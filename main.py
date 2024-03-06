@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from bson.objectid import ObjectId
 from typing import Annotated
@@ -7,12 +8,23 @@ from pydantic import BaseModel, Field, BeforeValidator
 import motor.motor_asyncio
 
 
+DATETIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
+
+
+def validate_datetime(value):
+    if isinstance(value, str) and not DATETIME_PATTERN.match(value):
+        raise ValueError(f'invalid datetime format, expected "{DATETIME_PATTERN.pattern}", got "{value}"')
+    return value
+
+
 mongo = motor.motor_asyncio.AsyncIOMotorClient()
 db = mongo.get_database("auditize")
 log_collection = db.get_collection("logs")
 
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
+
+AuditizeDatetime = Annotated[datetime, BeforeValidator(validate_datetime)]
 
 
 class Event(BaseModel):
@@ -22,7 +34,7 @@ class Event(BaseModel):
 
 class LogBase(BaseModel):
     event: Event
-    occurred_at: datetime
+    occurred_at: AuditizeDatetime
 
 
 class Log(LogBase):
