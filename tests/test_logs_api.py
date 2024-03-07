@@ -13,10 +13,11 @@ async def test_create_log(client: AsyncClient):
                 "name": "user_login",
                 "category": "authentication",
             },
-            "occurred_at": "2021-01-01T12:00:00",
+            "occurred_at": "2021-01-01T12:00:00.000Z",
         },
     )
-    assert resp.status_code == 200
+    print(resp.json())
+    assert resp.status_code == 201
     assert "id" in resp.json()
 
 
