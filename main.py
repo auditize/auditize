@@ -39,12 +39,11 @@ db = mongo.get_database("auditize")
 log_collection = db.get_collection("logs")
 
 
-class Event(BaseModel):
-    name: str
-    category: str
-
-
 class Log(BaseModel):
+    class Event(BaseModel):
+        name: str
+        category: str
+
     id: Optional[ObjectId] = Field(default=None, validation_alias="_id")
     event: Event
     occurred_at: datetime
@@ -56,6 +55,10 @@ class Log(BaseModel):
 
 
 class _LogBase(BaseModel):
+    class Event(BaseModel):
+        name: str
+        category: str
+
     event: Event
     occurred_at: Annotated[datetime, BeforeValidator(validate_datetime)]
 
