@@ -45,13 +45,14 @@ class Event(BaseModel):
 
 
 class Log(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
     id: Optional[ObjectId] = Field(default=None, validation_alias="_id")
     event: Event
     occurred_at: datetime
     saved_at: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True
+    )
 
 
 class LogCreationRequest(BaseModel):
@@ -59,7 +60,7 @@ class LogCreationRequest(BaseModel):
     occurred_at: Annotated[datetime, BeforeValidator(validate_datetime)]
 
     def to_log(self) -> Log:
-        return Log.model_validate(self.dict())
+        return Log.model_validate(self.model_dump())
 
 
 class LogCreationResponse(BaseModel):
@@ -78,7 +79,7 @@ class LogReadingResponse(BaseModel):
 
     @classmethod
     def from_log(cls, log: Log):
-        return cls.model_validate(log.dict())
+        return cls.model_validate(log.model_dump())
 
 
 async def save_log(log: Log) -> ObjectId:
