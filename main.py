@@ -55,10 +55,12 @@ class Log(BaseModel):
     )
 
 
-class LogCreationRequest(BaseModel):
+class _LogBase(BaseModel):
     event: Event
     occurred_at: Annotated[datetime, BeforeValidator(validate_datetime)]
 
+
+class LogCreationRequest(_LogBase):
     def to_log(self) -> Log:
         return Log.model_validate(self.model_dump())
 
@@ -67,15 +69,15 @@ class LogCreationResponse(BaseModel):
     id: Annotated[str, BeforeValidator(str)]
 
 
-class LogReadingResponse(BaseModel):
+class _LogReadingResponse(BaseModel):
+    id: Annotated[str, BeforeValidator(str)]
+    saved_at: datetime
+
+
+class LogReadingResponse(_LogBase, _LogReadingResponse):
     model_config = ConfigDict(
         json_encoders={datetime: serialize_datetime}
     )
-
-    id: Annotated[str, BeforeValidator(str)]
-    event: Event
-    occurred_at: datetime
-    saved_at: datetime
 
     @classmethod
     def from_log(cls, log: Log):
