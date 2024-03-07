@@ -1,3 +1,4 @@
+from typing import Optional
 import re
 from datetime import datetime, timezone
 from bson.objectid import ObjectId
@@ -6,6 +7,7 @@ from typing import Annotated
 from fastapi import FastAPI
 from pydantic import ConfigDict, BaseModel, Field, BeforeValidator
 import motor.motor_asyncio
+from icecream import ic
 
 
 DATETIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
@@ -13,7 +15,7 @@ DATETIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
 def validate_datetime(value):
     """
-    Validate datetime string in ISO 8601 format (("YYYY-MM-DDTHH:MM:SS.sssZ" to be specific).
+    Validate datetime string in ISO 8601 format ("YYYY-MM-DDTHH:MM:SS.sssZ" to be specific).
     """
     if isinstance(value, str) and not DATETIME_PATTERN.match(value):
         raise ValueError(f'invalid datetime format, expected "{DATETIME_PATTERN.pattern}", got "{value}"')
@@ -37,44 +39,54 @@ db = mongo.get_database("auditize")
 log_collection = db.get_collection("logs")
 
 
-PyObjectId = Annotated[str, BeforeValidator(str)]
-
-
 class Event(BaseModel):
-    name: str = Field(...)
+    name: str
     category: str
 
 
-class LogBase(BaseModel):
+class Log(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    id: Optional[ObjectId] = Field(default=None, validation_alias="_id")
+    event: Event
+    occurred_at: datetime
+    saved_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class LogCreationRequest(BaseModel):
+    event: Event
+    occurred_at: Annotated[datetime, BeforeValidator(validate_datetime)]
+
+    def to_log(self) -> Log:
+        return Log.model_validate(self.dict())
+
+
+class LogCreationResponse(BaseModel):
+    id: Annotated[str, BeforeValidator(str)]
+
+
+class LogReadingResponse(BaseModel):
     model_config = ConfigDict(
         json_encoders={datetime: serialize_datetime}
     )
 
+    id: Annotated[str, BeforeValidator(str)]
     event: Event
-    occurred_at: Annotated[datetime, BeforeValidator(validate_datetime)]
+    occurred_at: datetime
+    saved_at: datetime
+
+    @classmethod
+    def from_log(cls, log: Log):
+        return cls.model_validate(log.dict())
 
 
-class Log(LogBase):
-    id: PyObjectId = Field(validation_alias="_id")
+async def save_log(log: Log) -> ObjectId:
+    result = await log_collection.insert_one(log.model_dump())
+    return result.inserted_id
 
 
-class LogCreation(LogBase):
-    pass
-
-
-class LogCreated(BaseModel):
-    id: str
-
-
-async def save_log(log: LogCreation) -> str:
-    result = await log_collection.insert_one({
-        **log.model_dump(),
-        "created_at": datetime.utcnow(),
-    })
-    return str(result.inserted_id)
-
-
-async def get_log(log_id: str) -> Log:
+async def get_log(log_id: ObjectId | str) -> Log:
     data = await log_collection.find_one(ObjectId(log_id))
     return Log(**data)
 
@@ -83,12 +95,12 @@ app = FastAPI()
 
 
 @app.post("/logs", status_code=201)
-async def create_log(log: LogCreation) -> LogCreated:
-    log_id = await save_log(log)
-    return LogCreated(id=log_id)
+async def create_log(log_req: LogCreationRequest) -> LogCreationResponse:
+    log_id = await save_log(log_req.to_log())
+    return LogCreationResponse(id=log_id)
 
 
 @app.get("/logs/{log_id}")
-async def read_log(log_id: str) -> Log:
+async def read_log(log_id: str) -> LogReadingResponse:
     log = await get_log(log_id)
-    return log
+    return LogReadingResponse.from_log(log)
