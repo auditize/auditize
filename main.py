@@ -44,10 +44,24 @@ class Log(BaseModel):
         name: str
         category: str
 
+    class Actor(BaseModel):
+        type: str
+        id: str
+        name: str
+
+    class Resource(BaseModel):
+        type: str
+        id: str
+        name: str
+
     id: Optional[ObjectId] = Field(default=None, validation_alias="_id")
     event: Event
     occurred_at: datetime
     saved_at: datetime = Field(default_factory=datetime.utcnow)
+    source: dict[str, str] = Field(default_factory=dict)
+    actor: Optional[Actor] = Field(default=None)
+    resource: Optional[Actor] = Field(default=None)
+    context: dict[str, dict[str, str]] = Field(default_factory=dict)
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True
@@ -59,8 +73,22 @@ class _LogBase(BaseModel):
         name: str
         category: str
 
+    class Actor(BaseModel):
+        type: str
+        id: str
+        name: str
+
+    class Resource(BaseModel):
+        type: str
+        id: str
+        name: str
+
     event: Event
     occurred_at: Annotated[datetime, BeforeValidator(validate_datetime)]
+    source: dict[str, str] = Field(default_factory=dict)
+    actor: Optional[Actor] = Field(default=None)
+    resource: Optional[Resource] = Field(default=None)
+    context: dict[str, dict[str, str]] = Field(default_factory=dict)
 
 
 class LogCreationRequest(_LogBase):
