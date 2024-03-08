@@ -159,6 +159,18 @@ async def store_resource_type(type: str):
     await cache.set(cache_key, True)
 
 
+async def store_context_keys(context: dict[str, dict[str, str]]):
+    for level1_key, sub_keys in context.items():
+        for level2_key in sub_keys:
+            cache_key = f"context:{level1_key}:{level2_key}"
+            if await cache.exists(cache_key):
+                continue
+            ic(f"storing context key {level1_key!r} -> {level2_key!r}")
+            collection = db.get_collection("context_keys")
+            await collection.update_one({"level1_key": level1_key, "level2_key": level2_key}, {"$set": {}}, upsert=True)
+            await cache.set(cache_key, True)
+
+
 async def save_log(log: Log) -> ObjectId:
     result = await log_collection.insert_one(log.model_dump())
     await store_log_event(log.event)
@@ -168,6 +180,8 @@ async def save_log(log: Log) -> ObjectId:
         await store_actor_type(log.actor.type)
     if log.resource:
         await store_resource_type(log.resource.type)
+    if log.context:
+        await store_context_keys(log.context)
     return result.inserted_id
 
 
