@@ -118,6 +118,16 @@ class LogReadingResponse(_LogBase, _LogReadingResponse):
         return cls.model_validate(log.model_dump())
 
 
+async def store_log_event(event: Log.Event):
+    cache_key = f"event:{event.category}:{event.name}"
+    if await cache.exists(cache_key):
+        return
+    ic(f"storing event {event!r}")
+    collection = db.get_collection("events")
+    await collection.update_one({"category": event.category, "name": event.name}, {"$set": {}}, upsert=True)
+    await cache.set(cache_key, True)
+
+
 async def store_actor_type(type: str):
     cache_key = f"actor:{type}"
     if await cache.exists(cache_key):
@@ -132,6 +142,7 @@ async def save_log(log: Log) -> ObjectId:
     result = await log_collection.insert_one(log.model_dump())
     if log.actor:
         await store_actor_type(log.actor.type)
+    await store_log_event(log.event)
     return result.inserted_id
 
 
