@@ -128,6 +128,17 @@ async def store_log_event(event: Log.Event):
     await cache.set(cache_key, True)
 
 
+async def store_source_keys(source: dict[str, str]):
+    for key in source:
+        cache_key = f"source:{key}"
+        if await cache.exists(cache_key):
+            continue
+        ic(f"storing source key {key!r}")
+        collection = db.get_collection("source_keys")
+        await collection.update_one({"_id": key}, {"$set": {}}, upsert=True)
+        await cache.set(cache_key, True)
+
+
 async def store_actor_type(type: str):
     cache_key = f"actor:{type}"
     if await cache.exists(cache_key):
@@ -151,6 +162,8 @@ async def store_resource_type(type: str):
 async def save_log(log: Log) -> ObjectId:
     result = await log_collection.insert_one(log.model_dump())
     await store_log_event(log.event)
+    if log.source:
+        await store_source_keys(log.source)
     if log.actor:
         await store_actor_type(log.actor.type)
     if log.resource:
