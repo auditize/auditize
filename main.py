@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import FastAPI
 from pydantic import ConfigDict, BaseModel, Field, BeforeValidator
 import motor.motor_asyncio
+from motor import MotorCollection
 from icecream import ic
 from aiocache import Cache
 
@@ -118,70 +119,31 @@ class LogReadingResponse(_LogBase, _LogReadingResponse):
         return cls.model_validate(log.model_dump())
 
 
-async def store_log_event(event: Log.Event):
-    cache_key = f"event:{event.category}:{event.name}"
+async def store_unique_data(collection: MotorCollection, data: dict[str, str]):
+    cache_key = "%s:%s" % (collection.name, ":".join(data.values()))
     if await cache.exists(cache_key):
         return
-    ic(f"storing event {event!r}")
-    collection = db.get_collection("events")
-    await collection.update_one({"category": event.category, "name": event.name}, {"$set": {}}, upsert=True)
+    ic(f"storing {collection.name!r} {data!r}")
+    await collection.update_one(data, {"$set": {}}, upsert=True)
     await cache.set(cache_key, True)
-
-
-async def store_source_keys(source: dict[str, str]):
-    for key in source:
-        cache_key = f"source:{key}"
-        if await cache.exists(cache_key):
-            continue
-        ic(f"storing source key {key!r}")
-        collection = db.get_collection("source_keys")
-        await collection.update_one({"_id": key}, {"$set": {}}, upsert=True)
-        await cache.set(cache_key, True)
-
-
-async def store_actor_type(type: str):
-    cache_key = f"actor:{type}"
-    if await cache.exists(cache_key):
-        return
-    ic(f"storing actor type {type!r}")
-    collection = db.get_collection("actor_types")
-    await collection.update_one({"_id": type}, {"$set": {}}, upsert=True)
-    await cache.set(cache_key, True)
-
-
-async def store_resource_type(type: str):
-    cache_key = f"resource:{type}"
-    if await cache.exists(cache_key):
-        return
-    ic(f"storing resource type {type!r}")
-    collection = db.get_collection("resource_types")
-    await collection.update_one({"_id": type}, {"$set": {}}, upsert=True)
-    await cache.set(cache_key, True)
-
-
-async def store_context_keys(context: dict[str, dict[str, str]]):
-    for level1_key, sub_keys in context.items():
-        for level2_key in sub_keys:
-            cache_key = f"context:{level1_key}:{level2_key}"
-            if await cache.exists(cache_key):
-                continue
-            ic(f"storing context key {level1_key!r} -> {level2_key!r}")
-            collection = db.get_collection("context_keys")
-            await collection.update_one({"level1_key": level1_key, "level2_key": level2_key}, {"$set": {}}, upsert=True)
-            await cache.set(cache_key, True)
 
 
 async def save_log(log: Log) -> ObjectId:
     result = await log_collection.insert_one(log.model_dump())
-    await store_log_event(log.event)
-    if log.source:
-        await store_source_keys(log.source)
+    await store_unique_data(
+        db.get_collection("events"), {"category": log.event.category, "name": log.event.name}
+    )
+    for key in log.source:
+        await store_unique_data(db.get_collection("source_keys"), {"key": key})
     if log.actor:
-        await store_actor_type(log.actor.type)
+        await store_unique_data(db.get_collection("actor_types"), {"type": log.actor.type})
     if log.resource:
-        await store_resource_type(log.resource.type)
-    if log.context:
-        await store_context_keys(log.context)
+        await store_unique_data(db.get_collection("resource_types"), {"type": log.resource.type})
+    for level1_key, sub_keys in log.context.items():
+        for level2_key in sub_keys:
+            await store_unique_data(
+                db.get_collection("context_keys"), {"level1_key": level1_key, "level2_key": level2_key}
+            )
     return result.inserted_id
 
 
