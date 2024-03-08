@@ -138,11 +138,23 @@ async def store_actor_type(type: str):
     await cache.set(cache_key, True)
 
 
+async def store_resource_type(type: str):
+    cache_key = f"resource:{type}"
+    if await cache.exists(cache_key):
+        return
+    ic(f"storing resource type {type!r}")
+    collection = db.get_collection("resource_types")
+    await collection.update_one({"_id": type}, {"$set": {}}, upsert=True)
+    await cache.set(cache_key, True)
+
+
 async def save_log(log: Log) -> ObjectId:
     result = await log_collection.insert_one(log.model_dump())
+    await store_log_event(log.event)
     if log.actor:
         await store_actor_type(log.actor.type)
-    await store_log_event(log.event)
+    if log.resource:
+        await store_resource_type(log.resource.type)
     return result.inserted_id
 
 
