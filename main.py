@@ -8,7 +8,9 @@ from fastapi import FastAPI
 from pydantic import ConfigDict, BaseModel, Field, BeforeValidator
 import motor.motor_asyncio
 from icecream import ic
+from aiocache import Cache
 
+ic.configureOutput(includeContext=True)
 
 DATETIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
@@ -37,6 +39,7 @@ def serialize_datetime(dt: datetime) -> str:
 mongo = motor.motor_asyncio.AsyncIOMotorClient()
 db = mongo.get_database("auditize")
 log_collection = db.get_collection("logs")
+cache = Cache(Cache.MEMORY)
 
 
 class Log(BaseModel):
@@ -115,8 +118,20 @@ class LogReadingResponse(_LogBase, _LogReadingResponse):
         return cls.model_validate(log.model_dump())
 
 
+async def store_actor_type(type: str):
+    cache_key = f"actor:{type}"
+    if await cache.exists(cache_key):
+        return
+    ic(f"storing actor type {type!r}")
+    collection = db.get_collection("actor_types")
+    await collection.update_one({"_id": type}, {"$set": {}}, upsert=True)
+    await cache.set(cache_key, True)
+
+
 async def save_log(log: Log) -> ObjectId:
     result = await log_collection.insert_one(log.model_dump())
+    if log.actor:
+        await store_actor_type(log.actor.type)
     return result.inserted_id
 
 
