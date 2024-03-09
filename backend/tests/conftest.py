@@ -2,7 +2,7 @@ import pytest
 
 from httpx import AsyncClient, ASGITransport
 
-from main import app
+from auditize.main import app
 
 
 @pytest.fixture(scope="session")
