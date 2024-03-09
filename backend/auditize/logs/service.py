@@ -1,6 +1,7 @@
 from bson import ObjectId
 
-from motor import motor_asyncio, MotorCollection
+from motor import motor_asyncio
+from motor.motor_asyncio import AsyncIOMotorCollection
 from aiocache import Cache
 from icecream import ic
 
@@ -13,7 +14,7 @@ log_collection = db.get_collection("logs")
 cache = Cache(Cache.MEMORY)
 
 
-async def _store_unique_data(collection: MotorCollection, data: dict[str, str]):
+async def _store_unique_data(collection: AsyncIOMotorCollection, data: dict[str, str]):
     cache_key = "%s:%s" % (collection.name, ":".join(data.values()))
     if await cache.exists(cache_key):
         return
