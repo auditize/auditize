@@ -22,7 +22,6 @@ class Log(BaseModel):
 
     id: Optional[ObjectId] = Field(default=None, validation_alias="_id")
     event: Event
-    occurred_at: datetime
     saved_at: datetime = Field(default_factory=datetime.utcnow)
     source: dict[str, str] = Field(default_factory=dict)
     actor: Optional[Actor] = Field(default=None)

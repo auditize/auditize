@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Optional, Annotated
 
-from pydantic import ConfigDict, BaseModel, Field, BeforeValidator, field_serializer
+from pydantic import BaseModel, Field, BeforeValidator, field_serializer
 
-from auditize.common.api_models import serialize_datetime, validate_datetime
+from auditize.common.api_models import serialize_datetime
 from auditize.logs.models import Log
 
 
@@ -23,7 +23,6 @@ class _LogBase(BaseModel):
         name: str
 
     event: Event
-    occurred_at: Annotated[datetime, BeforeValidator(validate_datetime)]
     source: dict[str, str] = Field(default_factory=dict)
     actor: Optional[Actor] = Field(default=None)
     resource: Optional[Resource] = Field(default=None)
@@ -45,9 +44,9 @@ class _LogReadingResponse(BaseModel):
 
 
 class LogReadingResponse(_LogBase, _LogReadingResponse):
-    @field_serializer("occurred_at", "saved_at", when_used="json")
+    @field_serializer("saved_at", when_used="json")
     def serialize_datetimes(self, value):
-        return serialize_datetime(value, with_milliseconds=True)
+        return serialize_datetime(value)
 
     @classmethod
     def from_log(cls, log: Log):
