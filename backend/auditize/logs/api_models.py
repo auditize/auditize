@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Annotated
 
-from pydantic import BaseModel, Field, BeforeValidator, field_serializer
+from pydantic import BaseModel, Field, BeforeValidator, field_serializer, model_validator
 
 from auditize.common.api_models import serialize_datetime
 from auditize.logs.models import Log
@@ -22,11 +22,24 @@ class _LogBase(BaseModel):
         id: str
         name: str
 
+    class Tag(BaseModel):
+        id: str
+        type: Optional[str] = Field(default=None)
+        name: Optional[str] = Field(default=None)
+
     event: Event
     source: dict[str, str] = Field(default_factory=dict)
     actor: Optional[Actor] = Field(default=None)
     resource: Optional[Resource] = Field(default=None)
     context: dict[str, dict[str, str]] = Field(default_factory=dict)
+    tags: list[Tag] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_tags(self):
+        for tag in self.tags:
+            if bool(tag.type) ^ bool(tag.name):
+                raise ValueError("Rich tags require both type and name")
+        return self
 
 
 class LogCreationRequest(_LogBase):

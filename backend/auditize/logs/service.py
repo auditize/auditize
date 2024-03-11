@@ -25,20 +25,30 @@ async def _store_unique_data(collection: AsyncIOMotorCollection, data: dict[str,
 
 async def save_log(log: Log) -> ObjectId:
     result = await log_collection.insert_one(log.model_dump())
+
     await _store_unique_data(
         db.get_collection("events"), {"category": log.event.category, "name": log.event.name}
     )
+
     for key in log.source:
         await _store_unique_data(db.get_collection("source_keys"), {"key": key})
+
     if log.actor:
         await _store_unique_data(db.get_collection("actor_types"), {"type": log.actor.type})
+
     if log.resource:
         await _store_unique_data(db.get_collection("resource_types"), {"type": log.resource.type})
+
     for level1_key, sub_keys in log.context.items():
         for level2_key in sub_keys:
             await _store_unique_data(
                 db.get_collection("context_keys"), {"level1_key": level1_key, "level2_key": level2_key}
             )
+
+    for tag in log.tags:
+        if tag.type:
+            await _store_unique_data(db.get_collection("tag_types"), {"type": tag.type})
+
     return result.inserted_id
 
 
