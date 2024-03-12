@@ -24,7 +24,7 @@ async def _store_unique_data(collection: AsyncIOMotorCollection, data: dict[str,
 
 
 async def save_log(log: Log) -> ObjectId:
-    result = await log_collection.insert_one(log.model_dump())
+    result = await log_collection.insert_one(log.model_dump(exclude={"id"}))
 
     await _store_unique_data(
         db.get_collection("events"), {"category": log.event.category, "name": log.event.name}
