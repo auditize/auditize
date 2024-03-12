@@ -31,7 +31,7 @@ class _LogBase(BaseModel):
     source: dict[str, str] = Field(default_factory=dict)
     actor: Optional[Actor] = Field(default=None)
     resource: Optional[Resource] = Field(default=None)
-    context: dict[str, dict[str, str]] = Field(default_factory=dict)
+    details: dict[str, dict[str, str]] = Field(default_factory=dict)
     tags: list[Tag] = Field(default_factory=list)
 
     @model_validator(mode="after")

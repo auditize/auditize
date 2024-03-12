@@ -39,10 +39,10 @@ async def save_log(log: Log) -> ObjectId:
     if log.resource:
         await _store_unique_data(db.get_collection("resource_types"), {"type": log.resource.type})
 
-    for level1_key, sub_keys in log.context.items():
+    for level1_key, sub_keys in log.details.items():
         for level2_key in sub_keys:
             await _store_unique_data(
-                db.get_collection("context_keys"), {"level1_key": level1_key, "level2_key": level2_key}
+                db.get_collection("detail_keys"), {"level1_key": level1_key, "level2_key": level2_key}
             )
 
     for tag in log.tags:

@@ -44,7 +44,7 @@ async def test_create_log_all_fields(client: AsyncClient):
                 "id": "core",
                 "name": "Core Module"
             },
-            "context": {
+            "details": {
                 "more_details": {
                     "some_key": "some_value"
                 },
