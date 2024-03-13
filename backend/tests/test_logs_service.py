@@ -18,7 +18,7 @@ async def test_save_log_db_shape(client: AsyncClient):
     log_id = await save_log(log)
     db_log = await log_collection.find_one({"_id": log_id})
     assert list(db_log.keys()) == [
-        "_id", "event", "saved_at", "source", "actor", "resource", "details", "tags", "node_path"
+        "_id", "event", "saved_at", "source", "actor", "resource", "details", "tags", "attachments", "node_path"
     ]
     assert list(db_log["event"].keys()) == ["name", "category"]
     assert list(db_log["actor"].keys()) == ["type", "id", "name", "extra"]

@@ -67,6 +67,21 @@ async def save_log(log: Log) -> ObjectId:
     return result.inserted_id
 
 
+async def save_log_attachment(log_id: ObjectId | str, name: str, type: str, mime_type: str, data: bytes):
+    await log_collection.update_one(
+        {"_id": ObjectId(log_id)},
+        {"$push": {"attachments": {"name": name, "type": type, "mime_type": mime_type, "data": data}}},
+    )
+
+
 async def get_log(log_id: ObjectId | str) -> Log:
     data = await log_collection.find_one(ObjectId(log_id))
     return Log(**data)
+
+
+async def get_log_attachment(log_id: ObjectId | str, attachment_idx: int) -> Log.Attachment:
+    result = await log_collection.find_one(
+        {"_id": ObjectId(log_id)},
+        {"attachments": {"$slice": [attachment_idx, 1]}},
+    )
+    return Log.Attachment(**result["attachments"][0])

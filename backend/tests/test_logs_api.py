@@ -119,3 +119,31 @@ async def test_create_log_invalid_rich_tag(client: AsyncClient):
             },
         )
         assert resp.status_code == 422
+
+
+async def test_add_attachment(client: AsyncClient):
+    resp = await client.post(
+        "/logs",
+        json={
+            "event": {
+                "name": "user_login",
+                "category": "authentication",
+            },
+            "occurred_at": "2021-01-01T12:00:00",
+            "node_path": [
+                {
+                    "id": "1",
+                    "name": "Customer 1"
+                }
+            ]
+        },
+    )
+    assert resp.status_code == 201
+    log_id = resp.json()["id"]
+
+    resp = await client.post(
+        f"/logs/{log_id}/attachments",
+        files={"file": ("test.txt", b"test data")},
+        data={"type": "text", "name": "test_file.txt", "mime_type": "text/plain"}
+    )
+    assert resp.status_code == 200

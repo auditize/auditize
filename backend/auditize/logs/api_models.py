@@ -65,8 +65,14 @@ class LogCreationResponse(BaseModel):
 
 
 class _LogReadingResponse(BaseModel):
+    class Attachment(BaseModel):
+        name: str
+        type: str
+        mime_type: str
+
     id: Annotated[str, BeforeValidator(str)]
     saved_at: datetime
+    attachments: list[Attachment] = Field(default_factory=list)
 
 
 class LogReadingResponse(_LogBase, _LogReadingResponse):
