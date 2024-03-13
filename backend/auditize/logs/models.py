@@ -27,12 +27,12 @@ class Log(BaseModel):
         type: Optional[str] = Field(default=None)
         name: Optional[str] = Field(default=None)
 
-    class LightweightAttachment(BaseModel):
+    class AttachmentMetadata(BaseModel):
         name: str
         type: str
         mime_type: str
 
-    class Attachment(LightweightAttachment):
+    class Attachment(AttachmentMetadata):
         data: bytes
 
     class Node(BaseModel):
@@ -47,7 +47,7 @@ class Log(BaseModel):
     resource: Optional[Resource] = Field(default=None)
     details: dict[str, dict[str, str]] = Field(default_factory=dict)
     tags: list[Tag] = Field(default_factory=list)
-    attachments: list[LightweightAttachment] = Field(default_factory=list)
+    attachments: list[AttachmentMetadata] = Field(default_factory=list)
     node_path: list[Node] = Field(default_factory=list)
 
     model_config = ConfigDict(

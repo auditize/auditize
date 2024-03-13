@@ -77,7 +77,7 @@ async def save_log_attachment(log_id: ObjectId | str, name: str, type: str, mime
 async def get_log(log_id: ObjectId | str) -> Log:
     data = await log_collection.find_one(
         ObjectId(log_id),
-        # exclude attachments data as they can be large and not mapped in the Log -> LightweightAttachment model
+        # exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
         {"attachments.data": 0},
     )
     return Log(**data)
