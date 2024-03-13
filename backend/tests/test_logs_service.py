@@ -20,6 +20,6 @@ async def test_save_log_db_shape(client: AsyncClient):
         "_id", "event", "saved_at", "source", "actor", "resource", "details", "tags"
     ]
     assert list(db_log["event"].keys()) == ["name", "category"]
-    assert list(db_log["actor"].keys()) == ["type", "id", "name"]
-    assert list(db_log["resource"].keys()) == ["type", "id", "name"]
+    assert list(db_log["actor"].keys()) == ["type", "id", "name", "extra"]
+    assert list(db_log["resource"].keys()) == ["type", "id", "name", "extra"]
     assert list(db_log["tags"][0].keys()) == ["id", "type", "name"]

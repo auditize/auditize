@@ -14,11 +14,13 @@ class Log(BaseModel):
         type: str
         id: str
         name: str
+        extra: dict[str, str] = Field(default_factory=dict)
 
     class Resource(BaseModel):
         type: str
         id: str
         name: str
+        extra: dict[str, str] = Field(default_factory=dict)
 
     class Tag(BaseModel):
         id: str

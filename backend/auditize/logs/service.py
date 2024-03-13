@@ -35,9 +35,17 @@ async def save_log(log: Log) -> ObjectId:
 
     if log.actor:
         await _store_unique_data(db.get_collection("actor_types"), {"type": log.actor.type})
+        for extra_key in log.actor.extra:
+            await _store_unique_data(
+                db.get_collection("actor_extra_keys"), {"key": extra_key}
+            )
 
     if log.resource:
         await _store_unique_data(db.get_collection("resource_types"), {"type": log.resource.type})
+        for extra_key in log.resource.extra:
+            await _store_unique_data(
+                db.get_collection("resource_extra_keys"), {"key": extra_key}
+            )
 
     for level1_key, sub_keys in log.details.items():
         for level2_key in sub_keys:

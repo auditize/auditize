@@ -37,12 +37,18 @@ async def test_create_log_all_fields(client: AsyncClient):
             "actor": {
                 "type": "user",
                 "id": "user:123",
-                "name": "User 123"
+                "name": "User 123",
+                "extra": {
+                    "role": "admin"
+                }
             },
             "resource": {
                 "type": "module",
                 "id": "core",
-                "name": "Core Module"
+                "name": "Core Module",
+                "extra": {
+                    "creator": "xyz"
+                }
             },
             "details": {
                 "more_details": {
