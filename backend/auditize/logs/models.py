@@ -27,6 +27,10 @@ class Log(BaseModel):
         type: Optional[str] = Field(default=None)
         name: Optional[str] = Field(default=None)
 
+    class Node(BaseModel):
+        id: str
+        name: str
+
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     event: Event
     saved_at: datetime = Field(default_factory=datetime.utcnow)
@@ -35,6 +39,7 @@ class Log(BaseModel):
     resource: Optional[Resource] = Field(default=None)
     details: dict[str, dict[str, str]] = Field(default_factory=dict)
     tags: list[Tag] = Field(default_factory=list)
+    node_path: list[Node] = Field(default_factory=list)
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True

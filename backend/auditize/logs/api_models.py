@@ -29,18 +29,29 @@ class _LogBase(BaseModel):
         type: Optional[str] = Field(default=None)
         name: Optional[str] = Field(default=None)
 
+    class Node(BaseModel):
+        id: str
+        name: str
+
     event: Event
     source: dict[str, str] = Field(default_factory=dict)
     actor: Optional[Actor] = Field(default=None)
     resource: Optional[Resource] = Field(default=None)
     details: dict[str, dict[str, str]] = Field(default_factory=dict)
     tags: list[Tag] = Field(default_factory=list)
+    node_path: list[Node] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_tags(self):
         for tag in self.tags:
             if bool(tag.type) ^ bool(tag.name):
-                raise ValueError("Rich tags require both type and name")
+                raise ValueError("Rich tags require both type and name attributes")
+        return self
+
+    @model_validator(mode="after")
+    def validate_node_path(self):
+        if len(self.node_path) == 0:
+            raise ValueError("Node path must be at least one node deep")
         return self
 
 

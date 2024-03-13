@@ -14,6 +14,12 @@ async def test_create_log_minimal_fields(client: AsyncClient):
                 "category": "authentication",
             },
             "occurred_at": "2021-01-01T12:00:00.000Z",
+            "node_path": [
+                {
+                    "id": "1",
+                    "name": "Customer 1"
+                }
+            ]
         },
     )
     print(resp.json())
@@ -66,6 +72,12 @@ async def test_create_log_all_fields(client: AsyncClient):
                     "id": "rich_tag:1",
                     "type": "rich_tag",
                     "name": "Rich tag"
+                }
+            ],
+            "node_path": [
+                {
+                    "id": "1",
+                    "name": "Customer 1"
                 }
             ]
         }

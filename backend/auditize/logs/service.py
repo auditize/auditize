@@ -15,7 +15,7 @@ cache = Cache(Cache.MEMORY)
 
 
 async def _store_unique_data(collection: AsyncIOMotorCollection, data: dict[str, str]):
-    cache_key = "%s:%s" % (collection.name, ":".join(data.values()))
+    cache_key = "%s:%s" % (collection.name, ":".join(val or "" for val in data.values()))
     if await cache.exists(cache_key):
         return
     ic(f"storing {collection.name!r} {data!r}")
@@ -56,6 +56,13 @@ async def save_log(log: Log) -> ObjectId:
     for tag in log.tags:
         if tag.type:
             await _store_unique_data(db.get_collection("tag_types"), {"type": tag.type})
+
+    parent_node_id = None
+    for node in log.node_path:
+        await _store_unique_data(db.get_collection("nodes"), {
+            "parent_node_id": parent_node_id, "id": node.id, "name": node.name
+        })
+        parent_node_id = node.id
 
     return result.inserted_id
 
