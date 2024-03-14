@@ -22,6 +22,8 @@ async def create_log(log_req: LogCreationRequest) -> LogCreationResponse:
 
 @router.post(
     "/logs/{log_id}/attachments",
+    status_code=201,
+    response_class=Response,
     summary="Add a file attachment to a log",
     operation_id="add_log_attachment",
     tags=["logs"]
@@ -54,7 +56,7 @@ async def add_attachment(
                 "example": "application/json"
             }
         )] = None
-):
+) -> None:
     await service.save_log_attachment(
         log_id,
         name or file.filename,
