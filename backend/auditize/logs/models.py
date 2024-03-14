@@ -24,7 +24,7 @@ class Log(BaseModel):
 
     class Tag(BaseModel):
         id: str
-        type: Optional[str] = Field(default=None)
+        category: Optional[str] = Field(default=None)
         name: Optional[str] = Field(default=None)
 
     class AttachmentMetadata(BaseModel):

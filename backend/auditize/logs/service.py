@@ -54,8 +54,8 @@ async def save_log(log: Log) -> ObjectId:
             )
 
     for tag in log.tags:
-        if tag.type:
-            await _store_unique_data(db.get_collection("tag_types"), {"type": tag.type})
+        if tag.category:
+            await _store_unique_data(db.get_collection("tag_categories"), {"category": tag.category})
 
     parent_node_id = None
     for node in log.node_path:

@@ -84,7 +84,7 @@ async def test_create_log_all_fields(client: AsyncClient):
             },
             {
                 "id": "rich_tag:1",
-                "type": "rich_tag",
+                "category": "rich_tag",
                 "name": "Rich tag"
             }
         ],
@@ -101,7 +101,7 @@ async def test_create_log_missing_event_name(client: AsyncClient):
 
 async def test_create_log_invalid_rich_tag(client: AsyncClient):
     invalid_tags = (
-        {"id": "some_tag", "type": "rich_tag"},
+        {"id": "some_tag", "category": "rich_tag"},
         {"id": "some_other_tag", "name": "Rich tag"}
     )
 
