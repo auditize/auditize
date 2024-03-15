@@ -2,6 +2,9 @@ import pytest
 from httpx import AsyncClient
 from icecream import ic
 
+from auditize.common.mongo import Database
+
+
 pytestmark = pytest.mark.anyio
 
 
@@ -43,12 +46,12 @@ async def assert_create_log(client: AsyncClient, log: dict, expected_status_code
     return resp
 
 
-async def test_create_log_minimal_fields(client: AsyncClient):
+async def test_create_log_minimal_fields(client: AsyncClient, db: Database):
     log = make_log_data()
     await assert_create_log(client, log)
 
 
-async def test_create_log_all_fields(client: AsyncClient):
+async def test_create_log_all_fields(client: AsyncClient, db: Database):
     log = make_log_data({
         "source": {
             "ip": "1.1.1.1",
@@ -93,13 +96,13 @@ async def test_create_log_all_fields(client: AsyncClient):
     await assert_create_log(client, log)
 
 
-async def test_create_log_missing_event_name(client: AsyncClient):
+async def test_create_log_missing_event_name(client: AsyncClient, db: Database):
     log = make_log_data()
     del log["event"]["name"]
     await assert_create_log(client, log, expected_status_code=422)
 
 
-async def test_create_log_invalid_rich_tag(client: AsyncClient):
+async def test_create_log_invalid_rich_tag(client: AsyncClient, db: Database):
     invalid_tags = (
         {"id": "some_tag", "category": "rich_tag"},
         {"id": "some_other_tag", "name": "Rich tag"}
@@ -109,7 +112,7 @@ async def test_create_log_invalid_rich_tag(client: AsyncClient):
         await assert_create_log(client, make_log_data({"tags": [invalid_tag]}), expected_status_code=422)
 
 
-async def test_add_attachment(client: AsyncClient):
+async def test_add_attachment(client: AsyncClient, db: Database):
     resp = await assert_create_log(client, make_log_data())
     log_id = resp.json()["id"]
 
@@ -118,5 +121,5 @@ async def test_add_attachment(client: AsyncClient):
         f"/logs/{log_id}/attachments",
         files={"file": ("test.txt", b"test data")},
         data={"type": "text", "name": "test_file.txt", "mime_type": "text/plain"},
-        expected_status_code=200
+        expected_status_code=204
     )

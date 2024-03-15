@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, UploadFile, Form, Response, Path
+from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
 
 from auditize.logs.api_models import LogCreationRequest, LogCreationResponse, LogReadingResponse
 from auditize.logs import service
+from auditize.common.mongo import Database, get_db
 
 router = APIRouter()
 
@@ -15,8 +16,8 @@ router = APIRouter()
     operation_id="create_log",
     tags=["logs"]
 )
-async def create_log(log_req: LogCreationRequest) -> LogCreationResponse:
-    log_id = await service.save_log(log_req.to_log())
+async def create_log(db: Annotated[Database, Depends(get_db)], log_req: LogCreationRequest) -> LogCreationResponse:
+    log_id = await service.save_log(db, log_req.to_log())
     return LogCreationResponse(id=log_id)
 
 
@@ -29,6 +30,7 @@ async def create_log(log_req: LogCreationRequest) -> LogCreationResponse:
     tags=["logs"]
 )
 async def add_attachment(
+        db: Annotated[Database, Depends(get_db)],
         log_id: Annotated[str, Path(
             title="Log ID",
             description="The ID of the log to attach the file to"
@@ -58,6 +60,7 @@ async def add_attachment(
         )] = None
 ) -> None:
     await service.save_log_attachment(
+        db,
         log_id,
         name or file.filename,
         type,
@@ -72,8 +75,9 @@ async def add_attachment(
     operation_id="get_log",
     tags=["logs"]
 )
-async def get_log(log_id: Annotated[str, Path(title="Log ID")]) -> LogReadingResponse:
-    log = await service.get_log(log_id)
+async def get_log(
+        db: Annotated[Database, Depends(get_db)], log_id: Annotated[str, Path(title="Log ID")]) -> LogReadingResponse:
+    log = await service.get_log(db, log_id)
     return LogReadingResponse.from_log(log)
 
 
@@ -84,13 +88,14 @@ async def get_log(log_id: Annotated[str, Path(title="Log ID")]) -> LogReadingRes
     tags=["logs"]
 )
 async def get_log_attachment(
+        db: Annotated[Database, Depends(get_db)],
         log_id: str = Path(title="Log ID"),
         attachment_idx: int = Path(
             title="Attachment index",
             description="The index of the attachment in the log's attachments list (starts from 0)"
         )
 ):
-    attachment = await service.get_log_attachment(log_id, attachment_idx)
+    attachment = await service.get_log_attachment(db, log_id, attachment_idx)
     return Response(
         content=attachment.data,
         media_type=attachment.mime_type,

@@ -1,5 +1,6 @@
 from auditize.logs.models import Log
-from auditize.logs.service import save_log, log_collection
+from auditize.logs.service import save_log
+from auditize.common.mongo import Database
 
 import pytest
 from httpx import AsyncClient
@@ -7,7 +8,7 @@ from httpx import AsyncClient
 pytestmark = pytest.mark.anyio
 
 
-async def test_save_log_db_shape(client: AsyncClient):
+async def test_save_log_db_shape(client: AsyncClient, db: Database):
     log = Log(
         event=Log.Event(name="login", category="authentication"),
         actor=Log.Actor(type="user", id="user:123", name="User 123"),
@@ -15,8 +16,8 @@ async def test_save_log_db_shape(client: AsyncClient):
         tags=[Log.Tag(id="simple_tag")],
         node_path=[Log.Node(id="1", name="Customer 1")]
     )
-    log_id = await save_log(log)
-    db_log = await log_collection.find_one({"_id": log_id})
+    log_id = await save_log(db, log)
+    db_log = await db.logs.find_one({"_id": log_id})
     assert list(db_log.keys()) == [
         "_id", "event", "saved_at", "source", "actor", "resource", "details", "tags", "attachments", "node_path"
     ]
