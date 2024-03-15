@@ -31,7 +31,7 @@ def make_log_data(extra=None) -> dict:
 async def assert_post(client: AsyncClient, path, json=None, files=None, data=None, expected_status_code=200):
     ic(json, files, data)
     resp = await client.post(path, json=json, files=files, data=data)
-    ic(resp.json())
+    ic(resp.text)
     assert resp.status_code == expected_status_code
     return resp
 

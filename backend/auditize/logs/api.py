@@ -22,7 +22,7 @@ async def create_log(log_req: LogCreationRequest) -> LogCreationResponse:
 
 @router.post(
     "/logs/{log_id}/attachments",
-    status_code=201,
+    status_code=204,
     response_class=Response,
     summary="Add a file attachment to a log",
     operation_id="add_log_attachment",
