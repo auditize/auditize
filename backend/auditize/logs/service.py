@@ -1,3 +1,4 @@
+from typing import Iterator
 from bson import ObjectId
 
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -8,16 +9,20 @@ from auditize.logs.models import Log
 from auditize.common.mongo import Database
 
 
-cache = Cache(Cache.MEMORY)
+# Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
+_EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
+
+
+_cache = Cache(Cache.MEMORY)
 
 
 async def _store_unique_data(collection: AsyncIOMotorCollection, data: dict[str, str]):
     cache_key = "%s:%s" % (collection.name, ":".join(val or "" for val in data.values()))
-    if await cache.exists(cache_key):
+    if await _cache.exists(cache_key):
         return
     ic(f"storing {collection.name!r} {data!r}")
     await collection.update_one(data, {"$set": {}}, upsert=True)
-    await cache.set(cache_key, True)
+    await _cache.set(cache_key, True)
 
 
 async def save_log(db: Database, log: Log) -> ObjectId:
@@ -72,11 +77,7 @@ async def save_log_attachment(db: Database, log_id: ObjectId | str, name: str, t
 
 
 async def get_log(db: Database, log_id: ObjectId | str) -> Log:
-    data = await db.logs.find_one(
-        ObjectId(log_id),
-        # exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
-        {"attachments.data": 0},
-    )
+    data = await db.logs.find_one(ObjectId(log_id), _EXCLUDE_ATTACHMENT_DATA)
     return Log(**data)
 
 
@@ -86,3 +87,8 @@ async def get_log_attachment(db: Database, log_id: ObjectId | str, attachment_id
         {"attachments": {"$slice": [attachment_idx, 1]}},
     )
     return Log.Attachment(**result["attachments"][0])
+
+
+async def get_logs(db: Database, limit: int = 10) -> list[Log]:
+    cursor = db.logs.find({}, _EXCLUDE_ATTACHMENT_DATA, sort=[("saved_at", -1)], limit=limit)
+    return [Log(**log) async for log in cursor]

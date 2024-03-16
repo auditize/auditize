@@ -219,3 +219,11 @@ class LogReadingResponse(_LogBase, _LogReadingResponse):
     @classmethod
     def from_log(cls, log: Log):
         return cls.model_validate(log.model_dump())
+
+
+class LogsReadingResponse(BaseModel):
+    data: list[LogReadingResponse] = Field(default_factory=list)
+
+    @classmethod
+    def from_logs(cls, logs: list[Log]):
+        return cls(data=list(map(LogReadingResponse.from_log, logs)))

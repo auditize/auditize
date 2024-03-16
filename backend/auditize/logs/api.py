@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
 
-from auditize.logs.api_models import LogCreationRequest, LogCreationResponse, LogReadingResponse
+from auditize.logs.api_models import LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
 
@@ -101,3 +101,17 @@ async def get_log_attachment(
         media_type=attachment.mime_type,
         headers={"Content-Disposition": f"attachment; filename={attachment.name}"}
     )
+
+
+@router.get(
+    "/logs",
+    summary="Get logs",
+    operation_id="get_logs",
+    tags=["logs"]
+)
+async def get_logs(
+        db: Annotated[Database, Depends(get_db)],
+        limit: int = 10
+) -> LogsReadingResponse:
+    logs = await service.get_logs(db, limit)
+    return LogsReadingResponse.from_logs(logs)
