@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Optional
 
 from pydantic import BaseModel, Field, BeforeValidator, field_serializer, model_validator
 
@@ -89,21 +89,17 @@ class _LogBase(BaseModel):
             title="Tag ID",
             description="Tag ID is the only field required for a 'simple' tag"
         )
-        name: str = Field(
+        name: Optional[str] = Field(
             title="Tag name",
             description="If name is set then category must also be set to represent a valid 'rich' tag",
             default=None,
-            json_schema_extra={
-                "nullable": True
-            }
+            json_schema_extra={"nullable": True}
         )
-        category: str = Field(
+        category: Optional[str] = Field(
             title="Tag category",
             description="If category is set then name must also be set to represent a valid 'rich' tag",
             default=None,
-            json_schema_extra={
-                "nullable": True
-            }
+            json_schema_extra={"nullable": True}
         )
 
         model_config = {
@@ -136,16 +132,16 @@ class _LogBase(BaseModel):
             }
         }
     )
-    actor: Actor = Field(
+    actor: Optional[Actor] = Field(
         default=None,
         json_schema_extra={
             "nullable": True
         }
     )
-    resource: Resource = Field(
+    resource: Optional[Resource] = Field(
         default=None,
         json_schema_extra={
-            "nullable": True
+            "nullable": True,
         }
     )
     details: dict[str, dict[str, str]] = Field(
