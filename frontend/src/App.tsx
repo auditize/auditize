@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-query'
 
 import './App.css'
-import 'primereact/resources/themes/bootstrap4-dark-blue/theme.css';
+import 'primereact/resources/themes/lara-light-blue/theme.css';
 
 
 // function App() {
