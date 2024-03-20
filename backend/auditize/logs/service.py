@@ -1,11 +1,8 @@
 from bson import ObjectId
 
-from motor.motor_asyncio import AsyncIOMotorCollection
-from aiocache import Cache
-from icecream import ic
-
 from auditize.logs.models import Log
 from auditize.common.mongo import Database
+from auditize.common.exceptions import UnknownModelException
 
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
@@ -65,6 +62,8 @@ async def save_log_attachment(db: Database, log_id: ObjectId | str, name: str, t
 
 async def get_log(db: Database, log_id: ObjectId | str) -> Log:
     data = await db.logs.find_one(ObjectId(log_id), _EXCLUDE_ATTACHMENT_DATA)
+    if data is None:
+        raise UnknownModelException(log_id)
     return Log(**data)
 
 

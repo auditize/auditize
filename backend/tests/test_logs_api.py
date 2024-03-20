@@ -35,6 +35,23 @@ def make_log_data(extra=None) -> dict:
     }
 
 
+def make_expected_log_data_for_api(actual):
+    expected = {
+        "source": {},
+        "actor": None,
+        "resource": None,
+        "details": {},
+        "tags": [],
+        "attachments": [],
+        **actual,
+        "saved_at": callee.Regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+    }
+    for tag in expected["tags"]:
+        tag.setdefault("category", None)
+        tag.setdefault("name", None)
+    return expected
+
+
 async def assert_post(client: AsyncClient, path, json=None, files=None, data=None, expected_status_code=200):
     ic(json, files, data)
     resp = await client.post(path, json=json, files=files, data=data)
@@ -51,19 +68,7 @@ async def assert_create_log(client: AsyncClient, log: dict, expected_status_code
 
 
 async def assert_db_log(db: Database, log_id, expected):
-    expected = {
-        "source": {},
-        "actor": None,
-        "resource": None,
-        "details": {},
-        "tags": [],
-        "attachments": [],
-        **expected,
-        "saved_at": callee.IsA(datetime.datetime)
-    }
-    for tag in expected["tags"]:
-        tag.setdefault("category", None)
-        tag.setdefault("name", None)
+    expected = {**make_expected_log_data_for_api(expected), "saved_at": callee.IsA(datetime.datetime)}
     db_log = await db.logs.find_one({"_id": ObjectId(log_id)}, {"_id": 0})
     ic(db_log)
     assert db_log == expected
@@ -193,3 +198,74 @@ async def test_add_attachment_binary_and_all_fields(client: AsyncClient, db: Dat
             ]
         }
     )
+
+
+async def test_get_log_minimal_fields(client: AsyncClient, db: Database):
+    log = make_log_data()
+    resp = await assert_create_log(client, log)
+    log_id = resp.json()["id"]
+
+    resp = await client.get(f"/logs/{log_id}")
+    assert resp.status_code == 200
+    assert resp.json() == make_expected_log_data_for_api({
+        **log,
+        "id": log_id
+    })
+
+
+async def test_get_log_all_fields(client: AsyncClient, db: Database):
+    log = make_log_data({
+        "source": {
+            "ip": "1.1.1.1",
+            "user_agent": "Mozilla/5.0"
+        },
+        "actor": {
+            "type": "user",
+            "id": "user:123",
+            "name": "User 123",
+            "extra": {
+                "role": "admin"
+            }
+        },
+        "resource": {
+            "type": "module",
+            "id": "core",
+            "name": "Core Module",
+            "extra": {
+                "creator": "xyz"
+            }
+        },
+        "details": {
+            "more_details": {
+                "some_key": "some_value"
+            },
+            "other_details": {
+                "other_key": "other_value"
+            }
+        },
+        "tags": [
+            {
+                "id": "simple_tag",
+            },
+            {
+                "id": "rich_tag:1",
+                "category": "rich_tag",
+                "name": "Rich tag"
+            }
+        ],
+    })
+
+    resp = await assert_create_log(client, log)
+    log_id = resp.json()["id"]
+
+    resp = await client.get(f"/logs/{log_id}")
+    assert resp.status_code == 200
+    assert resp.json() == make_expected_log_data_for_api({
+        **log,
+        "id": log_id
+    })
+
+
+async def test_get_log_not_found(client: AsyncClient, db: Database):
+    resp = await client.get("/logs/65fab045f097fe0b9b664c99")
+    assert resp.status_code == 404

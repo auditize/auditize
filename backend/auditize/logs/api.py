@@ -5,6 +5,7 @@ from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
 from auditize.logs.api_models import LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
+from auditize.common.api import COMMON_RESPONSES
 
 router = APIRouter()
 
@@ -73,7 +74,8 @@ async def add_attachment(
     "/logs/{log_id}",
     summary="Get a log",
     operation_id="get_log",
-    tags=["logs"]
+    tags=["logs"],
+    responses=COMMON_RESPONSES
 )
 async def get_log(
         db: Annotated[Database, Depends(get_db)], log_id: Annotated[str, Path(title="Log ID")]) -> LogReadingResponse:
