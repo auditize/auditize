@@ -1,4 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from aiocache import Cache
+from icecream import ic
 
 
 class _Collection:
@@ -13,6 +15,15 @@ class Database:
     def __init__(self, name: str, client: AsyncIOMotorClient):
         self.name = name
         self.client = client
+        self._cache = Cache(Cache.MEMORY)
+
+    async def store_unique_data(self, collection: AsyncIOMotorCollection, data: dict[str, str]):
+        cache_key = "%s:%s" % (collection.name, ":".join(val or "" for val in data.values()))
+        if await self._cache.exists(cache_key):
+            return
+        ic(f"storing {collection.name!r} {data!r}")
+        await collection.update_one(data, {"$set": {}}, upsert=True)
+        await self._cache.set(cache_key, True)
 
     logs = _Collection("logs")
     log_events = _Collection("log_events")
@@ -27,7 +38,8 @@ class Database:
 
 
 mongo_client = AsyncIOMotorClient()
+database = Database("auditize", mongo_client)
 
 
 def get_db() -> Database:
-    return Database("auditize", mongo_client)
+    return database

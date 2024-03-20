@@ -1,4 +1,3 @@
-from typing import Iterator
 from bson import ObjectId
 
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -13,55 +12,43 @@ from auditize.common.mongo import Database
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 
 
-_cache = Cache(Cache.MEMORY)
-
-
-async def _store_unique_data(collection: AsyncIOMotorCollection, data: dict[str, str]):
-    cache_key = "%s:%s" % (collection.name, ":".join(val or "" for val in data.values()))
-    if await _cache.exists(cache_key):
-        return
-    ic(f"storing {collection.name!r} {data!r}")
-    await collection.update_one(data, {"$set": {}}, upsert=True)
-    await _cache.set(cache_key, True)
-
-
 async def save_log(db: Database, log: Log) -> ObjectId:
     result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
 
-    await _store_unique_data(
+    await db.store_unique_data(
         db.log_events, {"category": log.event.category, "name": log.event.name}
     )
 
     for key in log.source:
-        await _store_unique_data(db.log_source_keys, {"key": key})
+        await db.store_unique_data(db.log_source_keys, {"key": key})
 
     if log.actor:
-        await _store_unique_data(db.log_actor_types, {"type": log.actor.type})
+        await db.store_unique_data(db.log_actor_types, {"type": log.actor.type})
         for extra_key in log.actor.extra:
-            await _store_unique_data(
+            await db.store_unique_data(
                 db.log_actor_extra_keys, {"key": extra_key}
             )
 
     if log.resource:
-        await _store_unique_data(db.log_resource_types, {"type": log.resource.type})
+        await db.store_unique_data(db.log_resource_types, {"type": log.resource.type})
         for extra_key in log.resource.extra:
-            await _store_unique_data(
+            await db.store_unique_data(
                 db.log_resource_extra_keys, {"key": extra_key}
             )
 
     for level1_key, sub_keys in log.details.items():
         for level2_key in sub_keys:
-            await _store_unique_data(
+            await db.store_unique_data(
                 db.log_detail_keys, {"level1_key": level1_key, "level2_key": level2_key}
             )
 
     for tag in log.tags:
         if tag.category:
-            await _store_unique_data(db.log_tag_categories, {"category": tag.category})
+            await db.store_unique_data(db.log_tag_categories, {"category": tag.category})
 
     parent_node_id = None
     for node in log.node_path:
-        await _store_unique_data(db.log_nodes, {
+        await db.store_unique_data(db.log_nodes, {
             "parent_node_id": parent_node_id, "id": node.id, "name": node.name
         })
         parent_node_id = node.id
