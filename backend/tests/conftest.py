@@ -20,9 +20,9 @@ async def client():
 
 
 @pytest.fixture(scope="function")
-def db():
+async def db():
     new_db = Database("test_%s" % uuid.uuid4(), mongo_client)
     app.dependency_overrides[get_db] = lambda: new_db
     yield new_db
     app.dependency_overrides[get_db] = get_db
-    mongo_client.drop_database(new_db.name)
+    await mongo_client.drop_database(new_db.name)
