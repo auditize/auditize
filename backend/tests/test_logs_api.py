@@ -1,4 +1,9 @@
+import datetime
+from bson import ObjectId
+import base64
+
 import pytest
+import callee
 from httpx import AsyncClient
 from icecream import ic
 
@@ -20,7 +25,6 @@ def make_log_data(extra=None) -> dict:
             "name": "user_login",
             "category": "authentication",
         },
-        "occurred_at": "2021-01-01T12:00:00.000Z",
         "node_path": [
             {
                 "id": "1",
@@ -46,9 +50,29 @@ async def assert_create_log(client: AsyncClient, log: dict, expected_status_code
     return resp
 
 
+async def assert_db_log(db: Database, log_id, expected):
+    expected = {
+        "source": {},
+        "actor": None,
+        "resource": None,
+        "details": {},
+        "tags": [],
+        "attachments": [],
+        **expected,
+        "saved_at": callee.IsA(datetime.datetime)
+    }
+    for tag in expected["tags"]:
+        tag.setdefault("category", None)
+        tag.setdefault("name", None)
+    db_log = await db.logs.find_one({"_id": ObjectId(log_id)}, {"_id": 0})
+    ic(db_log)
+    assert db_log == expected
+
+
 async def test_create_log_minimal_fields(client: AsyncClient, db: Database):
     log = make_log_data()
-    await assert_create_log(client, log)
+    resp = await assert_create_log(client, log)
+    await assert_db_log(db, resp.json()["id"], log)
 
 
 async def test_create_log_all_fields(client: AsyncClient, db: Database):
@@ -93,7 +117,8 @@ async def test_create_log_all_fields(client: AsyncClient, db: Database):
         ],
     })
 
-    await assert_create_log(client, log)
+    resp = await assert_create_log(client, log)
+    await assert_db_log(db, resp.json()["id"], log)
 
 
 async def test_create_log_missing_event_name(client: AsyncClient, db: Database):
@@ -112,14 +137,59 @@ async def test_create_log_invalid_rich_tag(client: AsyncClient, db: Database):
         await assert_create_log(client, make_log_data({"tags": [invalid_tag]}), expected_status_code=422)
 
 
-async def test_add_attachment(client: AsyncClient, db: Database):
-    resp = await assert_create_log(client, make_log_data())
+async def test_add_attachment_text_and_minimal_fields(client: AsyncClient, db: Database):
+    log = make_log_data()
+    resp = await assert_create_log(client, log)
     log_id = resp.json()["id"]
 
     await assert_post(
         client,
         f"/logs/{log_id}/attachments",
-        files={"file": ("test.txt", b"test data")},
-        data={"type": "text", "name": "test_file.txt", "mime_type": "text/plain"},
+        files={"file": ("test.txt", "test data")},
+        data={"type": "text"},
         expected_status_code=204
+    )
+    await assert_db_log(
+        db, log_id, {
+            **log,
+            "attachments": [
+                {
+                    "name": "test.txt",
+                    "type": "text",
+                    "mime_type": "text/plain",
+                    "data": b"test data"
+                }
+            ]
+        }
+    )
+
+
+async def test_add_attachment_binary_and_all_fields(client: AsyncClient, db: Database):
+    log = make_log_data()
+    resp = await assert_create_log(client, log)
+    log_id = resp.json()["id"]
+
+    # some random data generated with /dev/urandom:
+    data_base64 = "srX7jaKuqoXJQm7YocqmFzSwjObc0ycvnMYor28L9Kc="
+    data = base64.b64decode(data_base64)
+
+    await assert_post(
+        client,
+        f"/logs/{log_id}/attachments",
+        files={"file": ("file.bin", data)},
+        data={"type": "binary", "name": "test_file.bin", "mime_type": "application/octet-stream"},
+        expected_status_code=204
+    )
+    await assert_db_log(
+        db, log_id, {
+            **log,
+            "attachments": [
+                {
+                    "name": "test_file.bin",
+                    "type": "binary",
+                    "mime_type": "application/octet-stream",
+                    "data": data
+                }
+            ]
+        }
     )
