@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from bson import ObjectId
 
@@ -41,7 +41,7 @@ class Log(BaseModel):
 
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     event: Event
-    saved_at: datetime = Field(default_factory=datetime.utcnow)
+    saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: dict[str, str] = Field(default_factory=dict)
     actor: Optional[Actor] = Field(default=None)
     resource: Optional[Resource] = Field(default=None)
