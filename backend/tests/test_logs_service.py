@@ -1,7 +1,10 @@
+from datetime import datetime
+from bson import ObjectId
+
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.logs.models import Log
-from auditize.logs.service import save_log
+from auditize.logs.service import save_log, PaginationCursor, InvalidPaginationCursor
 from auditize.common.mongo import Database
 
 import pytest
@@ -122,3 +125,24 @@ async def test_save_log_lookup_tables(db: Database):
             {"parent_node_id": "1", "id": "1:1", "name": "Entity A"}
         ]
     )
+
+
+def test_pagination_cursor():
+    # build initial cursor
+    log_id = ObjectId("60f3b3b3b3b3b3b3b3b3b3b3")
+    date = datetime.fromisoformat("2021-07-19T00:00:00Z")
+    cursor = PaginationCursor(log_id=log_id, date=date)
+
+    # test cursor serialization
+    serialized = cursor.serialize()
+    assert type(serialized) is str
+
+    # test cursor deserialization
+    new_cursor = PaginationCursor.load(serialized)
+    assert new_cursor.log_id == log_id
+    assert new_cursor.date == date
+
+
+def test_pagination_cursor_invalid_string():
+    with pytest.raises(InvalidPaginationCursor):
+        PaginationCursor.load("invalid_cursor_string")

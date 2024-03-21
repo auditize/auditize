@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 
 from pydantic import BaseModel, Field, BeforeValidator, field_serializer, model_validator
 
-from auditize.common.api_models import serialize_datetime
+from auditize.common.utils import serialize_datetime
 from auditize.logs.models import Log
 
 
@@ -213,7 +213,7 @@ class _LogReadingResponse(BaseModel):
 
 class LogReadingResponse(_LogBase, _LogReadingResponse):
     @field_serializer("saved_at", when_used="json")
-    def serialize_datetimes(self, value):
+    def serialize_datetime(self, value):
         return serialize_datetime(value)
 
     @classmethod
@@ -221,9 +221,21 @@ class LogReadingResponse(_LogBase, _LogReadingResponse):
         return cls.model_validate(log.model_dump())
 
 
+class CursorPagination(BaseModel):
+    next_cursor: str | None = Field(
+        description="The cursor to the next page of results. It must be passed as the 'cursor' parameter to the "
+                    "next query to get the next page of results. 'next_cursor' will be null if there "
+                    "are no more results to fetch."
+    )
+
+
 class LogsReadingResponse(BaseModel):
-    data: list[LogReadingResponse] = Field(default_factory=list)
+    data: list[LogReadingResponse] = Field(description="The actual log list")
+    pagination: CursorPagination = Field(description="Pagination information")
 
     @classmethod
-    def from_logs(cls, logs: list[Log]):
-        return cls(data=list(map(LogReadingResponse.from_log, logs)))
+    def from_logs(cls, logs: list[Log], next_cursor: str = None):
+        return cls(
+            data=list(map(LogReadingResponse.from_log, logs)),
+            pagination=CursorPagination(next_cursor=next_cursor)
+        )

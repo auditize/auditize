@@ -1,3 +1,4 @@
+import time
 import datetime
 from bson import ObjectId
 import base64
@@ -348,7 +349,10 @@ async def test_get_logs(client: AsyncClient, db: Database):
                 **log1,
                 "id": log1_id
             })
-        ]
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
     }
 
 
@@ -366,5 +370,37 @@ async def test_get_logs_limit(client: AsyncClient, db: Database):
                 **log2,
                 "id": log2_id
             })
-        ]
+        ],
+        "pagination": {
+            "next_cursor": callee.IsA(str)
+        }
     }
+
+
+async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
+    logs = []
+    log_ids = []
+    for _ in range(10):
+        log = make_log_data()
+        logs.append(log)
+        log_id = await prepare_log(client, log)
+        log_ids.append(log_id)
+
+    # first step, get 5 logs and check the next_cursor
+    resp = await client.get("/logs?limit=5")
+    assert resp.status_code == 200
+    next_cursor = resp.json()["pagination"]["next_cursor"]
+    assert next_cursor is not None
+    assert resp.json()["data"] == [
+        make_expected_log_data_for_api({**log, "id": log_id})
+        for log, log_id in zip(reversed(logs[-5:]), reversed(log_ids[-5:]))
+    ]
+
+    # second step, get the next 5 logs using the next_cursor from the previous response and check next_cursor is None
+    resp = await client.get(f"/logs?limit=5&cursor={next_cursor}")
+    assert resp.status_code == 200
+    assert resp.json()["pagination"]["next_cursor"] is None
+    assert resp.json()["data"] == [
+        make_expected_log_data_for_api({**log, "id": log_id})
+        for log, log_id in zip(reversed(logs[:5]), reversed(log_ids[:5]))
+    ]

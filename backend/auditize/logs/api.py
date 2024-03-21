@@ -113,7 +113,8 @@ async def get_log_attachment(
 )
 async def get_logs(
         db: Annotated[Database, Depends(get_db)],
-        limit: int = 10
+        limit: int = 10,
+        cursor: str = None
 ) -> LogsReadingResponse:
-    logs = await service.get_logs(db, limit)
-    return LogsReadingResponse.from_logs(logs)
+    logs, next_cursor = await service.get_logs(db, limit, cursor)
+    return LogsReadingResponse.from_logs(logs, next_cursor)
