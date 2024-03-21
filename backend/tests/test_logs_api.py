@@ -67,6 +67,11 @@ async def assert_create_log(client: AsyncClient, log: dict, expected_status_code
     return resp
 
 
+async def prepare_log(client: AsyncClient, log: dict):
+    resp = await assert_create_log(client, log)
+    return resp.json()["id"]
+
+
 async def assert_db_log(db: Database, log_id, expected):
     expected = {**make_expected_log_data_for_api(expected), "saved_at": callee.IsA(datetime.datetime)}
     db_log = await db.logs.find_one({"_id": ObjectId(log_id)}, {"_id": 0})
@@ -144,8 +149,7 @@ async def test_create_log_invalid_rich_tag(client: AsyncClient, db: Database):
 
 async def test_add_attachment_text_and_minimal_fields(client: AsyncClient, db: Database):
     log = make_log_data()
-    resp = await assert_create_log(client, log)
-    log_id = resp.json()["id"]
+    log_id = await prepare_log(client, log)
 
     await assert_post(
         client,
@@ -171,8 +175,7 @@ async def test_add_attachment_text_and_minimal_fields(client: AsyncClient, db: D
 
 async def test_add_attachment_binary_and_all_fields(client: AsyncClient, db: Database):
     log = make_log_data()
-    resp = await assert_create_log(client, log)
-    log_id = resp.json()["id"]
+    log_id = await prepare_log(client, log)
 
     # some random data generated with /dev/urandom:
     data_base64 = "srX7jaKuqoXJQm7YocqmFzSwjObc0ycvnMYor28L9Kc="
@@ -202,8 +205,7 @@ async def test_add_attachment_binary_and_all_fields(client: AsyncClient, db: Dat
 
 async def test_get_log_minimal_fields(client: AsyncClient, db: Database):
     log = make_log_data()
-    resp = await assert_create_log(client, log)
-    log_id = resp.json()["id"]
+    log_id = await prepare_log(client, log)
 
     resp = await client.get(f"/logs/{log_id}")
     assert resp.status_code == 200
@@ -255,8 +257,7 @@ async def test_get_log_all_fields(client: AsyncClient, db: Database):
         ],
     })
 
-    resp = await assert_create_log(client, log)
-    log_id = resp.json()["id"]
+    log_id = await prepare_log(client, log)
 
     resp = await client.get(f"/logs/{log_id}")
     assert resp.status_code == 200
@@ -267,5 +268,46 @@ async def test_get_log_all_fields(client: AsyncClient, db: Database):
 
 
 async def test_get_log_not_found(client: AsyncClient, db: Database):
+    # a valid ObjectId, but not existing in the database
     resp = await client.get("/logs/65fab045f097fe0b9b664c99")
     assert resp.status_code == 404
+
+
+async def test_get_logs(client: AsyncClient, db: Database):
+    log1 = make_log_data()
+    log2 = make_log_data()
+    log1_id = await prepare_log(client, log1)
+    log2_id = await prepare_log(client, log2)
+
+    resp = await client.get("/logs")
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log2,
+                "id": log2_id
+            }),
+            make_expected_log_data_for_api({
+                **log1,
+                "id": log1_id
+            })
+        ]
+    }
+
+
+async def test_get_logs_limit(client: AsyncClient, db: Database):
+    log1 = make_log_data()
+    log2 = make_log_data()
+    await prepare_log(client, log1)
+    log2_id = await prepare_log(client, log2)
+
+    resp = await client.get("/logs?limit=1")
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log2,
+                "id": log2_id
+            })
+        ]
+    }
