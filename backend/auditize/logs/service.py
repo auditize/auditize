@@ -72,6 +72,8 @@ async def get_log_attachment(db: Database, log_id: ObjectId | str, attachment_id
         {"_id": ObjectId(log_id)},
         {"attachments": {"$slice": [attachment_idx, 1]}},
     )
+    if result is None or len(result["attachments"]) == 0:
+        raise UnknownModelException()
     return Log.Attachment(**result["attachments"][0])
 
 

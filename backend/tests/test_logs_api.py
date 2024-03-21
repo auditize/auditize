@@ -13,6 +13,10 @@ from auditize.common.mongo import Database
 pytestmark = pytest.mark.anyio
 
 
+# a valid ObjectId, but not existing in the database
+UNKNOWN_LOG_ID = "65fab045f097fe0b9b664c99"
+
+
 def make_log_data(extra=None) -> dict:
     """
     By default, the log data is minimal viable.
@@ -268,8 +272,61 @@ async def test_get_log_all_fields(client: AsyncClient, db: Database):
 
 
 async def test_get_log_not_found(client: AsyncClient, db: Database):
-    # a valid ObjectId, but not existing in the database
-    resp = await client.get("/logs/65fab045f097fe0b9b664c99")
+    resp = await client.get(f"/logs/{UNKNOWN_LOG_ID}")
+    assert resp.status_code == 404
+
+
+async def test_get_log_attachment_text_and_minimal_fields(client: AsyncClient, db: Database):
+    log = make_log_data()
+    log_id = await prepare_log(client, log)
+
+    await assert_post(
+        client,
+        f"/logs/{log_id}/attachments",
+        files={"file": ("file.txt", "test data")},
+        data={"type": "text file"},
+        expected_status_code=204
+    )
+
+    resp = await client.get(f"/logs/{log_id}/attachments/0")
+    assert resp.status_code == 200
+    assert resp.headers["Content-Disposition"] == "attachment; filename=file.txt"
+    assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
+    assert resp.content == b"test data"
+
+
+async def test_get_log_attachment_binary_and_all_fields(client: AsyncClient, db: Database):
+    log = make_log_data()
+    log_id = await prepare_log(client, log)
+
+    data_base64 = "srX7jaKuqoXJQm7YocqmFzSwjObc0ycvnMYor28L9Kc="
+    data = base64.b64decode(data_base64)
+
+    await assert_post(
+        client,
+        f"/logs/{log_id}/attachments",
+        files={"file": ("file.bin", data)},
+        data={"type": "binary", "name": "test_file.bin", "mime_type": "image/jpeg"},
+        expected_status_code=204
+    )
+
+    resp = await client.get(f"/logs/{log_id}/attachments/0")
+    assert resp.status_code == 200
+    assert resp.headers["Content-Disposition"] == "attachment; filename=test_file.bin"
+    assert resp.headers["Content-Type"] == "image/jpeg"
+    assert resp.content == data
+
+
+async def test_get_log_attachment_not_found_log_id(client: AsyncClient, db: Database):
+    resp = await client.get(f"/logs/{UNKNOWN_LOG_ID}/attachments/0")
+    assert resp.status_code == 404
+
+
+async def test_get_log_attachment_not_found_attachment_idx(client: AsyncClient, db: Database):
+    log = make_log_data()
+    log_id = await prepare_log(client, log)
+
+    resp = await client.get(f"/logs/{log_id}/attachments/0")
     assert resp.status_code == 404
 
 
