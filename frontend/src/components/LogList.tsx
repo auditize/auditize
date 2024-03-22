@@ -1,28 +1,15 @@
-import React from 'react';
+import {useState, useEffect} from 'react';
 
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { Button } from 'primereact/button';
 import { useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { LogService } from '../services/logs';
 
-export default function LogList() {
-  const [service] = React.useState(() => new LogService());
 
-  const { isPending, error, data: logs } = useQuery({
-    queryKey: ['logs'],
-    queryFn: () => service.getLogs()
-  });
-
-  let rows = [];
-
-  if (isPending)
-    return <div>Loading...</div>;
-  
-  if (error)
-    return <div>Error: {error.message}</div>;
-  
-  rows = logs.map((log: Log) => ({
+function mapLogToRow(log: Log): object {
+  return {
     createdAt: log.saved_at,
     eventName: labelize(log.event.name),
     eventCategory: labelize(log.event.category),
@@ -30,10 +17,41 @@ export default function LogList() {
     resourceType: log.resource ? labelize(log.resource.type) : null,
     resourceName: log.resource ? log.resource.name : null,
     nodePath: log.node_path.map((n) => n.name).join(' > ')
-  }));
+  };
+}
+
+function mapLogsToRows(logs: Log[]): object[] {
+  return logs.map(mapLogToRow);
+}
+
+export default function LogList() {
+  const [service] = useState(() => new LogService());
+  const [rows, setRows] = useState<Object[]>([]);
+  const { isPending, error, data: logs } = useQuery({
+    queryKey: ['logs'],
+    queryFn: () => service.getLogs()
+  });
+
+  useEffect(() => {
+    if (logs)
+      setRows(mapLogsToRows(logs));
+  }, [logs]);
+  
+  if (isPending)
+    return <div>Loading...</div>;
+  
+  if (error)
+    return <div>Error: {error.message}</div>;
+  
+  const loadMoreLogs = async () => {
+    const newLogs = await service.getNextLogs();
+    setRows([...rows, ...mapLogsToRows(newLogs)]);
+  };
+
+  const footer = <Button onClick={loadMoreLogs} plain>Load more logs</Button>;
 
   return (
-    <DataTable value={rows} size="small" showGridlines>
+    <DataTable value={rows} footer={footer} size="small" showGridlines>
       <Column field="createdAt" header="Date" />
       <Column field="eventCategory" header="Event category" />
       <Column field="eventName" header="Event name" />
