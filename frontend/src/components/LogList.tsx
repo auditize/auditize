@@ -1,14 +1,17 @@
+import React from 'react';
 
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { useQuery } from '@tanstack/react-query';
-import { getLogs } from '../services/logs';
 import { labelize } from './utils';
+import { LogService } from '../services/logs';
 
 export default function LogList() {
+  const [service] = React.useState(() => new LogService());
+
   const { isPending, error, data: logs } = useQuery({
     queryKey: ['logs'],
-    queryFn: () => getLogs()
+    queryFn: () => service.getLogs()
   });
 
   let rows = [];

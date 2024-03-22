@@ -20,3 +20,10 @@ type Log = {
     name: string;
   }[];
 };
+
+type LogListResponse = {
+  data: Log[];
+  pagination: {
+    next_cursor: string | null;
+  }
+};
