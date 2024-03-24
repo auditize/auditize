@@ -31,10 +31,13 @@ export default function LogList() {
     queryKey: ['logs'],
     queryFn: () => service.getLogs()
   });
+  const [hasMoreLogs, setHasMoreLogs] = useState(false);
 
   useEffect(() => {
-    if (logs)
-      setRows(mapLogsToRows(logs));
+    if (logs) {
+        setRows(mapLogsToRows(logs));
+        setHasMoreLogs(service.hasMoreLogs());
+    }
   }, [logs]);
   
   if (isPending)
@@ -46,9 +49,16 @@ export default function LogList() {
   const loadMoreLogs = async () => {
     const newLogs = await service.getNextLogs();
     setRows([...rows, ...mapLogsToRows(newLogs)]);
+    setHasMoreLogs(service.hasMoreLogs());
   };
 
-  const footer = <Button onClick={loadMoreLogs} plain>Load more logs</Button>;
+  const footer = (
+    <div>
+      <Button onClick={loadMoreLogs} disabled={!hasMoreLogs}>
+        Load more logs
+      </Button>
+    </div>
+  );
 
   return (
     <DataTable value={rows} footer={footer} size="small" showGridlines>
