@@ -28,7 +28,7 @@ class Database:
         self.client = client
         self._cache = Cache(Cache.MEMORY)
 
-    async def store_unique_data(self, collection: AsyncIOMotorCollection, data: dict[str, str]):
+    async def consolidate_data(self, collection: AsyncIOMotorCollection, data: dict[str, str]):
         cache_key = "%s:%s" % (collection.name, ":".join(val or "" for val in data.values()))
         if await self._cache.exists(cache_key):
             return

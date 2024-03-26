@@ -46,27 +46,44 @@ class PaginationCursor:
 
 
 async def consolidate_log_event(db: Database, event: Log.Event):
-    await db.store_unique_data(
+    await db.consolidate_data(
         db.log_events, {"category": event.category, "name": event.name}
     )
 
 
 async def consolidate_log_actor(db: Database, actor: Log.Actor):
-    await db.store_unique_data(db.log_actor_types, {"type": actor.type})
+    await db.consolidate_data(db.log_actor_types, {"type": actor.type})
     for key in actor.extra:
-        await db.store_unique_data(db.log_actor_extra_keys, {"key": key})
+        await db.consolidate_data(db.log_actor_extra_keys, {"key": key})
 
 
 async def consolidate_log_resource(db: Database, resource: Log.Resource):
-    await db.store_unique_data(db.log_resource_types, {"type": resource.type})
+    await db.consolidate_data(db.log_resource_types, {"type": resource.type})
     for key in resource.extra:
-        await db.store_unique_data(db.log_resource_extra_keys, {"key": key})
+        await db.consolidate_data(db.log_resource_extra_keys, {"key": key})
 
 
 async def consolidate_log_tags(db: Database, tags: list[Log.Tag]):
     for tag in tags:
         if tag.category:
-            await db.store_unique_data(db.log_tag_categories, {"category": tag.category})
+            await db.consolidate_data(db.log_tag_categories, {"category": tag.category})
+
+
+async def consolidate_log_details(db: Database, details: dict[str, dict[str, str]]):
+    for level1_key, sub_keys in details.items():
+        for level2_key in sub_keys:
+            await db.consolidate_data(
+                db.log_detail_keys, {"level1_key": level1_key, "level2_key": level2_key}
+            )
+
+
+async def consolidate_log_path(db: Database, node_path: list[Log.Node]):
+    parent_node_id = None
+    for node in node_path:
+        await db.consolidate_data(db.log_nodes, {
+            "parent_node_id": parent_node_id, "id": node.id, "name": node.name
+        })
+        parent_node_id = node.id
 
 
 async def save_log(db: Database, log: Log) -> ObjectId:
@@ -75,7 +92,7 @@ async def save_log(db: Database, log: Log) -> ObjectId:
     await consolidate_log_event(db, log.event)
 
     for key in log.source:
-        await db.store_unique_data(db.log_source_keys, {"key": key})
+        await db.consolidate_data(db.log_source_keys, {"key": key})
 
     if log.actor:
         await consolidate_log_actor(db, log.actor)
@@ -83,20 +100,11 @@ async def save_log(db: Database, log: Log) -> ObjectId:
     if log.resource:
         await consolidate_log_resource(db, log.resource)
 
-    for level1_key, sub_keys in log.details.items():
-        for level2_key in sub_keys:
-            await db.store_unique_data(
-                db.log_detail_keys, {"level1_key": level1_key, "level2_key": level2_key}
-            )
+    await consolidate_log_details(db, log.details)
 
     await consolidate_log_tags(db, log.tags)
 
-    parent_node_id = None
-    for node in log.node_path:
-        await db.store_unique_data(db.log_nodes, {
-            "parent_node_id": parent_node_id, "id": node.id, "name": node.name
-        })
-        parent_node_id = node.id
+    await consolidate_log_path(db, log.node_path)
 
     return result.inserted_id
 
