@@ -7,6 +7,7 @@ from bson import ObjectId
 import json
 
 from pydantic import BaseModel, field_validator, field_serializer
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.logs.models import Log, PaginationInfo
 from auditize.common.mongo import Database
@@ -144,22 +145,31 @@ async def get_logs(db: Database, limit: int = 10, pagination_cursor: str = None)
     return logs, next_cursor
 
 
-async def get_log_event_categories(db: Database, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
-    # Get all unique event categories
-    results = db.log_events.aggregate([
-        {"$group": {"_id": "$category"}},
+async def _get_consolidated_data_aggregated(
+        collection: AsyncIOMotorCollection, field_name: str, page=1, page_size=10
+) -> tuple[list[str], PaginationInfo]:
+    # Get all unique aggregated data field
+    results = collection.aggregate([
+        {"$group": {"_id": field_name}},
         {"$sort": {"_id": 1}},
         {"$skip": (page - 1) * page_size},
         {"$limit": page_size}
     ])
     categories = [result["_id"] async for result in results]
 
-    # Get the total number of unique event categories
-    results = db.log_events.aggregate([
-        {"$group": {"_id": "$category"}},
+    # Get the total number of unique aggregated field value
+    results = collection.aggregate([
+        {"$group": {"_id": field_name}},
         {"$count": "total"}
     ])
     total = (await results.next())["total"]
 
     return categories, PaginationInfo.build(page=page, page_size=page_size, total=total)
 
+
+async def get_log_event_categories(db: Database, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
+    return await _get_consolidated_data_aggregated(db.log_events, "$category", page, page_size)
+
+
+async def get_log_events(db: Database, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
+    return await _get_consolidated_data_aggregated(db.log_events, "$name", page, page_size)

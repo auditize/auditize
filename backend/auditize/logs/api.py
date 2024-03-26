@@ -3,12 +3,30 @@ from typing import Annotated
 from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
 
 from auditize.logs.api_models import LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse, \
-    LogEventCategoryListResponse, PagePagination
+    LogEventCategoryListResponse, LogEventNameListResponse, PagePagination
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
 from auditize.common.api import COMMON_RESPONSES
 
 router = APIRouter()
+
+
+@router.get(
+    "/logs/events",
+    summary="Get log event names",
+    operation_id="get_log_event_names",
+    tags=["logs"]
+)
+async def get_log_event_names(
+        db: Annotated[Database, Depends(get_db)], page: int = 1, page_size: int = 10
+) -> LogEventNameListResponse:
+    names, pagination = await service.get_log_events(
+        db, page, page_size
+    )
+    return LogEventNameListResponse(
+        data=names,
+        pagination=PagePagination(**pagination.dict())
+    )
 
 
 @router.get(
@@ -25,7 +43,7 @@ async def get_log_event_categories(
     )
     return LogEventCategoryListResponse(
         data=categories,
-        pagination=PagePagination(**pagination.dict())
+        pagination=PagePagination.model_validate(pagination.model_dump())
     )
 
 

@@ -276,3 +276,13 @@ class LogEventCategoryListResponse(BaseModel):
         }
     )
     pagination: PagePagination = Field(description="Pagination information")
+
+
+class LogEventNameListResponse(BaseModel):
+    data: list[str] = Field(
+        description="List of event names",
+        json_schema_extra={
+            "example": ["create_configuration_profile", "update_configuration_profile"]
+        }
+    )
+    pagination: PagePagination = Field(description="Pagination information")

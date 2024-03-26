@@ -449,3 +449,37 @@ async def test_get_log_event_categories(client: AsyncClient, db: Database):
             "total_pages": 3
         }
     }
+
+
+async def test_get_log_event_names(client: AsyncClient, db: Database):
+    for i in reversed(range(5)):  # insert in reverse order to test sorting
+        await store_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
+        await store_log_event(db, Log.Event(category=f"category_{i+10}", name=f"name_{i}"))
+
+    # first test, without pagination parameters
+    resp = await assert_get(client, "/logs/events")
+    assert resp.json() == {
+        "data": [
+            f"name_{i}" for i in range(5)
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 5,
+            "total_pages": 1
+        }
+    }
+
+    # second test, with pagination parameters
+    resp = await assert_get(client, "/logs/events?page=2&page_size=2")
+    assert resp.json() == {
+        "data": [
+            f"name_{i}" for i in range(2, 4)
+        ],
+        "pagination": {
+            "page": 2,
+            "page_size": 2,
+            "total": 5,
+            "total_pages": 3
+        }
+    }
