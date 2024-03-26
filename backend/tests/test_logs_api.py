@@ -418,38 +418,38 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
     ]
 
 
-async def test_get_log_event_categories(client: AsyncClient, db: Database):
-    for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
-        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}"))
-
+async def _test_pagination_common_scenarii(client: AsyncClient, path: str, data: list[str]):
     # first test, without pagination parameters
-    resp = await assert_get(client, "/logs/event-categories")
+    resp = await assert_get(client, path)
     assert resp.json() == {
-        "data": [
-            f"category_{i}" for i in range(5)
-        ],
+        "data": data,
         "pagination": {
             "page": 1,
             "page_size": 10,
-            "total": 5,
+            "total": len(data),
             "total_pages": 1
         }
     }
 
     # second test, with pagination parameters
-    resp = await assert_get(client, "/logs/event-categories?page=2&page_size=2")
+    resp = await assert_get(client, f"{path}?page=2&page_size=2")
     assert resp.json() == {
-        "data": [
-            f"category_{i}" for i in range(2, 4)
-        ],
+        "data": data[2:4],
         "pagination": {
             "page": 2,
             "page_size": 2,
-            "total": 5,
+            "total": len(data),
             "total_pages": 3
         }
     }
+
+
+async def test_get_log_event_categories(client: AsyncClient, db: Database):
+    for i in reversed(range(5)):  # insert in reverse order to test sorting
+        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
+        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}"))
+
+    await _test_pagination_common_scenarii(client, "/logs/event-categories", [f"category_{i}" for i in range(5)])
 
 
 async def test_get_log_event_names(client: AsyncClient, db: Database):
@@ -457,35 +457,9 @@ async def test_get_log_event_names(client: AsyncClient, db: Database):
         await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
         await consolidate_log_event(db, Log.Event(category=f"category_{i + 10}", name=f"name_{i}"))
 
-    # first test, without pagination parameters
-    resp = await assert_get(client, "/logs/events")
-    assert resp.json() == {
-        "data": [
-            f"name_{i}" for i in range(5)
-        ],
-        "pagination": {
-            "page": 1,
-            "page_size": 10,
-            "total": 5,
-            "total_pages": 1
-        }
-    }
+    await _test_pagination_common_scenarii(client, "/logs/events", [f"name_{i}" for i in range(5)])
 
-    # second test, with pagination parameters
-    resp = await assert_get(client, "/logs/events?page=2&page_size=2")
-    assert resp.json() == {
-        "data": [
-            f"name_{i}" for i in range(2, 4)
-        ],
-        "pagination": {
-            "page": 2,
-            "page_size": 2,
-            "total": 5,
-            "total_pages": 3
-        }
-    }
-
-    # third test, with category filter
+    # test category parameter
     resp = await assert_get(client, "/logs/events?category=category_2")
     assert resp.json() == {
         "data": [
@@ -504,66 +478,14 @@ async def test_get_log_actor_types(client: AsyncClient, db: Database):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_actor(db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
-    # first test, without pagination parameters
-    resp = await assert_get(client, "/logs/actor-types")
-    assert resp.json() == {
-        "data": [
-            f"type_{i}" for i in range(5)
-        ],
-        "pagination": {
-            "page": 1,
-            "page_size": 10,
-            "total": 5,
-            "total_pages": 1
-        }
-    }
-
-    # second test, with pagination parameters
-    resp = await assert_get(client, "/logs/actor-types?page=2&page_size=2")
-    assert resp.json() == {
-        "data": [
-            f"type_{i}" for i in range(2, 4)
-        ],
-        "pagination": {
-            "page": 2,
-            "page_size": 2,
-            "total": 5,
-            "total_pages": 3
-        }
-    }
+    await _test_pagination_common_scenarii(client, "/logs/actor-types", [f"type_{i}" for i in range(5)])
 
 
 async def test_get_log_resource_types(client: AsyncClient, db: Database):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_resource(db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
-    # first test, without pagination parameters
-    resp = await assert_get(client, "/logs/resource-types")
-    assert resp.json() == {
-        "data": [
-            f"type_{i}" for i in range(5)
-        ],
-        "pagination": {
-            "page": 1,
-            "page_size": 10,
-            "total": 5,
-            "total_pages": 1
-        }
-    }
-
-    # second test, with pagination parameters
-    resp = await assert_get(client, "/logs/resource-types?page=2&page_size=2")
-    assert resp.json() == {
-        "data": [
-            f"type_{i}" for i in range(2, 4)
-        ],
-        "pagination": {
-            "page": 2,
-            "page_size": 2,
-            "total": 5,
-            "total_pages": 3
-        }
-    }
+    await _test_pagination_common_scenarii(client, "/logs/resource-types", [f"type_{i}" for i in range(5)])
 
 
 async def test_get_log_tag_categories(client: AsyncClient, db: Database):
@@ -571,30 +493,4 @@ async def test_get_log_tag_categories(client: AsyncClient, db: Database):
         await consolidate_log_tags(db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
     await consolidate_log_tags(db, [Log.Tag(id="simple_tag")])  # no category, it must not be returned
 
-    # first test, without pagination parameters
-    resp = await assert_get(client, "/logs/tag-categories")
-    assert resp.json() == {
-        "data": [
-            f"category_{i}" for i in range(5)
-        ],
-        "pagination": {
-            "page": 1,
-            "page_size": 10,
-            "total": 5,
-            "total_pages": 1
-        }
-    }
-
-    # second test, with pagination parameters
-    resp = await assert_get(client, "/logs/tag-categories?page=2&page_size=2")
-    assert resp.json() == {
-        "data": [
-            f"category_{i}" for i in range(2, 4)
-        ],
-        "pagination": {
-            "page": 2,
-            "page_size": 2,
-            "total": 5,
-            "total_pages": 3
-        }
-    }
+    await _test_pagination_common_scenarii(client, "/logs/tag-categories", [f"category_{i}" for i in range(5)])
