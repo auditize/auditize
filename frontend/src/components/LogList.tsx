@@ -1,9 +1,7 @@
-import {useState, useEffect} from 'react';
-
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs } from '../services/logs';
 
@@ -32,35 +30,26 @@ function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
 }
 
 export default function LogList() {
-  const [cursor, setCursor] = useState<string | null>(null);
-  const { isPending, error, data } = useQuery({
-    queryKey: ['logs', cursor],
-    queryFn: () => getLogs(cursor)
+  const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ['logs'],
+    queryFn: async ({ pageParam }: {pageParam: string | null}) => await getLogs(pageParam),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor
   });
-  const [allLogs, setAllLogs] = useState<Log[]>([]);
-
-  useEffect(() => {
-    if (data) {
-      const {logs} = data;
-      setAllLogs(prevLogs => [...prevLogs, ...logs]);
-    }
-  }, [data?.nextCursor]);
 
   if (isPending)
     return <div>Loading...</div>;
   
   if (error)
     return <div>Error: {error.message}</div>;
-
-  const { nextCursor } = data; 
     
   const footer = (
     <div>
-      <Button onClick={() => setCursor(nextCursor)} disabled={nextCursor === null}>
+      <Button onClick={() => fetchNextPage()} disabled={!hasNextPage || isFetchingNextPage}>
         Load more logs
       </Button>
     </div>
   );
 
-  return <LogTable logs={allLogs} footer={footer} />;
+  return <LogTable logs={data.pages.flatMap((page) => page.logs)} footer={footer} />;
 };
