@@ -9,7 +9,7 @@ from httpx import AsyncClient
 from icecream import ic
 
 from auditize.common.mongo import Database
-from auditize.logs.service import store_log_event
+from auditize.logs.service import consolidate_log_event, consolidate_log_actor
 from auditize.logs.models import Log
 
 
@@ -419,8 +419,8 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
 
 async def test_get_log_event_categories(client: AsyncClient, db: Database):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await store_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
-        await store_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i+10}"))
+        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
+        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}"))
 
     # first test, without pagination parameters
     resp = await assert_get(client, "/logs/event-categories")
@@ -453,8 +453,8 @@ async def test_get_log_event_categories(client: AsyncClient, db: Database):
 
 async def test_get_log_event_names(client: AsyncClient, db: Database):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await store_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
-        await store_log_event(db, Log.Event(category=f"category_{i+10}", name=f"name_{i}"))
+        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
+        await consolidate_log_event(db, Log.Event(category=f"category_{i + 10}", name=f"name_{i}"))
 
     # first test, without pagination parameters
     resp = await assert_get(client, "/logs/events")
@@ -495,5 +495,38 @@ async def test_get_log_event_names(client: AsyncClient, db: Database):
             "page_size": 10,
             "total": 1,
             "total_pages": 1
+        }
+    }
+
+
+async def test_get_log_actor_types(client: AsyncClient, db: Database):
+    for i in reversed(range(5)):  # insert in reverse order to test sorting
+        await consolidate_log_actor(db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
+
+    # first test, without pagination parameters
+    resp = await assert_get(client, "/logs/actor-types")
+    assert resp.json() == {
+        "data": [
+            f"type_{i}" for i in range(5)
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 5,
+            "total_pages": 1
+        }
+    }
+
+    # second test, with pagination parameters
+    resp = await assert_get(client, "/logs/actor-types?page=2&page_size=2")
+    assert resp.json() == {
+        "data": [
+            f"type_{i}" for i in range(2, 4)
+        ],
+        "pagination": {
+            "page": 2,
+            "page_size": 2,
+            "total": 5,
+            "total_pages": 3
         }
     }

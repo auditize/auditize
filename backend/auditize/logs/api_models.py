@@ -286,3 +286,13 @@ class LogEventNameListResponse(BaseModel):
         }
     )
     pagination: PagePagination = Field(description="Pagination information")
+
+
+class LogActorTypeListResponse(BaseModel):
+    data: list[str] = Field(
+        description="List of actor types",
+        json_schema_extra={
+            "example": ["internal", "sso"]
+        }
+    )
+    pagination: PagePagination = Field(description="Pagination information")

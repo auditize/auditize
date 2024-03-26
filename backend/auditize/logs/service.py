@@ -45,26 +45,28 @@ class PaginationCursor:
         return base64.b64encode(json.dumps(data).encode("utf-8")).decode("utf-8")
 
 
-async def store_log_event(db: Database, event: Log.Event):
+async def consolidate_log_event(db: Database, event: Log.Event):
     await db.store_unique_data(
         db.log_events, {"category": event.category, "name": event.name}
     )
 
 
+async def consolidate_log_actor(db: Database, actor: Log.Actor):
+    await db.store_unique_data(db.log_actor_types, {"type": actor.type})
+    for key in actor.extra:
+        await db.store_unique_data(db.log_actor_extra_keys, {"key": key})
+
+
 async def save_log(db: Database, log: Log) -> ObjectId:
     result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
 
-    await store_log_event(db, log.event)
+    await consolidate_log_event(db, log.event)
 
     for key in log.source:
         await db.store_unique_data(db.log_source_keys, {"key": key})
 
     if log.actor:
-        await db.store_unique_data(db.log_actor_types, {"type": log.actor.type})
-        for extra_key in log.actor.extra:
-            await db.store_unique_data(
-                db.log_actor_extra_keys, {"key": extra_key}
-            )
+        await consolidate_log_actor(db, log.actor)
 
     if log.resource:
         await db.store_unique_data(db.log_resource_types, {"type": log.resource.type})
@@ -154,30 +156,47 @@ async def _get_consolidated_data_aggregated(
     results = collection.aggregate(
         ([{"$match": match}] if match else []) +
         [
-            {"$group": {"_id": field_name}},
+            {"$group": {"_id": "$" + field_name}},
             {"$sort": {"_id": 1}},
             {"$skip": (page - 1) * page_size},
             {"$limit": page_size}
         ]
     )
-    categories = [result["_id"] async for result in results]
+    values = [result["_id"] async for result in results]
 
     # Get the total number of unique aggregated field value
     results = collection.aggregate(
         ([{"$match": match}] if match else []) +
         [
-            {"$group": {"_id": field_name}},
+            {"$group": {"_id": "$" + field_name}},
             {"$count": "total"}
         ]
     )
     total = (await results.next())["total"]
 
-    return categories, PaginationInfo.build(page=page, page_size=page_size, total=total)
+    return values, PaginationInfo.build(page=page, page_size=page_size, total=total)
+
+
+async def _get_consolidated_data(
+        collection: AsyncIOMotorCollection, field_name: str, *,
+        page=1, page_size=10
+) -> tuple[list[str], PaginationInfo]:
+    # Get consolidated data field values
+    results = collection.find(
+        projection=[field_name],
+        sort={field_name: 1}, skip=(page - 1) * page_size, limit=page_size
+    )
+    values = [result[field_name] async for result in results]
+
+    # Get the total number of consolidated field value
+    total = await collection.count_documents({})
+
+    return values, PaginationInfo.build(page=page, page_size=page_size, total=total)
 
 
 async def get_log_event_categories(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
     return await _get_consolidated_data_aggregated(
-        db.log_events, "$category", page=page, page_size=page_size
+        db.log_events, "category", page=page, page_size=page_size
     )
 
 
@@ -185,7 +204,11 @@ async def get_log_events(
         db: Database, *, event_category: str = None, page=1, page_size=10
 ) -> tuple[list[str], PaginationInfo]:
     return await _get_consolidated_data_aggregated(
-        db.log_events, "$name",
+        db.log_events, "name",
         page=page, page_size=page_size,
         match={"category": event_category} if event_category else None
     )
+
+
+async def get_log_actor_types(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
+    return await _get_consolidated_data(db.log_actor_types, "type", page=page, page_size=page_size)
