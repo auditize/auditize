@@ -1,6 +1,7 @@
 import { PrimeReactProvider } from 'primereact/api';
 import { twMerge } from 'tailwind-merge';
 import Tailwind from 'primereact/passthrough/tailwind';
+import 'primeicons/primeicons.css';
 import LogList from './components/LogList';
 
 import {

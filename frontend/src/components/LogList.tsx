@@ -45,8 +45,10 @@ export default function LogList() {
     
   const footer = (
     <div>
-      <Button onClick={() => fetchNextPage()} disabled={!hasNextPage || isFetchingNextPage}>
-        Load more logs
+      <Button
+        onClick={() => fetchNextPage()}
+        disabled={!hasNextPage || isFetchingNextPage}
+        icon={isFetchingNextPage ? "pi pi-spin pi-spinner" : null} label="Load more logs">
       </Button>
     </div>
   );
