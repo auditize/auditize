@@ -5,7 +5,7 @@ from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
 from auditize.logs.api_models import (
     LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse,
     LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, LogResourceTypeListResponse,
-    PagePagination
+    LogTagCategoryListResponse, PagePagination
 )
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
@@ -82,6 +82,23 @@ async def get_log_resource_types(
     resource_types, pagination = await service.get_log_resource_types(db, page=page, page_size=page_size)
     return LogResourceTypeListResponse(
         data=resource_types,
+        pagination=PagePagination.model_validate(pagination.model_dump())
+    )
+
+
+@router.get(
+    "/logs/tag-categories",
+    summary="Get log tag categories",
+    operation_id="get_log_tag_categories",
+    tags=["logs"]
+)
+async def get_log_tag_categories(
+        db: Annotated[Database, Depends(get_db)],
+        page: int = 1, page_size: int = 10
+) -> LogTagCategoryListResponse:
+    tag_categories, pagination = await service.get_log_tag_categories(db, page=page, page_size=page_size)
+    return LogTagCategoryListResponse(
+        data=tag_categories,
         pagination=PagePagination.model_validate(pagination.model_dump())
     )
 

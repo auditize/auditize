@@ -306,3 +306,13 @@ class LogResourceTypeListResponse(BaseModel):
         }
     )
     pagination: PagePagination = Field(description="Pagination information")
+
+
+class LogTagCategoryListResponse(BaseModel):
+    data: list[str] = Field(
+        description="List of tag categories",
+        json_schema_extra={
+            "example": ["security", "config-profile"]
+        }
+    )
+    pagination: PagePagination = Field(description="Pagination information")

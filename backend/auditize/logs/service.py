@@ -63,6 +63,12 @@ async def consolidate_log_resource(db: Database, resource: Log.Resource):
         await db.store_unique_data(db.log_resource_extra_keys, {"key": key})
 
 
+async def consolidate_log_tags(db: Database, tags: list[Log.Tag]):
+    for tag in tags:
+        if tag.category:
+            await db.store_unique_data(db.log_tag_categories, {"category": tag.category})
+
+
 async def save_log(db: Database, log: Log) -> ObjectId:
     result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
 
@@ -83,9 +89,7 @@ async def save_log(db: Database, log: Log) -> ObjectId:
                 db.log_detail_keys, {"level1_key": level1_key, "level2_key": level2_key}
             )
 
-    for tag in log.tags:
-        if tag.category:
-            await db.store_unique_data(db.log_tag_categories, {"category": tag.category})
+    await consolidate_log_tags(db, log.tags)
 
     parent_node_id = None
     for node in log.node_path:
@@ -218,3 +222,7 @@ async def get_log_actor_types(db: Database, *, page=1, page_size=10) -> tuple[li
 
 async def get_log_resource_types(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
     return await _get_consolidated_data(db.log_resource_types, "type", page=page, page_size=page_size)
+
+
+async def get_log_tag_categories(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
+    return await _get_consolidated_data(db.log_tag_categories, "category", page=page, page_size=page_size)

@@ -9,7 +9,8 @@ from httpx import AsyncClient
 from icecream import ic
 
 from auditize.common.mongo import Database
-from auditize.logs.service import consolidate_log_event, consolidate_log_actor, consolidate_log_resource
+from auditize.logs.service import (consolidate_log_event, consolidate_log_actor, consolidate_log_resource,
+                                   consolidate_log_tags)
 from auditize.logs.models import Log
 
 
@@ -555,6 +556,40 @@ async def test_get_log_resource_types(client: AsyncClient, db: Database):
     assert resp.json() == {
         "data": [
             f"type_{i}" for i in range(2, 4)
+        ],
+        "pagination": {
+            "page": 2,
+            "page_size": 2,
+            "total": 5,
+            "total_pages": 3
+        }
+    }
+
+
+async def test_get_log_tag_categories(client: AsyncClient, db: Database):
+    for i in reversed(range(5)):
+        await consolidate_log_tags(db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
+    await consolidate_log_tags(db, [Log.Tag(id="simple_tag")])  # no category, it must not be returned
+
+    # first test, without pagination parameters
+    resp = await assert_get(client, "/logs/tag-categories")
+    assert resp.json() == {
+        "data": [
+            f"category_{i}" for i in range(5)
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 5,
+            "total_pages": 1
+        }
+    }
+
+    # second test, with pagination parameters
+    resp = await assert_get(client, "/logs/tag-categories?page=2&page_size=2")
+    assert resp.json() == {
+        "data": [
+            f"category_{i}" for i in range(2, 4)
         ],
         "pagination": {
             "page": 2,
