@@ -229,6 +229,33 @@ class CursorPagination(BaseModel):
     )
 
 
+class PagePagination(BaseModel):
+    page: int = Field(
+        description="The current page number",
+        json_schema_extra={
+            "example": 1
+        }
+    )
+    page_size: int = Field(
+        description="The number of items per page",
+        json_schema_extra={
+            "example": 10
+        }
+    )
+    total: int = Field(
+        description="The total number of items",
+        json_schema_extra={
+            "example": 50
+        }
+    )
+    total_pages: int = Field(
+        description="The total number of pages",
+        json_schema_extra={
+            "example": 5
+        }
+    )
+
+
 class LogsReadingResponse(BaseModel):
     data: list[LogReadingResponse] = Field(description="The actual log list")
     pagination: CursorPagination = Field(description="Pagination information")
@@ -239,3 +266,13 @@ class LogsReadingResponse(BaseModel):
             data=list(map(LogReadingResponse.from_log, logs)),
             pagination=CursorPagination(next_cursor=next_cursor)
         )
+
+
+class LogEventCategoryListResponse(BaseModel):
+    data: list[str] = Field(
+        description="List of event categories",
+        json_schema_extra={
+            "example": ["authentication", "configuration"]
+        }
+    )
+    pagination: PagePagination = Field(description="Pagination information")

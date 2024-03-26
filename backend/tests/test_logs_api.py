@@ -9,6 +9,8 @@ from httpx import AsyncClient
 from icecream import ic
 
 from auditize.common.mongo import Database
+from auditize.logs.service import store_log_event
+from auditize.logs.models import Log
 
 
 pytestmark = pytest.mark.anyio
@@ -57,12 +59,21 @@ def make_expected_log_data_for_api(actual):
     return expected
 
 
-async def assert_post(client: AsyncClient, path, json=None, files=None, data=None, expected_status_code=200):
+async def assert_request(method: str, client: AsyncClient, path, json=None, files=None, data=None,
+                         expected_status_code=200):
     ic(json, files, data)
-    resp = await client.post(path, json=json, files=files, data=data)
+    resp = await client.request(method, path, json=json, files=files, data=data)
     ic(resp.text)
     assert resp.status_code == expected_status_code
     return resp
+
+
+async def assert_post(client: AsyncClient, path, json=None, files=None, data=None, expected_status_code=200):
+    return await assert_request("POST", client, path, json, files, data, expected_status_code)
+
+
+async def assert_get(client: AsyncClient, path, expected_status_code=200):
+    return await assert_request("GET", client, path, expected_status_code=expected_status_code)
 
 
 async def assert_create_log(client: AsyncClient, log: dict, expected_status_code=201):
@@ -404,3 +415,37 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
         make_expected_log_data_for_api({**log, "id": log_id})
         for log, log_id in zip(reversed(logs[:5]), reversed(log_ids[:5]))
     ]
+
+
+async def test_get_log_event_categories(client: AsyncClient, db: Database):
+    for i in reversed(range(5)):  # insert in reverse order to test sorting
+        await store_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
+        await store_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i+10}"))
+
+    # first test, without pagination parameters
+    resp = await assert_get(client, "/logs/event-categories")
+    assert resp.json() == {
+        "data": [
+            f"category_{i}" for i in range(5)
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 5,
+            "total_pages": 1
+        }
+    }
+
+    # second test, with pagination parameters
+    resp = await assert_get(client, "/logs/event-categories?page=2&page_size=2")
+    assert resp.json() == {
+        "data": [
+            f"category_{i}" for i in range(2, 4)
+        ],
+        "pagination": {
+            "page": 2,
+            "page_size": 2,
+            "total": 5,
+            "total_pages": 3
+        }
+    }

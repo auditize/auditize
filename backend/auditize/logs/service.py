@@ -8,7 +8,7 @@ import json
 
 from pydantic import BaseModel, field_validator, field_serializer
 
-from auditize.logs.models import Log
+from auditize.logs.models import Log, PaginationInfo
 from auditize.common.mongo import Database
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.utils import serialize_datetime
@@ -44,12 +44,16 @@ class PaginationCursor:
         return base64.b64encode(json.dumps(data).encode("utf-8")).decode("utf-8")
 
 
+async def store_log_event(db: Database, event: Log.Event):
+    await db.store_unique_data(
+        db.log_events, {"category": event.category, "name": event.name}
+    )
+
+
 async def save_log(db: Database, log: Log) -> ObjectId:
     result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
 
-    await db.store_unique_data(
-        db.log_events, {"category": log.event.category, "name": log.event.name}
-    )
+    await store_log_event(db, log.event)
 
     for key in log.source:
         await db.store_unique_data(db.log_source_keys, {"key": key})
@@ -138,3 +142,24 @@ async def get_logs(db: Database, limit: int = 10, pagination_cursor: str = None)
         next_cursor = None
 
     return logs, next_cursor
+
+
+async def get_log_event_categories(db: Database, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
+    # Get all unique event categories
+    results = db.log_events.aggregate([
+        {"$group": {"_id": "$category"}},
+        {"$sort": {"_id": 1}},
+        {"$skip": (page - 1) * page_size},
+        {"$limit": page_size}
+    ])
+    categories = [result["_id"] async for result in results]
+
+    # Get the total number of unique event categories
+    results = db.log_events.aggregate([
+        {"$group": {"_id": "$category"}},
+        {"$count": "total"}
+    ])
+    total = (await results.next())["total"]
+
+    return categories, PaginationInfo.build(page=page, page_size=page_size, total=total)
+
