@@ -146,30 +146,46 @@ async def get_logs(db: Database, limit: int = 10, pagination_cursor: str = None)
 
 
 async def _get_consolidated_data_aggregated(
-        collection: AsyncIOMotorCollection, field_name: str, page=1, page_size=10
+        collection: AsyncIOMotorCollection, field_name: str, *,
+        match=None,
+        page=1, page_size=10
 ) -> tuple[list[str], PaginationInfo]:
     # Get all unique aggregated data field
-    results = collection.aggregate([
-        {"$group": {"_id": field_name}},
-        {"$sort": {"_id": 1}},
-        {"$skip": (page - 1) * page_size},
-        {"$limit": page_size}
-    ])
+    results = collection.aggregate(
+        ([{"$match": match}] if match else []) +
+        [
+            {"$group": {"_id": field_name}},
+            {"$sort": {"_id": 1}},
+            {"$skip": (page - 1) * page_size},
+            {"$limit": page_size}
+        ]
+    )
     categories = [result["_id"] async for result in results]
 
     # Get the total number of unique aggregated field value
-    results = collection.aggregate([
-        {"$group": {"_id": field_name}},
-        {"$count": "total"}
-    ])
+    results = collection.aggregate(
+        ([{"$match": match}] if match else []) +
+        [
+            {"$group": {"_id": field_name}},
+            {"$count": "total"}
+        ]
+    )
     total = (await results.next())["total"]
 
     return categories, PaginationInfo.build(page=page, page_size=page_size, total=total)
 
 
-async def get_log_event_categories(db: Database, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
-    return await _get_consolidated_data_aggregated(db.log_events, "$category", page, page_size)
+async def get_log_event_categories(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
+    return await _get_consolidated_data_aggregated(
+        db.log_events, "$category", page=page, page_size=page_size
+    )
 
 
-async def get_log_events(db: Database, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
-    return await _get_consolidated_data_aggregated(db.log_events, "$name", page, page_size)
+async def get_log_events(
+        db: Database, *, event_category: str = None, page=1, page_size=10
+) -> tuple[list[str], PaginationInfo]:
+    return await _get_consolidated_data_aggregated(
+        db.log_events, "$name",
+        page=page, page_size=page_size,
+        match={"category": event_category} if event_category else None
+    )

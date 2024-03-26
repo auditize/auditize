@@ -18,14 +18,15 @@ router = APIRouter()
     tags=["logs"]
 )
 async def get_log_event_names(
-        db: Annotated[Database, Depends(get_db)], page: int = 1, page_size: int = 10
+        db: Annotated[Database, Depends(get_db)],
+        category: str = None, page: int = 1, page_size: int = 10
 ) -> LogEventNameListResponse:
     names, pagination = await service.get_log_events(
-        db, page, page_size
+        db, event_category=category, page=page, page_size=page_size
     )
     return LogEventNameListResponse(
         data=names,
-        pagination=PagePagination(**pagination.dict())
+        pagination=PagePagination.model_validate(pagination.model_dump())
     )
 
 
@@ -36,10 +37,11 @@ async def get_log_event_names(
     tags=["logs"]
 )
 async def get_log_event_categories(
-        db: Annotated[Database, Depends(get_db)], page: int = 1, page_size: int = 10
+        db: Annotated[Database, Depends(get_db)],
+        page: int = 1, page_size: int = 10
 ) -> LogEventCategoryListResponse:
     categories, pagination = await service.get_log_event_categories(
-        db, page, page_size
+        db, page=page, page_size=page_size
     )
     return LogEventCategoryListResponse(
         data=categories,

@@ -483,3 +483,17 @@ async def test_get_log_event_names(client: AsyncClient, db: Database):
             "total_pages": 3
         }
     }
+
+    # third test, with category filter
+    resp = await assert_get(client, "/logs/events?category=category_2")
+    assert resp.json() == {
+        "data": [
+            f"name_{2}"
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+            "total_pages": 1
+        }
+    }
