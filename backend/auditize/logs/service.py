@@ -57,6 +57,12 @@ async def consolidate_log_actor(db: Database, actor: Log.Actor):
         await db.store_unique_data(db.log_actor_extra_keys, {"key": key})
 
 
+async def consolidate_log_resource(db: Database, resource: Log.Resource):
+    await db.store_unique_data(db.log_resource_types, {"type": resource.type})
+    for key in resource.extra:
+        await db.store_unique_data(db.log_resource_extra_keys, {"key": key})
+
+
 async def save_log(db: Database, log: Log) -> ObjectId:
     result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
 
@@ -69,11 +75,7 @@ async def save_log(db: Database, log: Log) -> ObjectId:
         await consolidate_log_actor(db, log.actor)
 
     if log.resource:
-        await db.store_unique_data(db.log_resource_types, {"type": log.resource.type})
-        for extra_key in log.resource.extra:
-            await db.store_unique_data(
-                db.log_resource_extra_keys, {"key": extra_key}
-            )
+        await consolidate_log_resource(db, log.resource)
 
     for level1_key, sub_keys in log.details.items():
         for level2_key in sub_keys:
@@ -212,3 +214,7 @@ async def get_log_events(
 
 async def get_log_actor_types(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
     return await _get_consolidated_data(db.log_actor_types, "type", page=page, page_size=page_size)
+
+
+async def get_log_resource_types(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
+    return await _get_consolidated_data(db.log_resource_types, "type", page=page, page_size=page_size)

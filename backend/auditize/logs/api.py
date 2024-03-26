@@ -2,8 +2,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
 
-from auditize.logs.api_models import LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse, \
-    LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, PagePagination
+from auditize.logs.api_models import (
+    LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse,
+    LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, LogResourceTypeListResponse,
+    PagePagination
+)
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
 from auditize.common.api import COMMON_RESPONSES
@@ -62,6 +65,23 @@ async def get_log_actor_types(
     actor_types, pagination = await service.get_log_actor_types(db, page=page, page_size=page_size)
     return LogActorTypeListResponse(
         data=actor_types,
+        pagination=PagePagination.model_validate(pagination.model_dump())
+    )
+
+
+@router.get(
+    "/logs/resource-types",
+    summary="Get log resource types",
+    operation_id="get_log_resource_types",
+    tags=["logs"]
+)
+async def get_log_resource_types(
+        db: Annotated[Database, Depends(get_db)],
+        page: int = 1, page_size: int = 10
+) -> LogResourceTypeListResponse:
+    resource_types, pagination = await service.get_log_resource_types(db, page=page, page_size=page_size)
+    return LogResourceTypeListResponse(
+        data=resource_types,
         pagination=PagePagination.model_validate(pagination.model_dump())
     )
 

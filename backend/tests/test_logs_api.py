@@ -9,7 +9,7 @@ from httpx import AsyncClient
 from icecream import ic
 
 from auditize.common.mongo import Database
-from auditize.logs.service import consolidate_log_event, consolidate_log_actor
+from auditize.logs.service import consolidate_log_event, consolidate_log_actor, consolidate_log_resource
 from auditize.logs.models import Log
 
 
@@ -519,6 +519,39 @@ async def test_get_log_actor_types(client: AsyncClient, db: Database):
 
     # second test, with pagination parameters
     resp = await assert_get(client, "/logs/actor-types?page=2&page_size=2")
+    assert resp.json() == {
+        "data": [
+            f"type_{i}" for i in range(2, 4)
+        ],
+        "pagination": {
+            "page": 2,
+            "page_size": 2,
+            "total": 5,
+            "total_pages": 3
+        }
+    }
+
+
+async def test_get_log_resource_types(client: AsyncClient, db: Database):
+    for i in reversed(range(5)):  # insert in reverse order to test sorting
+        await consolidate_log_resource(db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
+
+    # first test, without pagination parameters
+    resp = await assert_get(client, "/logs/resource-types")
+    assert resp.json() == {
+        "data": [
+            f"type_{i}" for i in range(5)
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 5,
+            "total_pages": 1
+        }
+    }
+
+    # second test, with pagination parameters
+    resp = await assert_get(client, "/logs/resource-types?page=2&page_size=2")
     assert resp.json() == {
         "data": [
             f"type_{i}" for i in range(2, 4)

@@ -296,3 +296,13 @@ class LogActorTypeListResponse(BaseModel):
         }
     )
     pagination: PagePagination = Field(description="Pagination information")
+
+
+class LogResourceTypeListResponse(BaseModel):
+    data: list[str] = Field(
+        description="List of resource types",
+        json_schema_extra={
+            "example": ["config-profile", "entity"]
+        }
+    )
+    pagination: PagePagination = Field(description="Pagination information")
