@@ -221,7 +221,7 @@ class LogReadingResponse(_LogBase, _LogReadingResponse):
         return cls.model_validate(log.model_dump())
 
 
-class CursorPagination(BaseModel):
+class CursorPaginationData(BaseModel):
     next_cursor: str | None = Field(
         description="The cursor to the next page of results. It must be passed as the 'cursor' parameter to the "
                     "next query to get the next page of results. 'next_cursor' will be null if there "
@@ -229,7 +229,7 @@ class CursorPagination(BaseModel):
     )
 
 
-class PagePagination(BaseModel):
+class PagePaginationData(BaseModel):
     page: int = Field(
         description="The current page number",
         json_schema_extra={
@@ -256,15 +256,35 @@ class PagePagination(BaseModel):
     )
 
 
+class PagePaginationParams(BaseModel):
+    page: int = Field(
+        description="The page number to fetch",
+        default=1,
+        ge=1,
+        json_schema_extra={
+            "example": 1
+        }
+    )
+    page_size: int = Field(
+        description="The number of items per page",
+        default=10,
+        ge=1,
+        le=100,
+        json_schema_extra={
+            "example": 10
+        }
+    )
+
+
 class LogsReadingResponse(BaseModel):
     data: list[LogReadingResponse] = Field(description="The actual log list")
-    pagination: CursorPagination = Field(description="Pagination information")
+    pagination: CursorPaginationData = Field(description="Pagination information")
 
     @classmethod
     def from_logs(cls, logs: list[Log], next_cursor: str = None):
         return cls(
             data=list(map(LogReadingResponse.from_log, logs)),
-            pagination=CursorPagination(next_cursor=next_cursor)
+            pagination=CursorPaginationData(next_cursor=next_cursor)
         )
 
 
@@ -275,7 +295,7 @@ class LogEventCategoryListResponse(BaseModel):
             "example": ["authentication", "configuration"]
         }
     )
-    pagination: PagePagination = Field(description="Pagination information")
+    pagination: PagePaginationData = Field(description="Pagination information")
 
 
 class LogEventNameListResponse(BaseModel):
@@ -285,7 +305,7 @@ class LogEventNameListResponse(BaseModel):
             "example": ["create_configuration_profile", "update_configuration_profile"]
         }
     )
-    pagination: PagePagination = Field(description="Pagination information")
+    pagination: PagePaginationData = Field(description="Pagination information")
 
 
 class LogActorTypeListResponse(BaseModel):
@@ -295,7 +315,7 @@ class LogActorTypeListResponse(BaseModel):
             "example": ["internal", "sso"]
         }
     )
-    pagination: PagePagination = Field(description="Pagination information")
+    pagination: PagePaginationData = Field(description="Pagination information")
 
 
 class LogResourceTypeListResponse(BaseModel):
@@ -305,7 +325,7 @@ class LogResourceTypeListResponse(BaseModel):
             "example": ["config-profile", "entity"]
         }
     )
-    pagination: PagePagination = Field(description="Pagination information")
+    pagination: PagePaginationData = Field(description="Pagination information")
 
 
 class LogTagCategoryListResponse(BaseModel):
@@ -315,4 +335,4 @@ class LogTagCategoryListResponse(BaseModel):
             "example": ["security", "config-profile"]
         }
     )
-    pagination: PagePagination = Field(description="Pagination information")
+    pagination: PagePaginationData = Field(description="Pagination information")

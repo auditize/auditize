@@ -5,13 +5,25 @@ from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
 from auditize.logs.api_models import (
     LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse,
     LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, LogResourceTypeListResponse,
-    LogTagCategoryListResponse, PagePagination
+    LogTagCategoryListResponse, PagePaginationData, PagePaginationParams
 )
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
 from auditize.common.api import COMMON_RESPONSES
 
 router = APIRouter()
+
+
+async def handle_paginated_data_request(
+        db: Database, response_class, service_func, page_params: PagePaginationParams, **kwargs
+):
+    data, pagination = await service_func(
+        db, page=page_params.page, page_size=page_params.page_size, **kwargs
+    )
+    return response_class(
+        data=data,
+        pagination=PagePaginationData.model_validate(pagination.model_dump())
+    )
 
 
 @router.get(
@@ -22,14 +34,10 @@ router = APIRouter()
 )
 async def get_log_event_names(
         db: Annotated[Database, Depends(get_db)],
-        category: str = None, page: int = 1, page_size: int = 10
+        page_params: Annotated[PagePaginationParams, Depends()], category: str = None
 ) -> LogEventNameListResponse:
-    names, pagination = await service.get_log_events(
-        db, event_category=category, page=page, page_size=page_size
-    )
-    return LogEventNameListResponse(
-        data=names,
-        pagination=PagePagination.model_validate(pagination.model_dump())
+    return await handle_paginated_data_request(
+        db, LogEventNameListResponse, service.get_log_events, page_params, event_category=category
     )
 
 
@@ -40,15 +48,10 @@ async def get_log_event_names(
     tags=["logs"]
 )
 async def get_log_event_categories(
-        db: Annotated[Database, Depends(get_db)],
-        page: int = 1, page_size: int = 10
+        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogEventCategoryListResponse:
-    categories, pagination = await service.get_log_event_categories(
-        db, page=page, page_size=page_size
-    )
-    return LogEventCategoryListResponse(
-        data=categories,
-        pagination=PagePagination.model_validate(pagination.model_dump())
+    return await handle_paginated_data_request(
+        db, LogEventCategoryListResponse, service.get_log_event_categories, page_params
     )
 
 
@@ -59,13 +62,10 @@ async def get_log_event_categories(
     tags=["logs"]
 )
 async def get_log_actor_types(
-        db: Annotated[Database, Depends(get_db)],
-        page: int = 1, page_size: int = 10
+        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogActorTypeListResponse:
-    actor_types, pagination = await service.get_log_actor_types(db, page=page, page_size=page_size)
-    return LogActorTypeListResponse(
-        data=actor_types,
-        pagination=PagePagination.model_validate(pagination.model_dump())
+    return await handle_paginated_data_request(
+        db, LogActorTypeListResponse, service.get_log_actor_types, page_params
     )
 
 
@@ -76,13 +76,10 @@ async def get_log_actor_types(
     tags=["logs"]
 )
 async def get_log_resource_types(
-        db: Annotated[Database, Depends(get_db)],
-        page: int = 1, page_size: int = 10
+        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogResourceTypeListResponse:
-    resource_types, pagination = await service.get_log_resource_types(db, page=page, page_size=page_size)
-    return LogResourceTypeListResponse(
-        data=resource_types,
-        pagination=PagePagination.model_validate(pagination.model_dump())
+    return await handle_paginated_data_request(
+        db, LogResourceTypeListResponse, service.get_log_resource_types, page_params
     )
 
 
@@ -93,13 +90,10 @@ async def get_log_resource_types(
     tags=["logs"]
 )
 async def get_log_tag_categories(
-        db: Annotated[Database, Depends(get_db)],
-        page: int = 1, page_size: int = 10
+        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogTagCategoryListResponse:
-    tag_categories, pagination = await service.get_log_tag_categories(db, page=page, page_size=page_size)
-    return LogTagCategoryListResponse(
-        data=tag_categories,
-        pagination=PagePagination.model_validate(pagination.model_dump())
+    return await handle_paginated_data_request(
+        db, LogTagCategoryListResponse, service.get_log_tag_categories, page_params
     )
 
 
