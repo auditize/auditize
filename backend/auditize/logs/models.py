@@ -55,6 +55,12 @@ class Log(BaseModel):
     )
 
 
+class Node(BaseModel):
+    id: str
+    name: str
+    parent_node_id: str | None
+
+
 class PaginationInfo(BaseModel):
     page: int
     page_size: int

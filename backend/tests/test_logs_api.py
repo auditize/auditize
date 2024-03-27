@@ -507,7 +507,8 @@ async def test_get_log_nodes_without_filters(client: AsyncClient, db: Database):
 
     await _test_pagination_common_scenarii(
         client, "/logs/nodes",
-        [{"id": "customer", "name": "Customer"}] + [{"id": f"entity:{i}", "name": f"Entity {i}"} for i in range(4)]
+        [{"id": "customer", "name": "Customer", "parent_node_id": None}] +
+        [{"id": f"entity:{i}", "name": f"Entity {i}", "parent_node_id": "customer"} for i in range(4)]
     )
 
 
@@ -524,11 +525,12 @@ async def test_get_log_nodes_with_filters(client: AsyncClient, db: Database):
     # test top-level nodes
     await _test_pagination_common_scenarii(
         client, "/logs/nodes?root=true",
-        [{"id": f"customer:{i}", "name": f"Customer {i}"} for i in range(5)]
+        [{"id": f"customer:{i}", "name": f"Customer {i}", "parent_node_id": None} for i in range(5)]
     )
 
     # test non-top-level nodes
     await _test_pagination_common_scenarii(
         client, "/logs/nodes?parent_node_id=customer:2",
-        [{"id": f"entity:2-{j}", "name": f"Entity {j}"} for j in ("a", "b", "c", "d", "e")]
+        [{"id": f"entity:2-{j}", "name": f"Entity {j}", "parent_node_id": "customer:2"}
+         for j in ("a", "b", "c", "d", "e")]
     )

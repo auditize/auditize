@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Generic, TypeVar
 
 from pydantic import BaseModel, Field, BeforeValidator, field_serializer, model_validator
 
 from auditize.common.utils import serialize_datetime
-from auditize.logs.models import Log
+from auditize.logs.models import Log, PaginationInfo
 
 
 class _LogBase(BaseModel):
@@ -288,56 +288,53 @@ class LogsReadingResponse(BaseModel):
         )
 
 
-class LogEventCategoryListResponse(BaseModel):
-    data: list[str] = Field(
-        description="List of event categories",
-        json_schema_extra={
-            "example": ["authentication", "configuration"]
-        }
+ModelItemT = TypeVar("ModelItemT")
+ApiItemT = TypeVar("ApiItemT")
+
+
+class PaginatedItemListResponse(BaseModel, Generic[ModelItemT, ApiItemT]):
+    pagination: PagePaginationData = Field(description="Pagination information")
+    data: list[ApiItemT] = Field(description="List of items")
+
+    @classmethod
+    def build(cls, items: list[ModelItemT], pagination: PaginationInfo):
+        return cls(
+            data=list(map(cls.build_item, items)),
+            pagination=PagePaginationData.model_validate(pagination.model_dump())
+        )
+
+    @classmethod
+    def build_item(cls, item: ModelItemT) -> ApiItemT:
+        return item
+
+
+class LogEventCategoryListResponse(PaginatedItemListResponse[str, str]):
+    pass
+
+
+class LogEventNameListResponse(PaginatedItemListResponse[str, str]):
+    pass
+
+
+class LogActorTypeListResponse(PaginatedItemListResponse[str, str]):
+    pass
+
+
+class LogResourceTypeListResponse(PaginatedItemListResponse[str, str]):
+    pass
+
+
+class LogTagCategoryListResponse(PaginatedItemListResponse[str, str]):
+    pass
+
+
+class NodeItem(_LogBase.Node):
+    parent_node_id: str | None = Field(
+        description="The ID of the parent node. It is null for root nodes."
     )
-    pagination: PagePaginationData = Field(description="Pagination information")
 
 
-class LogEventNameListResponse(BaseModel):
-    data: list[str] = Field(
-        description="List of event names",
-        json_schema_extra={
-            "example": ["create_configuration_profile", "update_configuration_profile"]
-        }
-    )
-    pagination: PagePaginationData = Field(description="Pagination information")
-
-
-class LogActorTypeListResponse(BaseModel):
-    data: list[str] = Field(
-        description="List of actor types",
-        json_schema_extra={
-            "example": ["internal", "sso"]
-        }
-    )
-    pagination: PagePaginationData = Field(description="Pagination information")
-
-
-class LogResourceTypeListResponse(BaseModel):
-    data: list[str] = Field(
-        description="List of resource types",
-        json_schema_extra={
-            "example": ["config-profile", "entity"]
-        }
-    )
-    pagination: PagePaginationData = Field(description="Pagination information")
-
-
-class LogTagCategoryListResponse(BaseModel):
-    data: list[str] = Field(
-        description="List of tag categories",
-        json_schema_extra={
-            "example": ["security", "config-profile"]
-        }
-    )
-    pagination: PagePaginationData = Field(description="Pagination information")
-
-
-class LogNodeListResponse(BaseModel):
-    data: list[Log.Node] = Field(description="List of nodes")
-    pagination: PagePaginationData = Field(description="Pagination information")
+class LogNodeListResponse(PaginatedItemListResponse[Log.Node, NodeItem]):
+    @classmethod
+    def build_item(cls, node: Log.Node) -> NodeItem:
+        return NodeItem.model_validate(node.model_dump())

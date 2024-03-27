@@ -7,7 +7,7 @@ import json
 
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorCursor
 
-from auditize.logs.models import Log, PaginationInfo
+from auditize.logs.models import Log, Node, PaginationInfo
 from auditize.common.mongo import Database
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.utils import serialize_datetime
@@ -259,4 +259,4 @@ async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, 
         sort=[("name", 1)],
         page=page, page_size=page_size
     )
-    return [Log.Node(**result) async for result in results], pagination
+    return [Node(**result) async for result in results], pagination

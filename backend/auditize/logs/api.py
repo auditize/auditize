@@ -18,13 +18,10 @@ router = APIRouter()
 async def handle_paginated_data_request(
         db: Database, response_class, service_func, page_params: PagePaginationParams, **kwargs
 ):
-    data, pagination = await service_func(
+    items, pagination = await service_func(
         db, page=page_params.page, page_size=page_params.page_size, **kwargs
     )
-    return response_class(
-        data=data,
-        pagination=PagePaginationData.model_validate(pagination.model_dump())
-    )
+    return response_class.build(items, pagination)
 
 
 @router.get(
@@ -51,9 +48,8 @@ async def get_log_event_names(
 async def get_log_event_categories(
         db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogEventCategoryListResponse:
-    return await handle_paginated_data_request(
-        db, LogEventCategoryListResponse, service.get_log_event_categories, page_params
-    )
+    items, pagination = await service.get_log_event_categories(db, page=page_params.page, page_size=page_params.page_size)
+    return LogEventCategoryListResponse.build(items, pagination)
 
 
 @router.get(
