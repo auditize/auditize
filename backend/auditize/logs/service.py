@@ -2,12 +2,10 @@ from datetime import datetime
 import base64
 import binascii
 
-import bson.errors
 from bson import ObjectId
 import json
 
-from pydantic import BaseModel, field_validator, field_serializer
-from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorCursor
 
 from auditize.logs.models import Log, PaginationInfo
 from auditize.common.mongo import Database
@@ -77,7 +75,7 @@ async def consolidate_log_details(db: Database, details: dict[str, dict[str, str
             )
 
 
-async def consolidate_log_path(db: Database, node_path: list[Log.Node]):
+async def consolidate_log_node_path(db: Database, node_path: list[Log.Node]):
     parent_node_id = None
     for node in node_path:
         await db.consolidate_data(db.log_nodes, {
@@ -104,7 +102,7 @@ async def save_log(db: Database, log: Log) -> ObjectId:
 
     await consolidate_log_tags(db, log.tags)
 
-    await consolidate_log_path(db, log.node_path)
+    await consolidate_log_node_path(db, log.node_path)
 
     return result.inserted_id
 
@@ -161,7 +159,7 @@ async def get_logs(db: Database, limit: int = 10, pagination_cursor: str = None)
     return logs, next_cursor
 
 
-async def _get_consolidated_data_aggregated(
+async def _get_consolidated_data_aggregated_field(
         collection: AsyncIOMotorCollection, field_name: str, *,
         match=None,
         page=1, page_size=10
@@ -191,25 +189,35 @@ async def _get_consolidated_data_aggregated(
     return values, PaginationInfo.build(page=page, page_size=page_size, total=total)
 
 
-async def _get_consolidated_data(
-        collection: AsyncIOMotorCollection, field_name: str, *,
+async def _get_paginated_results(
+        collection: AsyncIOMotorCollection, *,
+        filter=None, projection=None, sort=None,
         page=1, page_size=10
-) -> tuple[list[str], PaginationInfo]:
-    # Get consolidated data field values
+) -> tuple[AsyncIOMotorCursor, PaginationInfo]:
+    # Get results
     results = collection.find(
-        projection=[field_name],
-        sort={field_name: 1}, skip=(page - 1) * page_size, limit=page_size
+        filter=filter, projection=projection, sort=sort,
+        skip=(page - 1) * page_size, limit=page_size
     )
-    values = [result[field_name] async for result in results]
 
-    # Get the total number of consolidated field value
-    total = await collection.count_documents({})
+    # Get the total number of results
+    total = await collection.count_documents(filter or {})
 
-    return values, PaginationInfo.build(page=page, page_size=page_size, total=total)
+    return results, PaginationInfo.build(page=page, page_size=page_size, total=total)
+
+
+async def _get_consolidated_data_field(
+        collection: AsyncIOMotorCollection, field_name: str, *, page=1, page_size=10
+) -> tuple[list[str], PaginationInfo]:
+    results, pagination = await _get_paginated_results(
+        collection,
+        projection=[field_name], sort={field_name: 1}, page=page, page_size=page_size
+    )
+    return [result[field_name] async for result in results], pagination
 
 
 async def get_log_event_categories(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
-    return await _get_consolidated_data_aggregated(
+    return await _get_consolidated_data_aggregated_field(
         db.log_events, "category", page=page, page_size=page_size
     )
 
@@ -217,7 +225,7 @@ async def get_log_event_categories(db: Database, *, page=1, page_size=10) -> tup
 async def get_log_events(
         db: Database, *, event_category: str = None, page=1, page_size=10
 ) -> tuple[list[str], PaginationInfo]:
-    return await _get_consolidated_data_aggregated(
+    return await _get_consolidated_data_aggregated_field(
         db.log_events, "name",
         page=page, page_size=page_size,
         match={"category": event_category} if event_category else None
@@ -225,12 +233,30 @@ async def get_log_events(
 
 
 async def get_log_actor_types(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
-    return await _get_consolidated_data(db.log_actor_types, "type", page=page, page_size=page_size)
+    return await _get_consolidated_data_field(db.log_actor_types, "type", page=page, page_size=page_size)
 
 
 async def get_log_resource_types(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
-    return await _get_consolidated_data(db.log_resource_types, "type", page=page, page_size=page_size)
+    return await _get_consolidated_data_field(db.log_resource_types, "type", page=page, page_size=page_size)
 
 
 async def get_log_tag_categories(db: Database, *, page=1, page_size=10) -> tuple[list[str], PaginationInfo]:
-    return await _get_consolidated_data(db.log_tag_categories, "category", page=page, page_size=page_size)
+    return await _get_consolidated_data_field(db.log_tag_categories, "category", page=page, page_size=page_size)
+
+
+async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, page_size=10
+                        ) -> tuple[list[Log.Node], PaginationInfo]:
+    # please note that we use NotImplemented instead of None because None is a valid value for parent_node_id
+    # (it means filtering on top nodes)
+    if parent_node_id is NotImplemented:
+        filter = {}
+    else:
+        filter = {"parent_node_id": parent_node_id}
+
+    results, pagination = await _get_paginated_results(
+        db.log_nodes,
+        filter=filter,
+        sort=[("name", 1)],
+        page=page, page_size=page_size
+    )
+    return [Log.Node(**result) async for result in results], pagination

@@ -336,3 +336,8 @@ class LogTagCategoryListResponse(BaseModel):
         }
     )
     pagination: PagePaginationData = Field(description="Pagination information")
+
+
+class LogNodeListResponse(BaseModel):
+    data: list[Log.Node] = Field(description="List of nodes")
+    pagination: PagePaginationData = Field(description="Pagination information")

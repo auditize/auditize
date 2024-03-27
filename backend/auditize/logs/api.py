@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends
+from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends, HTTPException
 
 from auditize.logs.api_models import (
     LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse,
     LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, LogResourceTypeListResponse,
-    LogTagCategoryListResponse, PagePaginationData, PagePaginationParams
+    LogTagCategoryListResponse, LogNodeListResponse,
+    PagePaginationData, PagePaginationParams
 )
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
@@ -94,6 +95,33 @@ async def get_log_tag_categories(
 ) -> LogTagCategoryListResponse:
     return await handle_paginated_data_request(
         db, LogTagCategoryListResponse, service.get_log_tag_categories, page_params
+    )
+
+
+@router.get(
+    "/logs/nodes",
+    summary="Get log nodes",
+    operation_id="get_log_nodes",
+    tags=["logs"]
+)
+async def get_log_nodes(
+        db: Annotated[Database, Depends(get_db)],
+        root: bool = False,
+        parent_node_id: str = None,
+        page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams()
+) -> LogNodeListResponse:
+    if root and parent_node_id is not None:
+        raise HTTPException(400, "Parameters 'root' and 'parent_node_id' are mutually exclusive.")
+
+    if root:
+        filter_args = {"parent_node_id": None}
+    elif parent_node_id:
+        filter_args = {"parent_node_id": parent_node_id}
+    else:
+        filter_args = {}
+
+    return await handle_paginated_data_request(
+        db, LogNodeListResponse, service.get_log_nodes, page_params, **filter_args
     )
 
 

@@ -10,7 +10,7 @@ from icecream import ic
 
 from auditize.common.mongo import Database
 from auditize.logs.service import (consolidate_log_event, consolidate_log_actor, consolidate_log_resource,
-                                   consolidate_log_tags)
+                                   consolidate_log_tags, consolidate_log_node_path)
 from auditize.logs.models import Log
 
 
@@ -60,21 +60,24 @@ def make_expected_log_data_for_api(actual):
     return expected
 
 
-async def assert_request(method: str, client: AsyncClient, path, json=None, files=None, data=None,
+async def assert_request(method: str, client: AsyncClient, path, *, params=None, json=None, files=None, data=None,
                          expected_status_code=200):
     ic(json, files, data)
-    resp = await client.request(method, path, json=json, files=files, data=data)
+    resp = await client.request(method, path, params=params, json=json, files=files, data=data)
     ic(resp.text)
     assert resp.status_code == expected_status_code
     return resp
 
 
-async def assert_post(client: AsyncClient, path, json=None, files=None, data=None, expected_status_code=200):
-    return await assert_request("POST", client, path, json, files, data, expected_status_code)
+async def assert_post(client: AsyncClient, path, *, json=None, files=None, data=None, expected_status_code=200):
+    return await assert_request(
+        "POST", client, path,
+        json=json, files=files, data=data, expected_status_code=expected_status_code
+    )
 
 
-async def assert_get(client: AsyncClient, path, expected_status_code=200):
-    return await assert_request("GET", client, path, expected_status_code=expected_status_code)
+async def assert_get(client: AsyncClient, path, *, params=None, expected_status_code=200):
+    return await assert_request("GET", client, path, params=params, expected_status_code=expected_status_code)
 
 
 async def assert_create_log(client: AsyncClient, log: dict, expected_status_code=201):
@@ -418,7 +421,7 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
     ]
 
 
-async def _test_pagination_common_scenarii(client: AsyncClient, path: str, data: list[str]):
+async def _test_pagination_common_scenarii(client: AsyncClient, path: str, data: list):
     # first test, without pagination parameters
     resp = await assert_get(client, path)
     assert resp.json() == {
@@ -432,7 +435,7 @@ async def _test_pagination_common_scenarii(client: AsyncClient, path: str, data:
     }
 
     # second test, with pagination parameters
-    resp = await assert_get(client, f"{path}?page=2&page_size=2")
+    resp = await assert_get(client, path, params={"page": 2, "page_size": 2})
     assert resp.json() == {
         "data": data[2:4],
         "pagination": {
@@ -494,3 +497,38 @@ async def test_get_log_tag_categories(client: AsyncClient, db: Database):
     await consolidate_log_tags(db, [Log.Tag(id="simple_tag")])  # no category, it must not be returned
 
     await _test_pagination_common_scenarii(client, "/logs/tag-categories", [f"category_{i}" for i in range(5)])
+
+
+async def test_get_log_nodes_without_filters(client: AsyncClient, db: Database):
+    for i in range(4):
+        await consolidate_log_node_path(
+            db, [Log.Node(id=f"customer", name=f"Customer"), Log.Node(id=f"entity:{i}", name=f"Entity {i}")]
+        )
+
+    await _test_pagination_common_scenarii(
+        client, "/logs/nodes",
+        [{"id": "customer", "name": "Customer"}] + [{"id": f"entity:{i}", "name": f"Entity {i}"} for i in range(4)]
+    )
+
+
+async def test_get_log_nodes_with_filters(client: AsyncClient, db: Database):
+    for i in range(5):
+        for j in "a", "b", "c", "d", "e":
+            await consolidate_log_node_path(
+                db, [
+                    Log.Node(id=f"customer:{i}", name=f"Customer {i}"),
+                    Log.Node(id=f"entity:{i}-{j}", name=f"Entity {j}")
+                ]
+            )
+
+    # test top-level nodes
+    await _test_pagination_common_scenarii(
+        client, "/logs/nodes?root=true",
+        [{"id": f"customer:{i}", "name": f"Customer {i}"} for i in range(5)]
+    )
+
+    # test non-top-level nodes
+    await _test_pagination_common_scenarii(
+        client, "/logs/nodes?parent_node_id=customer:2",
+        [{"id": f"entity:2-{j}", "name": f"Entity {j}"} for j in ("a", "b", "c", "d", "e")]
+    )
