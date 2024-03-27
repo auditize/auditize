@@ -57,6 +57,10 @@ def make_expected_log_data_for_api(actual):
     for tag in expected["tags"]:
         tag.setdefault("category", None)
         tag.setdefault("name", None)
+    if expected["actor"]:
+        expected["actor"].setdefault("extra", {})
+    if expected["resource"]:
+        expected["resource"].setdefault("extra", {})
     return expected
 
 
@@ -227,8 +231,7 @@ async def test_get_log_minimal_fields(client: AsyncClient, db: Database):
     log = make_log_data()
     log_id = await prepare_log(client, log)
 
-    resp = await client.get(f"/logs/{log_id}")
-    assert resp.status_code == 200
+    resp = await assert_get(client, f"/logs/{log_id}")
     assert resp.json() == make_expected_log_data_for_api({
         **log,
         "id": log_id
@@ -279,8 +282,7 @@ async def test_get_log_all_fields(client: AsyncClient, db: Database):
 
     log_id = await prepare_log(client, log)
 
-    resp = await client.get(f"/logs/{log_id}")
-    assert resp.status_code == 200
+    resp = await assert_get(client, f"/logs/{log_id}")
     assert resp.json() == make_expected_log_data_for_api({
         **log,
         "id": log_id
@@ -288,8 +290,7 @@ async def test_get_log_all_fields(client: AsyncClient, db: Database):
 
 
 async def test_get_log_not_found(client: AsyncClient, db: Database):
-    resp = await client.get(f"/logs/{UNKNOWN_LOG_ID}")
-    assert resp.status_code == 404
+    await assert_get(client, f"/logs/{UNKNOWN_LOG_ID}", expected_status_code=404)
 
 
 async def test_get_log_attachment_text_and_minimal_fields(client: AsyncClient, db: Database):
@@ -304,8 +305,7 @@ async def test_get_log_attachment_text_and_minimal_fields(client: AsyncClient, d
         expected_status_code=204
     )
 
-    resp = await client.get(f"/logs/{log_id}/attachments/0")
-    assert resp.status_code == 200
+    resp = await assert_get(client, f"/logs/{log_id}/attachments/0")
     assert resp.headers["Content-Disposition"] == "attachment; filename=file.txt"
     assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
     assert resp.content == b"test data"
@@ -326,24 +326,21 @@ async def test_get_log_attachment_binary_and_all_fields(client: AsyncClient, db:
         expected_status_code=204
     )
 
-    resp = await client.get(f"/logs/{log_id}/attachments/0")
-    assert resp.status_code == 200
+    resp = await assert_get(client, f"/logs/{log_id}/attachments/0")
     assert resp.headers["Content-Disposition"] == "attachment; filename=test_file.bin"
     assert resp.headers["Content-Type"] == "image/jpeg"
     assert resp.content == data
 
 
 async def test_get_log_attachment_not_found_log_id(client: AsyncClient, db: Database):
-    resp = await client.get(f"/logs/{UNKNOWN_LOG_ID}/attachments/0")
-    assert resp.status_code == 404
+    await assert_get(client, f"/logs/{UNKNOWN_LOG_ID}/attachments/0", expected_status_code=404)
 
 
 async def test_get_log_attachment_not_found_attachment_idx(client: AsyncClient, db: Database):
     log = make_log_data()
     log_id = await prepare_log(client, log)
 
-    resp = await client.get(f"/logs/{log_id}/attachments/0")
-    assert resp.status_code == 404
+    await assert_get(client, f"/logs/{log_id}/attachments/0", expected_status_code=404)
 
 
 async def test_get_logs(client: AsyncClient, db: Database):
@@ -352,8 +349,7 @@ async def test_get_logs(client: AsyncClient, db: Database):
     log1_id = await prepare_log(client, log1)
     log2_id = await prepare_log(client, log2)
 
-    resp = await client.get("/logs")
-    assert resp.status_code == 200
+    resp = await assert_get(client, "/logs")
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -377,8 +373,7 @@ async def test_get_logs_limit(client: AsyncClient, db: Database):
     await prepare_log(client, log1)
     log2_id = await prepare_log(client, log2)
 
-    resp = await client.get("/logs?limit=1")
-    assert resp.status_code == 200
+    resp = await assert_get(client, "/logs?limit=1")
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -402,8 +397,7 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
         log_ids.append(log_id)
 
     # first step, get 5 logs and check the next_cursor
-    resp = await client.get("/logs?limit=5")
-    assert resp.status_code == 200
+    resp = await assert_get(client, "/logs?limit=5")
     next_cursor = resp.json()["pagination"]["next_cursor"]
     assert next_cursor is not None
     assert resp.json()["data"] == [
@@ -412,13 +406,174 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
     ]
 
     # second step, get the next 5 logs using the next_cursor from the previous response and check next_cursor is None
-    resp = await client.get(f"/logs?limit=5&cursor={next_cursor}")
-    assert resp.status_code == 200
+    resp = await assert_get(client, f"/logs?limit=5&cursor={next_cursor}")
     assert resp.json()["pagination"]["next_cursor"] is None
     assert resp.json()["data"] == [
         make_expected_log_data_for_api({**log, "id": log_id})
         for log, log_id in zip(reversed(logs[:5]), reversed(log_ids[:5]))
     ]
+
+
+async def _test_get_logs_filter(client: AsyncClient, func, params):
+    log1 = make_log_data()
+    await prepare_log(client, log1)
+    log2 = make_log_data()
+    func(log2)
+    log2_id = await prepare_log(client, log2)
+
+    resp = await assert_get(client, "/logs", params=params)
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log2,
+                "id": log2_id
+            })
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
+
+
+async def test_get_logs_filter_event_name(client: AsyncClient, db: Database):
+    def func(log):
+        log["event"]["name"] = "find_me"
+
+    await _test_get_logs_filter(client, func, {"event_name": "find_me"})
+
+
+async def test_get_logs_filter_event_category(client: AsyncClient, db: Database):
+    def func(log):
+        log["event"]["category"] = "find_me"
+
+    await _test_get_logs_filter(client, func, {"event_category": "find_me"})
+
+
+async def test_get_logs_filter_actor_type(client: AsyncClient, db: Database):
+    def func(log):
+        log["actor"] = {
+            "type": "find_me",
+            "id": "user:123",
+            "name": "User 123"
+        }
+
+    await _test_get_logs_filter(client, func, {"actor_type": "find_me"})
+
+
+async def test_get_logs_filter_actor_name(client: AsyncClient, db: Database):
+    def func(log):
+        log["actor"] = {
+            "type": "user",
+            "id": "user:123",
+            "name": "find_me"
+        }
+
+    await _test_get_logs_filter(client, func, {"actor_name": "find_me"})
+
+
+async def test_get_logs_filter_resource_type(client: AsyncClient, db: Database):
+    def func(log):
+        log["resource"] = {
+            "type": "find_me",
+            "id": "core",
+            "name": "Core Module"
+        }
+
+    await _test_get_logs_filter(client, func, {"resource_type": "find_me"})
+
+
+async def test_get_logs_filter_resource_name(client: AsyncClient, db: Database):
+    def func(log):
+        log["resource"] = {
+            "type": "module",
+            "id": "core",
+            "name": "find_me"
+        }
+
+    await _test_get_logs_filter(client, func, {"resource_name": "find_me"})
+
+
+async def test_get_logs_filter_tag_category(client: AsyncClient, db: Database):
+    def func(log):
+        log["tags"] = [
+            {"id": "simple_tag"},
+            {"id": "rich_tag:1", "category": "find_me", "name": "Rich tag"}
+        ]
+
+    await _test_get_logs_filter(client, func, {"tag_category": "find_me"})
+
+
+async def test_get_logs_filter_tag_name(client: AsyncClient, db: Database):
+    def func(log):
+        log["tags"] = [
+            {"id": "simple_tag"},
+            {"id": "rich_tag:1", "category": "rich_tag", "name": "find_me"}
+        ]
+
+    await _test_get_logs_filter(client, func, {"tag_name": "find_me"})
+
+
+async def test_get_logs_filter_node_id_exact_node(client: AsyncClient, db: Database):
+    def func(log):
+        log["node_path"] = [
+            {"id": "find_me:1", "name": "Customer 1"},
+            {"id": "find_me:2", "name": "Customer 2"}
+        ]
+
+    await _test_get_logs_filter(client, func, {"node_id": "find_me:2"})
+
+
+async def test_get_logs_filter_node_id_ascendant_node(client: AsyncClient, db: Database):
+    def func(log):
+        log["node_path"] = [
+            {"id": "find_me:1", "name": "Customer 1"},
+            {"id": "find_me:2", "name": "Customer 2"}
+        ]
+
+    await _test_get_logs_filter(client, func, {"node_id": "find_me:1"})
+
+
+async def test_get_logs_filter_multiple_criteria(client: AsyncClient, db: Database):
+    log1 = make_log_data()
+    log1["event"]["name"] = "find_me:event_name"
+    await prepare_log(client, log1)
+
+    log2 = make_log_data()
+    log2["event"]["category"] = "find_me:event_category"
+    await prepare_log(client, log2)
+
+    log3 = make_log_data()
+    log3["event"] = {"name": "find_me:event_name", "category": "find_me:event_category"}
+    log3_id = await prepare_log(client, log3)
+
+    resp = await assert_get(
+        client,
+        "/logs", params={"event_name": "find_me:event_name", "event_category": "find_me:event_category"}
+    )
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log3,
+                "id": log3_id
+            })
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
+
+
+async def test_get_logs_filter_no_result(client: AsyncClient, db: Database):
+    log = make_log_data()
+    await prepare_log(client, log)
+
+    resp = await assert_get(client, "/logs", params={"event_name": "not to be found"})
+    assert resp.json() == {
+        "data": [],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
 
 
 async def _test_pagination_common_scenarii(client: AsyncClient, path: str, data: list):

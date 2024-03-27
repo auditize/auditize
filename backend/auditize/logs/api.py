@@ -224,8 +224,22 @@ async def get_log_attachment(
 )
 async def get_logs(
         db: Annotated[Database, Depends(get_db)],
+        event_name: str = None,
+        event_category: str = None,
+        actor_type: str = None, actor_name: str = None,
+        resource_type: str = None, resource_name: str = None,
+        tag_category: str = None, tag_name: str = None,
+        node_id: str = None,
         limit: int = 10,
         cursor: str = None
 ) -> LogsReadingResponse:
-    logs, next_cursor = await service.get_logs(db, limit, cursor)
+    logs, next_cursor = await service.get_logs(
+        db,
+        event_name=event_name, event_category=event_category,
+        actor_type=actor_type, actor_name=actor_name,
+        resource_type=resource_type, resource_name=resource_name,
+        tag_category=tag_category, tag_name=tag_name,
+        node_id=node_id,
+        limit=limit, pagination_cursor=cursor
+    )
     return LogsReadingResponse.from_logs(logs, next_cursor)

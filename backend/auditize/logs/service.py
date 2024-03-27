@@ -131,17 +131,48 @@ async def get_log_attachment(db: Database, log_id: ObjectId | str, attachment_id
     return Log.Attachment(**result["attachments"][0])
 
 
-async def get_logs(db: Database, limit: int = 10, pagination_cursor: str = None) -> tuple[list[Log], str | None]:
+async def get_logs(
+    db: Database,
+    *,
+    event_name: str = None,
+    event_category: str = None,
+    actor_type: str = None, actor_name: str = None,
+    resource_type: str = None, resource_name: str = None,
+    tag_category: str = None, tag_name: str = None,
+    node_id: str = None,
+    limit: int = 10, pagination_cursor: str = None
+   ) -> tuple[list[Log], str | None]:
+    criteria = {}
+    if event_name:
+        criteria["event.name"] = event_name
+    if event_category:
+        criteria["event.category"] = event_category
+    if actor_type:
+        criteria["actor.type"] = actor_type
+    if actor_name:
+        criteria["actor.name"] = actor_name
+    if resource_type:
+        criteria["resource.type"] = resource_type
+    if resource_name:
+        criteria["resource.name"] = resource_name
+    if tag_category:
+        criteria["tags.category"] = tag_category
+    if tag_name:
+        criteria["tags.name"] = tag_name
+    if node_id:
+        criteria["node_path.id"] = node_id
+
+    filter = {}
+
+    if criteria:
+        filter["$and"] = [{key: value} for key, value in criteria.items()]
+
     if pagination_cursor:
         cursor = PaginationCursor.load(pagination_cursor)
-        filter = {
-            "$or": [
-                {"saved_at": {"$lt": cursor.date}},
-                {"$and": [{"saved_at": {"$eq": cursor.date}}, {"_id": {"$lt": cursor.log_id}}]}
-            ]
-        }
-    else:
-        filter = None
+        filter["$or"] = [
+            {"saved_at": {"$lt": cursor.date}},
+            {"$and": [{"saved_at": {"$eq": cursor.date}}, {"_id": {"$lt": cursor.log_id}}]}
+        ]
 
     results = db.logs.find(filter, _EXCLUDE_ATTACHMENT_DATA, sort=[("saved_at", -1), ("_id", -1)], limit=limit+1)
     logs = [Log(**log) async for log in results]
