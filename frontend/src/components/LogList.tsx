@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { Dropdown } from 'primereact/dropdown';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
-import { getLogs } from '../services/logs';
+import { getLogs, getAllLogEventNames, getAllLogEventCategories } from '../services/logs';
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => ({
@@ -29,7 +31,52 @@ function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   );
 }
 
-export default function LogList() {
+function PaginatedSelector(
+  {name, queryKey, queryFn, selectedItem, onChange}:
+  {name: string, queryKey: any, queryFn: () => Promise<string[]>, selectedItem?: string, onChange?: (name: string) => void}) {
+  const {isPending, error, data} = useQuery({
+    queryKey: queryKey,
+    queryFn: queryFn
+  });
+
+  if (error)
+    return <div>Error: {error.message}</div>;
+
+  return (
+    <Dropdown
+      showClear
+      loading={isPending}
+      value={selectedItem}
+      options={data?.map((item) => ({label: labelize(item), value: item}))}
+      onChange={(e) => {
+        console.log("onChange", e.value);
+        onChange?.(e.value);
+      }}
+      placeholder={isPending ? "Loading..." : name}
+    />
+  );
+}
+
+function EventCategorySelector({category, onChange}: {category?: string, onChange?: (category: string) => void}) {
+  return (
+    <PaginatedSelector
+      name="Event category"
+      queryKey={['logEventCategory']} queryFn={getAllLogEventCategories}
+      selectedItem={category} onChange={onChange} />
+  );
+}
+
+function EventNameSelector(
+  {name, category, onChange}: {name?: string, category?: string, onChange?: (name: string) => void}) {
+  return (
+    <PaginatedSelector
+      name="Event name"
+      queryKey={['logEventNames', category]} queryFn={() => getAllLogEventNames(category)}
+      selectedItem={name} onChange={onChange} />
+  );
+}
+
+function LogLoader() {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['logs'],
     queryFn: async ({ pageParam }: {pageParam: string | null}) => await getLogs(pageParam),
@@ -55,3 +102,23 @@ export default function LogList() {
 
   return <LogTable logs={data.pages.flatMap((page) => page.logs)} footer={footer} />;
 };
+
+export default function LogList() {
+  const [eventName, setEventName] = useState<string | undefined>();
+  const [eventCategory, setEventCategory] = useState<string | undefined>();
+
+  return (
+    <div>
+      <EventCategorySelector
+        category={eventCategory}
+        onChange={(category) => {
+          setEventCategory(category);
+          setEventName(undefined);
+        }}/>
+      <EventNameSelector
+        name={eventName} category={eventCategory}
+        onChange={(name) => setEventName(name)}/>
+      <LogLoader />
+    </div>
+  );
+}
