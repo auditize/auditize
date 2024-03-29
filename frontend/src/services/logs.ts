@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-async function timeout(ms: number) {
+export async function timeout(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -53,4 +53,11 @@ export async function getAllLogResourceTypes(): Promise<string[]> {
 
 export async function getAllLogTagCategories(): Promise<string[]> {
   return getPaginatedItems<string>('http://localhost:8000/logs/tag-categories');
+}
+
+export async function getAllLogNodes(parent_node_id?: string): Promise<LogNode[]> {
+  return getPaginatedItems<LogNode>(
+    'http://localhost:8000/logs/nodes',
+    parent_node_id ? {parent_node_id} : {root: true}
+  );
 }

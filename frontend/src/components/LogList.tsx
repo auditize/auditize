@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
+import { TreeNode } from 'primereact/treenode';
+import { TreeSelect, TreeSelectEventNodeEvent, TreeSelectExpandedKeysType } from 'primereact/treeselect';
+import { Tree } from 'primereact/tree';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
-import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories } from '../services/logs';
+import { timeout, getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes } from '../services/logs';
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => ({
@@ -104,6 +107,51 @@ function TagCategorySelector({category, onChange}: {category?: string, onChange?
   );
 }
 
+function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nodeId: string | null) => void}) {
+  const [nodes, setNodes] = useState<TreeNode[]>([]);
+
+  const logNodeToTreeNode = (node: LogNode): TreeNode => ({
+    label: node.name,
+    id: node.id,
+    key: node.id,
+    children: [],
+    leaf: false
+  });
+
+  useEffect(() => {
+    getAllLogNodes().then((nodes) => setNodes(nodes.map(logNodeToTreeNode)))
+  }, []);
+
+  const updateTreeNodeList = (nodes: TreeNode[], nodeToBeUpdated: TreeNode, children: TreeNode[]): TreeNode[] => {
+    const updatedNodes: TreeNode[] = [];
+
+    for (const node of nodes) {
+      if (node.id === nodeToBeUpdated.id) {
+        updatedNodes.push({...nodeToBeUpdated, children, expanded: true});
+      } else {
+        updatedNodes.push({...node, children: node.children ? updateTreeNodeList(node.children, nodeToBeUpdated, children) : []});
+      }
+    }
+
+    return updatedNodes;
+  }
+
+  const loadNodeChildren = async (e: TreeSelectEventNodeEvent) => {
+    const children = (await getAllLogNodes(e.node.id)).map(logNodeToTreeNode);
+    setNodes(updateTreeNodeList(nodes, e.node, children));
+  }
+
+  return (
+    <TreeSelect
+      disabled={false}
+      value={nodeId}
+      options={nodes}
+      onNodeSelect={(e) => {onChange(e.node.key?.toString() || null)}}
+      onNodeExpand={loadNodeChildren}
+    />
+  );
+}
+
 function LogLoader() {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['logs'],
@@ -141,6 +189,7 @@ export default function LogList() {
   const [tagCategory, setTagCategory] = useState<string | undefined>();
   const [tagName, setTagName] = useState<string | undefined>();
   const [tagId, setTagId] = useState<string | undefined>();
+  const [nodeId, setNodeId] = useState<string | null>(null);
 
   return (
     <div>
@@ -154,16 +203,14 @@ export default function LogList() {
           }}/>
         <EventNameSelector
           name={eventName} category={eventCategory}
-          onChange={(name) => setEventName(name)}/>
+          onChange={setEventName}/>
       </div>
 
       {/* Actor criteria */}
       <div className="flex flex-row py-5 space-x-5">
         <ActorTypeSelector
           type={actorType}
-          onChange={(type) => {
-            setActorType(type);
-          }}/>
+          onChange={setActorType}/>
         <InputText placeholder="Actor name" value={actorName} onChange={(e) => setActorName(e.target.value)} />
       </div>
 
@@ -171,9 +218,7 @@ export default function LogList() {
       <div className="flex flex-row py-5 space-x-5">
       <ResourceTypeSelector
           type={resourceType}
-          onChange={(type) => {
-            setResourceType(type);
-          }}/>
+          onChange={setResourceType}/>
         <InputText placeholder="Resource name" value={resourceName} onChange={(e) => setResourceName(e.target.value)} />
       </div>
 
@@ -181,11 +226,14 @@ export default function LogList() {
       <div className="flex flex-row py-5 space-x-5">
         <TagCategorySelector
           category={tagCategory}
-          onChange={(category) => {
-            setTagCategory(category);
-          }}/>
+          onChange={setTagCategory}/>
         <InputText placeholder="Tag name" value={tagName} onChange={(e) => setTagName(e.target.value)} />
         <InputText placeholder="Tag id" value={tagId} onChange={(e) => setTagId(e.target.value)} />
+      </div>
+
+      {/* Node criteria */}
+      <div className="flex flex-row py-5 space-x-5">
+        <NodeSelector nodeId={nodeId} onChange={setNodeId} />
       </div>
 
       {/* Actual log list */}

@@ -27,3 +27,9 @@ type LogListResponse = {
     next_cursor: string | null;
   }
 };
+
+type LogNode = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+};
