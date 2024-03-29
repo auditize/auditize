@@ -179,7 +179,7 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   return <LogTable logs={data.pages.flatMap((page) => page.logs)} footer={footer} />;
 };
 
-export default function LogList() {
+function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}){
   const [eventName, setEventName] = useState<string>();
   const [eventCategory, setEventCategory] = useState<string>();
   const [actorType, setActorType] = useState<string>();
@@ -236,14 +236,28 @@ export default function LogList() {
         <NodeSelector nodeId={nodeId} onChange={setNodeId} />
       </div>
 
-      {/* Actual log list */}
-      <LogLoader filter={{
-        eventCategory, eventName,
-        actorType, actorName,
-        resourceType, resourceName,
-        tagCategory, tagName, tagId,
-        nodeId: nodeId || undefined
-      }} />
+      {/* Apply button */}
+      <Button
+        onClick={() => onChange({
+          eventCategory, eventName,
+          actorType, actorName,
+          resourceType, resourceName,
+          tagCategory, tagName, tagId,
+          nodeId: nodeId || undefined
+        })}
+        label="Apply filters"
+      />
+    </div>
+  );
+}
+
+export default function LogList() {
+  const [filter, setFilter] = useState<LogFilterParams>({});
+  
+  return (
+    <div>
+      <LogFilters onChange={setFilter} />
+      <LogLoader filter={filter} />
     </div>
   );
 }
