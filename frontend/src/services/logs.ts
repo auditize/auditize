@@ -4,12 +4,35 @@ export async function timeout(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function getLogs(cursor: string | null, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
+export type LogFilterParams = {
+  eventCategory?: string;
+  eventName?: string;
+  actorType?: string;
+  actorName?: string;
+  resourceType?: string;
+  resourceName?: string;
+  tagCategory?: string;
+  tagName?: string;
+  tagId?: string;
+  nodeId?: string;
+}
+
+export async function getLogs(cursor: string | null, filter?: LogFilterParams, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
   await timeout(300);  // FIXME: Simulate network latency
 
   const response = await axios.get('http://localhost:8000/logs', {
     params: {
       limit,
+      event_category: filter?.eventCategory,
+      event_name: filter?.eventName,
+      actor_type: filter?.actorType,
+      actor_name: filter?.actorName,
+      resource_type: filter?.resourceType,
+      resource_name: filter?.resourceName,
+      tag_category: filter?.tagCategory,
+      tag_name: filter?.tagName,
+      tag_id: filter?.tagId,
+      node_id: filter?.nodeId,
       ...(cursor && { cursor })
     }
   });

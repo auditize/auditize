@@ -9,7 +9,7 @@ import { TreeSelect, TreeSelectEventNodeEvent, TreeSelectExpandedKeysType } from
 import { Tree } from 'primereact/tree';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
-import { timeout, getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes } from '../services/logs';
+import { timeout, getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => ({
@@ -152,10 +152,10 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nod
   );
 }
 
-function LogLoader() {
+function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ['logs'],
-    queryFn: async ({ pageParam }: {pageParam: string | null}) => await getLogs(pageParam),
+    queryKey: ['logs', filter],
+    queryFn: async ({ pageParam }: {pageParam: string | null}) => await getLogs(pageParam, filter),
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor
   });
@@ -180,15 +180,15 @@ function LogLoader() {
 };
 
 export default function LogList() {
-  const [eventName, setEventName] = useState<string | undefined>();
-  const [eventCategory, setEventCategory] = useState<string | undefined>();
-  const [actorType, setActorType] = useState<string | undefined>();
-  const [actorName, setActorName] = useState<string | undefined>();
-  const [resourceType, setResourceType] = useState<string | undefined>();
-  const [resourceName, setResourceName] = useState<string | undefined>();
-  const [tagCategory, setTagCategory] = useState<string | undefined>();
-  const [tagName, setTagName] = useState<string | undefined>();
-  const [tagId, setTagId] = useState<string | undefined>();
+  const [eventName, setEventName] = useState<string>();
+  const [eventCategory, setEventCategory] = useState<string>();
+  const [actorType, setActorType] = useState<string>();
+  const [actorName, setActorName] = useState<string>("");
+  const [resourceType, setResourceType] = useState<string>();
+  const [resourceName, setResourceName] = useState<string>("");
+  const [tagCategory, setTagCategory] = useState<string>();
+  const [tagName, setTagName] = useState<string>("");
+  const [tagId, setTagId] = useState<string>();
   const [nodeId, setNodeId] = useState<string | null>(null);
 
   return (
@@ -237,7 +237,13 @@ export default function LogList() {
       </div>
 
       {/* Actual log list */}
-      <LogLoader />
+      <LogLoader filter={{
+        eventCategory, eventName,
+        actorType, actorName,
+        resourceType, resourceName,
+        tagCategory, tagName, tagId,
+        nodeId: nodeId || undefined
+      }} />
     </div>
   );
 }
