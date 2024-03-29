@@ -42,3 +42,15 @@ export async function getAllLogEventNames(category?: string): Promise<string[]> 
     'http://localhost:8000/logs/events', category ? {category} : {}
   );
 }
+
+export async function getAllLogActorTypes(): Promise<string[]> {
+  return getPaginatedItems<string>('http://localhost:8000/logs/actor-types');
+}
+
+export async function getAllLogResourceTypes(): Promise<string[]> {
+  return getPaginatedItems<string>('http://localhost:8000/logs/resource-types');
+}
+
+export async function getAllLogTagCategories(): Promise<string[]> {
+  return getPaginatedItems<string>('http://localhost:8000/logs/tag-categories');
+}

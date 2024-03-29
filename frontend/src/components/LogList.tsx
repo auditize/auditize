@@ -3,9 +3,10 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
-import { getLogs, getAllLogEventNames, getAllLogEventCategories } from '../services/logs';
+import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories } from '../services/logs';
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => ({
@@ -76,6 +77,33 @@ function EventNameSelector(
   );
 }
 
+function ActorTypeSelector({type, onChange}: {type?: string, onChange?: (type: string) => void}) {
+  return (
+    <PaginatedSelector
+      name="Actor type"
+      queryKey={['logActorType']} queryFn={getAllLogActorTypes}
+      selectedItem={type} onChange={onChange} />
+  );
+}
+
+function ResourceTypeSelector({type, onChange}: {type?: string, onChange?: (type: string) => void}) {
+  return (
+    <PaginatedSelector
+      name="Resource type"
+      queryKey={['logResourceType']} queryFn={getAllLogResourceTypes}
+      selectedItem={type} onChange={onChange} />
+  );
+}
+
+function TagCategorySelector({category, onChange}: {category?: string, onChange?: (category: string) => void}) {
+  return (
+    <PaginatedSelector
+      name="Tag category"
+      queryKey={['logTagCategory']} queryFn={getAllLogTagCategories}
+      selectedItem={category} onChange={onChange} />
+  );
+}
+
 function LogLoader() {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['logs'],
@@ -106,18 +134,61 @@ function LogLoader() {
 export default function LogList() {
   const [eventName, setEventName] = useState<string | undefined>();
   const [eventCategory, setEventCategory] = useState<string | undefined>();
+  const [actorType, setActorType] = useState<string | undefined>();
+  const [actorName, setActorName] = useState<string | undefined>();
+  const [resourceType, setResourceType] = useState<string | undefined>();
+  const [resourceName, setResourceName] = useState<string | undefined>();
+  const [tagCategory, setTagCategory] = useState<string | undefined>();
+  const [tagName, setTagName] = useState<string | undefined>();
+  const [tagId, setTagId] = useState<string | undefined>();
 
   return (
     <div>
-      <EventCategorySelector
-        category={eventCategory}
-        onChange={(category) => {
-          setEventCategory(category);
-          setEventName(undefined);
-        }}/>
-      <EventNameSelector
-        name={eventName} category={eventCategory}
-        onChange={(name) => setEventName(name)}/>
+      {/* Event criteria */}
+      <div className="flex flex-row py-5 space-x-5">
+        <EventCategorySelector
+          category={eventCategory}
+          onChange={(category) => {
+            setEventCategory(category);
+            setEventName(undefined);
+          }}/>
+        <EventNameSelector
+          name={eventName} category={eventCategory}
+          onChange={(name) => setEventName(name)}/>
+      </div>
+
+      {/* Actor criteria */}
+      <div className="flex flex-row py-5 space-x-5">
+        <ActorTypeSelector
+          type={actorType}
+          onChange={(type) => {
+            setActorType(type);
+          }}/>
+        <InputText placeholder="Actor name" value={actorName} onChange={(e) => setActorName(e.target.value)} />
+      </div>
+
+      {/* Resource criteria */}
+      <div className="flex flex-row py-5 space-x-5">
+      <ResourceTypeSelector
+          type={resourceType}
+          onChange={(type) => {
+            setResourceType(type);
+          }}/>
+        <InputText placeholder="Resource name" value={resourceName} onChange={(e) => setResourceName(e.target.value)} />
+      </div>
+
+      {/* Tag criteria */}
+      <div className="flex flex-row py-5 space-x-5">
+        <TagCategorySelector
+          category={tagCategory}
+          onChange={(category) => {
+            setTagCategory(category);
+          }}/>
+        <InputText placeholder="Tag name" value={tagName} onChange={(e) => setTagName(e.target.value)} />
+        <InputText placeholder="Tag id" value={tagId} onChange={(e) => setTagId(e.target.value)} />
+      </div>
+
+      {/* Actual log list */}
       <LogLoader />
     </div>
   );
