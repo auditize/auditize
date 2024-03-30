@@ -5,11 +5,13 @@ import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { TreeNode } from 'primereact/treenode';
-import { TreeSelect, TreeSelectEventNodeEvent, TreeSelectExpandedKeysType } from 'primereact/treeselect';
-import { Tree } from 'primereact/tree';
+import { TreeSelect, TreeSelectEventNodeEvent } from 'primereact/treeselect';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
-import { timeout, getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
+import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
+
+type ValueChangeEvent = {name: string, value: string | undefined};
+type OnValueChangeEvent = (event: ValueChangeEvent) => void;
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => ({
@@ -36,8 +38,8 @@ function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
 }
 
 function PaginatedSelector(
-  {name, queryKey, queryFn, selectedItem, onChange}:
-  {name: string, queryKey: any, queryFn: () => Promise<string[]>, selectedItem?: string, onChange?: (name: string) => void}) {
+  {label, name, queryKey, queryFn, selectedItem, onChange}:
+  {label: string, name: string, queryKey: any, queryFn: () => Promise<string[]>, selectedItem?: string, onChange: OnValueChangeEvent}) {
   const {isPending, error, data} = useQuery({
     queryKey: queryKey,
     queryFn: queryFn,
@@ -53,62 +55,64 @@ function PaginatedSelector(
       loading={isPending}
       value={selectedItem}
       options={data?.map((item) => ({label: labelize(item), value: item}))}
-      onChange={(e) => {
-        console.log("onChange", e.value);
-        onChange?.(e.value);
-      }}
-      placeholder={isPending ? "Loading..." : name}
+      onChange={(e) => onChange({name, value: e.value})}
+      placeholder={isPending ? "Loading..." : label}
     />
   );
 }
 
-function EventCategorySelector({category, onChange}: {category?: string, onChange?: (category: string) => void}) {
+function EventCategorySelector({category, onChange}: {category?: string, onChange: OnValueChangeEvent}) {
   return (
     <PaginatedSelector
-      name="Event category"
+      name="eventCategory"
+      label="Event category"
       queryKey={['logEventCategory']} queryFn={getAllLogEventCategories}
       selectedItem={category} onChange={onChange} />
   );
 }
 
 function EventNameSelector(
-  {name, category, onChange}: {name?: string, category?: string, onChange?: (name: string) => void}) {
+  {name, category, onChange}: {name?: string, category?: string, onChange: OnValueChangeEvent}) {
   return (
     <PaginatedSelector
-      name="Event name"
+      name='eventName'
+      label="Event name"
       queryKey={['logEventNames', category]} queryFn={() => getAllLogEventNames(category)}
       selectedItem={name} onChange={onChange} />
   );
 }
 
-function ActorTypeSelector({type, onChange}: {type?: string, onChange?: (type: string) => void}) {
+function ActorTypeSelector({type, onChange}: {type?: string, onChange: OnValueChangeEvent}) {
   return (
     <PaginatedSelector
-      name="Actor type"
+      name='actorType'
+      label="Actor type"
       queryKey={['logActorType']} queryFn={getAllLogActorTypes}
       selectedItem={type} onChange={onChange} />
   );
 }
 
-function ResourceTypeSelector({type, onChange}: {type?: string, onChange?: (type: string) => void}) {
+function ResourceTypeSelector({type, onChange}: {type?: string, onChange: OnValueChangeEvent}) {
   return (
     <PaginatedSelector
-      name="Resource type"
+      name='resourceType'
+      label="Resource type"
       queryKey={['logResourceType']} queryFn={getAllLogResourceTypes}
       selectedItem={type} onChange={onChange} />
   );
 }
 
-function TagCategorySelector({category, onChange}: {category?: string, onChange?: (category: string) => void}) {
+function TagCategorySelector({category, onChange}: {category?: string, onChange: OnValueChangeEvent}) {
   return (
     <PaginatedSelector
-      name="Tag category"
+      name='tagCategory'
+      label="Tag category"
       queryKey={['logTagCategory']} queryFn={getAllLogTagCategories}
       selectedItem={category} onChange={onChange} />
   );
 }
 
-function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nodeId: string | null) => void}) {
+function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnValueChangeEvent}) {
   const [nodes, setNodes] = useState<TreeNode[]>([]);
 
   const logNodeToTreeNode = (node: LogNode): TreeNode => ({
@@ -152,7 +156,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nod
       disabled={false}
       value={nodeId}
       options={nodes}
-      onNodeSelect={(e) => {onChange(e.node.key?.toString() || null)}}
+      onNodeSelect={(e) => {onChange({name: "nodeId", value: e.node.key?.toString()})}}
       onNodeExpand={loadNodeChildren}
       onNodeCollapse={collapseNode}
     />
@@ -188,71 +192,72 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
 };
 
 function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}){
-  const [eventName, setEventName] = useState<string>();
-  const [eventCategory, setEventCategory] = useState<string>();
-  const [actorType, setActorType] = useState<string>();
-  const [actorName, setActorName] = useState<string>("");
-  const [resourceType, setResourceType] = useState<string>();
-  const [resourceName, setResourceName] = useState<string>("");
-  const [tagCategory, setTagCategory] = useState<string>();
-  const [tagName, setTagName] = useState<string>("");
-  const [tagId, setTagId] = useState<string>();
-  const [nodeId, setNodeId] = useState<string | null>(null);
+  const [params, setParams] = useState<LogFilterParams>({});
+
+  const changeParam = ({name, value}: ValueChangeEvent) => {
+    const update = {[name]: value};
+    if (name === 'eventCategory')
+      update['eventName'] = undefined;
+    setParams({...params, ...update});
+  }
 
   return (
     <div>
       {/* Event criteria */}
       <div className="flex flex-row py-5 space-x-5">
         <EventCategorySelector
-          category={eventCategory}
-          onChange={(category) => {
-            setEventCategory(category);
-            setEventName(undefined);
-          }}/>
+          category={params.eventCategory}
+          onChange={changeParam}/>
         <EventNameSelector
-          name={eventName} category={eventCategory}
-          onChange={setEventName}/>
+          name={params.eventName} category={params.eventCategory}
+          onChange={changeParam}/>
       </div>
 
       {/* Actor criteria */}
       <div className="flex flex-row py-5 space-x-5">
         <ActorTypeSelector
-          type={actorType}
-          onChange={setActorType}/>
-        <InputText placeholder="Actor name" value={actorName} onChange={(e) => setActorName(e.target.value)} />
+          type={params.actorType}
+          onChange={changeParam}/>
+        <InputText
+          placeholder="Actor name"
+          value={params.actorName}
+          onChange={(e) => changeParam({name: 'actorName', value: e.target.value})} />
       </div>
 
       {/* Resource criteria */}
       <div className="flex flex-row py-5 space-x-5">
-      <ResourceTypeSelector
-          type={resourceType}
-          onChange={setResourceType}/>
-        <InputText placeholder="Resource name" value={resourceName} onChange={(e) => setResourceName(e.target.value)} />
+        <ResourceTypeSelector
+          type={params.resourceType}
+          onChange={changeParam}/>
+        <InputText
+          placeholder="Resource name"
+          value={params.resourceName}
+          onChange={(e) => changeParam({name: 'resourceName', value: e.target.value})} />
       </div>
 
       {/* Tag criteria */}
       <div className="flex flex-row py-5 space-x-5">
         <TagCategorySelector
-          category={tagCategory}
-          onChange={setTagCategory}/>
-        <InputText placeholder="Tag name" value={tagName} onChange={(e) => setTagName(e.target.value)} />
-        <InputText placeholder="Tag id" value={tagId} onChange={(e) => setTagId(e.target.value)} />
+          category={params.tagCategory}
+          onChange={changeParam}/>
+        <InputText
+          placeholder="Tag name"
+          value={params.tagName}
+          onChange={(e) => changeParam({name: 'tagName', value: e.target.value})} />
+        <InputText
+          placeholder="Tag id"
+          value={params.tagId}
+          onChange={(e) => changeParam({name: 'tagId', value: e.target.value})} />
       </div>
 
       {/* Node criteria */}
       <div className="flex flex-row py-5 space-x-5">
-        <NodeSelector nodeId={nodeId} onChange={setNodeId} />
+        <NodeSelector nodeId={params.nodeId || null} onChange={changeParam} />
       </div>
 
       {/* Apply button */}
       <Button
-        onClick={() => onChange({
-          eventCategory, eventName,
-          actorType, actorName,
-          resourceType, resourceName,
-          tagCategory, tagName, tagId,
-          nodeId: nodeId || undefined
-        })}
+        onClick={() => onChange(params)}
         label="Apply filters"
       />
     </div>
