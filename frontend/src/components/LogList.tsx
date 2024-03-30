@@ -114,7 +114,6 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nod
     label: node.name,
     id: node.id,
     key: node.id,
-    children: [],
     leaf: false
   });
 
@@ -137,6 +136,8 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nod
   }
 
   const loadNodeChildren = async (e: TreeSelectEventNodeEvent) => {
+    if (e.node.children !== undefined)
+      return;
     const children = (await getAllLogNodes(e.node.id)).map(logNodeToTreeNode);
     setNodes(updateTreeNodeList(nodes, e.node, (node) => ({...node, children, expanded: true})));
   }
