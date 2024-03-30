@@ -122,14 +122,14 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nod
     getAllLogNodes().then((nodes) => setNodes(nodes.map(logNodeToTreeNode)))
   }, []);
 
-  const updateTreeNodeList = (nodes: TreeNode[], nodeToBeUpdated: TreeNode, children: TreeNode[]): TreeNode[] => {
+  const updateTreeNodeList = (nodes: TreeNode[], nodeToBeUpdated: TreeNode, func: (node: TreeNode) => TreeNode): TreeNode[] => {
     const updatedNodes: TreeNode[] = [];
 
     for (const node of nodes) {
       if (node.id === nodeToBeUpdated.id) {
-        updatedNodes.push({...nodeToBeUpdated, children, expanded: true});
+        updatedNodes.push(func(nodeToBeUpdated));
       } else {
-        updatedNodes.push({...node, children: node.children ? updateTreeNodeList(node.children, nodeToBeUpdated, children) : []});
+        updatedNodes.push({...node, children: node.children ? updateTreeNodeList(node.children, nodeToBeUpdated, func) : []});
       }
     }
 
@@ -138,7 +138,11 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nod
 
   const loadNodeChildren = async (e: TreeSelectEventNodeEvent) => {
     const children = (await getAllLogNodes(e.node.id)).map(logNodeToTreeNode);
-    setNodes(updateTreeNodeList(nodes, e.node, children));
+    setNodes(updateTreeNodeList(nodes, e.node, (node) => ({...node, children, expanded: true})));
+  }
+
+  const collapseNode = async (e: TreeSelectEventNodeEvent) => {
+    setNodes(updateTreeNodeList(nodes, e.node, (node) => ({...node, expanded: false})));
   }
 
   return (
@@ -148,6 +152,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (nod
       options={nodes}
       onNodeSelect={(e) => {onChange(e.node.key?.toString() || null)}}
       onNodeExpand={loadNodeChildren}
+      onNodeCollapse={collapseNode}
     />
   );
 }
