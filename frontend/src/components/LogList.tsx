@@ -40,7 +40,8 @@ function PaginatedSelector(
   {name: string, queryKey: any, queryFn: () => Promise<string[]>, selectedItem?: string, onChange?: (name: string) => void}) {
   const {isPending, error, data} = useQuery({
     queryKey: queryKey,
-    queryFn: queryFn
+    queryFn: queryFn,
+    refetchOnWindowFocus: false
   });
 
   if (error)
@@ -163,7 +164,8 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
     queryKey: ['logs', filter],
     queryFn: async ({ pageParam }: {pageParam: string | null}) => await getLogs(pageParam, filter),
     initialPageParam: null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    refetchOnWindowFocus: false
   });
 
   if (isPending)
