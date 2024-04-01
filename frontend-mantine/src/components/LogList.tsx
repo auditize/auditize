@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Button, Center, Container, Select, Group, TextInput } from '@mantine/core';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
+import { ControlledTreeEnvironment, Tree, TreeItem, TreeItemIndex } from 'react-complex-tree';
+import 'react-complex-tree/lib/style-modern.css';
 
 type ValueChangeEvent = {name: string, value: string | undefined};
 type OnValueChangeEvent = (event: ValueChangeEvent) => void;
@@ -120,56 +122,76 @@ function TagCategorySelector({category, onChange}: {category?: string, onChange:
   );
 }
 
-// function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnValueChangeEvent}) {
-//   const [nodes, setNodes] = useState<TreeNode[]>([]);
+function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnValueChangeEvent}) {
+  const [items, setItems] = useState<Record<TreeItemIndex, TreeItem<any>>>({
+    root: {
+      index: 'root',
+      children: [],
+      isFolder: true,
+      data: 'Root',
+    }
+  });
+  const [expandedItems, setExpandedItems] = useState<TreeItemIndex[]>([]);
 
-//   const logNodeToTreeNode = (node: LogNode): TreeNode => ({
-//     label: node.name,
-//     id: node.id,
-//     key: node.id,
-//     leaf: false
-//   });
+  const logNodeToTreeNode = (node: LogNode): TreeItem => ({
+    index: node.id,
+    children: [],
+    isFolder: true,
+    data: node.name,
+  });
 
-//   useEffect(() => {
-//     getAllLogNodes().then((nodes) => setNodes(nodes.map(logNodeToTreeNode)))
-//   }, []);
+  const logNodesToTreeNodes = (nodes: LogNode[]): Record<TreeItemIndex, TreeItem<any>> => {
+    const treeItems: Record<TreeItemIndex, TreeItem<any>> = {};
+    nodes.forEach((node) => treeItems[node.id] = logNodeToTreeNode(node));
+    return treeItems;
+  }
 
-//   const updateTreeNodeList = (nodes: TreeNode[], nodeToBeUpdated: TreeNode, func: (node: TreeNode) => TreeNode): TreeNode[] => {
-//     const updatedNodes: TreeNode[] = [];
+  const addItems = (nodes: LogNode[], parentItem: TreeItemIndex) => {
+    const newItems = logNodesToTreeNodes(nodes);
+    const parent = {...items[parentItem]};
+    parent.children = nodes.map((node) => node.id);
+    setItems({...items, ...newItems, [parentItem]: parent});
+  }
 
-//     for (const node of nodes) {
-//       if (node.id === nodeToBeUpdated.id) {
-//         updatedNodes.push(func(nodeToBeUpdated));
-//       } else {
-//         updatedNodes.push({...node, children: node.children ? updateTreeNodeList(node.children, nodeToBeUpdated, func) : []});
-//       }
-//     }
+  useEffect(() => {
+    getAllLogNodes().then((nodes) => {
+      addItems(nodes, 'root');
+    });
+  }, []);
 
-//     return updatedNodes;
-//   }
+  const expandItem = (item: TreeItem<any>) => {
+    const arrayIdx = expandedItems.indexOf(item.index);
+    if (arrayIdx != -1) {
+      setExpandedItems(expandedItems.splice(arrayIdx, 1));
+    } else {
+      if (item.children?.length === 0)
+        getAllLogNodes(item.index as string).then((nodes) => addItems(nodes, item.index));
+      setExpandedItems([...expandedItems, item.index]);
+    }
+  };
 
-//   const loadNodeChildren = async (e: TreeSelectEventNodeEvent) => {
-//     if (e.node.children !== undefined)
-//       return;
-//     const children = (await getAllLogNodes(e.node.id)).map(logNodeToTreeNode);
-//     setNodes(updateTreeNodeList(nodes, e.node, (node) => ({...node, children, expanded: true})));
-//   }
+  const selectItem = (index: TreeItemIndex) => {
+    // console.log("Selected node", item.index);
+    onChange({name: 'nodeId', value: index as string});
+  }
 
-//   const collapseNode = async (e: TreeSelectEventNodeEvent) => {
-//     setNodes(updateTreeNodeList(nodes, e.node, (node) => ({...node, expanded: false})));
-//   }
-
-//   return (
-//     <TreeSelect
-//       disabled={false}
-//       value={nodeId}
-//       options={nodes}
-//       onNodeSelect={(e) => {onChange({name: "nodeId", value: e.node.key?.toString()})}}
-//       onNodeExpand={loadNodeChildren}
-//       onNodeCollapse={collapseNode}
-//     />
-//   );
-// }
+  return (
+    <ControlledTreeEnvironment
+      items={items}
+      viewState={{
+        ['nodeSelector']: {
+          selectedItems: [nodeId as TreeItemIndex] || undefined,
+          expandedItems,
+        },
+      }}
+      onExpandItem={expandItem}
+      onSelectItems={(items: TreeItemIndex[]) => selectItem(items[0])}
+      getItemTitle={(item) => item.data}
+    >
+      <Tree treeId='nodeSelector' rootItem='root' />
+    </ControlledTreeEnvironment>
+  );
+}
 
 function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -211,6 +233,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}){
     const update = {[name]: value};
     if (name === 'eventCategory')
       update['eventName'] = undefined;
+    console.log("Updating filter params", update);
     setParams({...params, ...update});
   }
 
@@ -268,9 +291,9 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}){
       </Group>
 
       {/* Node criteria */}
-      {/* <div className="flex flex-row py-5 space-x-5">
+      <Group m="1rem">
         <NodeSelector nodeId={params.nodeId || null} onChange={changeParam} />
-      </div> */}
+      </Group>
 
       {/* Apply button */}
       <Button onClick={() => onChange(params)}>
