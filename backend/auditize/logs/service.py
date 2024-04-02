@@ -148,6 +148,7 @@ async def get_logs(
     resource_type: str = None, resource_name: str = None,
     tag_category: str = None, tag_name: str = None, tag_id: str = None,
     node_id: str = None,
+    since: datetime = None, until: datetime = None,
     limit: int = 10, pagination_cursor: str = None
    ) -> tuple[list[Log], str | None]:
     criteria = {}
@@ -171,6 +172,10 @@ async def get_logs(
         criteria["tags.id"] = tag_id
     if node_id:
         criteria["node_path.id"] = node_id
+    if since:
+        criteria["saved_at"] = {"$gte": since}
+    if until:
+        criteria["saved_at"] = {**criteria.get("saved_at", {}), "$lt": until}
 
     filter: dict[str, Any] = {}
 

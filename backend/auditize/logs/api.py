@@ -1,16 +1,19 @@
 from typing import Annotated
+from datetime import datetime
 
 from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends, HTTPException
+from pydantic import Field, BeforeValidator
 
 from auditize.logs.api_models import (
     LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse,
     LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, LogResourceTypeListResponse,
     LogTagCategoryListResponse, LogNodeListResponse,
-    PagePaginationData, PagePaginationParams
+    PagePaginationParams
 )
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
 from auditize.common.api import COMMON_RESPONSES
+from auditize.common.utils import validate_datetime
 
 router = APIRouter()
 
@@ -230,9 +233,12 @@ async def get_logs(
         resource_type: str = None, resource_name: str = None,
         tag_category: str = None, tag_name: str = None, tag_id: str = None,
         node_id: str = None,
+        since: Annotated[datetime, BeforeValidator(validate_datetime)] = None,
+        until: Annotated[datetime, BeforeValidator(validate_datetime)] = None,
         limit: int = 10,
         cursor: str = None
 ) -> LogsReadingResponse:
+    # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
         db,
         event_name=event_name, event_category=event_category,
@@ -240,6 +246,7 @@ async def get_logs(
         resource_type=resource_type, resource_name=resource_name,
         tag_category=tag_category, tag_name=tag_name, tag_id=tag_id,
         node_id=node_id,
+        since=since, until=until,
         limit=limit, pagination_cursor=cursor
     )
     return LogsReadingResponse.from_logs(logs, next_cursor)

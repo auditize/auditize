@@ -1,5 +1,4 @@
-import time
-import datetime
+from datetime import datetime
 from bson import ObjectId
 import base64
 
@@ -97,10 +96,14 @@ async def prepare_log(client: AsyncClient, log: dict):
 
 
 async def assert_db_log(db: Database, log_id, expected):
-    expected = {**make_expected_log_data_for_api(expected), "saved_at": callee.IsA(datetime.datetime)}
+    expected = {**make_expected_log_data_for_api(expected), "saved_at": callee.IsA(datetime)}
     db_log = await db.logs.find_one({"_id": ObjectId(log_id)}, {"_id": 0})
     ic(db_log)
     assert db_log == expected
+
+
+def alter_log_saved_at(db, log_id, new_saved_at):
+    db.logs.update_one({"_id": ObjectId(log_id)}, {"$set": {"saved_at": new_saved_at}})
 
 
 async def test_create_log_minimal_fields(client: AsyncClient, db: Database):
@@ -544,6 +547,75 @@ async def test_get_logs_filter_node_id_ascendant_node(client: AsyncClient, db: D
         ]
 
     await _test_get_logs_filter(client, func, {"node_id": "find_me:1"})
+
+
+async def test_get_logs_filter_since(client: AsyncClient, db: Database):
+    log1 = make_log_data()
+    log1_id = await prepare_log(client, log1)
+    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2 = make_log_data()
+    log2_id = await prepare_log(client, log2)
+    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+
+    resp = await assert_get(client, "/logs", params={"since": "2024-01-01T12:00:00Z"})
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log2,
+                "id": log2_id
+            })
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
+
+
+async def test_get_logs_filter_until(client: AsyncClient, db: Database):
+    log1 = make_log_data()
+    log1_id = await prepare_log(client, log1)
+    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2 = make_log_data()
+    log2_id = await prepare_log(client, log2)
+    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+
+    resp = await assert_get(client, "/logs", params={"until": "2024-01-01T12:00:00Z"})
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log1,
+                "id": log1_id
+            })
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
+
+
+async def test_get_logs_filter_between_since_and_until(client: AsyncClient, db: Database):
+    log1 = make_log_data()
+    log1_id = await prepare_log(client, log1)
+    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2 = make_log_data()
+    log2_id = await prepare_log(client, log2)
+    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    log3 = make_log_data()
+    log3_id = await prepare_log(client, log3)
+    alter_log_saved_at(db, log3_id, datetime.fromisoformat("2024-01-03T00:00:00Z"))
+
+    resp = await assert_get(client, "/logs", params={"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"})
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log2,
+                "id": log2_id
+            })
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
 
 
 async def test_get_logs_filter_multiple_criteria(client: AsyncClient, db: Database):

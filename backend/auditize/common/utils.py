@@ -1,4 +1,14 @@
+import re
 from datetime import datetime, timezone
+
+
+DATETIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+
+def validate_datetime(value):
+    if isinstance(value, str) and not DATETIME_PATTERN.match(value):
+        raise ValueError(f'invalid datetime format, expected "{DATETIME_PATTERN.pattern}", got "{value}"')
+    return value
 
 
 def serialize_datetime(dt: datetime, with_milliseconds=False) -> str:
