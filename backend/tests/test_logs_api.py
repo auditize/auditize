@@ -516,6 +516,16 @@ async def test_get_logs_filter_tag_name(client: AsyncClient, db: Database):
     await _test_get_logs_filter(client, func, {"tag_name": "FIND"})
 
 
+async def test_get_logs_filter_tag_id(client: AsyncClient, db: Database):
+    def func(log):
+        log["tags"] = [
+            {"id": "simple_tag"},
+            {"id": "find_me", "category": "rich_tag", "name": "Rich tag"}
+        ]
+
+    await _test_get_logs_filter(client, func, {"tag_id": "find_me"})
+
+
 async def test_get_logs_filter_node_id_exact_node(client: AsyncClient, db: Database):
     def func(log):
         log["node_path"] = [

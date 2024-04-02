@@ -146,7 +146,7 @@ async def get_logs(
     event_category: str = None,
     actor_type: str = None, actor_name: str = None,
     resource_type: str = None, resource_name: str = None,
-    tag_category: str = None, tag_name: str = None,
+    tag_category: str = None, tag_name: str = None, tag_id: str = None,
     node_id: str = None,
     limit: int = 10, pagination_cursor: str = None
    ) -> tuple[list[Log], str | None]:
@@ -167,6 +167,8 @@ async def get_logs(
         criteria["tags.category"] = tag_category
     if tag_name:
         criteria["tags.name"] = _text_search_filter(tag_name)
+    if tag_id:
+        criteria["tags.id"] = tag_id
     if node_id:
         criteria["node_path.id"] = node_id
 
