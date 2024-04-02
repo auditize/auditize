@@ -1,3 +1,4 @@
+from typing import Any
 from datetime import datetime
 import base64
 import binascii
@@ -162,10 +163,10 @@ async def get_logs(
     if node_id:
         criteria["node_path.id"] = node_id
 
-    filter = {}
+    filter: dict[str, Any] = {}
 
     if criteria:
-        filter["$and"] = [{key: value} for key, value in criteria.items()]
+        filter.update(criteria)
 
     if pagination_cursor:
         cursor = PaginationCursor.load(pagination_cursor)
