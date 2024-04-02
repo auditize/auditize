@@ -32,4 +32,5 @@ type LogNode = {
   id: string;
   name: string;
   parent_id: string | null;
+  has_children: boolean;
 };

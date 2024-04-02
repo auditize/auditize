@@ -136,7 +136,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnVa
   const logNodeToTreeNode = (node: LogNode): TreeItem => ({
     index: node.id,
     children: [],
-    isFolder: true,
+    isFolder: node.has_children,
     data: node.name,
   });
 
@@ -160,18 +160,21 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnVa
   }, []);
 
   const expandItem = (item: TreeItem<any>) => {
+    if (item.children?.length === 0)
+      getAllLogNodes(item.index as string).then((nodes) => addItems(nodes, item.index));
+    setExpandedItems([...expandedItems, item.index]);
+  };
+
+  const collapseItem = (item: TreeItem<any>) => {
     const arrayIdx = expandedItems.indexOf(item.index);
     if (arrayIdx != -1) {
-      setExpandedItems(expandedItems.splice(arrayIdx, 1));
-    } else {
-      if (item.children?.length === 0)
-        getAllLogNodes(item.index as string).then((nodes) => addItems(nodes, item.index));
-      setExpandedItems([...expandedItems, item.index]);
+      const updatedExpandedItems = [...expandedItems];
+      updatedExpandedItems.splice(arrayIdx, 1);
+      setExpandedItems(updatedExpandedItems);
     }
   };
 
   const selectItem = (index: TreeItemIndex) => {
-    // console.log("Selected node", item.index);
     onChange({name: 'nodeId', value: index as string});
   }
 
@@ -185,6 +188,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnVa
         },
       }}
       onExpandItem={expandItem}
+      onCollapseItem={collapseItem}
       onSelectItems={(items: TreeItemIndex[]) => selectItem(items[0])}
       getItemTitle={(item) => item.data}
     >
