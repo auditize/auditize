@@ -59,6 +59,7 @@ class Node(BaseModel):
     id: str
     name: str
     parent_node_id: str | None
+    has_children: bool
 
 
 class PaginationInfo(BaseModel):

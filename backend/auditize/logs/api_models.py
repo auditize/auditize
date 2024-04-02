@@ -330,7 +330,10 @@ class LogTagCategoryListResponse(PaginatedItemListResponse[str, str]):
 
 class NodeItem(_LogBase.Node):
     parent_node_id: str | None = Field(
-        description="The ID of the parent node. It is null for root nodes."
+        description="The ID of the parent node. It is null for top-level nodes."
+    )
+    has_children: bool = Field(
+        description="Indicates whether the node has children or not"
     )
 
 

@@ -296,6 +296,17 @@ async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, 
 
     results = db.log_nodes.aggregate([
         {"$match": filter},
+        {"$lookup": {
+            "from": "log_nodes",
+            "localField": "id",
+            "foreignField": "parent_node_id",
+            "as": "children"
+        }},
+        {
+            "$addFields": {
+                "has_children": {"$gt": [{"$size": "$children"}, 0]}
+            }
+        },
         {"$sort": {"name": 1}},
         {"$skip": (page - 1) * page_size},
         {"$limit": page_size}
