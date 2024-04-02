@@ -468,7 +468,8 @@ async def test_get_logs_filter_actor_name(client: AsyncClient, db: Database):
             "name": "find_me"
         }
 
-    await _test_get_logs_filter(client, func, {"actor_name": "find_me"})
+    # filter on actor_name is substring and case-insensitive
+    await _test_get_logs_filter(client, func, {"actor_name": "FIND"})
 
 
 async def test_get_logs_filter_resource_type(client: AsyncClient, db: Database):
@@ -490,7 +491,8 @@ async def test_get_logs_filter_resource_name(client: AsyncClient, db: Database):
             "name": "find_me"
         }
 
-    await _test_get_logs_filter(client, func, {"resource_name": "find_me"})
+    # filter on resource_name is substring and case-insensitive
+    await _test_get_logs_filter(client, func, {"resource_name": "FIND"})
 
 
 async def test_get_logs_filter_tag_category(client: AsyncClient, db: Database):
@@ -510,7 +512,8 @@ async def test_get_logs_filter_tag_name(client: AsyncClient, db: Database):
             {"id": "rich_tag:1", "category": "rich_tag", "name": "find_me"}
         ]
 
-    await _test_get_logs_filter(client, func, {"tag_name": "find_me"})
+    # filter on tag_name is substring and case-insensitive
+    await _test_get_logs_filter(client, func, {"tag_name": "FIND"})
 
 
 async def test_get_logs_filter_node_id_exact_node(client: AsyncClient, db: Database):

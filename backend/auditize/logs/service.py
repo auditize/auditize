@@ -1,3 +1,4 @@
+import re
 from typing import Any
 from datetime import datetime
 import base64
@@ -132,6 +133,12 @@ async def get_log_attachment(db: Database, log_id: ObjectId | str, attachment_id
     return Log.Attachment(**result["attachments"][0])
 
 
+def _text_search_filter(text: str) -> dict[str, Any]:
+    return {
+        "$regex": re.compile(re.escape(text), re.IGNORECASE)
+    }
+
+
 async def get_logs(
     db: Database,
     *,
@@ -151,15 +158,15 @@ async def get_logs(
     if actor_type:
         criteria["actor.type"] = actor_type
     if actor_name:
-        criteria["actor.name"] = actor_name
+        criteria["actor.name"] = _text_search_filter(actor_name)
     if resource_type:
         criteria["resource.type"] = resource_type
     if resource_name:
-        criteria["resource.name"] = resource_name
+        criteria["resource.name"] = _text_search_filter(resource_name)
     if tag_category:
         criteria["tags.category"] = tag_category
     if tag_name:
-        criteria["tags.name"] = tag_name
+        criteria["tags.name"] = _text_search_filter(tag_name)
     if node_id:
         criteria["node_path.id"] = node_id
 
