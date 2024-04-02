@@ -294,10 +294,16 @@ async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, 
     else:
         filter = {"parent_node_id": parent_node_id}
 
-    results, pagination = await _get_paginated_results(
-        db.log_nodes,
-        filter=filter,
-        sort=[("name", 1)],
-        page=page, page_size=page_size
+    results = db.log_nodes.aggregate([
+        {"$match": filter},
+        {"$sort": {"name": 1}},
+        {"$skip": (page - 1) * page_size},
+        {"$limit": page_size}
+    ])
+
+    total = await db.log_nodes.count_documents(filter or {})
+
+    return (
+        [Node(**result) async for result in results],
+        PaginationInfo.build(page=page, page_size=page_size, total=total)
     )
-    return [Node(**result) async for result in results], pagination
