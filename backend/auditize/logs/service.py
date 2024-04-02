@@ -296,15 +296,20 @@ async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, 
 
     results = db.log_nodes.aggregate([
         {"$match": filter},
-        {"$lookup": {
-            "from": "log_nodes",
-            "localField": "id",
-            "foreignField": "parent_node_id",
-            "as": "children"
-        }},
+        {
+            "$lookup": {
+                "from": "log_nodes",
+                "let": {"id": "$id"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$eq": ["$parent_node_id", "$$id"]}}},
+                    {"$limit": 1}
+                ],
+                "as": "first_child_if_any"
+            }
+        },
         {
             "$addFields": {
-                "has_children": {"$gt": [{"$size": "$children"}, 0]}
+                "has_children": {"$eq": [{"$size": "$first_child_if_any"}, 1]}
             }
         },
         {"$sort": {"name": 1}},
