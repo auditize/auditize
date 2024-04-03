@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
-import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover } from '@mantine/core';
+import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space } from '@mantine/core';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
 import 'rsuite/dist/rsuite-no-reset.min.css';
 import { PickerHandle, TreePicker } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/@types/common';
-import { IconCaretDownFilled, IconCaretUpFilled, IconAsterisk } from '@tabler/icons-react';
+import { IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 
 function iconSize(size: any) {
   return { width: rem(size), height: rem(size) };
@@ -199,9 +199,7 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   );
 
   return (
-    <Container size="xl" p="20px">
-      <LogTable logs={data.pages.flatMap((page) => page.logs)} footer={footer} />
-    </Container>
+    <LogTable logs={data.pages.flatMap((page) => page.logs)} footer={footer} />
   );
 };
 
@@ -217,8 +215,8 @@ function LogFilterPopover({title, children, isFilled}: {title: string, children:
         <Button
           rightSection={
             opened ?
-              <IconCaretUpFilled style={iconSize("1.15rem")}/> :
-              <IconCaretDownFilled style={iconSize("1.15rem")}/>
+              <IconChevronUp style={iconSize("1.15rem")}/> :
+              <IconChevronDown style={iconSize("1.15rem")}/>
           }
           onClick={() => setOpened((opened_) => !opened_)}
           variant={isFilled ? 'light' : 'outline'}>
@@ -315,10 +313,11 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Apply & clear buttons */}
+      <Space w="l"/>
       <Button onClick={() => onChange(params)}>
         Apply
       </Button>
-      <Button onClick={() => setParams({...emptyLogFilterParams})} disabled={!hasFilter} variant='subtle'>
+      <Button onClick={() => setParams({...emptyLogFilterParams})} disabled={!hasFilter} variant='default'>
         Clear
       </Button>
     </Group>
@@ -329,9 +328,9 @@ export function LogList() {
   const [filter, setFilter] = useState<LogFilterParams>({});
   
   return (
-    <div>
+    <Container size="xl" p="20px">
       <LogFilters onChange={setFilter} />
       <LogLoader filter={filter} />
-    </div>
+    </Container>
   );
 }
