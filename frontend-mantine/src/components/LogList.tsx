@@ -135,8 +135,9 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnVa
   return (
     <TreePicker
       data={items}
-      value={nodeId || undefined}
+      value={nodeId || ""}
       onSelect={(item) => onChange({name: 'nodeId', value: item.value as string})}
+      onClean={() => onChange({name: 'nodeId', value: undefined})}
       onOpen={() => {
         if (items.length === 0)
           getAllLogNodes().then((nodes) => setItems(nodes.map(logNodeToItem)))
