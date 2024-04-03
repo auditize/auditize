@@ -12,6 +12,19 @@ function iconSize(size: any) {
   return { width: rem(size), height: rem(size) };
 }
 
+const emptyLogFilterParams = {
+  eventCategory: "",
+  eventName: "",
+  actorType: "",
+  actorName: "",
+  resourceType: "",
+  resourceName: "",
+  tagCategory: "",
+  tagName: "",
+  tagId: "",
+  nodeId: ""
+};
+
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => (
     <Table.Tr key={log.id}>
@@ -222,18 +235,7 @@ function LogFilterPopover({title, children, isFilled}: {title: string, children:
 }
 
 function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
-  const [params, setParams] = useState<LogFilterParams>({
-    eventCategory: "",
-    eventName: "",
-    actorType: "",
-    actorName: "",
-    resourceType: "",
-    resourceName: "",
-    tagCategory: "",
-    tagName: "",
-    tagId: "",
-    nodeId: ""
-  });
+  const [params, setParams] = useState<LogFilterParams>({...emptyLogFilterParams});
 
   const changeParam = (name: string, value: string) => {
     const update = {[name]: value};
@@ -247,10 +249,17 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
   const changeTextInputParam = (name: string) =>
     (e: React.ChangeEvent<HTMLInputElement>) => changeParam(name, e.target.value);
 
+  const hasEvent = !!(params.eventCategory || params.eventName);
+  const hasActor = !!(params.actorType || params.actorName);
+  const hasResource = !!(params.resourceType || params.resourceName);
+  const hasTag = !!(params.tagCategory || params.tagName || params.tagId);
+  const hasNode = !!params.nodeId;
+  const hasFilter = hasEvent || hasActor || hasResource || hasTag || hasNode;
+
   return (
     <Group p="1rem">
       {/* Event criteria */}
-      <LogFilterPopover title="Event" isFilled={!!(params.eventCategory || params.eventName)}>
+      <LogFilterPopover title="Event" isFilled={hasEvent}>
         <EventCategorySelector
           category={params.eventCategory}
           onChange={changeNamedParam("eventCategory")}/>
@@ -260,7 +269,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Actor criteria */}
-      <LogFilterPopover title="Actor" isFilled={!!(params.actorType || params.actorName)}>
+      <LogFilterPopover title="Actor" isFilled={hasActor}>
         <ActorTypeSelector
           type={params.actorType}
           onChange={changeNamedParam("actorType")}/>
@@ -272,7 +281,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Resource criteria */}
-      <LogFilterPopover title="Resource" isFilled={!!(params.resourceType || params.resourceName)}>
+      <LogFilterPopover title="Resource" isFilled={hasResource}>
         <ResourceTypeSelector
           type={params.resourceType}
           onChange={changeNamedParam("resourceType")}/>
@@ -284,7 +293,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Tag criteria */}
-      <LogFilterPopover title="Tag" isFilled={!!(params.tagCategory || params.tagName || params.tagId)}>
+      <LogFilterPopover title="Tag" isFilled={hasTag}>
         <TagCategorySelector
           category={params.tagCategory}
           onChange={changeNamedParam("tagCategory")}/>
@@ -305,9 +314,12 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
         <NodeSelector nodeId={params.nodeId || null} onChange={changeNamedParam("nodeId")} />
       </LogFilterPopover>
 
-      {/* Apply button */}
+      {/* Apply & clear buttons */}
       <Button onClick={() => onChange(params)}>
-        Apply filters
+        Apply
+      </Button>
+      <Button onClick={() => setParams({...emptyLogFilterParams})} disabled={!hasFilter} variant='subtle'>
+        Clear
       </Button>
     </Group>
   );
