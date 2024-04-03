@@ -189,12 +189,15 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
 
 function LogFilterPopover({title, children}: {title: string, children: React.ReactNode}) {
   return (
-    <Popover position="bottom" withArrow keepMounted={true}>
+    <Popover
+      position="bottom" withArrow keepMounted={true}>
       <Popover.Target>
         <Button>{title}</Button>
       </Popover.Target>
       <Popover.Dropdown>
-        {children}
+        <Stack>
+          {children}
+        </Stack>
       </Popover.Dropdown>
     </Popover>
   );
@@ -230,68 +233,58 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
     <Group p="1rem">
       {/* Event criteria */}
       <LogFilterPopover title="Event">
-        <Stack>
-          <EventCategorySelector
-            category={params.eventCategory}
-            onChange={changeNamedParam("eventCategory")}/>
-          <EventNameSelector
-            name={params.eventName} category={params.eventCategory}
-            onChange={changeNamedParam("eventName")}/>
-        </Stack>
+        <EventCategorySelector
+          category={params.eventCategory}
+          onChange={changeNamedParam("eventCategory")}/>
+        <EventNameSelector
+          name={params.eventName} category={params.eventCategory}
+          onChange={changeNamedParam("eventName")}/>
       </LogFilterPopover>
 
       {/* Actor criteria */}
       <LogFilterPopover title="Actor">
-        <Stack>
-          <ActorTypeSelector
-            type={params.actorType}
-            onChange={changeNamedParam("actorType")}/>
-          <TextInput
-            placeholder="Actor name"
-            value={params.actorName}
-            onChange={changeTextInputParam('actorName')}
-            display={"flex"}/>
-        </Stack>
+        <ActorTypeSelector
+          type={params.actorType}
+          onChange={changeNamedParam("actorType")}/>
+        <TextInput
+          placeholder="Actor name"
+          value={params.actorName}
+          onChange={changeTextInputParam('actorName')}
+          display={"flex"}/>
       </LogFilterPopover>
 
       {/* Resource criteria */}
       <LogFilterPopover title="Resource">
-        <Stack>
-          <ResourceTypeSelector
-            type={params.resourceType}
-            onChange={changeNamedParam("resourceType")}/>
-          <TextInput
-            placeholder="Resource name"
-            value={params.resourceName}
-            onChange={changeTextInputParam('resourceName')}
-            display={"flex"}/>
-        </Stack>
+        <ResourceTypeSelector
+          type={params.resourceType}
+          onChange={changeNamedParam("resourceType")}/>
+        <TextInput
+          placeholder="Resource name"
+          value={params.resourceName}
+          onChange={changeTextInputParam('resourceName')}
+          display={"flex"}/>
       </LogFilterPopover>
 
       {/* Tag criteria */}
       <LogFilterPopover title="Tag">
-        <Stack>
-          <TagCategorySelector
-            category={params.tagCategory}
-            onChange={changeNamedParam("tagCategory")}/>
-          <TextInput
-            placeholder="Tag name"
-            value={params.tagName}
-            onChange={changeTextInputParam('tagName')}
-            display="flex"/>
-          <TextInput
-            placeholder="Tag id"
-            value={params.tagId}
-            onChange={changeTextInputParam('tagId')}
-            display="flex"/>
-        </Stack>
+        <TagCategorySelector
+          category={params.tagCategory}
+          onChange={changeNamedParam("tagCategory")}/>
+        <TextInput
+          placeholder="Tag name"
+          value={params.tagName}
+          onChange={changeTextInputParam('tagName')}
+          display="flex"/>
+        <TextInput
+          placeholder="Tag id"
+          value={params.tagId}
+          onChange={changeTextInputParam('tagId')}
+          display="flex"/>
       </LogFilterPopover>
 
       {/* Node criteria */}
       <LogFilterPopover title="Node">
-        {/* <Portal> */}
-          <NodeSelector nodeId={params.nodeId || null} onChange={changeNamedParam("nodeId")} />
-        {/* </Portal> */}
+        <NodeSelector nodeId={params.nodeId || null} onChange={changeNamedParam("nodeId")} />
       </LogFilterPopover>
 
       {/* Apply button */}
