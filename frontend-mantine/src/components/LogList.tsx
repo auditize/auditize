@@ -6,9 +6,11 @@ import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorT
 import 'rsuite/dist/rsuite-no-reset.min.css';
 import { PickerHandle, TreePicker } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/@types/common';
-import { IconCaretDownFilled, IconCaretUpFilled } from '@tabler/icons-react';
+import { IconCaretDownFilled, IconCaretUpFilled, IconAsterisk } from '@tabler/icons-react';
 
-const iconSize = { width: rem("1.15rem"), height: rem("1.15rem") }
+function iconSize(size: any) {
+  return { width: rem(size), height: rem(size) };
+}
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => (
@@ -190,7 +192,7 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   );
 };
 
-function LogFilterPopover({title, children}: {title: string, children: React.ReactNode}) {
+function LogFilterPopover({title, children, isFilled}: {title: string, children: React.ReactNode, isFilled: boolean}) {
   const [opened, setOpened] = useState(false);
 
   return (
@@ -201,9 +203,14 @@ function LogFilterPopover({title, children}: {title: string, children: React.Rea
       <Popover.Target>
         <Button
           rightSection={
-            opened ? <IconCaretUpFilled style={iconSize}/> : <IconCaretDownFilled style={iconSize}/>
+            opened ?
+              <IconCaretUpFilled style={iconSize("1.15rem")}/> :
+              <IconCaretDownFilled style={iconSize("1.15rem")}/>
           }
-          onClick={() => setOpened((opened_) => !opened_)}>{title}</Button>
+          onClick={() => setOpened((opened_) => !opened_)}
+          variant={isFilled ? 'light' : 'outline'}>
+            {title}
+          </Button>
       </Popover.Target>
       <Popover.Dropdown>
         <Stack>
@@ -243,7 +250,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
   return (
     <Group p="1rem">
       {/* Event criteria */}
-      <LogFilterPopover title="Event">
+      <LogFilterPopover title="Event" isFilled={!!(params.eventCategory || params.eventName)}>
         <EventCategorySelector
           category={params.eventCategory}
           onChange={changeNamedParam("eventCategory")}/>
@@ -253,7 +260,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Actor criteria */}
-      <LogFilterPopover title="Actor">
+      <LogFilterPopover title="Actor" isFilled={!!(params.actorType || params.actorName)}>
         <ActorTypeSelector
           type={params.actorType}
           onChange={changeNamedParam("actorType")}/>
@@ -265,7 +272,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Resource criteria */}
-      <LogFilterPopover title="Resource">
+      <LogFilterPopover title="Resource" isFilled={!!(params.resourceType || params.resourceName)}>
         <ResourceTypeSelector
           type={params.resourceType}
           onChange={changeNamedParam("resourceType")}/>
@@ -277,7 +284,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Tag criteria */}
-      <LogFilterPopover title="Tag">
+      <LogFilterPopover title="Tag" isFilled={!!(params.tagCategory || params.tagName || params.tagId)}>
         <TagCategorySelector
           category={params.tagCategory}
           onChange={changeNamedParam("tagCategory")}/>
@@ -294,7 +301,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </LogFilterPopover>
 
       {/* Node criteria */}
-      <LogFilterPopover title="Node">
+      <LogFilterPopover title="Node" isFilled={!!params.nodeId}>
         <NodeSelector nodeId={params.nodeId || null} onChange={changeNamedParam("nodeId")} />
       </LogFilterPopover>
 
