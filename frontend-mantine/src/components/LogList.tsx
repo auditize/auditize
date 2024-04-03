@@ -1,11 +1,14 @@
-import { DOMElement, useRef, useState } from 'react';
-import { Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Portal } from '@mantine/core';
+import { useRef, useState } from 'react';
+import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover } from '@mantine/core';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
 import 'rsuite/dist/rsuite-no-reset.min.css';
 import { PickerHandle, TreePicker } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/@types/common';
+import { IconCaretDownFilled, IconCaretUpFilled } from '@tabler/icons-react';
+
+const iconSize = { width: rem("1.15rem"), height: rem("1.15rem") }
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
   const rows = logs.map((log) => (
@@ -188,11 +191,19 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
 };
 
 function LogFilterPopover({title, children}: {title: string, children: React.ReactNode}) {
+  const [opened, setOpened] = useState(false);
+
   return (
     <Popover
+      opened={opened}
+      onClose={() => setOpened(false)}  // close on click outside
       position="bottom" withArrow keepMounted={true}>
       <Popover.Target>
-        <Button>{title}</Button>
+        <Button
+          rightSection={
+            opened ? <IconCaretUpFilled style={iconSize}/> : <IconCaretDownFilled style={iconSize}/>
+          }
+          onClick={() => setOpened((opened_) => !opened_)}>{title}</Button>
       </Popover.Target>
       <Popover.Dropdown>
         <Stack>
