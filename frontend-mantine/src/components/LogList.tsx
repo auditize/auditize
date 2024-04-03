@@ -189,7 +189,7 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
 
 function LogFilterPopover({title, children}: {title: string, children: React.ReactNode}) {
   return (
-    <Popover position="bottom" withArrow>
+    <Popover position="bottom" withArrow keepMounted={true}>
       <Popover.Target>
         <Button>{title}</Button>
       </Popover.Target>
