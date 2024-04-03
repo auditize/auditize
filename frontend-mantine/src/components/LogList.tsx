@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Button, Center, Container, Select, Group, TextInput } from '@mantine/core';
+import { Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Portal } from '@mantine/core';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
@@ -65,6 +65,7 @@ function PaginatedSelector(
       placeholder={isPending ? "Loading..." : label}
       clearable
       display="flex"
+      comboboxProps={{ withinPortal: false }}
     />
   );
 }
@@ -142,8 +143,9 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
           return nodes.map(logNodeToItem);
         });
       }}
-      searchable={false}
       placeholder="Node"
+      searchable={false}
+      style={{width: 200}}
       ></TreePicker>
   );
 }
@@ -182,6 +184,19 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   );
 };
 
+function LogFilterPopover({title, children}: {title: string, children: React.ReactNode}) {
+  return (
+    <Popover position="bottom" withArrow>
+      <Popover.Target>
+        <Button>{title}</Button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        {children}
+      </Popover.Dropdown>
+    </Popover>
+  );
+}
+
 function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
   const [params, setParams] = useState<LogFilterParams>({
     eventCategory: "",
@@ -209,68 +224,78 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
     (e: React.ChangeEvent<HTMLInputElement>) => changeParam(name, e.target.value);
 
   return (
-    <Container>
+    <Group p="1rem">
       {/* Event criteria */}
-      <Group m={"1rem"}>
-        <EventCategorySelector
-          category={params.eventCategory}
-          onChange={changeNamedParam("eventCategory")}/>
-        <EventNameSelector
-          name={params.eventName} category={params.eventCategory}
-          onChange={changeNamedParam("eventName")}/>
-      </Group>
+      <LogFilterPopover title="Event">
+        <Stack>
+          <EventCategorySelector
+            category={params.eventCategory}
+            onChange={changeNamedParam("eventCategory")}/>
+          <EventNameSelector
+            name={params.eventName} category={params.eventCategory}
+            onChange={changeNamedParam("eventName")}/>
+        </Stack>
+      </LogFilterPopover>
 
       {/* Actor criteria */}
-      <Group m={"1rem"}>
-        <ActorTypeSelector
-          type={params.actorType}
-          onChange={changeNamedParam("actorType")}/>
-        <TextInput
-          placeholder="Actor name"
-          value={params.actorName}
-          onChange={changeTextInputParam('actorName')}
-          display={"flex"}/>
-      </Group>
+      <LogFilterPopover title="Actor">
+        <Stack>
+          <ActorTypeSelector
+            type={params.actorType}
+            onChange={changeNamedParam("actorType")}/>
+          <TextInput
+            placeholder="Actor name"
+            value={params.actorName}
+            onChange={changeTextInputParam('actorName')}
+            display={"flex"}/>
+        </Stack>
+      </LogFilterPopover>
 
       {/* Resource criteria */}
-      <Group m={"1rem"}>
-        <ResourceTypeSelector
-          type={params.resourceType}
-          onChange={changeNamedParam("resourceType")}/>
-        <TextInput
-          placeholder="Resource name"
-          value={params.resourceName}
-          onChange={changeTextInputParam('resourceName')}
-          display={"flex"}/>
-      </Group>
+      <LogFilterPopover title="Resource">
+        <Stack>
+          <ResourceTypeSelector
+            type={params.resourceType}
+            onChange={changeNamedParam("resourceType")}/>
+          <TextInput
+            placeholder="Resource name"
+            value={params.resourceName}
+            onChange={changeTextInputParam('resourceName')}
+            display={"flex"}/>
+        </Stack>
+      </LogFilterPopover>
 
       {/* Tag criteria */}
-      <Group m={"1rem"}>
-        <TagCategorySelector
-          category={params.tagCategory}
-          onChange={changeNamedParam("tagCategory")}/>
-        <TextInput
-          placeholder="Tag name"
-          value={params.tagName}
-          onChange={changeTextInputParam('tagName')}
-          display="flex"/>
-        <TextInput
-          placeholder="Tag id"
-          value={params.tagId}
-          onChange={changeTextInputParam('tagId')}
-          display="flex"/>
-      </Group>
+      <LogFilterPopover title="Tag">
+        <Stack>
+          <TagCategorySelector
+            category={params.tagCategory}
+            onChange={changeNamedParam("tagCategory")}/>
+          <TextInput
+            placeholder="Tag name"
+            value={params.tagName}
+            onChange={changeTextInputParam('tagName')}
+            display="flex"/>
+          <TextInput
+            placeholder="Tag id"
+            value={params.tagId}
+            onChange={changeTextInputParam('tagId')}
+            display="flex"/>
+        </Stack>
+      </LogFilterPopover>
 
       {/* Node criteria */}
-      <Group m="1rem">
-        <NodeSelector nodeId={params.nodeId || null} onChange={changeNamedParam("nodeId")} />
-      </Group>
+      <LogFilterPopover title="Node">
+        {/* <Portal> */}
+          <NodeSelector nodeId={params.nodeId || null} onChange={changeNamedParam("nodeId")} />
+        {/* </Portal> */}
+      </LogFilterPopover>
 
       {/* Apply button */}
       <Button onClick={() => onChange(params)}>
         Apply filters
       </Button>
-    </Container>
+    </Group>
   );
 }
 
