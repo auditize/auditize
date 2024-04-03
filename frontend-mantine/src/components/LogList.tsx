@@ -182,8 +182,19 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   );
 };
 
-function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}){
-  const [params, setParams] = useState<LogFilterParams>({});
+function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
+  const [params, setParams] = useState<LogFilterParams>({
+    eventCategory: "",
+    eventName: "",
+    actorType: "",
+    actorName: "",
+    resourceType: "",
+    resourceName: "",
+    tagCategory: "",
+    tagName: "",
+    tagId: "",
+    nodeId: ""
+  });
 
   const changeParam = (name: string, value: string) => {
     const update = {[name]: value};
