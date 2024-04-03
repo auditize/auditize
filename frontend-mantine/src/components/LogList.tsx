@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Table, Button, Center, Container, Select, Group, TextInput } from '@mantine/core';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
-import { ControlledTreeEnvironment, Tree, TreeItem, TreeItemIndex } from 'react-complex-tree';
-import 'react-complex-tree/lib/style-modern.css';
+import 'rsuite/dist/rsuite-no-reset.min.css';
+import { TreePicker } from 'rsuite';
+import { ItemDataType } from 'rsuite/esm/@types/common';
 
 type ValueChangeEvent = {name: string, value: string | undefined};
 type OnValueChangeEvent = (event: ValueChangeEvent) => void;
@@ -123,79 +124,37 @@ function TagCategorySelector({category, onChange}: {category?: string, onChange:
 }
 
 function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: OnValueChangeEvent}) {
-  const [items, setItems] = useState<Record<TreeItemIndex, TreeItem<any>>>({
-    root: {
-      index: 'root',
-      children: [],
-      isFolder: true,
-      data: 'Root',
-    }
+  const [items, setItems] = useState<ItemDataType<string>[]>([]);
+
+  const logNodeToItem = (node: LogNode): ItemDataType<string> => ({
+    value: node.id,
+    label: node.name,
+    children: node.has_children ? [] : undefined,
   });
-  const [expandedItems, setExpandedItems] = useState<TreeItemIndex[]>([]);
-
-  const logNodeToTreeNode = (node: LogNode): TreeItem => ({
-    index: node.id,
-    children: [],
-    isFolder: node.has_children,
-    data: node.name,
-  });
-
-  const logNodesToTreeNodes = (nodes: LogNode[]): Record<TreeItemIndex, TreeItem<any>> => {
-    const treeItems: Record<TreeItemIndex, TreeItem<any>> = {};
-    nodes.forEach((node) => treeItems[node.id] = logNodeToTreeNode(node));
-    return treeItems;
-  }
-
-  const addItems = (nodes: LogNode[], parentItem: TreeItemIndex) => {
-    const newItems = logNodesToTreeNodes(nodes);
-    const parent = {...items[parentItem]};
-    parent.children = nodes.map((node) => node.id);
-    setItems({...items, ...newItems, [parentItem]: parent});
-  }
-
-  useEffect(() => {
-    getAllLogNodes().then((nodes) => {
-      addItems(nodes, 'root');
-    });
-  }, []);
-
-  const expandItem = (item: TreeItem<any>) => {
-    if (item.children?.length === 0)
-      getAllLogNodes(item.index as string).then((nodes) => addItems(nodes, item.index));
-    setExpandedItems([...expandedItems, item.index]);
-  };
-
-  const collapseItem = (item: TreeItem<any>) => {
-    const arrayIdx = expandedItems.indexOf(item.index);
-    if (arrayIdx != -1) {
-      const updatedExpandedItems = [...expandedItems];
-      updatedExpandedItems.splice(arrayIdx, 1);
-      setExpandedItems(updatedExpandedItems);
-    }
-  };
-
-  const selectItem = (index: TreeItemIndex) => {
-    onChange({name: 'nodeId', value: index as string});
-  }
 
   return (
-    <ControlledTreeEnvironment
-      items={items}
-      viewState={{
-        ['nodeSelector']: {
-          selectedItems: [nodeId as TreeItemIndex] || undefined,
-          expandedItems,
-        },
+    <TreePicker
+      data={items}
+      value={nodeId || undefined}
+      onSelect={(item) => onChange({name: 'nodeId', value: item.value as string})}
+      onOpen={() => {
+        if (items.length === 0)
+          getAllLogNodes().then((nodes) => setItems(nodes.map(logNodeToItem)))
+        }
+      }
+      getChildren={(item) => {
+        // NB: beware that items are changed under the hood without using setItems by the TreePicker component
+        // after getChildren has been called
+        return getAllLogNodes(item.value as string).then((nodes) => {
+          return nodes.map(logNodeToItem);
+        });
       }}
-      onExpandItem={expandItem}
-      onCollapseItem={collapseItem}
-      onSelectItems={(items: TreeItemIndex[]) => selectItem(items[0])}
-      getItemTitle={(item) => item.data}
-    >
-      <Tree treeId='nodeSelector' rootItem='root' />
-    </ControlledTreeEnvironment>
+      searchable={false}
+      placeholder="Node"
+      ></TreePicker>
   );
 }
+
 
 function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({

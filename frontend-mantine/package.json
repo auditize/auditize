@@ -24,9 +24,9 @@
     "@tanstack/react-query": "^5.28.9",
     "axios": "^1.6.8",
     "react": "^18.2.0",
-    "react-complex-tree": "^2.4.1",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "rsuite": "^5.58.1"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.0.0",
