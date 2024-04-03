@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { DOMElement, useRef, useState } from 'react';
 import { Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Portal } from '@mantine/core';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
 import 'rsuite/dist/rsuite-no-reset.min.css';
-import { TreePicker } from 'rsuite';
+import { PickerHandle, TreePicker } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/@types/common';
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
@@ -118,6 +118,7 @@ function TagCategorySelector({category, onChange}: {category?: string, onChange:
 
 function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (value: string) => void}) {
   const [items, setItems] = useState<ItemDataType<string>[]>([]);
+  const ref = useRef<PickerHandle>(null);
 
   const logNodeToItem = (node: LogNode): ItemDataType<string> => ({
     value: node.id,
@@ -127,6 +128,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
 
   return (
     <TreePicker
+      ref={ref}
       data={items}
       value={nodeId || ""}
       onSelect={(item) => onChange(item.value as string)}
@@ -144,6 +146,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
         });
       }}
       placeholder="Node"
+      container={() => ref.current?.root?.parentElement as HTMLElement}
       searchable={false}
       style={{width: 200}}
       ></TreePicker>
