@@ -138,7 +138,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
           getAllLogNodes().then((nodes) => setItems(nodes.map(logNodeToItem)))
         }
       }
-      getChildren={(item) => {
+      getChildren={async (item) => {
         // NB: beware that items are changed under the hood without using setItems by the TreePicker component
         // after getChildren has been called
         return getAllLogNodes(item.value as string).then((nodes) => {
