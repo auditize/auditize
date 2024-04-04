@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space } from '@mantine/core';
+import { DateTimePicker } from '@mantine/dates';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, LogFilterParams } from '../services/logs';
@@ -7,6 +8,9 @@ import 'rsuite/dist/rsuite-no-reset.min.css';
 import { PickerHandle, TreePicker } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/@types/common';
 import { IconChevronUp, IconChevronDown } from '@tabler/icons-react';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
 
 function iconSize(size: any) {
   return { width: rem(size), height: rem(size) };
@@ -22,7 +26,9 @@ const emptyLogFilterParams = {
   tagCategory: "",
   tagName: "",
   tagId: "",
-  nodeId: ""
+  nodeId: "",
+  since: "",
+  until: ""
 };
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
@@ -232,8 +238,14 @@ function LogFilterPopover({title, children, isFilled}: {title: string, children:
   );
 }
 
+function formatDateForApi(date: Date, isEndOfInterval: boolean = false) {
+  return dayjs(date).utc().format("YYYY-MM-DDTHH:mm") + (isEndOfInterval ? ":59Z" : ":00Z");
+}
+
 function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
   const [params, setParams] = useState<LogFilterParams>({...emptyLogFilterParams});
+  const [sinceRawValue, setSinceRawValue] = useState<Date | null>(null);
+  const [untilRawValue, setUntilRawValue] = useState<Date | null>(null);
 
   const changeParam = (name: string, value: string) => {
     const update = {[name]: value};
@@ -247,15 +259,44 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
   const changeTextInputParam = (name: string) =>
     (e: React.ChangeEvent<HTMLInputElement>) => changeParam(name, e.target.value);
 
+  const hasDate = !!(params.since || params.until);
   const hasEvent = !!(params.eventCategory || params.eventName);
   const hasActor = !!(params.actorType || params.actorName);
   const hasResource = !!(params.resourceType || params.resourceName);
   const hasTag = !!(params.tagCategory || params.tagName || params.tagId);
   const hasNode = !!params.nodeId;
-  const hasFilter = hasEvent || hasActor || hasResource || hasTag || hasNode;
+  const hasFilter = hasDate || hasEvent || hasActor || hasResource || hasTag || hasNode;
 
   return (
     <Group p="1rem">
+      {/* Time criteria */}
+      <LogFilterPopover title="Date" isFilled={hasDate}>
+        <DateTimePicker
+          placeholder="From"
+          value={sinceRawValue}
+          valueFormat='YYYY-MM-DD HH:mm'
+          onChange={(value) => {
+            setSinceRawValue(value);
+            changeParam("since", value ? formatDateForApi(value) : "");
+          }}
+          clearable
+          w="14rem"
+          popoverProps={{ withinPortal: false }}
+          />
+        <DateTimePicker
+          placeholder="Until"
+          value={untilRawValue}
+          valueFormat='YYYY-MM-DD HH:mm'
+          onChange={(value) => {
+            setUntilRawValue(value);
+            changeParam("until", value ? formatDateForApi(value, true) : "");
+          }}
+          clearable
+          w="14rem"
+          popoverProps={{ withinPortal: false }}
+          />
+      </LogFilterPopover>
+
       {/* Event criteria */}
       <LogFilterPopover title="Event" isFilled={hasEvent}>
         <EventCategorySelector
@@ -317,7 +358,12 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       <Button onClick={() => onChange(params)}>
         Apply
       </Button>
-      <Button onClick={() => setParams({...emptyLogFilterParams})} disabled={!hasFilter} variant='default'>
+      <Button onClick={() => {
+          setParams({...emptyLogFilterParams});
+          setSinceRawValue(null);
+          setUntilRawValue(null);
+        }}
+        disabled={!hasFilter} variant='default'>
         Clear
       </Button>
     </Group>

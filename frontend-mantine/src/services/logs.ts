@@ -15,6 +15,8 @@ export type LogFilterParams = {
   tagName?: string;
   tagId?: string;
   nodeId?: string;
+  since?: string;
+  until?: string;
 }
 
 export async function getLogs(cursor: string | null, filter?: LogFilterParams, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
@@ -23,6 +25,8 @@ export async function getLogs(cursor: string | null, filter?: LogFilterParams, l
   const response = await axios.get('http://localhost:8000/logs', {
     params: {
       limit,
+      since: filter?.since,
+      until: filter?.until,
       event_category: filter?.eventCategory,
       event_name: filter?.eventName,
       actor_type: filter?.actorType,
