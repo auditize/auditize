@@ -23,7 +23,7 @@ export type LogFilterParams = {
 }
 
 function formatDate(date: Date) {
-  return dayjs(date).utc().format("YYYY-MM-DDTHH:mm:ssZ");
+  return dayjs(date).utc().format("YYYY-MM-DDTHH:mm:ss") + "Z";
 }
 
 export async function getLogs(cursor: string | null, filter?: LogFilterParams, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
