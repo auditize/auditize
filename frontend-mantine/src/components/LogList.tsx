@@ -236,6 +236,22 @@ function LogFilterPopover({title, children, isFilled}: {title: string, children:
   );
 }
 
+function LogFilterDateTimePicker(
+  {placeholder, value, onChange}:
+  {placeholder: string, value: Date | null | undefined, onChange: (value: Date | null) => void}) {
+  return (
+    <DateTimePicker
+      placeholder={placeholder}
+      value={value}
+      valueFormat='YYYY-MM-DD HH:mm'
+      onChange={onChange}
+      clearable
+      w="14rem"
+      popoverProps={{ withinPortal: false }}
+      />
+  );
+}
+
 function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
   const [params, setParams] = useState<LogFilterParams>({...emptyLogFilterParams});
 
@@ -263,28 +279,14 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
     <Group p="1rem">
       {/* Time criteria */}
       <LogFilterPopover title="Date" isFilled={hasDate}>
-        <DateTimePicker
+        <LogFilterDateTimePicker
           placeholder="From"
           value={params.since}
-          valueFormat='YYYY-MM-DD HH:mm'
-          onChange={(value) => {
-            changeParam("since", value);
-          }}
-          clearable
-          w="14rem"
-          popoverProps={{ withinPortal: false }}
-          />
-        <DateTimePicker
-          placeholder="Until"
+          onChange={(value) => changeParam("since", value)}/>
+        <LogFilterDateTimePicker
+          placeholder="To"
           value={params.until}
-          valueFormat='YYYY-MM-DD HH:mm'
-          onChange={(value) => {
-            changeParam("until", value);
-          }}
-          clearable
-          w="14rem"
-          popoverProps={{ withinPortal: false }}
-          />
+          onChange={(value) => changeParam("until", value)}/>
       </LogFilterPopover>
 
       {/* Event criteria */}
