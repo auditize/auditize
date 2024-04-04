@@ -175,7 +175,13 @@ async def get_logs(
     if since:
         criteria["saved_at"] = {"$gte": since}
     if until:
-        criteria["saved_at"] = {**criteria.get("saved_at", {}), "$lt": until}
+        criteria["saved_at"] = {
+            # do not overwrite "since" criterion if any:
+            **criteria.get("saved_at", {}),
+            # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
+            # will also include logs saved at 23:59:59.500 for instance
+            "$lte": until.replace(microsecond=999999)
+        }
 
     filter: dict[str, Any] = {}
 

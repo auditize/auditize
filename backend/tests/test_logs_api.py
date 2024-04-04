@@ -593,6 +593,28 @@ async def test_get_logs_filter_until(client: AsyncClient, db: Database):
     }
 
 
+async def test_get_logs_filter_until_milliseconds(client: AsyncClient, db: Database):
+    log1 = make_log_data()
+    log1_id = await prepare_log(client, log1)
+    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2023-12-31T23:59:59.500Z"))
+    log2 = make_log_data()
+    log2_id = await prepare_log(client, log2)
+    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+
+    resp = await assert_get(client, "/logs", params={"until": "2023-12-31T23:59:59Z"})
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log1,
+                "id": log1_id
+            })
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
+
+
 async def test_get_logs_filter_between_since_and_until(client: AsyncClient, db: Database):
     log1 = make_log_data()
     log1_id = await prepare_log(client, log1)
