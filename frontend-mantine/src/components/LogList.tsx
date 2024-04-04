@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -237,8 +237,21 @@ function LogFilterPopover({title, children, isFilled}: {title: string, children:
 }
 
 function LogFilterDateTimePicker(
-  {placeholder, value, onChange}:
-  {placeholder: string, value: Date | null | undefined, onChange: (value: Date | null) => void}) {
+  {placeholder, value, onChange, initToEndOfDay = false}:
+  {placeholder: string, value: Date | null | undefined, onChange: (value: Date | null) => void, initToEndOfDay?: boolean}) {
+    const previousValueRef = useRef<Date | null>(null);
+
+    useEffect(() => {
+      if (initToEndOfDay) {
+        if (previousValueRef.current === null && value) {
+          const date = new Date(value as Date);
+          date.setHours(23, 59, 59);
+          onChange(date);
+        }
+        previousValueRef.current = value || null;
+      }
+    });
+
   return (
     <DateTimePicker
       placeholder={placeholder}
@@ -286,7 +299,8 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
         <LogFilterDateTimePicker
           placeholder="To"
           value={params.until}
-          onChange={(value) => changeParam("until", value)}/>
+          onChange={(value) => changeParam("until", value)}
+          initToEndOfDay/>
       </LogFilterPopover>
 
       {/* Event criteria */}
