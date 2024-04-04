@@ -648,6 +648,31 @@ async def test_get_logs_filter_multiple_criteria(client: AsyncClient, db: Databa
     }
 
 
+async def test_get_logs_empty_string_filter_params(client: AsyncClient, db: Database):
+    log = make_log_data()
+    log_id = await prepare_log(client, log)
+
+    resp = await assert_get(client, "/logs", params={
+        "event_name": "", "event_category": "",
+        "actor_type": "", "actor_name": "",
+        "resource_type": "", "resource_name": "",
+        "tag_category": "", "tag_name": "", "tag_id": "",
+        "node_id": "",
+        "since": "", "until": ""
+    })
+    assert resp.json() == {
+        "data": [
+            make_expected_log_data_for_api({
+                **log,
+                "id": log_id
+            })
+        ],
+        "pagination": {
+            "next_cursor": None
+        }
+    }
+
+
 async def test_get_logs_filter_no_result(client: AsyncClient, db: Database):
     log = make_log_data()
     await prepare_log(client, log)

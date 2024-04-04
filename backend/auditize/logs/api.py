@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends, HTTPException
@@ -233,8 +233,8 @@ async def get_logs(
         resource_type: str = None, resource_name: str = None,
         tag_category: str = None, tag_name: str = None, tag_id: str = None,
         node_id: str = None,
-        since: Annotated[datetime, BeforeValidator(validate_datetime)] = None,
-        until: Annotated[datetime, BeforeValidator(validate_datetime)] = None,
+        since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
+        until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
         limit: int = 10,
         cursor: str = None
 ) -> LogsReadingResponse:
