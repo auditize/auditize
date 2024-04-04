@@ -8,15 +8,13 @@ import 'rsuite/dist/rsuite-no-reset.min.css';
 import { PickerHandle, TreePicker } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/@types/common';
 import { IconChevronUp, IconChevronDown } from '@tabler/icons-react';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-dayjs.extend(utc);
+
 
 function iconSize(size: any) {
   return { width: rem(size), height: rem(size) };
 }
 
-const emptyLogFilterParams = {
+const emptyLogFilterParams: LogFilterParams = {
   eventCategory: "",
   eventName: "",
   actorType: "",
@@ -27,8 +25,8 @@ const emptyLogFilterParams = {
   tagName: "",
   tagId: "",
   nodeId: "",
-  since: "",
-  until: ""
+  since: null,
+  until: null
 };
 
 function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
@@ -238,16 +236,10 @@ function LogFilterPopover({title, children, isFilled}: {title: string, children:
   );
 }
 
-function formatDateForApi(date: Date, isEndOfInterval: boolean = false) {
-  return dayjs(date).utc().format("YYYY-MM-DDTHH:mm") + (isEndOfInterval ? ":59Z" : ":00Z");
-}
-
 function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
   const [params, setParams] = useState<LogFilterParams>({...emptyLogFilterParams});
-  const [sinceRawValue, setSinceRawValue] = useState<Date | null>(null);
-  const [untilRawValue, setUntilRawValue] = useState<Date | null>(null);
 
-  const changeParam = (name: string, value: string) => {
+  const changeParam = (name: string, value: any) => {
     const update = {[name]: value};
     if (name === 'eventCategory')
       update['eventName'] = "";
@@ -273,11 +265,10 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       <LogFilterPopover title="Date" isFilled={hasDate}>
         <DateTimePicker
           placeholder="From"
-          value={sinceRawValue}
+          value={params.since}
           valueFormat='YYYY-MM-DD HH:mm'
           onChange={(value) => {
-            setSinceRawValue(value);
-            changeParam("since", value ? formatDateForApi(value) : "");
+            changeParam("since", value);
           }}
           clearable
           w="14rem"
@@ -285,11 +276,10 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
           />
         <DateTimePicker
           placeholder="Until"
-          value={untilRawValue}
+          value={params.until}
           valueFormat='YYYY-MM-DD HH:mm'
           onChange={(value) => {
-            setUntilRawValue(value);
-            changeParam("until", value ? formatDateForApi(value, true) : "");
+            changeParam("until", value);
           }}
           clearable
           w="14rem"
@@ -360,8 +350,6 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       </Button>
       <Button onClick={() => {
           setParams({...emptyLogFilterParams});
-          setSinceRawValue(null);
-          setUntilRawValue(null);
         }}
         disabled={!hasFilter} variant='default'>
         Clear

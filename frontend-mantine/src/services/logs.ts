@@ -1,4 +1,7 @@
 import axios from 'axios';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
 
 export async function timeout(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -15,8 +18,12 @@ export type LogFilterParams = {
   tagName?: string;
   tagId?: string;
   nodeId?: string;
-  since?: string;
-  until?: string;
+  since?: Date | null;
+  until?: Date | null;
+}
+
+function formatDate(date: Date) {
+  return dayjs(date).utc().format("YYYY-MM-DDTHH:mm:ssZ");
 }
 
 export async function getLogs(cursor: string | null, filter?: LogFilterParams, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
@@ -25,8 +32,8 @@ export async function getLogs(cursor: string | null, filter?: LogFilterParams, l
   const response = await axios.get('http://localhost:8000/logs', {
     params: {
       limit,
-      since: filter?.since,
-      until: filter?.until,
+      since: filter?.since ? formatDate(filter.since) : undefined,
+      until: filter?.until ? formatDate(filter.until) : undefined,
       event_category: filter?.eventCategory,
       event_name: filter?.eventName,
       actor_type: filter?.actorType,
