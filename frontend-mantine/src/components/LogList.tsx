@@ -29,11 +29,17 @@ const emptyLogFilterParams: LogFilterParams = {
   until: null
 };
 
-function LogTable({logs, footer}: {logs: Log[], footer: React.ReactNode}) {
+function LogTable(
+  {logs, footer, onTableFilterChange}:
+  {logs: Log[], footer: React.ReactNode, onTableFilterChange: (name: string, value: string) => void}) {
   const rows = logs.map((log) => (
     <Table.Tr key={log.id}>
       <Table.Td>{log.saved_at}</Table.Td>
-      <Table.Td>{labelize(log.event.name)}</Table.Td>
+      <Table.Td>
+        <a href='#' onClick={() => onTableFilterChange('eventName', log.event.name)}>
+          {labelize(log.event.name)}
+        </a>
+      </Table.Td>
       <Table.Td>{labelize(log.event.category)}</Table.Td>
       <Table.Td>{log.actor ? log.actor.name : null}</Table.Td>
       <Table.Td>{log.resource ? labelize(log.resource.type) : null}</Table.Td>
@@ -176,7 +182,9 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
 }
 
 
-function LogLoader({filter = {}}: {filter: LogFilterParams}) {
+function LogLoader(
+  {filter = {}, onTableFilterChange}:
+  {filter: LogFilterParams, onTableFilterChange: (name: string, value: string) => void}) {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['logs', filter],
     queryFn: async ({ pageParam }: {pageParam: string | null}) => await getLogs(pageParam, filter),
@@ -203,7 +211,10 @@ function LogLoader({filter = {}}: {filter: LogFilterParams}) {
   );
 
   return (
-    <LogTable logs={data.pages.flatMap((page) => page.logs)} footer={footer} />
+    <LogTable
+      logs={data.pages.flatMap((page) => page.logs)}
+      footer={footer}
+      onTableFilterChange={onTableFilterChange}/>
   );
 };
 
@@ -273,6 +284,7 @@ interface SetParamAction {
 
 interface ResetParamsAction {
   type: 'resetParams';
+  params?: LogFilterParams;
 }
 
 function filterParamsReducer(state: LogFilterParams, action: SetParamAction | ResetParamsAction): LogFilterParams {
@@ -284,23 +296,27 @@ function filterParamsReducer(state: LogFilterParams, action: SetParamAction | Re
         update['eventName'] = "";
       return {...state, ...update};
     case 'resetParams':
-      return {...emptyLogFilterParams};
+      return action.params ? {...emptyLogFilterParams, ...action.params} : {...emptyLogFilterParams};
   }
 }
 
-function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
-  const [params, dispatch] = useReducer(filterParamsReducer, emptyLogFilterParams);
+function LogFilters({params, onChange}: {params: LogFilterParams, onChange: (filter: LogFilterParams) => void}) {
+  const [editedParams, dispatch] = useReducer(filterParamsReducer, emptyLogFilterParams);
+  useEffect(() => {
+    dispatch({type: 'resetParams', params});
+  }, [params]);
+
   const changeParamHandler = (name: string) =>
     (value: any) => dispatch({type: 'setParam', name, value});
   const changeTextInputParamHandler = (name: string) =>
     (e: React.ChangeEvent<HTMLInputElement>) => dispatch({type: 'setParam', name, value: e.target.value});
 
-  const hasDate = !!(params.since || params.until);
-  const hasEvent = !!(params.eventCategory || params.eventName);
-  const hasActor = !!(params.actorType || params.actorName);
-  const hasResource = !!(params.resourceType || params.resourceName);
-  const hasTag = !!(params.tagCategory || params.tagName || params.tagId);
-  const hasNode = !!params.nodeId;
+  const hasDate = !!(editedParams.since || editedParams.until);
+  const hasEvent = !!(editedParams.eventCategory || editedParams.eventName);
+  const hasActor = !!(editedParams.actorType || editedParams.actorName);
+  const hasResource = !!(editedParams.resourceType || editedParams.resourceName);
+  const hasTag = !!(editedParams.tagCategory || editedParams.tagName || editedParams.tagId);
+  const hasNode = !!editedParams.nodeId;
   const hasFilter = hasDate || hasEvent || hasActor || hasResource || hasTag || hasNode;
 
   return (
@@ -309,11 +325,11 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       <LogFilterPopover title="Date" isFilled={hasDate}>
         <LogFilterDateTimePicker
           placeholder="From"
-          value={params.since}
+          value={editedParams.since}
           onChange={changeParamHandler("since")}/>
         <LogFilterDateTimePicker
           placeholder="To"
-          value={params.until}
+          value={editedParams.until}
           onChange={changeParamHandler("until")}
           initToEndOfDay/>
       </LogFilterPopover>
@@ -321,21 +337,21 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       {/* Event criteria */}
       <LogFilterPopover title="Event" isFilled={hasEvent}>
         <EventCategorySelector
-          category={params.eventCategory}
+          category={editedParams.eventCategory}
           onChange={changeParamHandler("eventCategory")}/>
         <EventNameSelector
-          name={params.eventName} category={params.eventCategory}
+          name={editedParams.eventName} category={editedParams.eventCategory}
           onChange={changeParamHandler("eventName")}/>
       </LogFilterPopover>
 
       {/* Actor criteria */}
       <LogFilterPopover title="Actor" isFilled={hasActor}>
         <ActorTypeSelector
-          type={params.actorType}
+          type={editedParams.actorType}
           onChange={changeParamHandler("actorType")}/>
         <TextInput
           placeholder="Actor name"
-          value={params.actorName}
+          value={editedParams.actorName}
           onChange={changeTextInputParamHandler('actorName')}
           display={"flex"}/>
       </LogFilterPopover>
@@ -343,11 +359,11 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       {/* Resource criteria */}
       <LogFilterPopover title="Resource" isFilled={hasResource}>
         <ResourceTypeSelector
-          type={params.resourceType}
+          type={editedParams.resourceType}
           onChange={changeParamHandler("resourceType")}/>
         <TextInput
           placeholder="Resource name"
-          value={params.resourceName}
+          value={editedParams.resourceName}
           onChange={changeTextInputParamHandler('resourceName')}
           display={"flex"}/>
       </LogFilterPopover>
@@ -355,28 +371,28 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       {/* Tag criteria */}
       <LogFilterPopover title="Tag" isFilled={hasTag}>
         <TagCategorySelector
-          category={params.tagCategory}
+          category={editedParams.tagCategory}
           onChange={changeParamHandler("tagCategory")}/>
         <TextInput
           placeholder="Tag name"
-          value={params.tagName}
+          value={editedParams.tagName}
           onChange={changeTextInputParamHandler('tagName')}
           display="flex"/>
         <TextInput
           placeholder="Tag id"
-          value={params.tagId}
+          value={editedParams.tagId}
           onChange={changeTextInputParamHandler('tagId')}
           display="flex"/>
       </LogFilterPopover>
 
       {/* Node criteria */}
-      <LogFilterPopover title="Node" isFilled={!!params.nodeId}>
-        <NodeSelector nodeId={params.nodeId || null} onChange={changeParamHandler("nodeId")} />
+      <LogFilterPopover title="Node" isFilled={!!editedParams.nodeId}>
+        <NodeSelector nodeId={editedParams.nodeId || null} onChange={changeParamHandler("nodeId")} />
       </LogFilterPopover>
 
       {/* Apply & clear buttons */}
       <Space w="l"/>
-      <Button onClick={() => onChange(params)}>
+      <Button onClick={() => onChange(editedParams)}>
         Apply
       </Button>
       <Button onClick={() => dispatch({type: 'resetParams'})} disabled={!hasFilter} variant='default'>
@@ -387,12 +403,14 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
 }
 
 export function LogList() {
-  const [filter, setFilter] = useState<LogFilterParams>({});
-  
+  const [filter, setFilter] = useState<LogFilterParams>({...emptyLogFilterParams});
+
   return (
     <Container size="xl" p="20px">
-      <LogFilters onChange={setFilter} />
-      <LogLoader filter={filter} />
+      <LogFilters params={filter} onChange={setFilter} />
+      <LogLoader filter={filter} onTableFilterChange={(name, value) => {
+        setFilter((filter) => ({since: filter.since, until: filter.until, [name]: value}));
+      }}/>
     </Container>
   );
 }
