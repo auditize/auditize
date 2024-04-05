@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useReducer } from 'react';
 import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -265,20 +265,35 @@ function LogFilterDateTimePicker(
   );
 }
 
-function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
-  const [params, setParams] = useState<LogFilterParams>({...emptyLogFilterParams});
+interface SetParamAction {
+  type: 'setParam';
+  name: string;
+  value: any;
+}
 
-  const changeParam = (name: string, value: any) => {
-    const update = {[name]: value};
-    if (name === 'eventCategory')
-      update['eventName'] = "";
-    console.log("Updating filter params", update);
-    setParams({...params, ...update});
+interface ResetParamsAction {
+  type: 'resetParams';
+}
+
+function filterParamsReducer(state: LogFilterParams, action: SetParamAction | ResetParamsAction): LogFilterParams {
+  console.log("filterParamsReducer", action);
+  switch (action.type) {
+    case 'setParam':
+      const update = {[action.name]: action.value};
+      if (action.name === 'eventCategory')
+        update['eventName'] = "";
+      return {...state, ...update};
+    case 'resetParams':
+      return {...emptyLogFilterParams};
   }
-  const changeNamedParam = (name: string) => 
-    (value: string) => changeParam(name, value);
-  const changeTextInputParam = (name: string) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => changeParam(name, e.target.value);
+}
+
+function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
+  const [params, dispatch] = useReducer(filterParamsReducer, emptyLogFilterParams);
+  const changeParamHandler = (name: string) =>
+    (value: any) => dispatch({type: 'setParam', name, value});
+  const changeTextInputParamHandler = (name: string) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => dispatch({type: 'setParam', name, value: e.target.value});
 
   const hasDate = !!(params.since || params.until);
   const hasEvent = !!(params.eventCategory || params.eventName);
@@ -295,11 +310,11 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
         <LogFilterDateTimePicker
           placeholder="From"
           value={params.since}
-          onChange={(value) => changeParam("since", value)}/>
+          onChange={changeParamHandler("since")}/>
         <LogFilterDateTimePicker
           placeholder="To"
           value={params.until}
-          onChange={(value) => changeParam("until", value)}
+          onChange={changeParamHandler("until")}
           initToEndOfDay/>
       </LogFilterPopover>
 
@@ -307,21 +322,21 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       <LogFilterPopover title="Event" isFilled={hasEvent}>
         <EventCategorySelector
           category={params.eventCategory}
-          onChange={changeNamedParam("eventCategory")}/>
+          onChange={changeParamHandler("eventCategory")}/>
         <EventNameSelector
           name={params.eventName} category={params.eventCategory}
-          onChange={changeNamedParam("eventName")}/>
+          onChange={changeParamHandler("eventName")}/>
       </LogFilterPopover>
 
       {/* Actor criteria */}
       <LogFilterPopover title="Actor" isFilled={hasActor}>
         <ActorTypeSelector
           type={params.actorType}
-          onChange={changeNamedParam("actorType")}/>
+          onChange={changeParamHandler("actorType")}/>
         <TextInput
           placeholder="Actor name"
           value={params.actorName}
-          onChange={changeTextInputParam('actorName')}
+          onChange={changeTextInputParamHandler('actorName')}
           display={"flex"}/>
       </LogFilterPopover>
 
@@ -329,11 +344,11 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       <LogFilterPopover title="Resource" isFilled={hasResource}>
         <ResourceTypeSelector
           type={params.resourceType}
-          onChange={changeNamedParam("resourceType")}/>
+          onChange={changeParamHandler("resourceType")}/>
         <TextInput
           placeholder="Resource name"
           value={params.resourceName}
-          onChange={changeTextInputParam('resourceName')}
+          onChange={changeTextInputParamHandler('resourceName')}
           display={"flex"}/>
       </LogFilterPopover>
 
@@ -341,22 +356,22 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       <LogFilterPopover title="Tag" isFilled={hasTag}>
         <TagCategorySelector
           category={params.tagCategory}
-          onChange={changeNamedParam("tagCategory")}/>
+          onChange={changeParamHandler("tagCategory")}/>
         <TextInput
           placeholder="Tag name"
           value={params.tagName}
-          onChange={changeTextInputParam('tagName')}
+          onChange={changeTextInputParamHandler('tagName')}
           display="flex"/>
         <TextInput
           placeholder="Tag id"
           value={params.tagId}
-          onChange={changeTextInputParam('tagId')}
+          onChange={changeTextInputParamHandler('tagId')}
           display="flex"/>
       </LogFilterPopover>
 
       {/* Node criteria */}
       <LogFilterPopover title="Node" isFilled={!!params.nodeId}>
-        <NodeSelector nodeId={params.nodeId || null} onChange={changeNamedParam("nodeId")} />
+        <NodeSelector nodeId={params.nodeId || null} onChange={changeParamHandler("nodeId")} />
       </LogFilterPopover>
 
       {/* Apply & clear buttons */}
@@ -364,10 +379,7 @@ function LogFilters({onChange}: {onChange: (filter: LogFilterParams) => void}) {
       <Button onClick={() => onChange(params)}>
         Apply
       </Button>
-      <Button onClick={() => {
-          setParams({...emptyLogFilterParams});
-        }}
-        disabled={!hasFilter} variant='default'>
+      <Button onClick={() => dispatch({type: 'resetParams'})} disabled={!hasFilter} variant='default'>
         Clear
       </Button>
     </Group>
