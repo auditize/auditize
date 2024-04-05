@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useReducer } from 'react';
-import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space } from '@mantine/core';
+import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space, Anchor } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
@@ -36,15 +36,55 @@ function LogTable(
     <Table.Tr key={log.id}>
       <Table.Td>{log.saved_at}</Table.Td>
       <Table.Td>
-        <a href='#' onClick={() => onTableFilterChange('eventName', log.event.name)}>
+        <Anchor onClick={() => onTableFilterChange('eventName', log.event.name)} underline='hover'>
           {labelize(log.event.name)}
-        </a>
+        </Anchor>
       </Table.Td>
-      <Table.Td>{labelize(log.event.category)}</Table.Td>
-      <Table.Td>{log.actor ? log.actor.name : null}</Table.Td>
-      <Table.Td>{log.resource ? labelize(log.resource.type) : null}</Table.Td>
-      <Table.Td>{log.resource ? log.resource.name : null}</Table.Td>
-      <Table.Td>{log.node_path.map((n) => n.name).join(' > ')}</Table.Td>
+      <Table.Td>
+        <Anchor onClick={() => onTableFilterChange('eventCategory', log.event.category)} underline='hover'>
+          {labelize(log.event.category)}
+        </Anchor>
+      </Table.Td>
+      <Table.Td>
+        {
+          log.actor ?
+            <Anchor onClick={() => onTableFilterChange('actorName', log.actor!.name)} underline='hover'>
+              {log.actor.name}
+            </Anchor> :
+            null
+        }
+        </Table.Td>
+      <Table.Td>
+        {
+          log.resource ?
+            <Anchor onClick={() => onTableFilterChange('resourceName', log.resource!.name)} underline='hover'>
+              {log.resource.name}
+            </Anchor> :
+            null
+        }
+      </Table.Td>
+      <Table.Td>
+        {
+          log.resource ?
+            <Anchor onClick={() => onTableFilterChange('resourceType', log.resource!.type)} underline='hover'>
+              {log.resource.type}
+            </Anchor> :
+            null
+        }
+      </Table.Td>
+      <Table.Td>
+        {
+          log.node_path.map<React.ReactNode>(
+            (node) => (
+              // FIXME: the filter edition for the node path may not work properly if the selected node
+              // has not been already loaded in the TreePicker component
+              <Anchor key={node.id} onClick={() => onTableFilterChange('nodeId', node.id)} underline='hover'>
+                {node.name}
+              </Anchor>
+            )
+          ).reduce((prev, curr) => [prev, ' > ', curr])
+        }
+      </Table.Td>
     </Table.Tr>
   ));
 
@@ -176,8 +216,7 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
       placeholder="Node"
       container={() => ref.current?.root?.parentElement as HTMLElement}
       searchable={false}
-      style={{width: 200}}
-      ></TreePicker>
+      style={{width: 200}}/>
   );
 }
 
