@@ -337,6 +337,12 @@ class NodeItem(_LogBase.Node):
     )
 
 
+class LogNodeResponse(NodeItem):
+    @classmethod
+    def from_node(cls, node: Log.Node):
+        return cls.model_validate(node.model_dump())
+
+
 class LogNodeListResponse(PaginatedItemListResponse[Log.Node, NodeItem]):
     @classmethod
     def build_item(cls, node: Log.Node) -> NodeItem:

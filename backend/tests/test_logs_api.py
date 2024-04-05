@@ -823,3 +823,25 @@ async def test_get_log_nodes_with_filters(client: AsyncClient, db: Database):
         [{"id": f"entity:2-{j}", "name": f"Entity {j}", "parent_node_id": "customer:2", "has_children": False}
          for j in ("a", "b", "c", "d", "e")]
     )
+
+
+async def test_get_log_node(client: AsyncClient, db: Database):
+    await consolidate_log_node_path(
+        db, [Log.Node(id="customer", name="Customer"), Log.Node(id="entity", name="Entity")]
+    )
+
+    resp = await assert_get(client, "/logs/nodes/customer")
+    assert resp.json() == {
+        "id": "customer",
+        "name": "Customer",
+        "parent_node_id": None,
+        "has_children": True
+    }
+
+    resp = await assert_get(client, "/logs/nodes/entity")
+    assert resp.json() == {
+        "id": "entity",
+        "name": "Entity",
+        "parent_node_id": "customer",
+        "has_children": False
+    }

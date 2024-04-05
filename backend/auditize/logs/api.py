@@ -7,7 +7,7 @@ from pydantic import Field, BeforeValidator
 from auditize.logs.api_models import (
     LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse,
     LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, LogResourceTypeListResponse,
-    LogTagCategoryListResponse, LogNodeListResponse,
+    LogTagCategoryListResponse, LogNodeListResponse, LogNodeResponse,
     PagePaginationParams
 )
 from auditize.logs import service
@@ -104,10 +104,10 @@ async def get_log_tag_categories(
     tags=["logs"]
 )
 async def get_log_nodes(
-        db: Annotated[Database, Depends(get_db)],
-        root: bool = False,
-        parent_node_id: str = None,
-        page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams()
+    db: Annotated[Database, Depends(get_db)],
+    root: bool = False,
+    parent_node_id: str = None,
+    page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams()
 ) -> LogNodeListResponse:
     if root and parent_node_id is not None:
         raise HTTPException(400, "Parameters 'root' and 'parent_node_id' are mutually exclusive.")
@@ -122,6 +122,20 @@ async def get_log_nodes(
     return await handle_paginated_data_request(
         db, LogNodeListResponse, service.get_log_nodes, page_params, **filter_args
     )
+
+
+@router.get(
+    "/logs/nodes/{node_id}",
+    summary="Get a log node",
+    operation_id="get_log_node",
+    tags=["logs"]
+)
+async def get_log_node(
+    db: Annotated[Database, Depends(get_db)],
+    node_id: Annotated[str, Path(title="Node ID")]
+):
+    node = await service.get_log_node(db, node_id)
+    return LogNodeResponse.from_node(node)
 
 
 @router.post(

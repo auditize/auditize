@@ -296,17 +296,9 @@ async def get_log_tag_categories(db: Database, *, page=1, page_size=10) -> tuple
     return await _get_consolidated_data_field(db.log_tag_categories, "category", page=page, page_size=page_size)
 
 
-async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, page_size=10
-                        ) -> tuple[list[Log.Node], PaginationInfo]:
-    # please note that we use NotImplemented instead of None because None is a valid value for parent_node_id
-    # (it means filtering on top nodes)
-    if parent_node_id is NotImplemented:
-        filter = {}
-    else:
-        filter = {"parent_node_id": parent_node_id}
-
-    results = db.log_nodes.aggregate([
-        {"$match": filter},
+async def _get_log_nodes(db: Database, *, match, pipeline_extra=None):
+    return db.log_nodes.aggregate([
+        {"$match": match},
         {
             "$lookup": {
                 "from": "log_nodes",
@@ -322,7 +314,20 @@ async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, 
             "$addFields": {
                 "has_children": {"$eq": [{"$size": "$first_child_if_any"}, 1]}
             }
-        },
+        }
+    ] + (pipeline_extra or []))
+
+
+async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, page_size=10
+                        ) -> tuple[list[Log.Node], PaginationInfo]:
+    # please note that we use NotImplemented instead of None because None is a valid value for parent_node_id
+    # (it means filtering on top nodes)
+    if parent_node_id is NotImplemented:
+        filter = {}
+    else:
+        filter = {"parent_node_id": parent_node_id}
+
+    results = await _get_log_nodes(db, match=filter, pipeline_extra=[
         {"$sort": {"name": 1}},
         {"$skip": (page - 1) * page_size},
         {"$limit": page_size}
@@ -334,3 +339,13 @@ async def get_log_nodes(db: Database, *, parent_node_id=NotImplemented, page=1, 
         [Node(**result) async for result in results],
         PaginationInfo.build(page=page, page_size=page_size, total=total)
     )
+
+
+async def get_log_node(db: Database, node_id: str) -> Log.Node:
+    results = await (await _get_log_nodes(db, match={"id": node_id})).to_list(None)
+    try:
+        result = results[0]
+    except IndexError:
+        raise UnknownModelException(node_id)
+
+    return Node(**result)
