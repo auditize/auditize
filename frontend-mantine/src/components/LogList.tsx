@@ -5,7 +5,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
 import { getLogs, getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, getAllLogNodes, getLogNode, LogFilterParams } from '../services/logs';
 import 'rsuite/dist/rsuite-no-reset.min.css';
-import { PickerHandle, TreePicker } from 'rsuite';
+import { Tree } from 'rsuite';
 import { ItemDataType } from 'rsuite/esm/@types/common';
 import { IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 
@@ -186,7 +186,7 @@ function TagCategorySelector({category, onChange}: {category?: string, onChange:
 
 function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (value: string) => void}) {
   const [items, setItems] = useState<ItemDataType<string>[]>([]);
-  const ref = useRef<PickerHandle>(null);
+  const currentNodeIdRef = useRef<string>("");
 
   const lookupItem = (itemValue: string, items: ItemDataType<string>[]): ItemDataType<string> | null => {
     for (const item of items) {
@@ -241,6 +241,14 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
     }
   }
 
+  // load top-level nodes
+  useEffect(() => {
+    if (items.length === 0) {
+      getAllLogNodes().then((nodes) => setItems(nodes.map(logNodeToItem)));
+    }
+  }, []);
+
+  // load the tree branch of the selected node
   useEffect(() => {
     let enabled = true;
 
@@ -271,28 +279,28 @@ function NodeSelector({nodeId, onChange}: {nodeId: string | null, onChange: (val
   });
 
   return (
-    <TreePicker
-      ref={ref}
+    <Tree
       data={items}
       value={nodeId || ""}
-      onSelect={(item) => onChange(item.value as string)}
-      onClean={() => onChange("")}
-      onOpen={() => {
-        if (items.length === 0)
-          getAllLogNodes().then((nodes) => setItems(nodes.map(logNodeToItem)))
+      onSelect={(item) => {
+        // implement an unselect behavior, which is not supported by the Tree component
+        if (item.value === currentNodeIdRef.current) {
+          currentNodeIdRef.current = "";
+          onChange("");
+        } else {
+          currentNodeIdRef.current = item.value as string;
+          onChange(item.value as string)
         }
-      }
+      }}
       getChildren={async (item) => {
-        // NB: beware that items are changed under the hood without using setItems by the TreePicker component
+        // NB: beware that items are changed under the hood without using setItems by the Tree component
         // after getChildren has been called
         return getAllLogNodes(item.value as string).then((nodes) => {
           return nodes.map(logNodeToItem);
         });
       }}
-      placeholder="Node"
-      container={() => ref.current?.root?.parentElement as HTMLElement}
       searchable={false}
-      style={{width: 200}}/>
+      style={{width: 200, height: 250}}/>
   );
 }
 
