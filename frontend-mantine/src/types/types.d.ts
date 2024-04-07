@@ -31,6 +31,6 @@ type LogListResponse = {
 type LogNode = {
   id: string;
   name: string;
-  parent_id: string | null;
+  parent_node_id: string | null;
   has_children: boolean;
 };
