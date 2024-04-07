@@ -89,9 +89,13 @@ export async function getAllLogTagCategories(): Promise<string[]> {
   return getPaginatedItems<string>('http://localhost:8000/logs/tag-categories');
 }
 
-export async function getAllLogNodes(parent_node_id?: string): Promise<LogNode[]> {
+export async function getAllLogNodes(parent_node_id?: string | null): Promise<LogNode[]> {
   return getPaginatedItems<LogNode>(
     'http://localhost:8000/logs/nodes',
     parent_node_id ? {parent_node_id} : {root: true}
   );
+}
+
+export async function getLogNode(node_id: string): Promise<LogNode> {
+  return (await axios.get(`http://localhost:8000/logs/nodes/${node_id}`)).data;
 }
