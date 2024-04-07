@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useReducer } from 'react';
-import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space, Anchor } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { rem, Table, Button, Center, Container, Select, Group, Stack, TextInput, Popover, Space, Anchor, Modal } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { labelize } from './utils';
@@ -29,12 +30,41 @@ const emptyLogFilterParams: LogFilterParams = {
   until: null
 };
 
-function LogTable(
-  {logs, footer, onTableFilterChange}:
-  {logs: Log[], footer: React.ReactNode, onTableFilterChange: (name: string, value: string) => void}) {
-  const rows = logs.map((log) => (
+function LogDetails({log, opened, onClose}: {log: Log, opened: boolean, onClose: () => void}) {
+  return (
+    <Modal title="Log details" size="md" padding="lg" opened={opened} onClose={onClose}>
+      <div>
+        <p>Event: {log.event.name}</p>
+        <p>Category: {log.event.category}</p>
+        {
+          log.actor ?
+            <p>Actor: {log.actor.name} ({log.actor.type})</p> :
+            null
+        }
+        {
+          log.resource ?
+            <p>Resource: {log.resource.name} ({log.resource.type})</p> :
+            null
+        }
+        <p>Node: {
+          log.node_path.map((node) => node.name).join(' > ')
+        }</p>
+      </div>
+    </Modal>
+  );
+}
+
+function LogTableRow({log, onTableFilterChange}: {log: Log, onTableFilterChange: (name: string, value: string) => void}) {
+  const [opened, { open, close }] = useDisclosure(false);
+
+  return (
     <Table.Tr key={log.id}>
-      <Table.Td>{log.saved_at}</Table.Td>
+      <LogDetails log={log} opened={opened} onClose={close}/>
+      <Table.Td>
+        <Anchor onClick={open} underline='hover'>
+          {log.saved_at}
+        </Anchor>
+      </Table.Td>
       <Table.Td>
         <Anchor onClick={() => onTableFilterChange('eventName', log.event.name)} underline='hover'>
           {labelize(log.event.name)}
@@ -86,8 +116,12 @@ function LogTable(
         }
       </Table.Td>
     </Table.Tr>
-  ));
+  );
+}
 
+function LogTable(
+  {logs, footer, onTableFilterChange}:
+  {logs: Log[], footer: React.ReactNode, onTableFilterChange: (name: string, value: string) => void}) {
   return (
     <Table>
       <Table.Thead>
@@ -102,7 +136,7 @@ function LogTable(
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {rows}
+        {logs.map((log) => <LogTableRow key={log.id} log={log} onTableFilterChange={onTableFilterChange}/>)}
       </Table.Tbody>
       <Table.Tfoot>
         <Table.Tr>
