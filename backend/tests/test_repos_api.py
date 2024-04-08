@@ -3,32 +3,28 @@ from bson import ObjectId
 
 import pytest
 import callee
-from httpx import AsyncClient
 
-from auditize.common.mongo import Database
 
-from helpers import assert_post, assert_collection
+from helpers import assert_collection, ApiTestHelper
 
 pytestmark = pytest.mark.anyio
 
 
-async def test_repo_create(client: AsyncClient, db: Database):
-    resp = await assert_post(
-        client,
-        "/repos", json={"name": "Repo 1"},
-        expected_status_code=201
-    )
-    assert resp.json() == {"id": callee.IsA(str)}
+class Test(ApiTestHelper):
+    async def test_repo_create(self):
+        resp = await self.post(
+            "/repos", json={"name": "Repo 1"},
+            expected_status_code=201
+        )
+        assert resp.json() == {"id": callee.IsA(str)}
 
-    await assert_collection(
-        db.repos,
-        [{"_id": ObjectId(resp.json()["id"]), "name": "Repo 1", "created_at": callee.IsA(datetime)}]
-    )
+        await assert_collection(
+            self.db.repos,
+            [{"_id": ObjectId(resp.json()["id"]), "name": "Repo 1", "created_at": callee.IsA(datetime)}]
+        )
 
-
-async def test_repo_create_missing_name(client: AsyncClient, db: Database):
-    await assert_post(
-        client,
-        "/repos", json={},
-        expected_status_code=422
-    )
+    async def test_repo_create_missing_name(self):
+        await self.post(
+            "/repos", json={},
+            expected_status_code=422
+        )
