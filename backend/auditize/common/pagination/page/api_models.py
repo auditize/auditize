@@ -57,7 +57,7 @@ ApiItemT = TypeVar("ApiItemT")
 
 
 class PagePaginatedResponse(BaseModel, Generic[ModelItemT, ApiItemT]):
-    pagination: PagePaginationData = Field(description="Pagination information")
+    pagination: PagePaginationData = Field(description="Page-based pagination information")
     data: list[ApiItemT] = Field(description="List of items")
 
     @classmethod

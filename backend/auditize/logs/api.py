@@ -256,4 +256,4 @@ async def get_logs(
         since=since, until=until,
         limit=limit, pagination_cursor=cursor
     )
-    return LogsReadingResponse.from_logs(logs, next_cursor)
+    return LogsReadingResponse.build(logs, next_cursor)

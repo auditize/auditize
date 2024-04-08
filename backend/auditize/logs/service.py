@@ -1,50 +1,21 @@
 import re
 from typing import Any
 from datetime import datetime
-import base64
-import binascii
 
 from bson import ObjectId
-import json
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.logs.models import Log, Node
 from auditize.common.mongo import Database
 from auditize.common.exceptions import UnknownModelException
-from auditize.common.utils import serialize_datetime
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
+from auditize.common.pagination.cursor.service import PaginationCursor, find_paginated_by_cursor
 
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
-
-
-class InvalidPaginationCursor(Exception):
-    pass
-
-
-class PaginationCursor:
-    def __init__(self, date: datetime, log_id: ObjectId):
-        self.date = date
-        self.log_id = log_id
-
-    @classmethod
-    def load(cls, value: str) -> "PaginationCursor":
-        try:
-            decoded = json.loads(base64.b64decode(value).decode("utf-8"))
-        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
-            raise InvalidPaginationCursor(value)
-
-        try:
-            return cls(datetime.fromisoformat(decoded["date"]), ObjectId(decoded["log_id"]))
-        except (KeyError, ValueError):
-            raise InvalidPaginationCursor(value)
-
-    def serialize(self) -> str:
-        data = {"date": serialize_datetime(self.date, with_milliseconds=True), "log_id": str(self.log_id)}
-        return base64.b64encode(json.dumps(data).encode("utf-8")).decode("utf-8")
 
 
 async def consolidate_log_event(db: Database, event: Log.Event):
@@ -185,30 +156,13 @@ async def get_logs(
             "$lte": until.replace(microsecond=999999)
         }
 
-    filter: dict[str, Any] = {}
+    results, next_cursor = await find_paginated_by_cursor(
+        db.logs,
+        id_field="_id", date_field="saved_at",
+        filter=criteria, limit=limit, pagination_cursor=pagination_cursor,
+    )
 
-    if criteria:
-        filter.update(criteria)
-
-    if pagination_cursor:
-        cursor = PaginationCursor.load(pagination_cursor)
-        filter["$or"] = [
-            {"saved_at": {"$lt": cursor.date}},
-            {"$and": [{"saved_at": {"$eq": cursor.date}}, {"_id": {"$lt": cursor.log_id}}]}
-        ]
-
-    results = db.logs.find(filter, _EXCLUDE_ATTACHMENT_DATA, sort=[("saved_at", -1), ("_id", -1)], limit=limit+1)
-    logs = [Log(**log) async for log in results]
-
-    # we previously fetched one extra log to check if there are more logs to fetch
-    if len(logs) == limit + 1:
-        # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
-        # limit range
-        next_cursor = PaginationCursor(logs[-2].saved_at, logs[-2].id).serialize()
-        # remove the extra log
-        logs.pop(-1)
-    else:
-        next_cursor = None
+    logs = [Log(**result) for result in results]
 
     return logs, next_cursor
 

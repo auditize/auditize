@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, BeforeValidator, field_serializer, model_
 from auditize.logs.models import Log
 from auditize.common.utils import serialize_datetime
 from auditize.common.pagination.page.api_models import PagePaginatedResponse
+from auditize.common.pagination.cursor.api_models import CursorPaginatedResponse
 
 
 class _LogBase(BaseModel):
@@ -222,24 +223,10 @@ class LogReadingResponse(_LogBase, _LogReadingResponse):
         return cls.model_validate(log.model_dump())
 
 
-class CursorPaginationData(BaseModel):
-    next_cursor: str | None = Field(
-        description="The cursor to the next page of results. It must be passed as the 'cursor' parameter to the "
-                    "next query to get the next page of results. 'next_cursor' will be null if there "
-                    "are no more results to fetch."
-    )
-
-
-class LogsReadingResponse(BaseModel):
-    data: list[LogReadingResponse] = Field(description="The actual log list")
-    pagination: CursorPaginationData = Field(description="Pagination information")
-
+class LogsReadingResponse(CursorPaginatedResponse[Log, LogReadingResponse]):
     @classmethod
-    def from_logs(cls, logs: list[Log], next_cursor: str = None):
-        return cls(
-            data=list(map(LogReadingResponse.from_log, logs)),
-            pagination=CursorPaginationData(next_cursor=next_cursor)
-        )
+    def build_item(cls, log: Log) -> LogReadingResponse:
+        return LogReadingResponse.from_log(log)
 
 
 class LogEventCategoryListResponse(PagePaginatedResponse[str, str]):
