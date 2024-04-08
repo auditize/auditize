@@ -2,29 +2,21 @@ from typing import Annotated, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, UploadFile, Form, Response, Path, Depends, HTTPException
-from pydantic import Field, BeforeValidator
+from pydantic import BeforeValidator
 
 from auditize.logs.api_models import (
     LogCreationRequest, LogCreationResponse, LogReadingResponse, LogsReadingResponse,
     LogEventCategoryListResponse, LogEventNameListResponse, LogActorTypeListResponse, LogResourceTypeListResponse,
-    LogTagCategoryListResponse, LogNodeListResponse, LogNodeResponse,
-    PagePaginationParams
+    LogTagCategoryListResponse, LogNodeListResponse, LogNodeResponse
 )
 from auditize.logs import service
 from auditize.common.mongo import Database, get_db
 from auditize.common.api import COMMON_RESPONSES
 from auditize.common.utils import validate_datetime
+from auditize.common.pagination.page.api_models import PagePaginationParams
+from auditize.common.pagination.page.api import handle_page_paginated_request
 
 router = APIRouter()
-
-
-async def handle_paginated_data_request(
-        db: Database, response_class, service_func, page_params: PagePaginationParams, **kwargs
-):
-    items, pagination = await service_func(
-        db, page=page_params.page, page_size=page_params.page_size, **kwargs
-    )
-    return response_class.build(items, pagination)
 
 
 @router.get(
@@ -37,7 +29,7 @@ async def get_log_event_names(
         db: Annotated[Database, Depends(get_db)],
         page_params: Annotated[PagePaginationParams, Depends()], category: str = None
 ) -> LogEventNameListResponse:
-    return await handle_paginated_data_request(
+    return await handle_page_paginated_request(
         db, LogEventNameListResponse, service.get_log_events, page_params, event_category=category
     )
 
@@ -51,8 +43,9 @@ async def get_log_event_names(
 async def get_log_event_categories(
         db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogEventCategoryListResponse:
-    items, pagination = await service.get_log_event_categories(db, page=page_params.page, page_size=page_params.page_size)
-    return LogEventCategoryListResponse.build(items, pagination)
+    return await handle_page_paginated_request(
+        db, LogEventCategoryListResponse, service.get_log_event_categories, page_params
+    )
 
 
 @router.get(
@@ -64,7 +57,7 @@ async def get_log_event_categories(
 async def get_log_actor_types(
         db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogActorTypeListResponse:
-    return await handle_paginated_data_request(
+    return await handle_page_paginated_request(
         db, LogActorTypeListResponse, service.get_log_actor_types, page_params
     )
 
@@ -78,7 +71,7 @@ async def get_log_actor_types(
 async def get_log_resource_types(
         db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogResourceTypeListResponse:
-    return await handle_paginated_data_request(
+    return await handle_page_paginated_request(
         db, LogResourceTypeListResponse, service.get_log_resource_types, page_params
     )
 
@@ -92,7 +85,7 @@ async def get_log_resource_types(
 async def get_log_tag_categories(
         db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogTagCategoryListResponse:
-    return await handle_paginated_data_request(
+    return await handle_page_paginated_request(
         db, LogTagCategoryListResponse, service.get_log_tag_categories, page_params
     )
 
@@ -119,7 +112,7 @@ async def get_log_nodes(
     else:
         filter_args = {}
 
-    return await handle_paginated_data_request(
+    return await handle_page_paginated_request(
         db, LogNodeListResponse, service.get_log_nodes, page_params, **filter_args
     )
 

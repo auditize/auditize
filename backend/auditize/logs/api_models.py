@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import Annotated, Optional, Generic, TypeVar
+from typing import Annotated, Optional
 
 from pydantic import BaseModel, Field, BeforeValidator, field_serializer, model_validator
 
+from auditize.logs.models import Log
 from auditize.common.utils import serialize_datetime
-from auditize.logs.models import Log, PaginationInfo
+from auditize.common.pagination.page.api_models import PagePaginatedResponse
 
 
 class _LogBase(BaseModel):
@@ -229,53 +230,6 @@ class CursorPaginationData(BaseModel):
     )
 
 
-class PagePaginationData(BaseModel):
-    page: int = Field(
-        description="The current page number",
-        json_schema_extra={
-            "example": 1
-        }
-    )
-    page_size: int = Field(
-        description="The number of items per page",
-        json_schema_extra={
-            "example": 10
-        }
-    )
-    total: int = Field(
-        description="The total number of items",
-        json_schema_extra={
-            "example": 50
-        }
-    )
-    total_pages: int = Field(
-        description="The total number of pages",
-        json_schema_extra={
-            "example": 5
-        }
-    )
-
-
-class PagePaginationParams(BaseModel):
-    page: int = Field(
-        description="The page number to fetch",
-        default=1,
-        ge=1,
-        json_schema_extra={
-            "example": 1
-        }
-    )
-    page_size: int = Field(
-        description="The number of items per page",
-        default=10,
-        ge=1,
-        le=100,
-        json_schema_extra={
-            "example": 10
-        }
-    )
-
-
 class LogsReadingResponse(BaseModel):
     data: list[LogReadingResponse] = Field(description="The actual log list")
     pagination: CursorPaginationData = Field(description="Pagination information")
@@ -288,43 +242,23 @@ class LogsReadingResponse(BaseModel):
         )
 
 
-ModelItemT = TypeVar("ModelItemT")
-ApiItemT = TypeVar("ApiItemT")
-
-
-class PaginatedItemListResponse(BaseModel, Generic[ModelItemT, ApiItemT]):
-    pagination: PagePaginationData = Field(description="Pagination information")
-    data: list[ApiItemT] = Field(description="List of items")
-
-    @classmethod
-    def build(cls, items: list[ModelItemT], pagination: PaginationInfo):
-        return cls(
-            data=list(map(cls.build_item, items)),
-            pagination=PagePaginationData.model_validate(pagination.model_dump())
-        )
-
-    @classmethod
-    def build_item(cls, item: ModelItemT) -> ApiItemT:
-        return item
-
-
-class LogEventCategoryListResponse(PaginatedItemListResponse[str, str]):
+class LogEventCategoryListResponse(PagePaginatedResponse[str, str]):
     pass
 
 
-class LogEventNameListResponse(PaginatedItemListResponse[str, str]):
+class LogEventNameListResponse(PagePaginatedResponse[str, str]):
     pass
 
 
-class LogActorTypeListResponse(PaginatedItemListResponse[str, str]):
+class LogActorTypeListResponse(PagePaginatedResponse[str, str]):
     pass
 
 
-class LogResourceTypeListResponse(PaginatedItemListResponse[str, str]):
+class LogResourceTypeListResponse(PagePaginatedResponse[str, str]):
     pass
 
 
-class LogTagCategoryListResponse(PaginatedItemListResponse[str, str]):
+class LogTagCategoryListResponse(PagePaginatedResponse[str, str]):
     pass
 
 
@@ -343,7 +277,7 @@ class LogNodeResponse(NodeItem):
         return cls.model_validate(node.model_dump())
 
 
-class LogNodeListResponse(PaginatedItemListResponse[Log.Node, NodeItem]):
+class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItem]):
     @classmethod
     def build_item(cls, node: Log.Node) -> NodeItem:
         return NodeItem.model_validate(node.model_dump())
