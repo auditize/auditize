@@ -12,6 +12,7 @@ from auditize.logs.service import (consolidate_log_event, consolidate_log_actor,
                                    consolidate_log_tags, consolidate_log_node_path)
 from auditize.logs.models import Log
 
+from helpers import assert_post, assert_get
 
 pytestmark = pytest.mark.anyio
 
@@ -61,26 +62,6 @@ def make_expected_log_data_for_api(actual):
     if expected["resource"]:
         expected["resource"].setdefault("extra", {})
     return expected
-
-
-async def assert_request(method: str, client: AsyncClient, path, *, params=None, json=None, files=None, data=None,
-                         expected_status_code=200):
-    ic(json, files, data)
-    resp = await client.request(method, path, params=params, json=json, files=files, data=data)
-    ic(resp.text)
-    assert resp.status_code == expected_status_code
-    return resp
-
-
-async def assert_post(client: AsyncClient, path, *, json=None, files=None, data=None, expected_status_code=200):
-    return await assert_request(
-        "POST", client, path,
-        json=json, files=files, data=data, expected_status_code=expected_status_code
-    )
-
-
-async def assert_get(client: AsyncClient, path, *, params=None, expected_status_code=200):
-    return await assert_request("GET", client, path, params=params, expected_status_code=expected_status_code)
 
 
 async def assert_create_log(client: AsyncClient, log: dict, expected_status_code=201):

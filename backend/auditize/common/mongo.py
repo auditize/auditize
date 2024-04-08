@@ -36,6 +36,7 @@ class Database:
         await collection.update_one(data, {"$set": {}}, upsert=True)
         await self._cache.set(cache_key, True)
 
+    # log related collections
     logs = _Collection("logs")
     log_events = _Collection("log_events")
     log_source_keys = _Collection("log_source_keys")
@@ -46,6 +47,9 @@ class Database:
     log_detail_keys = _Collection("log_detail_keys")
     log_tag_categories = _Collection("log_tag_categories")
     log_nodes = _Collection("log_nodes")
+
+    # settings related collections
+    repos = _Collection("repos")
 
 
 mongo_client = AsyncIOMotorClient()

@@ -7,6 +7,11 @@ from auditize.main import app
 from auditize.common.mongo import mongo_client, get_db, Database
 
 
+pytest.register_assert_rewrite(
+    "helpers"
+)
+
+
 @pytest.fixture(scope="session")
 def anyio_backend():
     # Limit the tests to only run on asyncio:

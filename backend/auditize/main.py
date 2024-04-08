@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
 
 from auditize.logs.api import router as logs_router
+from auditize.repos.api import router as repos_router
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.api import make_404_response
 
@@ -28,3 +29,4 @@ def resource_not_found_handler(request, exc):
 
 
 app.include_router(logs_router)
+app.include_router(repos_router)
