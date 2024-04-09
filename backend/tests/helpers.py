@@ -58,6 +58,7 @@ class ApiTestHelper:
         self.db = setup_test_db()
 
     async def teardown_method(self):
+        # FIXME: the teardown is not awaited
         await self.client.aclose()
         await teardown_test_db(self.db)
 
