@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
@@ -11,7 +13,13 @@ from auditize.common.mongo import database
 
 ic.configureOutput(includeContext=True)
 
-app = FastAPI()
+
+@asynccontextmanager
+async def setup_db(_):
+    await database.setup()
+    yield
+
+app = FastAPI(lifespan=setup_db)
 
 # Allow CORS for the frontend (FIXME: make this configurable)
 app.add_middleware(
@@ -21,11 +29,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def setup_db():
-    await database.setup()
 
 
 # Add exception handlers
