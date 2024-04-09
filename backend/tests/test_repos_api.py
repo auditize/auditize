@@ -58,9 +58,9 @@ async def test_repo_create(client: AsyncClient, db: Database):
     resp = await assert_post(
         client,
         "/repos", json=data,
-        expected_status_code=201
+        expected_status_code=201,
+        expected_json={"id": callee.IsA(str)}
     )
-    assert resp.json() == {"id": callee.IsA(str)}
 
     repo = PreparedRepo(resp.json()["id"], data)
     await assert_collection(db.repos, [repo.expected_document()])
@@ -118,13 +118,11 @@ async def test_repo_update_already_used_name(client: AsyncClient, db: Database):
 async def test_repo_get(client: AsyncClient, db: Database):
     repo = await prepare_repo(client)
 
-    resp = await client.get(f"/repos/{repo.id}")
-    assert resp.status_code == 200
-    assert resp.json() == {
-        "id": repo.id,
-        "name": repo.data["name"],
-        "created_at": callee.IsA(str)
-    }
+    await assert_get(
+        client, f"/repos/{repo.id}",
+        expected_status_code=200,
+        expected_json=repo.expected_response()
+    )
 
 
 async def test_repo_get_unknown_id(client: AsyncClient, db: Database):
