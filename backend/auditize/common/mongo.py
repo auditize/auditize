@@ -36,6 +36,9 @@ class Database:
         await collection.update_one(data, {"$set": {}}, upsert=True)
         await self._cache.set(cache_key, True)
 
+    async def setup(self):
+        await self.repos.create_index("name", unique=True)
+
     # log related collections
     logs = _Collection("logs")
     log_events = _Collection("log_events")

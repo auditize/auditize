@@ -20,5 +20,6 @@ async def client():
 @pytest.fixture(scope="function")
 async def db():
     test_db = setup_test_db()
+    await test_db.setup()
     yield test_db
     await teardown_test_db(test_db)

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from bson import ObjectId
 
@@ -14,7 +15,7 @@ pytestmark = pytest.mark.anyio
 
 def prepare_repo_data(extra=None):
     return {
-        "name": "Repo 1",
+        "name": f"Repo {uuid.uuid4()}",
         **(extra or {})
     }
 
@@ -65,6 +66,16 @@ async def test_repo_create_missing_name(client: AsyncClient, db: Database):
     )
 
 
+async def test_repo_create_already_used_name(client: AsyncClient, db: Database):
+    repo = await prepare_repo(client)
+
+    await assert_post(
+        client,
+        "/repos", json={"name": repo.data["name"]},
+        expected_status_code=409
+    )
+
+
 async def test_repo_update(client: AsyncClient, db: Database):
     repo = await prepare_repo(client)
 
@@ -82,4 +93,15 @@ async def test_repo_update_unknown_id(client: AsyncClient):
         client,
         f"/repos/{UNKNOWN_LOG_ID}", json={"name": "Repo Updated"},
         expected_status_code=404
+    )
+
+
+async def test_repo_update_already_used_name(client: AsyncClient, db: Database):
+    repo1 = await prepare_repo(client)
+    repo2 = await prepare_repo(client)
+
+    await assert_patch(
+        client,
+        f"/repos/{repo1.id}", json={"name": repo2.data["name"]},
+        expected_status_code=409
     )

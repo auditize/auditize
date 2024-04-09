@@ -16,3 +16,7 @@ COMMON_RESPONSES = {
 
 def make_404_response():
     return JSONResponse(status_code=404, content={"detail": "Not found"})
+
+
+def make_409_response():
+    return JSONResponse(status_code=409, content={"detail": "Resource already exists"})
