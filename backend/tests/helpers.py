@@ -59,6 +59,35 @@ async def assert_get(client: AsyncClient, path, *, params=None, expected_status_
     return await assert_request(client, "GET", path, params=params, expected_status_code=expected_status_code)
 
 
+async def do_test_page_pagination_common_scenarios(client: AsyncClient, path: str, data: list):
+    """
+    This function assumes that for the given path (with possible query string), the total number of items is 5.
+    """
+    # first test, without pagination parameters
+    resp = await assert_get(client, path)
+    assert resp.json() == {
+        "data": data,
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 5,
+            "total_pages": 1
+        }
+    }
+
+    # second test, with pagination parameters
+    resp = await assert_get(client, path, params={"page": 2, "page_size": 2})
+    assert resp.json() == {
+        "data": data[2:4],
+        "pagination": {
+            "page": 2,
+            "page_size": 2,
+            "total": 5,
+            "total_pages": 3
+        }
+    }
+
+
 class ApiTestHelper:
     client: AsyncClient
     db: Database

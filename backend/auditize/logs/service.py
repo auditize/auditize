@@ -11,7 +11,7 @@ from auditize.common.mongo import Database
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
-from auditize.common.pagination.cursor.service import PaginationCursor, find_paginated_by_cursor
+from auditize.common.pagination.cursor.service import find_paginated_by_cursor
 
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model

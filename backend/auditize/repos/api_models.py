@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, BeforeValidator, field_serializer
 
 from auditize.repos.models import Repo, RepoUpdate
 from auditize.common.utils import serialize_datetime
-
+from auditize.common.pagination.page.api_models import PagePaginatedResponse
 
 class RepoCreationRequest(BaseModel):
     name: str = Field(description="The repository name")
@@ -37,3 +37,9 @@ class RepoReadingResponse(BaseModel):
     @classmethod
     def from_repo(cls, repo: Repo):
         return cls.model_validate(repo.model_dump())
+
+
+class RepoListResponse(PagePaginatedResponse[Repo, RepoReadingResponse]):
+    @classmethod
+    def build_item(cls, repo: Repo) -> RepoReadingResponse:
+        return RepoReadingResponse.from_repo(repo)

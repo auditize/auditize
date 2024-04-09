@@ -12,7 +12,7 @@ from auditize.logs.service import (consolidate_log_event, consolidate_log_actor,
                                    consolidate_log_tags, consolidate_log_node_path)
 from auditize.logs.models import Log
 
-from helpers import UNKNOWN_LOG_ID, assert_post, assert_get
+from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, do_test_page_pagination_common_scenarios
 
 pytestmark = pytest.mark.anyio
 
@@ -685,38 +685,14 @@ async def test_get_logs_filter_no_result(client: AsyncClient, db: Database):
     }
 
 
-async def _test_pagination_common_scenarii(client: AsyncClient, path: str, data: list):
-    # first test, without pagination parameters
-    resp = await assert_get(client, path)
-    assert resp.json() == {
-        "data": data,
-        "pagination": {
-            "page": 1,
-            "page_size": 10,
-            "total": len(data),
-            "total_pages": 1
-        }
-    }
-
-    # second test, with pagination parameters
-    resp = await assert_get(client, path, params={"page": 2, "page_size": 2})
-    assert resp.json() == {
-        "data": data[2:4],
-        "pagination": {
-            "page": 2,
-            "page_size": 2,
-            "total": len(data),
-            "total_pages": 3
-        }
-    }
-
-
 async def test_get_log_event_categories(client: AsyncClient, db: Database):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
         await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}"))
 
-    await _test_pagination_common_scenarii(client, "/logs/event-categories", [f"category_{i}" for i in range(5)])
+    await do_test_page_pagination_common_scenarios(
+        client, "/logs/event-categories", [f"category_{i}" for i in range(5)]
+    )
 
 
 async def test_get_log_event_names(client: AsyncClient, db: Database):
@@ -724,7 +700,9 @@ async def test_get_log_event_names(client: AsyncClient, db: Database):
         await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
         await consolidate_log_event(db, Log.Event(category=f"category_{i + 10}", name=f"name_{i}"))
 
-    await _test_pagination_common_scenarii(client, "/logs/events", [f"name_{i}" for i in range(5)])
+    await do_test_page_pagination_common_scenarios(
+        client, "/logs/events", [f"name_{i}" for i in range(5)]
+    )
 
     # test category parameter
     resp = await assert_get(client, "/logs/events?category=category_2")
@@ -745,14 +723,18 @@ async def test_get_log_actor_types(client: AsyncClient, db: Database):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_actor(db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
-    await _test_pagination_common_scenarii(client, "/logs/actor-types", [f"type_{i}" for i in range(5)])
+    await do_test_page_pagination_common_scenarios(
+        client, "/logs/actor-types", [f"type_{i}" for i in range(5)]
+    )
 
 
 async def test_get_log_resource_types(client: AsyncClient, db: Database):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_resource(db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
-    await _test_pagination_common_scenarii(client, "/logs/resource-types", [f"type_{i}" for i in range(5)])
+    await do_test_page_pagination_common_scenarios(
+        client, "/logs/resource-types", [f"type_{i}" for i in range(5)]
+    )
 
 
 async def test_get_log_tag_categories(client: AsyncClient, db: Database):
@@ -760,7 +742,9 @@ async def test_get_log_tag_categories(client: AsyncClient, db: Database):
         await consolidate_log_tags(db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
     await consolidate_log_tags(db, [Log.Tag(id="simple_tag")])  # no category, it must not be returned
 
-    await _test_pagination_common_scenarii(client, "/logs/tag-categories", [f"category_{i}" for i in range(5)])
+    await do_test_page_pagination_common_scenarios(
+        client, "/logs/tag-categories", [f"category_{i}" for i in range(5)]
+    )
 
 
 async def test_get_log_nodes_without_filters(client: AsyncClient, db: Database):
@@ -769,7 +753,7 @@ async def test_get_log_nodes_without_filters(client: AsyncClient, db: Database):
             db, [Log.Node(id=f"customer", name=f"Customer"), Log.Node(id=f"entity:{i}", name=f"Entity {i}")]
         )
 
-    await _test_pagination_common_scenarii(
+    await do_test_page_pagination_common_scenarios(
         client, "/logs/nodes",
         [{"id": "customer", "name": "Customer", "parent_node_id": None, "has_children": True}] +
         [{"id": f"entity:{i}", "name": f"Entity {i}", "parent_node_id": "customer", "has_children": False}
@@ -788,14 +772,14 @@ async def test_get_log_nodes_with_filters(client: AsyncClient, db: Database):
             )
 
     # test top-level nodes
-    await _test_pagination_common_scenarii(
+    await do_test_page_pagination_common_scenarios(
         client, "/logs/nodes?root=true",
         [{"id": f"customer:{i}", "name": f"Customer {i}", "parent_node_id": None, "has_children": True}
          for i in range(5)]
     )
 
     # test non-top-level nodes
-    await _test_pagination_common_scenarii(
+    await do_test_page_pagination_common_scenarios(
         client, "/logs/nodes?parent_node_id=customer:2",
         [{"id": f"entity:2-{j}", "name": f"Entity {j}", "parent_node_id": "customer:2", "has_children": False}
          for j in ("a", "b", "c", "d", "e")]

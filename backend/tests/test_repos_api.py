@@ -8,7 +8,8 @@ from httpx import AsyncClient
 
 from auditize.common.mongo import Database
 
-from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, assert_patch, assert_collection
+from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, assert_patch, \
+    assert_collection, do_test_page_pagination_common_scenarios
 
 pytestmark = pytest.mark.anyio
 
@@ -31,6 +32,13 @@ class PreparedRepo:
             "name": self.data["name"],
             "created_at": callee.IsA(datetime),
             **(extra or {})
+        }
+
+    def expected_response(self):
+        return {
+            "id": self.id,
+            "name": self.data["name"],
+            "created_at": callee.IsA(str)
         }
 
 
@@ -124,4 +132,13 @@ async def test_repo_get_unknown_id(client: AsyncClient, db: Database):
         client,
         f"/repos/{UNKNOWN_LOG_ID}",
         expected_status_code=404
+    )
+
+
+async def test_repo_list(client: AsyncClient, db: Database):
+    repos = [await prepare_repo(client) for _ in range(5)]
+
+    await do_test_page_pagination_common_scenarios(
+        client, "/repos",
+        [repo.expected_response() for repo in repos]
     )
