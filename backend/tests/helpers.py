@@ -8,6 +8,9 @@ from icecream import ic
 from auditize.main import app
 from auditize.common.mongo import mongo_client, get_db, Database
 
+# a valid ObjectId, but not existing in the database
+UNKNOWN_LOG_ID = "65fab045f097fe0b9b664c99"
+
 
 def setup_test_db():
     test_db = Database("test_%s" % uuid.uuid4(), mongo_client)
@@ -41,6 +44,13 @@ async def assert_request(client: AsyncClient, method: str, path, *, params=None,
 async def assert_post(client: AsyncClient, path, *, json=None, files=None, data=None, expected_status_code=200) -> Response:
     return await assert_request(
         client, "POST", path,
+        json=json, files=files, data=data, expected_status_code=expected_status_code
+    )
+
+
+async def assert_patch(client: AsyncClient, path, *, json=None, files=None, data=None, expected_status_code=204) -> Response:
+    return await assert_request(
+        client, "PATCH", path,
         json=json, files=files, data=data, expected_status_code=expected_status_code
     )
 

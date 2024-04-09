@@ -12,13 +12,9 @@ from auditize.logs.service import (consolidate_log_event, consolidate_log_actor,
                                    consolidate_log_tags, consolidate_log_node_path)
 from auditize.logs.models import Log
 
-from helpers import assert_post, assert_get
+from helpers import UNKNOWN_LOG_ID, assert_post, assert_get
 
 pytestmark = pytest.mark.anyio
-
-
-# a valid ObjectId, but not existing in the database
-UNKNOWN_LOG_ID = "65fab045f097fe0b9b664c99"
 
 
 def make_log_data(extra=None) -> dict:

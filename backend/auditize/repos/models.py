@@ -13,3 +13,7 @@ class Repo(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True
     )
+
+
+class RepoUpdate(BaseModel):
+    name: Optional[str] = None
