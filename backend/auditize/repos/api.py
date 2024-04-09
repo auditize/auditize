@@ -62,3 +62,14 @@ async def list_repos(
     repos, page_info = await service.get_repos(db, page, page_size)
     return RepoListResponse.build(repos, page_info)
 
+
+@router.delete(
+    "/repos/{repo_id}",
+    summary="Delete log repository",
+    tags=["repos"],
+    status_code=204
+)
+async def delete_repo(
+    db: Annotated[Database, Depends(get_db)], repo_id: str
+):
+    await service.delete_repo(db, repo_id)

@@ -55,6 +55,12 @@ async def assert_patch(client: AsyncClient, path, *, json=None, files=None, data
     )
 
 
+async def assert_delete(client: AsyncClient, path, *, expected_status_code=204) -> Response:
+    return await assert_request(
+        client, "DELETE", path, expected_status_code=expected_status_code
+    )
+
+
 async def assert_get(client: AsyncClient, path, *, params=None, expected_status_code=200) -> Response:
     return await assert_request(client, "GET", path, params=params, expected_status_code=expected_status_code)
 

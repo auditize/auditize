@@ -9,7 +9,7 @@ from httpx import AsyncClient
 from auditize.common.mongo import Database
 
 from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, assert_patch, \
-    assert_collection, do_test_page_pagination_common_scenarios
+    assert_delete, assert_collection, do_test_page_pagination_common_scenarios
 
 pytestmark = pytest.mark.anyio
 
@@ -141,4 +141,24 @@ async def test_repo_list(client: AsyncClient, db: Database):
     await do_test_page_pagination_common_scenarios(
         client, "/repos",
         [repo.expected_response() for repo in repos]
+    )
+
+
+async def test_repo_delete(client: AsyncClient, db: Database):
+    repo = await prepare_repo(client)
+
+    await assert_delete(
+        client,
+        f"/repos/{repo.id}",
+        expected_status_code=204
+    )
+
+    await assert_collection(db.repos, [])
+
+
+async def test_repo_delete_unknown_id(client: AsyncClient, db: Database):
+    await assert_delete(
+        client,
+        f"/repos/{UNKNOWN_LOG_ID}",
+        expected_status_code=404
     )
