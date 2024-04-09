@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse, RepoUpdateRequest
+from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse, RepoReadingResponse, RepoUpdateRequest
 from auditize.repos import service
 from auditize.common.mongo import Database, get_db
 
@@ -34,3 +34,17 @@ async def update_repo(
 ):
     await service.update_repo(db, repo_id, repo.to_repo_update())
     return None
+
+
+@router.get(
+    "/repos/{repo_id}",
+    summary="Get log repository",
+    tags=["repos"],
+    response_model=RepoReadingResponse
+)
+async def get_repo(
+    db: Annotated[Database, Depends(get_db)], repo_id: str
+) -> RepoReadingResponse:
+    repo = await service.get_repo(db, repo_id)
+    return RepoReadingResponse.from_repo(repo)
+

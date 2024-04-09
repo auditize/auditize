@@ -17,3 +17,11 @@ async def update_repo(db: Database, repo_id: ObjectId | str, update: RepoUpdate)
     )
     if result.matched_count == 0:
         raise UnknownModelException()
+
+
+async def get_repo(db: Database, repo_id: ObjectId | str) -> Repo:
+    result = await db.repos.find_one({"_id": ObjectId(repo_id)})
+    if result is None:
+        raise UnknownModelException()
+
+    return Repo.model_validate(result)

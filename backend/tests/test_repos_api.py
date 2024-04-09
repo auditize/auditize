@@ -8,7 +8,7 @@ from httpx import AsyncClient
 
 from auditize.common.mongo import Database
 
-from helpers import UNKNOWN_LOG_ID, assert_post, assert_patch, assert_collection
+from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, assert_patch, assert_collection
 
 pytestmark = pytest.mark.anyio
 
@@ -104,4 +104,24 @@ async def test_repo_update_already_used_name(client: AsyncClient, db: Database):
         client,
         f"/repos/{repo1.id}", json={"name": repo2.data["name"]},
         expected_status_code=409
+    )
+
+
+async def test_repo_get(client: AsyncClient, db: Database):
+    repo = await prepare_repo(client)
+
+    resp = await client.get(f"/repos/{repo.id}")
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "id": repo.id,
+        "name": repo.data["name"],
+        "created_at": callee.IsA(str)
+    }
+
+
+async def test_repo_get_unknown_id(client: AsyncClient, db: Database):
+    await assert_get(
+        client,
+        f"/repos/{UNKNOWN_LOG_ID}",
+        expected_status_code=404
     )

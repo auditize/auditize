@@ -1,8 +1,10 @@
 from typing import Annotated
+from datetime import datetime
 
-from pydantic import BaseModel, Field, BeforeValidator
+from pydantic import BaseModel, Field, BeforeValidator, field_serializer
 
 from auditize.repos.models import Repo, RepoUpdate
+from auditize.common.utils import serialize_datetime
 
 
 class RepoCreationRequest(BaseModel):
@@ -21,3 +23,17 @@ class RepoUpdateRequest(BaseModel):
 
 class RepoCreationResponse(BaseModel):
     id: Annotated[str, BeforeValidator(str)] = Field(description="The repository ID")
+
+
+class RepoReadingResponse(BaseModel):
+    id: Annotated[str, BeforeValidator(str)] = Field(description="The repository ID")
+    name: str = Field(description="The repository name")
+    created_at: datetime = Field(description="The creation date")
+
+    @field_serializer("created_at", when_used="json")
+    def serialize_datetime(self, value):
+        return serialize_datetime(value)
+
+    @classmethod
+    def from_repo(cls, repo: Repo):
+        return cls.model_validate(repo.model_dump())
