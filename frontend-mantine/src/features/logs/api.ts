@@ -3,11 +3,11 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
 
-export async function timeout(ms: number) {
+async function timeout(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export type LogFilterParams = {
+export type LogsFilterParams = {
   eventCategory?: string;
   eventName?: string;
   actorType?: string;
@@ -22,11 +22,28 @@ export type LogFilterParams = {
   until?: Date | null;
 }
 
+export function buildEmptyLogsFilterParams(): LogsFilterParams {
+  return {
+    eventCategory: "",
+    eventName: "",
+    actorType: "",
+    actorName: "",
+    resourceType: "",
+    resourceName: "",
+    tagCategory: "",
+    tagName: "",
+    tagId: "",
+    nodeId: "",
+    since: null,
+    until: null
+  };
+}
+
 function formatDate(date: Date) {
   return dayjs(date).utc().format("YYYY-MM-DDTHH:mm:ss") + "Z";
 }
 
-export async function getLogs(cursor: string | null, filter?: LogFilterParams, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
+export async function getLogs(cursor: string | null, filter?: LogsFilterParams, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
   await timeout(300);  // FIXME: Simulate network latency
 
   const response = await axios.get('http://localhost:8000/logs', {

@@ -2,7 +2,7 @@ import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import { MantineProvider } from '@mantine/core';
 import { theme } from './theme';
-import { LogList } from './components/LogList';
+import { Logs } from './features/logs';
 import {
   QueryClient,
   QueryClientProvider,
@@ -14,7 +14,7 @@ export default function App() {
   return (
     <MantineProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <LogList />
+        <Logs />
       </QueryClientProvider>
     </MantineProvider>
   );
