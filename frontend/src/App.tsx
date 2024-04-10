@@ -1,28 +1,21 @@
-import { PrimeReactProvider } from 'primereact/api';
-// import { twMerge } from 'tailwind-merge';
-// import Tailwind from 'primereact/passthrough/tailwind';
-import 'primeicons/primeicons.css';
-import LogList from './components/LogList';
-import 'primereact/resources/themes/soho-light/theme.css';
-
+import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
+import { MantineProvider } from '@mantine/core';
+import { theme } from './theme';
+import { Logs } from './features/logs';
 import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
 
-import './App.css'
-
-function App() {
+export default function App() {
   const queryClient = new QueryClient()
 
   return (
-    // <PrimeReactProvider value={{ unstyled: true, pt: Tailwind, ptOptions: { mergeSections: true, mergeProps: true, classNameMergeFunction: twMerge } }}>
-      <PrimeReactProvider>
+    <MantineProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <LogList />
+        <Logs />
       </QueryClientProvider>
-      </PrimeReactProvider>
-  )
+    </MantineProvider>
+  );
 }
-
-export default App
