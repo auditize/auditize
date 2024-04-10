@@ -1,6 +1,6 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, AppShell, Group, UnstyledButton } from '@mantine/core';
 import { theme } from './theme';
 import { Logs } from './features/logs';
 import {
@@ -14,7 +14,20 @@ export default function App() {
   return (
     <MantineProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <Logs />
+        <AppShell
+          header={{height: 60}}
+        >
+          <AppShell.Header>
+            <Group h="100%" px="md" justify="right">
+              <Group ml="xl">
+                <UnstyledButton>Logs</UnstyledButton>
+              </Group>
+            </Group>
+          </AppShell.Header>
+          <AppShell.Main>
+            <Logs />
+          </AppShell.Main>
+        </AppShell>
       </QueryClientProvider>
     </MantineProvider>
   );
