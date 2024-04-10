@@ -1,3 +1,7 @@
+# Custom for auditize frontend
+
+.vite
+
 # Logs
 *.log
 npm-debug.log*
