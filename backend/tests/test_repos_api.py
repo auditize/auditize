@@ -6,7 +6,7 @@ import pytest
 import callee
 from httpx import AsyncClient
 
-from auditize.common.mongo import Database
+from auditize.common.mongo import DatabaseManager
 
 from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, assert_patch, \
     assert_delete, assert_collection, do_test_page_pagination_common_scenarios
@@ -53,7 +53,7 @@ async def prepare_repo(client: AsyncClient, data=None) -> PreparedRepo:
     return PreparedRepo(resp.json()["id"], data)
 
 
-async def test_repo_create(client: AsyncClient, db: Database):
+async def test_repo_create(client: AsyncClient, dbm: DatabaseManager):
     data = prepare_repo_data()
     resp = await assert_post(
         client,
@@ -63,10 +63,10 @@ async def test_repo_create(client: AsyncClient, db: Database):
     )
 
     repo = PreparedRepo(resp.json()["id"], data)
-    await assert_collection(db.repos, [repo.expected_document()])
+    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
 
 
-async def test_repo_create_missing_name(client: AsyncClient, db: Database):
+async def test_repo_create_missing_name(client: AsyncClient, dbm: DatabaseManager):
     await assert_post(
         client,
         "/repos", json={},
@@ -74,7 +74,7 @@ async def test_repo_create_missing_name(client: AsyncClient, db: Database):
     )
 
 
-async def test_repo_create_already_used_name(client: AsyncClient, db: Database):
+async def test_repo_create_already_used_name(client: AsyncClient, dbm: DatabaseManager):
     repo = await prepare_repo(client)
 
     await assert_post(
@@ -84,7 +84,7 @@ async def test_repo_create_already_used_name(client: AsyncClient, db: Database):
     )
 
 
-async def test_repo_update(client: AsyncClient, db: Database):
+async def test_repo_update(client: AsyncClient, dbm: DatabaseManager):
     repo = await prepare_repo(client)
 
     await assert_patch(
@@ -93,7 +93,7 @@ async def test_repo_update(client: AsyncClient, db: Database):
         expected_status_code=204
     )
 
-    await assert_collection(db.repos, [repo.expected_document({"name": "Repo Updated"})])
+    await assert_collection(dbm.core_db.repos, [repo.expected_document({"name": "Repo Updated"})])
 
 
 async def test_repo_update_unknown_id(client: AsyncClient):
@@ -104,7 +104,7 @@ async def test_repo_update_unknown_id(client: AsyncClient):
     )
 
 
-async def test_repo_update_already_used_name(client: AsyncClient, db: Database):
+async def test_repo_update_already_used_name(client: AsyncClient, dbm: DatabaseManager):
     repo1 = await prepare_repo(client)
     repo2 = await prepare_repo(client)
 
@@ -115,7 +115,7 @@ async def test_repo_update_already_used_name(client: AsyncClient, db: Database):
     )
 
 
-async def test_repo_get(client: AsyncClient, db: Database):
+async def test_repo_get(client: AsyncClient, dbm: DatabaseManager):
     repo = await prepare_repo(client)
 
     await assert_get(
@@ -125,7 +125,7 @@ async def test_repo_get(client: AsyncClient, db: Database):
     )
 
 
-async def test_repo_get_unknown_id(client: AsyncClient, db: Database):
+async def test_repo_get_unknown_id(client: AsyncClient, dbm: DatabaseManager):
     await assert_get(
         client,
         f"/repos/{UNKNOWN_LOG_ID}",
@@ -133,7 +133,7 @@ async def test_repo_get_unknown_id(client: AsyncClient, db: Database):
     )
 
 
-async def test_repo_list(client: AsyncClient, db: Database):
+async def test_repo_list(client: AsyncClient, dbm: DatabaseManager):
     repos = [await prepare_repo(client) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
@@ -142,7 +142,7 @@ async def test_repo_list(client: AsyncClient, db: Database):
     )
 
 
-async def test_repo_delete(client: AsyncClient, db: Database):
+async def test_repo_delete(client: AsyncClient, dbm: DatabaseManager):
     repo = await prepare_repo(client)
 
     await assert_delete(
@@ -151,10 +151,10 @@ async def test_repo_delete(client: AsyncClient, db: Database):
         expected_status_code=204
     )
 
-    await assert_collection(db.repos, [])
+    await assert_collection(dbm.core_db.repos, [])
 
 
-async def test_repo_delete_unknown_id(client: AsyncClient, db: Database):
+async def test_repo_delete_unknown_id(client: AsyncClient, dbm: DatabaseManager):
     await assert_delete(
         client,
         f"/repos/{UNKNOWN_LOG_ID}",
