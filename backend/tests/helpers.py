@@ -1,4 +1,4 @@
-import uuid
+import random
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
@@ -6,21 +6,39 @@ from httpx import AsyncClient, ASGITransport, Response
 from icecream import ic
 
 from auditize.main import app
-from auditize.common.mongo import mongo_client, get_db, Database
+from auditize.repos.models import Repo
+from auditize.repos.service import create_repo
+from auditize.common.mongo import DatabaseManager, get_dbm, RepoDatabase
 
-# a valid ObjectId, but not existing in the database
+# A valid ObjectId, but not existing in the database
 UNKNOWN_LOG_ID = "65fab045f097fe0b9b664c99"
 
 
-def setup_test_db():
-    test_db = Database("test_%s" % uuid.uuid4(), mongo_client)
-    app.dependency_overrides[get_db] = lambda: test_db
-    return test_db
+def setup_test_dbm():
+    test_dbm = DatabaseManager.spawn(base_name="test_%04d" % int(random.random() * 10000))
+    app.dependency_overrides[get_dbm] = lambda: test_dbm
+    return test_dbm
 
 
-async def teardown_test_db(test_db):
-    app.dependency_overrides[get_db] = get_db
-    await mongo_client.drop_database(test_db.name)
+async def teardown_test_dbm(test_dbm):
+    app.dependency_overrides[get_dbm] = get_dbm
+
+    # Drop repos databases and core database
+    async for repo in test_dbm.core_db.repos.find({}):
+        await test_dbm.client.drop_database(test_dbm.get_repo_db_name(repo["_id"]))
+    await test_dbm.core_db.client.drop_database(test_dbm.core_db.name)
+
+
+class RepoTest:
+    def __init__(self, id: str, db: RepoDatabase):
+        self.id = id
+        self.db = db
+
+    @classmethod
+    async def create(cls, dbm: DatabaseManager):
+        repo_id = await create_repo(dbm, Repo(name="logs"))
+        repo_db = dbm.get_repo_db(repo_id)
+        return cls(repo_id, repo_db)
 
 
 def create_http_client():
@@ -124,34 +142,34 @@ async def do_test_page_pagination_common_scenarios(client: AsyncClient, path: st
     }
 
 
-class ApiTestHelper:
-    client: AsyncClient
-    db: Database
-
-    def setup_method(self):
-        self.client = create_http_client()
-        self.db = setup_test_db()
-
-    async def teardown_method(self):
-        # FIXME: the teardown is not awaited
-        await self.client.aclose()
-        await teardown_test_db(self.db)
-
-    async def request(self, method: str, path, *, params=None, json=None, files=None, data=None,
-                      expected_status_code=200):
-        return await assert_request(
-            self.client, method, path,
-            params=params, json=json, files=files, data=data, expected_status_code=expected_status_code
-        )
-
-    async def post(self, path, *, json=None, files=None, data=None, expected_status_code=200):
-        return await assert_post(
-            self.client, path,
-            json=json, files=files, data=data, expected_status_code=expected_status_code
-        )
-
-    async def get(self, path, *, params=None, expected_status_code=200):
-        return await assert_get(
-            self.client, path,
-            params=params, expected_status_code=expected_status_code
-        )
+# class ApiTestHelper:
+#     client: AsyncClient
+#     db: Database
+#
+#     def setup_method(self):
+#         self.client = create_http_client()
+#         self.db = setup_test_db()
+#
+#     async def teardown_method(self):
+#         # FIXME: the teardown is not awaited
+#         await self.client.aclose()
+#         await teardown_test_db(self.db)
+#
+#     async def request(self, method: str, path, *, params=None, json=None, files=None, data=None,
+#                       expected_status_code=200):
+#         return await assert_request(
+#             self.client, method, path,
+#             params=params, json=json, files=files, data=data, expected_status_code=expected_status_code
+#         )
+#
+#     async def post(self, path, *, json=None, files=None, data=None, expected_status_code=200):
+#         return await assert_post(
+#             self.client, path,
+#             json=json, files=files, data=data, expected_status_code=expected_status_code
+#         )
+#
+#     async def get(self, path, *, params=None, expected_status_code=200):
+#         return await assert_get(
+#             self.client, path,
+#             params=params, expected_status_code=expected_status_code
+#         )

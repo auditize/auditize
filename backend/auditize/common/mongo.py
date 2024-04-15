@@ -22,10 +22,15 @@ class _Collection:
         )
 
 
-class Database:
+class _BaseDatabase:
     def __init__(self, name: str, client: AsyncIOMotorClient):
         self.name = name
         self.client = client
+
+
+class RepoDatabase(_BaseDatabase):
+    def __init__(self, name: str, client: AsyncIOMotorClient):
+        super().__init__(name, client)
         self._cache = Cache(Cache.MEMORY)
 
     async def consolidate_data(self, collection: AsyncIOMotorCollection, data: dict[str, str]):
@@ -36,10 +41,7 @@ class Database:
         await collection.update_one(data, {"$set": {}}, upsert=True)
         await self._cache.set(cache_key, True)
 
-    async def setup(self):
-        await self.repos.create_index("name", unique=True)
-
-    # log related collections
+    # Collections
     logs = _Collection("logs")
     log_events = _Collection("log_events")
     log_source_keys = _Collection("log_source_keys")
@@ -51,13 +53,41 @@ class Database:
     log_tag_categories = _Collection("log_tag_categories")
     log_nodes = _Collection("log_nodes")
 
-    # settings related collections
+
+class CoreDatabase(_BaseDatabase):
+    async def setup(self):
+        await self.repos.create_index("name", unique=True)
+
+    # Collections
     repos = _Collection("repos")
 
 
-mongo_client = AsyncIOMotorClient()
-database = Database("auditize", mongo_client)
+_mongo_client = AsyncIOMotorClient()
 
 
-def get_db() -> Database:
-    return database
+class DatabaseManager:
+    def __init__(self, client: AsyncIOMotorClient, base_name):
+        self.client = client
+        self.base_name = base_name
+        self.core_db = CoreDatabase(self.base_name, client)
+
+    @classmethod
+    def spawn(cls, client: AsyncIOMotorClient = None, base_name="auditize"):
+        return cls(client or _mongo_client, base_name)
+
+    def setup(self):
+        return self.core_db.setup()
+
+    def get_repo_db_name(self, repo_id: str) -> str:
+        return f"{self.base_name}_repo_{repo_id}"
+
+    @lru_cache
+    def get_repo_db(self, repo_name: str) -> RepoDatabase:
+        return RepoDatabase(self.get_repo_db_name(repo_name), self.client)
+
+
+_dbm = DatabaseManager.spawn(_mongo_client)
+
+
+def get_dbm() -> DatabaseManager:
+    return _dbm

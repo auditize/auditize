@@ -10,94 +10,109 @@ from auditize.logs.api_models import (
     LogTagCategoryListResponse, LogNodeListResponse, LogNodeResponse
 )
 from auditize.logs import service
-from auditize.common.mongo import Database, get_db
+from auditize.common.mongo import DatabaseManager, get_dbm
 from auditize.common.api import COMMON_RESPONSES
 from auditize.common.utils import validate_datetime
 from auditize.common.pagination.page.api_models import PagePaginationParams
-from auditize.common.pagination.page.api import handle_page_paginated_request
 
 router = APIRouter()
 
 
 @router.get(
-    "/logs/events",
+    "/repos/{repo_id}/logs/events",
     summary="Get log event names",
     operation_id="get_log_event_names",
     tags=["logs"]
 )
 async def get_log_event_names(
-        db: Annotated[Database, Depends(get_db)],
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        repo_id: str,
         page_params: Annotated[PagePaginationParams, Depends()], category: str = None
 ) -> LogEventNameListResponse:
-    return await handle_page_paginated_request(
-        db, LogEventNameListResponse, service.get_log_events, page_params, event_category=category
+    events, pagination = await service.get_log_events(
+        dbm, repo_id, event_category=category, page=page_params.page, page_size=page_params.page_size,
     )
+    return LogEventNameListResponse.build(events, pagination)
 
 
 @router.get(
-    "/logs/event-categories",
+    "/repos/{repo_id}/logs/event-categories",
     summary="Get log event categories",
     operation_id="get_log_event_categories",
     tags=["logs"]
 )
 async def get_log_event_categories(
-        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        repo_id: str,
+        page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogEventCategoryListResponse:
-    return await handle_page_paginated_request(
-        db, LogEventCategoryListResponse, service.get_log_event_categories, page_params
+    categories, pagination = await service.get_log_event_categories(
+        dbm, repo_id,
+        page=page_params.page, page_size=page_params.page_size
     )
+    return LogEventCategoryListResponse.build(categories, pagination)
 
 
 @router.get(
-    "/logs/actor-types",
+    "/repos/{repo_id}/logs/actor-types",
     summary="Get log actor types",
     operation_id="get_log_actor_types",
     tags=["logs"]
 )
 async def get_log_actor_types(
-        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        repo_id: str,
+        page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogActorTypeListResponse:
-    return await handle_page_paginated_request(
-        db, LogActorTypeListResponse, service.get_log_actor_types, page_params
+    actor_types, pagination = await service.get_log_actor_types(
+        dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
+    return LogActorTypeListResponse.build(actor_types, pagination)
 
 
 @router.get(
-    "/logs/resource-types",
+    "/repos/{repo_id}/logs/resource-types",
     summary="Get log resource types",
     operation_id="get_log_resource_types",
     tags=["logs"]
 )
 async def get_log_resource_types(
-        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        repo_id: str,
+        page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogResourceTypeListResponse:
-    return await handle_page_paginated_request(
-        db, LogResourceTypeListResponse, service.get_log_resource_types, page_params
+    resource_types, pagination = await service.get_log_resource_types(
+        dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
+    return LogResourceTypeListResponse.build(resource_types, pagination)
 
 
 @router.get(
-    "/logs/tag-categories",
+    "/repos/{repo_id}/logs/tag-categories",
     summary="Get log tag categories",
     operation_id="get_log_tag_categories",
     tags=["logs"]
 )
 async def get_log_tag_categories(
-        db: Annotated[Database, Depends(get_db)], page_params: Annotated[PagePaginationParams, Depends()]
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        repo_id: str,
+        page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogTagCategoryListResponse:
-    return await handle_page_paginated_request(
-        db, LogTagCategoryListResponse, service.get_log_tag_categories, page_params
+    tag_categories, pagination = await service.get_log_tag_categories(
+        dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
+    return LogTagCategoryListResponse.build(tag_categories, pagination)
 
 
 @router.get(
-    "/logs/nodes",
+    "/repos/{repo_id}/logs/nodes",
     summary="Get log nodes",
     operation_id="get_log_nodes",
     tags=["logs"]
 )
 async def get_log_nodes(
-    db: Annotated[Database, Depends(get_db)],
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    repo_id: str,
     root: bool = False,
     parent_node_id: str = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams()
@@ -112,39 +127,45 @@ async def get_log_nodes(
     else:
         filter_args = {}
 
-    return await handle_page_paginated_request(
-        db, LogNodeListResponse, service.get_log_nodes, page_params, **filter_args
+    nodes, pagination = await service.get_log_nodes(
+        dbm, repo_id, page=page_params.page, page_size=page_params.page_size, **filter_args
     )
+    return LogNodeListResponse.build(nodes, pagination)
 
 
 @router.get(
-    "/logs/nodes/{node_id}",
+    "/repos/{repo_id}/logs/nodes/{node_id}",
     summary="Get a log node",
     operation_id="get_log_node",
     tags=["logs"]
 )
 async def get_log_node(
-    db: Annotated[Database, Depends(get_db)],
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    repo_id: str,
     node_id: Annotated[str, Path(title="Node ID")]
 ):
-    node = await service.get_log_node(db, node_id)
+    node = await service.get_log_node(dbm, repo_id, node_id)
     return LogNodeResponse.from_node(node)
 
 
 @router.post(
-    "/logs",
+    "/repos/{repo_id}/logs",
     status_code=201,
     summary="Create a log",
     operation_id="create_log",
     tags=["logs"]
 )
-async def create_log(db: Annotated[Database, Depends(get_db)], log_req: LogCreationRequest) -> LogCreationResponse:
-    log_id = await service.save_log(db, log_req.to_log())
+async def create_log(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    repo_id: str,
+    log_req: LogCreationRequest
+) -> LogCreationResponse:
+    log_id = await service.save_log(dbm, repo_id, log_req.to_log())
     return LogCreationResponse(id=log_id)
 
 
 @router.post(
-    "/logs/{log_id}/attachments",
+    "/repos/{repo_id}/logs/{log_id}/attachments",
     status_code=204,
     response_class=Response,
     summary="Add a file attachment to a log",
@@ -152,7 +173,8 @@ async def create_log(db: Annotated[Database, Depends(get_db)], log_req: LogCreat
     tags=["logs"]
 )
 async def add_attachment(
-        db: Annotated[Database, Depends(get_db)],
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        repo_id: str,
         log_id: Annotated[str, Path(
             title="Log ID",
             description="The ID of the log to attach the file to"
@@ -182,7 +204,8 @@ async def add_attachment(
         )] = None
 ) -> None:
     await service.save_log_attachment(
-        db,
+        dbm,
+        repo_id,
         log_id,
         name or file.filename,
         type,
@@ -192,33 +215,37 @@ async def add_attachment(
 
 
 @router.get(
-    "/logs/{log_id}",
+    "/repos/{repo_id}/logs/{log_id}",
     summary="Get a log",
     operation_id="get_log",
     tags=["logs"],
     responses=COMMON_RESPONSES
 )
 async def get_log(
-        db: Annotated[Database, Depends(get_db)], log_id: Annotated[str, Path(title="Log ID")]) -> LogReadingResponse:
-    log = await service.get_log(db, log_id)
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    repo_id: str,
+    log_id: Annotated[str, Path(title="Log ID")]
+) -> LogReadingResponse:
+    log = await service.get_log(dbm, repo_id, log_id)
     return LogReadingResponse.from_log(log)
 
 
 @router.get(
-    "/logs/{log_id}/attachments/{attachment_idx}",
+    "/repos/{repo_id}/logs/{log_id}/attachments/{attachment_idx}",
     summary="Download a log attachment",
     operation_id="get_log_attachment",
     tags=["logs"]
 )
 async def get_log_attachment(
-        db: Annotated[Database, Depends(get_db)],
-        log_id: str = Path(title="Log ID"),
-        attachment_idx: int = Path(
-            title="Attachment index",
-            description="The index of the attachment in the log's attachments list (starts from 0)"
-        )
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    repo_id: str,
+    log_id: str = Path(title="Log ID"),
+    attachment_idx: int = Path(
+        title="Attachment index",
+        description="The index of the attachment in the log's attachments list (starts from 0)"
+    )
 ):
-    attachment = await service.get_log_attachment(db, log_id, attachment_idx)
+    attachment = await service.get_log_attachment(dbm, repo_id, log_id, attachment_idx)
     return Response(
         content=attachment.data,
         media_type=attachment.mime_type,
@@ -227,13 +254,14 @@ async def get_log_attachment(
 
 
 @router.get(
-    "/logs",
+    "/repos/{repo_id}/logs",
     summary="Get logs",
     operation_id="get_logs",
     tags=["logs"]
 )
 async def get_logs(
-        db: Annotated[Database, Depends(get_db)],
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        repo_id: str,
         event_name: str = None,
         event_category: str = None,
         actor_type: str = None, actor_name: str = None,
@@ -247,7 +275,8 @@ async def get_logs(
 ) -> LogsReadingResponse:
     # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
-        db,
+        dbm,
+        repo_id,
         event_name=event_name, event_category=event_category,
         actor_type=actor_type, actor_name=actor_name,
         resource_type=resource_type, resource_name=resource_name,

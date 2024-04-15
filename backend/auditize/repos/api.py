@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse, RepoReadingResponse, \
     RepoListResponse, RepoUpdateRequest
 from auditize.repos import service
-from auditize.common.mongo import Database, get_db
+from auditize.common.mongo import DatabaseManager, get_dbm
 
 router = APIRouter()
 
@@ -17,9 +17,9 @@ router = APIRouter()
     status_code=201
 )
 async def create_repo(
-        db: Annotated[Database, Depends(get_db)], repo: RepoCreationRequest
+        dbm: Annotated[DatabaseManager, Depends(get_dbm)], repo: RepoCreationRequest
 ) -> RepoCreationResponse:
-    repo_id = await service.create_repo(db, repo.to_repo())
+    repo_id = await service.create_repo(dbm, repo.to_repo())
     return RepoCreationResponse(id=repo_id)
 
 
@@ -30,10 +30,10 @@ async def create_repo(
     status_code=204
 )
 async def update_repo(
-    db: Annotated[Database, Depends(get_db)],
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     repo_id: str, repo: RepoUpdateRequest
 ):
-    await service.update_repo(db, repo_id, repo.to_repo_update())
+    await service.update_repo(dbm, repo_id, repo.to_repo_update())
     return None
 
 
@@ -44,9 +44,9 @@ async def update_repo(
     response_model=RepoReadingResponse
 )
 async def get_repo(
-    db: Annotated[Database, Depends(get_db)], repo_id: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], repo_id: str
 ) -> RepoReadingResponse:
-    repo = await service.get_repo(db, repo_id)
+    repo = await service.get_repo(dbm, repo_id)
     return RepoReadingResponse.from_repo(repo)
 
 
@@ -57,9 +57,9 @@ async def get_repo(
     response_model=RepoListResponse
 )
 async def list_repos(
-    db: Annotated[Database, Depends(get_db)], page: int = 1, page_size: int = 10
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], page: int = 1, page_size: int = 10
 ) -> RepoListResponse:
-    repos, page_info = await service.get_repos(db, page, page_size)
+    repos, page_info = await service.get_repos(dbm, page, page_size)
     return RepoListResponse.build(repos, page_info)
 
 
@@ -70,6 +70,6 @@ async def list_repos(
     status_code=204
 )
 async def delete_repo(
-    db: Annotated[Database, Depends(get_db)], repo_id: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], repo_id: str
 ):
-    await service.delete_repo(db, repo_id)
+    await service.delete_repo(dbm, repo_id)

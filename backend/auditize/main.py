@@ -9,15 +9,18 @@ from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.api import make_404_response, make_409_response
-from auditize.common.mongo import database
+from auditize.common.mongo import get_dbm
 
 ic.configureOutput(includeContext=True)
 
 
 @asynccontextmanager
 async def setup_db(_):
-    await database.setup()
+    # FIXME: avoid initializing the default database in a test context
+    dbm = get_dbm()
+    await dbm.setup()
     yield
+
 
 app = FastAPI(lifespan=setup_db)
 
