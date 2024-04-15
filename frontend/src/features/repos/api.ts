@@ -1,3 +1,4 @@
+import { getAllPagePaginatedItems } from '@/utils/api';
 import axios from 'axios';
 
 export async function createRepo({name}: {name: string}): Promise<string> {
@@ -12,6 +13,10 @@ export async function updateRepo(id: string, update: RepoUpdate): Promise<void> 
 export async function getRepos(page = 1): Promise<[Repo[], PagePaginationInfo]> {
   const response = await axios.get('http://localhost:8000/repos', {params: {page}});
   return [response.data.data, response.data.pagination];
+}
+
+export async function getAllRepos(): Promise<Repo[]> {
+  return await getAllPagePaginatedItems<Repo>('http://localhost:8000/repos');
 }
 
 export async function getRepo(repoId: string): Promise<Repo> {

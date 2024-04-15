@@ -1,25 +1,40 @@
 import { Select } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { labelize } from '../utils/format';
+import { useEffect } from 'react';
 
 export function PaginatedSelector(
-  { label, queryKey, queryFn, selectedItem, onChange }: { label: string; queryKey: any; queryFn: () => Promise<string[]>; selectedItem?: string; onChange: (value: string) => void; }) {
+  { label, queryKey, queryFn, onDataLoaded, selectedItem, clearable = true, onChange, itemLabel, itemValue }:
+  { label: string;
+    queryKey: any;
+    queryFn: () => Promise<any[]>;
+    onDataLoaded?: (data: any[]) => void;
+    selectedItem?: string;
+    clearable?: boolean;
+    onChange: (value: string) => void;
+    itemLabel: (item: any) => string;
+    itemValue: (item: any) => string;
+  }) {
   const { isPending, error, data } = useQuery({
     queryKey: queryKey,
     queryFn: queryFn,
     refetchOnWindowFocus: false
   });
 
+  useEffect(() => {
+    if (data && onDataLoaded)
+      onDataLoaded(data);
+  }, [data]);
+
   if (error)
     return <div>Error: {error.message}</div>;
 
   return (
     <Select
-      data={data?.map((item) => ({ label: labelize(item), value: item }))}
+      data={data?.map((item) => ({ label: itemLabel(item), value: itemValue(item) }))}
       value={selectedItem || null}
       onChange={(value) => onChange(value || "")}
       placeholder={isPending ? "Loading..." : label}
-      clearable
+      clearable={clearable}
       display="flex"
       comboboxProps={{ withinPortal: false }} />
   );

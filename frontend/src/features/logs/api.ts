@@ -1,13 +1,12 @@
+import { getAllPagePaginatedItems } from '@/utils/api';
+import { timeout } from '@/utils/api';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
 
-async function timeout(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 export type LogsFilterParams = {
+  repoId?: string;
   eventCategory?: string;
   eventName?: string;
   actorType?: string;
@@ -24,6 +23,7 @@ export type LogsFilterParams = {
 
 export function buildEmptyLogsFilterParams(): LogsFilterParams {
   return {
+    repoId: "",
     eventCategory: "",
     eventName: "",
     actorType: "",
@@ -67,47 +67,30 @@ export async function getLogs(cursor: string | null, filter?: LogsFilterParams, 
   return {logs: response.data.data, nextCursor: response.data.pagination.next_cursor};
 }
 
-export async function getPaginatedItems<T>(url: string, filter = {}): Promise<T[]> {
-  await timeout(500);  // FIXME: Simulate network latency
-
-  let page = 1;
-  let items: T[] = [];
-
-  while (true) {
-    const response = await axios.get(url, {params: {page, ...filter}});
-    items.push(...response.data.data);
-    if (response.data.pagination.page >= response.data.pagination.total_pages)
-      break;
-    page++;
-  }
-
-  return items;
-}
-
 export async function getAllLogEventCategories(): Promise<string[]> {
-  return getPaginatedItems<string>('http://localhost:8000/logs/event-categories');
+  return getAllPagePaginatedItems<string>('http://localhost:8000/logs/event-categories');
 }
 
 export async function getAllLogEventNames(category?: string): Promise<string[]> {
-  return getPaginatedItems<string>(
+  return getAllPagePaginatedItems<string>(
     'http://localhost:8000/logs/events', category ? {category} : {}
   );
 }
 
 export async function getAllLogActorTypes(): Promise<string[]> {
-  return getPaginatedItems<string>('http://localhost:8000/logs/actor-types');
+  return getAllPagePaginatedItems<string>('http://localhost:8000/logs/actor-types');
 }
 
 export async function getAllLogResourceTypes(): Promise<string[]> {
-  return getPaginatedItems<string>('http://localhost:8000/logs/resource-types');
+  return getAllPagePaginatedItems<string>('http://localhost:8000/logs/resource-types');
 }
 
 export async function getAllLogTagCategories(): Promise<string[]> {
-  return getPaginatedItems<string>('http://localhost:8000/logs/tag-categories');
+  return getAllPagePaginatedItems<string>('http://localhost:8000/logs/tag-categories');
 }
 
 export async function getAllLogNodes(parent_node_id?: string | null): Promise<LogNode[]> {
-  return getPaginatedItems<LogNode>(
+  return getAllPagePaginatedItems<LogNode>(
     'http://localhost:8000/logs/nodes',
     parent_node_id ? {parent_node_id} : {root: true}
   );

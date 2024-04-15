@@ -1,15 +1,20 @@
 import { useEffect, useReducer } from 'react';
 import { Button, Group, TextInput, Space } from '@mantine/core';
+import { useLocalStorage } from '@mantine/hooks';
 import { getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, LogsFilterParams, buildEmptyLogsFilterParams } from '../api';
 import { PaginatedSelector, PopoverForm, CustomDateTimePicker } from '@/components';
 import { NodeSelector } from './NodeSelector';
+import { labelize } from '@/utils/format';
+import { getAllRepos } from '@/features/repos/api';
 
 function EventCategorySelector({ category, onChange }: { category?: string; onChange: (value: string) => void; }) {
   return (
     <PaginatedSelector
       label="Event category"
       queryKey={['logEventCategory']} queryFn={getAllLogEventCategories}
-      selectedItem={category} onChange={onChange} />
+      selectedItem={category} onChange={onChange}
+      itemLabel={(item) => labelize(item)} itemValue={(item) => item}
+    />
   );
 }
 
@@ -19,7 +24,9 @@ function EventNameSelector(
     <PaginatedSelector
       label="Event name"
       queryKey={['logEventNames', category]} queryFn={() => getAllLogEventNames(category)}
-      selectedItem={name} onChange={onChange} />
+      selectedItem={name} onChange={onChange}
+      itemLabel={(item) => labelize(item)} itemValue={(item) => item}
+    />
   );
 }
 
@@ -28,7 +35,9 @@ function ActorTypeSelector({ type, onChange }: { type?: string; onChange: (value
     <PaginatedSelector
       label="Actor type"
       queryKey={['logActorType']} queryFn={getAllLogActorTypes}
-      selectedItem={type} onChange={onChange} />
+      selectedItem={type} onChange={onChange}
+      itemLabel={(item) => labelize(item)} itemValue={(item) => item}
+    />
   );
 }
 
@@ -37,7 +46,9 @@ function ResourceTypeSelector({ type, onChange }: { type?: string; onChange: (va
     <PaginatedSelector
       label="Resource type"
       queryKey={['logResourceType']} queryFn={getAllLogResourceTypes}
-      selectedItem={type} onChange={onChange} />
+      selectedItem={type} onChange={onChange}
+      itemLabel={(item) => labelize(item)} itemValue={(item) => item}
+    />
   );
 }
 
@@ -46,7 +57,39 @@ function TagCategorySelector({ category, onChange }: { category?: string; onChan
     <PaginatedSelector
       label="Tag category"
       queryKey={['logTagCategory']} queryFn={getAllLogTagCategories}
-      selectedItem={category} onChange={onChange} />
+      selectedItem={category} onChange={onChange}
+      itemLabel={(item) => labelize(item)} itemValue={(item) => item}
+    />
+  );
+}
+
+function RepoSelector({ repoId, onChange }: { repoId?: string; onChange: (value: string) => void; }) {
+  const [defaultSelectedRepo, setDefaultSelectedRepo] = useLocalStorage({
+    key: 'default-selected-repo'
+  });
+
+  useEffect(() => {
+    if (repoId) {
+      setDefaultSelectedRepo(repoId);
+    }
+  }, [repoId]);
+
+  return (
+    <PaginatedSelector
+      label="Repository"
+      queryKey={['repos']} queryFn={getAllRepos}
+      selectedItem={repoId} clearable={false} onChange={onChange}
+      onDataLoaded={(repos: Repo[]) => {
+        // if no default repo or default repo is not in the list, select the first one (if any)
+        if (!defaultSelectedRepo || !repos.find((repo) => repo.id === defaultSelectedRepo)) {
+          if (repos.length > 0)
+            onChange(repos[0].id);
+        } else {
+          onChange(defaultSelectedRepo);
+        }
+      }}
+      itemLabel={(repo) => repo.name} itemValue={(repo) => repo.id}
+    />
   );
 }
 
@@ -93,6 +136,9 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
 
   return (
     <Group p="1rem">
+      {/* Repository selector */}
+      <RepoSelector repoId={editedParams.repoId} onChange={changeParamHandler("repoId")} />
+
       {/* Time criteria */}
       <PopoverForm title="Date" isFilled={hasDate}>
         <CustomDateTimePicker
