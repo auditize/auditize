@@ -29,7 +29,9 @@ async def get_repo(db: Database, repo_id: ObjectId | str) -> Repo:
 
 
 async def get_repos(db: Database, page: int, page_size: int) -> tuple[list[Repo], PagePaginationInfo]:
-    results, page_info = await find_paginated_by_page(db.repos, page=page, page_size=page_size)
+    results, page_info = await find_paginated_by_page(
+        db.repos, page=page, page_size=page_size, sort=[("name", 1)]
+    )
     return [Repo.model_validate(result) async for result in results], page_info
 
 

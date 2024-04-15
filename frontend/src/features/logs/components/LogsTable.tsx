@@ -8,7 +8,7 @@ function LogTableRow({ log, onTableFilterChange }: { log: Log; onTableFilterChan
 
   return (
     <Table.Tr key={log.id}>
-      <LogDetails log={log} opened={opened} onClose={close} />
+      <LogDetails log={log} opened={opened} onClose={() => {console.log("close LogTableRow " + log.id); close();}} />
       <Table.Td>
         <Anchor onClick={open} underline='hover'>
           {log.saved_at}

@@ -34,3 +34,10 @@ type LogNode = {
   parent_node_id: string | null;
   has_children: boolean;
 };
+
+type PagePaginationInfo = {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+};

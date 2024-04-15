@@ -8,7 +8,7 @@ import { IconUser, IconCylinder, IconHierarchy } from "@tabler/icons-react";
 export function LogDetails({ log, opened, onClose }: { log: Log; opened: boolean; onClose: () => void; }) {
   return (
     <Modal
-      title={<Title order={1}>Log details</Title>} size="lg" padding="lg"
+      title={"Log details"} size="lg" padding="lg"
       opened={opened} onClose={onClose}
     >
       <div>

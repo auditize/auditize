@@ -3,6 +3,7 @@ import '@mantine/dates/styles.css';
 import { MantineProvider, AppShell, Group, UnstyledButton } from '@mantine/core';
 import { theme } from './theme';
 import { Logs } from './features/logs';
+import { ReposManagement } from './features/repos';
 import {
   QueryClient,
   QueryClientProvider,
@@ -24,6 +25,9 @@ function Main() {
             <UnstyledButton>
               <Link to="/logs">Logs</Link>
             </UnstyledButton>
+            <UnstyledButton>
+              <Link to="/repos">Repositories Management</Link>
+            </UnstyledButton>
           </Group>
         </Group>
       </AppShell.Header>
@@ -43,8 +47,12 @@ export default function App() {
       element: <Main/>,
       children: [
         {
-          path: "/logs",
+          path: "logs",
           element: <Logs/>
+        },
+        {
+          path: 'repos',
+          element: <ReposManagement/>
         }
       ]
     }
