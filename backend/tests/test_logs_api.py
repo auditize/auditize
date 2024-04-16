@@ -7,14 +7,18 @@ import callee
 from httpx import AsyncClient
 from icecream import ic
 
-from auditize.common.mongo import DatabaseManager, RepoDatabase
+from auditize.common.mongo import RepoDatabase
 from auditize.logs.service import (
     consolidate_log_event, consolidate_log_actor, consolidate_log_resource,
     consolidate_log_tags, consolidate_log_node_path
 )
 from auditize.logs.models import Log
 
-from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, do_test_page_pagination_common_scenarios, RepoTest
+from helpers import (
+    UNKNOWN_LOG_ID, assert_post, assert_get, RepoTest,
+    do_test_page_pagination_common_scenarios,
+    do_test_page_pagination_empty_data
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -705,6 +709,10 @@ async def test_get_log_event_categories(client: AsyncClient, repo: RepoTest):
     )
 
 
+async def test_get_log_event_categories_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/event-categories")
+
+
 async def test_get_log_event_names(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_event(repo.db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
@@ -729,6 +737,10 @@ async def test_get_log_event_names(client: AsyncClient, repo: RepoTest):
     }
 
 
+async def test_get_log_event_names_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/events")
+
+
 async def test_get_log_actor_types(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_actor(repo.db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
@@ -736,6 +748,10 @@ async def test_get_log_actor_types(client: AsyncClient, repo: RepoTest):
     await do_test_page_pagination_common_scenarios(
         client, f"/repos/{repo.id}/logs/actor-types", [f"type_{i}" for i in range(5)]
     )
+
+
+async def test_get_log_actor_types_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/actor-types")
 
 
 async def test_get_log_resource_types(client: AsyncClient, repo: RepoTest):
@@ -747,6 +763,10 @@ async def test_get_log_resource_types(client: AsyncClient, repo: RepoTest):
     )
 
 
+async def test_get_log_resource_types_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/resource-types")
+
+
 async def test_get_log_tag_categories(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):
         await consolidate_log_tags(repo.db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
@@ -755,6 +775,10 @@ async def test_get_log_tag_categories(client: AsyncClient, repo: RepoTest):
     await do_test_page_pagination_common_scenarios(
         client, f"/repos/{repo.id}/logs/tag-categories", [f"category_{i}" for i in range(5)]
     )
+
+
+async def test_get_log_tag_categories_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/tag-categories")
 
 
 async def test_get_log_nodes_without_filters(client: AsyncClient, repo: RepoTest):
@@ -794,6 +818,10 @@ async def test_get_log_nodes_with_filters(client: AsyncClient, repo: RepoTest):
         [{"id": f"entity:2-{j}", "name": f"Entity {j}", "parent_node_id": "customer:2", "has_children": False}
          for j in ("a", "b", "c", "d", "e")]
     )
+
+
+async def test_get_log_nodes_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/nodes")
 
 
 async def test_get_log_node(client: AsyncClient, repo: RepoTest):

@@ -142,6 +142,19 @@ async def do_test_page_pagination_common_scenarios(client: AsyncClient, path: st
     }
 
 
+async def do_test_page_pagination_empty_data(client: AsyncClient, path: str):
+    resp = await assert_get(client, path)
+    assert resp.json() == {
+        "data": [],
+        "pagination": {
+            "page": 1,
+            "page_size": 10,
+            "total": 0,
+            "total_pages": 0
+        }
+    }
+
+
 # class ApiTestHelper:
 #     client: AsyncClient
 #     db: Database

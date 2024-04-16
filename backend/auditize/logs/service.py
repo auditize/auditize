@@ -202,7 +202,10 @@ async def _get_consolidated_data_aggregated_field(
             {"$count": "total"}
         ]
     )
-    total = (await results.next())["total"]
+    try:
+        total = (await results.next())["total"]
+    except StopAsyncIteration:
+        total = 0
 
     return values, PagePaginationInfo.build(page=page, page_size=page_size, total=total)
 
