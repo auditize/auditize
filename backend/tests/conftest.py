@@ -1,8 +1,8 @@
 import pytest
 
-pytest.register_assert_rewrite("helpers")
 
-from helpers import create_http_client, setup_test_db, teardown_test_db
+pytest.register_assert_rewrite("helpers")
+from helpers import create_http_client, setup_test_dbm, teardown_test_dbm, RepoTest
 
 
 @pytest.fixture(scope="session")
@@ -18,8 +18,13 @@ async def client():
 
 
 @pytest.fixture(scope="function")
-async def db():
-    test_db = setup_test_db()
-    await test_db.setup()
-    yield test_db
-    await teardown_test_db(test_db)
+async def dbm():
+    test_dbm = setup_test_dbm()
+    await test_dbm.setup()
+    yield test_dbm
+    await teardown_test_dbm(test_dbm)
+
+
+@pytest.fixture(scope="function")
+async def repo(dbm):
+    return await RepoTest.create(dbm)

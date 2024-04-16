@@ -12,7 +12,7 @@ export function Logs() {
     <Container size="xl" p="20px">
       <LogsFilter params={filter} onChange={setFilter} />
       <LogsLoader filter={filter} onTableFilterChange={(name, value) => {
-        setFilter((filter) => ({since: filter.since, until: filter.until, [name]: value}));
+        setFilter((filter) => ({repoId: filter.repoId, since: filter.since, until: filter.until, [name]: value}));
       }}/>
     </Container>
   );

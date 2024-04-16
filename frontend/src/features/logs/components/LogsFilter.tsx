@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { Button, Group, TextInput, Space } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, getAllLogResourceTypes, getAllLogTagCategories, LogsFilterParams, buildEmptyLogsFilterParams } from '../api';
@@ -7,11 +7,15 @@ import { NodeSelector } from './NodeSelector';
 import { labelize } from '@/utils/format';
 import { getAllRepos } from '@/features/repos/api';
 
-function EventCategorySelector({ category, onChange }: { category?: string; onChange: (value: string) => void; }) {
+function EventCategorySelector(
+  { repoId, category, onChange }:
+  { repoId?: string, category?: string; onChange: (value: string) => void; }) {
   return (
     <PaginatedSelector
       label="Event category"
-      queryKey={['logEventCategory']} queryFn={getAllLogEventCategories}
+      queryKey={['logEventCategory', repoId]}
+      queryFn={() => getAllLogEventCategories(repoId!)}
+      enabled={!!repoId}
       selectedItem={category} onChange={onChange}
       itemLabel={(item) => labelize(item)} itemValue={(item) => item}
     />
@@ -19,44 +23,59 @@ function EventCategorySelector({ category, onChange }: { category?: string; onCh
 }
 
 function EventNameSelector(
-  { name, category, onChange }: { name?: string; category?: string; onChange: (value: string) => void; }) {
+  { repoId, name, category, onChange }:
+  { repoId?: string, name?: string; category?: string; onChange: (value: string) => void; }) {
   return (
     <PaginatedSelector
       label="Event name"
-      queryKey={['logEventNames', category]} queryFn={() => getAllLogEventNames(category)}
+      queryKey={['logEventNames', repoId, category]}
+      queryFn={() => getAllLogEventNames(repoId!, category)}
+      enabled={!!repoId}
       selectedItem={name} onChange={onChange}
       itemLabel={(item) => labelize(item)} itemValue={(item) => item}
     />
   );
 }
 
-function ActorTypeSelector({ type, onChange }: { type?: string; onChange: (value: string) => void; }) {
+function ActorTypeSelector(
+  { repoId, type, onChange }:
+  { repoId?: string, type?: string; onChange: (value: string) => void; }) {
   return (
     <PaginatedSelector
       label="Actor type"
-      queryKey={['logActorType']} queryFn={getAllLogActorTypes}
+      queryKey={['logActorType', repoId]}
+      queryFn={() => getAllLogActorTypes(repoId!)}
+      enabled={!!repoId}
       selectedItem={type} onChange={onChange}
       itemLabel={(item) => labelize(item)} itemValue={(item) => item}
     />
   );
 }
 
-function ResourceTypeSelector({ type, onChange }: { type?: string; onChange: (value: string) => void; }) {
+function ResourceTypeSelector(
+  { repoId, type, onChange }:
+  { repoId?: string, type?: string; onChange: (value: string) => void; }) {
   return (
     <PaginatedSelector
       label="Resource type"
-      queryKey={['logResourceType']} queryFn={getAllLogResourceTypes}
+      queryKey={['logResourceType', repoId]}
+      queryFn={() => getAllLogResourceTypes(repoId!)}
+      enabled={!!repoId}
       selectedItem={type} onChange={onChange}
       itemLabel={(item) => labelize(item)} itemValue={(item) => item}
     />
   );
 }
 
-function TagCategorySelector({ category, onChange }: { category?: string; onChange: (value: string) => void; }) {
+function TagCategorySelector(
+  { repoId, category, onChange }:
+  { repoId?: string, category?: string; onChange: (value: string) => void; }) {
   return (
     <PaginatedSelector
       label="Tag category"
-      queryKey={['logTagCategory']} queryFn={getAllLogTagCategories}
+      queryKey={['logTagCategory', repoId]}
+      queryFn={() => getAllLogTagCategories(repoId!)}
+      enabled={!!repoId}
       selectedItem={category} onChange={onChange}
       itemLabel={(item) => labelize(item)} itemValue={(item) => item}
     />
@@ -113,15 +132,28 @@ function filterParamsReducer(state: LogsFilterParams, action: SetParamAction | R
         update['eventName'] = "";
       return { ...state, ...update };
     case 'resetParams':
-      return action.params ? { ...buildEmptyLogsFilterParams(), ...action.params } : { ...buildEmptyLogsFilterParams() };
+      const newParams = { ...buildEmptyLogsFilterParams(), repoId: state.repoId };
+      return action.params ? { ...newParams, ...action.params } : newParams;
   }
 }
 
 export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onChange: (filter: LogsFilterParams) => void; }) {
   const [editedParams, dispatch] = useReducer(filterParamsReducer, buildEmptyLogsFilterParams());
+  const isRepoSelected = useRef(false);
+
+  // Typically, an inline filter has been applied from logs table
   useEffect(() => {
     dispatch({ type: 'resetParams', params });
   }, [params]);
+
+  // Trigger a log search when the log repository is selected for the first time
+  // so that the logs table can be populated when the page is loaded without any explicit filter
+  useEffect(() => {
+    if (! isRepoSelected.current && editedParams.repoId) {
+      isRepoSelected.current = true;
+      onChange(editedParams);
+    }
+  }, [editedParams.repoId]);
 
   const changeParamHandler = (name: string) => (value: any) => dispatch({ type: 'setParam', name, value });
   const changeTextInputParamHandler = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => dispatch({ type: 'setParam', name, value: e.target.value });
@@ -155,9 +187,11 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
       {/* Event criteria */}
       <PopoverForm title="Event" isFilled={hasEvent}>
         <EventCategorySelector
+          repoId={editedParams.repoId}
           category={editedParams.eventCategory}
           onChange={changeParamHandler("eventCategory")} />
         <EventNameSelector
+          repoId={editedParams.repoId}
           name={editedParams.eventName} category={editedParams.eventCategory}
           onChange={changeParamHandler("eventName")} />
       </PopoverForm>
@@ -165,6 +199,7 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
       {/* Actor criteria */}
       <PopoverForm title="Actor" isFilled={hasActor}>
         <ActorTypeSelector
+          repoId={editedParams.repoId}
           type={editedParams.actorType}
           onChange={changeParamHandler("actorType")} />
         <TextInput
@@ -177,6 +212,7 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
       {/* Resource criteria */}
       <PopoverForm title="Resource" isFilled={hasResource}>
         <ResourceTypeSelector
+          repoId={editedParams.repoId}
           type={editedParams.resourceType}
           onChange={changeParamHandler("resourceType")} />
         <TextInput
@@ -189,6 +225,7 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
       {/* Tag criteria */}
       <PopoverForm title="Tag" isFilled={hasTag}>
         <TagCategorySelector
+          repoId={editedParams.repoId}
           category={editedParams.tagCategory}
           onChange={changeParamHandler("tagCategory")} />
         <TextInput
@@ -205,7 +242,11 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
 
       {/* Node criteria */}
       <PopoverForm title="Node" isFilled={!!editedParams.nodeId}>
-        <NodeSelector nodeId={editedParams.nodeId || null} onChange={changeParamHandler("nodeId")} />
+        <NodeSelector
+          repoId={editedParams.repoId || null}
+          nodeId={editedParams.nodeId || null}
+          onChange={changeParamHandler("nodeId")}
+        />
       </PopoverForm>
 
       {/* Apply & clear buttons */}

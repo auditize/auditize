@@ -4,10 +4,12 @@ import { getLogs, LogsFilterParams } from '../api';
 import { LogsTable } from './LogsTable';
 
 export function LogsLoader(
-  { filter = {}, onTableFilterChange }: { filter: LogsFilterParams; onTableFilterChange: (name: string, value: string) => void; }) {
+  { filter = {}, onTableFilterChange } :
+  { filter: LogsFilterParams; onTableFilterChange: (name: string, value: string) => void; }) {
   const { isPending, error, data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['logs', filter],
     queryFn: async ({ pageParam }: { pageParam: string | null; }) => await getLogs(pageParam, filter),
+    enabled: !!filter.repoId,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     refetchOnWindowFocus: false

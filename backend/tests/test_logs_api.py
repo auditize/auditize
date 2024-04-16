@@ -7,12 +7,18 @@ import callee
 from httpx import AsyncClient
 from icecream import ic
 
-from auditize.common.mongo import Database
-from auditize.logs.service import (consolidate_log_event, consolidate_log_actor, consolidate_log_resource,
-                                   consolidate_log_tags, consolidate_log_node_path)
+from auditize.common.mongo import RepoDatabase
+from auditize.logs.service import (
+    consolidate_log_event, consolidate_log_actor, consolidate_log_resource,
+    consolidate_log_tags, consolidate_log_node_path
+)
 from auditize.logs.models import Log
 
-from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, do_test_page_pagination_common_scenarios
+from helpers import (
+    UNKNOWN_LOG_ID, assert_post, assert_get, RepoTest,
+    do_test_page_pagination_common_scenarios,
+    do_test_page_pagination_empty_data
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -60,36 +66,36 @@ def make_expected_log_data_for_api(actual):
     return expected
 
 
-async def assert_create_log(client: AsyncClient, log: dict, expected_status_code=201):
-    resp = await assert_post(client, "/logs", json=log, expected_status_code=expected_status_code)
+async def assert_create_log(client: AsyncClient, repo_id: str, log: dict, expected_status_code=201):
+    resp = await assert_post(client, f"/repos/{repo_id}/logs", json=log, expected_status_code=expected_status_code)
     if expected_status_code == 201:
         assert "id" in resp.json()
     return resp
 
 
-async def prepare_log(client: AsyncClient, log: dict):
-    resp = await assert_create_log(client, log)
+async def prepare_log(client: AsyncClient, repo_id: str, log: dict):
+    resp = await assert_create_log(client, repo_id, log)
     return resp.json()["id"]
 
 
-async def assert_db_log(db: Database, log_id, expected):
+async def assert_db_log(db: RepoDatabase, log_id, expected):
     expected = {**make_expected_log_data_for_api(expected), "saved_at": callee.IsA(datetime)}
     db_log = await db.logs.find_one({"_id": ObjectId(log_id)}, {"_id": 0})
     ic(db_log)
     assert db_log == expected
 
 
-def alter_log_saved_at(db, log_id, new_saved_at):
+def alter_log_saved_at(db: RepoDatabase, log_id, new_saved_at):
     db.logs.update_one({"_id": ObjectId(log_id)}, {"$set": {"saved_at": new_saved_at}})
 
 
-async def test_create_log_minimal_fields(client: AsyncClient, db: Database):
+async def test_create_log_minimal_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    resp = await assert_create_log(client, log)
-    await assert_db_log(db, resp.json()["id"], log)
+    resp = await assert_create_log(client, repo.id, log)
+    await assert_db_log(repo.db, resp.json()["id"], log)
 
 
-async def test_create_log_all_fields(client: AsyncClient, db: Database):
+async def test_create_log_all_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data({
         "source": {
             "ip": "1.1.1.1",
@@ -131,39 +137,41 @@ async def test_create_log_all_fields(client: AsyncClient, db: Database):
         ],
     })
 
-    resp = await assert_create_log(client, log)
-    await assert_db_log(db, resp.json()["id"], log)
+    resp = await assert_create_log(client, repo.id, log)
+    await assert_db_log(repo.db, resp.json()["id"], log)
 
 
-async def test_create_log_missing_event_name(client: AsyncClient, db: Database):
+async def test_create_log_missing_event_name(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
     del log["event"]["name"]
-    await assert_create_log(client, log, expected_status_code=422)
+    await assert_create_log(client, repo.id, log, expected_status_code=422)
 
 
-async def test_create_log_invalid_rich_tag(client: AsyncClient, db: Database):
+async def test_create_log_invalid_rich_tag(client: AsyncClient, repo: RepoTest):
     invalid_tags = (
         {"id": "some_tag", "category": "rich_tag"},
         {"id": "some_other_tag", "name": "Rich tag"}
     )
 
     for invalid_tag in invalid_tags:
-        await assert_create_log(client, make_log_data({"tags": [invalid_tag]}), expected_status_code=422)
+        await assert_create_log(
+            client, repo.id, make_log_data({"tags": [invalid_tag]}), expected_status_code=422
+        )
 
 
-async def test_add_attachment_text_and_minimal_fields(client: AsyncClient, db: Database):
+async def test_add_attachment_text_and_minimal_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
     await assert_post(
         client,
-        f"/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log_id}/attachments",
         files={"file": ("test.txt", "test data")},
         data={"type": "text"},
         expected_status_code=204
     )
     await assert_db_log(
-        db, log_id, {
+        repo.db, log_id, {
             **log,
             "attachments": [
                 {
@@ -177,9 +185,9 @@ async def test_add_attachment_text_and_minimal_fields(client: AsyncClient, db: D
     )
 
 
-async def test_add_attachment_binary_and_all_fields(client: AsyncClient, db: Database):
+async def test_add_attachment_binary_and_all_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
     # some random data generated with /dev/urandom:
     data_base64 = "srX7jaKuqoXJQm7YocqmFzSwjObc0ycvnMYor28L9Kc="
@@ -187,13 +195,13 @@ async def test_add_attachment_binary_and_all_fields(client: AsyncClient, db: Dat
 
     await assert_post(
         client,
-        f"/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log_id}/attachments",
         files={"file": ("file.bin", data)},
         data={"type": "binary", "name": "test_file.bin", "mime_type": "application/octet-stream"},
         expected_status_code=204
     )
     await assert_db_log(
-        db, log_id, {
+        repo.db, log_id, {
             **log,
             "attachments": [
                 {
@@ -207,18 +215,18 @@ async def test_add_attachment_binary_and_all_fields(client: AsyncClient, db: Dat
     )
 
 
-async def test_get_log_minimal_fields(client: AsyncClient, db: Database):
+async def test_get_log_minimal_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
-    resp = await assert_get(client, f"/logs/{log_id}")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs/{log_id}")
     assert resp.json() == make_expected_log_data_for_api({
         **log,
         "id": log_id
     })
 
 
-async def test_get_log_all_fields(client: AsyncClient, db: Database):
+async def test_get_log_all_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data({
         "source": {
             "ip": "1.1.1.1",
@@ -260,76 +268,80 @@ async def test_get_log_all_fields(client: AsyncClient, db: Database):
         ],
     })
 
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
-    resp = await assert_get(client, f"/logs/{log_id}")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs/{log_id}")
     assert resp.json() == make_expected_log_data_for_api({
         **log,
         "id": log_id
     })
 
 
-async def test_get_log_not_found(client: AsyncClient, db: Database):
-    await assert_get(client, f"/logs/{UNKNOWN_LOG_ID}", expected_status_code=404)
+async def test_get_log_not_found(client: AsyncClient, repo: RepoTest):
+    await assert_get(
+        client, f"/repos/{repo.id}/logs/{UNKNOWN_LOG_ID}", expected_status_code=404
+    )
 
 
-async def test_get_log_attachment_text_and_minimal_fields(client: AsyncClient, db: Database):
+async def test_get_log_attachment_text_and_minimal_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
     await assert_post(
         client,
-        f"/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log_id}/attachments",
         files={"file": ("file.txt", "test data")},
         data={"type": "text file"},
         expected_status_code=204
     )
 
-    resp = await assert_get(client, f"/logs/{log_id}/attachments/0")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs/{log_id}/attachments/0")
     assert resp.headers["Content-Disposition"] == "attachment; filename=file.txt"
     assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
     assert resp.content == b"test data"
 
 
-async def test_get_log_attachment_binary_and_all_fields(client: AsyncClient, db: Database):
+async def test_get_log_attachment_binary_and_all_fields(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
     data_base64 = "srX7jaKuqoXJQm7YocqmFzSwjObc0ycvnMYor28L9Kc="
     data = base64.b64decode(data_base64)
 
     await assert_post(
         client,
-        f"/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log_id}/attachments",
         files={"file": ("file.bin", data)},
         data={"type": "binary", "name": "test_file.bin", "mime_type": "image/jpeg"},
         expected_status_code=204
     )
 
-    resp = await assert_get(client, f"/logs/{log_id}/attachments/0")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs/{log_id}/attachments/0")
     assert resp.headers["Content-Disposition"] == "attachment; filename=test_file.bin"
     assert resp.headers["Content-Type"] == "image/jpeg"
     assert resp.content == data
 
 
-async def test_get_log_attachment_not_found_log_id(client: AsyncClient, db: Database):
-    await assert_get(client, f"/logs/{UNKNOWN_LOG_ID}/attachments/0", expected_status_code=404)
+async def test_get_log_attachment_not_found_log_id(client: AsyncClient, repo: RepoTest):
+    await assert_get(
+        client, f"/repos/{repo.id}/logs/{UNKNOWN_LOG_ID}/attachments/0", expected_status_code=404
+    )
 
 
-async def test_get_log_attachment_not_found_attachment_idx(client: AsyncClient, db: Database):
+async def test_get_log_attachment_not_found_attachment_idx(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
-    await assert_get(client, f"/logs/{log_id}/attachments/0", expected_status_code=404)
+    await assert_get(client, f"/repos/{repo.id}/logs/{log_id}/attachments/0", expected_status_code=404)
 
 
-async def test_get_logs(client: AsyncClient, db: Database):
+async def test_get_logs(client: AsyncClient, repo: RepoTest):
     log1 = make_log_data()
     log2 = make_log_data()
-    log1_id = await prepare_log(client, log1)
-    log2_id = await prepare_log(client, log2)
+    log1_id = await prepare_log(client, repo.id, log1)
+    log2_id = await prepare_log(client, repo.id, log2)
 
-    resp = await assert_get(client, "/logs")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs")
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -347,13 +359,13 @@ async def test_get_logs(client: AsyncClient, db: Database):
     }
 
 
-async def test_get_logs_limit(client: AsyncClient, db: Database):
+async def test_get_logs_limit(client: AsyncClient, repo: RepoTest):
     log1 = make_log_data()
     log2 = make_log_data()
-    await prepare_log(client, log1)
-    log2_id = await prepare_log(client, log2)
+    await prepare_log(client, repo.id, log1)
+    log2_id = await prepare_log(client, repo.id, log2)
 
-    resp = await assert_get(client, "/logs?limit=1")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs?limit=1")
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -367,17 +379,17 @@ async def test_get_logs_limit(client: AsyncClient, db: Database):
     }
 
 
-async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
+async def test_get_logs_limit_and_cursor(client: AsyncClient, repo: RepoTest):
     logs = []
     log_ids = []
     for _ in range(10):
         log = make_log_data()
         logs.append(log)
-        log_id = await prepare_log(client, log)
+        log_id = await prepare_log(client, repo.id, log)
         log_ids.append(log_id)
 
     # first step, get 5 logs and check the next_cursor
-    resp = await assert_get(client, "/logs?limit=5")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs?limit=5")
     next_cursor = resp.json()["pagination"]["next_cursor"]
     assert next_cursor is not None
     assert resp.json()["data"] == [
@@ -386,7 +398,7 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
     ]
 
     # second step, get the next 5 logs using the next_cursor from the previous response and check next_cursor is None
-    resp = await assert_get(client, f"/logs?limit=5&cursor={next_cursor}")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs?limit=5&cursor={next_cursor}")
     assert resp.json()["pagination"]["next_cursor"] is None
     assert resp.json()["data"] == [
         make_expected_log_data_for_api({**log, "id": log_id})
@@ -394,14 +406,14 @@ async def test_get_logs_limit_and_cursor(client: AsyncClient, db: Database):
     ]
 
 
-async def _test_get_logs_filter(client: AsyncClient, func, params):
+async def _test_get_logs_filter(client: AsyncClient, repo_id: str, func, params):
     log1 = make_log_data()
-    await prepare_log(client, log1)
+    await prepare_log(client, repo_id, log1)
     log2 = make_log_data()
     func(log2)
-    log2_id = await prepare_log(client, log2)
+    log2_id = await prepare_log(client, repo_id, log2)
 
-    resp = await assert_get(client, "/logs", params=params)
+    resp = await assert_get(client, f"/repos/{repo_id}/logs", params=params)
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -415,21 +427,21 @@ async def _test_get_logs_filter(client: AsyncClient, func, params):
     }
 
 
-async def test_get_logs_filter_event_name(client: AsyncClient, db: Database):
+async def test_get_logs_filter_event_name(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["event"]["name"] = "find_me"
 
-    await _test_get_logs_filter(client, func, {"event_name": "find_me"})
+    await _test_get_logs_filter(client, repo.id, func, {"event_name": "find_me"})
 
 
-async def test_get_logs_filter_event_category(client: AsyncClient, db: Database):
+async def test_get_logs_filter_event_category(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["event"]["category"] = "find_me"
 
-    await _test_get_logs_filter(client, func, {"event_category": "find_me"})
+    await _test_get_logs_filter(client, repo.id, func, {"event_category": "find_me"})
 
 
-async def test_get_logs_filter_actor_type(client: AsyncClient, db: Database):
+async def test_get_logs_filter_actor_type(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["actor"] = {
             "type": "find_me",
@@ -437,10 +449,10 @@ async def test_get_logs_filter_actor_type(client: AsyncClient, db: Database):
             "name": "User 123"
         }
 
-    await _test_get_logs_filter(client, func, {"actor_type": "find_me"})
+    await _test_get_logs_filter(client, repo.id, func, {"actor_type": "find_me"})
 
 
-async def test_get_logs_filter_actor_name(client: AsyncClient, db: Database):
+async def test_get_logs_filter_actor_name(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["actor"] = {
             "type": "user",
@@ -449,10 +461,10 @@ async def test_get_logs_filter_actor_name(client: AsyncClient, db: Database):
         }
 
     # filter on actor_name is substring and case-insensitive
-    await _test_get_logs_filter(client, func, {"actor_name": "FIND"})
+    await _test_get_logs_filter(client, repo.id, func, {"actor_name": "FIND"})
 
 
-async def test_get_logs_filter_resource_type(client: AsyncClient, db: Database):
+async def test_get_logs_filter_resource_type(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["resource"] = {
             "type": "find_me",
@@ -460,10 +472,10 @@ async def test_get_logs_filter_resource_type(client: AsyncClient, db: Database):
             "name": "Core Module"
         }
 
-    await _test_get_logs_filter(client, func, {"resource_type": "find_me"})
+    await _test_get_logs_filter(client, repo.id, func, {"resource_type": "find_me"})
 
 
-async def test_get_logs_filter_resource_name(client: AsyncClient, db: Database):
+async def test_get_logs_filter_resource_name(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["resource"] = {
             "type": "module",
@@ -472,20 +484,20 @@ async def test_get_logs_filter_resource_name(client: AsyncClient, db: Database):
         }
 
     # filter on resource_name is substring and case-insensitive
-    await _test_get_logs_filter(client, func, {"resource_name": "FIND"})
+    await _test_get_logs_filter(client, repo.id, func, {"resource_name": "FIND"})
 
 
-async def test_get_logs_filter_tag_category(client: AsyncClient, db: Database):
+async def test_get_logs_filter_tag_category(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["tags"] = [
             {"id": "simple_tag"},
             {"id": "rich_tag:1", "category": "find_me", "name": "Rich tag"}
         ]
 
-    await _test_get_logs_filter(client, func, {"tag_category": "find_me"})
+    await _test_get_logs_filter(client, repo.id, func, {"tag_category": "find_me"})
 
 
-async def test_get_logs_filter_tag_name(client: AsyncClient, db: Database):
+async def test_get_logs_filter_tag_name(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["tags"] = [
             {"id": "simple_tag"},
@@ -493,48 +505,48 @@ async def test_get_logs_filter_tag_name(client: AsyncClient, db: Database):
         ]
 
     # filter on tag_name is substring and case-insensitive
-    await _test_get_logs_filter(client, func, {"tag_name": "FIND"})
+    await _test_get_logs_filter(client, repo.id, func, {"tag_name": "FIND"})
 
 
-async def test_get_logs_filter_tag_id(client: AsyncClient, db: Database):
+async def test_get_logs_filter_tag_id(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["tags"] = [
             {"id": "simple_tag"},
             {"id": "find_me", "category": "rich_tag", "name": "Rich tag"}
         ]
 
-    await _test_get_logs_filter(client, func, {"tag_id": "find_me"})
+    await _test_get_logs_filter(client, repo.id, func, {"tag_id": "find_me"})
 
 
-async def test_get_logs_filter_node_id_exact_node(client: AsyncClient, db: Database):
+async def test_get_logs_filter_node_id_exact_node(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["node_path"] = [
             {"id": "find_me:1", "name": "Customer 1"},
             {"id": "find_me:2", "name": "Customer 2"}
         ]
 
-    await _test_get_logs_filter(client, func, {"node_id": "find_me:2"})
+    await _test_get_logs_filter(client, repo.id, func, {"node_id": "find_me:2"})
 
 
-async def test_get_logs_filter_node_id_ascendant_node(client: AsyncClient, db: Database):
+async def test_get_logs_filter_node_id_ascendant_node(client: AsyncClient, repo: RepoTest):
     def func(log):
         log["node_path"] = [
             {"id": "find_me:1", "name": "Customer 1"},
             {"id": "find_me:2", "name": "Customer 2"}
         ]
 
-    await _test_get_logs_filter(client, func, {"node_id": "find_me:1"})
+    await _test_get_logs_filter(client, repo.id, func, {"node_id": "find_me:1"})
 
 
-async def test_get_logs_filter_since(client: AsyncClient, db: Database):
+async def test_get_logs_filter_since(client: AsyncClient, repo: RepoTest):
     log1 = make_log_data()
-    log1_id = await prepare_log(client, log1)
-    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log1_id = await prepare_log(client, repo.id, log1)
+    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
     log2 = make_log_data()
-    log2_id = await prepare_log(client, log2)
-    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    log2_id = await prepare_log(client, repo.id, log2)
+    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
-    resp = await assert_get(client, "/logs", params={"since": "2024-01-01T12:00:00Z"})
+    resp = await assert_get(client, f"/repos/{repo.id}/logs", params={"since": "2024-01-01T12:00:00Z"})
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -548,15 +560,15 @@ async def test_get_logs_filter_since(client: AsyncClient, db: Database):
     }
 
 
-async def test_get_logs_filter_until(client: AsyncClient, db: Database):
+async def test_get_logs_filter_until(client: AsyncClient, repo: RepoTest):
     log1 = make_log_data()
-    log1_id = await prepare_log(client, log1)
-    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log1_id = await prepare_log(client, repo.id, log1)
+    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
     log2 = make_log_data()
-    log2_id = await prepare_log(client, log2)
-    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    log2_id = await prepare_log(client, repo.id, log2)
+    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
-    resp = await assert_get(client, "/logs", params={"until": "2024-01-01T12:00:00Z"})
+    resp = await assert_get(client, f"/repos/{repo.id}/logs", params={"until": "2024-01-01T12:00:00Z"})
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -570,15 +582,15 @@ async def test_get_logs_filter_until(client: AsyncClient, db: Database):
     }
 
 
-async def test_get_logs_filter_until_milliseconds(client: AsyncClient, db: Database):
+async def test_get_logs_filter_until_milliseconds(client: AsyncClient, repo: RepoTest):
     log1 = make_log_data()
-    log1_id = await prepare_log(client, log1)
-    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2023-12-31T23:59:59.500Z"))
+    log1_id = await prepare_log(client, repo.id, log1)
+    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2023-12-31T23:59:59.500Z"))
     log2 = make_log_data()
-    log2_id = await prepare_log(client, log2)
-    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2_id = await prepare_log(client, repo.id, log2)
+    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
 
-    resp = await assert_get(client, "/logs", params={"until": "2023-12-31T23:59:59Z"})
+    resp = await assert_get(client, f"/repos/{repo.id}/logs", params={"until": "2023-12-31T23:59:59Z"})
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -592,18 +604,20 @@ async def test_get_logs_filter_until_milliseconds(client: AsyncClient, db: Datab
     }
 
 
-async def test_get_logs_filter_between_since_and_until(client: AsyncClient, db: Database):
+async def test_get_logs_filter_between_since_and_until(client: AsyncClient, repo: RepoTest):
     log1 = make_log_data()
-    log1_id = await prepare_log(client, log1)
-    alter_log_saved_at(db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log1_id = await prepare_log(client, repo.id, log1)
+    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
     log2 = make_log_data()
-    log2_id = await prepare_log(client, log2)
-    alter_log_saved_at(db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    log2_id = await prepare_log(client, repo.id, log2)
+    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
     log3 = make_log_data()
-    log3_id = await prepare_log(client, log3)
-    alter_log_saved_at(db, log3_id, datetime.fromisoformat("2024-01-03T00:00:00Z"))
+    log3_id = await prepare_log(client, repo.id, log3)
+    alter_log_saved_at(repo.db, log3_id, datetime.fromisoformat("2024-01-03T00:00:00Z"))
 
-    resp = await assert_get(client, "/logs", params={"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"})
+    resp = await assert_get(
+        client, f"/repos/{repo.id}/logs", params={"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"}
+    )
     assert resp.json() == {
         "data": [
             make_expected_log_data_for_api({
@@ -617,22 +631,22 @@ async def test_get_logs_filter_between_since_and_until(client: AsyncClient, db: 
     }
 
 
-async def test_get_logs_filter_multiple_criteria(client: AsyncClient, db: Database):
+async def test_get_logs_filter_multiple_criteria(client: AsyncClient, repo: RepoTest):
     log1 = make_log_data()
     log1["event"]["name"] = "find_me:event_name"
-    await prepare_log(client, log1)
+    await prepare_log(client, repo.id, log1)
 
     log2 = make_log_data()
     log2["event"]["category"] = "find_me:event_category"
-    await prepare_log(client, log2)
+    await prepare_log(client, repo.id, log2)
 
     log3 = make_log_data()
     log3["event"] = {"name": "find_me:event_name", "category": "find_me:event_category"}
-    log3_id = await prepare_log(client, log3)
+    log3_id = await prepare_log(client, repo.id, log3)
 
     resp = await assert_get(
         client,
-        "/logs", params={"event_name": "find_me:event_name", "event_category": "find_me:event_category"}
+        f"/repos/{repo.id}/logs", params={"event_name": "find_me:event_name", "event_category": "find_me:event_category"}
     )
     assert resp.json() == {
         "data": [
@@ -647,11 +661,11 @@ async def test_get_logs_filter_multiple_criteria(client: AsyncClient, db: Databa
     }
 
 
-async def test_get_logs_empty_string_filter_params(client: AsyncClient, db: Database):
+async def test_get_logs_empty_string_filter_params(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    log_id = await prepare_log(client, log)
+    log_id = await prepare_log(client, repo.id, log)
 
-    resp = await assert_get(client, "/logs", params={
+    resp = await assert_get(client, f"/repos/{repo.id}/logs", params={
         "event_name": "", "event_category": "",
         "actor_type": "", "actor_name": "",
         "resource_type": "", "resource_name": "",
@@ -672,11 +686,11 @@ async def test_get_logs_empty_string_filter_params(client: AsyncClient, db: Data
     }
 
 
-async def test_get_logs_filter_no_result(client: AsyncClient, db: Database):
+async def test_get_logs_filter_no_result(client: AsyncClient, repo: RepoTest):
     log = make_log_data()
-    await prepare_log(client, log)
+    await prepare_log(client, repo.id, log)
 
-    resp = await assert_get(client, "/logs", params={"event_name": "not to be found"})
+    resp = await assert_get(client, f"/repos/{repo.id}/logs", params={"event_name": "not to be found"})
     assert resp.json() == {
         "data": [],
         "pagination": {
@@ -685,27 +699,31 @@ async def test_get_logs_filter_no_result(client: AsyncClient, db: Database):
     }
 
 
-async def test_get_log_event_categories(client: AsyncClient, db: Database):
+async def test_get_log_event_categories(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
-        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}"))
+        await consolidate_log_event(repo.db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
+        await consolidate_log_event(repo.db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}"))
 
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/event-categories", [f"category_{i}" for i in range(5)]
+        client, f"/repos/{repo.id}/logs/event-categories", [f"category_{i}" for i in range(5)]
     )
 
 
-async def test_get_log_event_names(client: AsyncClient, db: Database):
+async def test_get_log_event_categories_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/event-categories")
+
+
+async def test_get_log_event_names(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_event(db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
-        await consolidate_log_event(db, Log.Event(category=f"category_{i + 10}", name=f"name_{i}"))
+        await consolidate_log_event(repo.db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
+        await consolidate_log_event(repo.db, Log.Event(category=f"category_{i + 10}", name=f"name_{i}"))
 
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/events", [f"name_{i}" for i in range(5)]
+        client, f"/repos/{repo.id}/logs/events", [f"name_{i}" for i in range(5)]
     )
 
     # test category parameter
-    resp = await assert_get(client, "/logs/events?category=category_2")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs/events?category=category_2")
     assert resp.json() == {
         "data": [
             f"name_{2}"
@@ -719,53 +737,69 @@ async def test_get_log_event_names(client: AsyncClient, db: Database):
     }
 
 
-async def test_get_log_actor_types(client: AsyncClient, db: Database):
+async def test_get_log_event_names_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/events")
+
+
+async def test_get_log_actor_types(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_actor(db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
+        await consolidate_log_actor(repo.db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/actor-types", [f"type_{i}" for i in range(5)]
+        client, f"/repos/{repo.id}/logs/actor-types", [f"type_{i}" for i in range(5)]
     )
 
 
-async def test_get_log_resource_types(client: AsyncClient, db: Database):
+async def test_get_log_actor_types_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/actor-types")
+
+
+async def test_get_log_resource_types(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_resource(db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
+        await consolidate_log_resource(repo.db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/resource-types", [f"type_{i}" for i in range(5)]
+        client, f"/repos/{repo.id}/logs/resource-types", [f"type_{i}" for i in range(5)]
     )
 
 
-async def test_get_log_tag_categories(client: AsyncClient, db: Database):
+async def test_get_log_resource_types_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/resource-types")
+
+
+async def test_get_log_tag_categories(client: AsyncClient, repo: RepoTest):
     for i in reversed(range(5)):
-        await consolidate_log_tags(db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
-    await consolidate_log_tags(db, [Log.Tag(id="simple_tag")])  # no category, it must not be returned
+        await consolidate_log_tags(repo.db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
+    await consolidate_log_tags(repo.db, [Log.Tag(id="simple_tag")])  # no category, it must not be returned
 
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/tag-categories", [f"category_{i}" for i in range(5)]
+        client, f"/repos/{repo.id}/logs/tag-categories", [f"category_{i}" for i in range(5)]
     )
 
 
-async def test_get_log_nodes_without_filters(client: AsyncClient, db: Database):
+async def test_get_log_tag_categories_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/tag-categories")
+
+
+async def test_get_log_nodes_without_filters(client: AsyncClient, repo: RepoTest):
     for i in range(4):
         await consolidate_log_node_path(
-            db, [Log.Node(id=f"customer", name=f"Customer"), Log.Node(id=f"entity:{i}", name=f"Entity {i}")]
+            repo.db, [Log.Node(id=f"customer", name=f"Customer"), Log.Node(id=f"entity:{i}", name=f"Entity {i}")]
         )
 
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/nodes",
+        client, f"/repos/{repo.id}/logs/nodes",
         [{"id": "customer", "name": "Customer", "parent_node_id": None, "has_children": True}] +
         [{"id": f"entity:{i}", "name": f"Entity {i}", "parent_node_id": "customer", "has_children": False}
          for i in range(4)]
     )
 
 
-async def test_get_log_nodes_with_filters(client: AsyncClient, db: Database):
+async def test_get_log_nodes_with_filters(client: AsyncClient, repo: RepoTest):
     for i in range(5):
         for j in "a", "b", "c", "d", "e":
             await consolidate_log_node_path(
-                db, [
+                repo.db, [
                     Log.Node(id=f"customer:{i}", name=f"Customer {i}"),
                     Log.Node(id=f"entity:{i}-{j}", name=f"Entity {j}")
                 ]
@@ -773,25 +807,29 @@ async def test_get_log_nodes_with_filters(client: AsyncClient, db: Database):
 
     # test top-level nodes
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/nodes?root=true",
+        client, f"/repos/{repo.id}/logs/nodes?root=true",
         [{"id": f"customer:{i}", "name": f"Customer {i}", "parent_node_id": None, "has_children": True}
          for i in range(5)]
     )
 
     # test non-top-level nodes
     await do_test_page_pagination_common_scenarios(
-        client, "/logs/nodes?parent_node_id=customer:2",
+        client, f"/repos/{repo.id}/logs/nodes?parent_node_id=customer:2",
         [{"id": f"entity:2-{j}", "name": f"Entity {j}", "parent_node_id": "customer:2", "has_children": False}
          for j in ("a", "b", "c", "d", "e")]
     )
 
 
-async def test_get_log_node(client: AsyncClient, db: Database):
+async def test_get_log_nodes_empty(client: AsyncClient, repo: RepoTest):
+    await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/nodes")
+
+
+async def test_get_log_node(client: AsyncClient, repo: RepoTest):
     await consolidate_log_node_path(
-        db, [Log.Node(id="customer", name="Customer"), Log.Node(id="entity", name="Entity")]
+        repo.db, [Log.Node(id="customer", name="Customer"), Log.Node(id="entity", name="Entity")]
     )
 
-    resp = await assert_get(client, "/logs/nodes/customer")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs/nodes/customer")
     assert resp.json() == {
         "id": "customer",
         "name": "Customer",
@@ -799,7 +837,7 @@ async def test_get_log_node(client: AsyncClient, db: Database):
         "has_children": True
     }
 
-    resp = await assert_get(client, "/logs/nodes/entity")
+    resp = await assert_get(client, f"/repos/{repo.id}/logs/nodes/entity")
     assert resp.json() == {
         "id": "entity",
         "name": "Entity",

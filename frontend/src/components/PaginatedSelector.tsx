@@ -3,10 +3,21 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 export function PaginatedSelector(
-  { label, queryKey, queryFn, onDataLoaded, selectedItem, clearable = true, onChange, itemLabel, itemValue }:
+  { label,
+    queryKey,
+    queryFn,
+    enabled = true,
+    onDataLoaded,
+    selectedItem,
+    clearable = true,
+    onChange,
+    itemLabel,
+    itemValue
+  }:
   { label: string;
     queryKey: any;
     queryFn: () => Promise<any[]>;
+    enabled?: boolean;
     onDataLoaded?: (data: any[]) => void;
     selectedItem?: string;
     clearable?: boolean;
@@ -17,6 +28,7 @@ export function PaginatedSelector(
   const { isPending, error, data } = useQuery({
     queryKey: queryKey,
     queryFn: queryFn,
+    enabled: enabled,
     refetchOnWindowFocus: false
   });
 
