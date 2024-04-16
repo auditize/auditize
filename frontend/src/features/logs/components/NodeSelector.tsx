@@ -25,14 +25,14 @@ function logNodeToItem(node: LogNode): ItemDataType<string> {
   };
 }
 
-async function buildTreeBranch(nodeId: string, item: ItemDataType<string> | null, items: ItemDataType<string>[]): Promise<[ItemDataType<string> | null, ItemDataType<string>[]]> {
-  const node = await getLogNode(nodeId);
+async function buildTreeBranch(repoId: string, nodeId: string, item: ItemDataType<string> | null, items: ItemDataType<string>[]): Promise<[ItemDataType<string> | null, ItemDataType<string>[]]> {
+  const node = await getLogNode(repoId, nodeId);
   // now we have the full node, we can update the item label
   if (item)
     item.label = node.name;
 
   // get all sibling nodes
-  const siblingNodes = await getAllLogNodes(node.parent_node_id || null);
+  const siblingNodes = await getAllLogNodes(repoId, node.parent_node_id || null);
   const siblingItems = siblingNodes.map(logNodeToItem);
 
   if (item) {
@@ -59,21 +59,23 @@ async function buildTreeBranch(nodeId: string, item: ItemDataType<string> | null
         value: node.parent_node_id,
         children: siblingItems
       };
-      return buildTreeBranch(node.parent_node_id, parentItem, items);
+      return buildTreeBranch(repoId, node.parent_node_id, parentItem, items);
     }
   }
 }
 
-export function NodeSelector({ nodeId, onChange }: { nodeId: string | null; onChange: (value: string) => void; }) {
+export function NodeSelector(
+  { repoId, nodeId, onChange }:
+  { repoId: string | null, nodeId: string | null; onChange: (value: string) => void; }) {
   const [items, setItems] = useState<ItemDataType<string>[]>([]);
   const currentNodeIdRef = useRef<string>("");
 
   // load top-level nodes
   useEffect(() => {
-    if (items.length === 0) {
-      getAllLogNodes().then((nodes) => setItems(nodes.map(logNodeToItem)));
+    if (repoId) {
+      getAllLogNodes(repoId).then((nodes) => setItems(nodes.map(logNodeToItem)));
     }
-  }, []);
+  }, [repoId]);
 
   // load the tree branch of the selected node
   useEffect(() => {
@@ -82,7 +84,7 @@ export function NodeSelector({ nodeId, onChange }: { nodeId: string | null; onCh
     if (!nodeId || lookupItem(nodeId, items))
       return;
 
-    buildTreeBranch(nodeId, null, items).then(([parentItem, childrenItems]) => {
+    buildTreeBranch(repoId!, nodeId, null, items).then(([parentItem, childrenItems]) => {
       if (!enabled)
         return;
 
@@ -116,7 +118,7 @@ export function NodeSelector({ nodeId, onChange }: { nodeId: string | null; onCh
       getChildren={async (item) => {
         // NB: beware that items are changed under the hood without using setItems by the Tree component
         // after getChildren has been called
-        return getAllLogNodes(item.value as string).then((nodes) => {
+        return getAllLogNodes(repoId!, item.value as string).then((nodes) => {
           return nodes.map(logNodeToItem);
         });
       }}
