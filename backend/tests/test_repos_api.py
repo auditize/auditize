@@ -138,7 +138,7 @@ async def test_repo_list(client: AsyncClient, dbm: DatabaseManager):
 
     await do_test_page_pagination_common_scenarios(
         client, "/repos",
-        [repo.expected_response() for repo in repos]
+        [repo.expected_response() for repo in sorted(repos, key=lambda r: r.data["name"])]
     )
 
 
