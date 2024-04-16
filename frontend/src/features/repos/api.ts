@@ -10,8 +10,14 @@ export async function updateRepo(id: string, update: RepoUpdate): Promise<void> 
   await axios.patch(`http://localhost:8000/repos/${id}`, update);
 }
 
-export async function getRepos(page = 1): Promise<[Repo[], PagePaginationInfo]> {
-  const response = await axios.get('http://localhost:8000/repos', {params: {page}});
+export async function getRepos(
+  page = 1,
+  {includeStats} = {includeStats: false}):
+  Promise<[Repo[], PagePaginationInfo]> {
+  const response = await axios.get(
+    'http://localhost:8000/repos',
+    {params: {page, ...(includeStats && {include: 'stats'})}}
+  );
   return [response.data.data, response.data.pagination];
 }
 

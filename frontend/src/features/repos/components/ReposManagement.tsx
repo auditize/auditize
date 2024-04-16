@@ -21,6 +21,10 @@ function RepoTableRow({repo}: {repo: Repo}) {
       </Table.Td>
       <Table.Td>{repo.name}</Table.Td>
       <Table.Td>{repo.created_at}</Table.Td>
+      <Table.Td>{repo.stats!.first_log_date || "n/a"}</Table.Td>
+      <Table.Td>{repo.stats!.last_log_date || "n/a"}</Table.Td>
+      <Table.Td>{repo.stats!.log_count}</Table.Td>
+      <Table.Td>{repo.stats!.storage_size}</Table.Td>
       <Table.Td>
         <Anchor component={Link} to={repoLink}>
           Edit
@@ -44,7 +48,7 @@ export function ReposManagement() {
   const page = params.has('page') ? parseInt(params.get('page') || "") : 1;
   const { isPending, data, error } = useQuery({
     queryKey: ['repos', 'page', page],
-    queryFn: () => getRepos(page)
+    queryFn: () => getRepos(page, {includeStats: true})
   });
 
   if (isPending || !data) {
@@ -63,7 +67,11 @@ export function ReposManagement() {
           <Table.Tr>
             <Table.Th>ID</Table.Th>
             <Table.Th>Name</Table.Th>
-            <Table.Th>Date</Table.Th>
+            <Table.Th>Creation date</Table.Th>
+            <Table.Th>First log date</Table.Th>
+            <Table.Th>Last log date</Table.Th>
+            <Table.Th>Log count</Table.Th>
+            <Table.Th>Storage size</Table.Th>
             <Table.Th>Actions</Table.Th>
           </Table.Tr>
         </Table.Thead>
