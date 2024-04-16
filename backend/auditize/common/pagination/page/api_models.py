@@ -61,7 +61,8 @@ class PagePaginatedResponse(BaseModel, Generic[ModelItemT, ApiItemT]):
     data: list[ApiItemT] = Field(description="List of items")
 
     @classmethod
-    def build(cls, items: list[ModelItemT], pagination: PagePaginationInfo):
+    def build(cls, items: list[ModelItemT], pagination: PagePaginationInfo) -> \
+            "PagePaginatedResponse[ModelItemT, ApiItemT]":
         return cls(
             data=list(map(cls.build_item, items)),
             pagination=PagePaginationData.model_validate(pagination.model_dump())

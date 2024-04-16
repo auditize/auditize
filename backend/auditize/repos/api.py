@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse, RepoReadingResponse, \
-    RepoListResponse, RepoUpdateRequest
+    RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData
 from auditize.repos import service
 from auditize.common.mongo import DatabaseManager, get_dbm
 
@@ -44,10 +44,16 @@ async def update_repo(
     response_model=RepoReadingResponse
 )
 async def get_repo(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], repo_id: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    repo_id: str,
+    include: Annotated[list[RepoIncludeOptions], Query()] = ()
 ) -> RepoReadingResponse:
     repo = await service.get_repo(dbm, repo_id)
-    return RepoReadingResponse.from_repo(repo)
+    response = RepoReadingResponse.from_repo(repo)
+    if RepoIncludeOptions.STATS in include:
+        stats = await service.get_repo_stats(dbm, repo.id)
+        response.stats = RepoStatsData.model_validate(stats.model_dump())
+    return response
 
 
 @router.get(
@@ -57,10 +63,17 @@ async def get_repo(
     response_model=RepoListResponse
 )
 async def list_repos(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], page: int = 1, page_size: int = 10
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    include: Annotated[list[RepoIncludeOptions], Query()] = (),
+    page: int = 1, page_size: int = 10
 ) -> RepoListResponse:
     repos, page_info = await service.get_repos(dbm, page, page_size)
-    return RepoListResponse.build(repos, page_info)
+    response = RepoListResponse.build(repos, page_info)
+    if RepoIncludeOptions.STATS in include:
+        for repo in response.data:
+            stats = await service.get_repo_stats(dbm, repo.id)
+            repo.stats = RepoStatsData.model_validate(stats.model_dump())
+    return response
 
 
 @router.delete(

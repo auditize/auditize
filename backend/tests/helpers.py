@@ -1,9 +1,11 @@
 import random
 
 from motor.motor_asyncio import AsyncIOMotorCollection
+from bson import ObjectId
 
 from httpx import AsyncClient, ASGITransport, Response
 from icecream import ic
+import callee
 
 from auditize.main import app
 from auditize.repos.models import Repo
@@ -153,6 +155,65 @@ async def do_test_page_pagination_empty_data(client: AsyncClient, path: str):
             "total_pages": 0
         }
     }
+
+
+def make_log_data(extra=None) -> dict:
+    """
+    By default, the log data is minimal viable.
+    """
+
+    extra = extra or {}
+
+    return {
+        "event": {
+            "name": "user_login",
+            "category": "authentication",
+        },
+        "node_path": [
+            {
+                "id": "1",
+                "name": "Customer 1"
+            }
+        ],
+        **extra
+    }
+
+
+def make_expected_log_data_for_api(actual):
+    expected = {
+        "source": {},
+        "actor": None,
+        "resource": None,
+        "details": {},
+        "tags": [],
+        "attachments": [],
+        **actual,
+        "saved_at": callee.Regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+    }
+    for tag in expected["tags"]:
+        tag.setdefault("category", None)
+        tag.setdefault("name", None)
+    if expected["actor"]:
+        expected["actor"].setdefault("extra", {})
+    if expected["resource"]:
+        expected["resource"].setdefault("extra", {})
+    return expected
+
+
+async def assert_create_log(client: AsyncClient, repo_id: str, log: dict, expected_status_code=201):
+    resp = await assert_post(client, f"/repos/{repo_id}/logs", json=log, expected_status_code=expected_status_code)
+    if expected_status_code == 201:
+        assert "id" in resp.json()
+    return resp
+
+
+async def prepare_log(client: AsyncClient, repo_id: str, log: dict = None):
+    resp = await assert_create_log(client, repo_id, log or make_log_data())
+    return resp.json()["id"]
+
+
+def alter_log_saved_at(db: RepoDatabase, log_id, new_saved_at):
+    db.logs.update_one({"_id": ObjectId(log_id)}, {"$set": {"saved_at": new_saved_at}})
 
 
 # class ApiTestHelper:

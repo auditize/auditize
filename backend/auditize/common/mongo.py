@@ -12,8 +12,8 @@ class _Collection:
         self.name = name
 
     @lru_cache
-    def __get__(self, db: "Database", _) -> AsyncIOMotorCollection:
-        return db.client.get_database(db.name).get_collection(
+    def __get__(self, db: "_BaseDatabase", _) -> AsyncIOMotorCollection:
+        return db.db.get_collection(
             self.name,
             codec_options=CodecOptions(
                 tz_aware=True,
@@ -26,6 +26,10 @@ class _BaseDatabase:
     def __init__(self, name: str, client: AsyncIOMotorClient):
         self.name = name
         self.client = client
+
+    @property
+    def db(self):
+        return self.client.get_database(self.name)
 
 
 class RepoDatabase(_BaseDatabase):

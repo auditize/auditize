@@ -1,6 +1,6 @@
 from bson import ObjectId
 
-from auditize.repos.models import Repo, RepoUpdate
+from auditize.repos.models import Repo, RepoUpdate, RepoStats
 from auditize.common.mongo import DatabaseManager
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
@@ -27,6 +27,32 @@ async def get_repo(dbm: DatabaseManager, repo_id: ObjectId | str) -> Repo:
         raise UnknownModelException()
 
     return Repo.model_validate(result)
+
+
+async def get_repo_stats(dbm: DatabaseManager, repo_id: ObjectId | str) -> RepoStats:
+    repo_db = dbm.get_repo_db(repo_id)
+    results = await repo_db.logs.aggregate([
+        {
+            "$group": {
+                "_id": None,
+                "first_log_date": {"$min": "$saved_at"},
+                "last_log_date": {"$max": "$saved_at"},
+                "count": {"$count": {}},
+            }
+        }
+    ]).to_list(None)
+
+    stats = RepoStats()
+
+    if results:
+        stats.first_log_date = results[0]["first_log_date"]
+        stats.last_log_date = results[0]["last_log_date"]
+        stats.log_count = results[0]["count"]
+
+    db_stats = await repo_db.db.command("dbstats")
+    stats.storage_size = int(db_stats["storageSize"])
+
+    return stats
 
 
 async def get_repos(dbm: DatabaseManager, page: int, page_size: int) -> tuple[list[Repo], PagePaginationInfo]:

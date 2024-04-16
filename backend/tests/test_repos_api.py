@@ -8,8 +8,11 @@ from httpx import AsyncClient
 
 from auditize.common.mongo import DatabaseManager
 
-from helpers import UNKNOWN_LOG_ID, assert_post, assert_get, assert_patch, \
-    assert_delete, assert_collection, do_test_page_pagination_common_scenarios
+from helpers import (
+    UNKNOWN_LOG_ID, assert_post, assert_get, assert_patch,
+    assert_delete, assert_collection, do_test_page_pagination_common_scenarios,
+    prepare_log, alter_log_saved_at, RepoTest
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -34,11 +37,13 @@ class PreparedRepo:
             **(extra or {})
         }
 
-    def expected_response(self):
+    def expected_response(self, extra=None):
         return {
             "id": self.id,
             "name": self.data["name"],
-            "created_at": callee.IsA(str)
+            "created_at": callee.IsA(str),
+            "stats": None,
+            **(extra or {})
         }
 
 
@@ -125,6 +130,46 @@ async def test_repo_get(client: AsyncClient, dbm: DatabaseManager):
     )
 
 
+async def test_repo_get_with_stats_empty(client: AsyncClient, dbm: DatabaseManager):
+    repo = await prepare_repo(client)
+
+    await assert_get(
+        client, f"/repos/{repo.id}?include=stats",
+        expected_status_code=200,
+        expected_json=repo.expected_response({
+            "stats": {
+                "first_log_date": None,
+                "last_log_date": None,
+                "log_count": 0,
+                "storage_size": callee.IsA(int)
+            }
+        })
+    )
+
+
+async def test_repo_get_with_stats(client: AsyncClient, dbm: DatabaseManager):
+    repo = await prepare_repo(client)
+    repo_db = dbm.get_repo_db(repo.id)
+
+    log1_id = await prepare_log(client, repo.id)
+    alter_log_saved_at(repo_db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2_id = await prepare_log(client, repo.id)
+    alter_log_saved_at(repo_db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+
+    await assert_get(
+        client, f"/repos/{repo.id}?include=stats",
+        expected_status_code=200,
+        expected_json=repo.expected_response({
+            "stats": {
+                "first_log_date": "2024-01-01T00:00:00Z",
+                "last_log_date": "2024-01-02T00:00:00Z",
+                "log_count": 2,
+                "storage_size": callee.IsA(int)
+            }
+        })
+    )
+
+
 async def test_repo_get_unknown_id(client: AsyncClient, dbm: DatabaseManager):
     await assert_get(
         client,
@@ -139,6 +184,37 @@ async def test_repo_list(client: AsyncClient, dbm: DatabaseManager):
     await do_test_page_pagination_common_scenarios(
         client, "/repos",
         [repo.expected_response() for repo in sorted(repos, key=lambda r: r.data["name"])]
+    )
+
+
+async def test_repo_list_with_stats(client: AsyncClient, dbm: DatabaseManager):
+    repo = await prepare_repo(client)
+    repo_db = dbm.get_repo_db(repo.id)
+
+    log_id = await prepare_log(client, repo.id)
+    alter_log_saved_at(repo_db, log_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+
+    await assert_get(
+        client, f"/repos?include=stats",
+        expected_status_code=200,
+        expected_json={
+            "data": [
+                repo.expected_response({
+                    "stats": {
+                        "first_log_date": "2024-01-01T00:00:00Z",
+                        "last_log_date": "2024-01-01T00:00:00Z",
+                        "log_count": 1,
+                        "storage_size": callee.IsA(int)
+                    }
+                })
+            ],
+            "pagination": {
+                "page": 1,
+                "page_size": 10,
+                "total": 1,
+                "total_pages": 1
+            }
+        }
     )
 
 

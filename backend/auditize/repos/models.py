@@ -17,3 +17,10 @@ class Repo(BaseModel):
 
 class RepoUpdate(BaseModel):
     name: Optional[str] = None
+
+
+class RepoStats(BaseModel):
+    first_log_date: Optional[datetime] = None
+    last_log_date: Optional[datetime] = None
+    log_count: int = 0
+    storage_size: int = 0

@@ -17,65 +17,12 @@ from auditize.logs.models import Log
 from helpers import (
     UNKNOWN_LOG_ID, assert_post, assert_get, RepoTest,
     do_test_page_pagination_common_scenarios,
-    do_test_page_pagination_empty_data
+    do_test_page_pagination_empty_data,
+    make_log_data, make_expected_log_data_for_api, assert_create_log, prepare_log,
+    alter_log_saved_at
 )
 
 pytestmark = pytest.mark.anyio
-
-
-def make_log_data(extra=None) -> dict:
-    """
-    By default, the log data is minimal viable.
-    """
-
-    extra = extra or {}
-
-    return {
-        "event": {
-            "name": "user_login",
-            "category": "authentication",
-        },
-        "node_path": [
-            {
-                "id": "1",
-                "name": "Customer 1"
-            }
-        ],
-        **extra
-    }
-
-
-def make_expected_log_data_for_api(actual):
-    expected = {
-        "source": {},
-        "actor": None,
-        "resource": None,
-        "details": {},
-        "tags": [],
-        "attachments": [],
-        **actual,
-        "saved_at": callee.Regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
-    }
-    for tag in expected["tags"]:
-        tag.setdefault("category", None)
-        tag.setdefault("name", None)
-    if expected["actor"]:
-        expected["actor"].setdefault("extra", {})
-    if expected["resource"]:
-        expected["resource"].setdefault("extra", {})
-    return expected
-
-
-async def assert_create_log(client: AsyncClient, repo_id: str, log: dict, expected_status_code=201):
-    resp = await assert_post(client, f"/repos/{repo_id}/logs", json=log, expected_status_code=expected_status_code)
-    if expected_status_code == 201:
-        assert "id" in resp.json()
-    return resp
-
-
-async def prepare_log(client: AsyncClient, repo_id: str, log: dict):
-    resp = await assert_create_log(client, repo_id, log)
-    return resp.json()["id"]
 
 
 async def assert_db_log(db: RepoDatabase, log_id, expected):
@@ -83,10 +30,6 @@ async def assert_db_log(db: RepoDatabase, log_id, expected):
     db_log = await db.logs.find_one({"_id": ObjectId(log_id)}, {"_id": 0})
     ic(db_log)
     assert db_log == expected
-
-
-def alter_log_saved_at(db: RepoDatabase, log_id, new_saved_at):
-    db.logs.update_one({"_id": ObjectId(log_id)}, {"$set": {"saved_at": new_saved_at}})
 
 
 async def test_create_log_minimal_fields(client: AsyncClient, repo: RepoTest):
