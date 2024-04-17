@@ -43,10 +43,6 @@ class RepoTest:
         return cls(repo_id, repo_db)
 
 
-def create_http_client():
-    return AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost")
-
-
 async def assert_collection(collection: AsyncIOMotorCollection, expected):
     results = await collection.find({}).to_list(None)
     assert results == expected
@@ -215,35 +211,3 @@ async def prepare_log(client: AsyncClient, repo_id: str, log: dict = None):
 def alter_log_saved_at(db: RepoDatabase, log_id, new_saved_at):
     db.logs.update_one({"_id": ObjectId(log_id)}, {"$set": {"saved_at": new_saved_at}})
 
-
-# class ApiTestHelper:
-#     client: AsyncClient
-#     db: Database
-#
-#     def setup_method(self):
-#         self.client = create_http_client()
-#         self.db = setup_test_db()
-#
-#     async def teardown_method(self):
-#         # FIXME: the teardown is not awaited
-#         await self.client.aclose()
-#         await teardown_test_db(self.db)
-#
-#     async def request(self, method: str, path, *, params=None, json=None, files=None, data=None,
-#                       expected_status_code=200):
-#         return await assert_request(
-#             self.client, method, path,
-#             params=params, json=json, files=files, data=data, expected_status_code=expected_status_code
-#         )
-#
-#     async def post(self, path, *, json=None, files=None, data=None, expected_status_code=200):
-#         return await assert_post(
-#             self.client, path,
-#             json=json, files=files, data=data, expected_status_code=expected_status_code
-#         )
-#
-#     async def get(self, path, *, params=None, expected_status_code=200):
-#         return await assert_get(
-#             self.client, path,
-#             params=params, expected_status_code=expected_status_code
-#         )
