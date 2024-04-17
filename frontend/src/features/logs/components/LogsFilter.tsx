@@ -87,6 +87,9 @@ function RepoSelector({ repoId, onChange }: { repoId?: string; onChange: (value:
     key: 'default-selected-repo', getInitialValueInEffect: false
   });
 
+  // Update default-selected-repo local storage key on repoId change
+  // so that the repo selector will be automatically set to the last selected repo
+  // on page reload
   useEffect(() => {
     if (repoId) {
       setDefaultSelectedRepo(repoId);
@@ -101,8 +104,9 @@ function RepoSelector({ repoId, onChange }: { repoId?: string; onChange: (value:
       onDataLoaded={(repos: Repo[]) => {
         // if no default repo or default repo is not in the list, select the first one (if any)
         if (!defaultSelectedRepo || !repos.find((repo) => repo.id === defaultSelectedRepo)) {
-          if (repos.length > 0)
+          if (repos.length > 0) {
             onChange(repos[0].id);
+          }
         } else {
           onChange(defaultSelectedRepo);
         }
@@ -146,15 +150,6 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
     dispatch({ type: 'resetParams', params });
   }, [params]);
 
-  // Trigger a log search when the log repository is selected for the first time
-  // so that the logs table can be populated when the page is loaded without any explicit filter
-  useEffect(() => {
-    if (! isRepoSelected.current && editedParams.repoId) {
-      isRepoSelected.current = true;
-      onChange(editedParams);
-    }
-  }, [editedParams.repoId]);
-
   const changeParamHandler = (name: string) => (value: any) => dispatch({ type: 'setParam', name, value });
   const changeTextInputParamHandler = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => dispatch({ type: 'setParam', name, value: e.target.value });
 
@@ -169,7 +164,17 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
   return (
     <Group p="1rem">
       {/* Repository selector */}
-      <RepoSelector repoId={editedParams.repoId} onChange={changeParamHandler("repoId")} />
+      <RepoSelector repoId={editedParams.repoId} onChange={(repoId) => {
+          // Trigger a log search when the log repository is selected for the first time
+          // so that the logs table can be populated when the page is loaded without any explicit filter
+          if (! isRepoSelected.current) {
+            isRepoSelected.current = true;
+            onChange({ ...editedParams, repoId });
+          } else {
+            dispatch({ type: 'setParam', name: 'repoId', value: repoId });
+          }
+        }}
+      />
 
       {/* Time criteria */}
       <PopoverForm title="Date" isFilled={hasDate}>
