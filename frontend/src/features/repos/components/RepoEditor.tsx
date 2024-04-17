@@ -114,7 +114,7 @@ export function RepoEdition({repoId}: {repoId: string | null}) {
       title={`Edit '${data.name}' log repository`}
       opened={!!repoId}
       onSave={mutation.mutate}
-      error={errorMessage}/
-    >
+      error={errorMessage}
+    />
   );
 }

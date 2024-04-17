@@ -64,6 +64,10 @@ export async function getLogs(cursor: string | null, filter?: LogsFilterParams, 
   return {logs: response.data.data, nextCursor: response.data.pagination.next_cursor};
 }
 
+export async function getLog(repoId: string, logId: string): Promise<Log> {
+  return (await axios.get(`http://localhost:8000/repos/${repoId}/logs/${logId}`)).data;
+}
+
 export async function getAllLogEventCategories(repoId: string): Promise<string[]> {
   return getAllPagePaginatedItems<string>(`http://localhost:8000/repos/${repoId}/logs/event-categories`);
 }
