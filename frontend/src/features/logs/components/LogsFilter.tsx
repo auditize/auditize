@@ -141,7 +141,17 @@ function filterParamsReducer(state: LogsFilterParams, action: SetParamAction | R
   }
 }
 
-export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onChange: (filter: LogsFilterParams) => void; }) {
+export function LogsFilter(
+  {
+    params,
+    onChange,
+    onRepoAutoSelect
+  }:
+  {
+    params: LogsFilterParams;
+    onChange: (filter: LogsFilterParams) => void;
+    onRepoAutoSelect: (repoId: string) => void;
+  }) {
   const [editedParams, dispatch] = useReducer(filterParamsReducer, buildEmptyLogsFilterParams());
 
   // Typically, an inline filter has been applied from logs table
@@ -167,7 +177,7 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
           // Trigger a log search when the log repository is selected for the first time
           // so that the logs table can be populated when the page is loaded without any explicit filter
           if (! editedParams.repoId) {
-            onChange({ ...editedParams, repoId });
+            onRepoAutoSelect(repoId);
           } else {
             dispatch({ type: 'setParam', name: 'repoId', value: repoId });
           }

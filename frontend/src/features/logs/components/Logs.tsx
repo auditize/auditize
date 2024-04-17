@@ -15,7 +15,12 @@ function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
 }
 
 function stripEmptyStringsFromObject(obj: any): any {
-  return Object.fromEntries(Object.entries(obj).filter(([_, value]) => value !== ""));
+  // Make the query string prettier by avoid query keys without values
+  return Object.fromEntries(
+    Object.entries(obj).filter(
+      ([_, value]) => value !== ""
+    )
+  );
 }
 
 function filterToSearchParams(filter: LogsFilterParams): URLSearchParams {
@@ -32,17 +37,28 @@ export function Logs() {
 
   return (
     <Container size="xl" p="20px">
-      <LogsFilter params={filter} onChange={(newFilter) => setSearchParams(filterToSearchParams(newFilter))} />
-      <LogsLoader filter={filter} onTableFilterChange={(name, value) => {
-        setSearchParams((currentSearchParams) => {
-          const currentFilter = searchParamsToFilter(currentSearchParams);
-          const newFilter = {
-            repoId: currentFilter.repoId, since: currentFilter.since, until: currentFilter.until,
-            [name]: value
-          };
-          return filterToSearchParams(newFilter);
-        })
-      }}/>
+      <LogsFilter
+        params={filter}
+        onChange={(newFilter) => setSearchParams(filterToSearchParams(newFilter))}
+        onRepoAutoSelect={(repoId) => {
+          // Do not keep the "repo auto-select redirect" in the history,
+          // so the user can still go back to the previous page
+          setSearchParams(filterToSearchParams({repoId}), { replace: true })
+        }}
+      />
+      <LogsLoader
+        filter={filter}
+        onTableFilterChange={(name, value) => {
+          setSearchParams((currentSearchParams) => {
+            const currentFilter = searchParamsToFilter(currentSearchParams);
+            const newFilter = {
+              repoId: currentFilter.repoId, since: currentFilter.since, until: currentFilter.until,
+              [name]: value
+            };
+            return filterToSearchParams(newFilter);
+          })
+        }
+      }/>
     </Container>
   );
 }
