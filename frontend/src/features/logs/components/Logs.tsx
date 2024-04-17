@@ -39,11 +39,13 @@ export function Logs() {
     <Container size="xl" p="20px">
       <LogsFilter
         params={filter}
-        onChange={(newFilter) => setSearchParams(filterToSearchParams(newFilter))}
-        onRepoAutoSelect={(repoId) => {
+        onChange={(newFilter) => {
           // Do not keep the "repo auto-select redirect" in the history,
           // so the user can still go back to the previous page
-          setSearchParams(filterToSearchParams({repoId}), { replace: true })
+          const isAutoSelectRepo = !!(!filter.repoId && newFilter.repoId);
+          setSearchParams(
+            filterToSearchParams(newFilter), { replace: isAutoSelectRepo }
+          );
         }}
       />
       <LogsLoader
