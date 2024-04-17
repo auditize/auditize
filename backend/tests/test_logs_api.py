@@ -160,11 +160,13 @@ async def test_get_log_minimal_fields(client: HttpTestHelper, repo: RepoTest):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs/{log_id}")
-    assert resp.json() == make_expected_log_data_for_api({
-        **log,
-        "id": log_id
-    })
+    await client.assert_get(
+        f"/repos/{repo.id}/logs/{log_id}",
+        expected_json=make_expected_log_data_for_api({
+            **log,
+            "id": log_id
+        })
+    )
 
 
 async def test_get_log_all_fields(client: HttpTestHelper, repo: RepoTest):
@@ -211,11 +213,13 @@ async def test_get_log_all_fields(client: HttpTestHelper, repo: RepoTest):
 
     log_id = await prepare_log(client, repo.id, log)
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs/{log_id}")
-    assert resp.json() == make_expected_log_data_for_api({
-        **log,
-        "id": log_id
-    })
+    await client.assert_get(
+        f"/repos/{repo.id}/logs/{log_id}",
+        expected_json=make_expected_log_data_for_api({
+            **log,
+            "id": log_id
+        })
+    )
 
 
 async def test_get_log_not_found(client: HttpTestHelper, repo: RepoTest):
@@ -280,22 +284,24 @@ async def test_get_logs(client: HttpTestHelper, repo: RepoTest):
     log1_id = await prepare_log(client, repo.id, log1)
     log2_id = await prepare_log(client, repo.id, log2)
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs")
-    assert resp.json() == {
-        "data": [
-            make_expected_log_data_for_api({
-                **log2,
-                "id": log2_id
-            }),
-            make_expected_log_data_for_api({
-                **log1,
-                "id": log1_id
-            })
-        ],
-        "pagination": {
-            "next_cursor": None
+    await client.assert_get(
+        f"/repos/{repo.id}/logs",
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({
+                    **log2,
+                    "id": log2_id
+                }),
+                make_expected_log_data_for_api({
+                    **log1,
+                    "id": log1_id
+                })
+            ],
+            "pagination": {
+                "next_cursor": None
+            }
         }
-    }
+    )
 
 
 async def test_get_logs_limit(client: HttpTestHelper, repo: RepoTest):
@@ -304,18 +310,20 @@ async def test_get_logs_limit(client: HttpTestHelper, repo: RepoTest):
     await prepare_log(client, repo.id, log1)
     log2_id = await prepare_log(client, repo.id, log2)
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs?limit=1")
-    assert resp.json() == {
-        "data": [
-            make_expected_log_data_for_api({
-                **log2,
-                "id": log2_id
-            })
-        ],
-        "pagination": {
-            "next_cursor": callee.IsA(str)
+    await client.assert_get(
+        f"/repos/{repo.id}/logs?limit=1",
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({
+                    **log2,
+                    "id": log2_id
+                })
+            ],
+            "pagination": {
+                "next_cursor": callee.IsA(str)
+            }
         }
-    }
+    )
 
 
 async def test_get_logs_limit_and_cursor(client: HttpTestHelper, repo: RepoTest):
@@ -328,21 +336,33 @@ async def test_get_logs_limit_and_cursor(client: HttpTestHelper, repo: RepoTest)
         log_ids.append(log_id)
 
     # first step, get 5 logs and check the next_cursor
-    resp = await client.assert_get(f"/repos/{repo.id}/logs?limit=5")
+    resp = await client.assert_get(
+        f"/repos/{repo.id}/logs?limit=5",
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({**log, "id": log_id})
+                for log, log_id in zip(reversed(logs[-5:]), reversed(log_ids[-5:]))
+            ],
+            "pagination": {
+                "next_cursor": callee.IsA(str)
+            }
+        }
+    )
     next_cursor = resp.json()["pagination"]["next_cursor"]
-    assert next_cursor is not None
-    assert resp.json()["data"] == [
-        make_expected_log_data_for_api({**log, "id": log_id})
-        for log, log_id in zip(reversed(logs[-5:]), reversed(log_ids[-5:]))
-    ]
 
     # second step, get the next 5 logs using the next_cursor from the previous response and check next_cursor is None
-    resp = await client.assert_get(f"/repos/{repo.id}/logs?limit=5&cursor={next_cursor}")
-    assert resp.json()["pagination"]["next_cursor"] is None
-    assert resp.json()["data"] == [
-        make_expected_log_data_for_api({**log, "id": log_id})
-        for log, log_id in zip(reversed(logs[:5]), reversed(log_ids[:5]))
-    ]
+    await client.assert_get(
+        f"/repos/{repo.id}/logs?limit=5&cursor={next_cursor}",
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({**log, "id": log_id})
+                for log, log_id in zip(reversed(logs[:5]), reversed(log_ids[:5]))
+            ],
+            "pagination": {
+                "next_cursor": None
+            }
+        }
+    )
 
 
 async def _test_get_logs_filter(client: HttpTestHelper, repo_id: str, func, params):
@@ -352,18 +372,20 @@ async def _test_get_logs_filter(client: HttpTestHelper, repo_id: str, func, para
     func(log2)
     log2_id = await prepare_log(client, repo_id, log2)
 
-    resp = await client.assert_get(f"/repos/{repo_id}/logs", params=params)
-    assert resp.json() == {
-        "data": [
-            make_expected_log_data_for_api({
-                **log2,
-                "id": log2_id
-            })
-        ],
-        "pagination": {
-            "next_cursor": None
+    await client.assert_get(
+        f"/repos/{repo_id}/logs", params=params,
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({
+                    **log2,
+                    "id": log2_id
+                })
+            ],
+            "pagination": {
+                "next_cursor": None
+            }
         }
-    }
+    )
 
 
 async def test_get_logs_filter_event_name(client: HttpTestHelper, repo: RepoTest):
@@ -485,18 +507,20 @@ async def test_get_logs_filter_since(client: HttpTestHelper, repo: RepoTest):
     log2_id = await prepare_log(client, repo.id, log2)
     alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs", params={"since": "2024-01-01T12:00:00Z"})
-    assert resp.json() == {
-        "data": [
-            make_expected_log_data_for_api({
-                **log2,
-                "id": log2_id
-            })
-        ],
-        "pagination": {
-            "next_cursor": None
+    await client.assert_get(
+        f"/repos/{repo.id}/logs", params={"since": "2024-01-01T12:00:00Z"},
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({
+                    **log2,
+                    "id": log2_id
+                })
+            ],
+            "pagination": {
+                "next_cursor": None
+            }
         }
-    }
+    )
 
 
 async def test_get_logs_filter_until(client: HttpTestHelper, repo: RepoTest):
@@ -507,18 +531,20 @@ async def test_get_logs_filter_until(client: HttpTestHelper, repo: RepoTest):
     log2_id = await prepare_log(client, repo.id, log2)
     alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs", params={"until": "2024-01-01T12:00:00Z"})
-    assert resp.json() == {
-        "data": [
-            make_expected_log_data_for_api({
-                **log1,
-                "id": log1_id
-            })
-        ],
-        "pagination": {
-            "next_cursor": None
+    await client.assert_get(
+        f"/repos/{repo.id}/logs", params={"until": "2024-01-01T12:00:00Z"},
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({
+                    **log1,
+                    "id": log1_id
+                })
+            ],
+            "pagination": {
+                "next_cursor": None
+            }
         }
-    }
+    )
 
 
 async def test_get_logs_filter_until_milliseconds(client: HttpTestHelper, repo: RepoTest):
@@ -529,18 +555,20 @@ async def test_get_logs_filter_until_milliseconds(client: HttpTestHelper, repo: 
     log2_id = await prepare_log(client, repo.id, log2)
     alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs", params={"until": "2023-12-31T23:59:59Z"})
-    assert resp.json() == {
-        "data": [
-            make_expected_log_data_for_api({
-                **log1,
-                "id": log1_id
-            })
-        ],
-        "pagination": {
-            "next_cursor": None
+    await client.assert_get(
+        f"/repos/{repo.id}/logs", params={"until": "2023-12-31T23:59:59Z"},
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({
+                    **log1,
+                    "id": log1_id
+                })
+            ],
+            "pagination": {
+                "next_cursor": None
+            }
         }
-    }
+    )
 
 
 async def test_get_logs_filter_between_since_and_until(client: HttpTestHelper, repo: RepoTest):
@@ -583,20 +611,21 @@ async def test_get_logs_filter_multiple_criteria(client: HttpTestHelper, repo: R
     log3["event"] = {"name": "find_me:event_name", "category": "find_me:event_category"}
     log3_id = await prepare_log(client, repo.id, log3)
 
-    resp = await client.assert_get(
-        f"/repos/{repo.id}/logs", params={"event_name": "find_me:event_name", "event_category": "find_me:event_category"}
-    )
-    assert resp.json() == {
-        "data": [
-            make_expected_log_data_for_api({
-                **log3,
-                "id": log3_id
-            })
-        ],
-        "pagination": {
-            "next_cursor": None
+    await client.assert_get(
+        f"/repos/{repo.id}/logs",
+        params={"event_name": "find_me:event_name", "event_category": "find_me:event_category"},
+        expected_json={
+            "data": [
+                make_expected_log_data_for_api({
+                    **log3,
+                    "id": log3_id
+                })
+            ],
+            "pagination": {
+                "next_cursor": None
+            }
         }
-    }
+    )
 
 
 async def test_get_logs_empty_string_filter_params(client: HttpTestHelper, repo: RepoTest):
@@ -628,13 +657,15 @@ async def test_get_logs_filter_no_result(client: HttpTestHelper, repo: RepoTest)
     log = make_log_data()
     await prepare_log(client, repo.id, log)
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs", params={"event_name": "not to be found"})
-    assert resp.json() == {
-        "data": [],
-        "pagination": {
-            "next_cursor": None
+    await client.assert_get(
+        f"/repos/{repo.id}/logs", params={"event_name": "not to be found"},
+        expected_json={
+            "data": [],
+            "pagination": {
+                "next_cursor": None
+            }
         }
-    }
+    )
 
 
 async def test_get_log_event_categories(client: HttpTestHelper, repo: RepoTest):
@@ -661,18 +692,20 @@ async def test_get_log_event_names(client: HttpTestHelper, repo: RepoTest):
     )
 
     # test category parameter
-    resp = await client.assert_get(f"/repos/{repo.id}/logs/events?category=category_2")
-    assert resp.json() == {
-        "data": [
-            f"name_{2}"
-        ],
-        "pagination": {
-            "page": 1,
-            "page_size": 10,
-            "total": 1,
-            "total_pages": 1
+    await client.assert_get(
+        f"/repos/{repo.id}/logs/events?category=category_2",
+        expected_json={
+            "data": [
+                f"name_{2}"
+            ],
+            "pagination": {
+                "page": 1,
+                "page_size": 10,
+                "total": 1,
+                "total_pages": 1
+            }
         }
-    }
+    )
 
 
 async def test_get_log_event_names_empty(client: HttpTestHelper, repo: RepoTest):
@@ -767,18 +800,23 @@ async def test_get_log_node(client: HttpTestHelper, repo: RepoTest):
         repo.db, [Log.Node(id="customer", name="Customer"), Log.Node(id="entity", name="Entity")]
     )
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs/nodes/customer")
-    assert resp.json() == {
-        "id": "customer",
-        "name": "Customer",
-        "parent_node_id": None,
-        "has_children": True
-    }
+    await client.assert_get(
+        f"/repos/{repo.id}/logs/nodes/customer",
+        expected_json={
+            "id": "customer",
+            "name": "Customer",
+            "parent_node_id": None,
+            "has_children": True
+        }
+    )
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs/nodes/entity")
-    assert resp.json() == {
-        "id": "entity",
-        "name": "Entity",
-        "parent_node_id": "customer",
-        "has_children": False
-    }
+    await client.assert_get(
+        f"/repos/{repo.id}/logs/nodes/entity",
+        expected_json={
+            "id": "entity",
+            "name": "Entity",
+            "parent_node_id": "customer",
+            "has_children": False
+        }
+    )
+
