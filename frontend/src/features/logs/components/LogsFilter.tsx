@@ -269,7 +269,11 @@ export function LogsFilter(
       <Button onClick={() => onChange(editedParams)}>
         Apply
       </Button>
-      <Button onClick={() => dispatch({ type: 'resetParams' })} disabled={!hasFilter} variant='default'>
+      <Button
+        onClick={() => dispatch({ type: 'resetParams', params: {repoId: editedParams.repoId} })}
+        disabled={!hasFilter}
+        variant='default'
+      >
         Clear
       </Button>
     </Group>
