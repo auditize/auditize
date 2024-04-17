@@ -3,14 +3,14 @@ import random
 from motor.motor_asyncio import AsyncIOMotorCollection
 from bson import ObjectId
 
-from httpx import AsyncClient, ASGITransport, Response
-from icecream import ic
 import callee
 
 from auditize.main import app
 from auditize.repos.models import Repo
 from auditize.repos.service import create_repo
 from auditize.common.mongo import DatabaseManager, get_dbm, RepoDatabase
+
+from .http import HttpTestHelper
 
 # A valid ObjectId, but not existing in the database
 UNKNOWN_LOG_ID = "65fab045f097fe0b9b664c99"
@@ -48,75 +48,12 @@ async def assert_collection(collection: AsyncIOMotorCollection, expected):
     assert results == expected
 
 
-async def assert_request(
-    client: AsyncClient,
-    method: str, path, *, params=None, json=None, files=None, data=None,
-    expected_status_code=200, expected_json=None
-) -> Response:
-    ic(json, files, data)
-    resp = await client.request(method, path, params=params, json=json, files=files, data=data)
-    ic(resp.text)
-    assert resp.status_code == expected_status_code
-    if expected_json is not None:
-        assert resp.json() == expected_json
-    return resp
-
-
-async def assert_post(
-    client: AsyncClient, path, *, json=None, files=None, data=None,
-    expected_status_code=200, expected_json=None
-) -> Response:
-    return await assert_request(
-        client,
-        "POST", path,
-        json=json, files=files, data=data,
-        expected_status_code=expected_status_code, expected_json=expected_json
-    )
-
-
-async def assert_patch(
-    client: AsyncClient,
-    path, *, json=None, files=None, data=None,
-    expected_status_code=204, expected_json=None
-) -> Response:
-    return await assert_request(
-        client,
-        "PATCH", path,
-        json=json, files=files, data=data,
-        expected_status_code=expected_status_code, expected_json=expected_json
-    )
-
-
-async def assert_delete(
-    client: AsyncClient,
-    path, *,
-    expected_status_code=204, expected_json=None
-) -> Response:
-    return await assert_request(
-        client,
-        "DELETE", path,
-        expected_status_code=expected_status_code, expected_json=expected_json
-    )
-
-
-async def assert_get(
-    client: AsyncClient,
-    path, *, params=None,
-    expected_status_code=200, expected_json=None
-) -> Response:
-    return await assert_request(
-        client,
-        "GET", path, params=params,
-        expected_status_code=expected_status_code, expected_json=expected_json
-    )
-
-
-async def do_test_page_pagination_common_scenarios(client: AsyncClient, path: str, data: list):
+async def do_test_page_pagination_common_scenarios(client: HttpTestHelper, path: str, data: list):
     """
     This function assumes that for the given path (with possible query string), the total number of items is 5.
     """
     # first test, without pagination parameters
-    resp = await assert_get(client, path)
+    resp = await client.assert_get(path)
     assert resp.json() == {
         "data": data,
         "pagination": {
@@ -128,7 +65,7 @@ async def do_test_page_pagination_common_scenarios(client: AsyncClient, path: st
     }
 
     # second test, with pagination parameters
-    resp = await assert_get(client, path, params={"page": 2, "page_size": 2})
+    resp = await client.assert_get(path, params={"page": 2, "page_size": 2})
     assert resp.json() == {
         "data": data[2:4],
         "pagination": {
@@ -140,8 +77,8 @@ async def do_test_page_pagination_common_scenarios(client: AsyncClient, path: st
     }
 
 
-async def do_test_page_pagination_empty_data(client: AsyncClient, path: str):
-    resp = await assert_get(client, path)
+async def do_test_page_pagination_empty_data(client: HttpTestHelper, path: str):
+    resp = await client.assert_get(path)
     assert resp.json() == {
         "data": [],
         "pagination": {
@@ -196,18 +133,17 @@ def make_expected_log_data_for_api(actual):
     return expected
 
 
-async def assert_create_log(client: AsyncClient, repo_id: str, log: dict, expected_status_code=201):
-    resp = await assert_post(client, f"/repos/{repo_id}/logs", json=log, expected_status_code=expected_status_code)
+async def assert_create_log(client: HttpTestHelper, repo_id: str, log: dict, expected_status_code=201):
+    resp = await client.assert_post(f"/repos/{repo_id}/logs", json=log, expected_status_code=expected_status_code)
     if expected_status_code == 201:
         assert "id" in resp.json()
     return resp
 
 
-async def prepare_log(client: AsyncClient, repo_id: str, log: dict = None):
+async def prepare_log(client: HttpTestHelper, repo_id: str, log: dict = None):
     resp = await assert_create_log(client, repo_id, log or make_log_data())
     return resp.json()["id"]
 
 
 def alter_log_saved_at(db: RepoDatabase, log_id, new_saved_at):
     db.logs.update_one({"_id": ObjectId(log_id)}, {"$set": {"saved_at": new_saved_at}})
-
