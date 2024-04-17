@@ -102,13 +102,17 @@ function RepoSelector({ repoId, onChange }: { repoId?: string; onChange: (value:
       queryKey={['repos']} queryFn={getAllRepos}
       selectedItem={repoId} clearable={false} onChange={onChange}
       onDataLoaded={(repos: Repo[]) => {
-        // if no default repo or default repo is not in the list, select the first one (if any)
-        if (!defaultSelectedRepo || !repos.find((repo) => repo.id === defaultSelectedRepo)) {
-          if (repos.length > 0) {
-            onChange(repos[0].id);
+        // repo has not been auto-selected yet
+        if (! repoId ) {
+          // if no default repo or default repo is not in the list, select the first one (if any)
+          if (!defaultSelectedRepo || !repos.find((repo) => repo.id === defaultSelectedRepo)) {
+            if (repos.length > 0) {
+              onChange(repos[0].id);
+            }
+          // otherwise, select the default/previously selected repo (local storage)
+          } else {
+            onChange(defaultSelectedRepo);
           }
-        } else {
-          onChange(defaultSelectedRepo);
         }
       }}
       itemLabel={(repo) => repo.name} itemValue={(repo) => repo.id}
