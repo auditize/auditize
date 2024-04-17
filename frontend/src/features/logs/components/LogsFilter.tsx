@@ -84,7 +84,7 @@ function TagCategorySelector(
 
 function RepoSelector({ repoId, onChange }: { repoId?: string; onChange: (value: string) => void; }) {
   const [defaultSelectedRepo, setDefaultSelectedRepo] = useLocalStorage({
-    key: 'default-selected-repo'
+    key: 'default-selected-repo', getInitialValueInEffect: false
   });
 
   useEffect(() => {
