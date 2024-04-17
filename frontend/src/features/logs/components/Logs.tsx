@@ -37,7 +37,8 @@ export function Logs() {
         setSearchParams((currentSearchParams) => {
           const currentFilter = searchParamsToFilter(currentSearchParams);
           const newFilter = {
-            repoId: currentFilter.repoId, since: currentFilter.since, until: currentFilter.until, [name]: value
+            repoId: currentFilter.repoId, since: currentFilter.since, until: currentFilter.until,
+            [name]: value
           };
           return filterToSearchParams(newFilter);
         })

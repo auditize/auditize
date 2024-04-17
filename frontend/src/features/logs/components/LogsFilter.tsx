@@ -136,14 +136,13 @@ function filterParamsReducer(state: LogsFilterParams, action: SetParamAction | R
         update['eventName'] = "";
       return { ...state, ...update };
     case 'resetParams':
-      const newParams = { ...buildEmptyLogsFilterParams(), repoId: state.repoId };
+      const newParams = buildEmptyLogsFilterParams();
       return action.params ? { ...newParams, ...action.params } : newParams;
   }
 }
 
 export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onChange: (filter: LogsFilterParams) => void; }) {
   const [editedParams, dispatch] = useReducer(filterParamsReducer, buildEmptyLogsFilterParams());
-  const isRepoSelected = useRef(false);
 
   // Typically, an inline filter has been applied from logs table
   useEffect(() => {
@@ -167,8 +166,7 @@ export function LogsFilter({ params, onChange }: { params: LogsFilterParams; onC
       <RepoSelector repoId={editedParams.repoId} onChange={(repoId) => {
           // Trigger a log search when the log repository is selected for the first time
           // so that the logs table can be populated when the page is loaded without any explicit filter
-          if (! isRepoSelected.current) {
-            isRepoSelected.current = true;
+          if (! editedParams.repoId) {
             onChange({ ...editedParams, repoId });
           } else {
             dispatch({ type: 'setParam', name: 'repoId', value: repoId });
