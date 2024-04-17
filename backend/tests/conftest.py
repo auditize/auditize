@@ -2,7 +2,8 @@ import pytest
 
 
 pytest.register_assert_rewrite("helpers")
-from helpers import create_http_client, setup_test_dbm, teardown_test_dbm, RepoTest
+from helpers import setup_test_dbm, teardown_test_dbm, RepoTest
+from helpers.http import create_http_client
 
 
 @pytest.fixture(scope="session")
