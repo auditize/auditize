@@ -1,12 +1,17 @@
 import { Container } from '@mantine/core';
-import { LogsFilterParams } from '../api';
+import { LogsFilterParams, buildEmptyLogsFilterParams } from '../api';
 import { LogsLoader } from './LogsLoader';
 import { LogsFilter } from './LogsFilter';
 import { useSearchParams } from 'react-router-dom';
 import { deserializeDate, serializeDate } from '@/utils/date';
 
 function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
-  const obj = Object.fromEntries(params.entries());
+  // filter the params from the LogsFilterParams available keys (white list)
+  // in order to avoid possible undesired keys in LogsFilterParams resulting object
+  const template = buildEmptyLogsFilterParams();
+  const obj = Object.fromEntries(
+    Object.keys(template).map((key) => [key, params.get(key) || ""])
+  );
   return {
     ...obj,
     since: obj.since ? deserializeDate(obj.since) : null,
