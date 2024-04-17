@@ -34,6 +34,7 @@ export function LogsLoader(
 
   return (
     <LogsTable
+      repoId={filter.repoId!}
       logs={data.pages.flatMap((page) => page.logs)}
       footer={footer}
       onTableFilterChange={onTableFilterChange} />

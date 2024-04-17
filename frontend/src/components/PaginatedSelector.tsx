@@ -35,7 +35,7 @@ export function PaginatedSelector(
   useEffect(() => {
     if (data && onDataLoaded)
       onDataLoaded(data);
-  }, [data]);
+  }, [data, selectedItem]);
 
   if (error)
     return <div>Error: {error.message}</div>;

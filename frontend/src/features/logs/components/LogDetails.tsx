@@ -3,13 +3,34 @@ import { iconSize } from '@/utils/ui';
 import { labelize } from "@/utils/format";
 import { Modal, Title, Text, Divider, Accordion } from "@mantine/core";
 import { IconUser, IconCylinder, IconHierarchy } from "@tabler/icons-react";
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getLog } from '../api';
 
 
-export function LogDetails({ log, opened, onClose }: { log: Log; opened: boolean; onClose: () => void; }) {
+export function LogDetails({ repoId, logId }: { repoId?: string, logId?: string }) {
+  const opened = !!(repoId && logId)
+  const { data: log, error, isPending } = useQuery({
+    queryKey: ['log', logId],
+    queryFn: () => getLog(repoId!, logId!),
+    enabled: opened
+  });
+  const navigate = useNavigate();
+
+  if (isPending) {
+    return null;
+  }
+
+  if (error) {
+    return (
+      <div>{error.message}</div>
+    );
+  }
+
   return (
     <Modal
       title={"Log details"} size="lg" padding="lg"
-      opened={opened} onClose={onClose}
+      opened={opened} onClose={() => navigate(-1)}
     >
       <div>
         <table>

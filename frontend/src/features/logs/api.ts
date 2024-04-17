@@ -1,5 +1,6 @@
 import { getAllPagePaginatedItems } from '@/utils/api';
 import { timeout } from '@/utils/api';
+import { serializeDate } from '@/utils/date';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -39,18 +40,14 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
   };
 }
 
-function formatDate(date: Date) {
-  return dayjs(date).utc().format("YYYY-MM-DDTHH:mm:ss") + "Z";
-}
-
 export async function getLogs(cursor: string | null, filter?: LogsFilterParams, limit = 3): Promise<{logs: Log[], nextCursor: string | null}> {
   await timeout(300);  // FIXME: Simulate network latency
 
   const response = await axios.get(`http://localhost:8000/repos/${filter!.repoId}/logs`, {
     params: {
       limit,
-      since: filter?.since ? formatDate(filter.since) : undefined,
-      until: filter?.until ? formatDate(filter.until) : undefined,
+      since: filter?.since ? serializeDate(filter.since) : undefined,
+      until: filter?.until ? serializeDate(filter.until) : undefined,
       event_category: filter?.eventCategory,
       event_name: filter?.eventName,
       actor_type: filter?.actorType,
@@ -65,6 +62,10 @@ export async function getLogs(cursor: string | null, filter?: LogsFilterParams, 
     }
   });
   return {logs: response.data.data, nextCursor: response.data.pagination.next_cursor};
+}
+
+export async function getLog(repoId: string, logId: string): Promise<Log> {
+  return (await axios.get(`http://localhost:8000/repos/${repoId}/logs/${logId}`)).data;
 }
 
 export async function getAllLogEventCategories(repoId: string): Promise<string[]> {
