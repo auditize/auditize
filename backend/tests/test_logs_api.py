@@ -1,12 +1,9 @@
 from datetime import datetime
-from bson import ObjectId
 import base64
 
 import pytest
 import callee
-from icecream import ic
 
-from auditize.common.mongo import RepoDatabase
 from auditize.logs.service import (
     consolidate_log_event, consolidate_log_actor, consolidate_log_resource,
     consolidate_log_tags, consolidate_log_node_path
@@ -16,31 +13,26 @@ from auditize.logs.models import Log
 from helpers import (
     UNKNOWN_LOG_ID,
     do_test_page_pagination_common_scenarios,
-    do_test_page_pagination_empty_data,
-    make_log_data, make_expected_log_data_for_api, assert_create_log, prepare_log,
-    alter_log_saved_at
+    do_test_page_pagination_empty_data
 )
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
+from helpers.logs import PreparedLog
 
 pytestmark = pytest.mark.anyio
 
 
-async def assert_db_log(db: RepoDatabase, log_id, expected):
-    expected = {**make_expected_log_data_for_api(expected), "saved_at": callee.IsA(datetime)}
-    db_log = await db.logs.find_one({"_id": ObjectId(log_id)}, {"_id": 0})
-    ic(db_log)
-    assert db_log == expected
-
-
 async def test_create_log_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    resp = await assert_create_log(client, repo.id, log)
-    await assert_db_log(repo.db, resp.json()["id"], log)
+    await client.assert_post(
+        f"/repos/{repo.id}/logs",
+        json=PreparedLog.prepare_data(),
+        expected_status_code=201,
+        expected_json={"id": callee.IsA(str)}
+    )
 
 
 async def test_create_log_all_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data({
+    data = PreparedLog.prepare_data({
         "source": {
             "ip": "1.1.1.1",
             "user_agent": "Mozilla/5.0"
@@ -81,14 +73,21 @@ async def test_create_log_all_fields(client: HttpTestHelper, repo: PreparedRepo)
         ],
     })
 
-    resp = await assert_create_log(client, repo.id, log)
-    await assert_db_log(repo.db, resp.json()["id"], log)
+    await client.assert_post(
+        f"/repos/{repo.id}/logs",
+        json=data,
+        expected_status_code=201,
+        expected_json={"id": callee.IsA(str)}
+    )
 
 
 async def test_create_log_missing_event_name(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    del log["event"]["name"]
-    await assert_create_log(client, repo.id, log, expected_status_code=422)
+    data = PreparedLog.prepare_data()
+    del data["event"]["name"]
+    await client.assert_post(
+        f"/repos/{repo.id}/logs", json=data,
+        expected_status_code=422
+    )
 
 
 async def test_create_log_invalid_rich_tag(client: HttpTestHelper, repo: PreparedRepo):
@@ -98,80 +97,69 @@ async def test_create_log_invalid_rich_tag(client: HttpTestHelper, repo: Prepare
     )
 
     for invalid_tag in invalid_tags:
-        await assert_create_log(
-            client, repo.id, make_log_data({"tags": [invalid_tag]}), expected_status_code=422
+        await client.assert_post(
+            f"/repos/{repo.id}/logs", json=PreparedLog.prepare_data({"tags": [invalid_tag]}),
+            expected_status_code=422
         )
 
 
 async def test_add_attachment_text_and_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    log_id = await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client)
 
     await client.assert_post(
-        f"/repos/{repo.id}/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("test.txt", "test data")},
         data={"type": "text"},
         expected_status_code=204
     )
-    await assert_db_log(
-        repo.db, log_id, {
-            **log,
-            "attachments": [
-                {
-                    "name": "test.txt",
-                    "type": "text",
-                    "mime_type": "text/plain",
-                    "data": b"test data"
-                }
-            ]
-        }
-    )
+    await log.assert_db({
+        "attachments": [
+            {
+                "name": "test.txt",
+                "type": "text",
+                "mime_type": "text/plain",
+                "data": b"test data"
+            }
+        ]
+    })
 
 
 async def test_add_attachment_binary_and_all_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    log_id = await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client)
 
     # some random data generated with /dev/urandom:
     data_base64 = "srX7jaKuqoXJQm7YocqmFzSwjObc0ycvnMYor28L9Kc="
     data = base64.b64decode(data_base64)
 
     await client.assert_post(
-        f"/repos/{repo.id}/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.bin", data)},
         data={"type": "binary", "name": "test_file.bin", "mime_type": "application/octet-stream"},
         expected_status_code=204
     )
-    await assert_db_log(
-        repo.db, log_id, {
-            **log,
-            "attachments": [
-                {
-                    "name": "test_file.bin",
-                    "type": "binary",
-                    "mime_type": "application/octet-stream",
-                    "data": data
-                }
-            ]
-        }
-    )
+    await log.assert_db({
+        "attachments": [
+            {
+                "name": "test_file.bin",
+                "type": "binary",
+                "mime_type": "application/octet-stream",
+                "data": data
+            }
+        ]
+    })
 
 
 async def test_get_log_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    log_id = await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client)
 
     await client.assert_get(
-        f"/repos/{repo.id}/logs/{log_id}",
-        expected_json=make_expected_log_data_for_api({
-            **log,
-            "id": log_id
-        })
+        f"/repos/{repo.id}/logs/{log.id}",
+        expected_json=log.expected_api_response()
     )
 
 
 async def test_get_log_all_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data({
+    data = PreparedLog.prepare_data({
         "source": {
             "ip": "1.1.1.1",
             "user_agent": "Mozilla/5.0"
@@ -211,15 +199,11 @@ async def test_get_log_all_fields(client: HttpTestHelper, repo: PreparedRepo):
             }
         ],
     })
-
-    log_id = await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client, data)
 
     await client.assert_get(
-        f"/repos/{repo.id}/logs/{log_id}",
-        expected_json=make_expected_log_data_for_api({
-            **log,
-            "id": log_id
-        })
+        f"/repos/{repo.id}/logs/{log.id}",
+        expected_json=log.expected_api_response()
     )
 
 
@@ -230,37 +214,35 @@ async def test_get_log_not_found(client: HttpTestHelper, repo: PreparedRepo):
 
 
 async def test_get_log_attachment_text_and_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    log_id = await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client)
 
     await client.assert_post(
-        f"/repos/{repo.id}/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
         data={"type": "text file"},
         expected_status_code=204
     )
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs/{log_id}/attachments/0")
+    resp = await client.assert_get(f"/repos/{repo.id}/logs/{log.id}/attachments/0")
     assert resp.headers["Content-Disposition"] == "attachment; filename=file.txt"
     assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
     assert resp.content == b"test data"
 
 
 async def test_get_log_attachment_binary_and_all_fields(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    log_id = await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client)
 
     data_base64 = "srX7jaKuqoXJQm7YocqmFzSwjObc0ycvnMYor28L9Kc="
     data = base64.b64decode(data_base64)
 
     await client.assert_post(
-        f"/repos/{repo.id}/logs/{log_id}/attachments",
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.bin", data)},
         data={"type": "binary", "name": "test_file.bin", "mime_type": "image/jpeg"},
         expected_status_code=204
     )
 
-    resp = await client.assert_get(f"/repos/{repo.id}/logs/{log_id}/attachments/0")
+    resp = await client.assert_get(f"/repos/{repo.id}/logs/{log.id}/attachments/0")
     assert resp.headers["Content-Disposition"] == "attachment; filename=test_file.bin"
     assert resp.headers["Content-Type"] == "image/jpeg"
     assert resp.content == data
@@ -273,30 +255,20 @@ async def test_get_log_attachment_not_found_log_id(client: HttpTestHelper, repo:
 
 
 async def test_get_log_attachment_not_found_attachment_idx(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    log_id = await prepare_log(client, repo.id, log)
-
-    await client.assert_get(f"/repos/{repo.id}/logs/{log_id}/attachments/0", expected_status_code=404)
+    log = await repo.create_log(client)
+    await client.assert_get(f"/repos/{repo.id}/logs/{log.id}/attachments/0", expected_status_code=404)
 
 
 async def test_get_logs(client: HttpTestHelper, repo: PreparedRepo):
-    log1 = make_log_data()
-    log2 = make_log_data()
-    log1_id = await prepare_log(client, repo.id, log1)
-    log2_id = await prepare_log(client, repo.id, log2)
+    log1 = await repo.create_log(client)
+    log2 = await repo.create_log(client)
 
     await client.assert_get(
         f"/repos/{repo.id}/logs",
         expected_json={
             "data": [
-                make_expected_log_data_for_api({
-                    **log2,
-                    "id": log2_id
-                }),
-                make_expected_log_data_for_api({
-                    **log1,
-                    "id": log1_id
-                })
+                log2.expected_api_response(),
+                log1.expected_api_response()
             ],
             "pagination": {
                 "next_cursor": None
@@ -306,19 +278,14 @@ async def test_get_logs(client: HttpTestHelper, repo: PreparedRepo):
 
 
 async def test_get_logs_limit(client: HttpTestHelper, repo: PreparedRepo):
-    log1 = make_log_data()
-    log2 = make_log_data()
-    await prepare_log(client, repo.id, log1)
-    log2_id = await prepare_log(client, repo.id, log2)
+    await repo.create_log(client)
+    log2 = await repo.create_log(client)
 
     await client.assert_get(
         f"/repos/{repo.id}/logs?limit=1",
         expected_json={
             "data": [
-                make_expected_log_data_for_api({
-                    **log2,
-                    "id": log2_id
-                })
+                log2.expected_api_response()
             ],
             "pagination": {
                 "next_cursor": callee.IsA(str)
@@ -328,21 +295,14 @@ async def test_get_logs_limit(client: HttpTestHelper, repo: PreparedRepo):
 
 
 async def test_get_logs_limit_and_cursor(client: HttpTestHelper, repo: PreparedRepo):
-    logs = []
-    log_ids = []
-    for _ in range(10):
-        log = make_log_data()
-        logs.append(log)
-        log_id = await prepare_log(client, repo.id, log)
-        log_ids.append(log_id)
+    logs = [await repo.create_log(client) for _ in range(10)]
 
     # first step, get 5 logs and check the next_cursor
     resp = await client.assert_get(
         f"/repos/{repo.id}/logs?limit=5",
         expected_json={
             "data": [
-                make_expected_log_data_for_api({**log, "id": log_id})
-                for log, log_id in zip(reversed(logs[-5:]), reversed(log_ids[-5:]))
+                log.expected_api_response() for log in reversed(logs[-5:])
             ],
             "pagination": {
                 "next_cursor": callee.IsA(str)
@@ -356,8 +316,7 @@ async def test_get_logs_limit_and_cursor(client: HttpTestHelper, repo: PreparedR
         f"/repos/{repo.id}/logs?limit=5&cursor={next_cursor}",
         expected_json={
             "data": [
-                make_expected_log_data_for_api({**log, "id": log_id})
-                for log, log_id in zip(reversed(logs[:5]), reversed(log_ids[:5]))
+                log.expected_api_response() for log in reversed(logs[:5])
             ],
             "pagination": {
                 "next_cursor": None
@@ -366,21 +325,17 @@ async def test_get_logs_limit_and_cursor(client: HttpTestHelper, repo: PreparedR
     )
 
 
-async def _test_get_logs_filter(client: HttpTestHelper, repo_id: str, func, params):
-    log1 = make_log_data()
-    await prepare_log(client, repo_id, log1)
-    log2 = make_log_data()
-    func(log2)
-    log2_id = await prepare_log(client, repo_id, log2)
+async def _test_get_logs_filter(client: HttpTestHelper, repo: PreparedRepo, func, params):
+    await repo.create_log(client)  # a log not be seen in the response
+    log2_data = PreparedLog.prepare_data()
+    func(log2_data)
+    log2 = await repo.create_log(client, log2_data)
 
     await client.assert_get(
-        f"/repos/{repo_id}/logs", params=params,
+        f"/repos/{repo.id}/logs", params=params,
         expected_json={
             "data": [
-                make_expected_log_data_for_api({
-                    **log2,
-                    "id": log2_id
-                })
+                log2.expected_api_response()
             ],
             "pagination": {
                 "next_cursor": None
@@ -393,14 +348,14 @@ async def test_get_logs_filter_event_name(client: HttpTestHelper, repo: Prepared
     def func(log):
         log["event"]["name"] = "find_me"
 
-    await _test_get_logs_filter(client, repo.id, func, {"event_name": "find_me"})
+    await _test_get_logs_filter(client, repo, func, {"event_name": "find_me"})
 
 
 async def test_get_logs_filter_event_category(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["event"]["category"] = "find_me"
 
-    await _test_get_logs_filter(client, repo.id, func, {"event_category": "find_me"})
+    await _test_get_logs_filter(client, repo, func, {"event_category": "find_me"})
 
 
 async def test_get_logs_filter_actor_type(client: HttpTestHelper, repo: PreparedRepo):
@@ -411,7 +366,7 @@ async def test_get_logs_filter_actor_type(client: HttpTestHelper, repo: Prepared
             "name": "User 123"
         }
 
-    await _test_get_logs_filter(client, repo.id, func, {"actor_type": "find_me"})
+    await _test_get_logs_filter(client, repo, func, {"actor_type": "find_me"})
 
 
 async def test_get_logs_filter_actor_name(client: HttpTestHelper, repo: PreparedRepo):
@@ -423,7 +378,7 @@ async def test_get_logs_filter_actor_name(client: HttpTestHelper, repo: Prepared
         }
 
     # filter on actor_name is substring and case-insensitive
-    await _test_get_logs_filter(client, repo.id, func, {"actor_name": "FIND"})
+    await _test_get_logs_filter(client, repo, func, {"actor_name": "FIND"})
 
 
 async def test_get_logs_filter_resource_type(client: HttpTestHelper, repo: PreparedRepo):
@@ -434,7 +389,7 @@ async def test_get_logs_filter_resource_type(client: HttpTestHelper, repo: Prepa
             "name": "Core Module"
         }
 
-    await _test_get_logs_filter(client, repo.id, func, {"resource_type": "find_me"})
+    await _test_get_logs_filter(client, repo, func, {"resource_type": "find_me"})
 
 
 async def test_get_logs_filter_resource_name(client: HttpTestHelper, repo: PreparedRepo):
@@ -446,7 +401,7 @@ async def test_get_logs_filter_resource_name(client: HttpTestHelper, repo: Prepa
         }
 
     # filter on resource_name is substring and case-insensitive
-    await _test_get_logs_filter(client, repo.id, func, {"resource_name": "FIND"})
+    await _test_get_logs_filter(client, repo, func, {"resource_name": "FIND"})
 
 
 async def test_get_logs_filter_tag_category(client: HttpTestHelper, repo: PreparedRepo):
@@ -456,7 +411,7 @@ async def test_get_logs_filter_tag_category(client: HttpTestHelper, repo: Prepar
             {"id": "rich_tag:1", "category": "find_me", "name": "Rich tag"}
         ]
 
-    await _test_get_logs_filter(client, repo.id, func, {"tag_category": "find_me"})
+    await _test_get_logs_filter(client, repo, func, {"tag_category": "find_me"})
 
 
 async def test_get_logs_filter_tag_name(client: HttpTestHelper, repo: PreparedRepo):
@@ -467,7 +422,7 @@ async def test_get_logs_filter_tag_name(client: HttpTestHelper, repo: PreparedRe
         ]
 
     # filter on tag_name is substring and case-insensitive
-    await _test_get_logs_filter(client, repo.id, func, {"tag_name": "FIND"})
+    await _test_get_logs_filter(client, repo, func, {"tag_name": "FIND"})
 
 
 async def test_get_logs_filter_tag_id(client: HttpTestHelper, repo: PreparedRepo):
@@ -477,7 +432,7 @@ async def test_get_logs_filter_tag_id(client: HttpTestHelper, repo: PreparedRepo
             {"id": "find_me", "category": "rich_tag", "name": "Rich tag"}
         ]
 
-    await _test_get_logs_filter(client, repo.id, func, {"tag_id": "find_me"})
+    await _test_get_logs_filter(client, repo, func, {"tag_id": "find_me"})
 
 
 async def test_get_logs_filter_node_id_exact_node(client: HttpTestHelper, repo: PreparedRepo):
@@ -487,7 +442,7 @@ async def test_get_logs_filter_node_id_exact_node(client: HttpTestHelper, repo: 
             {"id": "find_me:2", "name": "Customer 2"}
         ]
 
-    await _test_get_logs_filter(client, repo.id, func, {"node_id": "find_me:2"})
+    await _test_get_logs_filter(client, repo, func, {"node_id": "find_me:2"})
 
 
 async def test_get_logs_filter_node_id_ascendant_node(client: HttpTestHelper, repo: PreparedRepo):
@@ -497,25 +452,18 @@ async def test_get_logs_filter_node_id_ascendant_node(client: HttpTestHelper, re
             {"id": "find_me:2", "name": "Customer 2"}
         ]
 
-    await _test_get_logs_filter(client, repo.id, func, {"node_id": "find_me:1"})
+    await _test_get_logs_filter(client, repo, func, {"node_id": "find_me:1"})
 
 
 async def test_get_logs_filter_since(client: HttpTestHelper, repo: PreparedRepo):
-    log1 = make_log_data()
-    log1_id = await prepare_log(client, repo.id, log1)
-    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
-    log2 = make_log_data()
-    log2_id = await prepare_log(client, repo.id, log2)
-    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    log1 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
     await client.assert_get(
         f"/repos/{repo.id}/logs", params={"since": "2024-01-01T12:00:00Z"},
         expected_json={
             "data": [
-                make_expected_log_data_for_api({
-                    **log2,
-                    "id": log2_id
-                })
+                log2.expected_api_response()
             ],
             "pagination": {
                 "next_cursor": None
@@ -525,21 +473,14 @@ async def test_get_logs_filter_since(client: HttpTestHelper, repo: PreparedRepo)
 
 
 async def test_get_logs_filter_until(client: HttpTestHelper, repo: PreparedRepo):
-    log1 = make_log_data()
-    log1_id = await prepare_log(client, repo.id, log1)
-    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
-    log2 = make_log_data()
-    log2_id = await prepare_log(client, repo.id, log2)
-    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    log1 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
     await client.assert_get(
         f"/repos/{repo.id}/logs", params={"until": "2024-01-01T12:00:00Z"},
         expected_json={
             "data": [
-                make_expected_log_data_for_api({
-                    **log1,
-                    "id": log1_id
-                })
+                log1.expected_api_response()
             ],
             "pagination": {
                 "next_cursor": None
@@ -549,21 +490,14 @@ async def test_get_logs_filter_until(client: HttpTestHelper, repo: PreparedRepo)
 
 
 async def test_get_logs_filter_until_milliseconds(client: HttpTestHelper, repo: PreparedRepo):
-    log1 = make_log_data()
-    log1_id = await prepare_log(client, repo.id, log1)
-    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2023-12-31T23:59:59.500Z"))
-    log2 = make_log_data()
-    log2_id = await prepare_log(client, repo.id, log2)
-    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log1 = await repo.create_log(client, saved_at=datetime.fromisoformat("2023-12-31T23:59:59.500Z"))
+    log2 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
 
     await client.assert_get(
         f"/repos/{repo.id}/logs", params={"until": "2023-12-31T23:59:59Z"},
         expected_json={
             "data": [
-                make_expected_log_data_for_api({
-                    **log1,
-                    "id": log1_id
-                })
+                log1.expected_api_response()
             ],
             "pagination": {
                 "next_cursor": None
@@ -573,25 +507,16 @@ async def test_get_logs_filter_until_milliseconds(client: HttpTestHelper, repo: 
 
 
 async def test_get_logs_filter_between_since_and_until(client: HttpTestHelper, repo: PreparedRepo):
-    log1 = make_log_data()
-    log1_id = await prepare_log(client, repo.id, log1)
-    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
-    log2 = make_log_data()
-    log2_id = await prepare_log(client, repo.id, log2)
-    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
-    log3 = make_log_data()
-    log3_id = await prepare_log(client, repo.id, log3)
-    alter_log_saved_at(repo.db, log3_id, datetime.fromisoformat("2024-01-03T00:00:00Z"))
+    log1 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    log2 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    log3 = await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-03T00:00:00Z"))
 
     resp = await client.assert_get(
         f"/repos/{repo.id}/logs", params={"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"}
     )
     assert resp.json() == {
         "data": [
-            make_expected_log_data_for_api({
-                **log2,
-                "id": log2_id
-            })
+            log2.expected_api_response()
         ],
         "pagination": {
             "next_cursor": None
@@ -600,27 +525,24 @@ async def test_get_logs_filter_between_since_and_until(client: HttpTestHelper, r
 
 
 async def test_get_logs_filter_multiple_criteria(client: HttpTestHelper, repo: PreparedRepo):
-    log1 = make_log_data()
-    log1["event"]["name"] = "find_me:event_name"
-    await prepare_log(client, repo.id, log1)
+    log1_data = PreparedLog.prepare_data()
+    log1_data["event"]["name"] = "find_me:event_name"
+    log1 = await repo.create_log(client, log1_data)
 
-    log2 = make_log_data()
-    log2["event"]["category"] = "find_me:event_category"
-    await prepare_log(client, repo.id, log2)
+    log2_data = PreparedLog.prepare_data()
+    log2_data["event"]["category"] = "find_me:event_category"
+    log2 = await repo.create_log(client, log2_data)
 
-    log3 = make_log_data()
-    log3["event"] = {"name": "find_me:event_name", "category": "find_me:event_category"}
-    log3_id = await prepare_log(client, repo.id, log3)
+    log3_data = PreparedLog.prepare_data()
+    log3_data["event"] = {"name": "find_me:event_name", "category": "find_me:event_category"}
+    log3 = await repo.create_log(client, log3_data)
 
     await client.assert_get(
         f"/repos/{repo.id}/logs",
         params={"event_name": "find_me:event_name", "event_category": "find_me:event_category"},
         expected_json={
             "data": [
-                make_expected_log_data_for_api({
-                    **log3,
-                    "id": log3_id
-                })
+                log3.expected_api_response()
             ],
             "pagination": {
                 "next_cursor": None
@@ -630,8 +552,7 @@ async def test_get_logs_filter_multiple_criteria(client: HttpTestHelper, repo: P
 
 
 async def test_get_logs_empty_string_filter_params(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    log_id = await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client)
 
     resp = await client.assert_get(f"/repos/{repo.id}/logs", params={
         "event_name": "", "event_category": "",
@@ -643,10 +564,7 @@ async def test_get_logs_empty_string_filter_params(client: HttpTestHelper, repo:
     })
     assert resp.json() == {
         "data": [
-            make_expected_log_data_for_api({
-                **log,
-                "id": log_id
-            })
+            log.expected_api_response()
         ],
         "pagination": {
             "next_cursor": None
@@ -655,8 +573,7 @@ async def test_get_logs_empty_string_filter_params(client: HttpTestHelper, repo:
 
 
 async def test_get_logs_filter_no_result(client: HttpTestHelper, repo: PreparedRepo):
-    log = make_log_data()
-    await prepare_log(client, repo.id, log)
+    log = await repo.create_log(client)
 
     await client.assert_get(
         f"/repos/{repo.id}/logs", params={"event_name": "not to be found"},
@@ -820,4 +737,3 @@ async def test_get_log_node(client: HttpTestHelper, repo: PreparedRepo):
             "has_children": False
         }
     )
-

@@ -1,6 +1,4 @@
-import uuid
 from datetime import datetime
-from bson import ObjectId
 
 import pytest
 import callee
@@ -8,8 +6,7 @@ import callee
 from auditize.common.mongo import DatabaseManager
 
 from helpers import (
-    UNKNOWN_LOG_ID, assert_collection, do_test_page_pagination_common_scenarios,
-    prepare_log, alter_log_saved_at
+    UNKNOWN_LOG_ID, assert_collection, do_test_page_pagination_common_scenarios
 )
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
@@ -93,10 +90,8 @@ async def test_repo_get_with_stats_empty(client: HttpTestHelper, repo: PreparedR
 
 
 async def test_repo_get_with_stats(client: HttpTestHelper, repo: PreparedRepo):
-    log1_id = await prepare_log(client, repo.id)
-    alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
-    log2_id = await prepare_log(client, repo.id)
-    alter_log_saved_at(repo.db, log2_id, datetime.fromisoformat("2024-01-02T00:00:00Z"))
+    await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
     await client.assert_get(
         f"/repos/{repo.id}?include=stats",
@@ -129,8 +124,7 @@ async def test_repo_list(client: HttpTestHelper, dbm: DatabaseManager):
 
 
 async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
-    log_id = await prepare_log(client, repo.id)
-    alter_log_saved_at(repo.db, log_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
 
     await client.assert_get(
         f"/repos?include=stats",

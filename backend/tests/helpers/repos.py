@@ -8,6 +8,8 @@ from auditize.common.mongo import DatabaseManager, RepoDatabase
 
 import callee
 
+from .http import HttpTestHelper
+
 
 class PreparedRepo:
     def __init__(self, id: str, data: dict, db: RepoDatabase):
@@ -45,3 +47,7 @@ class PreparedRepo:
             "stats": None,
             **(extra or {})
         }
+
+    def create_log(self, client: HttpTestHelper, data: dict = None, saved_at: datetime = None) -> "PreparedLog":
+        from .logs import PreparedLog  # avoid circular import
+        return PreparedLog.create(client, self, data, saved_at=saved_at)
