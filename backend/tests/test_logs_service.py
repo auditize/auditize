@@ -7,8 +7,8 @@ from auditize.common.mongo import DatabaseManager
 import pytest
 import callee
 
-from helpers import assert_collection, RepoTest
-
+from helpers import assert_collection
+from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
 
@@ -30,7 +30,7 @@ def make_log_data(**extra) -> Log:
     return Log(**kwargs)
 
 
-async def test_save_log_db_shape(dbm: DatabaseManager, repo: RepoTest):
+async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data()
     log_id = await save_log(dbm, repo.id, log)
     db_log = await repo.db.logs.find_one({"_id": log_id})
@@ -53,7 +53,7 @@ async def assert_consolidated_data(collection: AsyncIOMotorCollection, expected:
     ])
 
 
-async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: RepoTest):
+async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     # first log
     log = make_log_data(source={"ip": "127.0.0.1"})
     log.actor.extra = {"role": "admin"}

@@ -31,18 +31,6 @@ async def teardown_test_dbm(test_dbm):
     await test_dbm.core_db.client.drop_database(test_dbm.core_db.name)
 
 
-class RepoTest:
-    def __init__(self, id: str, db: RepoDatabase):
-        self.id = id
-        self.db = db
-
-    @classmethod
-    async def create(cls, dbm: DatabaseManager):
-        repo_id = await create_repo(dbm, Repo(name="logs"))
-        repo_db = dbm.get_repo_db(repo_id)
-        return cls(repo_id, repo_db)
-
-
 async def assert_collection(collection: AsyncIOMotorCollection, expected):
     results = await collection.find({}).to_list(None)
     assert results == expected

@@ -14,13 +14,14 @@ from auditize.logs.service import (
 from auditize.logs.models import Log
 
 from helpers import (
-    UNKNOWN_LOG_ID, RepoTest,
+    UNKNOWN_LOG_ID,
     do_test_page_pagination_common_scenarios,
     do_test_page_pagination_empty_data,
     make_log_data, make_expected_log_data_for_api, assert_create_log, prepare_log,
     alter_log_saved_at
 )
 from helpers.http import HttpTestHelper
+from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
 
@@ -32,13 +33,13 @@ async def assert_db_log(db: RepoDatabase, log_id, expected):
     assert db_log == expected
 
 
-async def test_create_log_minimal_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_create_log_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     resp = await assert_create_log(client, repo.id, log)
     await assert_db_log(repo.db, resp.json()["id"], log)
 
 
-async def test_create_log_all_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_create_log_all_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data({
         "source": {
             "ip": "1.1.1.1",
@@ -84,13 +85,13 @@ async def test_create_log_all_fields(client: HttpTestHelper, repo: RepoTest):
     await assert_db_log(repo.db, resp.json()["id"], log)
 
 
-async def test_create_log_missing_event_name(client: HttpTestHelper, repo: RepoTest):
+async def test_create_log_missing_event_name(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     del log["event"]["name"]
     await assert_create_log(client, repo.id, log, expected_status_code=422)
 
 
-async def test_create_log_invalid_rich_tag(client: HttpTestHelper, repo: RepoTest):
+async def test_create_log_invalid_rich_tag(client: HttpTestHelper, repo: PreparedRepo):
     invalid_tags = (
         {"id": "some_tag", "category": "rich_tag"},
         {"id": "some_other_tag", "name": "Rich tag"}
@@ -102,7 +103,7 @@ async def test_create_log_invalid_rich_tag(client: HttpTestHelper, repo: RepoTes
         )
 
 
-async def test_add_attachment_text_and_minimal_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_add_attachment_text_and_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
@@ -127,7 +128,7 @@ async def test_add_attachment_text_and_minimal_fields(client: HttpTestHelper, re
     )
 
 
-async def test_add_attachment_binary_and_all_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_add_attachment_binary_and_all_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
@@ -156,7 +157,7 @@ async def test_add_attachment_binary_and_all_fields(client: HttpTestHelper, repo
     )
 
 
-async def test_get_log_minimal_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
@@ -169,7 +170,7 @@ async def test_get_log_minimal_fields(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_log_all_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_all_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data({
         "source": {
             "ip": "1.1.1.1",
@@ -222,13 +223,13 @@ async def test_get_log_all_fields(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_log_not_found(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_not_found(client: HttpTestHelper, repo: PreparedRepo):
     await client.assert_get(
         f"/repos/{repo.id}/logs/{UNKNOWN_LOG_ID}", expected_status_code=404
     )
 
 
-async def test_get_log_attachment_text_and_minimal_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_attachment_text_and_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
@@ -245,7 +246,7 @@ async def test_get_log_attachment_text_and_minimal_fields(client: HttpTestHelper
     assert resp.content == b"test data"
 
 
-async def test_get_log_attachment_binary_and_all_fields(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_attachment_binary_and_all_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
@@ -265,20 +266,20 @@ async def test_get_log_attachment_binary_and_all_fields(client: HttpTestHelper, 
     assert resp.content == data
 
 
-async def test_get_log_attachment_not_found_log_id(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_attachment_not_found_log_id(client: HttpTestHelper, repo: PreparedRepo):
     await client.assert_get(
         f"/repos/{repo.id}/logs/{UNKNOWN_LOG_ID}/attachments/0", expected_status_code=404
     )
 
 
-async def test_get_log_attachment_not_found_attachment_idx(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_attachment_not_found_attachment_idx(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
     await client.assert_get(f"/repos/{repo.id}/logs/{log_id}/attachments/0", expected_status_code=404)
 
 
-async def test_get_logs(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs(client: HttpTestHelper, repo: PreparedRepo):
     log1 = make_log_data()
     log2 = make_log_data()
     log1_id = await prepare_log(client, repo.id, log1)
@@ -304,7 +305,7 @@ async def test_get_logs(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_logs_limit(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_limit(client: HttpTestHelper, repo: PreparedRepo):
     log1 = make_log_data()
     log2 = make_log_data()
     await prepare_log(client, repo.id, log1)
@@ -326,7 +327,7 @@ async def test_get_logs_limit(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_logs_limit_and_cursor(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_limit_and_cursor(client: HttpTestHelper, repo: PreparedRepo):
     logs = []
     log_ids = []
     for _ in range(10):
@@ -388,21 +389,21 @@ async def _test_get_logs_filter(client: HttpTestHelper, repo_id: str, func, para
     )
 
 
-async def test_get_logs_filter_event_name(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_event_name(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["event"]["name"] = "find_me"
 
     await _test_get_logs_filter(client, repo.id, func, {"event_name": "find_me"})
 
 
-async def test_get_logs_filter_event_category(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_event_category(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["event"]["category"] = "find_me"
 
     await _test_get_logs_filter(client, repo.id, func, {"event_category": "find_me"})
 
 
-async def test_get_logs_filter_actor_type(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_actor_type(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["actor"] = {
             "type": "find_me",
@@ -413,7 +414,7 @@ async def test_get_logs_filter_actor_type(client: HttpTestHelper, repo: RepoTest
     await _test_get_logs_filter(client, repo.id, func, {"actor_type": "find_me"})
 
 
-async def test_get_logs_filter_actor_name(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_actor_name(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["actor"] = {
             "type": "user",
@@ -425,7 +426,7 @@ async def test_get_logs_filter_actor_name(client: HttpTestHelper, repo: RepoTest
     await _test_get_logs_filter(client, repo.id, func, {"actor_name": "FIND"})
 
 
-async def test_get_logs_filter_resource_type(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_resource_type(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["resource"] = {
             "type": "find_me",
@@ -436,7 +437,7 @@ async def test_get_logs_filter_resource_type(client: HttpTestHelper, repo: RepoT
     await _test_get_logs_filter(client, repo.id, func, {"resource_type": "find_me"})
 
 
-async def test_get_logs_filter_resource_name(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_resource_name(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["resource"] = {
             "type": "module",
@@ -448,7 +449,7 @@ async def test_get_logs_filter_resource_name(client: HttpTestHelper, repo: RepoT
     await _test_get_logs_filter(client, repo.id, func, {"resource_name": "FIND"})
 
 
-async def test_get_logs_filter_tag_category(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_tag_category(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["tags"] = [
             {"id": "simple_tag"},
@@ -458,7 +459,7 @@ async def test_get_logs_filter_tag_category(client: HttpTestHelper, repo: RepoTe
     await _test_get_logs_filter(client, repo.id, func, {"tag_category": "find_me"})
 
 
-async def test_get_logs_filter_tag_name(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_tag_name(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["tags"] = [
             {"id": "simple_tag"},
@@ -469,7 +470,7 @@ async def test_get_logs_filter_tag_name(client: HttpTestHelper, repo: RepoTest):
     await _test_get_logs_filter(client, repo.id, func, {"tag_name": "FIND"})
 
 
-async def test_get_logs_filter_tag_id(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_tag_id(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["tags"] = [
             {"id": "simple_tag"},
@@ -479,7 +480,7 @@ async def test_get_logs_filter_tag_id(client: HttpTestHelper, repo: RepoTest):
     await _test_get_logs_filter(client, repo.id, func, {"tag_id": "find_me"})
 
 
-async def test_get_logs_filter_node_id_exact_node(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_node_id_exact_node(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["node_path"] = [
             {"id": "find_me:1", "name": "Customer 1"},
@@ -489,7 +490,7 @@ async def test_get_logs_filter_node_id_exact_node(client: HttpTestHelper, repo: 
     await _test_get_logs_filter(client, repo.id, func, {"node_id": "find_me:2"})
 
 
-async def test_get_logs_filter_node_id_ascendant_node(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_node_id_ascendant_node(client: HttpTestHelper, repo: PreparedRepo):
     def func(log):
         log["node_path"] = [
             {"id": "find_me:1", "name": "Customer 1"},
@@ -499,7 +500,7 @@ async def test_get_logs_filter_node_id_ascendant_node(client: HttpTestHelper, re
     await _test_get_logs_filter(client, repo.id, func, {"node_id": "find_me:1"})
 
 
-async def test_get_logs_filter_since(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_since(client: HttpTestHelper, repo: PreparedRepo):
     log1 = make_log_data()
     log1_id = await prepare_log(client, repo.id, log1)
     alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
@@ -523,7 +524,7 @@ async def test_get_logs_filter_since(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_logs_filter_until(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_until(client: HttpTestHelper, repo: PreparedRepo):
     log1 = make_log_data()
     log1_id = await prepare_log(client, repo.id, log1)
     alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
@@ -547,7 +548,7 @@ async def test_get_logs_filter_until(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_logs_filter_until_milliseconds(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_until_milliseconds(client: HttpTestHelper, repo: PreparedRepo):
     log1 = make_log_data()
     log1_id = await prepare_log(client, repo.id, log1)
     alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2023-12-31T23:59:59.500Z"))
@@ -571,7 +572,7 @@ async def test_get_logs_filter_until_milliseconds(client: HttpTestHelper, repo: 
     )
 
 
-async def test_get_logs_filter_between_since_and_until(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_between_since_and_until(client: HttpTestHelper, repo: PreparedRepo):
     log1 = make_log_data()
     log1_id = await prepare_log(client, repo.id, log1)
     alter_log_saved_at(repo.db, log1_id, datetime.fromisoformat("2024-01-01T00:00:00Z"))
@@ -598,7 +599,7 @@ async def test_get_logs_filter_between_since_and_until(client: HttpTestHelper, r
     }
 
 
-async def test_get_logs_filter_multiple_criteria(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_multiple_criteria(client: HttpTestHelper, repo: PreparedRepo):
     log1 = make_log_data()
     log1["event"]["name"] = "find_me:event_name"
     await prepare_log(client, repo.id, log1)
@@ -628,7 +629,7 @@ async def test_get_logs_filter_multiple_criteria(client: HttpTestHelper, repo: R
     )
 
 
-async def test_get_logs_empty_string_filter_params(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_empty_string_filter_params(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     log_id = await prepare_log(client, repo.id, log)
 
@@ -653,7 +654,7 @@ async def test_get_logs_empty_string_filter_params(client: HttpTestHelper, repo:
     }
 
 
-async def test_get_logs_filter_no_result(client: HttpTestHelper, repo: RepoTest):
+async def test_get_logs_filter_no_result(client: HttpTestHelper, repo: PreparedRepo):
     log = make_log_data()
     await prepare_log(client, repo.id, log)
 
@@ -668,7 +669,7 @@ async def test_get_logs_filter_no_result(client: HttpTestHelper, repo: RepoTest)
     )
 
 
-async def test_get_log_event_categories(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_event_categories(client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_event(repo.db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
         await consolidate_log_event(repo.db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}"))
@@ -678,11 +679,11 @@ async def test_get_log_event_categories(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_log_event_categories_empty(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_event_categories_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/event-categories")
 
 
-async def test_get_log_event_names(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_event_names(client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_event(repo.db, Log.Event(category=f"category_{i}", name=f"name_{i}"))
         await consolidate_log_event(repo.db, Log.Event(category=f"category_{i + 10}", name=f"name_{i}"))
@@ -708,11 +709,11 @@ async def test_get_log_event_names(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_log_event_names_empty(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_event_names_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/events")
 
 
-async def test_get_log_actor_types(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_actor_types(client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_actor(repo.db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
@@ -721,11 +722,11 @@ async def test_get_log_actor_types(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_log_actor_types_empty(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_actor_types_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/actor-types")
 
 
-async def test_get_log_resource_types(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_resource_types(client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_resource(repo.db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
 
@@ -734,11 +735,11 @@ async def test_get_log_resource_types(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_log_resource_types_empty(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_resource_types_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/resource-types")
 
 
-async def test_get_log_tag_categories(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_tag_categories(client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):
         await consolidate_log_tags(repo.db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
     await consolidate_log_tags(repo.db, [Log.Tag(id="simple_tag")])  # no category, it must not be returned
@@ -748,11 +749,11 @@ async def test_get_log_tag_categories(client: HttpTestHelper, repo: RepoTest):
     )
 
 
-async def test_get_log_tag_categories_empty(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_tag_categories_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/tag-categories")
 
 
-async def test_get_log_nodes_without_filters(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_nodes_without_filters(client: HttpTestHelper, repo: PreparedRepo):
     for i in range(4):
         await consolidate_log_node_path(
             repo.db, [Log.Node(id=f"customer", name=f"Customer"), Log.Node(id=f"entity:{i}", name=f"Entity {i}")]
@@ -766,7 +767,7 @@ async def test_get_log_nodes_without_filters(client: HttpTestHelper, repo: RepoT
     )
 
 
-async def test_get_log_nodes_with_filters(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_nodes_with_filters(client: HttpTestHelper, repo: PreparedRepo):
     for i in range(5):
         for j in "a", "b", "c", "d", "e":
             await consolidate_log_node_path(
@@ -791,11 +792,11 @@ async def test_get_log_nodes_with_filters(client: HttpTestHelper, repo: RepoTest
     )
 
 
-async def test_get_log_nodes_empty(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_nodes_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/nodes")
 
 
-async def test_get_log_node(client: HttpTestHelper, repo: RepoTest):
+async def test_get_log_node(client: HttpTestHelper, repo: PreparedRepo):
     await consolidate_log_node_path(
         repo.db, [Log.Node(id="customer", name="Customer"), Log.Node(id="entity", name="Entity")]
     )
