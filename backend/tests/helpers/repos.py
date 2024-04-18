@@ -27,7 +27,7 @@ class RepoTestHelper:
         data = cls.prepare_data()
         repo_id = await create_repo(dbm, Repo(**data))
         repo_db = dbm.get_repo_db(repo_id)
-        return cls(repo_id, data, repo_db)
+        return cls(str(repo_id), data, repo_db)
 
     def expected_document(self, extra=None):
         return {
