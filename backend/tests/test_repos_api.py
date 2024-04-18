@@ -9,7 +9,7 @@ from auditize.common.mongo import DatabaseManager
 
 from helpers import (
     UNKNOWN_LOG_ID, assert_collection, do_test_page_pagination_common_scenarios,
-    prepare_log, alter_log_saved_at, RepoTest
+    prepare_log, alter_log_saved_at
 )
 from helpers.http import HttpTestHelper
 
