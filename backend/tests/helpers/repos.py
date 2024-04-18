@@ -9,7 +9,7 @@ from auditize.common.mongo import DatabaseManager, RepoDatabase
 import callee
 
 
-class RepoTestHelper:
+class PreparedRepo:
     def __init__(self, id: str, data: dict, db: RepoDatabase):
         self.id = id
         self.data = data

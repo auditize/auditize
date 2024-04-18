@@ -4,7 +4,7 @@ import pytest
 pytest.register_assert_rewrite("helpers")
 from helpers import setup_test_dbm, teardown_test_dbm
 from helpers.http import create_http_client
-from helpers.repos import RepoTestHelper
+from helpers.repos import PreparedRepo
 
 
 @pytest.fixture(scope="session")
@@ -29,4 +29,4 @@ async def dbm():
 
 @pytest.fixture(scope="function")
 async def repo(dbm):
-    return await RepoTestHelper.create(dbm)
+    return await PreparedRepo.create(dbm)
