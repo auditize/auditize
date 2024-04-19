@@ -8,9 +8,6 @@ from auditize.common.mongo import DatabaseManager, get_dbm
 
 from .http import HttpTestHelper
 
-# A valid ObjectId, but not existing in the database
-UNKNOWN_LOG_ID = "65fab045f097fe0b9b664c99"
-
 
 def setup_test_dbm():
     test_dbm = DatabaseManager.spawn(base_name="test_%04d" % int(random.random() * 10000))

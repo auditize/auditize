@@ -6,8 +6,9 @@ import callee
 from auditize.common.mongo import DatabaseManager
 
 from helpers import (
-    UNKNOWN_LOG_ID, assert_collection, do_test_page_pagination_common_scenarios
+    assert_collection, do_test_page_pagination_common_scenarios
 )
+from tests.helpers.logs import UNKNOWN_LOG_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 
