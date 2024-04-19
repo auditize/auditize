@@ -10,11 +10,8 @@ from auditize.logs.service import (
 )
 from auditize.logs.models import Log
 
-from helpers import (
-    do_test_page_pagination_common_scenarios,
-    do_test_page_pagination_empty_data
-)
-from tests.helpers.logs import UNKNOWN_LOG_ID
+from helpers.pagination import do_test_page_pagination_common_scenarios, do_test_page_pagination_empty_data
+from helpers.logs import UNKNOWN_LOG_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 from helpers.logs import PreparedLog

@@ -7,7 +7,7 @@ from auditize.common.mongo import DatabaseManager
 import pytest
 import callee
 
-from tests.helpers.database import assert_collection
+from helpers.database import assert_collection
 from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
