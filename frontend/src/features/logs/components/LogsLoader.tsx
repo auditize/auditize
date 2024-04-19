@@ -12,7 +12,6 @@ export function LogsLoader(
     enabled: !!filter.repoId,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    refetchOnWindowFocus: false
   });
 
   if (isPending)

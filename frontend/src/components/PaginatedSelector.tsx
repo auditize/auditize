@@ -29,7 +29,6 @@ export function PaginatedSelector(
     queryKey: queryKey,
     queryFn: queryFn,
     enabled: enabled,
-    refetchOnWindowFocus: false
   });
 
   useEffect(() => {
