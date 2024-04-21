@@ -11,7 +11,7 @@ from auditize.logs.service import (
 from auditize.logs.models import Log
 
 from helpers.pagination import do_test_page_pagination_common_scenarios, do_test_page_pagination_empty_data
-from helpers.logs import UNKNOWN_LOG_ID
+from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 from helpers.logs import PreparedLog
@@ -206,7 +206,13 @@ async def test_get_log_all_fields(client: HttpTestHelper, repo: PreparedRepo):
 
 async def test_get_log_not_found(client: HttpTestHelper, repo: PreparedRepo):
     await client.assert_get(
-        f"/repos/{repo.id}/logs/{UNKNOWN_LOG_ID}", expected_status_code=404
+        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}", expected_status_code=404
+    )
+
+
+async def test_get_log_unknown_repo(client: HttpTestHelper):
+    await client.assert_get(
+        f"/repos/{UNKNOWN_OBJECT_ID}/logs/{UNKNOWN_OBJECT_ID}", expected_status_code=404
     )
 
 
@@ -247,7 +253,7 @@ async def test_get_log_attachment_binary_and_all_fields(client: HttpTestHelper, 
 
 async def test_get_log_attachment_not_found_log_id(client: HttpTestHelper, repo: PreparedRepo):
     await client.assert_get(
-        f"/repos/{repo.id}/logs/{UNKNOWN_LOG_ID}/attachments/0", expected_status_code=404
+        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}/attachments/0", expected_status_code=404
     )
 
 
@@ -272,6 +278,10 @@ async def test_get_logs(client: HttpTestHelper, repo: PreparedRepo):
             }
         }
     )
+
+
+async def test_get_logs_unknown_repo(client: HttpTestHelper, repo: PreparedRepo):
+    await client.assert_get(f"/repos/{UNKNOWN_OBJECT_ID}/logs", expected_status_code=404)
 
 
 async def test_get_logs_limit(client: HttpTestHelper, repo: PreparedRepo):
@@ -590,6 +600,12 @@ async def test_get_log_event_categories(client: HttpTestHelper, repo: PreparedRe
 
     await do_test_page_pagination_common_scenarios(
         client, f"/repos/{repo.id}/logs/event-categories", [f"category_{i}" for i in range(5)]
+    )
+
+
+async def test_get_log_event_categories_unknown_repo(client: HttpTestHelper, repo: PreparedRepo):
+    await client.assert_get(
+        f"/repos/{UNKNOWN_OBJECT_ID}/logs/event-categories", expected_status_code=404
     )
 
 
