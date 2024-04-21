@@ -2,7 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.logs.models import Log
 from auditize.logs.service import save_log
-from auditize.common.mongo import DatabaseManager
+from auditize.common.db import DatabaseManager
 
 import pytest
 import callee

@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 import callee
 
-from auditize.common.mongo import DatabaseManager
+from auditize.common.db import DatabaseManager
 
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.database import assert_collection

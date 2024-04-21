@@ -10,7 +10,7 @@ from auditize.logs.api_models import (
     LogTagCategoryListResponse, LogNodeListResponse, LogNodeResponse
 )
 from auditize.logs import service
-from auditize.common.mongo import DatabaseManager, get_dbm
+from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.api import COMMON_RESPONSES
 from auditize.common.utils import validate_datetime
 from auditize.common.pagination.page.api_models import PagePaginationParams
