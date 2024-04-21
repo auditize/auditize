@@ -3,11 +3,11 @@ from datetime import datetime
 import pytest
 import callee
 
-from auditize.common.mongo import DatabaseManager
+from auditize.common.db import DatabaseManager
 
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.database import assert_collection
-from helpers.logs import UNKNOWN_LOG_ID
+from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 
@@ -51,7 +51,7 @@ async def test_repo_update(client: HttpTestHelper, repo: PreparedRepo, dbm: Data
 
 async def test_repo_update_unknown_id(client: HttpTestHelper):
     await client.assert_patch(
-        f"/repos/{UNKNOWN_LOG_ID}", json={"name": "Repo Updated"},
+        f"/repos/{UNKNOWN_OBJECT_ID}", json={"name": "Repo Updated"},
         expected_status_code=404
     )
 
@@ -109,7 +109,7 @@ async def test_repo_get_with_stats(client: HttpTestHelper, repo: PreparedRepo):
 
 async def test_repo_get_unknown_id(client: HttpTestHelper, dbm: DatabaseManager):
     await client.assert_get(
-        f"/repos/{UNKNOWN_LOG_ID}",
+        f"/repos/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )
 
@@ -161,6 +161,6 @@ async def test_repo_delete(client: HttpTestHelper, repo: PreparedRepo, dbm: Data
 
 async def test_repo_delete_unknown_id(client: HttpTestHelper, dbm: DatabaseManager):
     await client.assert_delete(
-        f"/repos/{UNKNOWN_LOG_ID}",
+        f"/repos/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )

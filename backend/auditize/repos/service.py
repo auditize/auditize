@@ -1,7 +1,8 @@
 from bson import ObjectId
 
 from auditize.repos.models import Repo, RepoUpdate, RepoStats
-from auditize.common.mongo import DatabaseManager
+from auditize.logs.db import get_logs_db
+from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
@@ -30,8 +31,8 @@ async def get_repo(dbm: DatabaseManager, repo_id: ObjectId | str) -> Repo:
 
 
 async def get_repo_stats(dbm: DatabaseManager, repo_id: ObjectId | str) -> RepoStats:
-    repo_db = dbm.get_repo_db(repo_id)
-    results = await repo_db.logs.aggregate([
+    logs_db = await get_logs_db(dbm, repo_id)
+    results = await logs_db.logs.aggregate([
         {
             "$group": {
                 "_id": None,
@@ -49,7 +50,7 @@ async def get_repo_stats(dbm: DatabaseManager, repo_id: ObjectId | str) -> RepoS
         stats.last_log_date = results[0]["last_log_date"]
         stats.log_count = results[0]["count"]
 
-    db_stats = await repo_db.db.command("dbstats")
+    db_stats = await logs_db.db.command("dbstats")
     stats.storage_size = int(db_stats["storageSize"])
 
     return stats
@@ -64,9 +65,9 @@ async def get_repos(dbm: DatabaseManager, page: int, page_size: int) -> tuple[li
 
 
 async def delete_repo(dbm: DatabaseManager, repo_id: ObjectId | str):
-    repo_db = dbm.get_repo_db(repo_id)
+    logs_db = await get_logs_db(dbm, repo_id)
     result = await dbm.core_db.repos.delete_one({"_id": ObjectId(repo_id)})
     if result.deleted_count == 0:
         raise UnknownModelException()
 
-    repo_db.client.drop_database(repo_db.name)
+    logs_db.client.drop_database(logs_db.name)

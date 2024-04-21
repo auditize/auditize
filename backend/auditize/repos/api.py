@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse, RepoReadingResponse, \
     RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData
 from auditize.repos import service
-from auditize.common.mongo import DatabaseManager, get_dbm
+from auditize.common.db import DatabaseManager, get_dbm
 
 router = APIRouter()
 

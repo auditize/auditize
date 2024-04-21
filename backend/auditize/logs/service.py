@@ -7,7 +7,8 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.logs.models import Log, Node
-from auditize.common.mongo import DatabaseManager, RepoDatabase
+from auditize.common.db import DatabaseManager
+from auditize.logs.db import LogsDatabase, get_logs_db
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
@@ -18,31 +19,31 @@ from auditize.common.pagination.cursor.service import find_paginated_by_cursor
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 
 
-async def consolidate_log_event(db: RepoDatabase, event: Log.Event):
+async def consolidate_log_event(db: LogsDatabase, event: Log.Event):
     await db.consolidate_data(
         db.log_events, {"category": event.category, "name": event.name}
     )
 
 
-async def consolidate_log_actor(db: RepoDatabase, actor: Log.Actor):
+async def consolidate_log_actor(db: LogsDatabase, actor: Log.Actor):
     await db.consolidate_data(db.log_actor_types, {"type": actor.type})
     for key in actor.extra:
         await db.consolidate_data(db.log_actor_extra_keys, {"key": key})
 
 
-async def consolidate_log_resource(db: RepoDatabase, resource: Log.Resource):
+async def consolidate_log_resource(db: LogsDatabase, resource: Log.Resource):
     await db.consolidate_data(db.log_resource_types, {"type": resource.type})
     for key in resource.extra:
         await db.consolidate_data(db.log_resource_extra_keys, {"key": key})
 
 
-async def consolidate_log_tags(db: RepoDatabase, tags: list[Log.Tag]):
+async def consolidate_log_tags(db: LogsDatabase, tags: list[Log.Tag]):
     for tag in tags:
         if tag.category:
             await db.consolidate_data(db.log_tag_categories, {"category": tag.category})
 
 
-async def consolidate_log_details(db: RepoDatabase, details: dict[str, dict[str, str]]):
+async def consolidate_log_details(db: LogsDatabase, details: dict[str, dict[str, str]]):
     for level1_key, sub_keys in details.items():
         for level2_key in sub_keys:
             await db.consolidate_data(
@@ -50,7 +51,7 @@ async def consolidate_log_details(db: RepoDatabase, details: dict[str, dict[str,
             )
 
 
-async def consolidate_log_node_path(db: RepoDatabase, node_path: list[Log.Node]):
+async def consolidate_log_node_path(db: LogsDatabase, node_path: list[Log.Node]):
     parent_node_id = None
     for node in node_path:
         await db.consolidate_data(db.log_nodes, {
@@ -60,7 +61,7 @@ async def consolidate_log_node_path(db: RepoDatabase, node_path: list[Log.Node])
 
 
 async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> ObjectId:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
 
     result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
 
@@ -85,7 +86,7 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> ObjectId:
 
 
 async def save_log_attachment(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str, name: str, type: str, mime_type: str, data: bytes):
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
 
     await db.logs.update_one(
         {"_id": ObjectId(log_id)},
@@ -94,7 +95,7 @@ async def save_log_attachment(dbm: DatabaseManager, repo_id: str, log_id: Object
 
 
 async def get_log(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str) -> Log:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
 
     data = await db.logs.find_one(ObjectId(log_id), _EXCLUDE_ATTACHMENT_DATA)
     if data is None:
@@ -103,7 +104,7 @@ async def get_log(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str) ->
 
 
 async def get_log_attachment(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str, attachment_idx: int) -> Log.Attachment:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
 
     result = await db.logs.find_one(
         {"_id": ObjectId(log_id)},
@@ -132,7 +133,7 @@ async def get_logs(
     since: datetime = None, until: datetime = None,
     limit: int = 10, pagination_cursor: str = None
    ) -> tuple[list[Log], str | None]:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
 
     criteria = {}
     if event_name:
@@ -221,7 +222,7 @@ async def _get_consolidated_data_field(
 
 
 async def get_log_event_categories(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
         db.log_events, "category", page=page, page_size=page_size
     )
@@ -230,7 +231,7 @@ async def get_log_event_categories(dbm: DatabaseManager, repo_id: str, *, page=1
 async def get_log_events(
     dbm: DatabaseManager, repo_id: str, *, event_category: str = None, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
         db.log_events, "name",
         page=page, page_size=page_size,
@@ -239,21 +240,21 @@ async def get_log_events(
 
 
 async def get_log_actor_types(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
     return await _get_consolidated_data_field(db.log_actor_types, "type", page=page, page_size=page_size)
 
 
 async def get_log_resource_types(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
     return await _get_consolidated_data_field(db.log_resource_types, "type", page=page, page_size=page_size)
 
 
 async def get_log_tag_categories(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
     return await _get_consolidated_data_field(db.log_tag_categories, "category", page=page, page_size=page_size)
 
 
-async def _get_log_nodes(db: RepoDatabase, *, match, pipeline_extra=None):
+async def _get_log_nodes(db: LogsDatabase, *, match, pipeline_extra=None):
     return db.log_nodes.aggregate([
         {"$match": match},
         {
@@ -277,7 +278,7 @@ async def _get_log_nodes(db: RepoDatabase, *, match, pipeline_extra=None):
 
 async def get_log_nodes(dbm: DatabaseManager, repo_id: str, *, parent_node_id=NotImplemented, page=1, page_size=10
                         ) -> tuple[list[Log.Node], PagePaginationInfo]:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
 
     # please note that we use NotImplemented instead of None because None is a valid value for parent_node_id
     # (it means filtering on top nodes)
@@ -301,7 +302,7 @@ async def get_log_nodes(dbm: DatabaseManager, repo_id: str, *, parent_node_id=No
 
 
 async def get_log_node(dbm: DatabaseManager, repo_id: str, node_id: str) -> Log.Node:
-    db = dbm.get_repo_db(repo_id)
+    db = await get_logs_db(dbm, repo_id)
 
     results = await (await _get_log_nodes(db, match={"id": node_id})).to_list(None)
     try:

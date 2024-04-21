@@ -9,7 +9,7 @@ from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.api import make_404_response, make_409_response
-from auditize.common.mongo import get_dbm
+from auditize.common.db import get_dbm
 
 ic.configureOutput(includeContext=True)
 

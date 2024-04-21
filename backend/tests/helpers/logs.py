@@ -8,7 +8,7 @@ from .http import HttpTestHelper
 from .repos import PreparedRepo
 
 # A valid ObjectId, but not existing in the database
-UNKNOWN_LOG_ID = "65fab045f097fe0b9b664c99"
+UNKNOWN_OBJECT_ID = "65fab045f097fe0b9b664c99"
 
 
 class PreparedLog:

@@ -4,7 +4,8 @@ from bson import ObjectId
 
 from auditize.repos.service import create_repo
 from auditize.repos.models import Repo
-from auditize.common.mongo import DatabaseManager, RepoDatabase
+from auditize.common.db import DatabaseManager
+from auditize.logs.db import LogsDatabase, get_logs_db
 
 import callee
 
@@ -12,7 +13,7 @@ from .http import HttpTestHelper
 
 
 class PreparedRepo:
-    def __init__(self, id: str, data: dict, db: RepoDatabase):
+    def __init__(self, id: str, data: dict, db: LogsDatabase):
         self.id = id
         self.data = data
         self.db = db
@@ -28,8 +29,8 @@ class PreparedRepo:
     async def create(cls, dbm: DatabaseManager):
         data = cls.prepare_data()
         repo_id = await create_repo(dbm, Repo(**data))
-        repo_db = dbm.get_repo_db(repo_id)
-        return cls(str(repo_id), data, repo_db)
+        logs_db = await get_logs_db(dbm, repo_id)
+        return cls(str(repo_id), data, logs_db)
 
     def expected_document(self, extra=None):
         return {
