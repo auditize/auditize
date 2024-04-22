@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 import callee
 
@@ -14,11 +16,18 @@ pytestmark = pytest.mark.anyio
 
 async def test_user_create(client: HttpTestHelper, dbm: DatabaseManager):
     data = PreparedUser.prepare_data()
-    resp = await client.assert_post(
-        "/users", json=data,
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str)}
-    )
+
+    with patch("auditize.users.service.send_email") as mock:
+        resp = await client.assert_post(
+            "/users", json=data,
+            expected_status_code=201,
+            expected_json={"id": callee.IsA(str)}
+        )
+        mock.assert_called_once_with(
+            data["email"],  # to
+            callee.IsA(str),  # subject
+            callee.Regex(".*/signup/[0-9a-f]{64}.*")  # body
+        )
 
     user = PreparedUser(resp.json()["id"], data)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
