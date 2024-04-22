@@ -4,6 +4,7 @@ import { MantineProvider, AppShell, Group, UnstyledButton } from '@mantine/core'
 import { theme } from './theme';
 import { Logs } from './features/logs';
 import { ReposManagement } from './features/repos';
+import { UsersManagement } from './features/users';
 import {
   QueryClient,
   QueryClientProvider,
@@ -11,7 +12,6 @@ import {
 import {
   createBrowserRouter,
   RouterProvider,
-  Route,
   Link,
   Outlet
 } from "react-router-dom";
@@ -26,7 +26,10 @@ function Main() {
               <Link to="/logs">Logs</Link>
             </UnstyledButton>
             <UnstyledButton>
-              <Link to="/repos">Repositories Management</Link>
+              <Link to="/repos">Repository Management</Link>
+            </UnstyledButton>
+            <UnstyledButton>
+              <Link to="/users">User Management</Link>
             </UnstyledButton>
           </Group>
         </Group>
@@ -59,6 +62,10 @@ export default function App() {
         {
           path: 'repos',
           element: <ReposManagement/>
+        },
+        {
+          path: 'users',
+          element: <UsersManagement/>
         }
       ]
     }
