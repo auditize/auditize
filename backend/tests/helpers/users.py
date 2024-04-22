@@ -39,6 +39,10 @@ class PreparedUser:
             "email": self.data["email"],
             "password_hash": None,
             "created_at": callee.IsA(datetime),
+            "signup_token": {
+                "token": callee.Regex(r"^[0-9a-f]{64}$"),
+                "expires_at": callee.IsA(datetime),
+            },
             **(extra or {})
         }
 

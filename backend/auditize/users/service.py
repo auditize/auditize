@@ -1,13 +1,26 @@
+from datetime import datetime, timezone, timedelta
+import secrets
 from bson import ObjectId
 
-from auditize.users.models import User, UserUpdate
+from auditize.users.models import User, UserUpdate, SignupToken
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
 
+DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
+
+
+def _generate_signup_token() -> SignupToken:
+    return SignupToken(
+        token=secrets.token_hex(32),
+        expires_at=datetime.now(timezone.utc) + timedelta(seconds=DEFAULT_SIGNUP_TOKEN_LIFETIME)
+    )
+
 
 async def create_user(dbm: DatabaseManager, user: User):
+    user = user.model_copy()
+    user.signup_token = _generate_signup_token()
     result = await dbm.core_db.users.insert_one(user.model_dump(exclude={"id"}))
     return result.inserted_id
 
