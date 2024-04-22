@@ -10,6 +10,7 @@ class HttpTestHelper(AsyncClient):
         method: str, path, *, params=None, json=None, files=None, data=None,
         expected_status_code=200, expected_json=None
     ) -> Response:
+        ic(method, path)
         ic(json, files, data)
         resp = await self.request(method, path, params=params, json=json, files=files, data=data)
         ic(resp.text)
