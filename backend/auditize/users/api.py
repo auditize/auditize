@@ -1,0 +1,79 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+
+from auditize.users.api_models import (
+    UserCreationRequest, UserCreationResponse, UserUpdateRequest, UserReadingResponse,
+    UserListResponse
+)
+from auditize.users import service
+from auditize.common.db import DatabaseManager, get_dbm
+
+router = APIRouter()
+
+
+@router.post(
+    "/users",
+    summary="Create user",
+    tags=["users"],
+    status_code=201
+)
+async def create_user(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], user: UserCreationRequest
+) -> UserCreationResponse:
+    user_id = await service.create_user(dbm, user.to_db_model())
+    return UserCreationResponse(id=user_id)
+
+
+@router.patch(
+    "/users/{user_id}",
+    summary="Update user",
+    tags=["repos"],
+    status_code=204
+)
+async def update_user(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    user_id: str, user: UserUpdateRequest
+):
+    await service.update_user(dbm, user_id, user.to_db_model())
+    return None
+
+
+@router.get(
+    "/users/{user_id}",
+    summary="Get user",
+    tags=["users"],
+    response_model=UserReadingResponse
+)
+async def get_repo(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    user_id: str
+) -> UserReadingResponse:
+    user = await service.get_user(dbm, user_id)
+    return UserReadingResponse.from_db_model(user)
+
+
+@router.get(
+    "/users",
+    summary="List users",
+    tags=["users"],
+    response_model=UserListResponse
+)
+async def list_users(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    page: int = 1, page_size: int = 10
+) -> UserListResponse:
+    users, page_info = await service.get_users(dbm, page, page_size)
+    return UserListResponse.build(users, page_info)
+
+
+@router.delete(
+    "/users/{user_id}",
+    summary="Delete user",
+    tags=["users"],
+    status_code=204
+)
+async def delete_user(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], user_id: str
+):
+    await service.delete_user(dbm, user_id)

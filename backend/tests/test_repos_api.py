@@ -15,7 +15,7 @@ pytestmark = pytest.mark.anyio
 
 
 async def test_repo_create(client: HttpTestHelper, dbm: DatabaseManager):
-    data = PreparedRepo.prepare_data()
+    data = {"name": "myrepo"}
     resp = await client.assert_post(
         "/repos", json=data,
         expected_status_code=201,
