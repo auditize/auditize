@@ -2,13 +2,16 @@ import smtplib
 import ssl
 
 import certifi
+from icecream import ic
 
 from .config import config
 
 
 def send_email(to, subject, body):
     if not config.is_smtp_enabled():
-        raise Exception("SMTP is not configured")
+        ic("SMTP is disabled, print email information instead")
+        ic(to, subject, body)
+        return
 
     message = f"Subject: {subject}\n\n{body}"
 
