@@ -19,7 +19,7 @@ async def client():
         yield client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 async def dbm():
     test_dbm = setup_test_dbm()
     await test_dbm.setup()
