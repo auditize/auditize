@@ -2,6 +2,8 @@ from datetime import datetime, timezone, timedelta
 import secrets
 from bson import ObjectId
 
+from passlib.context import CryptContext
+
 from auditize.users.models import User, UserUpdate, SignupToken
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import UnknownModelException
@@ -11,6 +13,9 @@ from auditize.common.config import config
 from auditize.common.email import send_email
 
 DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
+
+
+password_context = CryptContext(schemes=["bcrypt"])
 
 
 def _generate_signup_token() -> SignupToken:
@@ -54,14 +59,29 @@ async def get_user(dbm: DatabaseManager, user_id: ObjectId | str) -> User:
     return User.model_validate(result)
 
 
+def _build_signup_token_filter(token: str):
+    return {
+        "signup_token.token": token,
+        "signup_token.expires_at": {"$gt": datetime.now(timezone.utc)}
+    }
+
+
 async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
-    result = await dbm.core_db.users.find_one(
-        {"signup_token.token": token, "signup_token.expires_at": {"$gt": datetime.now(timezone.utc)}}
-    )
+    result = await dbm.core_db.users.find_one(_build_signup_token_filter(token))
     if result is None:
         raise UnknownModelException()
 
     return User.model_validate(result)
+
+
+async def update_user_password_by_signup_token(dbm: DatabaseManager, token: str, password: str):
+    password_hash = password_context.hash(password)
+    result = await dbm.core_db.users.update_one(
+        _build_signup_token_filter(token),
+        {"$set": {"password_hash": password_hash, "signup_token": None}}
+    )
+    if result.modified_count == 0:
+        raise UnknownModelException()
 
 
 async def get_users(dbm: DatabaseManager, page: int, page_size: int) -> tuple[list[User], PagePaginationInfo]:

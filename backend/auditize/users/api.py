@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from auditize.users.api_models import (
     UserCreationRequest, UserCreationResponse, UserUpdateRequest, UserReadingResponse,
-    UserListResponse, UserSignupInfoResponse
+    UserListResponse, UserSignupInfoResponse, UserSignupSetPasswordRequest
 )
 from auditize.users import service
 from auditize.common.db import DatabaseManager, get_dbm
@@ -90,3 +90,16 @@ async def get_user_signup_info(
 ) -> UserSignupInfoResponse:
     user = await service.get_user_by_signup_token(dbm, token)
     return UserSignupInfoResponse.from_db_model(user)
+
+
+@router.post(
+    "/users/signup/{token}",
+    summary="Set user password",
+    tags=["users"],
+    status_code=204
+)
+async def set_user_password(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], token: str,
+    request: UserSignupSetPasswordRequest
+):
+    await service.update_user_password_by_signup_token(dbm, token, request.password)

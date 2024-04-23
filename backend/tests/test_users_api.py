@@ -173,3 +173,41 @@ async def test_user_signup_unknown(client: HttpTestHelper, user: PreparedUser, d
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
         expected_status_code=404,
     )
+
+
+async def test_user_signup_set_password(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    user_model = await get_user(dbm, user.id)
+
+    await client.assert_post(
+        f"/users/signup/{user_model.signup_token.token}", json={"password": "new_password"},
+        expected_status_code=204
+    )
+
+    await assert_collection(
+        dbm.core_db.users, [user.expected_document({
+            "password_hash": callee.IsA(str),
+            "signup_token": None
+        })]
+    )
+
+
+async def test_user_signup_set_password_token_expired(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    user_model = await get_user(dbm, user.id)
+
+    # Make the token expired one day ago
+    await dbm.core_db.users.update_one(
+        {"_id": ObjectId(user.id)},
+        {"$set": {"signup_token.expires_at": datetime.now(timezone.utc) - timedelta(days=1)}}
+    )
+
+    await client.assert_post(
+        f"/users/signup/{user_model.signup_token.token}", json={"password": "new_password"},
+        expected_status_code=404
+    )
+
+
+async def test_user_signup_set_password_token_unknown(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    await client.assert_post(
+        f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}", json={"password": "new_password"},
+        expected_status_code=404
+    )

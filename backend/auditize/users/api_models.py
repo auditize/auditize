@@ -53,3 +53,7 @@ class UserSignupInfoResponse(BaseModel):
     @classmethod
     def from_db_model(cls, user: User):
         return cls.model_validate(user.model_dump())
+
+
+class UserSignupSetPasswordRequest(BaseModel):
+    password: str = Field(description="The user password")
