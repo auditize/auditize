@@ -1,6 +1,5 @@
 import pytest
 
-
 pytest.register_assert_rewrite("helpers")
 from helpers.database import setup_test_dbm, teardown_test_dbm
 from helpers.http import create_http_client
@@ -34,5 +33,5 @@ async def repo(dbm):
 
 
 @pytest.fixture(scope="function")
-async def user(client):
-    return await PreparedUser.create(client)
+async def user(client, dbm):
+    return await PreparedUser.create(client, dbm)
