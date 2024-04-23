@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from auditize.users.api_models import (
     UserCreationRequest, UserCreationResponse, UserUpdateRequest, UserReadingResponse,
-    UserListResponse
+    UserListResponse, UserSignupInfoResponse
 )
 from auditize.users import service
 from auditize.common.db import DatabaseManager, get_dbm
@@ -77,3 +77,16 @@ async def delete_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)], user_id: str
 ):
     await service.delete_user(dbm, user_id)
+
+
+@router.get(
+    "/users/signup/{token}",
+    summary="Get user signup info",
+    tags=["users"],
+    response_model=UserSignupInfoResponse
+)
+async def get_user_signup_info(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], token: str
+) -> UserSignupInfoResponse:
+    user = await service.get_user_by_signup_token(dbm, token)
+    return UserSignupInfoResponse.from_db_model(user)

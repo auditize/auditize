@@ -43,3 +43,13 @@ class UserListResponse(PagePaginatedResponse[User, UserReadingResponse]):
     @classmethod
     def build_item(cls, user: User) -> UserReadingResponse:
         return UserReadingResponse.from_db_model(user)
+
+
+class UserSignupInfoResponse(BaseModel):
+    first_name: str = Field(description="The user first name")
+    last_name: str = Field(description="The user last name")
+    email: str = Field(description="The user email")
+
+    @classmethod
+    def from_db_model(cls, user: User):
+        return cls.model_validate(user.model_dump())

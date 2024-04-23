@@ -14,7 +14,8 @@ class HttpTestHelper(AsyncClient):
         ic(json, files, data)
         resp = await self.request(method, path, params=params, json=json, files=files, data=data)
         ic(resp.text)
-        assert resp.status_code == expected_status_code
+        if expected_status_code is not None:
+            assert resp.status_code == expected_status_code
         if expected_json is not None:
             assert resp.json() == expected_json
         return resp

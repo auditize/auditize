@@ -54,6 +54,16 @@ async def get_user(dbm: DatabaseManager, user_id: ObjectId | str) -> User:
     return User.model_validate(result)
 
 
+async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
+    result = await dbm.core_db.users.find_one(
+        {"signup_token.token": token, "signup_token.expires_at": {"$gt": datetime.now(timezone.utc)}}
+    )
+    if result is None:
+        raise UnknownModelException()
+
+    return User.model_validate(result)
+
+
 async def get_users(dbm: DatabaseManager, page: int, page_size: int) -> tuple[list[User], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
         dbm.core_db.users,

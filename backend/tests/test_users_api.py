@@ -1,9 +1,13 @@
+from datetime import datetime, timedelta, timezone
+from bson import ObjectId
+
 from unittest.mock import patch
 
 import pytest
 import callee
 
 from auditize.common.db import DatabaseManager
+from auditize.users.service import get_user
 
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.database import assert_collection
@@ -12,6 +16,8 @@ from helpers.http import HttpTestHelper
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
+
+UNKNOWN_SIGNUP_TOKEN = "5620281609bbdc9796751a1cb1ac58efb27497b1fd14a0788faa83ada93e6048"
 
 
 async def test_user_create(client: HttpTestHelper, dbm: DatabaseManager):
@@ -130,4 +136,40 @@ async def test_user_delete_unknown_id(client: HttpTestHelper):
     await client.assert_delete(
         f"/users/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
+    )
+
+
+async def test_user_signup(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    user_model = await get_user(dbm, user.id)
+
+    await client.assert_get(
+        f"/users/signup/{user_model.signup_token.token}",
+        expected_status_code=200,
+        expected_json={
+            "first_name": user.data["first_name"],
+            "last_name": user.data["last_name"],
+            "email": user.data["email"]
+        }
+    )
+
+
+async def test_user_signup_expired(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    user_model = await get_user(dbm, user.id)
+
+    # Make the token expired one day ago
+    await dbm.core_db.users.update_one(
+        {"_id": ObjectId(user.id)},
+        {"$set": {"signup_token.expires_at": datetime.now(timezone.utc) - timedelta(days=1)}}
+    )
+
+    await client.assert_get(
+        f"/users/signup/{user_model.signup_token.token}",
+        expected_status_code=404,
+    )
+
+
+async def test_user_signup_unknown(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    await client.assert_get(
+        f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
+        expected_status_code=404,
     )
