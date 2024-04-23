@@ -1,5 +1,4 @@
 import camelcaseKeys from 'camelcase-keys';
-import { getAllPagePaginatedItems } from '@/utils/api';
 import { axiosInstance } from '@/utils/axios';
 
 export async function createUser(
@@ -16,7 +15,6 @@ export async function createUser(
 }
 
 export async function updateUser(id: string, update: UserUpdate): Promise<void> {
-  console.log("updateUser", update);
   await axiosInstance.patch(`/users/${id}`, {
     first_name: update.firstName,
     last_name: update.lastName,

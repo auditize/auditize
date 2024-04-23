@@ -1,10 +1,11 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import { MantineProvider, AppShell, Group, UnstyledButton } from '@mantine/core';
-import { theme } from './theme';
-import { Logs } from './features/logs';
-import { ReposManagement } from './features/repos';
-import { UsersManagement } from './features/users';
+import { theme } from '@/theme';
+import { Logs } from '@/features/logs';
+import { ReposManagement } from '@/features/repos';
+import { UsersManagement } from '@/features/users';
+import { Signup } from '@/features/signup';
 import {
   QueryClient,
   QueryClientProvider,
@@ -45,7 +46,8 @@ export default function App() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        refetchOnWindowFocus: false
+        refetchOnWindowFocus: false,
+        retry: false
       }
     }
   });
@@ -67,7 +69,11 @@ export default function App() {
           path: 'users',
           element: <UsersManagement/>
         }
-      ]
+      ],
+    },
+    {
+      path: "/signup/:token",
+      element: <Signup/>
     }
   ]);
 
