@@ -6,9 +6,8 @@ import { getSignupInfo, setPassword } from '../api';
 import { useEffect, useState } from 'react';
 import {AxiosError} from 'axios';
 
-export function Signup({}) {
-  const {token} = useParams();
-  const form = useForm({
+function useSignupForm() {
+  return useForm({
     mode: 'uncontrolled',
     initialValues: {
       firstName: '',
@@ -22,34 +21,15 @@ export function Signup({}) {
       passwordConfirmation: matchesField('password', 'Passwords do not match'),
     }
   });
-  const [signupDone, setSignupDone] = useState(false);
-  const [signupError, setSignupError] = useState('');
-  const {data, error, isPending} = useQuery({
-    queryKey: ['signup', token],
-    queryFn: () => getSignupInfo(token!),
-  });
-  const mutation = useMutation({
-    mutationFn: (password: string) => setPassword(token!, password),
-    onSuccess: () => setSignupDone(true),
-    onError: (error) => setSignupError(error.message),
-  });
+}
 
-  useEffect(() => {
-    if (data)
-      form.setValues(data);
-  }, [data]);
-
-  if (signupDone) {
-    return <Center><h1>Signup successful!</h1></Center>;
-  }
-
-  if (error && (error as AxiosError).response?.status === 404) {
-    return <Center><h1>Invalid token</h1></Center>;
-  }
-
+function SignupForm(
+  {form, onSave, error} :
+  {form: ReturnType<typeof useSignupForm>, onSave: (password: string) => void, error: string}
+) {
   return (
     <Center>
-      <form onSubmit={form.onSubmit((values) => mutation.mutate(values.password))}>
+      <form onSubmit={form.onSubmit((values) => onSave(values.password))}>
         <Stack w="25rem" p="1rem">
           <h1>Sign up !</h1>
           <TextInput
@@ -83,9 +63,42 @@ export function Signup({}) {
             key={form.key('passwordConfirmation')}
           />
           <Button type='submit'>Submit</Button>
-          {signupError && <div>{signupError}</div>}
+          {error && <div>{error}</div>}
         </Stack>
       </form>
     </Center>
-  )
+  );
+}
+
+export function Signup({}) {
+  const {token} = useParams();
+  const form = useSignupForm();
+  const [signupDone, setSignupDone] = useState(false);
+  const [signupError, setSignupError] = useState('');
+  const {data, error, isPending} = useQuery({
+    queryKey: ['signup', token],
+    queryFn: () => getSignupInfo(token!),
+  });
+  const mutation = useMutation({
+    mutationFn: (password: string) => setPassword(token!, password),
+    onSuccess: () => setSignupDone(true),
+    onError: (error) => setSignupError(error.message),
+  });
+
+  useEffect(() => {
+    if (data)
+      form.setValues(data);
+  }, [data]);
+
+  if (signupDone) {
+    return <Center><h1>Signup successful!</h1></Center>;
+  }
+
+  if (error && (error as AxiosError).response?.status === 404) {
+    return <Center><h1>Invalid token</h1></Center>;
+  }
+
+  return (
+    <SignupForm form={form} onSave={mutation.mutate} error={signupError}/>
+  );
 }
