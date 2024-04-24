@@ -34,3 +34,8 @@ export async function getIntegration(integrationId: string): Promise<Integration
 export async function deleteIntegration(integrationId: string): Promise<void> {
   await axiosInstance.delete('/integrations/' + integrationId);
 }
+
+export async function regenerateIntegrationToken(integrationId: string): Promise<string> {
+  const response = await axiosInstance.post(`/integrations/${integrationId}/token`);
+  return response.data.token;
+}

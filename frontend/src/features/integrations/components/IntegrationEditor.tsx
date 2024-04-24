@@ -1,9 +1,11 @@
 import { useForm, isNotEmpty } from '@mantine/form';
-import { TextInput, Code, Group } from '@mantine/core';
-import { createIntegration, updateIntegration, getIntegration } from '../api';
+import { TextInput, Code, Group, Button } from '@mantine/core';
+import { createIntegration, updateIntegration, getIntegration, regenerateIntegrationToken } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
 import { useEffect, useState } from 'react';
 import { CopyIcon } from '@/components/CopyIcon';
+import { useMutation } from '@tanstack/react-query';
+import { InlineErrorMessage } from '@/components/InlineErrorMessage';
 
 function useIntegrationForm() {
   return useForm({
@@ -61,6 +63,27 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
   );
 }
 
+export function TokenRegeneration({integrationId}: {integrationId: string}) {
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
+  const mutation = useMutation({
+    mutationFn: () => regenerateIntegrationToken(integrationId),
+    onSuccess: (value) => setNewToken(value),
+    onError: (error) => setError(error.message)
+  });
+
+  if (newToken) {
+    return <Token value={newToken}/>;
+  } else {
+    return (
+      <>
+        <Button onClick={() => mutation.mutate()}>Regenerate token</Button>
+        <InlineErrorMessage>{error}</InlineErrorMessage>
+      </>
+    );
+  }
+}
+
 export function IntegrationEdition({integrationId}: {integrationId: string | null}) {
   const form = useIntegrationForm();
 
@@ -75,6 +98,7 @@ export function IntegrationEdition({integrationId}: {integrationId: string | nul
       queryKeyForInvalidation={['integrations']}
     >
       <IntegrationForm form={form}/>
+      <TokenRegeneration integrationId={integrationId!}/>
     </ResourceEdition>
   );
 }
