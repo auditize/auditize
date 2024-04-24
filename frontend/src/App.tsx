@@ -5,6 +5,7 @@ import { theme } from '@/theme';
 import { Logs } from '@/features/logs';
 import { ReposManagement } from '@/features/repos';
 import { UsersManagement } from '@/features/users';
+import { IntegrationsManagement } from './features/integrations';
 import { Signup } from '@/features/signup';
 import {
   QueryClient,
@@ -31,6 +32,9 @@ function Main() {
             </UnstyledButton>
             <UnstyledButton>
               <Link to="/users">User Management</Link>
+            </UnstyledButton>
+            <UnstyledButton>
+              <Link to="/integrations">Integration Management</Link>
             </UnstyledButton>
           </Group>
         </Group>
@@ -68,6 +72,10 @@ export default function App() {
         {
           path: 'users',
           element: <UsersManagement/>
+        },
+        {
+          path: 'integrations',
+          element: <IntegrationsManagement/>
         }
       ],
     },

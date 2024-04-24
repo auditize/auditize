@@ -125,7 +125,7 @@ export function ResourceManagement(
         onChange={(value) => {
           navigate(addQueryParamToLocation(location, 'page', value.toString()));
         } } />
-      <Link to={path + '?new'}><Button>Create</Button></Link>
+      <Link to={addQueryParamToLocation(location, "new")}><Button>Create</Button></Link>
       {
         resourceCreationComponentBuilder(newResource)
       }
