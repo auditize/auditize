@@ -7,6 +7,7 @@ from helpers.database import setup_test_dbm, teardown_test_dbm
 from helpers.http import create_http_client
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
+from helpers.integrations import PreparedIntegration
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -44,3 +45,8 @@ async def repo(dbm):
 @pytest.fixture(scope="function")
 async def user(client, dbm):
     return await PreparedUser.create(client, dbm)
+
+
+@pytest.fixture(scope="function")
+async def integration(client, dbm):
+    return await PreparedIntegration.create(client, dbm)

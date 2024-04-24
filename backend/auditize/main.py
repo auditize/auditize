@@ -8,6 +8,7 @@ from pymongo.errors import DuplicateKeyError
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
+from auditize.integrations.api import router as integrations_router
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.api import make_404_response, make_409_response
 from auditize.common.db import get_dbm
@@ -50,3 +51,4 @@ def duplicate_key_handler(request, exc):
 app.include_router(logs_router)
 app.include_router(repos_router)
 app.include_router(users_router)
+app.include_router(integrations_router)

@@ -1,13 +1,9 @@
-from datetime import datetime, timedelta, timezone
-from bson import ObjectId
-
 from unittest.mock import patch
 
 import pytest
 import callee
 
 from auditize.common.db import DatabaseManager
-from auditize.users.service import get_user
 
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.database import assert_collection
