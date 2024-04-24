@@ -1,7 +1,9 @@
-import { useForm, isNotEmpty, isEmail, UseFormReturnType } from '@mantine/form';
-import { TextInput } from '@mantine/core';
+import { useForm, isNotEmpty } from '@mantine/form';
+import { TextInput, Code, Group } from '@mantine/core';
 import { createIntegration, updateIntegration, getIntegration } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
+import { useEffect, useState } from 'react';
+import { CopyIcon } from '@/components/CopyIcon';
 
 function useIntegrationForm() {
   return useForm({
@@ -22,8 +24,23 @@ function IntegrationForm({form}: {form: ReturnType<typeof useIntegrationForm>}) 
   );
 }
 
+function Token({value}: {value: string}) {
+  return (
+    <Group>
+      <span>Token: </span>
+      <Code>{value}</Code>
+      <CopyIcon value={value}/>
+    </Group>
+  );
+}
+
 export function IntegrationCreation({opened}: {opened?: boolean}) {
   const form = useIntegrationForm();
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(null);
+  }, [opened]);
 
   return (
     <ResourceCreation
@@ -31,9 +48,15 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
       form={form}
       opened={!!opened}
       onSave={() => createIntegration(form.values.name!)}
+      onSaveSuccess={(data) => {
+        const [_, token] = data as [string, string];
+        setToken(token);
+      }}
+      isSaved={!!token}
       queryKeyForInvalidation={['integrations']}
     >
       <IntegrationForm form={form}/>
+      {token && <Token value={token}/>}
     </ResourceCreation>
   );
 }

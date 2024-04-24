@@ -10,19 +10,27 @@ interface ResourceEditorProps {
   opened: boolean;
   form: UseFormReturnType<any>;
   onSave: () => Promise<any>;
+  onSaveSuccess?: (data: any) => void;
+  isSaved?: boolean;
   queryKeyForInvalidation: any[];
   children: React.ReactNode;
 }
 
-function ResourceEditor({ title, opened, form, onSave, queryKeyForInvalidation, children }: ResourceEditorProps) {
+function ResourceEditor(
+  { title, opened, form, onSave, onSaveSuccess, isSaved = false, queryKeyForInvalidation, children }:
+  ResourceEditorProps
+) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => onSave(),
-    onSuccess: () => {
+    onSuccess: ((data) => {
       queryClient.invalidateQueries({ queryKey: queryKeyForInvalidation });
-      navigate(-1);
-    },
+      if (onSaveSuccess)
+        onSaveSuccess(data);
+      else
+        navigate(-1);
+    }),
     onError: (error) => {
       setError(error.message);
     }
@@ -31,7 +39,7 @@ function ResourceEditor({ title, opened, form, onSave, queryKeyForInvalidation, 
 
   useEffect(() => {
     setError("");
-  }, [opened]);
+  }, [opened, isSaved]);
 
   const onClose = () => navigate(-1);
 
@@ -48,8 +56,19 @@ function ResourceEditor({ title, opened, form, onSave, queryKeyForInvalidation, 
           <form onSubmit={form.onSubmit(() => mutation.mutate())}>
             {children}
             <Group justify="center">
-              <Button onClick={onClose}>Cancel</Button>
-              <Button type='submit' color="blue">Save</Button>
+              {
+                ! isSaved && (
+                  <>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button type='submit' color="blue">Save</Button>
+                  </>
+                )
+              }
+              {
+                isSaved && (
+                  <Button onClick={onClose}>Close</Button>
+                )
+              }
             </Group>
           </form>
           {error && <Box mt="md" color="red">{error}</Box>}

@@ -9,7 +9,7 @@ export async function createIntegration(
       name
     }
   );
-  return response.data.id, response.data.token;
+  return [response.data.id, response.data.token];
 }
 
 export async function updateIntegration(id: string, update: IntegrationUpdate): Promise<void> {
