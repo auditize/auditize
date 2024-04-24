@@ -9,7 +9,7 @@ from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
-from auditize.common.config import config
+from auditize.common.config import get_config
 from auditize.common.email import send_email
 
 DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
@@ -26,6 +26,7 @@ def _generate_signup_token() -> SignupToken:
 
 
 def _send_signup_email(user: User):
+    config = get_config()
     send_email(
         user.email,
         "Welcome to Auditize",

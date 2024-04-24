@@ -4,10 +4,11 @@ import ssl
 import certifi
 from icecream import ic
 
-from .config import config
+from .config import get_config
 
 
 def send_email(to, subject, body):
+    config = get_config()
     if not config.is_smtp_enabled():
         ic("SMTP is disabled, print email information instead")
         ic(to, subject, body)

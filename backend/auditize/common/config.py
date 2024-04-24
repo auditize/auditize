@@ -1,5 +1,6 @@
 import os
 import dataclasses
+from threading import Lock
 
 
 @dataclasses.dataclass
@@ -32,4 +33,15 @@ class Config:
         return all((self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_password))
 
 
-config = Config.load_from_env()
+_config = None
+_config_lock = Lock()
+
+
+def get_config() -> Config:
+    global _config
+    # we make an initial check outside of lock to avoid unneeded locking when config is already loaded
+    if _config is None:
+        with _config_lock:
+            if _config is None:
+                _config = Config.load_from_env()
+    return _config
