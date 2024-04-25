@@ -57,3 +57,8 @@ class UserSignupInfoResponse(BaseModel):
 
 class UserSignupSetPasswordRequest(BaseModel):
     password: str = Field(description="The user password")
+
+
+class UserAuthenticationRequest(BaseModel):
+    email: str = Field(description="The user email")
+    password: str = Field(description="The user password")

@@ -126,17 +126,19 @@ async def _authenticate_user(dbm: DatabaseManager, email: str, password: str) ->
     return user
 
 
-def _generate_user_token(user: User):
+def _generate_user_token(user: User) -> tuple[str, datetime]:
     config = get_config()
-    return jwt.encode(
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=config.user_token_lifetime)
+    token = jwt.encode(
         {
             "sub": f"user_email:{user.email}",
-            "exp": datetime.now(timezone.utc) + timedelta(seconds=config.user_token_lifetime)
+            "exp": expires_at
         },
         config.user_token_signing_key, algorithm="HS256"
     )
+    return token, expires_at
 
 
-async def user_log_in(dbm: DatabaseManager, email: str, password: str) -> str:
+async def user_log_in(dbm: DatabaseManager, email: str, password: str) -> tuple[str, datetime]:
     user = await _authenticate_user(dbm, email, password)
     return _generate_user_token(user)

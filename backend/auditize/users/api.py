@@ -1,10 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
 from auditize.users.api_models import (
     UserCreationRequest, UserCreationResponse, UserUpdateRequest, UserReadingResponse,
-    UserListResponse, UserSignupInfoResponse, UserSignupSetPasswordRequest
+    UserListResponse, UserSignupInfoResponse, UserSignupSetPasswordRequest,
+    UserAuthenticationRequest
 )
 from auditize.users import service
 from auditize.common.db import DatabaseManager, get_dbm
@@ -103,3 +104,18 @@ async def set_user_password(
     request: UserSignupSetPasswordRequest
 ):
     await service.update_user_password_by_signup_token(dbm, token, request.password)
+
+
+@router.post(
+    "/users/login",
+    summary="User log-in",
+    tags=["users"],
+    status_code=204
+)
+async def login_user(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    request: UserAuthenticationRequest,
+    response: Response
+):
+    token, expires_at = await service.user_log_in(dbm, request.email, request.password)
+    response.set_cookie("token", token, httponly=True, samesite="strict", secure=True, expires=expires_at)
