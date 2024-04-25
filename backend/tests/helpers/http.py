@@ -1,3 +1,5 @@
+from http.cookiejar import Cookie
+
 from httpx import AsyncClient, ASGITransport, Response
 from icecream import ic
 
@@ -65,3 +67,10 @@ class HttpTestHelper(AsyncClient):
 
 def create_http_client():
     return HttpTestHelper(transport=ASGITransport(app=app), base_url="http://localhost")
+
+
+def get_cookie_by_name(resp: Response, name) -> Cookie:
+    for cookie in resp.cookies.jar:
+        if cookie.name == name:
+            return cookie
+    raise LookupError(f"Cookie {name} not found")

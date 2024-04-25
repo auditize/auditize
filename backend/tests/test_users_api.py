@@ -1,14 +1,16 @@
+import time
 from unittest.mock import patch
 
 import pytest
 import callee
+from icecream import ic
 
 from auditize.common.db import DatabaseManager
 
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.database import assert_collection
 from helpers.logs import UNKNOWN_OBJECT_ID
-from helpers.http import HttpTestHelper
+from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
@@ -189,3 +191,21 @@ async def test_user_signup_set_password_token_unknown(client: HttpTestHelper):
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}", json={"password": "new_password"},
         expected_status_code=404
     )
+
+
+async def test_user_log_in(client: HttpTestHelper, dbm: DatabaseManager):
+    user = await PreparedUser.inject_into_db(dbm)
+    now = int(time.time())
+    resp = await client.assert_post(
+        "/users/login", json={"email": user.email, "password": user.password},
+        expected_status_code=204
+    )
+    ic(resp.cookies)
+    cookie = get_cookie_by_name(resp, "token")
+    assert cookie.name == "token"
+    assert cookie.expires > now
+    assert cookie.path == "/"
+    assert cookie.secure is True
+    assert cookie.value
+    assert cookie.has_nonstandard_attr("HttpOnly")
+    assert cookie.get_nonstandard_attr("SameSite") == "strict"

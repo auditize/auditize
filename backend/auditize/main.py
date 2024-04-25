@@ -9,8 +9,8 @@ from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
 from auditize.integrations.api import router as integrations_router
-from auditize.common.exceptions import UnknownModelException
-from auditize.common.api import make_404_response, make_409_response
+from auditize.common.exceptions import UnknownModelException, AuthenticationFailure
+from auditize.common.api import make_404_response, make_409_response, make_401_response
 from auditize.common.db import get_dbm
 
 ic.configureOutput(includeContext=True)
@@ -46,6 +46,11 @@ def resource_not_found_handler(request, exc):
 @app.exception_handler(DuplicateKeyError)
 def duplicate_key_handler(request, exc):
     return make_409_response()
+
+
+@app.exception_handler(AuthenticationFailure)
+def authentication_failure(request, exc):
+    return make_401_response()
 
 
 app.include_router(logs_router)
