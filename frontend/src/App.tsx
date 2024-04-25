@@ -17,6 +17,7 @@ import {
   Link,
   Outlet
 } from "react-router-dom";
+import { LogInForm } from '@/features/log-in';
 
 function Main() {
   return (
@@ -24,6 +25,9 @@ function Main() {
       <AppShell.Header>
         <Group h="100%" px="md" justify="right">
           <Group ml="xl">
+          <UnstyledButton>
+              <Link to="/log-in">Log-in</Link>
+            </UnstyledButton>
             <UnstyledButton>
               <Link to="/logs">Logs</Link>
             </UnstyledButton>
@@ -82,6 +86,10 @@ export default function App() {
     {
       path: "/signup/:token",
       element: <Signup/>
+    },
+    {
+      path: "/log-in",
+      element: <LogInForm/>
     }
   ]);
 
