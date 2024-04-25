@@ -2,6 +2,9 @@ import axios from 'axios';
 
 export const axiosInstance = axios.create({
   baseURL: 'http://localhost:8000',
+  // Enable cross site cookies
+  // FIXME: it should only be enabled for development
+  withCredentials: true,
 });
 
 // Simulate network latency
