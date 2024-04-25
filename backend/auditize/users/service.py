@@ -3,10 +3,11 @@ import secrets
 from bson import ObjectId
 
 from passlib.context import CryptContext
+from jose import JWTError, jwt
 
 from auditize.users.models import User, UserUpdate, SignupToken
 from auditize.common.db import DatabaseManager
-from auditize.common.exceptions import UnknownModelException
+from auditize.common.exceptions import UnknownModelException, AuthenticationFailure
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.config import get_config
@@ -52,12 +53,20 @@ async def update_user(dbm: DatabaseManager, user_id: ObjectId | str, update: Use
         raise UnknownModelException()
 
 
-async def get_user(dbm: DatabaseManager, user_id: ObjectId | str) -> User:
-    result = await dbm.core_db.users.find_one({"_id": ObjectId(user_id)})
+async def _get_user(dbm: DatabaseManager, filter: dict) -> User:
+    result = await dbm.core_db.users.find_one(filter)
     if result is None:
         raise UnknownModelException()
 
     return User.model_validate(result)
+
+
+async def get_user(dbm: DatabaseManager, user_id: ObjectId | str) -> User:
+    return await _get_user(dbm, {"_id": ObjectId(user_id)})
+
+
+async def get_user_by_email(dbm: DatabaseManager, email: str) -> User:
+    return await _get_user(dbm, {"email": email})
 
 
 def _build_signup_token_filter(token: str):
@@ -75,8 +84,14 @@ async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
     return User.model_validate(result)
 
 
+# NB: this function is let public to be used in tests and to make sure that passwords
+# are hashed in a consistent way
+def hash_user_password(password: str) -> str:
+    return password_context.hash(password)
+
+
 async def update_user_password_by_signup_token(dbm: DatabaseManager, token: str, password: str):
-    password_hash = password_context.hash(password)
+    password_hash = hash_user_password(password)
     result = await dbm.core_db.users.update_one(
         _build_signup_token_filter(token),
         {"$set": {"password_hash": password_hash, "signup_token": None}}
@@ -97,3 +112,31 @@ async def delete_user(dbm: DatabaseManager, user_id: ObjectId | str):
     result = await dbm.core_db.users.delete_one({"_id": ObjectId(user_id)})
     if result.deleted_count == 0:
         raise UnknownModelException()
+
+
+async def _authenticate_user(dbm: DatabaseManager, email: str, password: str) -> User:
+    try:
+        user = await get_user_by_email(dbm, email)
+    except UnknownModelException:
+        raise AuthenticationFailure()
+
+    if not password_context.verify(password, user.password_hash):
+        raise AuthenticationFailure()
+
+    return user
+
+
+def _generate_user_token(user: User):
+    config = get_config()
+    return jwt.encode(
+        {
+            "sub": f"user_email:{user.email}",
+            "exp": datetime.now(timezone.utc) + timedelta(seconds=config.user_token_lifetime)
+        },
+        config.user_token_signing_key, algorithm="HS256"
+    )
+
+
+async def user_log_in(dbm: DatabaseManager, email: str, password: str) -> str:
+    user = await _authenticate_user(dbm, email, password)
+    return _generate_user_token(user)

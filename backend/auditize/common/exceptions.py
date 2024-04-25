@@ -4,3 +4,7 @@ class AuditizeException(Exception):
 
 class UnknownModelException(AuditizeException):
     pass
+
+
+class AuthenticationFailure(AuditizeException):
+    pass

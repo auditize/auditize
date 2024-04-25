@@ -6,6 +6,8 @@ from threading import Lock
 @dataclasses.dataclass
 class Config:
     base_url: str
+    user_token_signing_key: str
+    user_token_lifetime: int
     smtp_server: str
     smtp_port: int
     smtp_username: str
@@ -16,14 +18,33 @@ class Config:
     def load_from_env(cls, env=None):
         if env is None:
             env = os.environ
-        return cls(
-            base_url=env.get("AUDITIZE_BASE_URL", "http://localhost:8000"),
-            smtp_server=env.get("AUDITIZE_SMTP_SERVER"),
-            smtp_port=int(env.get("AUDITIZE_SMTP_PORT", 0)),
-            smtp_username=env.get("AUDITIZE_SMTP_USERNAME"),
-            smtp_password=env.get("AUDITIZE_SMTP_PASSWORD"),
-            _smtp_sender=env.get("AUDITIZE_SMTP_SENDER"),
-        )
+
+        def required(key, cast=None):
+            value = env[key]
+            if cast:
+                value = cast(value)
+            return value
+
+        def optional(key, default=None, cast=None):
+            try:
+                return required(key, cast)
+            except KeyError:
+                return default
+
+        try:
+            return cls(
+                base_url=optional("AUDITIZE_BASE_URL", "http://localhost:8000"),
+                user_token_signing_key=required("AUDITIZE_USER_TOKEN_SIGNING_KEY"),
+                user_token_lifetime=optional("AUDITIZE_USER_TOKEN_LIFETIME", 60 * 60 * 12, cast=int),
+                smtp_server=optional("AUDITIZE_SMTP_SERVER"),
+                smtp_port=optional("AUDITIZE_SMTP_PORT", cast=int),
+                smtp_username=optional("AUDITIZE_SMTP_USERNAME"),
+                smtp_password=optional("AUDITIZE_SMTP_PASSWORD"),
+                _smtp_sender=optional("AUDITIZE_SMTP_SENDER"),
+            )
+        except KeyError as e:
+            var_name = str(e)
+            raise ValueError(f"Could not load configuration, variable {var_name} is missing")
 
     @property
     def smtp_sender(self):

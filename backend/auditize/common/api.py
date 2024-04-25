@@ -20,3 +20,7 @@ def make_404_response():
 
 def make_409_response():
     return JSONResponse(status_code=409, content={"detail": "Resource already exists"})
+
+
+def make_401_response():
+    return JSONResponse(status_code=401, content={"detail": "Unauthorized"})

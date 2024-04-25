@@ -11,10 +11,16 @@ from helpers.integrations import PreparedIntegration
 
 
 @pytest.fixture(scope="session", autouse=True)
-def cleanup_env():
+def setup_env():
+    # clean slate
     for key in os.environ:
         if key.startswith("AUDITIZE_"):
             del os.environ[key]
+
+    # set the environment variables (at least the required ones)
+    os.environ.update({
+        "AUDITIZE_USER_TOKEN_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73"
+    })
 
 
 @pytest.fixture(scope="session")
