@@ -23,3 +23,9 @@ def serialize_datetime(dt: datetime, with_milliseconds=False) -> str:
     dt = dt.replace(tzinfo=None)
     # third, format:
     return dt.isoformat(timespec="milliseconds" if with_milliseconds else "seconds") + "Z"
+
+
+# NB: this function doesn't do much and is mostly here to ease monkey-patching when we want
+# to test time-related features (e.g. token expiration)
+def now() -> datetime:
+    return datetime.now(timezone.utc)

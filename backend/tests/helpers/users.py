@@ -2,13 +2,14 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 
+from httpx import Response
 import callee
 
 from auditize.common.db import DatabaseManager
 from auditize.users.service import get_user, hash_user_password
 from auditize.users.models import User
 
-from .http import HttpTestHelper
+from .http import HttpTestHelper, get_cookie_by_name
 
 
 class PreparedUser:
@@ -79,6 +80,16 @@ class PreparedUser:
     async def signup_token(self) -> str | None:
         user_model = await get_user(self.dbm, self.id)
         return user_model.signup_token.token if user_model.signup_token else None
+
+    async def log_in(self, client: HttpTestHelper) -> Response:
+        return await client.assert_post(
+            "/users/login", json={"email": self.email, "password": self.password},
+            expected_status_code=204
+        )
+
+    async def get_session_token(self, client: HttpTestHelper) -> str:
+        resp = await self.log_in(client)
+        return get_cookie_by_name(resp, "token").value
 
     def expected_document(self, extra=None) -> dict:
         return {
