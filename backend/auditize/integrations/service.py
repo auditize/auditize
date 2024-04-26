@@ -57,6 +57,14 @@ async def get_integration(dbm: DatabaseManager, integration_id: ObjectId | str) 
     return Integration.model_validate(result)
 
 
+async def get_integration_by_token(dbm: DatabaseManager, token: str) -> Integration:
+    result = await dbm.core_db.integrations.find_one({"token_hash": _hash_token(token)})
+    if result is None:
+        raise UnknownModelException()
+
+    return Integration.model_validate(result)
+
+
 async def get_integrations(dbm: DatabaseManager, page: int, page_size: int) \
         -> tuple[list[Integration], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(

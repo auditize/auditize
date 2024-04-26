@@ -1,5 +1,7 @@
 from http.cookiejar import Cookie
 
+from starlette.requests import Request
+
 from httpx import AsyncClient, ASGITransport, Response
 from icecream import ic
 
@@ -74,3 +76,25 @@ def get_cookie_by_name(resp: Response, name) -> Cookie:
         if cookie.name == name:
             return cookie
     raise LookupError(f"Cookie {name} not found")
+
+
+# Some useful links about ASGI scope and Starlette:
+# - https://www.encode.io/articles/asgi-http
+# - https://www.encode.io/articles/working-with-http-requests-in-asgi
+
+def make_http_request(*, headers: dict = None) -> Request:
+    if headers is None:
+        headers = {}
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "scheme": "http",
+        "server": ("localhost", 8000),
+        "path": "/",
+        "headers": [
+            [key.lower().encode(), value.encode()] for key, value in headers.items()
+        ],
+    }
+
+    return Request(scope)
