@@ -89,7 +89,7 @@ class PreparedUser:
 
     async def get_session_token(self, client: HttpTestHelper) -> str:
         resp = await self.log_in(client)
-        return get_cookie_by_name(resp, "token").value
+        return get_cookie_by_name(resp, "session").value
 
     def expected_document(self, extra=None) -> dict:
         return {

@@ -46,7 +46,7 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     if not request.cookies:
         raise AuthenticationFailure()
 
-    session_token = request.cookies.get("token")
+    session_token = request.cookies.get("session")
     if not session_token:
         raise AuthenticationFailure()
 
@@ -56,7 +56,7 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
 
 
 def looks_like_user_auth(request: Request) -> bool:
-    return bool(request.cookies.get("token"))
+    return bool(request.cookies.get("session"))
 
 
 async def get_authenticated(

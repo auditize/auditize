@@ -201,8 +201,8 @@ async def test_user_log_in(client: HttpTestHelper, dbm: DatabaseManager):
         expected_status_code=204
     )
     ic(resp.cookies)
-    cookie = get_cookie_by_name(resp, "token")
-    assert cookie.name == "token"
+    cookie = get_cookie_by_name(resp, "session")
+    assert cookie.name == "session"
     assert cookie.expires > now
     assert cookie.path == "/"
     assert cookie.secure is True

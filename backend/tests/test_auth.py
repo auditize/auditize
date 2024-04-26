@@ -2,7 +2,7 @@ from datetime import datetime
 from jose import jwt
 
 from auditize.auth import get_authenticated
-from auditize.users.service import generate_jwt_token_payload
+from auditize.users.service import generate_session_token_payload
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import AuthenticationFailure
 
@@ -62,7 +62,7 @@ async def test_auth_user(dbm: DatabaseManager, client: HttpTestHelper):
 
     request = make_http_request(
         headers={
-            "Cookie": f"token={session_token}"
+            "Cookie": f"session={session_token}"
         }
     )
     authenticated = await get_authenticated(dbm, request)
@@ -73,7 +73,7 @@ async def test_auth_user(dbm: DatabaseManager, client: HttpTestHelper):
 async def test_auth_user_invalid_session_token_syntax(dbm: DatabaseManager):
     request = make_http_request(
         headers={
-            "Cookie": f"token=INVALID_TOKEN"
+            "Cookie": f"session=INVALID_TOKEN"
         }
     )
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
@@ -84,12 +84,12 @@ async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManage
     user = await PreparedUser.inject_into_db(dbm)
 
     # Prepare a valid JWT session token but sign with a different key
-    jwt_payload, _ = generate_jwt_token_payload(user.data["email"])
+    jwt_payload, _ = generate_session_token_payload(user.data["email"])
     jwt_token = jwt.encode(jwt_payload, "agreatsigningkey", algorithm="HS256")
 
     request = make_http_request(
         headers={
-            "Cookie": f"token={jwt_token}"
+            "Cookie": f"session={jwt_token}"
         }
     )
 
@@ -111,7 +111,7 @@ async def test_auth_user_invalid_session_token_expired(dbm: DatabaseManager, cli
 
     request = make_http_request(
         headers={
-            "Cookie": f"token={session_token}"
+            "Cookie": f"session={session_token}"
         }
     )
 

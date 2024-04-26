@@ -20,10 +20,10 @@ async def test_user_log_in(dbm: DatabaseManager):
     now = int(time.time())
     config = get_config()
     user = await PreparedUser.inject_into_db(dbm)
-    token, expires_at = await service.user_log_in(dbm, user.email, user.password)
+    token, expires_at = await service.authenticate_user(dbm, user.email, user.password)
     ic(token, expires_at)
     assert expires_at.timestamp() > now
-    payload = jwt.decode(token, config.user_token_signing_key, algorithms=["HS256"])
+    payload = jwt.decode(token, config.user_session_token_signing_key, algorithms=["HS256"])
     ic(payload)
     assert payload == {
         "sub": f"user_email:{user.email}",
@@ -33,10 +33,10 @@ async def test_user_log_in(dbm: DatabaseManager):
 
 async def test_user_log_in_unknown_email(dbm: DatabaseManager):
     with pytest.raises(AuthenticationFailure):
-        await service.user_log_in(dbm, "unknown.guy@example.net", "somepassword")
+        await service.authenticate_user(dbm, "unknown.guy@example.net", "somepassword")
 
 
 async def test_user_log_in_wrong_password(dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
     with pytest.raises(AuthenticationFailure):
-        await service.user_log_in(dbm, user.email, "wrongpassword")
+        await service.authenticate_user(dbm, user.email, "wrongpassword")

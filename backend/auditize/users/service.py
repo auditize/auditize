@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timedelta
 import secrets
 from bson import ObjectId
@@ -89,7 +88,7 @@ async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
 async def get_user_by_session_token(dbm: DatabaseManager, token: str) -> User:
     # Load JWT token
     try:
-        payload = jwt.decode(token, get_config().user_token_signing_key, algorithms=["HS256"])
+        payload = jwt.decode(token, get_config().user_session_token_signing_key, algorithms=["HS256"])
     except ExpiredSignatureError:
         raise AuthenticationFailure("JWT token expired")
     except JWTError:
@@ -154,8 +153,8 @@ async def _authenticate_user(dbm: DatabaseManager, email: str, password: str) ->
 
 
 # NB: make this function public so can can test valid JWT tokens but signed with another key
-def generate_jwt_token_payload(user_email: str) -> tuple[dict, datetime]:
-    expires_at = now() + timedelta(seconds=get_config().user_token_lifetime)
+def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
+    expires_at = now() + timedelta(seconds=get_config().user_session_token_lifetime)
     payload = {
         "sub": f"{_JWT_SUB_PREFIX}{user_email}",
         "exp": expires_at
@@ -163,13 +162,13 @@ def generate_jwt_token_payload(user_email: str) -> tuple[dict, datetime]:
     return payload, expires_at
 
 
-def _generate_user_token(user: User) -> tuple[str, datetime]:
+def _generate_session_token(user: User) -> tuple[str, datetime]:
     config = get_config()
-    payload, expires_at = generate_jwt_token_payload(user.email)
-    token = jwt.encode(payload, config.user_token_signing_key, algorithm="HS256")
+    payload, expires_at = generate_session_token_payload(user.email)
+    token = jwt.encode(payload, config.user_session_token_signing_key, algorithm="HS256")
     return token, expires_at
 
 
-async def user_log_in(dbm: DatabaseManager, email: str, password: str) -> tuple[str, datetime]:
+async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> tuple[str, datetime]:
     user = await _authenticate_user(dbm, email, password)
-    return _generate_user_token(user)
+    return _generate_session_token(user)

@@ -117,5 +117,5 @@ async def login_user(
     request: UserAuthenticationRequest,
     response: Response
 ):
-    token, expires_at = await service.user_log_in(dbm, request.email, request.password)
-    response.set_cookie("token", token, httponly=True, samesite="strict", secure=True, expires=expires_at)
+    token, expires_at = await service.authenticate_user(dbm, request.email, request.password)
+    response.set_cookie("session", token, httponly=True, samesite="strict", secure=True, expires=expires_at)
