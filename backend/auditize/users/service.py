@@ -4,7 +4,7 @@ import secrets
 from bson import ObjectId
 
 from passlib.context import CryptContext
-from jose import JWTError, jwt
+from jose import JWTError, ExpiredSignatureError, jwt
 
 from auditize.users.models import User, UserUpdate, SignupToken
 from auditize.common.db import DatabaseManager
@@ -90,17 +90,10 @@ async def get_user_by_session_token(dbm: DatabaseManager, token: str) -> User:
     # Load JWT token
     try:
         payload = jwt.decode(token, get_config().user_token_signing_key, algorithms=["HS256"])
+    except ExpiredSignatureError:
+        raise AuthenticationFailure("JWT token expired")
     except JWTError:
         raise AuthenticationFailure("Cannot decode JWT token")
-
-    # Check expiration
-    try:
-        expires_in = int(payload["exp"])
-    except (KeyError, ValueError):
-        raise AuthenticationFailure("Missing or invalid 'exp' field in JWT token")
-    now_ts = int(time.time())
-    if expires_in < now_ts:
-        raise AuthenticationFailure("JWT token expired")
 
     # Get user email from token
     try:

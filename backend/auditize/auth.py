@@ -7,8 +7,12 @@ from auditize.common.exceptions import UnknownModelException, AuthenticationFail
 from auditize.integrations.service import get_integration_by_token
 from auditize.users.service import get_user_by_session_token
 
-
 _BEARER_PREFIX = "Bearer "
+
+
+@dataclasses.dataclass
+class Authenticated:
+    name: str
 
 
 def _get_authorization_bearer(request: Request) -> str:
@@ -20,45 +24,48 @@ def _get_authorization_bearer(request: Request) -> str:
     return authorization[len(_BEARER_PREFIX):]
 
 
-@dataclasses.dataclass
-class Authenticated:
-    name: str
-
-
-async def _try_integration_auth(dbm: DatabaseManager, request: Request):
+async def authenticate_integration(dbm: DatabaseManager, request: Request) -> Authenticated:
     try:
         token = _get_authorization_bearer(request)
-    except LookupError:
-        return None
+    except LookupError as e:
+        raise AuthenticationFailure(str(e))
+
     try:
         integration = await get_integration_by_token(dbm, token)
     except UnknownModelException:
-        return None
+        raise AuthenticationFailure("Invalid integration token")
+
     return Authenticated(name=integration.name)
 
 
-async def _try_user_auth(dbm: DatabaseManager, request: Request):
+def looks_like_integration_auth(request: Request) -> bool:
+    return bool(request.headers.get("Authorization"))
+
+
+async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authenticated:
     if not request.cookies:
-        return None
+        raise AuthenticationFailure()
+
     session_token = request.cookies.get("token")
     if not session_token:
-        return None
-    try:
-        user = await get_user_by_session_token(dbm, session_token)
-    except AuthenticationFailure:
-        return None
+        raise AuthenticationFailure()
+
+    user = await get_user_by_session_token(dbm, session_token)
+
     return Authenticated(name=user.email)
+
+
+def looks_like_user_auth(request: Request) -> bool:
+    return bool(request.cookies.get("token"))
 
 
 async def get_authenticated(
     dbm: DatabaseManager = Depends(get_dbm), request: Request = Depends()
-):
-    authenticated = await _try_integration_auth(dbm, request)
-    if authenticated is not None:
-        return authenticated
+) -> Authenticated:
+    if looks_like_integration_auth(request):
+        return await authenticate_integration(dbm, request)
 
-    authenticated = await _try_user_auth(dbm, request)
-    if authenticated is not None:
-        return authenticated
+    if looks_like_user_auth(request):
+        return await authenticate_user(dbm, request)
 
-    return None
+    raise AuthenticationFailure()

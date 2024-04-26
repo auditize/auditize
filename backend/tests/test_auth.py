@@ -4,6 +4,7 @@ from jose import jwt
 from auditize.auth import get_authenticated
 from auditize.users.service import generate_jwt_token_payload
 from auditize.common.db import DatabaseManager
+from auditize.common.exceptions import AuthenticationFailure
 
 import pytest
 from unittest.mock import patch
@@ -17,8 +18,9 @@ pytestmark = pytest.mark.anyio
 
 async def test_auth_no_auth(dbm: DatabaseManager, integration: PreparedIntegration):
     request = make_http_request()
-    authenticated = await get_authenticated(dbm, request)
-    assert authenticated is None
+
+    with pytest.raises(AuthenticationFailure):
+        await get_authenticated(dbm, request)
 
 
 async def test_auth_integration(dbm: DatabaseManager, integration: PreparedIntegration):
@@ -38,8 +40,9 @@ async def test_auth_invalid_authorization_header(dbm: DatabaseManager, integrati
             "Authorization": f"This is not a valid authorization header we recognize"
         }
     )
-    authenticated = await get_authenticated(dbm, request)
-    assert authenticated is None
+
+    with pytest.raises(AuthenticationFailure, match="not a Bearer token"):
+        await get_authenticated(dbm, request)
 
 
 async def test_auth_invalid_authorization_bearer(dbm: DatabaseManager, integration: PreparedIntegration):
@@ -49,8 +52,8 @@ async def test_auth_invalid_authorization_bearer(dbm: DatabaseManager, integrati
             "Authorization": f"Bearer intgr-BOg6yxarq9oJ-y98VOMvy4gERijPxtcjta6YVxKiAaU"
         }
     )
-    authenticated = await get_authenticated(dbm, request)
-    assert authenticated is None
+    with pytest.raises(AuthenticationFailure, match="Invalid integration token"):
+        await get_authenticated(dbm, request)
 
 
 async def test_auth_user(dbm: DatabaseManager, client: HttpTestHelper):
@@ -73,8 +76,8 @@ async def test_auth_user_invalid_session_token_syntax(dbm: DatabaseManager):
             "Cookie": f"token=INVALID_TOKEN"
         }
     )
-    authenticated = await get_authenticated(dbm, request)
-    assert authenticated is None
+    with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
+        await get_authenticated(dbm, request)
 
 
 async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManager):
@@ -89,8 +92,9 @@ async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManage
             "Cookie": f"token={jwt_token}"
         }
     )
-    authenticated = await get_authenticated(dbm, request)
-    assert authenticated is None
+
+    with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
+        await get_authenticated(dbm, request)
 
 
 async def test_auth_user_invalid_session_token_expired(dbm: DatabaseManager, client: HttpTestHelper):
@@ -110,5 +114,6 @@ async def test_auth_user_invalid_session_token_expired(dbm: DatabaseManager, cli
             "Cookie": f"token={session_token}"
         }
     )
-    authenticated = await get_authenticated(dbm, request)
-    assert authenticated is None
+
+    with pytest.raises(AuthenticationFailure, match="JWT token expired"):
+        await get_authenticated(dbm, request)
