@@ -29,7 +29,7 @@ def anyio_backend():
     return 'asyncio'
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 async def client():
     async with create_http_client() as client:
         yield client
