@@ -130,8 +130,8 @@ async def test_user_delete(client: HttpTestHelper, user: PreparedUser, dbm: Data
     await assert_collection(dbm.core_db.users, [])
 
 
-async def test_user_delete_unknown_id(anon_client: HttpTestHelper):
-    await anon_client.assert_delete(
+async def test_user_delete_unknown_id(client: HttpTestHelper):
+    await client.assert_delete(
         f"/users/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )

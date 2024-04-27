@@ -6,6 +6,7 @@ from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse,
     RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData
 from auditize.repos import service
 from auditize.common.db import DatabaseManager, get_dbm
+from auditize.auth import Authenticated, get_authenticated
 
 router = APIRouter()
 
@@ -17,7 +18,9 @@ router = APIRouter()
     status_code=201
 )
 async def create_repo(
-        dbm: Annotated[DatabaseManager, Depends(get_dbm)], repo: RepoCreationRequest
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    repo: RepoCreationRequest
 ) -> RepoCreationResponse:
     repo_id = await service.create_repo(dbm, repo.to_repo())
     return RepoCreationResponse(id=repo_id)
@@ -31,6 +34,7 @@ async def create_repo(
 )
 async def update_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     repo_id: str, repo: RepoUpdateRequest
 ):
     await service.update_repo(dbm, repo_id, repo.to_repo_update())
@@ -45,6 +49,7 @@ async def update_repo(
 )
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     repo_id: str,
     include: Annotated[list[RepoIncludeOptions], Query()] = ()
 ) -> RepoReadingResponse:
@@ -64,6 +69,7 @@ async def get_repo(
 )
 async def list_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
     page: int = 1, page_size: int = 10
 ) -> RepoListResponse:
@@ -83,6 +89,8 @@ async def list_repos(
     status_code=204
 )
 async def delete_repo(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], repo_id: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    repo_id: str
 ):
     await service.delete_repo(dbm, repo_id)

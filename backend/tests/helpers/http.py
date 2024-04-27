@@ -14,10 +14,9 @@ class HttpTestHelper(AsyncClient):
         method: str, path, *, params=None, json=None, files=None, data=None,
         expected_status_code=200, expected_json=None
     ) -> Response:
-        ic(method, path)
-        ic(json, files, data)
+        ic("REQUEST", id(self), method, path, self.headers, params, json, files, data)
         resp = await self.request(method, path, params=params, json=json, files=files, data=data)
-        ic(resp.text)
+        ic("RESPONSE", id(self), resp.status_code, resp.headers, resp.text)
         if expected_status_code is not None:
             assert resp.status_code == expected_status_code
         if expected_json is not None:
@@ -68,7 +67,7 @@ class HttpTestHelper(AsyncClient):
 
 
 def create_http_client():
-    return HttpTestHelper(transport=ASGITransport(app=app), base_url="http://localhost")
+    return HttpTestHelper(transport=ASGITransport(app=app), base_url="https://localhost")
 
 
 def get_cookie_by_name(resp: Response, name) -> Cookie:

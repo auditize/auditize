@@ -1,3 +1,4 @@
+from typing import Annotated
 import dataclasses
 
 from fastapi import Depends, Request
@@ -60,7 +61,8 @@ def looks_like_user_auth(request: Request) -> bool:
 
 
 async def get_authenticated(
-    dbm: DatabaseManager = Depends(get_dbm), request: Request = Depends()
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    request: Request
 ) -> Authenticated:
     if looks_like_integration_auth(request):
         return await authenticate_integration(dbm, request)
