@@ -209,3 +209,9 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
     assert cookie.value
     assert cookie.has_nonstandard_attr("HttpOnly")
     assert cookie.get_nonstandard_attr("SameSite") == "strict"
+
+    # test that the cookie auth actually works
+    await anon_client.assert_get(
+        "/users",
+        expected_status_code=200
+    )

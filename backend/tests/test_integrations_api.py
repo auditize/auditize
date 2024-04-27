@@ -8,7 +8,7 @@ from auditize.common.db import DatabaseManager
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.database import assert_collection
 from helpers.logs import UNKNOWN_OBJECT_ID
-from helpers.http import HttpTestHelper
+from helpers.http import HttpTestHelper, create_http_client
 from helpers.integrations import PreparedIntegration
 
 pytestmark = pytest.mark.anyio
@@ -28,6 +28,16 @@ async def test_integration_create(user_client: HttpTestHelper, dbm: DatabaseMana
 
     integration = PreparedIntegration(resp.json()["id"], resp.json()["token"], data, dbm)
     await assert_collection(dbm.core_db.integrations, [integration.expected_document()])
+
+    # Test that the token actually works
+    integration_client = create_http_client()
+    await integration_client.assert_get(
+        "/integrations",
+        headers={
+            "Authorization": f"Bearer {integration.token}"
+        },
+        expected_status_code=200
+    )
 
 
 async def test_integration_create_missing_parameter(user_client: HttpTestHelper, dbm: DatabaseManager):

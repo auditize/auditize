@@ -11,11 +11,14 @@ from auditize.main import app
 class HttpTestHelper(AsyncClient):
     async def assert_request(
         self,
-        method: str, path, *, params=None, json=None, files=None, data=None,
+        method: str, path, *, params=None, headers=None, json=None, files=None, data=None,
         expected_status_code=200, expected_json=None
     ) -> Response:
-        ic("REQUEST", id(self), method, path, self.headers, params, json, files, data)
-        resp = await self.request(method, path, params=params, json=json, files=files, data=data)
+        ic("REQUEST", id(self), method, path, {**self.headers, **(headers or {})}, params, json, files, data)
+        resp = await self.request(
+            method, path,
+            headers=headers, params=params, json=json, files=files, data=data
+        )
         ic("RESPONSE", id(self), resp.status_code, resp.headers, resp.text)
         if expected_status_code is not None:
             assert resp.status_code == expected_status_code
@@ -57,11 +60,12 @@ class HttpTestHelper(AsyncClient):
 
     async def assert_get(
         self,
-        path, *, params=None,
+        path, *, params=None, headers=None,
         expected_status_code=200, expected_json=None
     ) -> Response:
         return await self.assert_request(
-            "GET", path, params=params,
+            "GET", path,
+            params=params, headers=headers,
             expected_status_code=expected_status_code, expected_json=expected_json
         )
 
