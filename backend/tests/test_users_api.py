@@ -58,6 +58,12 @@ async def test_user_create_already_used_email(client: HttpTestHelper, user: Prep
     )
 
 
+async def test_user_create_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_post(
+        "/users", json=PreparedUser.prepare_data()
+    )
+
+
 async def test_user_update_all(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
     data = {
         "first_name": "John Updated", "last_name": "Doe Updated", "email": "john.doe_updated@example.net"
@@ -97,6 +103,12 @@ async def test_user_update_already_used_email(client: HttpTestHelper, dbm: Datab
     )
 
 
+async def test_user_update_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_unauthorized_patch(
+        f"/users/{user.id}", json={"first_name": "John Updated"}
+    )
+
+
 async def test_user_get(client: HttpTestHelper, user: PreparedUser):
     await client.assert_get(
         f"/users/{user.id}",
@@ -112,12 +124,24 @@ async def test_user_get_unknown_id(client: HttpTestHelper):
     )
 
 
+async def test_user_get_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_unauthorized_get(
+        f"/users/{user.id}"
+    )
+
+
 async def test_user_list(client: HttpTestHelper, dbm: DatabaseManager):
     users = [await PreparedUser.create(client, dbm) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
         client, "/users",
         [user.expected_api_response() for user in sorted(users, key=lambda r: r.data["last_name"])]
+    )
+
+
+async def test_user_list_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_get(
+        "/users"
     )
 
 
@@ -134,6 +158,12 @@ async def test_user_delete_unknown_id(client: HttpTestHelper):
     await client.assert_delete(
         f"/users/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
+    )
+
+
+async def test_user_delete_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_unauthorized_delete(
+        f"/users/{user.id}"
     )
 
 

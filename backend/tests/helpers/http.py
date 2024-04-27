@@ -1,3 +1,4 @@
+from functools import partialmethod
 from http.cookiejar import Cookie
 
 from starlette.requests import Request
@@ -37,6 +38,8 @@ class HttpTestHelper(AsyncClient):
             expected_status_code=expected_status_code, expected_json=expected_json
         )
 
+    assert_unauthorized_post = partialmethod(assert_post, expected_status_code=401)
+
     async def assert_patch(
         self,
         path, *, json=None, files=None, data=None,
@@ -48,6 +51,8 @@ class HttpTestHelper(AsyncClient):
             expected_status_code=expected_status_code, expected_json=expected_json
         )
 
+    assert_unauthorized_patch = partialmethod(assert_patch, expected_status_code=401)
+
     async def assert_delete(
         self,
         path, *,
@@ -57,6 +62,8 @@ class HttpTestHelper(AsyncClient):
             "DELETE", path,
             expected_status_code=expected_status_code, expected_json=expected_json
         )
+
+    assert_unauthorized_delete = partialmethod(assert_delete, expected_status_code=401)
 
     async def assert_get(
         self,
@@ -68,6 +75,8 @@ class HttpTestHelper(AsyncClient):
             params=params, headers=headers,
             expected_status_code=expected_status_code, expected_json=expected_json
         )
+
+    assert_unauthorized_get = partialmethod(assert_get, expected_status_code=401)
 
 
 def create_http_client():

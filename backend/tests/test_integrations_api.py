@@ -61,6 +61,12 @@ async def test_integration_create_already_used_name(user_client: HttpTestHelper,
     )
 
 
+async def test_integration_create_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_post(
+        "/integrations", json=PreparedIntegration.prepare_data(),
+    )
+
+
 async def test_integration_update(user_client: HttpTestHelper, integration: PreparedIntegration, dbm: DatabaseManager):
     data = {"name": "Integration Updated"}
     await user_client.assert_patch(
@@ -69,21 +75,6 @@ async def test_integration_update(user_client: HttpTestHelper, integration: Prep
     )
 
     await assert_collection(dbm.core_db.integrations, [integration.expected_document(data)])
-
-
-async def test_integration_regenerate_token(user_client: HttpTestHelper, integration: PreparedIntegration, dbm: DatabaseManager):
-    mongo_document = await dbm.core_db.integrations.find_one({"_id": ObjectId(integration.id)})
-
-    await user_client.assert_post(
-        f"/integrations/{integration.id}/token",
-        expected_status_code=200,
-        expected_json={"token": callee.IsA(str)}
-    )
-
-    # make sure the token has changed
-    await assert_collection(dbm.core_db.integrations, [integration.expected_document({
-        "token_hash": callee.Matching(lambda val: type(val) is str and val != mongo_document["token_hash"])
-    })])
 
 
 async def test_integration_update_unknown_id(user_client: HttpTestHelper):
@@ -103,6 +94,33 @@ async def test_integration_update_already_name(user_client: HttpTestHelper, dbm:
     )
 
 
+async def test_integration_update_unauthorized(anon_client: HttpTestHelper, integration: PreparedIntegration):
+    await anon_client.assert_unauthorized_patch(
+        f"/integrations/{integration.id}", json={"name": "Integration Updated"}
+    )
+
+
+async def test_integration_regenerate_token(user_client: HttpTestHelper, integration: PreparedIntegration, dbm: DatabaseManager):
+    mongo_document = await dbm.core_db.integrations.find_one({"_id": ObjectId(integration.id)})
+
+    await user_client.assert_post(
+        f"/integrations/{integration.id}/token",
+        expected_status_code=200,
+        expected_json={"token": callee.IsA(str)}
+    )
+
+    # make sure the token has changed
+    await assert_collection(dbm.core_db.integrations, [integration.expected_document({
+        "token_hash": callee.Matching(lambda val: type(val) is str and val != mongo_document["token_hash"])
+    })])
+
+
+async def test_integration_regenerate_token_unauthorized(anon_client: HttpTestHelper, integration: PreparedIntegration):
+    await anon_client.assert_unauthorized_post(
+        f"/integrations/{integration.id}/token"
+    )
+
+
 async def test_integration_get(user_client: HttpTestHelper, integration: PreparedIntegration):
     await user_client.assert_get(
         f"/integrations/{integration.id}",
@@ -118,12 +136,24 @@ async def test_integration_get_unknown_id(user_client: HttpTestHelper):
     )
 
 
+async def test_integration_get_unauthorized(anon_client: HttpTestHelper, integration: PreparedIntegration):
+    await anon_client.assert_unauthorized_get(
+        f"/integrations/{integration.id}"
+    )
+
+
 async def test_integration_list(user_client: HttpTestHelper, dbm: DatabaseManager):
     integrations = [await PreparedIntegration.create(user_client, dbm) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
         user_client, "/integrations",
         [integration.expected_api_response() for integration in sorted(integrations, key=lambda r: r.data["name"])]
+    )
+
+
+async def test_integration_list_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_get(
+        "/integrations"
     )
 
 
@@ -140,4 +170,10 @@ async def test_integration_delete_unknown_id(user_client: HttpTestHelper):
     await user_client.assert_delete(
         f"/integrations/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
+    )
+
+
+async def test_integration_delete_unauthorized(anon_client: HttpTestHelper, integration: PreparedIntegration):
+    await anon_client.assert_unauthorized_delete(
+        f"/integrations/{integration.id}"
     )

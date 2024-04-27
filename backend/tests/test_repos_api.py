@@ -40,6 +40,12 @@ async def test_repo_create_already_used_name(client: HttpTestHelper, repo: Prepa
     )
 
 
+async def test_repo_create_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_post(
+        "/repos", json={"name": "myrepo"}
+    )
+
+
 async def test_repo_update(client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager):
     await client.assert_patch(
         f"/repos/{repo.id}", json={"name": "Repo Updated"},
@@ -63,6 +69,12 @@ async def test_repo_update_already_used_name(client: HttpTestHelper, dbm: Databa
     await client.assert_patch(
         f"/repos/{repo1.id}", json={"name": repo2.data["name"]},
         expected_status_code=409
+    )
+
+
+async def test_repo_update_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_patch(
+        f"/repos/{repo.id}", json={"name": "Repo Updated"}
     )
 
 
@@ -114,6 +126,12 @@ async def test_repo_get_unknown_id(client: HttpTestHelper, dbm: DatabaseManager)
     )
 
 
+async def test_repo_get_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}"
+    )
+
+
 async def test_repo_list(client: HttpTestHelper, dbm: DatabaseManager):
     repos = [await PreparedRepo.create(dbm) for _ in range(5)]
 
@@ -150,6 +168,12 @@ async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
     )
 
 
+async def test_repo_list_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_get(
+        "/repos"
+    )
+
+
 async def test_repo_delete(client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager):
     await client.assert_delete(
         f"/repos/{repo.id}",
@@ -163,4 +187,10 @@ async def test_repo_delete_unknown_id(client: HttpTestHelper, dbm: DatabaseManag
     await client.assert_delete(
         f"/repos/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
+    )
+
+
+async def test_repo_delete_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_delete(
+        f"/repos/{repo.id}"
     )
