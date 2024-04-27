@@ -31,7 +31,7 @@ async def create_integration(
 @router.patch(
     "/integrations/{integration_id}",
     summary="Update integration",
-    tags=["repos"],
+    tags=["integrations"],
     status_code=204
 )
 async def update_integration(

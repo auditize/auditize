@@ -32,7 +32,7 @@ async def create_user(
 @router.patch(
     "/users/{user_id}",
     summary="Update user",
-    tags=["repos"],
+    tags=["users"],
     status_code=204
 )
 async def update_user(
