@@ -9,7 +9,7 @@ from auditize.common.db import DatabaseManager
 from auditize.users.service import get_user, hash_user_password
 from auditize.users.models import User
 
-from .http import HttpTestHelper, get_cookie_by_name
+from .http import HttpTestHelper, get_cookie_by_name, create_http_client
 
 
 class PreparedUser:
@@ -39,7 +39,7 @@ class PreparedUser:
         return cls(resp.json()["id"], data, dbm)
 
     @staticmethod
-    def prepare_user_model(password="dummypassword") -> User:
+    def prepare_model(password="dummypassword") -> User:
         rand = str(uuid.uuid4())
         return User(
             first_name=f"John {rand}",
@@ -53,7 +53,7 @@ class PreparedUser:
         password = None
         if user is None:
             password = "dummypassword"
-            user = cls.prepare_user_model(password=password)
+            user = cls.prepare_model(password=password)
         result = await dbm.core_db.users.insert_one(user.model_dump())
         return cls(
             id=str(result.inserted_id),
@@ -86,6 +86,11 @@ class PreparedUser:
             "/users/login", json={"email": self.email, "password": self.password},
             expected_status_code=204
         )
+
+    async def client(self) -> HttpTestHelper:
+        client = create_http_client()
+        await self.log_in(client)
+        return client
 
     async def get_session_token(self, client: HttpTestHelper) -> str:
         resp = await self.log_in(client)

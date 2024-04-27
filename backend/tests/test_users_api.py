@@ -130,15 +130,15 @@ async def test_user_delete(client: HttpTestHelper, user: PreparedUser, dbm: Data
     await assert_collection(dbm.core_db.users, [])
 
 
-async def test_user_delete_unknown_id(client: HttpTestHelper):
-    await client.assert_delete(
+async def test_user_delete_unknown_id(anon_client: HttpTestHelper):
+    await anon_client.assert_delete(
         f"/users/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )
 
 
-async def test_user_signup(client: HttpTestHelper, user: PreparedUser):
-    await client.assert_get(
+async def test_user_signup(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_get(
         f"/users/signup/{await user.signup_token}",
         expected_status_code=200,
         expected_json={
@@ -149,23 +149,23 @@ async def test_user_signup(client: HttpTestHelper, user: PreparedUser):
     )
 
 
-async def test_user_signup_expired(client: HttpTestHelper, user: PreparedUser):
+async def test_user_signup_expired(anon_client: HttpTestHelper, user: PreparedUser):
     await user.expire_signup_token()
-    await client.assert_get(
+    await anon_client.assert_get(
         f"/users/signup/{await user.signup_token}",
         expected_status_code=404,
     )
 
 
-async def test_user_signup_unknown(client: HttpTestHelper):
-    await client.assert_get(
+async def test_user_signup_unknown(anon_client: HttpTestHelper):
+    await anon_client.assert_get(
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
         expected_status_code=404,
     )
 
 
-async def test_user_signup_set_password(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
-    await client.assert_post(
+async def test_user_signup_set_password(anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    await anon_client.assert_post(
         f"/users/signup/{await user.signup_token}", json={"password": "new_password"},
         expected_status_code=204
     )
@@ -178,25 +178,25 @@ async def test_user_signup_set_password(client: HttpTestHelper, user: PreparedUs
     )
 
 
-async def test_user_signup_set_password_token_expired(client: HttpTestHelper, user: PreparedUser):
+async def test_user_signup_set_password_token_expired(anon_client: HttpTestHelper, user: PreparedUser):
     await user.expire_signup_token()
-    await client.assert_post(
+    await anon_client.assert_post(
         f"/users/signup/{await user.signup_token}", json={"password": "new_password"},
         expected_status_code=404
     )
 
 
-async def test_user_signup_set_password_token_unknown(client: HttpTestHelper):
-    await client.assert_post(
+async def test_user_signup_set_password_token_unknown(anon_client: HttpTestHelper):
+    await anon_client.assert_post(
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}", json={"password": "new_password"},
         expected_status_code=404
     )
 
 
-async def test_user_log_in(client: HttpTestHelper, dbm: DatabaseManager):
+async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
     now = int(time.time())
-    resp = await client.assert_post(
+    resp = await anon_client.assert_post(
         "/users/login", json={"email": user.email, "password": user.password},
         expected_status_code=204
     )
