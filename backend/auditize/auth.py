@@ -5,8 +5,10 @@ from fastapi import Depends, Request
 
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import UnknownModelException, AuthenticationFailure
+from auditize.integrations.models import Integration
 from auditize.integrations.service import get_integration_by_token
 from auditize.users.service import get_user_by_session_token
+from auditize.users.models import User
 
 _BEARER_PREFIX = "Bearer "
 
@@ -14,6 +16,16 @@ _BEARER_PREFIX = "Bearer "
 @dataclasses.dataclass
 class Authenticated:
     name: str
+    user: User = None
+    integration: Integration = None
+
+    @classmethod
+    def from_user(cls, user: User):
+        return cls(name=user.email, user=user)
+
+    @classmethod
+    def from_integration(cls, integration: Integration):
+        return cls(name=integration.name, integration=integration)
 
 
 def _get_authorization_bearer(request: Request) -> str:
@@ -36,7 +48,7 @@ async def authenticate_integration(dbm: DatabaseManager, request: Request) -> Au
     except UnknownModelException:
         raise AuthenticationFailure("Invalid integration token")
 
-    return Authenticated(name=integration.name)
+    return Authenticated.from_integration(integration)
 
 
 def looks_like_integration_auth(request: Request) -> bool:
@@ -53,7 +65,7 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
 
     user = await get_user_by_session_token(dbm, session_token)
 
-    return Authenticated(name=user.email)
+    return Authenticated.from_user(user)
 
 
 def looks_like_user_auth(request: Request) -> bool:

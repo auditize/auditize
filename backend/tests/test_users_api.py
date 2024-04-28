@@ -245,3 +245,34 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
         "/users",
         expected_status_code=200
     )
+
+
+async def test_get_user_me(dbm: DatabaseManager):
+    user = await PreparedUser.inject_into_db(dbm)
+    client = None
+    try:
+        client = await user.client()
+        await client.assert_get(
+            "/users/me",
+            expected_status_code=200,
+            expected_json={
+                "first_name": user.data["first_name"],
+                "last_name": user.data["last_name"],
+                "email": user.data["email"]
+            }
+        )
+    finally:
+        if client:
+            await client.aclose()
+
+
+async def test_get_user_me_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_get(
+        "/users/me"
+    )
+
+
+async def test_get_user_me_as_integration(integration_client: HttpTestHelper):
+    await integration_client.assert_unauthorized_get(
+        "/users/me"
+    )

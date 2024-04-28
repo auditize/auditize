@@ -5,11 +5,12 @@ from fastapi import APIRouter, Depends, Response
 from auditize.users.api_models import (
     UserCreationRequest, UserCreationResponse, UserUpdateRequest, UserReadingResponse,
     UserListResponse, UserSignupInfoResponse, UserSignupSetPasswordRequest,
-    UserAuthenticationRequest
+    UserAuthenticationRequest, UserMeResponse
 )
 from auditize.users import service
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.auth import Authenticated, get_authenticated
+from auditize.common.exceptions import AuthenticationFailure
 
 router = APIRouter()
 
@@ -45,12 +46,27 @@ async def update_user(
 
 
 @router.get(
+    "/users/me",
+    summary="Get authenticated user",
+    tags=["users"],
+    response_model=UserMeResponse
+)
+async def get_user_me(
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)]
+) -> UserMeResponse:
+    if not authenticated.user:
+        # FIXME: raise a 403 instead
+        raise AuthenticationFailure("This endpoint requires user authentication")
+    return UserMeResponse.from_db_model(authenticated.user)
+
+
+@router.get(
     "/users/{user_id}",
     summary="Get user",
     tags=["users"],
     response_model=UserReadingResponse
 )
-async def get_repo(
+async def get_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     user_id: str
