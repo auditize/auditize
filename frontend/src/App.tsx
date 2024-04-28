@@ -10,6 +10,7 @@ import { Signup } from '@/features/signup';
 import {
   QueryClient,
   QueryClientProvider,
+  useQuery,
 } from '@tanstack/react-query'
 import {
   createBrowserRouter,
@@ -18,7 +19,8 @@ import {
   Outlet,
 } from "react-router-dom";
 import { LogInForm } from '@/features/log-in';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getLoggedInUser } from './features/log-in/api';
 
 function IfLoggedIn({isLoggedIn, children} : {isLoggedIn: boolean, children: React.ReactNode}) {
   return isLoggedIn ? <>{children}</> : null;
@@ -63,16 +65,20 @@ function Main({isLoggedIn} : {isLoggedIn: boolean}) {
   );
 }
 
-export default function App() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnWindowFocus: false,
-        retry: false
-      }
-    }
+function AppRoutes() {
+  const { data: currentUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: () => getLoggedInUser(),
+    staleTime: Infinity
   });
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (currentUser && currentUser.email) {
+      setIsLoggedIn(true);
+    }
+  }, [currentUser]);
 
   const router = createBrowserRouter([
     isLoggedIn ?
@@ -98,7 +104,10 @@ export default function App() {
           }
         ],
       } :
-      {},
+      {
+        path: "*",
+        element: <Main isLoggedIn={isLoggedIn}/>,
+      },
     {
       path: "/signup/:token",
       element: <Signup/>
@@ -112,9 +121,24 @@ export default function App() {
   ]);
 
   return (
+    <RouterProvider router={router}/>
+  );
+}
+
+export default function App() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: false
+      }
+    }
+  });
+
+  return (
     <MantineProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router}/>
+        <AppRoutes />
       </QueryClientProvider>
     </MantineProvider>
   );

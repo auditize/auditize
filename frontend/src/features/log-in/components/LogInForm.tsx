@@ -1,7 +1,7 @@
 import { Center, Stack, TextInput, Button, Title, Box } from "@mantine/core";
 import { useForm, isEmail } from '@mantine/form';
 import { useMutation } from "@tanstack/react-query";
-import { log_in } from "../api";
+import { logIn } from "../api";
 import { useState } from "react";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +21,7 @@ export function LogInForm({onLogged}: {onLogged: () => void}) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const mutation = useMutation({
-    mutationFn: (values: {email: string, password: string}) => log_in(values.email, values.password),
+    mutationFn: (values: {email: string, password: string}) => logIn(values.email, values.password),
     onSuccess: () => {
       onLogged();
       navigate('/logs');
