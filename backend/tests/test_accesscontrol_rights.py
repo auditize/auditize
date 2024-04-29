@@ -1,5 +1,5 @@
 from auditize.accesscontrol.models import AccessRights
-from auditize.accesscontrol.utils import normalize_access_rights
+from auditize.accesscontrol.rights import normalize_access_rights
 
 
 def _test_access_rights_normalization(actual: dict, expected: dict):

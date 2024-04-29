@@ -6,17 +6,17 @@ class ReadWritePermissions(BaseModel):
     write: bool = Field(default=False)
 
 
-class ManageableEntities(BaseModel):
+class EntitiesRights(BaseModel):
     repos: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
     users: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
     integrations: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
 
 
-class LogPermissions(ReadWritePermissions):
+class LogsRights(ReadWritePermissions):
     repos: dict[str, ReadWritePermissions] = Field(default_factory=dict)
 
 
 class AccessRights(BaseModel):
     is_superadmin: bool = False
-    logs: LogPermissions = Field(default_factory=LogPermissions)
-    entities: ManageableEntities = Field(default_factory=ManageableEntities)
+    logs: LogsRights = Field(default_factory=LogsRights)
+    entities: EntitiesRights = Field(default_factory=EntitiesRights)
