@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 
 
 class ReadWritePermissions(BaseModel):
-    read: bool = Field(default=False)
-    write: bool = Field(default=False)
+    read: bool = Field(default=None)
+    write: bool = Field(default=None)
 
 
 class EntitiesRights(BaseModel):

@@ -2,17 +2,28 @@ from auditize.accesscontrol.models import AccessRights
 from auditize.accesscontrol.rights import normalize_access_rights
 
 
-def _test_access_rights_normalization(actual: dict, expected: dict):
-    actual = AccessRights.model_validate(actual)
-    expected = AccessRights.model_validate(expected)
+def _test_access_rights_normalization(input: dict, expected: dict):
+    input = AccessRights.model_validate(input)
 
-    assert normalize_access_rights(actual).model_dump() == expected.model_dump()
+    assert normalize_access_rights(input).model_dump() == expected
 
 
 def test_normalization_superadmin_only():
     _test_access_rights_normalization(
         {"is_superadmin": True},
-        {"is_superadmin": True},
+        {
+            "is_superadmin": True,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": {},
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
     )
 
 
@@ -34,7 +45,19 @@ def test_normalization_superadmin_with_explicit_permissions():
                 },
             },
         },
-        {"is_superadmin": True},
+        {
+            "is_superadmin": True,
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": {},
+            },
+        },
     )
 
 
@@ -51,7 +74,19 @@ def test_normalization_superadmin_with_log_permissions():
                 },
             },
         },
-        {"is_superadmin": True},
+        {
+            "is_superadmin": True,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": {},
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
     )
 
 
@@ -69,6 +104,7 @@ def test_normalization_read_logs_on_all_repos():
             },
         },
         {
+            "is_superadmin": False,
             "logs": {
                 "read": True,
                 "write": False,
@@ -76,6 +112,11 @@ def test_normalization_read_logs_on_all_repos():
                     "repo1": {"read": False, "write": True},
                     "repo2": {"read": False, "write": True}
                 },
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
             },
         },
     )
@@ -95,6 +136,7 @@ def test_normalization_write_logs_on_all_repos():
             },
         },
         {
+            "is_superadmin": False,
             "logs": {
                 "read": False,
                 "write": True,
@@ -102,6 +144,11 @@ def test_normalization_write_logs_on_all_repos():
                     "repo1": {"read": True, "write": False},
                     "repo3": {"read": True, "write": False},
                 },
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
             },
         },
     )
@@ -121,10 +168,16 @@ def test_normalization_read_and_write_logs_on_all_repos():
             },
         },
         {
+            "is_superadmin": False,
             "logs": {
                 "read": True,
                 "write": True,
                 "repos": {},
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
             },
         },
     )

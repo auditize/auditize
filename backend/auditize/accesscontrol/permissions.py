@@ -59,9 +59,9 @@ class EntityPermissionAssertion:
             raise Exception(f"Invalid entity type: {self.entity_type}")  # pragma: no cover, cannot happen
 
         if self.permission_type == "read":
-            return entity_perms.read
+            return bool(entity_perms.read)
         if self.permission_type == "write":
-            return entity_perms.write
+            return bool(entity_perms.write)
 
         raise Exception(f"Invalid entity permission type: {self.permission_type}")  # pragma: no cover, cannot happen
 
