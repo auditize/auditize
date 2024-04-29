@@ -5,8 +5,10 @@ from bson import ObjectId
 import callee
 
 from auditize.common.db import DatabaseManager
+from auditize.integrations.models import Integration
+from auditize.integrations.service import create_integration
 
-from .http import HttpTestHelper
+from .http import HttpTestHelper, create_http_client
 
 
 class PreparedIntegration:
@@ -32,6 +34,26 @@ class PreparedIntegration:
         )
         return cls(resp.json()["id"], resp.json()["token"], data, dbm)
 
+    @staticmethod
+    def prepare_model() -> Integration:
+        return Integration(
+            name=f"Integration {uuid.uuid4()}"
+        )
+
+    @classmethod
+    async def inject_into_db(cls, dbm: DatabaseManager, integration: Integration = None) -> "PreparedIntegration":
+        if integration is None:
+            integration = cls.prepare_model()
+        integration_id, token = await create_integration(dbm, integration)
+        return cls(
+            id=str(integration_id),
+            token=token,
+            data={
+                "name": integration.name,
+            },
+            dbm=dbm
+        )
+
     def expected_document(self, extra=None):
         return {
             "_id": ObjectId(self.id),
@@ -47,3 +69,8 @@ class PreparedIntegration:
             "name": self.data["name"],
             **(extra or {})
         }
+
+    def client(self):
+        c = create_http_client()
+        c.headers["Authorization"] = f"Bearer {self.token}"
+        return c

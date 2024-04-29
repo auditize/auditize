@@ -6,8 +6,8 @@ from threading import Lock
 @dataclasses.dataclass
 class Config:
     base_url: str
-    user_token_signing_key: str
-    user_token_lifetime: int
+    user_session_token_signing_key: str
+    user_session_token_lifetime: int
     smtp_server: str
     smtp_port: int
     smtp_username: str
@@ -34,8 +34,8 @@ class Config:
         try:
             return cls(
                 base_url=optional("AUDITIZE_BASE_URL", "http://localhost:8000"),
-                user_token_signing_key=required("AUDITIZE_USER_TOKEN_SIGNING_KEY"),
-                user_token_lifetime=optional("AUDITIZE_USER_TOKEN_LIFETIME", 60 * 60 * 12, cast=int),
+                user_session_token_signing_key=required("AUDITIZE_USER_SESSION_TOKEN_SIGNING_KEY"),
+                user_session_token_lifetime=optional("AUDITIZE_USER_SESSION_TOKEN_LIFETIME", 60 * 60 * 12, cast=int),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
                 smtp_port=optional("AUDITIZE_SMTP_PORT", cast=int),
                 smtp_username=optional("AUDITIZE_SMTP_USERNAME"),

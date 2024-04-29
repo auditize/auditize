@@ -1,4 +1,7 @@
+from functools import partialmethod
 from http.cookiejar import Cookie
+
+from starlette.requests import Request
 
 from httpx import AsyncClient, ASGITransport, Response
 from icecream import ic
@@ -9,13 +12,15 @@ from auditize.main import app
 class HttpTestHelper(AsyncClient):
     async def assert_request(
         self,
-        method: str, path, *, params=None, json=None, files=None, data=None,
+        method: str, path, *, params=None, headers=None, json=None, files=None, data=None,
         expected_status_code=200, expected_json=None
     ) -> Response:
-        ic(method, path)
-        ic(json, files, data)
-        resp = await self.request(method, path, params=params, json=json, files=files, data=data)
-        ic(resp.text)
+        ic("REQUEST", id(self), method, path, {**self.headers, **(headers or {})}, params, json, files, data)
+        resp = await self.request(
+            method, path,
+            headers=headers, params=params, json=json, files=files, data=data
+        )
+        ic("RESPONSE", id(self), resp.status_code, resp.headers, resp.text)
         if expected_status_code is not None:
             assert resp.status_code == expected_status_code
         if expected_json is not None:
@@ -33,6 +38,8 @@ class HttpTestHelper(AsyncClient):
             expected_status_code=expected_status_code, expected_json=expected_json
         )
 
+    assert_unauthorized_post = partialmethod(assert_post, expected_status_code=401)
+
     async def assert_patch(
         self,
         path, *, json=None, files=None, data=None,
@@ -44,6 +51,8 @@ class HttpTestHelper(AsyncClient):
             expected_status_code=expected_status_code, expected_json=expected_json
         )
 
+    assert_unauthorized_patch = partialmethod(assert_patch, expected_status_code=401)
+
     async def assert_delete(
         self,
         path, *,
@@ -54,19 +63,24 @@ class HttpTestHelper(AsyncClient):
             expected_status_code=expected_status_code, expected_json=expected_json
         )
 
+    assert_unauthorized_delete = partialmethod(assert_delete, expected_status_code=401)
+
     async def assert_get(
         self,
-        path, *, params=None,
+        path, *, params=None, headers=None,
         expected_status_code=200, expected_json=None
     ) -> Response:
         return await self.assert_request(
-            "GET", path, params=params,
+            "GET", path,
+            params=params, headers=headers,
             expected_status_code=expected_status_code, expected_json=expected_json
         )
 
+    assert_unauthorized_get = partialmethod(assert_get, expected_status_code=401)
+
 
 def create_http_client():
-    return HttpTestHelper(transport=ASGITransport(app=app), base_url="http://localhost")
+    return HttpTestHelper(transport=ASGITransport(app=app), base_url="https://localhost")
 
 
 def get_cookie_by_name(resp: Response, name) -> Cookie:
@@ -74,3 +88,25 @@ def get_cookie_by_name(resp: Response, name) -> Cookie:
         if cookie.name == name:
             return cookie
     raise LookupError(f"Cookie {name} not found")
+
+
+# Some useful links about ASGI scope and Starlette:
+# - https://www.encode.io/articles/asgi-http
+# - https://www.encode.io/articles/working-with-http-requests-in-asgi
+
+def make_http_request(*, headers: dict = None) -> Request:
+    if headers is None:
+        headers = {}
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "scheme": "http",
+        "server": ("localhost", 8000),
+        "path": "/",
+        "headers": [
+            [key.lower().encode(), value.encode()] for key, value in headers.items()
+        ],
+    }
+
+    return Request(scope)

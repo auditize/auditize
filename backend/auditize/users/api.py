@@ -5,10 +5,12 @@ from fastapi import APIRouter, Depends, Response
 from auditize.users.api_models import (
     UserCreationRequest, UserCreationResponse, UserUpdateRequest, UserReadingResponse,
     UserListResponse, UserSignupInfoResponse, UserSignupSetPasswordRequest,
-    UserAuthenticationRequest
+    UserAuthenticationRequest, UserMeResponse
 )
 from auditize.users import service
 from auditize.common.db import DatabaseManager, get_dbm
+from auditize.auth import Authenticated, get_authenticated
+from auditize.common.exceptions import AuthenticationFailure
 
 router = APIRouter()
 
@@ -20,7 +22,9 @@ router = APIRouter()
     status_code=201
 )
 async def create_user(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], user: UserCreationRequest
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    user: UserCreationRequest
 ) -> UserCreationResponse:
     user_id = await service.create_user(dbm, user.to_db_model())
     return UserCreationResponse(id=user_id)
@@ -29,15 +33,31 @@ async def create_user(
 @router.patch(
     "/users/{user_id}",
     summary="Update user",
-    tags=["repos"],
+    tags=["users"],
     status_code=204
 )
 async def update_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     user_id: str, user: UserUpdateRequest
 ):
     await service.update_user(dbm, user_id, user.to_db_model())
     return None
+
+
+@router.get(
+    "/users/me",
+    summary="Get authenticated user",
+    tags=["users"],
+    response_model=UserMeResponse
+)
+async def get_user_me(
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)]
+) -> UserMeResponse:
+    if not authenticated.user:
+        # FIXME: raise a 403 instead
+        raise AuthenticationFailure("This endpoint requires user authentication")
+    return UserMeResponse.from_db_model(authenticated.user)
 
 
 @router.get(
@@ -46,8 +66,9 @@ async def update_user(
     tags=["users"],
     response_model=UserReadingResponse
 )
-async def get_repo(
+async def get_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     user_id: str
 ) -> UserReadingResponse:
     user = await service.get_user(dbm, user_id)
@@ -62,6 +83,7 @@ async def get_repo(
 )
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     page: int = 1, page_size: int = 10
 ) -> UserListResponse:
     users, page_info = await service.get_users(dbm, page, page_size)
@@ -75,7 +97,9 @@ async def list_users(
     status_code=204
 )
 async def delete_user(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], user_id: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    user_id: str
 ):
     await service.delete_user(dbm, user_id)
 
@@ -87,7 +111,8 @@ async def delete_user(
     response_model=UserSignupInfoResponse
 )
 async def get_user_signup_info(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], token: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    token: str
 ) -> UserSignupInfoResponse:
     user = await service.get_user_by_signup_token(dbm, token)
     return UserSignupInfoResponse.from_db_model(user)
@@ -100,7 +125,8 @@ async def get_user_signup_info(
     status_code=204
 )
 async def set_user_password(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], token: str,
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    token: str,
     request: UserSignupSetPasswordRequest
 ):
     await service.update_user_password_by_signup_token(dbm, token, request.password)
@@ -117,5 +143,5 @@ async def login_user(
     request: UserAuthenticationRequest,
     response: Response
 ):
-    token, expires_at = await service.user_log_in(dbm, request.email, request.password)
-    response.set_cookie("token", token, httponly=True, samesite="strict", secure=True, expires=expires_at)
+    token, expires_at = await service.authenticate_user(dbm, request.email, request.password)
+    response.set_cookie("session", token, httponly=True, samesite="strict", secure=True, expires=expires_at)

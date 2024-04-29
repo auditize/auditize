@@ -28,6 +28,12 @@ async def test_create_log_minimal_fields(client: HttpTestHelper, repo: PreparedR
     )
 
 
+async def test_create_log_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_post(
+        f"/repos/{repo.id}/logs", json=PreparedLog.prepare_data()
+    )
+
+
 async def test_create_log_all_fields(client: HttpTestHelper, repo: PreparedRepo):
     data = PreparedLog.prepare_data({
         "source": {
@@ -146,6 +152,15 @@ async def test_add_attachment_binary_and_all_fields(client: HttpTestHelper, repo
     })
 
 
+async def test_add_attachment_unauthorized(client: HttpTestHelper, anon_client: HttpTestHelper, repo: PreparedRepo):
+    log = await repo.create_log(client)
+    await anon_client.assert_unauthorized_post(
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
+        files={"file": ("test.txt", "test data")},
+        data={"type": "text"}
+    )
+
+
 async def test_get_log_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = await repo.create_log(client)
 
@@ -216,6 +231,13 @@ async def test_get_log_unknown_repo(client: HttpTestHelper):
     )
 
 
+async def test_get_log_unauthorized(client: HttpTestHelper, anon_client: HttpTestHelper, repo: PreparedRepo):
+    log = await repo.create_log(client)
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/{log.id}"
+    )
+
+
 async def test_get_log_attachment_text_and_minimal_fields(client: HttpTestHelper, repo: PreparedRepo):
     log = await repo.create_log(client)
 
@@ -262,6 +284,21 @@ async def test_get_log_attachment_not_found_attachment_idx(client: HttpTestHelpe
     await client.assert_get(f"/repos/{repo.id}/logs/{log.id}/attachments/0", expected_status_code=404)
 
 
+async def test_get_log_attachment_unauthorized(client: HttpTestHelper, anon_client: HttpTestHelper, repo: PreparedRepo):
+    log = await repo.create_log(client)
+
+    await client.assert_post(
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
+        files={"file": ("file.txt", "test data")},
+        data={"type": "text file"},
+        expected_status_code=204
+    )
+
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/{log.id}/attachments/0"
+    )
+
+
 async def test_get_logs(client: HttpTestHelper, repo: PreparedRepo):
     log1 = await repo.create_log(client)
     log2 = await repo.create_log(client)
@@ -282,6 +319,10 @@ async def test_get_logs(client: HttpTestHelper, repo: PreparedRepo):
 
 async def test_get_logs_unknown_repo(client: HttpTestHelper, repo: PreparedRepo):
     await client.assert_get(f"/repos/{UNKNOWN_OBJECT_ID}/logs", expected_status_code=404)
+
+
+async def test_get_logs_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(f"/repos/{repo.id}/logs")
 
 
 async def test_get_logs_limit(client: HttpTestHelper, repo: PreparedRepo):
@@ -609,6 +650,12 @@ async def test_get_log_event_categories_unknown_repo(client: HttpTestHelper, rep
     )
 
 
+async def test_get_log_event_categories_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/event-categories"
+    )
+
+
 async def test_get_log_event_categories_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/event-categories")
 
@@ -643,6 +690,12 @@ async def test_get_log_event_names_empty(client: HttpTestHelper, repo: PreparedR
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/events")
 
 
+async def test_get_log_event_names_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/events"
+    )
+
+
 async def test_get_log_actor_types(client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_actor(repo.db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}"))
@@ -654,6 +707,12 @@ async def test_get_log_actor_types(client: HttpTestHelper, repo: PreparedRepo):
 
 async def test_get_log_actor_types_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/actor-types")
+
+
+async def test_get_log_actor_types_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/actor-types"
+    )
 
 
 async def test_get_log_resource_types(client: HttpTestHelper, repo: PreparedRepo):
@@ -669,6 +728,12 @@ async def test_get_log_resource_types_empty(client: HttpTestHelper, repo: Prepar
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/resource-types")
 
 
+async def test_get_log_resource_types_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/resource-types"
+    )
+
+
 async def test_get_log_tag_categories(client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):
         await consolidate_log_tags(repo.db, [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")])
@@ -681,6 +746,12 @@ async def test_get_log_tag_categories(client: HttpTestHelper, repo: PreparedRepo
 
 async def test_get_log_tag_categories_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/tag-categories")
+
+
+async def test_get_log_tag_categories_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/tag-categories"
+    )
 
 
 async def test_get_log_nodes_without_filters(client: HttpTestHelper, repo: PreparedRepo):
@@ -726,6 +797,12 @@ async def test_get_log_nodes_empty(client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(client, f"/repos/{repo.id}/logs/nodes")
 
 
+async def test_get_log_nodes_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/nodes"
+    )
+
+
 async def test_get_log_node(client: HttpTestHelper, repo: PreparedRepo):
     await consolidate_log_node_path(
         repo.db, [Log.Node(id="customer", name="Customer"), Log.Node(id="entity", name="Entity")]
@@ -749,4 +826,10 @@ async def test_get_log_node(client: HttpTestHelper, repo: PreparedRepo):
             "parent_node_id": "customer",
             "has_children": False
         }
+    )
+
+
+async def test_get_log_node_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
+    await anon_client.assert_unauthorized_get(
+        f"/repos/{repo.id}/logs/nodes/some_value"
     )

@@ -62,3 +62,13 @@ class UserSignupSetPasswordRequest(BaseModel):
 class UserAuthenticationRequest(BaseModel):
     email: str = Field(description="The user email")
     password: str = Field(description="The user password")
+
+
+class UserMeResponse(BaseModel):
+    first_name: str = Field(description="The authenticated user first name")
+    last_name: str = Field(description="The authenticated user last name")
+    email: str = Field(description="The authenticated user email")
+
+    @classmethod
+    def from_db_model(cls, user: User):
+        return cls.model_validate(user.model_dump())

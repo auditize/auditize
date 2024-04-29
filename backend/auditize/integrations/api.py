@@ -8,6 +8,7 @@ from auditize.integrations.api_models import (
 )
 from auditize.integrations import service
 from auditize.common.db import DatabaseManager, get_dbm
+from auditize.auth import Authenticated, get_authenticated
 
 router = APIRouter()
 
@@ -19,7 +20,9 @@ router = APIRouter()
     status_code=201
 )
 async def create_integration(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], integration: IntegrationCreationRequest
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    integration: IntegrationCreationRequest
 ) -> IntegrationCreationResponse:
     integration_id, token = await service.create_integration(dbm, integration.to_db_model())
     return IntegrationCreationResponse(id=integration_id, token=token)
@@ -28,11 +31,12 @@ async def create_integration(
 @router.patch(
     "/integrations/{integration_id}",
     summary="Update integration",
-    tags=["repos"],
+    tags=["integrations"],
     status_code=204
 )
 async def update_integration(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     integration_id: str, integration: IntegrationUpdateRequest
 ):
     await service.update_integration(dbm, integration_id, integration.to_db_model())
@@ -46,6 +50,7 @@ async def update_integration(
 )
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     integration_id: str
 ) -> IntegrationReadingResponse:
     integration = await service.get_integration(dbm, integration_id)
@@ -60,6 +65,7 @@ async def get_repo(
 )
 async def list_integrations(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     page: int = 1, page_size: int = 10
 ) -> IntegrationListResponse:
     integrations, page_info = await service.get_integrations(dbm, page, page_size)
@@ -73,7 +79,9 @@ async def list_integrations(
     status_code=204
 )
 async def delete_integration(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], integration_id: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    integration_id: str
 ):
     await service.delete_integration(dbm, integration_id)
 
@@ -85,7 +93,9 @@ async def delete_integration(
     status_code=200
 )
 async def regenerate_integration_token(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], integration_id: str,
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    integration_id: str,
 ):
     token = await service.regenerate_integration_token(dbm, integration_id)
     return IntegrationTokenGenerationResponse(token=token)

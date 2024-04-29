@@ -1,7 +1,7 @@
 import secrets
 from bson import ObjectId
 
-from passlib.context import CryptContext
+import hashlib
 
 from auditize.integrations.models import Integration, IntegrationUpdate
 from auditize.common.db import DatabaseManager
@@ -10,12 +10,14 @@ from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
 
 
-token_context = CryptContext(schemes=["bcrypt"])
+def _hash_token(token: str) -> str:
+    # Generate a non-salted hash of the token, so it can be looked up afterward
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def _generate_token() -> tuple[str, str]:
     value = "intgr-" + secrets.token_urlsafe(32)
-    return value, token_context.hash(value)
+    return value, _hash_token(value)
 
 
 async def create_integration(dbm: DatabaseManager, integration: Integration) -> tuple[ObjectId, str]:
@@ -49,6 +51,14 @@ async def regenerate_integration_token(dbm: DatabaseManager, integration_id: Obj
 
 async def get_integration(dbm: DatabaseManager, integration_id: ObjectId | str) -> Integration:
     result = await dbm.core_db.integrations.find_one({"_id": ObjectId(integration_id)})
+    if result is None:
+        raise UnknownModelException()
+
+    return Integration.model_validate(result)
+
+
+async def get_integration_by_token(dbm: DatabaseManager, token: str) -> Integration:
+    result = await dbm.core_db.integrations.find_one({"token_hash": _hash_token(token)})
     if result is None:
         raise UnknownModelException()
 

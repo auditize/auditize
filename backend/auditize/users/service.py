@@ -1,9 +1,9 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 import secrets
 from bson import ObjectId
 
 from passlib.context import CryptContext
-from jose import JWTError, jwt
+from jose import JWTError, ExpiredSignatureError, jwt
 
 from auditize.users.models import User, UserUpdate, SignupToken
 from auditize.common.db import DatabaseManager
@@ -12,9 +12,10 @@ from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.config import get_config
 from auditize.common.email import send_email
+from auditize.common.utils import now
 
-DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
-
+_DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
+_JWT_SUB_PREFIX = "user_email:"
 
 password_context = CryptContext(schemes=["bcrypt"])
 
@@ -22,7 +23,7 @@ password_context = CryptContext(schemes=["bcrypt"])
 def _generate_signup_token() -> SignupToken:
     return SignupToken(
         token=secrets.token_hex(32),
-        expires_at=datetime.now(timezone.utc) + timedelta(seconds=DEFAULT_SIGNUP_TOKEN_LIFETIME)
+        expires_at=now() + timedelta(seconds=_DEFAULT_SIGNUP_TOKEN_LIFETIME)
     )
 
 
@@ -72,7 +73,7 @@ async def get_user_by_email(dbm: DatabaseManager, email: str) -> User:
 def _build_signup_token_filter(token: str):
     return {
         "signup_token.token": token,
-        "signup_token.expires_at": {"$gt": datetime.now(timezone.utc)}
+        "signup_token.expires_at": {"$gt": now()}
     }
 
 
@@ -82,6 +83,31 @@ async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
         raise UnknownModelException()
 
     return User.model_validate(result)
+
+
+async def get_user_by_session_token(dbm: DatabaseManager, token: str) -> User:
+    # Load JWT token
+    try:
+        payload = jwt.decode(token, get_config().user_session_token_signing_key, algorithms=["HS256"])
+    except ExpiredSignatureError:
+        raise AuthenticationFailure("JWT token expired")
+    except JWTError:
+        raise AuthenticationFailure("Cannot decode JWT token")
+
+    # Get user email from token
+    try:
+        sub = payload["sub"]
+    except KeyError:
+        raise AuthenticationFailure("Missing 'sub' field in JWT token")
+    if not sub.startswith(_JWT_SUB_PREFIX):
+        raise AuthenticationFailure("Invalid 'sub' field in JWT token")
+    email = sub[len(_JWT_SUB_PREFIX):]
+
+    # Get user by email
+    try:
+        return await get_user_by_email(dbm, email)
+    except UnknownModelException:
+        raise AuthenticationFailure("User is no longer valid")
 
 
 # NB: this function is let public to be used in tests and to make sure that passwords
@@ -126,19 +152,23 @@ async def _authenticate_user(dbm: DatabaseManager, email: str, password: str) ->
     return user
 
 
-def _generate_user_token(user: User) -> tuple[str, datetime]:
+# NB: make this function public so can can test valid JWT tokens but signed with another key
+def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
+    expires_at = now() + timedelta(seconds=get_config().user_session_token_lifetime)
+    payload = {
+        "sub": f"{_JWT_SUB_PREFIX}{user_email}",
+        "exp": expires_at
+    }
+    return payload, expires_at
+
+
+def _generate_session_token(user: User) -> tuple[str, datetime]:
     config = get_config()
-    expires_at = datetime.now(timezone.utc) + timedelta(seconds=config.user_token_lifetime)
-    token = jwt.encode(
-        {
-            "sub": f"user_email:{user.email}",
-            "exp": expires_at
-        },
-        config.user_token_signing_key, algorithm="HS256"
-    )
+    payload, expires_at = generate_session_token_payload(user.email)
+    token = jwt.encode(payload, config.user_session_token_signing_key, algorithm="HS256")
     return token, expires_at
 
 
-async def user_log_in(dbm: DatabaseManager, email: str, password: str) -> tuple[str, datetime]:
+async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> tuple[str, datetime]:
     user = await _authenticate_user(dbm, email, password)
-    return _generate_user_token(user)
+    return _generate_session_token(user)

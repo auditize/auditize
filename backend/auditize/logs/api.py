@@ -14,6 +14,7 @@ from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.api import COMMON_RESPONSES
 from auditize.common.utils import validate_datetime
 from auditize.common.pagination.page.api_models import PagePaginationParams
+from auditize.auth import Authenticated, get_authenticated
 
 router = APIRouter()
 
@@ -25,9 +26,10 @@ router = APIRouter()
     tags=["logs"]
 )
 async def get_log_event_names(
-        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-        repo_id: str,
-        page_params: Annotated[PagePaginationParams, Depends()], category: str = None
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()], category: str = None
 ) -> LogEventNameListResponse:
     events, pagination = await service.get_log_events(
         dbm, repo_id, event_category=category, page=page_params.page, page_size=page_params.page_size,
@@ -42,9 +44,10 @@ async def get_log_event_names(
     tags=["logs"]
 )
 async def get_log_event_categories(
-        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-        repo_id: str,
-        page_params: Annotated[PagePaginationParams, Depends()]
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogEventCategoryListResponse:
     categories, pagination = await service.get_log_event_categories(
         dbm, repo_id,
@@ -60,9 +63,10 @@ async def get_log_event_categories(
     tags=["logs"]
 )
 async def get_log_actor_types(
-        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-        repo_id: str,
-        page_params: Annotated[PagePaginationParams, Depends()]
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogActorTypeListResponse:
     actor_types, pagination = await service.get_log_actor_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
@@ -77,9 +81,10 @@ async def get_log_actor_types(
     tags=["logs"]
 )
 async def get_log_resource_types(
-        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-        repo_id: str,
-        page_params: Annotated[PagePaginationParams, Depends()]
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogResourceTypeListResponse:
     resource_types, pagination = await service.get_log_resource_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
@@ -94,9 +99,10 @@ async def get_log_resource_types(
     tags=["logs"]
 )
 async def get_log_tag_categories(
-        dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-        repo_id: str,
-        page_params: Annotated[PagePaginationParams, Depends()]
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()]
 ) -> LogTagCategoryListResponse:
     tag_categories, pagination = await service.get_log_tag_categories(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
@@ -112,6 +118,7 @@ async def get_log_tag_categories(
 )
 async def get_log_nodes(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     repo_id: str,
     root: bool = False,
     parent_node_id: str = None,
@@ -141,6 +148,7 @@ async def get_log_nodes(
 )
 async def get_log_node(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     repo_id: str,
     node_id: Annotated[str, Path(title="Node ID")]
 ):
@@ -157,6 +165,7 @@ async def get_log_node(
 )
 async def create_log(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     repo_id: str,
     log_req: LogCreationRequest
 ) -> LogCreationResponse:
@@ -174,6 +183,7 @@ async def create_log(
 )
 async def add_attachment(
         dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        authenticated: Annotated[Authenticated, Depends(get_authenticated)],
         repo_id: str,
         log_id: Annotated[str, Path(
             title="Log ID",
@@ -223,6 +233,7 @@ async def add_attachment(
 )
 async def get_log(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     repo_id: str,
     log_id: Annotated[str, Path(title="Log ID")]
 ) -> LogReadingResponse:
@@ -238,6 +249,7 @@ async def get_log(
 )
 async def get_log_attachment(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     repo_id: str,
     log_id: str = Path(title="Log ID"),
     attachment_idx: int = Path(
@@ -261,6 +273,7 @@ async def get_log_attachment(
 )
 async def get_logs(
         dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+        authenticated: Annotated[Authenticated, Depends(get_authenticated)],
         repo_id: str,
         event_name: str = None,
         event_category: str = None,

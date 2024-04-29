@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from auditize.common.db import DatabaseManager
+
 pytest.register_assert_rewrite("helpers")
 from helpers.database import setup_test_dbm, teardown_test_dbm
 from helpers.http import create_http_client
@@ -19,7 +21,7 @@ def setup_env():
 
     # set the environment variables (at least the required ones)
     os.environ.update({
-        "AUDITIZE_USER_TOKEN_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73"
+        "AUDITIZE_USER_SESSION_TOKEN_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73"
     })
 
 
@@ -29,8 +31,29 @@ def anyio_backend():
     return 'asyncio'
 
 
-@pytest.fixture(scope="session")
-async def client():
+@pytest.fixture(scope="function")
+async def integration_client(dbm: DatabaseManager):
+    integration = await PreparedIntegration.inject_into_db(dbm)
+    async with integration.client() as client:
+        yield client
+
+
+# the default client fixture is based on integration
+@pytest.fixture(scope="function")
+async def client(integration_client):
+    yield integration_client
+
+
+@pytest.fixture(scope="function")
+async def user_client(dbm: DatabaseManager):
+    user = await PreparedUser.inject_into_db(dbm)
+    client = await user.client()
+    yield client
+    await client.aclose()
+
+
+@pytest.fixture(scope="function")
+async def anon_client():
     async with create_http_client() as client:
         yield client
 
@@ -54,5 +77,7 @@ async def user(client, dbm):
 
 
 @pytest.fixture(scope="function")
-async def integration(client, dbm):
-    return await PreparedIntegration.create(client, dbm)
+async def integration(user_client, dbm):
+    # use user_client instead of integration_client to let an empty integrations collection
+    # when testing integrations
+    return await PreparedIntegration.create(user_client, dbm)

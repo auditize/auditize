@@ -58,6 +58,12 @@ async def test_user_create_already_used_email(client: HttpTestHelper, user: Prep
     )
 
 
+async def test_user_create_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_post(
+        "/users", json=PreparedUser.prepare_data()
+    )
+
+
 async def test_user_update_all(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
     data = {
         "first_name": "John Updated", "last_name": "Doe Updated", "email": "john.doe_updated@example.net"
@@ -97,6 +103,12 @@ async def test_user_update_already_used_email(client: HttpTestHelper, dbm: Datab
     )
 
 
+async def test_user_update_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_unauthorized_patch(
+        f"/users/{user.id}", json={"first_name": "John Updated"}
+    )
+
+
 async def test_user_get(client: HttpTestHelper, user: PreparedUser):
     await client.assert_get(
         f"/users/{user.id}",
@@ -112,12 +124,24 @@ async def test_user_get_unknown_id(client: HttpTestHelper):
     )
 
 
+async def test_user_get_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_unauthorized_get(
+        f"/users/{user.id}"
+    )
+
+
 async def test_user_list(client: HttpTestHelper, dbm: DatabaseManager):
     users = [await PreparedUser.create(client, dbm) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
         client, "/users",
         [user.expected_api_response() for user in sorted(users, key=lambda r: r.data["last_name"])]
+    )
+
+
+async def test_user_list_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_get(
+        "/users"
     )
 
 
@@ -137,8 +161,14 @@ async def test_user_delete_unknown_id(client: HttpTestHelper):
     )
 
 
-async def test_user_signup(client: HttpTestHelper, user: PreparedUser):
-    await client.assert_get(
+async def test_user_delete_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_unauthorized_delete(
+        f"/users/{user.id}"
+    )
+
+
+async def test_user_signup(anon_client: HttpTestHelper, user: PreparedUser):
+    await anon_client.assert_get(
         f"/users/signup/{await user.signup_token}",
         expected_status_code=200,
         expected_json={
@@ -149,23 +179,23 @@ async def test_user_signup(client: HttpTestHelper, user: PreparedUser):
     )
 
 
-async def test_user_signup_expired(client: HttpTestHelper, user: PreparedUser):
+async def test_user_signup_expired(anon_client: HttpTestHelper, user: PreparedUser):
     await user.expire_signup_token()
-    await client.assert_get(
+    await anon_client.assert_get(
         f"/users/signup/{await user.signup_token}",
         expected_status_code=404,
     )
 
 
-async def test_user_signup_unknown(client: HttpTestHelper):
-    await client.assert_get(
+async def test_user_signup_unknown(anon_client: HttpTestHelper):
+    await anon_client.assert_get(
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
         expected_status_code=404,
     )
 
 
-async def test_user_signup_set_password(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
-    await client.assert_post(
+async def test_user_signup_set_password(anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    await anon_client.assert_post(
         f"/users/signup/{await user.signup_token}", json={"password": "new_password"},
         expected_status_code=204
     )
@@ -178,34 +208,71 @@ async def test_user_signup_set_password(client: HttpTestHelper, user: PreparedUs
     )
 
 
-async def test_user_signup_set_password_token_expired(client: HttpTestHelper, user: PreparedUser):
+async def test_user_signup_set_password_token_expired(anon_client: HttpTestHelper, user: PreparedUser):
     await user.expire_signup_token()
-    await client.assert_post(
+    await anon_client.assert_post(
         f"/users/signup/{await user.signup_token}", json={"password": "new_password"},
         expected_status_code=404
     )
 
 
-async def test_user_signup_set_password_token_unknown(client: HttpTestHelper):
-    await client.assert_post(
+async def test_user_signup_set_password_token_unknown(anon_client: HttpTestHelper):
+    await anon_client.assert_post(
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}", json={"password": "new_password"},
         expected_status_code=404
     )
 
 
-async def test_user_log_in(client: HttpTestHelper, dbm: DatabaseManager):
+async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
     now = int(time.time())
-    resp = await client.assert_post(
+    resp = await anon_client.assert_post(
         "/users/login", json={"email": user.email, "password": user.password},
         expected_status_code=204
     )
     ic(resp.cookies)
-    cookie = get_cookie_by_name(resp, "token")
-    assert cookie.name == "token"
+    cookie = get_cookie_by_name(resp, "session")
+    assert cookie.name == "session"
     assert cookie.expires > now
     assert cookie.path == "/"
     assert cookie.secure is True
     assert cookie.value
     assert cookie.has_nonstandard_attr("HttpOnly")
     assert cookie.get_nonstandard_attr("SameSite") == "strict"
+
+    # test that the cookie auth actually works
+    await anon_client.assert_get(
+        "/users",
+        expected_status_code=200
+    )
+
+
+async def test_get_user_me(dbm: DatabaseManager):
+    user = await PreparedUser.inject_into_db(dbm)
+    client = None
+    try:
+        client = await user.client()
+        await client.assert_get(
+            "/users/me",
+            expected_status_code=200,
+            expected_json={
+                "first_name": user.data["first_name"],
+                "last_name": user.data["last_name"],
+                "email": user.data["email"]
+            }
+        )
+    finally:
+        if client:
+            await client.aclose()
+
+
+async def test_get_user_me_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_unauthorized_get(
+        "/users/me"
+    )
+
+
+async def test_get_user_me_as_integration(integration_client: HttpTestHelper):
+    await integration_client.assert_unauthorized_get(
+        "/users/me"
+    )
