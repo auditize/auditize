@@ -8,3 +8,7 @@ class UnknownModelException(AuditizeException):
 
 class AuthenticationFailure(AuditizeException):
     pass
+
+
+class PermissionDenied(AuditizeException):
+    pass
