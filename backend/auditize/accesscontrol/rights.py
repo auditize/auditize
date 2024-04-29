@@ -1,4 +1,5 @@
 from auditize.accesscontrol.models import AccessRights, LogsRights, EntitiesRights, ReadWritePermissions
+from auditize.common.exceptions import PermissionDenied
 
 
 def _normalize_repo_permissions(
@@ -61,3 +62,43 @@ def normalize_access_rights(rights: AccessRights) -> AccessRights:
             integrations=_normalize_read_write_permissions(rights.entities.integrations),
         ),
     )
+
+
+def _authorize_grant(target_right: bool | None, base_right: bool, name: str):
+    if target_right in (True, False) and not base_right:
+        raise PermissionDenied(f"Insufficient rights to grant {name!r} rights")
+
+
+def authorize_grant(rights: AccessRights, target_rights: AccessRights):
+    # optimization: if superadmin, can grant anything
+    if rights.is_superadmin:
+        return
+
+    if target_rights.is_superadmin is not None:
+        raise PermissionDenied("Cannot grant superadmin rights")
+
+    # Check logs.{read,write} grants
+    _authorize_grant(target_rights.logs.read, rights.logs.read, "logs read")
+    _authorize_grant(target_rights.logs.write, rights.logs.write, "logs write")
+
+    # Check logs.repos.{read,write} grants
+    for target_repo_id, target_repo_perms in target_rights.logs.repos.items():
+        repo_rights = rights.logs.repos.get(target_repo_id, ReadWritePermissions(read=False, write=False))
+        _authorize_grant(
+            target_repo_perms.read, repo_rights.read or rights.logs.read, f"logs read on repo {target_repo_id}"
+        )
+        _authorize_grant(
+            target_repo_perms.write, repo_rights.write or rights.logs.write, f"logs write on repo {target_repo_id}"
+        )
+
+    # Check entities.repos grants
+    _authorize_grant(target_rights.entities.repos.read, rights.entities.repos.read, "repos read")
+    _authorize_grant(target_rights.entities.repos.write, rights.entities.repos.write, "repos write")
+
+    # Check entities.users grants
+    _authorize_grant(target_rights.entities.users.read, rights.entities.users.read, "users read")
+    _authorize_grant(target_rights.entities.users.write, rights.entities.users.write, "users write")
+
+    # Check entities.integrations grants
+    _authorize_grant(target_rights.entities.integrations.read, rights.entities.integrations.read, "integrations read")
+    _authorize_grant(target_rights.entities.integrations.write, rights.entities.integrations.write, "integrations write")

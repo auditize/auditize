@@ -17,6 +17,6 @@ class LogsRights(ReadWritePermissions):
 
 
 class AccessRights(BaseModel):
-    is_superadmin: bool = False
+    is_superadmin: bool = Field(default=None)
     logs: LogsRights = Field(default_factory=LogsRights)
     entities: EntitiesRights = Field(default_factory=EntitiesRights)

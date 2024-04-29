@@ -50,7 +50,7 @@ def test_permission_assertions_as_superadmin():
     )
 
 
-def test_permission_assertions_as_no_rights():
+def test_permission_assertions_as_no_right():
     assert_unauthorized(
         {},
         can_read_logs("repo1"),
