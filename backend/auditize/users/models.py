@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
 
+from auditize.permissions.models import Permissions
+
 
 class SignupToken(BaseModel):
     token: str
@@ -16,6 +18,7 @@ class User(BaseModel):
     last_name: str
     email: str
     password_hash: Optional[str] = Field(default=None)
+    permissions: Permissions = Field(default_factory=Permissions)
     signup_token: Optional[SignupToken] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -28,3 +31,4 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[str] = None
+    permissions: Optional[Permissions] = None

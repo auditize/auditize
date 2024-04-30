@@ -13,6 +13,7 @@ from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.config import get_config
 from auditize.common.email import send_email
 from auditize.common.utils import now
+from auditize.permissions.operations import normalize_permissions, update_permissions
 
 _DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
 _JWT_SUB_PREFIX = "user_email:"
@@ -37,18 +38,31 @@ def _send_signup_email(user: User):
     )
 
 
+# NB: this function is let public to be used in tests when we have to inject
+# a user directly into database (and we want to make sure that is consistently stored)
+def build_document_from_user(user: User) -> dict:
+    return {
+        **user.model_dump(exclude={"id", "permissions"}),
+        "permissions": normalize_permissions(user.permissions).model_dump()
+    }
+
+
 async def create_user(dbm: DatabaseManager, user: User):
     user = user.model_copy()
     user.signup_token = _generate_signup_token()
-    result = await dbm.core_db.users.insert_one(user.model_dump(exclude={"id"}))
+    result = await dbm.core_db.users.insert_one(build_document_from_user(user))
     _send_signup_email(user)
     return result.inserted_id
 
 
 async def update_user(dbm: DatabaseManager, user_id: ObjectId | str, update: UserUpdate):
+    doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
+    if update.permissions:
+        user = await get_user(dbm, user_id)
+        doc_update["permissions"] = update_permissions(user.permissions, update.permissions).model_dump()
+
     result = await dbm.core_db.users.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": update.model_dump(exclude_unset=True)}
+        {"_id": ObjectId(user_id)}, {"$set": doc_update}
     )
     if result.matched_count == 0:
         raise UnknownModelException()

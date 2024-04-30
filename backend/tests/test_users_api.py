@@ -12,6 +12,7 @@ from helpers.database import assert_collection
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.users import PreparedUser
+from helpers.permissions import DEFAULT_PERMISSIONS
 
 pytestmark = pytest.mark.anyio
 
@@ -35,6 +36,32 @@ async def test_user_create(client: HttpTestHelper, dbm: DatabaseManager):
 
     user = PreparedUser(resp.json()["id"], data, dbm)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+
+async def test_user_create_custom_permissions(client: HttpTestHelper, dbm: DatabaseManager):
+    data = PreparedUser.prepare_data(extra={"permissions": {"logs": {"read": True, "write": True}}})
+    resp = await client.assert_post(
+        "/users", json=data,
+        expected_status_code=201,
+        expected_json={"id": callee.IsA(str)}
+    )
+
+    user = PreparedUser(resp.json()["id"], data, dbm)
+    await assert_collection(dbm.core_db.users, [user.expected_document({
+        "permissions": {
+            "is_superadmin": False,
+            "logs": {
+                "read": True,
+                "write": True,
+                "repos": {}
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        }
+    })])
 
 
 async def test_user_create_missing_parameter(client: HttpTestHelper, dbm: DatabaseManager):
@@ -64,7 +91,7 @@ async def test_user_create_unauthorized(anon_client: HttpTestHelper):
     )
 
 
-async def test_user_update_all(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+async def test_user_update_multiple(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
     data = {
         "first_name": "John Updated", "last_name": "Doe Updated", "email": "john.doe_updated@example.net"
     }
@@ -84,6 +111,47 @@ async def test_user_update_partial(client: HttpTestHelper, user: PreparedUser, d
     )
 
     await assert_collection(dbm.core_db.users, [user.expected_document(data)])
+
+
+async def test_user_update_permissions(client: HttpTestHelper, dbm: DatabaseManager):
+    user = await PreparedUser.create(client, dbm, PreparedUser.prepare_data({
+        "permissions": {
+            "logs": {"read": True, "write": False},
+            "entities": {
+                "repos": {"read": True, "write": True},
+            }
+        }
+    }))
+
+    await client.assert_patch(
+        f"/users/{user.id}",
+        json={
+            "permissions": {
+                "logs": {"write": True},
+                "entities": {
+                    "repos": {"read": False, "write": False},
+                    "users": {"read": True, "write": True},
+                }
+            }
+        },
+        expected_status_code=204
+    )
+
+    await assert_collection(dbm.core_db.users, [user.expected_document({
+        "permissions": {
+            "is_superadmin": False,
+            "logs": {
+                "read": True,
+                "write": True,
+                "repos": {}
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": True, "write": True},
+                "integrations": {"read": False, "write": False},
+            },
+        }
+    })])
 
 
 async def test_user_update_unknown_id(client: HttpTestHelper):
@@ -273,7 +341,8 @@ async def test_get_user_me(dbm: DatabaseManager):
             expected_json={
                 "first_name": user.data["first_name"],
                 "last_name": user.data["last_name"],
-                "email": user.data["email"]
+                "email": user.data["email"],
+                "permissions": DEFAULT_PERMISSIONS
             }
         )
 

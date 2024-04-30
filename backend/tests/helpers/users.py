@@ -8,10 +8,11 @@ from httpx import Response
 import callee
 
 from auditize.common.db import DatabaseManager
-from auditize.users.service import get_user, hash_user_password
+from auditize.users.service import get_user, hash_user_password, build_document_from_user
 from auditize.users.models import User
 
 from .http import HttpTestHelper, get_cookie_by_name, create_http_client
+from .permissions import DEFAULT_PERMISSIONS
 
 
 class PreparedUser:
@@ -32,8 +33,9 @@ class PreparedUser:
         }
 
     @classmethod
-    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager) -> "PreparedUser":
-        data = cls.prepare_data()
+    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager, data=None) -> "PreparedUser":
+        if data is None:
+            data = cls.prepare_data()
         resp = await client.assert_post(
             "/users", json=data,
             expected_status_code=201,
@@ -56,7 +58,7 @@ class PreparedUser:
         if user is None:
             password = "dummypassword"
             user = cls.prepare_model(password=password)
-        result = await dbm.core_db.users.insert_one(user.model_dump(exclude={"id"}))
+        result = await dbm.core_db.users.insert_one(build_document_from_user(user))
         return cls(
             id=str(result.inserted_id),
             data={
@@ -109,6 +111,7 @@ class PreparedUser:
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],
+            "permissions": DEFAULT_PERMISSIONS,
             "password_hash": callee.IsA(str) if self.password else None,
             "created_at": callee.IsA(datetime),
             "signup_token": None if self.password else signup_token,
@@ -121,5 +124,6 @@ class PreparedUser:
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],
+            "permissions": DEFAULT_PERMISSIONS,
             **(extra or {})
         }
