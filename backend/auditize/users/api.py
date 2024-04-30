@@ -10,9 +10,14 @@ from auditize.users.api_models import (
 from auditize.users import service
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.auth import Authenticated, get_authenticated
-from auditize.common.exceptions import AuthenticationFailure
+from auditize.common.exceptions import AuthenticationFailure, PermissionDenied
 
 router = APIRouter()
+
+
+def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: str):
+    if authenticated.user and str(authenticated.user.id) == user_id:
+        raise PermissionDenied("Cannot alter own user")
 
 
 @router.post(
@@ -41,6 +46,7 @@ async def update_user(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     user_id: str, user: UserUpdateRequest
 ):
+    _ensure_cannot_alter_own_user(authenticated, user_id)
     await service.update_user(dbm, user_id, user.to_db_model())
     return None
 
@@ -101,6 +107,7 @@ async def delete_user(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     user_id: str
 ):
+    _ensure_cannot_alter_own_user(authenticated, user_id)
     await service.delete_user(dbm, user_id)
 
 

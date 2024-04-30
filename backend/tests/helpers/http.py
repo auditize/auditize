@@ -39,6 +39,7 @@ class HttpTestHelper(AsyncClient):
         )
 
     assert_unauthorized_post = partialmethod(assert_post, expected_status_code=401)
+    assert_forbidden_post = partialmethod(assert_post, expected_status_code=403)
 
     async def assert_patch(
         self,
@@ -52,6 +53,7 @@ class HttpTestHelper(AsyncClient):
         )
 
     assert_unauthorized_patch = partialmethod(assert_patch, expected_status_code=401)
+    assert_forbidden_patch = partialmethod(assert_patch, expected_status_code=403)
 
     async def assert_delete(
         self,
@@ -64,6 +66,7 @@ class HttpTestHelper(AsyncClient):
         )
 
     assert_unauthorized_delete = partialmethod(assert_delete, expected_status_code=401)
+    assert_forbidden_delete = partialmethod(assert_delete, expected_status_code=403)
 
     async def assert_get(
         self,
@@ -77,6 +80,7 @@ class HttpTestHelper(AsyncClient):
         )
 
     assert_unauthorized_get = partialmethod(assert_get, expected_status_code=401)
+    assert_forbidden_get = partialmethod(assert_get, expected_status_code=403)
 
 
 def create_http_client():

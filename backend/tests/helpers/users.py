@@ -54,7 +54,7 @@ class PreparedUser:
         if user is None:
             password = "dummypassword"
             user = cls.prepare_model(password=password)
-        result = await dbm.core_db.users.insert_one(user.model_dump())
+        result = await dbm.core_db.users.insert_one(user.model_dump(exclude={"id"}))
         return cls(
             id=str(result.inserted_id),
             data={
@@ -97,17 +97,18 @@ class PreparedUser:
         return get_cookie_by_name(resp, "session").value
 
     def expected_document(self, extra=None) -> dict:
+        signup_token = {
+            "token": callee.Regex(r"^[0-9a-f]{64}$"),
+            "expires_at": callee.IsA(datetime),
+        }
         return {
             "_id": ObjectId(self.id),
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],
-            "password_hash": None,
+            "password_hash": callee.IsA(str) if self.password else None,
             "created_at": callee.IsA(datetime),
-            "signup_token": {
-                "token": callee.Regex(r"^[0-9a-f]{64}$"),
-                "expires_at": callee.IsA(datetime),
-            },
+            "signup_token": None if self.password else signup_token,
             **(extra or {})
         }
 

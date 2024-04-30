@@ -24,3 +24,7 @@ def make_409_response():
 
 def make_401_response():
     return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+
+def make_403_response():
+    return JSONResponse(status_code=403, content={"detail": "Forbidden"})
