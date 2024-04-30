@@ -2,42 +2,55 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Callable
 
-from auditize.accesscontrol.models import AccessRights
-from auditize.common.exceptions import PermissionDenied
+from auditize.permissions.models import Permissions
 
-PermissionAssertion = Callable[[AccessRights], bool]
+__all__ = (
+    "PermissionAssertion",
+    "can_read_logs",
+    "can_write_logs",
+    "can_read_repos",
+    "can_write_repos",
+    "can_read_users",
+    "can_write_users",
+    "can_read_integrations",
+    "can_write_integrations",
+    "permissions_and",
+    "permissions_or"
+)
+
+PermissionAssertion = Callable[[Permissions], bool]
 
 
 @dataclass
 class LogPermissionAssertion:
-    type: str  # "read" or "write"
+    permission_type: str  # "read" or "write"
     repo_id: str
 
-    def __call__(self, rights: AccessRights) -> bool:
-        if rights.is_superadmin:
+    def __call__(self, perms: Permissions) -> bool:
+        if perms.is_superadmin:
             return True
 
-        if self.type == "read":
-            if rights.logs.read:
+        if self.permission_type == "read":
+            if perms.logs.read:
                 return True
-            repo_perms = rights.logs.repos.get(self.repo_id)
+            repo_perms = perms.logs.repos.get(self.repo_id)
             return bool(repo_perms and repo_perms.read)
 
-        if self.type == "write":
-            if rights.logs.write:
+        if self.permission_type == "write":
+            if perms.logs.write:
                 return True
-            repo_perms = rights.logs.repos.get(self.repo_id)
+            repo_perms = perms.logs.repos.get(self.repo_id)
             return bool(repo_perms and repo_perms.write)
 
-        raise Exception(f"Invalid log permission type: {self.type}")  # pragma: no cover, cannot happen
+        raise Exception(f"Invalid log permission type: {self.permission_type}")  # pragma: no cover, cannot happen
 
 
 def can_read_logs(repo_id: str) -> PermissionAssertion:
-    return LogPermissionAssertion(type="read", repo_id=repo_id)
+    return LogPermissionAssertion(permission_type="read", repo_id=repo_id)
 
 
 def can_write_logs(repo_id: str) -> PermissionAssertion:
-    return LogPermissionAssertion(type="write", repo_id=repo_id)
+    return LogPermissionAssertion(permission_type="write", repo_id=repo_id)
 
 
 @dataclass
@@ -45,16 +58,16 @@ class EntityPermissionAssertion:
     permission_type: str  # "read" or "write"
     entity_type: str  # "repos", "users" or "integrations"
 
-    def __call__(self, rights: AccessRights) -> bool:
-        if rights.is_superadmin:
+    def __call__(self, perms: Permissions) -> bool:
+        if perms.is_superadmin:
             return True
 
         if self.entity_type == "repos":
-            entity_perms = rights.entities.repos
+            entity_perms = perms.entities.repos
         elif self.entity_type == "users":
-            entity_perms = rights.entities.users
+            entity_perms = perms.entities.users
         elif self.entity_type == "integrations":
-            entity_perms = rights.entities.integrations
+            entity_perms = perms.entities.integrations
         else:
             raise Exception(f"Invalid entity type: {self.entity_type}")  # pragma: no cover, cannot happen
 
@@ -75,19 +88,14 @@ can_write_integrations = partial(EntityPermissionAssertion, permission_type="wri
 
 
 def permissions_and(*assertions: PermissionAssertion) -> PermissionAssertion:
-    def func(rights: AccessRights) -> bool:
-        return all(assertion(rights) for assertion in assertions)
+    def func(perms: Permissions) -> bool:
+        return all(assertion(perms) for assertion in assertions)
 
     return func
 
 
 def permissions_or(*assertions: PermissionAssertion) -> PermissionAssertion:
-    def func(rights: AccessRights) -> bool:
-        return any(assertion(rights) for assertion in assertions)
+    def func(perms: Permissions) -> bool:
+        return any(assertion(perms) for assertion in assertions)
 
     return func
-
-
-def authorize_access(rights: AccessRights, assertion: PermissionAssertion) -> None:
-    if not assertion(rights):
-        raise PermissionDenied("Access denied")

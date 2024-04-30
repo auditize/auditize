@@ -3,19 +3,20 @@ from copy import deepcopy
 from icecream import ic
 import pytest
 
-from auditize.accesscontrol.models import AccessRights
-from auditize.accesscontrol.rights import normalize_access_rights, authorize_grant, update_permissions
+from auditize.permissions.assertions import can_read_logs
+from auditize.permissions.models import Permissions
+from auditize.permissions.operations import normalize_permissions, authorize_grant, update_permissions, authorize_access
 from auditize.common.exceptions import PermissionDenied
 
 
-def _test_access_rights_normalization(input: dict, expected: dict):
-    input = AccessRights.model_validate(input)
+def _test_access_perms_normalization(input: dict, expected: dict):
+    input = Permissions.model_validate(input)
 
-    assert normalize_access_rights(input).model_dump() == expected
+    assert normalize_permissions(input).model_dump() == expected
 
 
 def test_normalization_superadmin_only():
-    _test_access_rights_normalization(
+    _test_access_perms_normalization(
         {"is_superadmin": True},
         {
             "is_superadmin": True,
@@ -34,7 +35,7 @@ def test_normalization_superadmin_only():
 
 
 def test_normalization_superadmin_with_explicit_permissions():
-    _test_access_rights_normalization(
+    _test_access_perms_normalization(
         {
             "is_superadmin": True,
             "entities": {
@@ -68,7 +69,7 @@ def test_normalization_superadmin_with_explicit_permissions():
 
 
 def test_normalization_superadmin_with_log_permissions():
-    _test_access_rights_normalization(
+    _test_access_perms_normalization(
         {
             "is_superadmin": True,
             "logs": {
@@ -97,7 +98,7 @@ def test_normalization_superadmin_with_log_permissions():
 
 
 def test_normalization_read_logs_on_all_repos():
-    _test_access_rights_normalization(
+    _test_access_perms_normalization(
         {
             "logs": {
                 "read": True,
@@ -129,7 +130,7 @@ def test_normalization_read_logs_on_all_repos():
 
 
 def test_normalization_write_logs_on_all_repos():
-    _test_access_rights_normalization(
+    _test_access_perms_normalization(
         {
             "logs": {
                 "read": False,
@@ -161,7 +162,7 @@ def test_normalization_write_logs_on_all_repos():
 
 
 def test_normalization_read_and_write_logs_on_all_repos():
-    _test_access_rights_normalization(
+    _test_access_perms_normalization(
         {
             "logs": {
                 "read": True,
@@ -189,21 +190,21 @@ def test_normalization_read_and_write_logs_on_all_repos():
     )
 
 
-def assert_authorized(rights, *grants):
-    rights = AccessRights.model_validate(rights)
+def assert_authorized(perms, *grants):
+    perms = Permissions.model_validate(perms)
 
     for grant in grants:
         ic(grant)
-        authorize_grant(rights, AccessRights.model_validate(grant))
+        authorize_grant(perms, Permissions.model_validate(grant))
 
 
-def assert_unauthorized(rights, *grants):
-    rights = AccessRights.model_validate(rights)
+def assert_unauthorized(perms, *grants):
+    perms = Permissions.model_validate(perms)
 
     for grant in grants:
         ic(grant)
         with pytest.raises(PermissionDenied):
-            authorize_grant(rights, AccessRights.model_validate(grant))
+            authorize_grant(perms, Permissions.model_validate(grant))
 
 
 def test_authorize_grant_as_superadmin():
@@ -245,17 +246,17 @@ def test_authorize_grant_as_no_right():
 
 
 def test_authorize_grant_on_logs_as_permissions_on_all_repos():
-    read_rights = {"logs": {"read": True}}
-    assert_authorized(read_rights, {"logs": {"read": True}})
-    assert_unauthorized(read_rights, {"logs": {"write": True}})
+    read_perms = {"logs": {"read": True}}
+    assert_authorized(read_perms, {"logs": {"read": True}})
+    assert_unauthorized(read_perms, {"logs": {"write": True}})
 
-    write_rights = {"logs": {"write": True}}
-    assert_authorized(write_rights, {"logs": {"write": True}})
-    assert_unauthorized(write_rights, {"logs": {"read": True}})
+    write_perms = {"logs": {"write": True}}
+    assert_authorized(write_perms, {"logs": {"write": True}})
+    assert_unauthorized(write_perms, {"logs": {"read": True}})
 
 
 def test_permission_assertions_on_logs_as_permissions_specific_repos():
-    rights = {
+    perms = {
         "logs": {
             "repos": {
                 "repo1": {"read": True, "write": False},
@@ -264,13 +265,13 @@ def test_permission_assertions_on_logs_as_permissions_specific_repos():
         }
     }
     assert_authorized(
-        rights,
+        perms,
         ###
         {"logs": {"repos": {"repo1": {"read": True}}}},
         {"logs": {"repos": {"repo2": {"write": True}}}},
     )
     assert_unauthorized(
-        rights,
+        perms,
         ###
         {"logs": {"repos": {"repo1": {"write": True}}}},
         {"logs": {"repos": {"repo2": {"read": True}}}},
@@ -278,7 +279,7 @@ def test_permission_assertions_on_logs_as_permissions_specific_repos():
 
 
 def test_permission_assertions_on_entities_as_specific_permissions():
-    every_possible_entities_rights = {
+    every_possible_entities_perms = {
         "entities": {
             "repos": {"read": True, "write": True},
             "users": {"read": True, "write": True},
@@ -287,22 +288,22 @@ def test_permission_assertions_on_entities_as_specific_permissions():
     }
     for entity_type in "repos", "users", "integrations":
         for perm_type in "read", "write":
-            target_rights = {
+            target_perms = {
                 "entities": {entity_type: {perm_type: True}}
             }
 
-            # test authorized with the minimum rights
-            assert_authorized(target_rights, target_rights)
+            # test authorized with the minimum permissions
+            assert_authorized(target_perms, target_perms)
 
-            # test unauthorized with all rights on entities but not the requested one
-            all_rights_but = deepcopy(every_possible_entities_rights)
-            all_rights_but["entities"][entity_type][perm_type] = False
-            assert_unauthorized(all_rights_but, target_rights)
+            # test unauthorized with all permissions on entities but not the requested one
+            all_perms_but = deepcopy(every_possible_entities_perms)
+            all_perms_but["entities"][entity_type][perm_type] = False
+            assert_unauthorized(all_perms_but, target_perms)
 
 
 def _test_update_permission(orig: dict, update: dict, expected: dict):
-    orig = AccessRights.model_validate(orig)
-    update = AccessRights.model_validate(update)
+    orig = Permissions.model_validate(orig)
+    update = Permissions.model_validate(update)
 
     actual = update_permissions(orig, update)
     assert actual.model_dump() == expected
@@ -409,3 +410,14 @@ def test_update_permission_drop_individual_permissions():
             },
         },
     )
+
+
+def test_authorize_access():
+    assertion = can_read_logs("repo1")
+
+    # OK case
+    authorize_access(Permissions(is_superadmin=True), assertion)
+
+    # Not OK case
+    with pytest.raises(PermissionDenied, match="Access denied"):
+        authorize_access(Permissions(), assertion)
