@@ -9,8 +9,14 @@ from auditize.integrations.api_models import (
 from auditize.integrations import service
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.auth import Authenticated, get_authenticated
+from auditize.common.exceptions import PermissionDenied
 
 router = APIRouter()
+
+
+def _ensure_cannot_alter_own_integration(authenticated: Authenticated, integration_id: str):
+    if authenticated.integration and str(authenticated.integration.id) == integration_id:
+        raise PermissionDenied("Cannot alter own integration")
 
 
 @router.post(
@@ -39,6 +45,7 @@ async def update_integration(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     integration_id: str, integration: IntegrationUpdateRequest
 ):
+    _ensure_cannot_alter_own_integration(authenticated, integration_id)
     await service.update_integration(dbm, integration_id, integration.to_db_model())
 
 
@@ -83,6 +90,7 @@ async def delete_integration(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     integration_id: str
 ):
+    _ensure_cannot_alter_own_integration(authenticated, integration_id)
     await service.delete_integration(dbm, integration_id)
 
 
@@ -97,5 +105,6 @@ async def regenerate_integration_token(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     integration_id: str,
 ):
+    _ensure_cannot_alter_own_integration(authenticated, integration_id)
     token = await service.regenerate_integration_token(dbm, integration_id)
     return IntegrationTokenGenerationResponse(token=token)

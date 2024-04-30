@@ -100,6 +100,13 @@ async def test_integration_update_unauthorized(anon_client: HttpTestHelper, inte
     )
 
 
+async def test_integration_update_self(integration: PreparedIntegration):
+    async with integration.client() as client:
+        await client.assert_forbidden_patch(
+            f"/integrations/{integration.id}", json={"name": "Integration Updated"},
+        )
+
+
 async def test_integration_regenerate_token(user_client: HttpTestHelper, integration: PreparedIntegration, dbm: DatabaseManager):
     mongo_document = await dbm.core_db.integrations.find_one({"_id": ObjectId(integration.id)})
 
@@ -119,6 +126,11 @@ async def test_integration_regenerate_token_unauthorized(anon_client: HttpTestHe
     await anon_client.assert_unauthorized_post(
         f"/integrations/{integration.id}/token"
     )
+
+
+async def test_integration_regenerate_token_self(integration: PreparedIntegration):
+    async with integration.client() as client:
+        await client.assert_forbidden_post(f"/integrations/{integration.id}/token")
 
 
 async def test_integration_get(user_client: HttpTestHelper, integration: PreparedIntegration):
@@ -177,3 +189,8 @@ async def test_integration_delete_unauthorized(anon_client: HttpTestHelper, inte
     await anon_client.assert_unauthorized_delete(
         f"/integrations/{integration.id}"
     )
+
+
+async def test_integration_delete_self(integration: PreparedIntegration):
+    async with integration.client() as client:
+        await client.assert_forbidden_delete(f"/integrations/{integration.id}")

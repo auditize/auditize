@@ -70,7 +70,7 @@ class PreparedIntegration:
             **(extra or {})
         }
 
-    def client(self):
+    def client(self) -> HttpTestHelper:
         c = create_http_client()
         c.headers["Authorization"] = f"Bearer {self.token}"
         return c
