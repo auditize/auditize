@@ -69,6 +69,11 @@ def _authorize_grant(target_right: bool | None, base_right: bool, name: str):
         raise PermissionDenied(f"Insufficient rights to grant {name!r} rights")
 
 
+def _authorize_rw_perm_grant(target_right: ReadWritePermissions, base_right: ReadWritePermissions, name: str):
+    _authorize_grant(target_right.read, base_right.read, f"{name} read")
+    _authorize_grant(target_right.write, base_right.write, f"{name} write")
+
+
 def authorize_grant(rights: AccessRights, target_rights: AccessRights):
     # optimization: if superadmin, can grant anything
     if rights.is_superadmin:
@@ -78,27 +83,54 @@ def authorize_grant(rights: AccessRights, target_rights: AccessRights):
         raise PermissionDenied("Cannot grant superadmin rights")
 
     # Check logs.{read,write} grants
-    _authorize_grant(target_rights.logs.read, rights.logs.read, "logs read")
-    _authorize_grant(target_rights.logs.write, rights.logs.write, "logs write")
+    _authorize_rw_perm_grant(target_rights.logs, rights.logs, "logs")
 
     # Check logs.repos.{read,write} grants
-    for target_repo_id, target_repo_perms in target_rights.logs.repos.items():
-        repo_rights = rights.logs.repos.get(target_repo_id, ReadWritePermissions(read=False, write=False))
-        _authorize_grant(
-            target_repo_perms.read, repo_rights.read or rights.logs.read, f"logs read on repo {target_repo_id}"
-        )
-        _authorize_grant(
-            target_repo_perms.write, repo_rights.write or rights.logs.write, f"logs write on repo {target_repo_id}"
-        )
+    # optimization: if logs.read and logs.write, can grant anything:
+    if not (target_rights.logs.read and target_rights.logs.write):
+        for target_repo_id, target_repo_perms in target_rights.logs.repos.items():
+            repo_rights = rights.logs.repos.get(target_repo_id, ReadWritePermissions(read=False, write=False))
+            _authorize_grant(
+                target_repo_perms.read, repo_rights.read or rights.logs.read, f"logs read on repo {target_repo_id}"
+            )
+            _authorize_grant(
+                target_repo_perms.write, repo_rights.write or rights.logs.write, f"logs write on repo {target_repo_id}"
+            )
 
-    # Check entities.repos grants
-    _authorize_grant(target_rights.entities.repos.read, rights.entities.repos.read, "repos read")
-    _authorize_grant(target_rights.entities.repos.write, rights.entities.repos.write, "repos write")
+    # Check entities.{repos,users,integrations} grants
+    _authorize_rw_perm_grant(target_rights.entities.repos, rights.entities.repos, "repos")
+    _authorize_rw_perm_grant(target_rights.entities.users, rights.entities.users, "users")
+    _authorize_rw_perm_grant(target_rights.entities.integrations, rights.entities.integrations, "integrations")
 
-    # Check entities.users grants
-    _authorize_grant(target_rights.entities.users.read, rights.entities.users.read, "users read")
-    _authorize_grant(target_rights.entities.users.write, rights.entities.users.write, "users write")
 
-    # Check entities.integrations grants
-    _authorize_grant(target_rights.entities.integrations.read, rights.entities.integrations.read, "integrations read")
-    _authorize_grant(target_rights.entities.integrations.write, rights.entities.integrations.write, "integrations write")
+def _update_permission(orig: bool, update: bool | None) -> bool:
+    return update if update is not None else orig
+
+
+def _update_rw_permissions(orig: ReadWritePermissions, update: ReadWritePermissions) -> ReadWritePermissions:
+    return ReadWritePermissions(
+        read=_update_permission(orig.read, update.read),
+        write=_update_permission(orig.write, update.write),
+    )
+
+
+def update_permissions(orig: AccessRights, update: AccessRights) -> AccessRights:
+    new = AccessRights()
+
+    # Update superadmin role
+    new.is_superadmin = _update_permission(orig.is_superadmin, update.is_superadmin)
+
+    # Update logs permissions
+    new.logs.read = _update_permission(orig.logs.read, update.logs.read)
+    new.logs.write = _update_permission(orig.logs.write, update.logs.write)
+    for update_repo_id, update_repo_perms in update.logs.repos.items():
+        orig_repo_perms = orig.logs.repos.get(update_repo_id, ReadWritePermissions(read=False, write=False))
+        new.logs.repos[update_repo_id] = _update_rw_permissions(orig_repo_perms, update_repo_perms)
+
+    # Update entities permissions
+    new.entities.repos = _update_rw_permissions(orig.entities.repos, update.entities.repos)
+    new.entities.users = _update_rw_permissions(orig.entities.users, update.entities.users)
+    new.entities.integrations = _update_rw_permissions(orig.entities.integrations, update.entities.integrations)
+
+    # Return a normalized result
+    return normalize_access_rights(new)

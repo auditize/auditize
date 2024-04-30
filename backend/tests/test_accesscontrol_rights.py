@@ -4,7 +4,7 @@ from icecream import ic
 import pytest
 
 from auditize.accesscontrol.models import AccessRights
-from auditize.accesscontrol.rights import normalize_access_rights, authorize_grant
+from auditize.accesscontrol.rights import normalize_access_rights, authorize_grant, update_permissions
 from auditize.common.exceptions import PermissionDenied
 
 
@@ -298,3 +298,114 @@ def test_permission_assertions_on_entities_as_specific_permissions():
             all_rights_but = deepcopy(every_possible_entities_rights)
             all_rights_but["entities"][entity_type][perm_type] = False
             assert_unauthorized(all_rights_but, target_rights)
+
+
+def _test_update_permission(orig: dict, update: dict, expected: dict):
+    orig = AccessRights.model_validate(orig)
+    update = AccessRights.model_validate(update)
+
+    actual = update_permissions(orig, update)
+    assert actual.model_dump() == expected
+
+
+def test_update_permission_grant_superadmin():
+    _test_update_permission(
+        {
+            "logs": {
+                "read": True,
+                "write": False,
+                "repos": {
+                    "repo1": {"write": True},
+                },
+            },
+            "entities": {"repos": {"read": True, "write": True}}
+        },
+        {"is_superadmin": True},
+        {
+            "is_superadmin": True,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": {},
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_update_permission_grant_individual_permissions():
+    _test_update_permission(
+        {
+            "logs": {
+                "read": True,
+                "write": False,
+                "repos": {
+                    "repo1": {"write": True},
+                },
+            },
+            "entities": {"repos": {"read": True, "write": True}}
+        },
+        {
+            "logs": {"write": True},
+            "entities": {"users": {"read": True}},
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": True,
+                "write": True,
+                "repos": {},
+            },
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_update_permission_drop_individual_permissions():
+    _test_update_permission(
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": True,
+                "write": True,
+                "repos": {},
+            },
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+        {
+            "logs": {
+                "write": False,
+                "repos": {
+                    "repo1": {"write": True},
+                },
+            },
+            "entities": {"users": {"read": False}},
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": True,
+                "write": False,
+                "repos": {
+                    "repo1": {"read": False, "write": True},
+                },
+            },
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+    )
