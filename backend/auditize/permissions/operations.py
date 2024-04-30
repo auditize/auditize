@@ -84,21 +84,21 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
         return
 
     if assignee_perms.is_superadmin is not None:
-        raise PermissionDenied("Cannot grant superadmin role")
+        raise PermissionDenied("Cannot alter superadmin role")
 
     # Check logs.{read,write} grants
     _authorize_rw_perms_grant(assignee_perms.logs, grantor_perms.logs, "logs")
 
     # Check logs.repos.{read,write} grants
-    # optimization: if logs.read and logs.write, can grant anything:
-    if not (assignee_perms.logs.read and assignee_perms.logs.write):
-        for target_repo_id, target_repo_perms in assignee_perms.logs.repos.items():
-            repo_perms = grantor_perms.logs.repos.get(target_repo_id, ReadWritePermissions(read=False, write=False))
+    # optimization: if grantor has logs.read and logs.write, he can grant anything:
+    if not (grantor_perms.logs.read and grantor_perms.logs.write):
+        for assignee_repo_id, assignee_repo_perms in assignee_perms.logs.repos.items():
+            grantor_repo_perms = grantor_perms.logs.repos.get(assignee_repo_id, ReadWritePermissions.no())
             _authorize_grant(
-                target_repo_perms.read, repo_perms.read or grantor_perms.logs.read, f"logs read on repo {target_repo_id}"
+                assignee_repo_perms.read, grantor_repo_perms.read or grantor_perms.logs.read, f"logs read on repo {assignee_repo_id!r}"
             )
             _authorize_grant(
-                target_repo_perms.write, repo_perms.write or grantor_perms.logs.write, f"logs write on repo {target_repo_id}"
+                assignee_repo_perms.write, grantor_repo_perms.write or grantor_perms.logs.write, f"logs write on repo {assignee_repo_id!r}"
             )
 
     # Check entities.{repos,users,integrations} grants
