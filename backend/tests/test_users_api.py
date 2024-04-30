@@ -242,7 +242,7 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
 
     # test that the cookie auth actually works
     await anon_client.assert_get(
-        "/users",
+        "/users/me",
         expected_status_code=200
     )
 
