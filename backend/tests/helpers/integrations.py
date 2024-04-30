@@ -9,6 +9,7 @@ from auditize.integrations.models import Integration
 from auditize.integrations.service import create_integration
 
 from .http import HttpTestHelper, create_http_client
+from .permissions import DEFAULT_PERMISSIONS
 
 
 class PreparedIntegration:
@@ -26,8 +27,9 @@ class PreparedIntegration:
         }
 
     @classmethod
-    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager):
-        data = cls.prepare_data()
+    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager, data=None) -> "PreparedIntegration":
+        if data is None:
+            data = cls.prepare_data()
         resp = await client.assert_post(
             "/integrations", json=data,
             expected_status_code=201,
@@ -60,6 +62,7 @@ class PreparedIntegration:
             "name": self.data["name"],
             "token_hash": callee.IsA(str),
             "created_at": callee.IsA(datetime),
+            "permissions": DEFAULT_PERMISSIONS,
             **(extra or {})
         }
 
@@ -67,6 +70,7 @@ class PreparedIntegration:
         return {
             "id": self.id,
             "name": self.data["name"],
+            "permissions": DEFAULT_PERMISSIONS,
             **(extra or {})
         }
 

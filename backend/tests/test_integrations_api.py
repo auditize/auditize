@@ -40,6 +40,32 @@ async def test_integration_create(user_client: HttpTestHelper, dbm: DatabaseMana
     )
 
 
+async def test_integration_create_custom_permissions(user_client: HttpTestHelper, dbm: DatabaseManager):
+    data = PreparedIntegration.prepare_data(extra={"permissions": {"logs": {"read": True, "write": True}}})
+    resp = await user_client.assert_post(
+        "/integrations", json=data,
+        expected_status_code=201,
+        expected_json={"id": callee.IsA(str), "token": callee.IsA(str)}
+    )
+
+    integration = PreparedIntegration(resp.json()["id"], resp.json()["token"], data, dbm)
+    await assert_collection(dbm.core_db.integrations, [integration.expected_document({
+        "permissions": {
+            "is_superadmin": False,
+            "logs": {
+                "read": True,
+                "write": True,
+                "repos": {}
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        }
+    })])
+
+
 async def test_integration_create_missing_parameter(user_client: HttpTestHelper, dbm: DatabaseManager):
     template = PreparedIntegration.prepare_data()
     for key in template:
@@ -77,6 +103,47 @@ async def test_integration_update(user_client: HttpTestHelper, integration: Prep
     await assert_collection(dbm.core_db.integrations, [integration.expected_document(data)])
 
 
+async def test_user_update_permissions(user_client: HttpTestHelper, dbm: DatabaseManager):
+    integration = await PreparedIntegration.create(user_client, dbm, PreparedIntegration.prepare_data({
+        "permissions": {
+            "logs": {"read": True, "write": False},
+            "entities": {
+                "repos": {"read": True, "write": True},
+            }
+        }
+    }))
+
+    await user_client.assert_patch(
+        f"/integrations/{integration.id}",
+        json={
+            "permissions": {
+                "logs": {"write": True},
+                "entities": {
+                    "repos": {"read": False, "write": False},
+                    "users": {"read": True, "write": True},
+                }
+            }
+        },
+        expected_status_code=204
+    )
+
+    await assert_collection(dbm.core_db.integrations, [integration.expected_document({
+        "permissions": {
+            "is_superadmin": False,
+            "logs": {
+                "read": True,
+                "write": True,
+                "repos": {}
+            },
+            "entities": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": True, "write": True},
+                "integrations": {"read": False, "write": False},
+            },
+        }
+    })])
+
+
 async def test_integration_update_unknown_id(user_client: HttpTestHelper):
     await user_client.assert_patch(
         f"/integrations/{UNKNOWN_OBJECT_ID}", json={"name": "update"},
@@ -84,7 +151,7 @@ async def test_integration_update_unknown_id(user_client: HttpTestHelper):
     )
 
 
-async def test_integration_update_already_name(user_client: HttpTestHelper, dbm: DatabaseManager):
+async def test_integration_update_name_already_used(user_client: HttpTestHelper, dbm: DatabaseManager):
     integration1 = await PreparedIntegration.create(user_client, dbm)
     integration2 = await PreparedIntegration.create(user_client, dbm)
 
