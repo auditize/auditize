@@ -83,7 +83,7 @@ class HttpTestHelper(AsyncClient):
     assert_forbidden_get = partialmethod(assert_get, expected_status_code=403)
 
 
-def create_http_client():
+def create_http_client() -> HttpTestHelper:
     return HttpTestHelper(transport=ASGITransport(app=app), base_url="https://localhost")
 
 

@@ -6,7 +6,7 @@ from auditize.common.db import DatabaseManager
 
 pytest.register_assert_rewrite("helpers")
 from helpers.database import setup_test_dbm, teardown_test_dbm
-from helpers.http import create_http_client
+from helpers.http import create_http_client, HttpTestHelper
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
 from helpers.integrations import PreparedIntegration
@@ -47,9 +47,9 @@ async def client(integration_client):
 @pytest.fixture(scope="function")
 async def user_client(dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
-    client = await user.client()
-    yield client
-    await client.aclose()
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        yield client
 
 
 @pytest.fixture(scope="function")

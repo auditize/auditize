@@ -111,13 +111,11 @@ async def test_user_update_unauthorized(anon_client: HttpTestHelper, user: Prepa
 
 async def test_user_update_self(dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
-    client = await user.client()
-    try:
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
         await client.assert_forbidden_patch(
             f"/users/{user.id}", json={"first_name": "John Updated"}
         )
-    finally:
-        await client.aclose()
 
 
 async def test_user_get(client: HttpTestHelper, user: PreparedUser):
@@ -180,11 +178,9 @@ async def test_user_delete_unauthorized(anon_client: HttpTestHelper, user: Prepa
 
 async def test_user_delete_self(dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
-    client = await user.client()
-    try:
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
         await client.assert_forbidden_delete(f"/users/{user.id}")
-    finally:
-        await client.aclose()
 
 
 async def test_user_signup(anon_client: HttpTestHelper, user: PreparedUser):
@@ -269,8 +265,8 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
 
 async def test_get_user_me(dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
-    client = await user.client()
-    try:
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
         await client.assert_get(
             "/users/me",
             expected_status_code=200,
@@ -280,8 +276,6 @@ async def test_get_user_me(dbm: DatabaseManager):
                 "email": user.data["email"]
             }
         )
-    finally:
-        await client.aclose()
 
 
 async def test_get_user_me_unauthorized(anon_client: HttpTestHelper):

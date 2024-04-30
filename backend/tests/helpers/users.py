@@ -1,6 +1,8 @@
+from typing import AsyncIterator
 import uuid
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
+from contextlib import asynccontextmanager
 
 from httpx import Response
 import callee
@@ -87,10 +89,11 @@ class PreparedUser:
             expected_status_code=204
         )
 
-    async def client(self) -> HttpTestHelper:
-        client = create_http_client()
-        await self.log_in(client)
-        return client
+    @asynccontextmanager
+    async def client(self) -> AsyncIterator[HttpTestHelper]:
+        async with create_http_client() as client:
+            await self.log_in(client)
+            yield client
 
     async def get_session_token(self, client: HttpTestHelper) -> str:
         resp = await self.log_in(client)
