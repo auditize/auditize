@@ -34,11 +34,17 @@ class RepoStatsData(BaseModel):
     storage_size: int = Field(description="The storage size")
 
 
+class RepoLogPermissionsData(BaseModel):
+    read_logs: bool = Field(description="Whether authenticated can read logs on the repository")
+    write_logs: bool = Field(description="Whether authenticated can write logs into the repository")
+
+
 class RepoReadingResponse(BaseModel):
     id: Annotated[str, BeforeValidator(str)] = Field(description="The repository ID")
     name: str = Field(description="The repository name")
     created_at: datetime = Field(description="The creation date")
     stats: Optional[RepoStatsData] = Field(description="The repository stats", default=None)
+    permissions: Optional[RepoLogPermissionsData] = Field(description="The repository permissions", default=None)
 
     @field_serializer("created_at", when_used="json")
     def serialize_datetime(self, value):
@@ -57,3 +63,4 @@ class RepoListResponse(PagePaginatedResponse[Repo, RepoReadingResponse]):
 
 class RepoIncludeOptions(Enum):
     STATS = "stats"
+    PERMISSIONS = "permissions"

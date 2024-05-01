@@ -7,6 +7,7 @@ import callee
 from auditize.common.db import DatabaseManager
 from auditize.integrations.models import Integration
 from auditize.integrations.service import create_integration
+from auditize.permissions.models import Permissions
 
 from .http import HttpTestHelper, create_http_client
 from .permissions import DEFAULT_PERMISSIONS
@@ -37,10 +38,13 @@ class PreparedIntegration:
         return cls(resp.json()["id"], resp.json()["token"], data, dbm)
 
     @staticmethod
-    def prepare_model() -> Integration:
-        return Integration(
+    def prepare_model(*, permissions=None) -> Integration:
+        model = Integration(
             name=f"Integration {uuid.uuid4()}"
         )
+        if permissions is not None:
+            model.permissions = Permissions.model_validate(permissions)
+        return model
 
     @classmethod
     async def inject_into_db(cls, dbm: DatabaseManager, integration: Integration = None) -> "PreparedIntegration":

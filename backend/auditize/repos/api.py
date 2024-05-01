@@ -3,10 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse, RepoReadingResponse, \
-    RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData
+    RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData, RepoLogPermissionsData
 from auditize.repos import service
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.auth import Authenticated, get_authenticated
+from auditize.permissions.assertions import can_read_logs, can_write_logs
 
 router = APIRouter()
 
@@ -41,6 +42,20 @@ async def update_repo(
     return None
 
 
+async def _handle_repo_include_options(
+    repo_response: RepoReadingResponse, include: list[RepoIncludeOptions],
+    dbm: DatabaseManager, authenticated: Authenticated
+):
+    if RepoIncludeOptions.STATS in include:
+        stats = await service.get_repo_stats(dbm, repo_response.id)
+        repo_response.stats = RepoStatsData.model_validate(stats.model_dump())
+    if RepoIncludeOptions.PERMISSIONS in include:
+        repo_response.permissions = RepoLogPermissionsData(
+            read_logs=authenticated.comply(can_read_logs(repo_response.id)),
+            write_logs=authenticated.comply(can_write_logs(repo_response.id))
+        )
+
+
 @router.get(
     "/repos/{repo_id}",
     summary="Get log repository",
@@ -55,9 +70,7 @@ async def get_repo(
 ) -> RepoReadingResponse:
     repo = await service.get_repo(dbm, repo_id)
     response = RepoReadingResponse.from_repo(repo)
-    if RepoIncludeOptions.STATS in include:
-        stats = await service.get_repo_stats(dbm, repo.id)
-        response.stats = RepoStatsData.model_validate(stats.model_dump())
+    await _handle_repo_include_options(response, include, dbm, authenticated)
     return response
 
 
@@ -75,10 +88,9 @@ async def list_repos(
 ) -> RepoListResponse:
     repos, page_info = await service.get_repos(dbm, page, page_size)
     response = RepoListResponse.build(repos, page_info)
-    if RepoIncludeOptions.STATS in include:
+    if include:
         for repo in response.data:
-            stats = await service.get_repo_stats(dbm, repo.id)
-            repo.stats = RepoStatsData.model_validate(stats.model_dump())
+            await _handle_repo_include_options(repo, include, dbm, authenticated)
     return response
 
 

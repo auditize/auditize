@@ -10,6 +10,7 @@ from helpers.database import assert_collection
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
+from tests.helpers.integrations import PreparedIntegration
 
 pytestmark = pytest.mark.anyio
 
@@ -119,6 +120,42 @@ async def test_repo_get_with_stats(client: HttpTestHelper, repo: PreparedRepo):
     )
 
 
+async def test_repo_get_with_permissions_as_superadmin(repo: PreparedRepo, dbm: DatabaseManager):
+    integration = await PreparedIntegration.inject_into_db(
+        dbm, PreparedIntegration.prepare_model(permissions={"is_superadmin": True})
+    )
+
+    async with integration.client() as client:
+        await client.assert_get(
+            f"/repos/{repo.id}?include=permissions",
+            expected_status_code=200,
+            expected_json=repo.expected_api_response({
+                "permissions": {
+                    "read_logs": True,
+                    "write_logs": True
+                }
+            })
+        )
+
+
+async def test_repo_get_with_permissions_as_repo_rw(repo: PreparedRepo, dbm: DatabaseManager):
+    integration = await PreparedIntegration.inject_into_db(
+        dbm, PreparedIntegration.prepare_model(permissions={"entities": {"repos": {"read": True, "write": True}}})
+    )
+
+    async with integration.client() as client:
+        await client.assert_get(
+            f"/repos/{repo.id}?include=permissions",
+            expected_status_code=200,
+            expected_json=repo.expected_api_response({
+                "permissions": {
+                    "read_logs": False,
+                    "write_logs": False
+                }
+            })
+        )
+
+
 async def test_repo_get_unknown_id(client: HttpTestHelper, dbm: DatabaseManager):
     await client.assert_get(
         f"/repos/{UNKNOWN_OBJECT_ID}",
@@ -166,6 +203,34 @@ async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
             }
         }
     )
+
+
+async def test_repo_list_with_permissions_as_superadmin(repo: PreparedRepo, dbm: DatabaseManager):
+    integration = await PreparedIntegration.inject_into_db(
+        dbm, PreparedIntegration.prepare_model(permissions={"is_superadmin": True})
+    )
+
+    async with integration.client() as client:
+        await client.assert_get(
+            f"/repos?include=permissions",
+            expected_status_code=200,
+            expected_json={
+                "data": [
+                    repo.expected_api_response({
+                        "permissions": {
+                            "read_logs": True,
+                            "write_logs": True
+                        }
+                    })
+                ],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1
+                }
+            }
+        )
 
 
 async def test_repo_list_unauthorized(anon_client: HttpTestHelper):

@@ -9,6 +9,8 @@ from auditize.integrations.models import Integration
 from auditize.integrations.service import get_integration_by_token
 from auditize.users.service import get_user_by_session_token
 from auditize.users.models import User
+from auditize.permissions.models import Permissions
+from auditize.permissions.assertions import PermissionAssertion
 
 _BEARER_PREFIX = "Bearer "
 
@@ -26,6 +28,17 @@ class Authenticated:
     @classmethod
     def from_integration(cls, integration: Integration):
         return cls(name=integration.name, integration=integration)
+
+    @property
+    def permissions(self) -> Permissions:
+        if self.user:
+            return self.user.permissions
+        if self.integration:
+            return self.integration.permissions
+        raise Exception("Authenticated is neither user nor integration")  # pragma: no cover
+
+    def comply(self, assertion: PermissionAssertion) -> bool:
+        return assertion(self.permissions)
 
 
 def _get_authorization_bearer(request: Request) -> str:
