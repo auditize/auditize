@@ -64,11 +64,15 @@ def test_permission_assertions_as_no_right():
 def test_permission_assertions_on_logs_as_permissions_on_all_repos():
     read_perms = {"logs": {"read": True}}
     assert_authorized(read_perms, can_read_logs("repo1"))
+    assert_authorized(read_perms, can_read_logs())
     assert_unauthorized(read_perms, can_write_logs("repo1"))
+    assert_unauthorized(read_perms, can_write_logs())
 
     write_perms = {"logs": {"write": True}}
     assert_authorized(write_perms, can_write_logs("repo1"))
+    assert_authorized(write_perms, can_write_logs())
     assert_unauthorized(write_perms, can_read_logs("repo1"))
+    assert_unauthorized(write_perms, can_read_logs())
 
 
 def test_permission_assertions_on_logs_as_permissions_specific_repos():

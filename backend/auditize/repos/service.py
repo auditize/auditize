@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from bson import ObjectId
 
 from auditize.repos.models import Repo, RepoUpdate, RepoStats
@@ -56,9 +58,17 @@ async def get_repo_stats(dbm: DatabaseManager, repo_id: ObjectId | str) -> RepoS
     return stats
 
 
-async def get_repos(dbm: DatabaseManager, page: int, page_size: int) -> tuple[list[Repo], PagePaginationInfo]:
+async def get_repos(
+    dbm: DatabaseManager, *, page: int, page_size: int, repo_ids: Sequence[ObjectId | str] = None
+) -> tuple[list[Repo], PagePaginationInfo]:
+    # TODO: implement this as a join with the authenticated permissions
+    if repo_ids:
+        filter = {"_id": {"$in": list(map(ObjectId, repo_ids))}}
+    else:
+        filter = None
     results, page_info = await find_paginated_by_page(
         dbm.core_db.repos,
+        filter=filter,
         sort=[("name", 1)], page=page, page_size=page_size
     )
     return [Repo.model_validate(result) async for result in results], page_info

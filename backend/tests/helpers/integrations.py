@@ -60,6 +60,10 @@ class PreparedIntegration:
             dbm=dbm
         )
 
+    @classmethod
+    async def inject_into_db_with_permissions(cls, dbm: DatabaseManager, permissions: dict) -> "PreparedIntegration":
+        return await cls.inject_into_db(dbm, cls.prepare_model(permissions=permissions))
+
     def expected_document(self, extra=None):
         return {
             "_id": ObjectId(self.id),

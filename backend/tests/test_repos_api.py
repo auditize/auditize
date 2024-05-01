@@ -121,8 +121,8 @@ async def test_repo_get_with_stats(client: HttpTestHelper, repo: PreparedRepo):
 
 
 async def test_repo_get_with_permissions_as_superadmin(repo: PreparedRepo, dbm: DatabaseManager):
-    integration = await PreparedIntegration.inject_into_db(
-        dbm, PreparedIntegration.prepare_model(permissions={"is_superadmin": True})
+    integration = await PreparedIntegration.inject_into_db_with_permissions(
+        dbm, {"is_superadmin": True}
     )
 
     async with integration.client() as client:
@@ -139,8 +139,8 @@ async def test_repo_get_with_permissions_as_superadmin(repo: PreparedRepo, dbm: 
 
 
 async def test_repo_get_with_permissions_as_repo_rw(repo: PreparedRepo, dbm: DatabaseManager):
-    integration = await PreparedIntegration.inject_into_db(
-        dbm, PreparedIntegration.prepare_model(permissions={"entities": {"repos": {"read": True, "write": True}}})
+    integration = await PreparedIntegration.inject_into_db_with_permissions(
+        dbm, {"entities": {"repos": {"read": True, "write": True}}}
     )
 
     async with integration.client() as client:
@@ -206,8 +206,8 @@ async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
 
 
 async def test_repo_list_with_permissions_as_superadmin(repo: PreparedRepo, dbm: DatabaseManager):
-    integration = await PreparedIntegration.inject_into_db(
-        dbm, PreparedIntegration.prepare_model(permissions={"is_superadmin": True})
+    integration = await PreparedIntegration.inject_into_db_with_permissions(
+        dbm, {"is_superadmin": True}
     )
 
     async with integration.client() as client:
@@ -227,6 +227,60 @@ async def test_repo_list_with_permissions_as_superadmin(repo: PreparedRepo, dbm:
                     "page": 1,
                     "page_size": 10,
                     "total": 1,
+                    "total_pages": 1
+                }
+            }
+        )
+
+
+async def test_repo_list_with_permissions(dbm: DatabaseManager):
+    repos = [await PreparedRepo.create(dbm, {"name": f"repo_{i}"}) for i in range(3)]
+
+    # First test, as superadmin
+    integration = await PreparedIntegration.inject_into_db_with_permissions(
+        dbm, {"is_superadmin": True}
+    )
+    async with integration.client() as client:
+        await client.assert_get(
+            "/repos?has_log_permission=true",
+            expected_status_code=200,
+            expected_json={
+                "data": [
+                    repo.expected_api_response() for repo in repos
+                ],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 3,
+                    "total_pages": 1
+                }
+            }
+        )
+
+    # Second test, as an integration with mixed permissions
+    integration = await PreparedIntegration.inject_into_db_with_permissions(
+        dbm, {
+            "logs": {
+                "repos": {
+                    repos[0].id: {"read": True, "write": False},
+                    repos[1].id: {"read": False, "write": True},
+                    repos[2].id: {"read": False, "write": False}
+                }
+            }
+        }
+    )
+    async with integration.client() as client:
+        await client.assert_get(
+            "/repos?has_log_permission=true",
+            expected_status_code=200,
+            expected_json={
+                "data": [
+                    repo.expected_api_response() for repo in repos[:2]
+                ],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 2,
                     "total_pages": 1
                 }
             }

@@ -24,7 +24,7 @@ PermissionAssertion = Callable[[Permissions], bool]
 @dataclass
 class LogPermissionAssertion:
     permission_type: str  # "read" or "write"
-    repo_id: str
+    repo_id: str = None
 
     def __call__(self, perms: Permissions) -> bool:
         if perms.is_superadmin:
@@ -33,23 +33,27 @@ class LogPermissionAssertion:
         if self.permission_type == "read":
             if perms.logs.read:
                 return True
+            if self.repo_id is None:
+                return False
             repo_perms = perms.logs.repos.get(self.repo_id)
             return bool(repo_perms and repo_perms.read)
 
         if self.permission_type == "write":
             if perms.logs.write:
                 return True
+            if self.repo_id is None:
+                return False
             repo_perms = perms.logs.repos.get(self.repo_id)
             return bool(repo_perms and repo_perms.write)
 
         raise Exception(f"Invalid log permission type: {self.permission_type}")  # pragma: no cover, cannot happen
 
 
-def can_read_logs(repo_id: str) -> PermissionAssertion:
+def can_read_logs(repo_id: str = None) -> PermissionAssertion:
     return LogPermissionAssertion(permission_type="read", repo_id=repo_id)
 
 
-def can_write_logs(repo_id: str) -> PermissionAssertion:
+def can_write_logs(repo_id: str = None) -> PermissionAssertion:
     return LogPermissionAssertion(permission_type="write", repo_id=repo_id)
 
 
