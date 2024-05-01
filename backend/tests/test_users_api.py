@@ -12,7 +12,7 @@ from helpers.database import assert_collection
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.users import PreparedUser
-from helpers.permissions import DEFAULT_PERMISSIONS
+from helpers.permissions import DEFAULT_PERMISSIONS, DEFAULT_APPLICABLE_PERMISSIONS
 
 pytestmark = pytest.mark.anyio
 
@@ -343,7 +343,7 @@ async def test_get_user_me(dbm: DatabaseManager):
                 "first_name": user.data["first_name"],
                 "last_name": user.data["last_name"],
                 "email": user.data["email"],
-                "permissions": DEFAULT_PERMISSIONS
+                "permissions": DEFAULT_APPLICABLE_PERMISSIONS
             }
         )
 

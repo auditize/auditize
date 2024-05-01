@@ -28,3 +28,9 @@ class PermissionsData(BaseModel):
     is_superadmin: bool | None = Field(default=None)
     logs: LogsPermissionsData = Field(default_factory=LogsPermissionsData)
     entities: EntitiesPermissionsData = Field(default_factory=EntitiesPermissionsData)
+
+
+class ApplicablePermissionsData(BaseModel):
+    is_superadmin: bool
+    logs: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
+    entities: EntitiesPermissionsData = Field(default_factory=EntitiesPermissionsData)

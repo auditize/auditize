@@ -5,7 +5,7 @@ import pytest
 
 from auditize.permissions.assertions import can_read_logs
 from auditize.permissions.models import Permissions
-from auditize.permissions.operations import normalize_permissions, authorize_grant, update_permissions, authorize_access
+from auditize.permissions.operations import normalize_permissions, authorize_grant, update_permissions, authorize_access, get_applicable_permissions
 from auditize.common.exceptions import PermissionDenied
 
 
@@ -406,6 +406,55 @@ def test_update_permission_drop_individual_permissions():
             "entities": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": False, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def _test_get_applicable_permissions(input: dict, expected: dict):
+    input = Permissions.model_validate(input)
+    assert get_applicable_permissions(input).model_dump() == expected
+
+
+def test_get_applicable_permissions_superadmin():
+    _test_get_applicable_permissions(
+        {"is_superadmin": True},
+        {
+            "is_superadmin": True,
+            "logs": {"read": True, "write": True},
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": True},
+                "integrations": {"read": True, "write": True},
+            },
+        },
+    )
+
+
+def test_get_applicable_permissions_partial_rights():
+    _test_get_applicable_permissions(
+        {
+            "logs": {
+                "read": True,
+                "write": False,
+                "repos": {
+                    "repo1": {"read": True, "write": False},
+                    "repo2": {"read": False, "write": True},
+                },
+            },
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {"read": True, "write": False},
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": False},
                 "integrations": {"read": False, "write": False},
             },
         },

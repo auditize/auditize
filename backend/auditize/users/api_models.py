@@ -4,7 +4,8 @@ from pydantic import BaseModel, Field, BeforeValidator
 
 from auditize.users.models import User, UserUpdate
 from auditize.common.pagination.page.api_models import PagePaginatedResponse
-from auditize.permissions.api_models import PermissionsData
+from auditize.permissions.api_models import PermissionsData, ApplicablePermissionsData
+from auditize.permissions.operations import get_applicable_permissions
 
 
 class UserCreationRequest(BaseModel):
@@ -73,8 +74,11 @@ class UserMeResponse(BaseModel):
     first_name: str = Field(description="The authenticated user first name")
     last_name: str = Field(description="The authenticated user last name")
     email: str = Field(description="The authenticated user email")
-    permissions: PermissionsData = Field(description="The user permissions", default_factory=PermissionsData)
+    permissions: ApplicablePermissionsData = Field(description="The user permissions", default_factory=ApplicablePermissionsData)
 
     @classmethod
     def from_db_model(cls, user: User):
-        return cls.model_validate(user.model_dump())
+        return cls.model_validate({
+            **user.model_dump(exclude={"permissions"}),
+            "permissions": get_applicable_permissions(user.permissions).model_dump()
+        })

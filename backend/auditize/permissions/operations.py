@@ -1,9 +1,9 @@
 from auditize.permissions.assertions import PermissionAssertion
-from auditize.permissions.models import Permissions, LogsPermissions, EntitiesPermissions, ReadWritePermissions
+from auditize.permissions.models import Permissions, LogsPermissions, EntitiesPermissions, ReadWritePermissions, ApplicablePermissions
 from auditize.common.exceptions import PermissionDenied
 
 
-__all__ = ("normalize_permissions", "authorize_grant", "update_permissions", "authorize_access")
+__all__ = ("normalize_permissions", "authorize_grant", "update_permissions", "authorize_access", "get_applicable_permissions")
 
 
 def _normalize_repo_permissions(
@@ -66,6 +66,25 @@ def normalize_permissions(perms: Permissions) -> Permissions:
             integrations=_normalize_read_write_permissions(perms.entities.integrations),
         ),
     )
+
+
+def get_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
+    if perms.is_superadmin:
+        return ApplicablePermissions(
+            is_superadmin=True,
+            logs=LogsPermissions.yes(),
+            entities=EntitiesPermissions(
+                repos=ReadWritePermissions.yes(),
+                users=ReadWritePermissions.yes(),
+                integrations=ReadWritePermissions.yes(),
+            ),
+        )
+    else:
+        return ApplicablePermissions(
+            is_superadmin=False,
+            logs=ReadWritePermissions(read=perms.logs.read, write=perms.logs.write),
+            entities=perms.entities.model_copy(deep=True),
+        )
 
 
 def _authorize_grant(assignee_perm: bool | None, grantor_perm: bool, name: str):

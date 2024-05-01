@@ -61,8 +61,7 @@ async def get_user_me(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)]
 ) -> UserMeResponse:
     if not authenticated.user:
-        # FIXME: raise a 403 instead
-        raise AuthenticationFailure("This endpoint requires user authentication")
+        raise AuthenticationFailure()
     return UserMeResponse.from_db_model(authenticated.user)
 
 

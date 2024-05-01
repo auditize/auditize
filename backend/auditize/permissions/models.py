@@ -17,6 +17,10 @@ class ReadWritePermissions(BaseModel):
     def no(cls) -> "ReadWritePermissions":
         return cls(read=False, write=False)
 
+    @classmethod
+    def yes(cls) -> "ReadWritePermissions":
+        return cls(read=True, write=True)
+
 
 class EntitiesPermissions(BaseModel):
     repos: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
@@ -32,3 +36,10 @@ class Permissions(BaseModel):
     is_superadmin: bool | None = Field(default=None)
     logs: LogsPermissions = Field(default_factory=LogsPermissions)
     entities: EntitiesPermissions = Field(default_factory=EntitiesPermissions)
+
+
+class ApplicablePermissions(BaseModel):
+    is_superadmin: bool
+    logs: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
+    entities: EntitiesPermissions = Field(default_factory=EntitiesPermissions)
+
