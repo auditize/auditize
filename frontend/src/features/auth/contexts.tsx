@@ -30,3 +30,11 @@ export function useCurrentUser() {
   }
   return context;
 }
+
+export function useAuthenticatedUser() {
+  const {currentUser} = useCurrentUser();
+  if (!currentUser) {
+    throw new Error('User is not authenticated');
+  }
+  return {currentUser};
+}

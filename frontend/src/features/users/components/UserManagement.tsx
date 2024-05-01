@@ -2,8 +2,11 @@ import { UserCreation, UserEdition } from './UserEditor';
 import { UserDeletion } from './UserDeletion';
 import { getUsers } from '../api';
 import { ResourceManagement } from '@/components/ResourceManagement';
+import { useAuthenticatedUser } from '@/features/auth';
 
 export function UsersManagement() {
+  const {currentUser} = useAuthenticatedUser();
+
   return (
     <ResourceManagement
       title="Users Management"
@@ -23,7 +26,8 @@ export function UsersManagement() {
         <UserEdition userId={resourceId} />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) => (
-        <UserDeletion user={resource} opened={opened} onClose={onClose} />
+        (currentUser.id !== resource.id) &&
+          <UserDeletion user={resource} opened={opened} onClose={onClose} />
       )}
     />
   );
