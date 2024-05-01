@@ -18,9 +18,9 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { LogInForm } from '@/features/log-in';
+import { LogInForm } from '@/features/auth';
 import { useEffect, useState } from 'react';
-import { getLoggedInUser } from './features/log-in/api';
+import { getLoggedInUser } from './features/auth/api';
 
 function IfLoggedIn({isLoggedIn, children} : {isLoggedIn: boolean, children: React.ReactNode}) {
   return isLoggedIn ? <>{children}</> : null;
