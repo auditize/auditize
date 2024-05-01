@@ -339,6 +339,7 @@ async def test_get_user_me(dbm: DatabaseManager):
             "/users/me",
             expected_status_code=200,
             expected_json={
+                "id": user.id,
                 "first_name": user.data["first_name"],
                 "last_name": user.data["last_name"],
                 "email": user.data["email"],

@@ -69,6 +69,7 @@ class UserAuthenticationRequest(BaseModel):
 
 
 class UserMeResponse(BaseModel):
+    id: Annotated[str, BeforeValidator(str)] = Field(description="The authenticated user id")
     first_name: str = Field(description="The authenticated user first name")
     last_name: str = Field(description="The authenticated user last name")
     email: str = Field(description="The authenticated user email")
