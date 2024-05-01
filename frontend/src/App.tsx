@@ -10,7 +10,6 @@ import { Signup } from '@/features/signup';
 import {
   QueryClient,
   QueryClientProvider,
-  useQuery,
 } from '@tanstack/react-query'
 import {
   createBrowserRouter,
@@ -18,9 +17,8 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { LogInForm } from '@/features/auth';
+import { AuthProvider, LogInForm, useCurrentUser } from '@/features/auth';
 import { useEffect, useState } from 'react';
-import { getLoggedInUser } from './features/auth/api';
 
 function IfLoggedIn({isLoggedIn, children} : {isLoggedIn: boolean, children: React.ReactNode}) {
   return isLoggedIn ? <>{children}</> : null;
@@ -66,16 +64,11 @@ function Main({isLoggedIn} : {isLoggedIn: boolean}) {
 }
 
 function AppRoutes() {
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => getLoggedInUser(),
-    staleTime: Infinity
-  });
-
+  const {currentUser} = useCurrentUser();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    if (currentUser && currentUser.email) {
+    if (currentUser) {
       setIsLoggedIn(true);
     }
   }, [currentUser]);
@@ -121,7 +114,7 @@ function AppRoutes() {
   ]);
 
   return (
-    <RouterProvider router={router}/>
+      <RouterProvider router={router}/>
   );
 }
 
@@ -138,7 +131,9 @@ export default function App() {
   return (
     <MantineProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <AppRoutes />
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </QueryClientProvider>
     </MantineProvider>
   );
