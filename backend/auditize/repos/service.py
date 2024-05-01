@@ -10,7 +10,7 @@ from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
 
 
-async def create_repo(dbm: DatabaseManager, repo: Repo):
+async def create_repo(dbm: DatabaseManager, repo: Repo) -> ObjectId:
     result = await dbm.core_db.repos.insert_one(repo.model_dump(exclude={"id"}))
     return result.inserted_id
 

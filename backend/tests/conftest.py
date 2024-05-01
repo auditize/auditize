@@ -1,3 +1,4 @@
+from typing import Callable, Awaitable
 import os
 
 import pytest
@@ -81,3 +82,29 @@ async def integration(user_client, dbm):
     # use user_client instead of integration_client to let an empty integrations collection
     # when testing integrations
     return await PreparedIntegration.create(user_client, dbm)
+
+
+@pytest.fixture(scope="function")
+def integration_builder(dbm):
+    async def func(permissions):
+        return await PreparedIntegration.inject_into_db_with_permissions(
+            dbm, permissions
+        )
+    return func
+
+
+IntegrationBuilder = Callable[[dict], Awaitable[PreparedIntegration]]
+
+
+@pytest.fixture(scope="function")
+def user_builder(dbm):
+    async def func(permissions):
+        return await PreparedUser.inject_into_db(
+            dbm,
+            user=PreparedUser.prepare_model(password="dummy", permissions=permissions),
+            password="dummy"
+        )
+    return func
+
+
+UserBuilder = Callable[[dict], Awaitable[PreparedUser]]

@@ -11,20 +11,39 @@ from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 from tests.helpers.integrations import PreparedIntegration
+from conftest import IntegrationBuilder, UserBuilder
 
 pytestmark = pytest.mark.anyio
 
 
-async def test_repo_create(client: HttpTestHelper, dbm: DatabaseManager):
+async def _test_repo_create(client: HttpTestHelper, dbm: DatabaseManager):
     data = {"name": "myrepo"}
+
     resp = await client.assert_post(
         "/repos", json=data,
         expected_status_code=201,
         expected_json={"id": callee.IsA(str)}
     )
-
     repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
     await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+
+    resp = await client.get(f"/repos/{repo.id}?include=permissions")
+    assert resp.json()["permissions"] == {"read_logs": True, "write_logs": True}
+
+
+async def test_repo_create_as_integration(integration_builder: IntegrationBuilder, dbm: DatabaseManager):
+    integration_builder = await integration_builder({"entities": {"repos": {"write": True}}})
+
+    async with integration_builder.client() as client:
+        await _test_repo_create(client, dbm)
+
+
+async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManager):
+    user_builder = await user_builder({"entities": {"repos": {"write": True}}})
+
+    async with user_builder.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await _test_repo_create(client, dbm)
 
 
 async def test_repo_create_missing_name(client: HttpTestHelper, dbm: DatabaseManager):
@@ -205,10 +224,8 @@ async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
     )
 
 
-async def test_repo_list_with_permissions_as_superadmin(repo: PreparedRepo, dbm: DatabaseManager):
-    integration = await PreparedIntegration.inject_into_db_with_permissions(
-        dbm, {"is_superadmin": True}
-    )
+async def test_repo_list_with_permissions_as_superadmin(repo: PreparedRepo, integration_builder: IntegrationBuilder):
+    integration = await integration_builder({"is_superadmin": True})
 
     async with integration.client() as client:
         await client.assert_get(
@@ -233,13 +250,11 @@ async def test_repo_list_with_permissions_as_superadmin(repo: PreparedRepo, dbm:
         )
 
 
-async def test_repo_list_with_permissions(dbm: DatabaseManager):
+async def test_repo_list_with_permissions(dbm: DatabaseManager, integration_builder: IntegrationBuilder):
     repos = [await PreparedRepo.create(dbm, {"name": f"repo_{i}"}) for i in range(3)]
 
     # First test, as superadmin
-    integration = await PreparedIntegration.inject_into_db_with_permissions(
-        dbm, {"is_superadmin": True}
-    )
+    integration = await integration_builder({"is_superadmin": True})
     async with integration.client() as client:
         await client.assert_get(
             "/repos?has_log_permission=true",
@@ -258,17 +273,15 @@ async def test_repo_list_with_permissions(dbm: DatabaseManager):
         )
 
     # Second test, as an integration with mixed permissions
-    integration = await PreparedIntegration.inject_into_db_with_permissions(
-        dbm, {
-            "logs": {
-                "repos": {
-                    repos[0].id: {"read": True, "write": False},
-                    repos[1].id: {"read": False, "write": True},
-                    repos[2].id: {"read": False, "write": False}
-                }
+    integration = await integration_builder({
+        "logs": {
+            "repos": {
+                repos[0].id: {"read": True, "write": False},
+                repos[1].id: {"read": False, "write": True},
+                repos[2].id: {"read": False, "write": False}
             }
         }
-    )
+    })
     async with integration.client() as client:
         await client.assert_get(
             "/repos?has_log_permission=true",

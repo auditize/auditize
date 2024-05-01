@@ -7,7 +7,12 @@ from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse,
 from auditize.repos import service
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.auth import Authenticated, get_authenticated
-from auditize.permissions.assertions import can_read_logs, can_write_logs, permissions_or
+from auditize.permissions.assertions import can_read_logs, can_write_logs, permissions_or, permissions_and
+from auditize.integrations.service import update_integration
+from auditize.integrations.models import IntegrationUpdate
+from auditize.users.service import update_user
+from auditize.users.models import UserUpdate
+from auditize.permissions.models import Permissions, LogsPermissions, ReadWritePermissions
 
 router = APIRouter()
 
@@ -24,6 +29,22 @@ async def create_repo(
     repo: RepoCreationRequest
 ) -> RepoCreationResponse:
     repo_id = await service.create_repo(dbm, repo.to_repo())
+
+    # Ensure that authenticated will have read & write logs permissions on the repo he created
+    if not authenticated.comply(permissions_and(can_read_logs(), can_write_logs())):
+        grant_rw_on_repo_logs = Permissions(
+            logs=LogsPermissions(repos={str(repo_id): ReadWritePermissions.yes()})
+        )
+        if authenticated.integration:
+            await update_integration(
+                dbm, authenticated.integration.id,
+                IntegrationUpdate(permissions=grant_rw_on_repo_logs)
+            )
+        if authenticated.user:
+            await update_user(
+                dbm, authenticated.user.id,
+                UserUpdate(permissions=grant_rw_on_repo_logs)
+            )
     return RepoCreationResponse(id=repo_id)
 
 

@@ -10,6 +10,7 @@ import callee
 from auditize.common.db import DatabaseManager
 from auditize.users.service import get_user, hash_user_password, build_document_from_user
 from auditize.users.models import User
+from auditize.permissions.models import Permissions
 
 from .http import HttpTestHelper, get_cookie_by_name, create_http_client
 from .permissions import DEFAULT_PERMISSIONS
@@ -43,20 +44,21 @@ class PreparedUser:
         return cls(resp.json()["id"], data, dbm)
 
     @staticmethod
-    def prepare_model(password="dummypassword") -> User:
+    def prepare_model(*, password="dummypassword", permissions=None) -> User:
         rand = str(uuid.uuid4())
-        return User(
+        model = User(
             first_name=f"John {rand}",
             last_name=f"Doe {rand}",
             email=f"john.doe_{rand}@example.net",
             password_hash=hash_user_password(password)
         )
+        if permissions is not None:
+            model.permissions = Permissions.model_validate(permissions)
+        return model
 
     @classmethod
-    async def inject_into_db(cls, dbm: DatabaseManager, user: User = None) -> "PreparedUser":
-        password = None
+    async def inject_into_db(cls, dbm: DatabaseManager, user: User = None, password="dummypassword") -> "PreparedUser":
         if user is None:
-            password = "dummypassword"
             user = cls.prepare_model(password=password)
         result = await dbm.core_db.users.insert_one(build_document_from_user(user))
         return cls(
