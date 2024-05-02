@@ -1,4 +1,4 @@
-import { useForm, isNotEmpty } from '@mantine/form';
+import { useForm, isNotEmpty, UseFormReturnType } from '@mantine/form';
 import { TextInput, Code, Group, Button } from '@mantine/core';
 import { createIntegration, updateIntegration, getIntegration, regenerateIntegrationToken } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { CopyIcon } from '@/components/CopyIcon';
 import { useMutation } from '@tanstack/react-query';
 import { InlineErrorMessage } from '@/components/InlineErrorMessage';
-import { WithPermissionManagement } from '@/features/permissions/components/WithPermissionManagement';
+import { WithPermissionManagement, emptyPermissions } from '@/features/permissions';
 
 function useIntegrationForm() {
   return useForm({
@@ -27,9 +27,22 @@ function BaseIntegrationForm({form}: {form: ReturnType<typeof useIntegrationForm
   );
 }
 
-function IntegrationForm({form, children}: {form: ReturnType<typeof useIntegrationForm>, children: React.ReactNode}) {
+function IntegrationEditor(
+  {
+    form,
+    permissions,
+    onChange,
+    children,
+  }:
+  {
+    form: UseFormReturnType<any>,
+    permissions: Auditize.Permissions,
+    onChange: (permissions: Auditize.Permissions) => void,
+    children: React.ReactNode,
+  }
+) {
   return (
-    <WithPermissionManagement>
+    <WithPermissionManagement permissions={permissions} onChange={onChange}>
       <BaseIntegrationForm form={form}/>
       {children}
     </WithPermissionManagement>
@@ -48,6 +61,7 @@ function Token({value}: {value: string}) {
 
 export function IntegrationCreation({opened}: {opened?: boolean}) {
   const form = useIntegrationForm();
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,7 +74,7 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
       title={"Create new integration"}
       opened={!!opened}
       onSubmit={form.onSubmit}
-      onSave={() => createIntegration(form.values.name!)}
+      onSave={() => createIntegration({...form.values, permissions})}
       onSaveSuccess={(data) => {
         const [_, token] = data as [string, string];
         setToken(token);
@@ -68,9 +82,13 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
       queryKeyForInvalidation={['integrations']}
       disabledSaving={!!token}
     >
-      <IntegrationForm form={form}>
+      <IntegrationEditor
+        form={form}
+        permissions={permissions}
+        onChange={(perms) => setPermissions(perms)}
+      >
         {token && <Token value={token}/>}
-      </IntegrationForm>
+      </IntegrationEditor>
     </ResourceCreation>
   );
 }
@@ -98,21 +116,37 @@ export function TokenRegeneration({integrationId}: {integrationId: string}) {
 
 export function IntegrationEdition({integrationId}: {integrationId: string | null}) {
   const form = useIntegrationForm();
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
 
   return (
     <ResourceEdition
       resourceId={integrationId}
       queryKeyForLoad={['integration', integrationId]}
       queryFnForLoad={() => getIntegration(integrationId!)}
-      onDataLoaded={(data) => form.setValues(data)}
+      onDataLoaded={
+        (data) => {
+          form.setValues(data);
+          setPermissions(data.permissions);
+        }
+      }
       title={`Edit integration`}
       onSubmit={form.onSubmit}
-      onSave={() => updateIntegration(integrationId!, form.values)}
+      onSave={
+        () => updateIntegration(integrationId!, {...form.values, permissions})
+      }
       queryKeyForInvalidation={['integrations']}
     >
-      <IntegrationForm form={form}>
+      <IntegrationEditor
+        form={form}
+        permissions={permissions}
+        onChange={
+          (perms) => {
+            setPermissions(perms);
+          }
+        }
+      >
         <TokenRegeneration integrationId={integrationId!}/>
-      </IntegrationForm>
+      </IntegrationEditor>
     </ResourceEdition>
   );
 }

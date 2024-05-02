@@ -1,6 +1,20 @@
 import { Tabs } from '@mantine/core';
+import { PermissionManagement } from './PermissionManagement';
 
-export function WithPermissionManagement({children}: {children: React.ReactNode}) {
+export function WithPermissionManagement(
+  {
+    permissions,
+    onChange,
+    children,
+    readOnly = false
+  }:
+  {
+    permissions: Auditize.Permissions,
+    onChange: (permissions: Auditize.Permissions) => void,
+    children: React.ReactNode,
+    readOnly?: boolean
+  }
+) {
   return (
     <Tabs defaultValue="general">
       <Tabs.List>
@@ -16,7 +30,11 @@ export function WithPermissionManagement({children}: {children: React.ReactNode}
         {children}
       </Tabs.Panel>
       <Tabs.Panel value="permissions">
-        PERMISSIONS !!!!
+        <PermissionManagement
+          permissions={permissions}
+          onChange={onChange}
+          readOnly={readOnly}
+        />
       </Tabs.Panel>
     </Tabs>
   );

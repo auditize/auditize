@@ -2,9 +2,9 @@ import { useForm, isNotEmpty, isEmail, UseFormReturnType } from '@mantine/form';
 import { TextInput } from '@mantine/core';
 import { createUser, updateUser, getUser } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
-import { useAuthenticatedUser, useCurrentUser } from '@/features/auth';
-import { WithPermissionManagement } from '@/features/permissions/components/WithPermissionManagement';
-import { useEffect } from 'react';
+import { useAuthenticatedUser } from '@/features/auth';
+import { WithPermissionManagement, emptyPermissions } from '@/features/permissions';
+import { useEffect, useState } from 'react';
 
 function useUserForm(values: {name?: string}) {
   return useForm({
@@ -22,21 +22,36 @@ function useUserForm(values: {name?: string}) {
   });
 }
 
-function UserForm({form, readonly = false}: {form: UseFormReturnType<any>, readonly?: boolean}) {
+function UserEditor(
+  {
+    form,
+    permissions,
+    onChange,
+    readOnly = false
+  }:
+  {
+    form: UseFormReturnType<any>,
+    permissions: Auditize.Permissions,
+    onChange: (permissions: Auditize.Permissions) => void,
+    readOnly?: boolean
+  }
+) {
   return (
-    <WithPermissionManagement>
-      <TextInput label="Firstname" placeholder="Firstname" data-autofocus {...form.getInputProps('firstName')} disabled={readonly}/>
-      <TextInput label="Lastname" placeholder="Lastname" data-autofocus {...form.getInputProps('lastName')} disabled={readonly}/>
-      <TextInput label="Email" placeholder="Email" data-autofocus {...form.getInputProps('email')} disabled={readonly}/>
+    <WithPermissionManagement permissions={permissions} onChange={onChange} readOnly={readOnly}>
+      <TextInput label="Firstname" placeholder="Firstname" data-autofocus {...form.getInputProps('firstName')} disabled={readOnly}/>
+      <TextInput label="Lastname" placeholder="Lastname" data-autofocus {...form.getInputProps('lastName')} disabled={readOnly}/>
+      <TextInput label="Email" placeholder="Email" data-autofocus {...form.getInputProps('email')} disabled={readOnly}/>
     </WithPermissionManagement>
   );
 }
 
 export function UserCreation({opened}: {opened?: boolean}) {
   const form = useUserForm({});
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
 
   useEffect(() => {
     form.reset();
+    setPermissions(emptyPermissions());
   }, [opened]);
 
   return (
@@ -44,10 +59,14 @@ export function UserCreation({opened}: {opened?: boolean}) {
       title={"Create new user"}
       opened={!!opened}
       onSubmit={form.onSubmit}
-      onSave={() => createUser(form.values.firstName, form.values.lastName, form.values.email)}
+      onSave={() => createUser({...form.values, permissions})}
       queryKeyForInvalidation={['users']}
     >
-      <UserForm form={form}/>
+      <UserEditor
+        form={form}
+        permissions={permissions}
+        onChange={(perms) => setPermissions(perms)}
+      />
     </ResourceCreation>
   );
 }
@@ -55,6 +74,7 @@ export function UserCreation({opened}: {opened?: boolean}) {
 export function UserEdition({userId}: {userId: string | null}) {
   const form = useUserForm({});
   const {currentUser} = useAuthenticatedUser();
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
   const editSelf = userId === currentUser.id;
 
   return (
@@ -62,14 +82,30 @@ export function UserEdition({userId}: {userId: string | null}) {
       resourceId={userId}
       queryKeyForLoad={['user', userId]}
       queryFnForLoad={() => getUser(userId!)}
-      onDataLoaded={(data) => form.setValues(data)}
+      onDataLoaded={
+        (data) => {
+          form.setValues(data);
+          setPermissions(data.permissions);
+        }
+      }
       title={`Edit user`}
       onSubmit={form.onSubmit}
-      onSave={() => updateUser(userId!, form.values)}
+      onSave={
+        () => updateUser(userId!, {...form.values, permissions})
+      }
       queryKeyForInvalidation={['users']}
       disabledSaving={editSelf}
     >
-      <UserForm form={form} readonly={editSelf}/>
+      <UserEditor
+        form={form} 
+        permissions={permissions}
+        onChange={
+          (perms) => {
+            setPermissions(perms);
+          }
+        }
+        readOnly={editSelf}
+      />
     </ResourceEdition>
   );
 }

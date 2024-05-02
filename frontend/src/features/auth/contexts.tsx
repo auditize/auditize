@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useState } from "react";
-import { getLoggedInUser } from "./api";
+import { getCurrentUserInfo } from "./api";
 
 type AuthContextProps = {
   currentUser: CurrentUserInfo | null;
@@ -15,7 +15,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const { data } = useQuery({
     queryKey: ['current-user', lastRefresh],
     // FIXME: handle possible errors and make a distinction between 401 and others
-    queryFn: () => getLoggedInUser(),
+    queryFn: () => getCurrentUserInfo(),
     staleTime: Infinity
   });
 
