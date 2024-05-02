@@ -18,28 +18,27 @@ import {
   Outlet,
 } from "react-router-dom";
 import { AuthProvider, LogInForm, useCurrentUser } from '@/features/auth';
-import { useEffect, useState } from 'react';
 
-function IfLoggedIn({isLoggedIn, children} : {isLoggedIn: boolean, children: React.ReactNode}) {
-  return isLoggedIn ? <>{children}</> : null;
+function IfAuthenticated({isAuthenticated, children} : {isAuthenticated: boolean, children: React.ReactNode}) {
+  return isAuthenticated ? <>{children}</> : null;
 }
 
-function IfNotLoggedIn({isLoggedIn, children} : {isLoggedIn: boolean, children: React.ReactNode}) {
-  return !isLoggedIn ? <>{children}</> : null;
+function IfAnonymous({isAuthenticated, children} : {isAuthenticated: boolean, children: React.ReactNode}) {
+  return !isAuthenticated ? <>{children}</> : null;
 }
 
-function Main({isLoggedIn} : {isLoggedIn: boolean}) {
+function Main({isAuthenticated} : {isAuthenticated: boolean}) {
   return (
     <AppShell header={{height: 60}}>
       <AppShell.Header>
         <Group h="100%" px="md" justify="right">
           <Group ml="xl">
-            <IfNotLoggedIn isLoggedIn={isLoggedIn}>
+            <IfAnonymous isAuthenticated={isAuthenticated}>
               <UnstyledButton>
                 <Link to="/log-in">Log-in</Link>
               </UnstyledButton>
-            </IfNotLoggedIn>
-            <IfLoggedIn isLoggedIn={isLoggedIn}>
+            </IfAnonymous>
+            <IfAuthenticated isAuthenticated={isAuthenticated}>
               <UnstyledButton>
                 <Link to="/logs">Logs</Link>
               </UnstyledButton>
@@ -52,7 +51,7 @@ function Main({isLoggedIn} : {isLoggedIn: boolean}) {
               <UnstyledButton>
                 <Link to="/integrations">Integration Management</Link>
               </UnstyledButton>
-            </IfLoggedIn>
+            </IfAuthenticated>
           </Group>
         </Group>
       </AppShell.Header>
@@ -64,20 +63,13 @@ function Main({isLoggedIn} : {isLoggedIn: boolean}) {
 }
 
 function AppRoutes() {
-  const {currentUser} = useCurrentUser();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    if (currentUser) {
-      setIsLoggedIn(true);
-    }
-  }, [currentUser]);
+  const {isAuthenticated, refreshUser} = useCurrentUser();
 
   const router = createBrowserRouter([
-    isLoggedIn ?
+    isAuthenticated ?
       {
         path: "/",
-        element: <Main isLoggedIn={isLoggedIn}/>,
+        element: <Main isAuthenticated={isAuthenticated}/>,
         children: [
           {
             path: "logs",
@@ -99,7 +91,7 @@ function AppRoutes() {
       } :
       {
         path: "*",
-        element: <Main isLoggedIn={isLoggedIn}/>,
+        element: <Main isAuthenticated={isAuthenticated}/>,
       },
     {
       path: "/signup/:token",
@@ -107,9 +99,7 @@ function AppRoutes() {
     },
     {
       path: "/log-in",
-      element: <LogInForm onLogged={() => {
-        setIsLoggedIn(true);
-      }}/>
+      element: <LogInForm onLogged={refreshUser}/>
     }
   ]);
 

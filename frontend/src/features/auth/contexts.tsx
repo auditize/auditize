@@ -1,23 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import { getLoggedInUser } from "./api";
 
 type AuthContextProps = {
   currentUser: CurrentUserInfo | null;
+  refreshUser: () => void;
+  isAuthenticated: boolean;
 };
 
 const AuthContext = createContext<AuthContextProps | null>(null);
 
 export function AuthProvider({children}: {children: React.ReactNode}) {
+  const [lastRefresh, setLastRefresh] = useState<Date>(() => new Date());
   const { data } = useQuery({
-    queryKey: ['current-user'],
+    queryKey: ['current-user', lastRefresh],
     // FIXME: handle possible errors and make a distinction between 401 and others
     queryFn: () => getLoggedInUser(),
     staleTime: Infinity
   });
 
   return (
-    <AuthContext.Provider value={{currentUser: data || null}}>
+    <AuthContext.Provider value={{
+      currentUser: data || null,
+      refreshUser: () => setLastRefresh(new Date()),
+      isAuthenticated: !!data,
+    }}>
       {children}
     </AuthContext.Provider>
   );
