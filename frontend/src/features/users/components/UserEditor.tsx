@@ -4,6 +4,7 @@ import { createUser, updateUser, getUser } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
 import { useAuthenticatedUser, useCurrentUser } from '@/features/auth';
 import { WithPermissionManagement } from '@/features/permissions/components/WithPermissionManagement';
+import { useEffect } from 'react';
 
 function useUserForm(values: {name?: string}) {
   return useForm({
@@ -34,11 +35,15 @@ function UserForm({form, readonly = false}: {form: UseFormReturnType<any>, reado
 export function UserCreation({opened}: {opened?: boolean}) {
   const form = useUserForm({});
 
+  useEffect(() => {
+    form.reset();
+  }, [opened]);
+
   return (
     <ResourceCreation
       title={"Create new user"}
-      form={form}
       opened={!!opened}
+      onSubmit={form.onSubmit}
       onSave={() => createUser(form.values.firstName, form.values.lastName, form.values.email)}
       queryKeyForInvalidation={['users']}
     >
@@ -57,8 +62,9 @@ export function UserEdition({userId}: {userId: string | null}) {
       resourceId={userId}
       queryKeyForLoad={['user', userId]}
       queryFnForLoad={() => getUser(userId!)}
+      onDataLoaded={(data) => form.setValues(data)}
       title={`Edit user`}
-      form={form}
+      onSubmit={form.onSubmit}
       onSave={() => updateUser(userId!, form.values)}
       queryKeyForInvalidation={['users']}
       disabledSaving={editSelf}

@@ -1,14 +1,13 @@
 import { Modal, Box, Group, Button } from "@mantine/core";
-import { UseFormReturnType } from "@mantine/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { FormEventHandler, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 interface ResourceEditorProps {
   title: string;
   opened: boolean;
-  form: UseFormReturnType<any>;
+  onSubmit: (handleSubmit: () => void) => FormEventHandler<HTMLFormElement>;
   disabledSaving?: boolean;
   onSave: () => Promise<any>;
   queryKeyForInvalidation: any[];
@@ -17,7 +16,7 @@ interface ResourceEditorProps {
 }
 
 function ResourceEditor(
-  { title, opened, form, disabledSaving = false, onSave, onSaveSuccess, queryKeyForInvalidation, children }:
+  { title, opened, onSubmit, disabledSaving = false, onSave, onSaveSuccess, queryKeyForInvalidation, children }:
   ResourceEditorProps
 ) {
   const navigate = useNavigate();
@@ -53,7 +52,7 @@ function ResourceEditor(
     >
       <div>
         <Box mb="md">
-          <form onSubmit={form.onSubmit(() => mutation.mutate())}>
+          <form onSubmit={onSubmit(() => mutation.mutate())}>
             {children}
             <Group justify="center">
               {
@@ -79,12 +78,6 @@ function ResourceEditor(
 }
 
 export function ResourceCreation(props: ResourceEditorProps) {
-  const { form, opened } = props;
-
-  useEffect(() => {
-    form.reset();
-  }, [opened]);
-
   return (<ResourceEditor {...props} />);
 }
 
@@ -92,10 +85,12 @@ type ResourceEditionProps = Omit<ResourceEditorProps, "opened"> & {
   resourceId: string | null;
   queryKeyForLoad: any[];
   queryFnForLoad: () => Promise<any>;
+  onDataLoaded: (data: any) => void;
 }
 
-export function ResourceEdition({resourceId, queryKeyForLoad, queryFnForLoad, ...props}: ResourceEditionProps) {
-  const { form } = props;
+export function ResourceEdition(
+  {resourceId, queryKeyForLoad, queryFnForLoad, onDataLoaded, ...props}: ResourceEditionProps
+) {
   const { data, isPending, error } = useQuery({
     queryKey: queryKeyForLoad,
     queryFn: queryFnForLoad,
@@ -105,7 +100,7 @@ export function ResourceEdition({resourceId, queryKeyForLoad, queryFnForLoad, ..
   useEffect(() => {
     if (!!resourceId) {
       if (data)
-        form.setValues(data);
+        onDataLoaded(data);
     }
   }, [resourceId, data]);
 

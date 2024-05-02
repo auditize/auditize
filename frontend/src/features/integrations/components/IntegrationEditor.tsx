@@ -51,14 +51,15 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    form.reset();
     setToken(null);
   }, [opened]);
 
   return (
     <ResourceCreation
       title={"Create new integration"}
-      form={form}
       opened={!!opened}
+      onSubmit={form.onSubmit}
       onSave={() => createIntegration(form.values.name!)}
       onSaveSuccess={(data) => {
         const [_, token] = data as [string, string];
@@ -103,8 +104,9 @@ export function IntegrationEdition({integrationId}: {integrationId: string | nul
       resourceId={integrationId}
       queryKeyForLoad={['integration', integrationId]}
       queryFnForLoad={() => getIntegration(integrationId!)}
+      onDataLoaded={(data) => form.setValues(data)}
       title={`Edit integration`}
-      form={form}
+      onSubmit={form.onSubmit}
       onSave={() => updateIntegration(integrationId!, form.values)}
       queryKeyForInvalidation={['integrations']}
     >
