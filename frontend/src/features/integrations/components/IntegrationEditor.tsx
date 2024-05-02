@@ -54,8 +54,8 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
         const [_, token] = data as [string, string];
         setToken(token);
       }}
-      isSaved={!!token}
       queryKeyForInvalidation={['integrations']}
+      disabledSaving={!!token}
     >
       <IntegrationForm form={form}/>
       {token && <Token value={token}/>}

@@ -9,15 +9,15 @@ interface ResourceEditorProps {
   title: string;
   opened: boolean;
   form: UseFormReturnType<any>;
+  disabledSaving?: boolean;
   onSave: () => Promise<any>;
-  onSaveSuccess?: (data: any) => void;
-  isSaved?: boolean;
   queryKeyForInvalidation: any[];
+  onSaveSuccess?: (data: any) => void;
   children: React.ReactNode;
 }
 
 function ResourceEditor(
-  { title, opened, form, onSave, onSaveSuccess, isSaved = false, queryKeyForInvalidation, children }:
+  { title, opened, form, disabledSaving = false, onSave, onSaveSuccess, queryKeyForInvalidation, children }:
   ResourceEditorProps
 ) {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ function ResourceEditor(
 
   useEffect(() => {
     setError("");
-  }, [opened, isSaved]);
+  }, [opened, disabledSaving]);
 
   const onClose = () => navigate(-1);
 
@@ -57,7 +57,7 @@ function ResourceEditor(
             {children}
             <Group justify="center">
               {
-                ! isSaved && (
+                ! disabledSaving && (
                   <>
                     <Button onClick={onClose}>Cancel</Button>
                     <Button type='submit' color="blue">Save</Button>
@@ -65,7 +65,7 @@ function ResourceEditor(
                 )
               }
               {
-                isSaved && (
+                disabledSaving && (
                   <Button onClick={onClose}>Close</Button>
                 )
               }

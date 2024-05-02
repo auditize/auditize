@@ -2,6 +2,7 @@ import { useForm, isNotEmpty, isEmail, UseFormReturnType } from '@mantine/form';
 import { TextInput } from '@mantine/core';
 import { createUser, updateUser, getUser } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
+import { useAuthenticatedUser, useCurrentUser } from '@/features/auth';
 
 function useUserForm(values: {name?: string}) {
   return useForm({
@@ -19,12 +20,12 @@ function useUserForm(values: {name?: string}) {
   });
 }
 
-function UserForm({form}: {form: UseFormReturnType<any>}) {
+function UserForm({form, readonly = false}: {form: UseFormReturnType<any>, readonly?: boolean}) {
   return (
     <>
-      <TextInput label="Firstname" placeholder="Firstname" data-autofocus {...form.getInputProps('firstName')}/>
-      <TextInput label="Lastname" placeholder="Lastname" data-autofocus {...form.getInputProps('lastName')}/>
-      <TextInput label="email" placeholder="email" data-autofocus {...form.getInputProps('email')}/>
+      <TextInput label="Firstname" placeholder="Firstname" data-autofocus {...form.getInputProps('firstName')} disabled={readonly}/>
+      <TextInput label="Lastname" placeholder="Lastname" data-autofocus {...form.getInputProps('lastName')} disabled={readonly}/>
+      <TextInput label="Email" placeholder="Email" data-autofocus {...form.getInputProps('email')} disabled={readonly}/>
     </>
   );
 }
@@ -47,6 +48,8 @@ export function UserCreation({opened}: {opened?: boolean}) {
 
 export function UserEdition({userId}: {userId: string | null}) {
   const form = useUserForm({});
+  const {currentUser} = useAuthenticatedUser();
+  const editSelf = userId === currentUser.id;
 
   return (
     <ResourceEdition
@@ -57,8 +60,9 @@ export function UserEdition({userId}: {userId: string | null}) {
       form={form}
       onSave={() => updateUser(userId!, form.values)}
       queryKeyForInvalidation={['users']}
+      disabledSaving={editSelf}
     >
-      <UserForm form={form}/>
+      <UserForm form={form} readonly={editSelf}/>
     </ResourceEdition>
   );
 }
