@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { CopyIcon } from '@/components/CopyIcon';
 import { useMutation } from '@tanstack/react-query';
 import { InlineErrorMessage } from '@/components/InlineErrorMessage';
+import { WithPermissionManagement } from '@/features/permissions/components/WithPermissionManagement';
 
 function useIntegrationForm() {
   return useForm({
@@ -18,11 +19,20 @@ function useIntegrationForm() {
   });
 }
 
-function IntegrationForm({form}: {form: ReturnType<typeof useIntegrationForm>}) {
+function BaseIntegrationForm({form}: {form: ReturnType<typeof useIntegrationForm>}) {
   return (
     <>
       <TextInput label="Name" placeholder="Name" data-autofocus {...form.getInputProps('name')}/>
     </>
+  );
+}
+
+function IntegrationForm({form, children}: {form: ReturnType<typeof useIntegrationForm>, children: React.ReactNode}) {
+  return (
+    <WithPermissionManagement>
+      <BaseIntegrationForm form={form}/>
+      {children}
+    </WithPermissionManagement>
   );
 }
 
@@ -57,8 +67,9 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
       queryKeyForInvalidation={['integrations']}
       disabledSaving={!!token}
     >
-      <IntegrationForm form={form}/>
-      {token && <Token value={token}/>}
+      <IntegrationForm form={form}>
+        {token && <Token value={token}/>}
+      </IntegrationForm>
     </ResourceCreation>
   );
 }
@@ -97,8 +108,9 @@ export function IntegrationEdition({integrationId}: {integrationId: string | nul
       onSave={() => updateIntegration(integrationId!, form.values)}
       queryKeyForInvalidation={['integrations']}
     >
-      <IntegrationForm form={form}/>
-      <TokenRegeneration integrationId={integrationId!}/>
+      <IntegrationForm form={form}>
+        <TokenRegeneration integrationId={integrationId!}/>
+      </IntegrationForm>
     </ResourceEdition>
   );
 }

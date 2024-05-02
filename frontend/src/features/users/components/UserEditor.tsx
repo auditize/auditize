@@ -3,6 +3,7 @@ import { TextInput } from '@mantine/core';
 import { createUser, updateUser, getUser } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
 import { useAuthenticatedUser, useCurrentUser } from '@/features/auth';
+import { WithPermissionManagement } from '@/features/permissions/components/WithPermissionManagement';
 
 function useUserForm(values: {name?: string}) {
   return useForm({
@@ -22,11 +23,11 @@ function useUserForm(values: {name?: string}) {
 
 function UserForm({form, readonly = false}: {form: UseFormReturnType<any>, readonly?: boolean}) {
   return (
-    <>
+    <WithPermissionManagement>
       <TextInput label="Firstname" placeholder="Firstname" data-autofocus {...form.getInputProps('firstName')} disabled={readonly}/>
       <TextInput label="Lastname" placeholder="Lastname" data-autofocus {...form.getInputProps('lastName')} disabled={readonly}/>
       <TextInput label="Email" placeholder="Email" data-autofocus {...form.getInputProps('email')} disabled={readonly}/>
-    </>
+    </WithPermissionManagement>
   );
 }
 
