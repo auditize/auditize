@@ -15,6 +15,7 @@ from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 from tests.helpers.integrations import PreparedIntegration
 from conftest import IntegrationBuilder, UserBuilder
+from tests.helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
 
@@ -192,6 +193,31 @@ async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
     )
 
 
+async def test_repo_list_user_repos_simple(user_builder: UserBuilder, repo: PreparedRepo):
+    # some very basic test to ensure that the response is properly shaped
+    # we'll test the permissions in a separate test
+
+    user = await user_builder({"is_superadmin": True})
+
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_get(
+            "/users/me/repos",
+            expected_status_code=200,
+            expected_json={
+                "data": [
+                    repo.expected_api_response({
+                        "permissions": {
+                            "read_logs": True,
+                            "write_logs": True
+                        }
+                    })
+                ],
+                "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1}
+            }
+        )
+
+
 async def _test_repo_list_user_repos(client: HttpTestHelper, params: dict, expected: dict[str, dict]):
     resp = await client.assert_get(
         "/users/me/repos", params=params,
@@ -207,7 +233,7 @@ async def _test_repo_list_user_repos(client: HttpTestHelper, params: dict, expec
         )
 
 
-async def test_repo_list_user_repos(user_builder: UserBuilder, dbm: DatabaseManager):
+async def test_repo_list_user_repos_with_permissions(user_builder: UserBuilder, dbm: DatabaseManager):
     repo_1 = await PreparedRepo.create(dbm, {"name": "repo_1"})
     repo_2 = await PreparedRepo.create(dbm, {"name": "repo_2"})
     repo_3 = await PreparedRepo.create(dbm, {"name": "repo_3"})
