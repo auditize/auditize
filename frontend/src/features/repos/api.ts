@@ -21,12 +21,12 @@ export async function getRepos(
   return [response.data.data, response.data.pagination];
 }
 
-export async function getAllRepos(): Promise<Repo[]> {
-  return await getAllPagePaginatedItems<Repo>('/repos');
-}
-
-export async function getAllMyRepos(): Promise<Repo[]> {
-  return await getAllPagePaginatedItems<Repo>('/repos', {has_log_permission: true, include: 'permissions'});
+export async function getAllMyRepos(
+  {hasReadPermission, hasWritePermission} : {hasReadPermission?: boolean, hasWritePermission?: boolean}
+): Promise<Repo[]> {
+  return await getAllPagePaginatedItems<Repo>(
+    '/users/me/repos', {has_read_permission: hasReadPermission, has_write_permission: hasWritePermission}
+  );
 }
 
 export async function getRepo(repoId: string): Promise<Repo> {

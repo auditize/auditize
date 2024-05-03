@@ -5,7 +5,7 @@ import { getAllLogEventNames, getAllLogEventCategories, getAllLogActorTypes, get
 import { PaginatedSelector, PopoverForm, CustomDateTimePicker } from '@/components';
 import { NodeSelector } from './NodeSelector';
 import { labelize } from '@/utils/format';
-import { getAllRepos } from '@/features/repos/api';
+import { getAllMyRepos } from '@/features/repos';
 
 function EventCategorySelector(
   { repoId, category, onChange }:
@@ -99,7 +99,7 @@ function RepoSelector({ repoId, onChange }: { repoId?: string; onChange: (value:
   return (
     <PaginatedSelector
       label="Repository"
-      queryKey={['repos']} queryFn={getAllRepos}
+      queryKey={['repos']} queryFn={() => getAllMyRepos({hasReadPermission: true})}
       selectedItem={repoId} clearable={false} onChange={onChange}
       onDataLoaded={(repos: Repo[]) => {
         // repo has not been auto-selected yet

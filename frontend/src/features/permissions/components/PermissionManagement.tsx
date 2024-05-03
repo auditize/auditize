@@ -130,7 +130,7 @@ function LogsPermissionManagement(
 ) {
   const {data, error, isPending} = useQuery({
     queryKey: ['assignable-log-repos'],
-    queryFn: () => getAllMyRepos(),
+    queryFn: () => getAllMyRepos({}),
     placeholderData: [],
   });
 
