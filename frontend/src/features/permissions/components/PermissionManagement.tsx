@@ -112,6 +112,39 @@ function EntitiesPermissionManagement(
   );
 }
 
+function LogsPermissionManagement(
+  {
+    perms,
+    onChange,
+    assignablePerms,
+    readOnly = false,
+  }: 
+  {
+    perms: Auditize.Permissions['logs'],
+    onChange: (perms: Auditize.Permissions['logs']) => void,
+    assignablePerms: Auditize.ReadWritePermissions
+    readOnly?: boolean
+  }
+) {
+  return (
+    <Accordion.Item value="entities">
+      <Accordion.Control>Entities</Accordion.Control>
+        <Accordion.Panel>
+          <Table withRowBorders={false}>
+            <Table.Tbody>
+              <ReadWritePermissionManagement
+                perms={perms}
+                assignablePerms={assignablePerms}
+                onChange={(logPerms) => onChange({...perms, ...logPerms})}
+                readOnly={readOnly}
+              />
+            </Table.Tbody>
+          </Table>
+        </Accordion.Panel>
+      </Accordion.Item>
+  );
+}
+
 export function PermissionManagement(
   {perms, onChange, readOnly = false}: 
   {perms: Auditize.Permissions, onChange: (perms: Auditize.Permissions) => void, readOnly?: boolean}
@@ -132,6 +165,12 @@ export function PermissionManagement(
           perms={perms.entities}
           assignablePerms={assignablePerms.entities}
           onChange={(entitiesPerms) => onChange({...perms, entities: entitiesPerms})}
+          readOnly={readOnly}
+        />
+        <LogsPermissionManagement
+          perms={perms.logs}
+          assignablePerms={assignablePerms.logs}
+          onChange={(logsPerms) => onChange({...perms, logs: logsPerms})}
           readOnly={readOnly}
         />
       </Accordion>

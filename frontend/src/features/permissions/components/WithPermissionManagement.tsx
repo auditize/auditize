@@ -31,7 +31,7 @@ export function WithPermissionManagement(
       </Tabs.Panel>
       <Tabs.Panel value="permissions">
         <PermissionManagement
-          permissions={permissions}
+          perms={permissions}
           onChange={onChange}
           readOnly={readOnly}
         />
