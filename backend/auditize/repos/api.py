@@ -2,8 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from auditize.common.exceptions import AuthenticationFailure
 from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse, RepoReadingResponse, \
-    RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData, RepoLogPermissionsData
+    RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData, RepoLogPermissionsData, UserRepoListResponse
 from auditize.repos import service
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.auth import Authenticated, get_authenticated
@@ -118,6 +119,51 @@ async def list_repos(
     if include:
         for repo in response.data:
             await _handle_repo_include_options(repo, include, dbm, authenticated)
+    return response
+
+
+@router.get(
+    "/users/me/repos",
+    summary="List user log repositories",
+    tags=["users"],
+    response_model=UserRepoListResponse,
+)
+async def list_user_repos(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    has_read_permission: Annotated[
+        bool, Query(description="Filter repositories on which user can read logs")
+    ] = False,
+    has_write_permission: Annotated[
+        bool, Query(description="Filter repositories on which user can write logs")
+    ] = False,
+    page: int = 1,
+    page_size: int = 10,
+) -> UserRepoListResponse:
+    if not authenticated.user:
+        raise AuthenticationFailure()
+
+    repo_ids = None
+    if has_read_permission or has_write_permission:
+        can_read = has_read_permission and not authenticated.comply(can_read_logs())
+        can_write = has_write_permission and not authenticated.comply(can_write_logs())
+        if can_read or can_write:
+            repo_ids = authenticated.permissions.logs.get_repos(can_read=can_read, can_write=can_write)
+    else:
+        if not authenticated.comply(permissions_and(can_read_logs(), can_write_logs())):
+            repo_ids = authenticated.permissions.logs.get_repos()
+
+    repos, page_info = await service.get_repos(
+        dbm, repo_ids=repo_ids, page=page, page_size=page_size
+    )
+
+    response = UserRepoListResponse.build(repos, page_info)
+    for repo_response in response.data:
+        repo_response.permissions = RepoLogPermissionsData(
+            read_logs=authenticated.comply(can_read_logs(repo_response.id)),
+            write_logs=authenticated.comply(can_write_logs(repo_response.id)),
+        )
+
     return response
 
 

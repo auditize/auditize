@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pytest
 import callee
+from icecream import ic
 
 from auditize.common.db import DatabaseManager
 
@@ -296,6 +297,84 @@ async def test_repo_list_with_permissions(dbm: DatabaseManager, integration_buil
                     "total": 2,
                     "total_pages": 1
                 }
+            }
+        )
+
+
+async def _test_repo_list_user_repos(client: HttpTestHelper, params: dict, expected: dict[str, dict]):
+    resp = await client.assert_get(
+        "/users/me/repos", params=params,
+        expected_status_code=200,
+    )
+    data = resp.json()["data"]
+    assert len(expected) == len(data)
+    for expected_repo, expected_repo_perms in expected.items():
+        ic(expected_repo, expected_repo_perms)
+        assert any(
+            repo["id"] == expected_repo and repo["permissions"] == expected_repo_perms
+            for repo in data
+        )
+
+
+async def test_repo_list_user_repos(user_builder: UserBuilder, dbm: DatabaseManager):
+    repo_1 = await PreparedRepo.create(dbm, {"name": "repo_1"})
+    repo_2 = await PreparedRepo.create(dbm, {"name": "repo_2"})
+    repo_3 = await PreparedRepo.create(dbm, {"name": "repo_3"})
+
+    user = await user_builder({"logs": {"read": True, "write": True}})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await _test_repo_list_user_repos(
+            client,
+            {},
+            {
+                repo_1.id: {"read_logs": True, "write_logs": True},
+                repo_2.id: {"read_logs": True, "write_logs": True},
+                repo_3.id: {"read_logs": True, "write_logs": True}
+            }
+        )
+
+    user = await user_builder({
+        "logs": {
+            "repos": {
+                repo_1.id: {"read": True, "write": False},
+                repo_2.id: {"read": False, "write": True},
+                repo_3.id: {"read": True, "write": True}
+            }
+        }
+    })
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await _test_repo_list_user_repos(
+            client,
+            {},
+            {
+                repo_1.id: {"read_logs": True, "write_logs": False},
+                repo_2.id: {"read_logs": False, "write_logs": True},
+                repo_3.id: {"read_logs": True, "write_logs": True}
+            }
+        )
+        await _test_repo_list_user_repos(
+            client,
+            {"has_read_permission": True},
+            {
+                repo_1.id: {"read_logs": True, "write_logs": False},
+                repo_3.id: {"read_logs": True, "write_logs": True}
+            }
+        )
+        await _test_repo_list_user_repos(
+            client,
+            {"has_write_permission": True},
+            {
+                repo_2.id: {"read_logs": False, "write_logs": True},
+                repo_3.id: {"read_logs": True, "write_logs": True}
+            }
+        )
+        await _test_repo_list_user_repos(
+            client,
+            {"has_read_permission": True, "has_write_permission": True},
+            {
+                repo_3.id: {"read_logs": True, "write_logs": True}
             }
         )
 

@@ -37,6 +37,14 @@ class LogsPermissions(ReadWritePermissions):
 
     model_config = ConfigDict(extra='forbid')
 
+    def get_repos(self, *, can_read=False, can_write=False) -> list[str]:
+        def perms_ok(perms: ReadWritePermissions):
+            read_ok = perms.read if can_read else True
+            write_ok = perms.write if can_write else True
+            return read_ok and write_ok
+
+        return [repo_id for repo_id, perms in self.repos.items() if perms_ok(perms)]
+
 
 class Permissions(BaseModel):
     is_superadmin: bool | None = Field(default=None)
