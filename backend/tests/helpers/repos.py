@@ -47,7 +47,6 @@ class PreparedRepo:
             "name": self.data["name"],
             "created_at": callee.IsA(str),
             "stats": None,
-            "permissions": None,
             **(extra or {})
         }
 

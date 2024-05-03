@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from motor.motor_asyncio import AsyncIOMotorCollection
+
 import pytest
 import callee
 from icecream import ic
@@ -17,7 +19,7 @@ from conftest import IntegrationBuilder, UserBuilder
 pytestmark = pytest.mark.anyio
 
 
-async def _test_repo_create(client: HttpTestHelper, dbm: DatabaseManager):
+async def _test_repo_create(client: HttpTestHelper, dbm: DatabaseManager, collection: AsyncIOMotorCollection):
     data = {"name": "myrepo"}
 
     resp = await client.assert_post(
@@ -28,15 +30,16 @@ async def _test_repo_create(client: HttpTestHelper, dbm: DatabaseManager):
     repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
     await assert_collection(dbm.core_db.repos, [repo.expected_document()])
 
-    resp = await client.get(f"/repos/{repo.id}?include=permissions")
-    assert resp.json()["permissions"] == {"read_logs": True, "write_logs": True}
+    # check that the authenticated user has read & write permissions on the new repo
+    permission_holder = await collection.find_one({})
+    assert permission_holder["permissions"]["logs"]["repos"] == {repo.id: {"read": True, "write": True}}
 
 
 async def test_repo_create_as_integration(integration_builder: IntegrationBuilder, dbm: DatabaseManager):
     integration_builder = await integration_builder({"entities": {"repos": {"write": True}}})
 
     async with integration_builder.client() as client:
-        await _test_repo_create(client, dbm)
+        await _test_repo_create(client, dbm, dbm.core_db.integrations)
 
 
 async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManager):
@@ -44,7 +47,7 @@ async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManag
 
     async with user_builder.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await _test_repo_create(client, dbm)
+        await _test_repo_create(client, dbm, dbm.core_db.users)
 
 
 async def test_repo_create_missing_name(client: HttpTestHelper, dbm: DatabaseManager):
@@ -140,42 +143,6 @@ async def test_repo_get_with_stats(client: HttpTestHelper, repo: PreparedRepo):
     )
 
 
-async def test_repo_get_with_permissions_as_superadmin(repo: PreparedRepo, dbm: DatabaseManager):
-    integration = await PreparedIntegration.inject_into_db_with_permissions(
-        dbm, {"is_superadmin": True}
-    )
-
-    async with integration.client() as client:
-        await client.assert_get(
-            f"/repos/{repo.id}?include=permissions",
-            expected_status_code=200,
-            expected_json=repo.expected_api_response({
-                "permissions": {
-                    "read_logs": True,
-                    "write_logs": True
-                }
-            })
-        )
-
-
-async def test_repo_get_with_permissions_as_repo_rw(repo: PreparedRepo, dbm: DatabaseManager):
-    integration = await PreparedIntegration.inject_into_db_with_permissions(
-        dbm, {"entities": {"repos": {"read": True, "write": True}}}
-    )
-
-    async with integration.client() as client:
-        await client.assert_get(
-            f"/repos/{repo.id}?include=permissions",
-            expected_status_code=200,
-            expected_json=repo.expected_api_response({
-                "permissions": {
-                    "read_logs": False,
-                    "write_logs": False
-                }
-            })
-        )
-
-
 async def test_repo_get_unknown_id(client: HttpTestHelper, dbm: DatabaseManager):
     await client.assert_get(
         f"/repos/{UNKNOWN_OBJECT_ID}",
@@ -223,82 +190,6 @@ async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
             }
         }
     )
-
-
-async def test_repo_list_with_permissions_as_superadmin(repo: PreparedRepo, integration_builder: IntegrationBuilder):
-    integration = await integration_builder({"is_superadmin": True})
-
-    async with integration.client() as client:
-        await client.assert_get(
-            f"/repos?include=permissions",
-            expected_status_code=200,
-            expected_json={
-                "data": [
-                    repo.expected_api_response({
-                        "permissions": {
-                            "read_logs": True,
-                            "write_logs": True
-                        }
-                    })
-                ],
-                "pagination": {
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 1,
-                    "total_pages": 1
-                }
-            }
-        )
-
-
-async def test_repo_list_with_permissions(dbm: DatabaseManager, integration_builder: IntegrationBuilder):
-    repos = [await PreparedRepo.create(dbm, {"name": f"repo_{i}"}) for i in range(3)]
-
-    # First test, as superadmin
-    integration = await integration_builder({"is_superadmin": True})
-    async with integration.client() as client:
-        await client.assert_get(
-            "/repos?has_log_permission=true",
-            expected_status_code=200,
-            expected_json={
-                "data": [
-                    repo.expected_api_response() for repo in repos
-                ],
-                "pagination": {
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 3,
-                    "total_pages": 1
-                }
-            }
-        )
-
-    # Second test, as an integration with mixed permissions
-    integration = await integration_builder({
-        "logs": {
-            "repos": {
-                repos[0].id: {"read": True, "write": False},
-                repos[1].id: {"read": False, "write": True},
-                repos[2].id: {"read": False, "write": False}
-            }
-        }
-    })
-    async with integration.client() as client:
-        await client.assert_get(
-            "/repos?has_log_permission=true",
-            expected_status_code=200,
-            expected_json={
-                "data": [
-                    repo.expected_api_response() for repo in repos[:2]
-                ],
-                "pagination": {
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 2,
-                    "total_pages": 1
-                }
-            }
-        )
 
 
 async def _test_repo_list_user_repos(client: HttpTestHelper, params: dict, expected: dict[str, dict]):

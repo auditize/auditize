@@ -44,7 +44,6 @@ class RepoReadingResponse(BaseModel):
     name: str = Field(description="The repository name")
     created_at: datetime = Field(description="The creation date")
     stats: Optional[RepoStatsData] = Field(description="The repository stats", default=None)
-    permissions: Optional[RepoLogPermissionsData] = Field(description="The repository permissions", default=None)
 
     @field_serializer("created_at", when_used="json")
     def serialize_datetime(self, value):
@@ -76,4 +75,3 @@ class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoReadingResponse])
 
 class RepoIncludeOptions(Enum):
     STATS = "stats"
-    PERMISSIONS = "permissions"

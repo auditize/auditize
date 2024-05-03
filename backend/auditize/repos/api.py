@@ -8,7 +8,7 @@ from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse,
 from auditize.repos import service
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.auth import Authenticated, get_authenticated
-from auditize.permissions.assertions import can_read_logs, can_write_logs, permissions_or, permissions_and
+from auditize.permissions.assertions import can_read_logs, can_write_logs, permissions_and
 from auditize.integrations.service import update_integration
 from auditize.integrations.models import IntegrationUpdate
 from auditize.users.service import update_user
@@ -66,16 +66,11 @@ async def update_repo(
 
 async def _handle_repo_include_options(
     repo_response: RepoReadingResponse, include: list[RepoIncludeOptions],
-    dbm: DatabaseManager, authenticated: Authenticated
+    dbm: DatabaseManager
 ):
     if RepoIncludeOptions.STATS in include:
         stats = await service.get_repo_stats(dbm, repo_response.id)
         repo_response.stats = RepoStatsData.model_validate(stats.model_dump())
-    if RepoIncludeOptions.PERMISSIONS in include:
-        repo_response.permissions = RepoLogPermissionsData(
-            read_logs=authenticated.comply(can_read_logs(repo_response.id)),
-            write_logs=authenticated.comply(can_write_logs(repo_response.id))
-        )
 
 
 @router.get(
@@ -92,7 +87,7 @@ async def get_repo(
 ) -> RepoReadingResponse:
     repo = await service.get_repo(dbm, repo_id)
     response = RepoReadingResponse.from_repo(repo)
-    await _handle_repo_include_options(response, include, dbm, authenticated)
+    await _handle_repo_include_options(response, include, dbm)
     return response
 
 
@@ -106,19 +101,15 @@ async def list_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
-    has_log_permission: Annotated[bool, Query(description="Filter repositories on which authenticated at least a read or write permission on log")] = False,
     page: int = 1, page_size: int = 10
 ) -> RepoListResponse:
-    repo_ids = None
-    if has_log_permission and not authenticated.comply(permissions_or(can_read_logs(), can_write_logs())):
-        repo_ids = authenticated.permissions.logs.repos.keys()
     repos, page_info = await service.get_repos(
-        dbm, repo_ids=repo_ids, page=page, page_size=page_size
+        dbm, page=page, page_size=page_size
     )
     response = RepoListResponse.build(repos, page_info)
     if include:
         for repo in response.data:
-            await _handle_repo_include_options(repo, include, dbm, authenticated)
+            await _handle_repo_include_options(repo, include, dbm)
     return response
 
 
