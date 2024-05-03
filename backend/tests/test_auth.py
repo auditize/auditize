@@ -117,3 +117,7 @@ async def test_auth_user_invalid_session_token_expired(dbm: DatabaseManager, cli
 
     with pytest.raises(AuthenticationFailure, match="JWT token expired"):
         await get_authenticated(dbm, request)
+
+
+async def test_auth_http_request(anon_client: HttpTestHelper):
+    anon_client.assert_unauthorized_get("/repos")

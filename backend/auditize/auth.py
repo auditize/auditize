@@ -1,10 +1,10 @@
-from typing import Annotated
+from typing import Annotated, Type
 import dataclasses
 
 from fastapi import Depends, Request
 
 from auditize.common.db import DatabaseManager, get_dbm
-from auditize.common.exceptions import UnknownModelException, AuthenticationFailure
+from auditize.common.exceptions import UnknownModelException, AuthenticationFailure, PermissionDenied
 from auditize.integrations.models import Integration
 from auditize.integrations.service import get_integration_by_token
 from auditize.users.service import get_user_by_session_token
@@ -96,3 +96,16 @@ async def get_authenticated(
         return await authenticate_user(dbm, request)
 
     raise AuthenticationFailure()
+
+
+def authorized(assertion: PermissionAssertion):
+    def func(authenticated: Authenticated = Depends(get_authenticated)):
+        if not authenticated.comply(assertion):
+            raise PermissionDenied()
+        return authenticated
+
+    return func
+
+
+def Authorized(assertion: PermissionAssertion) -> Type[Authenticated]:  # noqa
+    return Annotated[Authenticated, Depends(authorized(assertion))]

@@ -51,28 +51,28 @@ async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManag
         await _test_repo_create(client, dbm, dbm.core_db.users)
 
 
-async def test_repo_create_missing_name(client: HttpTestHelper, dbm: DatabaseManager):
-    await client.assert_post(
+async def test_repo_create_missing_name(repo_write_client: HttpTestHelper, dbm: DatabaseManager):
+    await repo_write_client.assert_post(
         "/repos", json={},
         expected_status_code=422
     )
 
 
-async def test_repo_create_already_used_name(client: HttpTestHelper, repo: PreparedRepo):
-    await client.assert_post(
+async def test_repo_create_already_used_name(repo_write_client: HttpTestHelper, repo: PreparedRepo):
+    await repo_write_client.assert_post(
         "/repos", json={"name": repo.data["name"]},
         expected_status_code=409
     )
 
 
-async def test_repo_create_unauthorized(anon_client: HttpTestHelper):
-    await anon_client.assert_unauthorized_post(
+async def test_repo_create_forbidden(no_permission_client: HttpTestHelper):
+    await no_permission_client.assert_forbidden_post(
         "/repos", json={"name": "myrepo"}
     )
 
 
-async def test_repo_update(client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager):
-    await client.assert_patch(
+async def test_repo_update(repo_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager):
+    await repo_write_client.assert_patch(
         f"/repos/{repo.id}", json={"name": "Repo Updated"},
         expected_status_code=204
     )
@@ -80,39 +80,39 @@ async def test_repo_update(client: HttpTestHelper, repo: PreparedRepo, dbm: Data
     await assert_collection(dbm.core_db.repos, [repo.expected_document({"name": "Repo Updated"})])
 
 
-async def test_repo_update_unknown_id(client: HttpTestHelper):
-    await client.assert_patch(
+async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
+    await repo_write_client.assert_patch(
         f"/repos/{UNKNOWN_OBJECT_ID}", json={"name": "Repo Updated"},
         expected_status_code=404
     )
 
 
-async def test_repo_update_already_used_name(client: HttpTestHelper, dbm: DatabaseManager):
+async def test_repo_update_already_used_name(repo_write_client: HttpTestHelper, dbm: DatabaseManager):
     repo1 = await PreparedRepo.create(dbm)
     repo2 = await PreparedRepo.create(dbm)
 
-    await client.assert_patch(
+    await repo_write_client.assert_patch(
         f"/repos/{repo1.id}", json={"name": repo2.data["name"]},
         expected_status_code=409
     )
 
 
-async def test_repo_update_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
-    await anon_client.assert_unauthorized_patch(
+async def test_repo_update_forbidden(no_permission_client: HttpTestHelper, repo: PreparedRepo):
+    await no_permission_client.assert_forbidden_patch(
         f"/repos/{repo.id}", json={"name": "Repo Updated"}
     )
 
 
-async def test_repo_get(client: HttpTestHelper, repo: PreparedRepo):
-    await client.assert_get(
+async def test_repo_get(repo_read_client: HttpTestHelper, repo: PreparedRepo):
+    await repo_read_client.assert_get(
         f"/repos/{repo.id}",
         expected_status_code=200,
         expected_json=repo.expected_api_response()
     )
 
 
-async def test_repo_get_with_stats_empty(client: HttpTestHelper, repo: PreparedRepo):
-    await client.assert_get(
+async def test_repo_get_with_stats_empty(repo_read_client: HttpTestHelper, repo: PreparedRepo):
+    await repo_read_client.assert_get(
         f"/repos/{repo.id}?include=stats",
         expected_status_code=200,
         expected_json=repo.expected_api_response({
@@ -126,11 +126,11 @@ async def test_repo_get_with_stats_empty(client: HttpTestHelper, repo: PreparedR
     )
 
 
-async def test_repo_get_with_stats(client: HttpTestHelper, repo: PreparedRepo):
-    await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
-    await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
+async def test_repo_get_with_stats(repo_read_client: HttpTestHelper, repo: PreparedRepo):
+    await repo.create_log(repo_read_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    await repo.create_log(repo_read_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
-    await client.assert_get(
+    await repo_read_client.assert_get(
         f"/repos/{repo.id}?include=stats",
         expected_status_code=200,
         expected_json=repo.expected_api_response({
@@ -144,32 +144,32 @@ async def test_repo_get_with_stats(client: HttpTestHelper, repo: PreparedRepo):
     )
 
 
-async def test_repo_get_unknown_id(client: HttpTestHelper, dbm: DatabaseManager):
-    await client.assert_get(
+async def test_repo_get_unknown_id(repo_read_client: HttpTestHelper, dbm: DatabaseManager):
+    await repo_read_client.assert_get(
         f"/repos/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )
 
 
-async def test_repo_get_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
-    await anon_client.assert_unauthorized_get(
+async def test_repo_get_forbidden(no_permission_client: HttpTestHelper, repo: PreparedRepo):
+    await no_permission_client.assert_forbidden_get(
         f"/repos/{repo.id}"
     )
 
 
-async def test_repo_list(client: HttpTestHelper, dbm: DatabaseManager):
+async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager):
     repos = [await PreparedRepo.create(dbm) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
-        client, "/repos",
+        repo_read_client, "/repos",
         [repo.expected_api_response() for repo in sorted(repos, key=lambda r: r.data["name"])]
     )
 
 
-async def test_repo_list_with_stats(client: HttpTestHelper, repo: PreparedRepo):
-    await repo.create_log(client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+async def test_repo_list_with_stats(repo_read_client: HttpTestHelper, repo: PreparedRepo):
+    await repo.create_log(repo_read_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
 
-    await client.assert_get(
+    await repo_read_client.assert_get(
         f"/repos?include=stats",
         expected_status_code=200,
         expected_json={
@@ -224,7 +224,7 @@ async def _test_repo_list_user_repos(client: HttpTestHelper, params: dict, expec
         expected_status_code=200,
     )
     data = resp.json()["data"]
-    assert len(expected) == len(data)
+    assert len(data) == len(expected)
     for expected_repo, expected_repo_perms in expected.items():
         ic(expected_repo, expected_repo_perms)
         assert any(
@@ -238,6 +238,7 @@ async def test_repo_list_user_repos_with_permissions(user_builder: UserBuilder, 
     repo_2 = await PreparedRepo.create(dbm, {"name": "repo_2"})
     repo_3 = await PreparedRepo.create(dbm, {"name": "repo_3"})
 
+    # Test with user having read&write permissions on all repos
     user = await user_builder({"logs": {"read": True, "write": True}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -251,6 +252,7 @@ async def test_repo_list_user_repos_with_permissions(user_builder: UserBuilder, 
             }
         )
 
+    # Test with user having specific permissions on various repos
     user = await user_builder({
         "logs": {
             "repos": {
@@ -295,15 +297,30 @@ async def test_repo_list_user_repos_with_permissions(user_builder: UserBuilder, 
             }
         )
 
+    # Test with user having no log permissions (but can manage repos)
+    user = await user_builder({"entities": {"repos": {"read": True, "write": True}}})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await _test_repo_list_user_repos(
+            client,
+            {},
+            {}  # no repo should be returned
+        )
+        await _test_repo_list_user_repos(
+            client,
+            {"has_read_permission": True},
+            {}  # no repo should be returned
+        )
 
-async def test_repo_list_unauthorized(anon_client: HttpTestHelper):
-    await anon_client.assert_unauthorized_get(
+
+async def test_repo_list_forbidden(no_permission_client: HttpTestHelper):
+    await no_permission_client.assert_forbidden_get(
         "/repos"
     )
 
 
-async def test_repo_delete(client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager):
-    await client.assert_delete(
+async def test_repo_delete(repo_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager):
+    await repo_write_client.assert_delete(
         f"/repos/{repo.id}",
         expected_status_code=204
     )
@@ -311,14 +328,14 @@ async def test_repo_delete(client: HttpTestHelper, repo: PreparedRepo, dbm: Data
     await assert_collection(dbm.core_db.repos, [])
 
 
-async def test_repo_delete_unknown_id(client: HttpTestHelper, dbm: DatabaseManager):
-    await client.assert_delete(
+async def test_repo_delete_unknown_id(repo_write_client: HttpTestHelper, dbm: DatabaseManager):
+    await repo_write_client.assert_delete(
         f"/repos/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )
 
 
-async def test_repo_delete_unauthorized(anon_client: HttpTestHelper, repo: PreparedRepo):
-    await anon_client.assert_unauthorized_delete(
+async def test_repo_delete_forbidden(no_permission_client: HttpTestHelper, repo: PreparedRepo):
+    await no_permission_client.assert_forbidden_delete(
         f"/repos/{repo.id}"
     )

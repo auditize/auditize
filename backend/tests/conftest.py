@@ -108,3 +108,24 @@ def user_builder(dbm):
 
 
 UserBuilder = Callable[[dict], Awaitable[PreparedUser]]
+
+
+@pytest.fixture(scope="function")
+async def no_permission_client(integration_builder):
+    integration = await integration_builder({})  # {} == no permissions
+    async with integration.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def repo_read_client(integration_builder):
+    integration = await integration_builder({"entities": {"repos": {"read": True}}})
+    async with integration.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def repo_write_client(integration_builder):
+    integration = await integration_builder({"entities": {"repos": {"write": True}}})
+    async with integration.client() as client:
+        yield client

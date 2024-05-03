@@ -7,8 +7,8 @@ from auditize.repos.api_models import RepoCreationRequest, RepoCreationResponse,
     RepoListResponse, RepoUpdateRequest, RepoIncludeOptions, RepoStatsData, RepoLogPermissionsData, UserRepoListResponse
 from auditize.repos import service
 from auditize.common.db import DatabaseManager, get_dbm
-from auditize.auth import Authenticated, get_authenticated
-from auditize.permissions.assertions import can_read_logs, can_write_logs, permissions_and
+from auditize.auth import Authenticated, get_authenticated, Authorized
+from auditize.permissions.assertions import can_read_logs, can_write_logs, can_write_repos, permissions_and, can_read_repos
 from auditize.integrations.service import update_integration
 from auditize.integrations.models import IntegrationUpdate
 from auditize.users.service import update_user
@@ -26,7 +26,7 @@ router = APIRouter()
 )
 async def create_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_write_repos()),
     repo: RepoCreationRequest
 ) -> RepoCreationResponse:
     repo_id = await service.create_repo(dbm, repo.to_repo())
@@ -57,7 +57,7 @@ async def create_repo(
 )
 async def update_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_write_repos()),
     repo_id: str, repo: RepoUpdateRequest
 ):
     await service.update_repo(dbm, repo_id, repo.to_repo_update())
@@ -81,7 +81,7 @@ async def _handle_repo_include_options(
 )
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_read_repos()),
     repo_id: str,
     include: Annotated[list[RepoIncludeOptions], Query()] = ()
 ) -> RepoReadingResponse:
@@ -99,7 +99,7 @@ async def get_repo(
 )
 async def list_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_read_repos()),
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
     page: int = 1, page_size: int = 10
 ) -> RepoListResponse:
@@ -166,7 +166,7 @@ async def list_user_repos(
 )
 async def delete_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_write_repos()),
     repo_id: str
 ):
     await service.delete_repo(dbm, repo_id)

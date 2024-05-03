@@ -62,7 +62,7 @@ async def get_repos(
     dbm: DatabaseManager, *, page: int, page_size: int, repo_ids: Sequence[ObjectId | str] = None
 ) -> tuple[list[Repo], PagePaginationInfo]:
     # TODO: implement this as a join with the authenticated permissions
-    if repo_ids:
+    if repo_ids is not None:
         filter = {"_id": {"$in": list(map(ObjectId, repo_ids))}}
     else:
         filter = None
