@@ -25,6 +25,10 @@ export async function getAllRepos(): Promise<Repo[]> {
   return await getAllPagePaginatedItems<Repo>('/repos');
 }
 
+export async function getAllMyRepos(): Promise<Repo[]> {
+  return await getAllPagePaginatedItems<Repo>('/repos', {has_log_permission: true, include: 'permissions'});
+}
+
 export async function getRepo(repoId: string): Promise<Repo> {
   const response = await axiosInstance.get('/repos/' + repoId);
   return response.data;

@@ -1,5 +1,7 @@
 import { useAuthenticatedUser } from "@/features/auth";
+import { getAllMyRepos } from "@/features/repos";
 import { Accordion, Checkbox, Group, Table } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
 
 function ReadWritePermissionManagement(
   {
@@ -126,18 +128,49 @@ function LogsPermissionManagement(
     readOnly?: boolean
   }
 ) {
+  const {data, error, isPending} = useQuery({
+    queryKey: ['assignable-log-repos'],
+    queryFn: () => getAllMyRepos(),
+    placeholderData: [],
+  });
+
   return (
     <Accordion.Item value="entities">
-      <Accordion.Control>Entities</Accordion.Control>
+      <Accordion.Control>Logs</Accordion.Control>
         <Accordion.Panel>
           <Table withRowBorders={false}>
             <Table.Tbody>
-              <ReadWritePermissionManagement
-                perms={perms}
-                assignablePerms={assignablePerms}
-                onChange={(logPerms) => onChange({...perms, ...logPerms})}
-                readOnly={readOnly}
-              />
+              <Table.Tr>
+                <Table.Td><b>All repositories</b></Table.Td>
+                <Table.Td>
+                  <ReadWritePermissionManagement
+                    perms={perms}
+                    assignablePerms={assignablePerms}
+                    onChange={(logPerms) => onChange({...perms, ...logPerms})}
+                    readOnly={readOnly}
+                  />
+                </Table.Td>
+              </Table.Tr>
+              {
+                data!.map((assignableRepo) => (
+                  <Table.Tr>
+                    <Table.Td>{assignableRepo.name}</Table.Td>
+                    <Table.Td>
+                      <ReadWritePermissionManagement
+                        perms={perms.repos[assignableRepo.id] || {read: false, write: false}}
+                        assignablePerms={{
+                          read: perms.read ? false : (assignablePerms.read || assignableRepo.permissions.read_logs),
+                          write: perms.write ? false : (assignablePerms.write || assignableRepo.permissions.write_logs),
+                        }}
+                        onChange={
+                          (repoLogsPerms) => onChange({...perms, repos: {...perms.repos, [assignableRepo.id]: repoLogsPerms}})
+                        }
+                        readOnly={readOnly}
+                      />
+                    </Table.Td>
+                  </Table.Tr>
+                ))
+              }
             </Table.Tbody>
           </Table>
         </Accordion.Panel>
@@ -160,18 +193,18 @@ export function PermissionManagement(
         onChange={(event) => onChange({...perms, isSuperadmin: event.currentTarget.checked})}
         disabled={readOnly || !assignablePerms.isSuperadmin}
       />
-      <Accordion multiple defaultValue={['entities']}>
+      <Accordion multiple defaultValue={['entities', 'logs']}>
         <EntitiesPermissionManagement
           perms={perms.entities}
           assignablePerms={assignablePerms.entities}
           onChange={(entitiesPerms) => onChange({...perms, entities: entitiesPerms})}
-          readOnly={readOnly}
+          readOnly={readOnly || perms.isSuperadmin}
         />
         <LogsPermissionManagement
           perms={perms.logs}
           assignablePerms={assignablePerms.logs}
           onChange={(logsPerms) => onChange({...perms, logs: logsPerms})}
-          readOnly={readOnly}
+          readOnly={readOnly || perms.isSuperadmin}
         />
       </Accordion>
     </div>
