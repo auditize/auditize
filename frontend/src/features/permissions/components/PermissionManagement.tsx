@@ -1,5 +1,5 @@
-import { useAuthenticatedUser, useCurrentUser } from "@/features/auth";
-import { Accordion, Checkbox, Group, Radio, Table } from "@mantine/core";
+import { useAuthenticatedUser } from "@/features/auth";
+import { Accordion, Checkbox, Group, Table } from "@mantine/core";
 
 function ReadWritePermissionManagement(
   {
@@ -64,9 +64,57 @@ function EntityPermissionManagement(
   );
 }
 
+function EntitiesPermissionManagement(
+  {
+    perms,
+    onChange,
+    assignablePerms,
+    readOnly = false,
+  }: 
+  {
+    perms: Auditize.Permissions['entities'],
+    onChange: (perms: Auditize.Permissions['entities']) => void,
+    assignablePerms: Auditize.Permissions['entities']
+    readOnly?: boolean
+  }
+) {
+  return (
+    <Accordion.Item value="entities">
+      <Accordion.Control>Entities</Accordion.Control>
+        <Accordion.Panel>
+          <Table withRowBorders={false}>
+            <Table.Tbody>
+              <EntityPermissionManagement
+                name="Repositories"
+                perms={perms.repos}
+                onChange={(repoPerms) => onChange({...perms, repos: repoPerms})}
+                assignablePerms={assignablePerms.repos}
+                readOnly={readOnly}
+              />
+              <EntityPermissionManagement
+                name="Users"
+                perms={perms.users}
+                onChange={(userPerms) => onChange({...perms, users: userPerms})}
+                assignablePerms={assignablePerms.users}
+                readOnly={readOnly}
+              />
+              <EntityPermissionManagement
+                name="Integrations"
+                perms={perms.integrations}
+                onChange={(intgrPerms) => onChange({...perms, integrations: intgrPerms})}
+                assignablePerms={assignablePerms.integrations}
+                readOnly={readOnly}
+              />
+            </Table.Tbody>
+          </Table>
+        </Accordion.Panel>
+      </Accordion.Item>
+  );
+}
+
 export function PermissionManagement(
-  {permissions, onChange, readOnly = false}: 
-  {permissions: Auditize.Permissions, onChange: (permissions: Auditize.Permissions) => void, readOnly?: boolean}
+  {perms, onChange, readOnly = false}: 
+  {perms: Auditize.Permissions, onChange: (perms: Auditize.Permissions) => void, readOnly?: boolean}
 ) {
   const {currentUser} = useAuthenticatedUser();
   const assignablePerms = currentUser.permissions;
@@ -75,41 +123,17 @@ export function PermissionManagement(
     <div>
       <Checkbox
         label="Superadmin"
-        checked={permissions.isSuperadmin}
-        onChange={(event) => onChange({...permissions, isSuperadmin: event.currentTarget.checked})}
+        checked={perms.isSuperadmin}
+        onChange={(event) => onChange({...perms, isSuperadmin: event.currentTarget.checked})}
         disabled={readOnly || !assignablePerms.isSuperadmin}
       />
       <Accordion multiple defaultValue={['entities']}>
-        <Accordion.Item value="entities">
-          <Accordion.Control>Entities</Accordion.Control>
-          <Accordion.Panel>
-            <Table withRowBorders={false}>
-              <Table.Tbody>
-                <EntityPermissionManagement
-                  name="Repositories"
-                  perms={permissions.entities.repos}
-                  onChange={(perms) => onChange({...permissions, entities: {...permissions.entities, repos: perms}})}
-                  assignablePerms={assignablePerms.entities.repos}
-                  readOnly={readOnly}
-                />
-                <EntityPermissionManagement
-                  name="Users"
-                  perms={permissions.entities.users}
-                  onChange={(perms) => onChange({...permissions, entities: {...permissions.entities, users: perms}})}
-                  assignablePerms={assignablePerms.entities.users}
-                  readOnly={readOnly}
-                />
-                <EntityPermissionManagement
-                  name="Integrations"
-                  perms={permissions.entities.integrations}
-                  onChange={(perms) => onChange({...permissions, entities: {...permissions.entities, integrations: perms}})}
-                  assignablePerms={assignablePerms.entities.integrations}
-                  readOnly={readOnly}
-                />
-              </Table.Tbody>
-            </Table>
-          </Accordion.Panel>
-        </Accordion.Item>
+        <EntitiesPermissionManagement
+          perms={perms.entities}
+          assignablePerms={assignablePerms.entities}
+          onChange={(entitiesPerms) => onChange({...perms, entities: entitiesPerms})}
+          readOnly={readOnly}
+        />
       </Accordion>
     </div>
   );
