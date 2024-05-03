@@ -193,6 +193,12 @@ async def test_repo_list_with_stats(repo_read_client: HttpTestHelper, repo: Prep
     )
 
 
+async def test_repo_list_forbidden(no_permission_client: HttpTestHelper):
+    await no_permission_client.assert_forbidden_get(
+        "/repos"
+    )
+
+
 async def test_repo_list_user_repos_simple(user_builder: UserBuilder, repo: PreparedRepo):
     # some very basic test to ensure that the response is properly shaped
     # we'll test the permissions in a separate test
@@ -313,9 +319,12 @@ async def test_repo_list_user_repos_with_permissions(user_builder: UserBuilder, 
         )
 
 
-async def test_repo_list_forbidden(no_permission_client: HttpTestHelper):
-    await no_permission_client.assert_forbidden_get(
-        "/repos"
+async def test_repo_list_user_repo_unauthorized(no_permission_client: HttpTestHelper):
+    # /users/me/repos does not require any permission (as its job is to
+    # return authorized repos for log access)
+    # but the user must be authenticated
+    await no_permission_client.assert_unauthorized_get(
+        "/users/me/repos"
     )
 
 
