@@ -1,4 +1,4 @@
-from typing import Annotated, Type
+from typing import Annotated, Type, Callable
 import dataclasses
 
 from fastapi import Depends, Request
@@ -10,7 +10,7 @@ from auditize.integrations.service import get_integration_by_token
 from auditize.users.service import get_user_by_session_token
 from auditize.users.models import User
 from auditize.permissions.models import Permissions
-from auditize.permissions.assertions import PermissionAssertion
+from auditize.permissions.assertions import PermissionAssertion, can_read_logs, can_write_logs
 
 _BEARER_PREFIX = "Bearer "
 
@@ -98,7 +98,7 @@ async def get_authenticated(
     raise AuthenticationFailure()
 
 
-def authorized(assertion: PermissionAssertion):
+def _authorized(assertion: PermissionAssertion):
     def func(authenticated: Authenticated = Depends(get_authenticated)):
         if not authenticated.comply(assertion):
             raise PermissionDenied()
@@ -107,5 +107,23 @@ def authorized(assertion: PermissionAssertion):
     return func
 
 
+def _authorized_on_logs(assertion_func: Callable[[str], PermissionAssertion]):
+    def func(repo_id: str, authenticated: Authenticated = Depends(get_authenticated)):
+        assertion = assertion_func(repo_id)
+        if not authenticated.comply(assertion):
+            raise PermissionDenied()
+        return authenticated
+
+    return func
+
+
 def Authorized(assertion: PermissionAssertion) -> Type[Authenticated]:  # noqa
-    return Annotated[Authenticated, Depends(authorized(assertion))]
+    return Annotated[Authenticated, Depends(_authorized(assertion))]
+
+
+def AuthorizedOnLogsRead() -> Type[Authenticated]:  # noqa
+    return Annotated[Authenticated, Depends(_authorized_on_logs(can_read_logs))]
+
+
+def AuthorizedOnLogsWrite() -> Type[Authenticated]:  # noqa
+    return Annotated[Authenticated, Depends(_authorized_on_logs(can_write_logs))]

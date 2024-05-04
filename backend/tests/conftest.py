@@ -118,6 +118,13 @@ async def no_permission_client(integration_builder):
 
 
 @pytest.fixture(scope="function")
+async def superadmin_client(integration_builder):
+    integration = await integration_builder({"is_superadmin": True})
+    async with integration.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
 async def repo_read_client(integration_builder):
     integration = await integration_builder({"entities": {"repos": {"read": True}}})
     async with integration.client() as client:
@@ -127,5 +134,26 @@ async def repo_read_client(integration_builder):
 @pytest.fixture(scope="function")
 async def repo_write_client(integration_builder):
     integration = await integration_builder({"entities": {"repos": {"write": True}}})
+    async with integration.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def log_read_client(integration_builder):
+    integration = await integration_builder({"logs": {"read": True}})
+    async with integration.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def log_write_client(integration_builder):
+    integration = await integration_builder({"logs": {"write": True}})
+    async with integration.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def log_rw_client(integration_builder):
+    integration = await integration_builder({"logs": {"read": True, "write": True}})
     async with integration.client() as client:
         yield client

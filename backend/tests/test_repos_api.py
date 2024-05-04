@@ -126,11 +126,11 @@ async def test_repo_get_with_stats_empty(repo_read_client: HttpTestHelper, repo:
     )
 
 
-async def test_repo_get_with_stats(repo_read_client: HttpTestHelper, repo: PreparedRepo):
-    await repo.create_log(repo_read_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
-    await repo.create_log(repo_read_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
+async def test_repo_get_with_stats(superadmin_client: HttpTestHelper, repo: PreparedRepo):
+    await repo.create_log(superadmin_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+    await repo.create_log(superadmin_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z"))
 
-    await repo_read_client.assert_get(
+    await superadmin_client.assert_get(
         f"/repos/{repo.id}?include=stats",
         expected_status_code=200,
         expected_json=repo.expected_api_response({
@@ -166,10 +166,10 @@ async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager)
     )
 
 
-async def test_repo_list_with_stats(repo_read_client: HttpTestHelper, repo: PreparedRepo):
-    await repo.create_log(repo_read_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
+async def test_repo_list_with_stats(superadmin_client: HttpTestHelper, repo: PreparedRepo):
+    await repo.create_log(superadmin_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"))
 
-    await repo_read_client.assert_get(
+    await superadmin_client.assert_get(
         f"/repos?include=stats",
         expected_status_code=200,
         expected_json={
