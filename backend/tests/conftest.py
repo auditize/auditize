@@ -84,8 +84,11 @@ async def integration(user_client, dbm):
     return await PreparedIntegration.create(user_client, dbm)
 
 
+IntegrationBuilder = Callable[[dict], Awaitable[PreparedIntegration]]
+
+
 @pytest.fixture(scope="function")
-def integration_builder(dbm):
+def integration_builder(dbm) -> IntegrationBuilder:
     async def func(permissions):
         return await PreparedIntegration.inject_into_db_with_permissions(
             dbm, permissions
@@ -93,11 +96,11 @@ def integration_builder(dbm):
     return func
 
 
-IntegrationBuilder = Callable[[dict], Awaitable[PreparedIntegration]]
+UserBuilder = Callable[[dict], Awaitable[PreparedUser]]
 
 
 @pytest.fixture(scope="function")
-def user_builder(dbm):
+def user_builder(dbm) -> UserBuilder:
     async def func(permissions):
         return await PreparedUser.inject_into_db(
             dbm,
@@ -105,9 +108,6 @@ def user_builder(dbm):
             password="dummy"
         )
     return func
-
-
-UserBuilder = Callable[[dict], Awaitable[PreparedUser]]
 
 
 @pytest.fixture(scope="function")

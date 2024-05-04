@@ -4,6 +4,7 @@ import base64
 import pytest
 import callee
 
+from auditize.common.db import DatabaseManager
 from auditize.logs.service import (
     consolidate_log_event, consolidate_log_actor, consolidate_log_resource,
     consolidate_log_tags, consolidate_log_node_path
@@ -15,8 +16,34 @@ from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 from helpers.logs import PreparedLog
+from tests.conftest import IntegrationBuilder
 
 pytestmark = pytest.mark.anyio
+
+
+async def test_log_repo_access_control(integration_builder: IntegrationBuilder, dbm: DatabaseManager):
+    # Test that access control based on repo_id is properly enforced by the API
+
+    repo_1 = await PreparedRepo.create(dbm)
+    repo_2 = await PreparedRepo.create(dbm)
+
+    integration = await integration_builder({
+        "logs": {
+            "repos": {
+                repo_1.id: {"write": True},
+            }
+        }
+    })
+
+    async with integration.client() as client:
+        await client.assert_post(
+            f"/repos/{repo_1.id}/logs", json=PreparedLog.prepare_data(),
+            expected_status_code=201
+        )
+        await client.assert_post(
+            f"/repos/{repo_2.id}/logs", json=PreparedLog.prepare_data(),
+            expected_status_code=403
+        )
 
 
 async def test_create_log_minimal_fields(log_write_client: HttpTestHelper, repo: PreparedRepo):

@@ -13,9 +13,7 @@ from helpers.database import assert_collection
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
-from tests.helpers.integrations import PreparedIntegration
 from conftest import IntegrationBuilder, UserBuilder
-from tests.helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
 
