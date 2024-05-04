@@ -134,18 +134,12 @@ async def list_user_repos(
     if not authenticated.user:
         raise AuthenticationFailure()
 
-    repo_ids = None
-    if has_read_permission or has_write_permission:
-        can_read = has_read_permission and not authenticated.comply(can_read_logs())
-        can_write = has_write_permission and not authenticated.comply(can_write_logs())
-        if can_read or can_write:
-            repo_ids = authenticated.permissions.logs.get_repos(can_read=can_read, can_write=can_write)
-    else:
-        if not authenticated.comply(permissions_and(can_read_logs(), can_write_logs())):
-            repo_ids = authenticated.permissions.logs.get_repos()
-
     repos, page_info = await service.get_repos(
-        dbm, repo_ids=repo_ids, page=page, page_size=page_size
+        dbm,
+        user=authenticated.user,
+        user_can_read=has_read_permission,
+        user_can_write=has_write_permission,
+        page=page, page_size=page_size
     )
 
     response = UserRepoListResponse.build(repos, page_info)

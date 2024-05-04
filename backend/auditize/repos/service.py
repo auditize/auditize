@@ -2,12 +2,15 @@ from typing import Sequence
 
 from bson import ObjectId
 
+from auditize.permissions.assertions import can_read_logs, can_write_logs, permissions_and
+from auditize.permissions.operations import is_authorized
 from auditize.repos.models import Repo, RepoUpdate, RepoStats
 from auditize.logs.db import get_logs_db
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
+from auditize.users.models import User
 
 
 async def create_repo(dbm: DatabaseManager, repo: Repo) -> ObjectId:
@@ -58,19 +61,41 @@ async def get_repo_stats(dbm: DatabaseManager, repo_id: ObjectId | str) -> RepoS
     return stats
 
 
+def _get_authorized_repo_ids_for_user(user: User, has_read_perm: bool, has_write_perm: bool) -> Sequence[str] | None:
+    no_filtering_needed = any((
+        is_authorized(user.permissions, permissions_and(can_read_logs(), can_write_logs())),
+        is_authorized(user.permissions, can_read_logs()) and (has_read_perm and not has_write_perm),
+        is_authorized(user.permissions, can_write_logs()) and (has_write_perm and not has_read_perm),
+    ))
+    if no_filtering_needed:
+        return None
+
+    return user.permissions.logs.get_repos(
+        can_read=has_read_perm and not is_authorized(user.permissions, can_read_logs()),
+        can_write=has_write_perm and not is_authorized(user.permissions, can_write_logs())
+    )
+
+
 async def get_repos(
-    dbm: DatabaseManager, *, page: int, page_size: int, repo_ids: Sequence[ObjectId | str] = None
+    dbm: DatabaseManager, *, page: int, page_size: int,
+    user: User = None, user_can_read: bool = False, user_can_write: bool = False,
 ) -> tuple[list[Repo], PagePaginationInfo]:
-    # TODO: implement this as a join with the authenticated permissions
+    repo_ids = None
+
+    if user:
+        repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
+
     if repo_ids is not None:
         filter = {"_id": {"$in": list(map(ObjectId, repo_ids))}}
     else:
         filter = None
+
     results, page_info = await find_paginated_by_page(
         dbm.core_db.repos,
         filter=filter,
         sort=[("name", 1)], page=page, page_size=page_size
     )
+
     return [Repo.model_validate(result) async for result in results], page_info
 
 

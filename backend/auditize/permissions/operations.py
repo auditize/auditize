@@ -3,7 +3,7 @@ from auditize.permissions.models import Permissions, LogsPermissions, EntitiesPe
 from auditize.common.exceptions import PermissionDenied
 
 
-__all__ = ("normalize_permissions", "authorize_grant", "update_permissions", "authorize_access", "get_applicable_permissions")
+__all__ = ("normalize_permissions", "authorize_grant", "update_permissions", "authorize_access", "get_applicable_permissions", "is_authorized")
 
 
 def _normalize_repo_permissions(
@@ -159,6 +159,10 @@ def update_permissions(orig_perms: Permissions, update_perms: Permissions) -> Pe
     return normalize_permissions(new)
 
 
+def is_authorized(perms: Permissions, assertion: PermissionAssertion) -> bool:
+    return assertion(perms)
+
+
 def authorize_access(perms: Permissions, assertion: PermissionAssertion) -> None:
-    if not assertion(perms):
+    if not is_authorized(perms, assertion):
         raise PermissionDenied("Access denied")
