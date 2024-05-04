@@ -12,18 +12,19 @@ from helpers.database import assert_collection
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.users import PreparedUser
-from helpers.permissions import DEFAULT_PERMISSIONS, DEFAULT_APPLICABLE_PERMISSIONS
+from helpers.permissions import DEFAULT_APPLICABLE_PERMISSIONS
+from tests.conftest import UserBuilder
 
 pytestmark = pytest.mark.anyio
 
 UNKNOWN_SIGNUP_TOKEN = "5620281609bbdc9796751a1cb1ac58efb27497b1fd14a0788faa83ada93e6048"
 
 
-async def test_user_create(client: HttpTestHelper, dbm: DatabaseManager):
+async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManager):
     data = PreparedUser.prepare_data()
 
     with patch("auditize.users.service.send_email") as mock:
-        resp = await client.assert_post(
+        resp = await user_write_client.assert_post(
             "/users", json=data,
             expected_status_code=201,
             expected_json={"id": callee.IsA(str)}
@@ -38,9 +39,9 @@ async def test_user_create(client: HttpTestHelper, dbm: DatabaseManager):
     await assert_collection(dbm.core_db.users, [user.expected_document()])
 
 
-async def test_user_create_custom_permissions(client: HttpTestHelper, dbm: DatabaseManager):
+async def test_user_create_custom_permissions(superadmin_client: HttpTestHelper, dbm: DatabaseManager):
     data = PreparedUser.prepare_data(extra={"permissions": {"logs": {"read": True, "write": True}}})
-    resp = await client.assert_post(
+    resp = await superadmin_client.assert_post(
         "/users", json=data,
         expected_status_code=201,
         expected_json={"id": callee.IsA(str)}
@@ -64,20 +65,20 @@ async def test_user_create_custom_permissions(client: HttpTestHelper, dbm: Datab
     })])
 
 
-async def test_user_create_missing_parameter(client: HttpTestHelper, dbm: DatabaseManager):
+async def test_user_create_missing_parameter(user_write_client: HttpTestHelper, dbm: DatabaseManager):
     template = PreparedUser.prepare_data()
     for key in template:
         data = template.copy()
         del data[key]
 
-        await client.assert_post(
+        await user_write_client.assert_post(
             "/users", json=data,
             expected_status_code=422
         )
 
 
-async def test_user_create_already_used_email(client: HttpTestHelper, user: PreparedUser):
-    await client.assert_post(
+async def test_user_create_already_used_email(user_write_client: HttpTestHelper, user: PreparedUser):
+    await user_write_client.assert_post(
         "/users", json={
             "email": user.data["email"], "first_name": "Another John", "last_name": "Another Doe"
         },
@@ -85,17 +86,17 @@ async def test_user_create_already_used_email(client: HttpTestHelper, user: Prep
     )
 
 
-async def test_user_create_unauthorized(anon_client: HttpTestHelper):
-    await anon_client.assert_unauthorized_post(
+async def test_user_create_forbidden(no_permission_client: HttpTestHelper):
+    await no_permission_client.assert_forbidden_post(
         "/users", json=PreparedUser.prepare_data()
     )
 
 
-async def test_user_update_multiple(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+async def test_user_update_multiple(user_write_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
     data = {
         "first_name": "John Updated", "last_name": "Doe Updated", "email": "john.doe_updated@example.net"
     }
-    await client.assert_patch(
+    await user_write_client.assert_patch(
         f"/users/{user.id}", json=data,
         expected_status_code=204
     )
@@ -103,9 +104,9 @@ async def test_user_update_multiple(client: HttpTestHelper, user: PreparedUser, 
     await assert_collection(dbm.core_db.users, [user.expected_document(data)])
 
 
-async def test_user_update_partial(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+async def test_user_update_partial(user_write_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
     data = {"first_name": "John Updated"}
-    await client.assert_patch(
+    await user_write_client.assert_patch(
         f"/users/{user.id}", json=data,
         expected_status_code=204
     )
@@ -113,8 +114,8 @@ async def test_user_update_partial(client: HttpTestHelper, user: PreparedUser, d
     await assert_collection(dbm.core_db.users, [user.expected_document(data)])
 
 
-async def test_user_update_permissions(client: HttpTestHelper, dbm: DatabaseManager):
-    user = await PreparedUser.create(client, dbm, PreparedUser.prepare_data({
+async def test_user_update_permissions(superadmin_client: HttpTestHelper, dbm: DatabaseManager):
+    user = await PreparedUser.create(superadmin_client, dbm, PreparedUser.prepare_data({
         "permissions": {
             "logs": {"read": True, "write": False},
             "entities": {
@@ -123,7 +124,7 @@ async def test_user_update_permissions(client: HttpTestHelper, dbm: DatabaseMana
         }
     }))
 
-    await client.assert_patch(
+    await superadmin_client.assert_patch(
         f"/users/{user.id}",
         json={
             "permissions": {
@@ -154,31 +155,35 @@ async def test_user_update_permissions(client: HttpTestHelper, dbm: DatabaseMana
     })])
 
 
-async def test_user_update_unknown_id(client: HttpTestHelper):
-    await client.assert_patch(
+async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
+    await user_write_client.assert_patch(
         f"/users/{UNKNOWN_OBJECT_ID}", json={"first_name": "John Updated"},
         expected_status_code=404
     )
 
 
-async def test_user_update_already_used_email(client: HttpTestHelper, dbm: DatabaseManager):
-    user1 = await PreparedUser.create(client, dbm)
-    user2 = await PreparedUser.create(client, dbm)
+async def test_user_update_already_used_email(user_write_client: HttpTestHelper, dbm: DatabaseManager):
+    user1 = await PreparedUser.create(user_write_client, dbm)
+    user2 = await PreparedUser.create(user_write_client, dbm)
 
-    await client.assert_patch(
+    await user_write_client.assert_patch(
         f"/users/{user1.id}", json={"email": user2.data["email"]},
         expected_status_code=409
     )
 
 
-async def test_user_update_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
-    await anon_client.assert_unauthorized_patch(
+async def test_user_update_forbidden(no_permission_client: HttpTestHelper, user: PreparedUser):
+    await no_permission_client.assert_forbidden_patch(
         f"/users/{user.id}", json={"first_name": "John Updated"}
     )
 
 
-async def test_user_update_self(dbm: DatabaseManager):
-    user = await PreparedUser.inject_into_db(dbm)
+async def test_user_update_self(user_builder: UserBuilder):
+    user = await user_builder({
+        "entities": {
+            "users": {"read": True, "write": True},
+        }
+    })
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await client.assert_forbidden_patch(
@@ -186,44 +191,44 @@ async def test_user_update_self(dbm: DatabaseManager):
         )
 
 
-async def test_user_get(client: HttpTestHelper, user: PreparedUser):
-    await client.assert_get(
+async def test_user_get(user_read_client: HttpTestHelper, user: PreparedUser):
+    await user_read_client.assert_get(
         f"/users/{user.id}",
         expected_status_code=200,
         expected_json=user.expected_api_response()
     )
 
 
-async def test_user_get_unknown_id(client: HttpTestHelper):
-    await client.assert_get(
+async def test_user_get_unknown_id(user_read_client: HttpTestHelper):
+    await user_read_client.assert_get(
         f"/users/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )
 
 
-async def test_user_get_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
-    await anon_client.assert_unauthorized_get(
+async def test_user_get_forbidden(no_permission_client: HttpTestHelper, user: PreparedUser):
+    await no_permission_client.assert_forbidden_get(
         f"/users/{user.id}"
     )
 
 
-async def test_user_list(client: HttpTestHelper, dbm: DatabaseManager):
-    users = [await PreparedUser.create(client, dbm) for _ in range(5)]
+async def test_user_list(user_read_client: HttpTestHelper, user_write_client: HttpTestHelper, dbm: DatabaseManager):
+    users = [await PreparedUser.create(user_write_client, dbm) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
-        client, "/users",
+        user_read_client, "/users",
         [user.expected_api_response() for user in sorted(users, key=lambda r: r.data["last_name"])]
     )
 
 
-async def test_user_list_unauthorized(anon_client: HttpTestHelper):
-    await anon_client.assert_unauthorized_get(
+async def test_user_list_forbidden(no_permission_client: HttpTestHelper):
+    await no_permission_client.assert_forbidden_get(
         "/users"
     )
 
 
-async def test_user_delete(client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
-    await client.assert_delete(
+async def test_user_delete(user_write_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager):
+    await user_write_client.assert_delete(
         f"/users/{user.id}",
         expected_status_code=204
     )
@@ -231,21 +236,25 @@ async def test_user_delete(client: HttpTestHelper, user: PreparedUser, dbm: Data
     await assert_collection(dbm.core_db.users, [])
 
 
-async def test_user_delete_unknown_id(client: HttpTestHelper):
-    await client.assert_delete(
+async def test_user_delete_unknown_id(user_write_client: HttpTestHelper):
+    await user_write_client.assert_delete(
         f"/users/{UNKNOWN_OBJECT_ID}",
         expected_status_code=404
     )
 
 
-async def test_user_delete_unauthorized(anon_client: HttpTestHelper, user: PreparedUser):
-    await anon_client.assert_unauthorized_delete(
+async def test_user_delete_forbidden(no_permission_client: HttpTestHelper, user: PreparedUser):
+    await no_permission_client.assert_forbidden_delete(
         f"/users/{user.id}"
     )
 
 
-async def test_user_delete_self(dbm: DatabaseManager):
-    user = await PreparedUser.inject_into_db(dbm)
+async def test_user_delete_self(user_builder: UserBuilder):
+    user = await user_builder({
+        "entities": {
+            "users": {"read": True, "write": True},
+        }
+    })
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await client.assert_forbidden_delete(f"/users/{user.id}")

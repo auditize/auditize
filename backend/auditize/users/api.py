@@ -9,8 +9,9 @@ from auditize.users.api_models import (
 )
 from auditize.users import service
 from auditize.common.db import DatabaseManager, get_dbm
-from auditize.auth import Authenticated, get_authenticated
+from auditize.auth import Authenticated, get_authenticated, Authorized
 from auditize.common.exceptions import AuthenticationFailure, PermissionDenied
+from auditize.permissions.assertions import can_read_users, can_write_users
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: str):
 )
 async def create_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_write_users()),
     user: UserCreationRequest
 ) -> UserCreationResponse:
     user_id = await service.create_user(dbm, user.to_db_model())
@@ -43,7 +44,7 @@ async def create_user(
 )
 async def update_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_write_users()),
     user_id: str, user: UserUpdateRequest
 ):
     _ensure_cannot_alter_own_user(authenticated, user_id)
@@ -73,7 +74,7 @@ async def get_user_me(
 )
 async def get_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_read_users()),
     user_id: str
 ) -> UserReadingResponse:
     user = await service.get_user(dbm, user_id)
@@ -88,7 +89,7 @@ async def get_user(
 )
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_read_users()),
     page: int = 1, page_size: int = 10
 ) -> UserListResponse:
     users, page_info = await service.get_users(dbm, page, page_size)
@@ -103,7 +104,7 @@ async def list_users(
 )
 async def delete_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(can_write_users()),
     user_id: str
 ):
     _ensure_cannot_alter_own_user(authenticated, user_id)

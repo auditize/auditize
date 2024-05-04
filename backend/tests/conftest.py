@@ -73,8 +73,8 @@ async def repo(dbm):
 
 
 @pytest.fixture(scope="function")
-async def user(client, dbm):
-    return await PreparedUser.create(client, dbm)
+async def user(superadmin_client, dbm):
+    return await PreparedUser.create(superadmin_client, dbm)
 
 
 @pytest.fixture(scope="function")
@@ -161,6 +161,30 @@ async def integration_rw_client(user_builder):
 
 
 @pytest.fixture(scope="function")
+async def user_read_client(integration_builder):
+    integration = await integration_builder({"entities": {"users": {"read": True}}})
+    async with integration.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def user_write_client(integration_builder):
+    integration = await integration_builder({"entities": {"users": {"write": True}}})
+    async with integration.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def user_rw_client(integration_builder):
+    integration = await integration_builder({"entities": {"users": {"read": True, "write": True}}})
+    async with integration.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        yield client
+
+
+@pytest.fixture(scope="function")
 async def log_read_client(integration_builder):
     integration = await integration_builder({"logs": {"read": True}})
     async with integration.client() as client:
@@ -179,3 +203,4 @@ async def log_rw_client(integration_builder):
     integration = await integration_builder({"logs": {"read": True, "write": True}})
     async with integration.client() as client:
         yield client
+
