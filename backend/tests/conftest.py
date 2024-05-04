@@ -78,10 +78,8 @@ async def user(client, dbm):
 
 
 @pytest.fixture(scope="function")
-async def integration(user_client, dbm):
-    # use user_client instead of integration_client to let an empty integrations collection
-    # when testing integrations
-    return await PreparedIntegration.create(user_client, dbm)
+async def integration(dbm):
+    return await PreparedIntegration.inject_into_db(dbm)
 
 
 IntegrationBuilder = Callable[[dict], Awaitable[PreparedIntegration]]
@@ -135,6 +133,30 @@ async def repo_read_client(integration_builder):
 async def repo_write_client(integration_builder):
     integration = await integration_builder({"entities": {"repos": {"write": True}}})
     async with integration.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def integration_read_client(user_builder):
+    user = await user_builder({"entities": {"integrations": {"read": True}}})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def integration_write_client(user_builder):
+    user = await user_builder({"entities": {"integrations": {"write": True}}})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def integration_rw_client(user_builder):
+    user = await user_builder({"entities": {"integrations": {"read": True, "write": True}}})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
         yield client
 
 
