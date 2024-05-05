@@ -93,7 +93,7 @@ export function ResourceManagement(
     queryKey: (page: number) => any[];
     queryFn: (page: number) => () => Promise<any>;
     columnBuilders: [string, (resource: any) => React.ReactNode][];
-    resourceCreationComponentBuilder: ResourceCreationComponentBuilder;
+    resourceCreationComponentBuilder?: ResourceCreationComponentBuilder;
     resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
     resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
   }
@@ -148,9 +148,13 @@ export function ResourceManagement(
         onChange={(value) => {
           navigate(addQueryParamToLocation(location, 'page', value.toString()));
         } } />
-      <Link to={addQueryParamToLocation(location, "new")}><Button>Create</Button></Link>
       {
-        resourceCreationComponentBuilder(newResource)
+        resourceCreationComponentBuilder && (
+          <Link to={addQueryParamToLocation(location, "new")}><Button>Create</Button></Link>
+        )
+      }
+      {
+        resourceCreationComponentBuilder && resourceCreationComponentBuilder(newResource)
       }
       {
         resourceEditionComponentBuilder(resourceId)

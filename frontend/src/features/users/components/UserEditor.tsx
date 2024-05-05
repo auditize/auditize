@@ -71,11 +71,9 @@ export function UserCreation({opened}: {opened?: boolean}) {
   );
 }
 
-export function UserEdition({userId}: {userId: string | null}) {
+export function UserEdition({userId, readOnly}: {userId: string | null, readOnly: boolean}) {
   const form = useUserForm({});
-  const {currentUser} = useAuthenticatedUser();
   const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
-  const editSelf = userId === currentUser.id;
 
   return (
     <ResourceEdition
@@ -94,7 +92,7 @@ export function UserEdition({userId}: {userId: string | null}) {
         () => updateUser(userId!, {...form.values, permissions})
       }
       queryKeyForInvalidation={['users']}
-      disabledSaving={editSelf}
+      disabledSaving={readOnly}
     >
       <UserEditor
         form={form} 
@@ -104,7 +102,7 @@ export function UserEdition({userId}: {userId: string | null}) {
             setPermissions(perms);
           }
         }
-        readOnly={editSelf}
+        readOnly={readOnly}
       />
     </ResourceEdition>
   );

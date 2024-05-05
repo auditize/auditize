@@ -19,10 +19,10 @@ function useIntegrationForm() {
   });
 }
 
-function BaseIntegrationForm({form}: {form: ReturnType<typeof useIntegrationForm>}) {
+function BaseIntegrationForm({form, readOnly}: {form: ReturnType<typeof useIntegrationForm>, readOnly: boolean}) {
   return (
     <>
-      <TextInput label="Name" placeholder="Name" data-autofocus {...form.getInputProps('name')}/>
+      <TextInput label="Name" placeholder="Name" data-autofocus disabled={readOnly} {...form.getInputProps('name')}/>
     </>
   );
 }
@@ -33,17 +33,19 @@ function IntegrationEditor(
     permissions,
     onChange,
     children,
+    readOnly = false,
   }:
   {
     form: UseFormReturnType<any>,
     permissions: Auditize.Permissions,
     onChange: (permissions: Auditize.Permissions) => void,
     children: React.ReactNode,
+    readOnly?: boolean,
   }
 ) {
   return (
-    <WithPermissionManagement permissions={permissions} onChange={onChange}>
-      <BaseIntegrationForm form={form}/>
+    <WithPermissionManagement permissions={permissions} onChange={onChange} readOnly={readOnly}>
+      <BaseIntegrationForm form={form} readOnly={readOnly}/>
       {children}
     </WithPermissionManagement>
   );
@@ -114,7 +116,7 @@ export function TokenRegeneration({integrationId}: {integrationId: string}) {
   }
 }
 
-export function IntegrationEdition({integrationId}: {integrationId: string | null}) {
+export function IntegrationEdition({integrationId, readOnly}: {integrationId: string | null, readOnly: boolean}) {
   const form = useIntegrationForm();
   const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
 
@@ -135,6 +137,7 @@ export function IntegrationEdition({integrationId}: {integrationId: string | nul
         () => updateIntegration(integrationId!, {...form.values, permissions})
       }
       queryKeyForInvalidation={['integrations']}
+      disabledSaving={readOnly}
     >
       <IntegrationEditor
         form={form}
@@ -144,8 +147,9 @@ export function IntegrationEdition({integrationId}: {integrationId: string | nul
             setPermissions(perms);
           }
         }
+        readOnly={readOnly}
       >
-        <TokenRegeneration integrationId={integrationId!}/>
+        {!readOnly && <TokenRegeneration integrationId={integrationId!}/>}
       </IntegrationEditor>
     </ResourceEdition>
   );

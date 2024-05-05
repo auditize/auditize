@@ -2,8 +2,12 @@ import { RepoCreation, RepoEdition } from './RepoEditor';
 import { RepoDeletion } from './RepoDeletion';
 import { getRepos } from '../api';
 import { ResourceManagement } from '@/components/ResourceManagement';
+import { useAuthenticatedUser } from '@/features/auth';
 
 export function ReposManagement() {
+  const {currentUser} = useAuthenticatedUser();
+  const readOnly = currentUser.permissions.entities.repos.write === false;
+
   return (
     <ResourceManagement
       title="Repos Management"
@@ -19,14 +23,14 @@ export function ReposManagement() {
         ["Log count", (repo: Repo) => repo.stats!.log_count],
         ["Storage size", (repo: Repo) => repo.stats!.storage_size],
       ]}
-      resourceCreationComponentBuilder={(opened) => (
-        <RepoCreation opened={opened} />
-      )}
+      resourceCreationComponentBuilder={
+        readOnly ? undefined : ((opened) => <RepoCreation opened={opened} />)
+      }
       resourceEditionComponentBuilder={(resourceId) => (
-        <RepoEdition repoId={resourceId} />
+        <RepoEdition repoId={resourceId} readOnly={readOnly} />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) => (
-        <RepoDeletion repo={resource} opened={opened} onClose={onClose} />
+        readOnly ? undefined : <RepoDeletion repo={resource} opened={opened} onClose={onClose} />
       )}
     />
   );

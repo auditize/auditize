@@ -2,8 +2,12 @@ import { IntegrationCreation, IntegrationEdition } from './IntegrationEditor';
 import { IntegrationDeletion } from './IntegrationDeletion';
 import { getIntegrations } from '../api';
 import { ResourceManagement } from '@/components/ResourceManagement';
+import { useAuthenticatedUser } from '@/features/auth';
 
 export function IntegrationsManagement() {
+  const {currentUser} = useAuthenticatedUser();
+  const readOnly = currentUser.permissions.entities.integrations.write === false;
+
   return (
     <ResourceManagement
       title="Integration Management"
@@ -14,14 +18,14 @@ export function IntegrationsManagement() {
       columnBuilders={[
         ["Name", (integration: Integration) => integration.name],
       ]}
-      resourceCreationComponentBuilder={(opened) => (
-        <IntegrationCreation opened={opened} />
-      )}
+      resourceCreationComponentBuilder={
+        readOnly ? undefined : (opened) => <IntegrationCreation opened={opened} />
+      }
       resourceEditionComponentBuilder={(resourceId) => (
-        <IntegrationEdition integrationId={resourceId} />
+        <IntegrationEdition integrationId={resourceId} readOnly={readOnly} />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) => (
-        <IntegrationDeletion integration={resource} opened={opened} onClose={onClose} />
+        readOnly ? undefined : <IntegrationDeletion integration={resource} opened={opened} onClose={onClose} />
       )}
     />
   );

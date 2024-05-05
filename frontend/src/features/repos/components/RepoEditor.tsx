@@ -16,10 +16,10 @@ function useRepoForm(values: {name?: string}) {
   });
 }
 
-function RepoForm({form}: {form: UseFormReturnType<any>}) {
+function RepoForm({form, readOnly = false}: {form: UseFormReturnType<any>, readOnly?: boolean}) {
   return (
     <>
-      <TextInput label="Name" placeholder="Name" data-autofocus {...form.getInputProps('name')}/>
+      <TextInput label="Name" placeholder="Name" data-autofocus disabled={readOnly} {...form.getInputProps('name')}/>
     </>
   );
 }
@@ -44,7 +44,7 @@ export function RepoCreation({opened}: {opened?: boolean}) {
   );
 }
 
-export function RepoEdition({repoId}: {repoId: string | null}) {
+export function RepoEdition({repoId, readOnly}: {repoId: string | null, readOnly: boolean }) {
   const form = useRepoForm({});
 
   return (
@@ -57,8 +57,9 @@ export function RepoEdition({repoId}: {repoId: string | null}) {
       onSubmit={form.onSubmit}
       onSave={() => updateRepo(repoId!, {name: form.values.name})}
       queryKeyForInvalidation={['repos']}
+      disabledSaving={readOnly}
     >
-      <RepoForm form={form}/>
+      <RepoForm form={form} readOnly={readOnly}/>
     </ResourceEdition>
   );
 }

@@ -6,6 +6,7 @@ import { useAuthenticatedUser } from '@/features/auth';
 
 export function UsersManagement() {
   const {currentUser} = useAuthenticatedUser();
+  const readOnly = currentUser.permissions.entities.users.write === false;
 
   return (
     <ResourceManagement
@@ -19,16 +20,19 @@ export function UsersManagement() {
         ["Lastname", (user: User) => user.lastName],
         ["Email", (user: User) => user.email],
       ]}
-      resourceCreationComponentBuilder={(opened) => (
-        <UserCreation opened={opened} />
-      )}
+      resourceCreationComponentBuilder={
+        readOnly ? undefined : (opened) => <UserCreation opened={opened} />
+      }
       resourceEditionComponentBuilder={(resourceId) => (
-        <UserEdition userId={resourceId} />
+        <UserEdition
+          userId={resourceId}
+          readOnly={readOnly || resourceId === currentUser.id}
+        />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) => (
-        (currentUser.id !== resource.id) &&
+        (readOnly || currentUser.id === resource.id) ? undefined : (
           <UserDeletion user={resource} opened={opened} onClose={onClose} />
-      )}
+      ))}
     />
   );
 }
