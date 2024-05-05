@@ -47,12 +47,17 @@ def build_document_from_user(user: User) -> dict:
     }
 
 
+async def save_user(dbm: DatabaseManager, user: User):
+    result = await dbm.core_db.users.insert_one(build_document_from_user(user))
+    return result.inserted_id
+
+
 async def create_user(dbm: DatabaseManager, user: User):
     user = user.model_copy()
     user.signup_token = _generate_signup_token()
-    result = await dbm.core_db.users.insert_one(build_document_from_user(user))
+    user_id = await save_user(dbm, user)
     _send_signup_email(user)
-    return result.inserted_id
+    return user_id
 
 
 async def update_user(dbm: DatabaseManager, user_id: ObjectId | str, update: UserUpdate):
