@@ -8,6 +8,7 @@ from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import UnknownModelException
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.pagination.page.models import PagePaginationInfo
+from auditize.permissions.operations import normalize_permissions, update_permissions
 
 
 def _hash_token(token: str) -> str:
@@ -21,17 +22,23 @@ def _generate_token() -> tuple[str, str]:
 
 
 async def create_integration(dbm: DatabaseManager, integration: Integration) -> tuple[ObjectId, str]:
-    integration = integration.model_copy()
     token, token_hash = _generate_token()
-    integration.token_hash = token_hash
-    result = await dbm.core_db.integrations.insert_one(integration.model_dump(exclude={"id"}))
+    result = await dbm.core_db.integrations.insert_one({
+        **integration.model_dump(exclude={"id", "token_hash", "permissions"}),
+        "token_hash": token_hash,
+        "permissions": normalize_permissions(integration.permissions).model_dump()
+    })
     return result.inserted_id, token
 
 
 async def update_integration(dbm: DatabaseManager, integration_id: ObjectId | str, update: IntegrationUpdate):
+    doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
+    if update.permissions:
+        integration = await get_integration(dbm, integration_id)
+        doc_update["permissions"] = update_permissions(integration.permissions, update.permissions).model_dump()
+
     result = await dbm.core_db.integrations.update_one(
-        {"_id": ObjectId(integration_id)},
-        {"$set": update.model_dump(exclude_unset=True)}
+        {"_id": ObjectId(integration_id)}, {"$set": doc_update}
     )
     if result.matched_count == 0:
         raise UnknownModelException()

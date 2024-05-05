@@ -2,6 +2,7 @@ import { useForm, isNotEmpty, UseFormReturnType } from '@mantine/form';
 import { TextInput } from '@mantine/core';
 import { createRepo, updateRepo, getRepo } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
+import { useEffect } from 'react';
 
 function useRepoForm(values: {name?: string}) {
   return useForm({
@@ -15,10 +16,10 @@ function useRepoForm(values: {name?: string}) {
   });
 }
 
-function RepoForm({form}: {form: UseFormReturnType<any>}) {
+function RepoForm({form, readOnly = false}: {form: UseFormReturnType<any>, readOnly?: boolean}) {
   return (
     <>
-      <TextInput label="Name" placeholder="Name" data-autofocus {...form.getInputProps('name')}/>
+      <TextInput label="Name" placeholder="Name" data-autofocus disabled={readOnly} {...form.getInputProps('name')}/>
     </>
   );
 }
@@ -26,11 +27,15 @@ function RepoForm({form}: {form: UseFormReturnType<any>}) {
 export function RepoCreation({opened}: {opened?: boolean}) {
   const form = useRepoForm({});
 
+  useEffect(() => {
+    form.reset();
+  }, [opened]);
+
   return (
     <ResourceCreation
       title={"Create new log repository"}
-      form={form}
       opened={!!opened}
+      onSubmit={form.onSubmit}
       onSave={() => createRepo(form.values)}
       queryKeyForInvalidation={['repos']}
     >
@@ -39,7 +44,7 @@ export function RepoCreation({opened}: {opened?: boolean}) {
   );
 }
 
-export function RepoEdition({repoId}: {repoId: string | null}) {
+export function RepoEdition({repoId, readOnly}: {repoId: string | null, readOnly: boolean }) {
   const form = useRepoForm({});
 
   return (
@@ -47,12 +52,14 @@ export function RepoEdition({repoId}: {repoId: string | null}) {
       resourceId={repoId}
       queryKeyForLoad={['repo', repoId]}
       queryFnForLoad={() => getRepo(repoId!)}
+      onDataLoaded={(data) => form.setValues(data)}
       title={`Edit log repository`}
-      form={form}
+      onSubmit={form.onSubmit}
       onSave={() => updateRepo(repoId!, {name: form.values.name})}
       queryKeyForInvalidation={['repos']}
+      disabledSaving={readOnly}
     >
-      <RepoForm form={form}/>
+      <RepoForm form={form} readOnly={readOnly}/>
     </ResourceEdition>
   );
 }

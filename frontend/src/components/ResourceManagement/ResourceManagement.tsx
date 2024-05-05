@@ -1,9 +1,33 @@
 import { useQuery } from "@tanstack/react-query";
-import React from "react";
+import React, { createElement } from "react";
 import { addQueryParamToLocation } from "@/utils/router";
 import { Table, Anchor, Divider, Pagination, Button } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useLocation, Link, useSearchParams, useNavigate } from "react-router-dom";
+
+type ResourceCreationComponentBuilder = (opened: boolean) => React.ReactNode;
+type ResourceEditionComponentBuilder = (resourceId: string | null) => React.ReactNode;
+type ResourceDeletionComponentBuilder = (resource: any, opened: boolean, onClose: () => void) => React.ReactNode;
+
+function ResourceDeletionAction(
+  {resource, componentBuilder}:
+  {resource: any; componentBuilder: ResourceDeletionComponentBuilder}
+) {
+  const [opened, { open, close }] = useDisclosure();
+  const component = componentBuilder(resource, opened, close);
+
+  if (!component)
+    return null;
+
+  return (
+    <>
+      <Anchor onClick={() => open()}>
+        Delete
+      </Anchor>
+      {component}
+    </>
+  );
+}
 
 function ResourceTableRow(
   {
@@ -12,13 +36,15 @@ function ResourceTableRow(
     resourceName: string;
     resource: any;
     rowValueBuilders: ((resource: any) => React.ReactNode)[];
-    resourceDeletionComponentBuilder: (
-      resource: any, opened: boolean, onClose: () => void
-    ) => React.ReactNode;
+    resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
   }) {
   const location = useLocation();
   const resourceLink = addQueryParamToLocation(location, resourceName, resource.id);
-  const [deletionModalOpened, { open: openDeletionModal, close: closeDeletionModal }] = useDisclosure();
+
+  const resourceDeletionAction = createElement(ResourceDeletionAction, {
+    resource: resource,
+    componentBuilder: resourceDeletionComponentBuilder
+  });
 
   return (
     <Table.Tr>
@@ -36,11 +62,14 @@ function ResourceTableRow(
         <Anchor component={Link} to={resourceLink}>
           Edit
         </Anchor>
-        <Divider size="sm" orientation="vertical" />
-        <Anchor onClick={() => openDeletionModal()}>
-          Delete
-        </Anchor>
-        {resourceDeletionComponentBuilder(resource, deletionModalOpened, closeDeletionModal)}
+        {
+          resourceDeletionAction && (
+            <>
+              <Divider size="sm" orientation="vertical" />
+              {resourceDeletionAction}
+            </>
+          )
+        }
       </Table.Td>
     </Table.Tr>
   );
@@ -64,15 +93,9 @@ export function ResourceManagement(
     queryKey: (page: number) => any[];
     queryFn: (page: number) => () => Promise<any>;
     columnBuilders: [string, (resource: any) => React.ReactNode][];
-    resourceCreationComponentBuilder: (
-      opened: boolean
-    ) => React.ReactNode;
-    resourceEditionComponentBuilder: (
-      resourceId: string | null
-    ) => React.ReactNode;
-    resourceDeletionComponentBuilder: (
-      resource: any, opened: boolean, onClose: () => void
-    ) => React.ReactNode;
+    resourceCreationComponentBuilder?: ResourceCreationComponentBuilder;
+    resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
+    resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
   }
 ) {
   const [params] = useSearchParams();
@@ -125,9 +148,13 @@ export function ResourceManagement(
         onChange={(value) => {
           navigate(addQueryParamToLocation(location, 'page', value.toString()));
         } } />
-      <Link to={addQueryParamToLocation(location, "new")}><Button>Create</Button></Link>
       {
-        resourceCreationComponentBuilder(newResource)
+        resourceCreationComponentBuilder && (
+          <Link to={addQueryParamToLocation(location, "new")}><Button>Create</Button></Link>
+        )
+      }
+      {
+        resourceCreationComponentBuilder && resourceCreationComponentBuilder(newResource)
       }
       {
         resourceEditionComponentBuilder(resourceId)

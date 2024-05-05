@@ -10,7 +10,6 @@ import { Signup } from '@/features/signup';
 import {
   QueryClient,
   QueryClientProvider,
-  useQuery,
 } from '@tanstack/react-query'
 import {
   createBrowserRouter,
@@ -18,43 +17,42 @@ import {
   Link,
   Outlet,
 } from "react-router-dom";
-import { LogInForm } from '@/features/log-in';
-import { useEffect, useState } from 'react';
-import { getLoggedInUser } from './features/log-in/api';
+import { AuthProvider, LogInForm, useCurrentUser } from '@/features/auth';
+import { VisibleIf } from './components/VisibleIf';
 
-function IfLoggedIn({isLoggedIn, children} : {isLoggedIn: boolean, children: React.ReactNode}) {
-  return isLoggedIn ? <>{children}</> : null;
-}
+function Main() {
+  const {currentUser} = useCurrentUser();
 
-function IfNotLoggedIn({isLoggedIn, children} : {isLoggedIn: boolean, children: React.ReactNode}) {
-  return !isLoggedIn ? <>{children}</> : null;
-}
-
-function Main({isLoggedIn} : {isLoggedIn: boolean}) {
   return (
     <AppShell header={{height: 60}}>
       <AppShell.Header>
         <Group h="100%" px="md" justify="right">
           <Group ml="xl">
-            <IfNotLoggedIn isLoggedIn={isLoggedIn}>
+            <VisibleIf condition={!currentUser}>
               <UnstyledButton>
                 <Link to="/log-in">Log-in</Link>
               </UnstyledButton>
-            </IfNotLoggedIn>
-            <IfLoggedIn isLoggedIn={isLoggedIn}>
+            </VisibleIf>
+            <VisibleIf condition={!!currentUser}>  {/* FIXME: actual check depends on https://nde.atlassian.net/browse/ADZ-179 */}
               <UnstyledButton>
                 <Link to="/logs">Logs</Link>
               </UnstyledButton>
+            </VisibleIf>
+            <VisibleIf condition={currentUser && currentUser.permissions.entities.repos.read}>
               <UnstyledButton>
                 <Link to="/repos">Repository Management</Link>
               </UnstyledButton>
+            </VisibleIf>
+            <VisibleIf condition={currentUser && currentUser.permissions.entities.users.read}>
               <UnstyledButton>
                 <Link to="/users">User Management</Link>
               </UnstyledButton>
+            </VisibleIf>
+            <VisibleIf condition={currentUser && currentUser.permissions.entities.integrations.read}>
               <UnstyledButton>
                 <Link to="/integrations">Integration Management</Link>
               </UnstyledButton>
-            </IfLoggedIn>
+            </VisibleIf>
           </Group>
         </Group>
       </AppShell.Header>
@@ -66,25 +64,13 @@ function Main({isLoggedIn} : {isLoggedIn: boolean}) {
 }
 
 function AppRoutes() {
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => getLoggedInUser(),
-    staleTime: Infinity
-  });
-
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    if (currentUser && currentUser.email) {
-      setIsLoggedIn(true);
-    }
-  }, [currentUser]);
+  const {isAuthenticated, refreshUser} = useCurrentUser();
 
   const router = createBrowserRouter([
-    isLoggedIn ?
+    isAuthenticated ?
       {
         path: "/",
-        element: <Main isLoggedIn={isLoggedIn}/>,
+        element: <Main/>,
         children: [
           {
             path: "logs",
@@ -106,7 +92,7 @@ function AppRoutes() {
       } :
       {
         path: "*",
-        element: <Main isLoggedIn={isLoggedIn}/>,
+        element: <Main/>,
       },
     {
       path: "/signup/:token",
@@ -114,14 +100,12 @@ function AppRoutes() {
     },
     {
       path: "/log-in",
-      element: <LogInForm onLogged={() => {
-        setIsLoggedIn(true);
-      }}/>
+      element: <LogInForm onLogged={refreshUser}/>
     }
   ]);
 
   return (
-    <RouterProvider router={router}/>
+      <RouterProvider router={router}/>
   );
 }
 
@@ -138,7 +122,9 @@ export default function App() {
   return (
     <MantineProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <AppRoutes />
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </QueryClientProvider>
     </MantineProvider>
   );

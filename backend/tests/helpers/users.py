@@ -1,15 +1,19 @@
+from typing import AsyncIterator
 import uuid
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
+from contextlib import asynccontextmanager
 
 from httpx import Response
 import callee
 
 from auditize.common.db import DatabaseManager
-from auditize.users.service import get_user, hash_user_password
+from auditize.users.service import get_user, hash_user_password, build_document_from_user
 from auditize.users.models import User
+from auditize.permissions.models import Permissions
 
 from .http import HttpTestHelper, get_cookie_by_name, create_http_client
+from .permissions import DEFAULT_PERMISSIONS
 
 
 class PreparedUser:
@@ -30,8 +34,9 @@ class PreparedUser:
         }
 
     @classmethod
-    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager) -> "PreparedUser":
-        data = cls.prepare_data()
+    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager, data=None) -> "PreparedUser":
+        if data is None:
+            data = cls.prepare_data()
         resp = await client.assert_post(
             "/users", json=data,
             expected_status_code=201,
@@ -39,22 +44,23 @@ class PreparedUser:
         return cls(resp.json()["id"], data, dbm)
 
     @staticmethod
-    def prepare_model(password="dummypassword") -> User:
+    def prepare_model(*, password="dummypassword", permissions=None) -> User:
         rand = str(uuid.uuid4())
-        return User(
+        model = User(
             first_name=f"John {rand}",
             last_name=f"Doe {rand}",
             email=f"john.doe_{rand}@example.net",
             password_hash=hash_user_password(password)
         )
+        if permissions is not None:
+            model.permissions = Permissions.model_validate(permissions)
+        return model
 
     @classmethod
-    async def inject_into_db(cls, dbm: DatabaseManager, user: User = None) -> "PreparedUser":
-        password = None
+    async def inject_into_db(cls, dbm: DatabaseManager, user: User = None, password="dummypassword") -> "PreparedUser":
         if user is None:
-            password = "dummypassword"
             user = cls.prepare_model(password=password)
-        result = await dbm.core_db.users.insert_one(user.model_dump())
+        result = await dbm.core_db.users.insert_one(build_document_from_user(user))
         return cls(
             id=str(result.inserted_id),
             data={
@@ -87,27 +93,30 @@ class PreparedUser:
             expected_status_code=204
         )
 
-    async def client(self) -> HttpTestHelper:
-        client = create_http_client()
-        await self.log_in(client)
-        return client
+    @asynccontextmanager
+    async def client(self) -> AsyncIterator[HttpTestHelper]:
+        async with create_http_client() as client:
+            await self.log_in(client)
+            yield client
 
     async def get_session_token(self, client: HttpTestHelper) -> str:
         resp = await self.log_in(client)
         return get_cookie_by_name(resp, "session").value
 
     def expected_document(self, extra=None) -> dict:
+        signup_token = {
+            "token": callee.Regex(r"^[0-9a-f]{64}$"),
+            "expires_at": callee.IsA(datetime),
+        }
         return {
             "_id": ObjectId(self.id),
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],
-            "password_hash": None,
+            "permissions": DEFAULT_PERMISSIONS,
+            "password_hash": callee.IsA(str) if self.password else None,
             "created_at": callee.IsA(datetime),
-            "signup_token": {
-                "token": callee.Regex(r"^[0-9a-f]{64}$"),
-                "expires_at": callee.IsA(datetime),
-            },
+            "signup_token": None if self.password else signup_token,
             **(extra or {})
         }
 
@@ -117,5 +126,6 @@ class PreparedUser:
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],
+            "permissions": DEFAULT_PERMISSIONS,
             **(extra or {})
         }

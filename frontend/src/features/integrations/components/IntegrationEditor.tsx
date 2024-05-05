@@ -1,4 +1,4 @@
-import { useForm, isNotEmpty } from '@mantine/form';
+import { useForm, isNotEmpty, UseFormReturnType } from '@mantine/form';
 import { TextInput, Code, Group, Button } from '@mantine/core';
 import { createIntegration, updateIntegration, getIntegration, regenerateIntegrationToken } from '../api';
 import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { CopyIcon } from '@/components/CopyIcon';
 import { useMutation } from '@tanstack/react-query';
 import { InlineErrorMessage } from '@/components/InlineErrorMessage';
+import { WithPermissionManagement, emptyPermissions } from '@/features/permissions';
 
 function useIntegrationForm() {
   return useForm({
@@ -18,11 +19,35 @@ function useIntegrationForm() {
   });
 }
 
-function IntegrationForm({form}: {form: ReturnType<typeof useIntegrationForm>}) {
+function BaseIntegrationForm({form, readOnly}: {form: ReturnType<typeof useIntegrationForm>, readOnly: boolean}) {
   return (
     <>
-      <TextInput label="Name" placeholder="Name" data-autofocus {...form.getInputProps('name')}/>
+      <TextInput label="Name" placeholder="Name" data-autofocus disabled={readOnly} {...form.getInputProps('name')}/>
     </>
+  );
+}
+
+function IntegrationEditor(
+  {
+    form,
+    permissions,
+    onChange,
+    children,
+    readOnly = false,
+  }:
+  {
+    form: UseFormReturnType<any>,
+    permissions: Auditize.Permissions,
+    onChange: (permissions: Auditize.Permissions) => void,
+    children: React.ReactNode,
+    readOnly?: boolean,
+  }
+) {
+  return (
+    <WithPermissionManagement permissions={permissions} onChange={onChange} readOnly={readOnly}>
+      <BaseIntegrationForm form={form} readOnly={readOnly}/>
+      {children}
+    </WithPermissionManagement>
   );
 }
 
@@ -38,27 +63,34 @@ function Token({value}: {value: string}) {
 
 export function IntegrationCreation({opened}: {opened?: boolean}) {
   const form = useIntegrationForm();
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    form.reset();
     setToken(null);
   }, [opened]);
 
   return (
     <ResourceCreation
       title={"Create new integration"}
-      form={form}
       opened={!!opened}
-      onSave={() => createIntegration(form.values.name!)}
+      onSubmit={form.onSubmit}
+      onSave={() => createIntegration({...form.values, permissions})}
       onSaveSuccess={(data) => {
         const [_, token] = data as [string, string];
         setToken(token);
       }}
-      isSaved={!!token}
       queryKeyForInvalidation={['integrations']}
+      disabledSaving={!!token}
     >
-      <IntegrationForm form={form}/>
-      {token && <Token value={token}/>}
+      <IntegrationEditor
+        form={form}
+        permissions={permissions}
+        onChange={(perms) => setPermissions(perms)}
+      >
+        {token && <Token value={token}/>}
+      </IntegrationEditor>
     </ResourceCreation>
   );
 }
@@ -84,21 +116,41 @@ export function TokenRegeneration({integrationId}: {integrationId: string}) {
   }
 }
 
-export function IntegrationEdition({integrationId}: {integrationId: string | null}) {
+export function IntegrationEdition({integrationId, readOnly}: {integrationId: string | null, readOnly: boolean}) {
   const form = useIntegrationForm();
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
 
   return (
     <ResourceEdition
       resourceId={integrationId}
       queryKeyForLoad={['integration', integrationId]}
       queryFnForLoad={() => getIntegration(integrationId!)}
+      onDataLoaded={
+        (data) => {
+          form.setValues(data);
+          setPermissions(data.permissions);
+        }
+      }
       title={`Edit integration`}
-      form={form}
-      onSave={() => updateIntegration(integrationId!, form.values)}
+      onSubmit={form.onSubmit}
+      onSave={
+        () => updateIntegration(integrationId!, {...form.values, permissions})
+      }
       queryKeyForInvalidation={['integrations']}
+      disabledSaving={readOnly}
     >
-      <IntegrationForm form={form}/>
-      <TokenRegeneration integrationId={integrationId!}/>
+      <IntegrationEditor
+        form={form}
+        permissions={permissions}
+        onChange={
+          (perms) => {
+            setPermissions(perms);
+          }
+        }
+        readOnly={readOnly}
+      >
+        {!readOnly && <TokenRegeneration integrationId={integrationId!}/>}
+      </IntegrationEditor>
     </ResourceEdition>
   );
 }

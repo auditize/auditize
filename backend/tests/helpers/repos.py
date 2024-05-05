@@ -26,8 +26,9 @@ class PreparedRepo:
         }
 
     @classmethod
-    async def create(cls, dbm: DatabaseManager):
-        data = cls.prepare_data()
+    async def create(cls, dbm: DatabaseManager, data=None):
+        if not data:
+            data = cls.prepare_data()
         repo_id = await create_repo(dbm, Repo(**data))
         logs_db = await get_logs_db(dbm, repo_id)
         return cls(str(repo_id), data, logs_db)
@@ -40,7 +41,7 @@ class PreparedRepo:
             **(extra or {})
         }
 
-    def expected_api_response(self, extra=None):
+    def expected_api_response(self, extra=None) -> dict:
         return {
             "id": self.id,
             "name": self.data["name"],

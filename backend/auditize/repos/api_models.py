@@ -34,6 +34,11 @@ class RepoStatsData(BaseModel):
     storage_size: int = Field(description="The storage size")
 
 
+class RepoLogPermissionsData(BaseModel):
+    read_logs: bool = Field(description="Whether authenticated can read logs on the repository")
+    write_logs: bool = Field(description="Whether authenticated can write logs into the repository")
+
+
 class RepoReadingResponse(BaseModel):
     id: Annotated[str, BeforeValidator(str)] = Field(description="The repository ID")
     name: str = Field(description="The repository name")
@@ -49,10 +54,23 @@ class RepoReadingResponse(BaseModel):
         return cls.model_validate(repo.model_dump())
 
 
+class UserRepoReadingResponse(RepoReadingResponse):
+    permissions: RepoLogPermissionsData = Field(
+        description="The repository permissions",
+        default_factory=lambda: RepoLogPermissionsData(read_logs=False, write_logs=False)
+    )
+
+
 class RepoListResponse(PagePaginatedResponse[Repo, RepoReadingResponse]):
     @classmethod
     def build_item(cls, repo: Repo) -> RepoReadingResponse:
         return RepoReadingResponse.from_repo(repo)
+
+
+class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoReadingResponse]):
+    @classmethod
+    def build_item(cls, repo: Repo) -> UserRepoReadingResponse:
+        return UserRepoReadingResponse.from_repo(repo)
 
 
 class RepoIncludeOptions(Enum):

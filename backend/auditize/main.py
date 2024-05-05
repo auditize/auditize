@@ -9,8 +9,8 @@ from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
 from auditize.integrations.api import router as integrations_router
-from auditize.common.exceptions import UnknownModelException, AuthenticationFailure
-from auditize.common.api import make_404_response, make_409_response, make_401_response
+from auditize.common.exceptions import UnknownModelException, AuthenticationFailure, PermissionDenied
+from auditize.common.api import make_404_response, make_409_response, make_401_response, make_403_response
 from auditize.common.db import get_dbm
 
 ic.configureOutput(includeContext=True)
@@ -51,6 +51,11 @@ def duplicate_key_handler(request, exc):
 @app.exception_handler(AuthenticationFailure)
 def authentication_failure(request, exc):
     return make_401_response()
+
+
+@app.exception_handler(PermissionDenied)
+def permission_denied_handler(request, exc):
+    return make_403_response()
 
 
 app.include_router(logs_router)

@@ -32,7 +32,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
-    "rsuite": "^5.58.1"
+    "rsuite": "^5.58.1",
+    "snakecase-keys": "^8.0.0"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.0.0",
