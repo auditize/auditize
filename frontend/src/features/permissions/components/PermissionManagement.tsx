@@ -135,7 +135,7 @@ function LogsPermissionManagement(
   });
 
   return (
-    <Accordion.Item value="entities">
+    <Accordion.Item value="logs">
       <Accordion.Control>Logs</Accordion.Control>
         <Accordion.Panel>
           <Table withRowBorders={false}>
