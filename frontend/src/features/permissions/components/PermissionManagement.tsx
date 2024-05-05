@@ -153,7 +153,7 @@ function LogsPermissionManagement(
               </Table.Tr>
               {
                 data!.map((assignableRepo) => (
-                  <Table.Tr>
+                  <Table.Tr key={assignableRepo.id}>
                     <Table.Td>{assignableRepo.name}</Table.Td>
                     <Table.Td>
                       <ReadWritePermissionManagement
