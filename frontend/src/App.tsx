@@ -18,40 +18,41 @@ import {
   Outlet,
 } from "react-router-dom";
 import { AuthProvider, LogInForm, useCurrentUser } from '@/features/auth';
+import { VisibleIf } from './components/VisibleIf';
 
-function IfAuthenticated({isAuthenticated, children} : {isAuthenticated: boolean, children: React.ReactNode}) {
-  return isAuthenticated ? <>{children}</> : null;
-}
+function Main() {
+  const {currentUser} = useCurrentUser();
 
-function IfAnonymous({isAuthenticated, children} : {isAuthenticated: boolean, children: React.ReactNode}) {
-  return !isAuthenticated ? <>{children}</> : null;
-}
-
-function Main({isAuthenticated} : {isAuthenticated: boolean}) {
   return (
     <AppShell header={{height: 60}}>
       <AppShell.Header>
         <Group h="100%" px="md" justify="right">
           <Group ml="xl">
-            <IfAnonymous isAuthenticated={isAuthenticated}>
+            <VisibleIf condition={!currentUser}>
               <UnstyledButton>
                 <Link to="/log-in">Log-in</Link>
               </UnstyledButton>
-            </IfAnonymous>
-            <IfAuthenticated isAuthenticated={isAuthenticated}>
+            </VisibleIf>
+            <VisibleIf condition={!!currentUser}>  {/* FIXME: actual check depends on https://nde.atlassian.net/browse/ADZ-179 */}
               <UnstyledButton>
                 <Link to="/logs">Logs</Link>
               </UnstyledButton>
+            </VisibleIf>
+            <VisibleIf condition={currentUser && currentUser.permissions.entities.repos.read}>
               <UnstyledButton>
                 <Link to="/repos">Repository Management</Link>
               </UnstyledButton>
+            </VisibleIf>
+            <VisibleIf condition={currentUser && currentUser.permissions.entities.users.read}>
               <UnstyledButton>
                 <Link to="/users">User Management</Link>
               </UnstyledButton>
+            </VisibleIf>
+            <VisibleIf condition={currentUser && currentUser.permissions.entities.integrations.read}>
               <UnstyledButton>
                 <Link to="/integrations">Integration Management</Link>
               </UnstyledButton>
-            </IfAuthenticated>
+            </VisibleIf>
           </Group>
         </Group>
       </AppShell.Header>
@@ -69,7 +70,7 @@ function AppRoutes() {
     isAuthenticated ?
       {
         path: "/",
-        element: <Main isAuthenticated={isAuthenticated}/>,
+        element: <Main/>,
         children: [
           {
             path: "logs",
@@ -91,7 +92,7 @@ function AppRoutes() {
       } :
       {
         path: "*",
-        element: <Main isAuthenticated={isAuthenticated}/>,
+        element: <Main/>,
       },
     {
       path: "/signup/:token",
