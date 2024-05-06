@@ -21,9 +21,7 @@ async def test_user_log_in(dbm: DatabaseManager):
     token, expires_at = await service.authenticate_user(dbm, user.email, user.password)
     ic(token, expires_at)
     assert expires_at.timestamp() > now
-    payload = jwt.decode(
-        token, config.user_session_token_signing_key, algorithms=["HS256"]
-    )
+    payload = jwt.decode(token, config.jwt_signing_key, algorithms=["HS256"])
     ic(payload)
     assert payload == {
         "sub": f"user_email:{user.email}",

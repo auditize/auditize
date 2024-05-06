@@ -108,9 +108,7 @@ async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
 async def get_user_by_session_token(dbm: DatabaseManager, token: str) -> User:
     # Load JWT token
     try:
-        payload = jwt.decode(
-            token, get_config().user_session_token_signing_key, algorithms=["HS256"]
-        )
+        payload = jwt.decode(token, get_config().jwt_signing_key, algorithms=["HS256"])
     except ExpiredSignatureError:
         raise AuthenticationFailure("JWT token expired")
     except JWTError:
@@ -187,9 +185,7 @@ def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
 def _generate_session_token(user: User) -> tuple[str, datetime]:
     config = get_config()
     payload, expires_at = generate_session_token_payload(user.email)
-    token = jwt.encode(
-        payload, config.user_session_token_signing_key, algorithm="HS256"
-    )
+    token = jwt.encode(payload, config.jwt_signing_key, algorithm="HS256")
     return token, expires_at
 
 
