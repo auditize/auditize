@@ -1,5 +1,6 @@
 import {
   AppShell,
+  Button,
   Group,
   MantineProvider,
   Text,
@@ -7,8 +8,9 @@ import {
 } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
-import { modals, ModalsProvider } from "@mantine/modals";
+import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   createBrowserRouter,
   Link,
@@ -26,8 +28,9 @@ import { theme } from "@/theme";
 import { VisibleIf } from "./components/VisibleIf";
 import { logOut } from "./features/auth";
 import { IntegrationsManagement } from "./features/integrations";
+import { interceptStatusCode } from "./utils/axios";
 
-function logoutModal(notifyLoggedOut: () => void) {
+function logoutConfirmationModal(notifyLoggedOut: () => void) {
   return () =>
     modals.openConfirmModal({
       title: "Please confirm log-out",
@@ -40,8 +43,47 @@ function logoutModal(notifyLoggedOut: () => void) {
     });
 }
 
+function LoggedOutModal({
+  context,
+  id,
+  innerProps,
+}: ContextModalProps<{ notifyLoggedOut: () => void }>) {
+  return (
+    <>
+      <Text size="sm">Your session has expired, you need to log-in again.</Text>
+      <Button
+        fullWidth
+        mt="md"
+        onClick={() => {
+          innerProps.notifyLoggedOut();
+          context.closeModal(id);
+        }}
+      >
+        Ok
+      </Button>
+    </>
+  );
+}
+
 function Main() {
   const { currentUser, notifyLoggedOut } = useCurrentUser();
+
+  useEffect(() => {
+    let alreadyIntercepted = false;
+
+    if (currentUser !== null) {
+      const interceptorUnmount = interceptStatusCode(401, () => {
+        if (!alreadyIntercepted) {
+          alreadyIntercepted = true; // avoid multiple modals in a row when we have multiple 401 responses
+          modals.openContextModal({
+            modal: "loggedOut",
+            innerProps: { notifyLoggedOut },
+          });
+        }
+      });
+      return interceptorUnmount;
+    }
+  }, [currentUser]);
 
   return (
     <AppShell header={{ height: 60 }}>
@@ -54,7 +96,9 @@ function Main() {
               </UnstyledButton>
             </VisibleIf>
             <VisibleIf condition={!!currentUser}>
-              <UnstyledButton onClick={logoutModal(notifyLoggedOut)}>
+              <UnstyledButton
+                onClick={logoutConfirmationModal(notifyLoggedOut)}
+              >
                 Log-out
               </UnstyledButton>
             </VisibleIf>
@@ -159,7 +203,7 @@ export default function App() {
 
   return (
     <MantineProvider theme={theme}>
-      <ModalsProvider>
+      <ModalsProvider modals={{ loggedOut: LoggedOutModal }}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <AppRoutes />

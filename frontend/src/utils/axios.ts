@@ -22,3 +22,23 @@ axiosInstance.interceptors.request.use(
     return Promise.reject(error);
   },
 );
+
+export function interceptStatusCode(
+  statusCode: number,
+  func: (error: any) => void,
+) {
+  const interceptor = axiosInstance.interceptors.response.use(
+    (response) => {
+      return response;
+    },
+    (error) => {
+      if (error.response.status === statusCode) {
+        func(error);
+      }
+      return error;
+    },
+  );
+  return () => {
+    axiosInstance.interceptors.response.eject(interceptor);
+  };
+}
