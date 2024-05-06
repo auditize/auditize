@@ -149,3 +149,11 @@ async def login_user(
         secure=True,
         expires=expires_at,
     )
+
+
+@router.post("/users/logout", summary="User log-out", tags=["users"], status_code=204)
+async def logout_user(
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    response: Response,
+):
+    response.delete_cookie("session", httponly=True, samesite="strict", secure=True)

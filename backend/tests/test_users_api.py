@@ -391,6 +391,14 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
     await anon_client.assert_get("/users/me", expected_status_code=200)
 
 
+async def test_user_log_out(user_builder: UserBuilder):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_post("/users/logout", expected_status_code=204)
+        await client.assert_unauthorized_get("/users/me")
+
+
 async def test_get_user_me(dbm: DatabaseManager):
     user = await PreparedUser.inject_into_db(dbm)
     async with user.client() as client:
