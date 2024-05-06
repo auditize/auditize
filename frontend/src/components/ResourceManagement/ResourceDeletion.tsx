@@ -1,5 +1,5 @@
+import { Box, Button, Group, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Modal, Box, Text, Group, Button } from "@mantine/core";
 
 interface ResourceDeletionProps {
   title: string;
@@ -10,27 +10,39 @@ interface ResourceDeletionProps {
   onClose: () => void;
 }
 
-export function ResourceDeletion({ title, message, opened, onDelete, queryKeyForInvalidation, onClose }: ResourceDeletionProps) {
+export function ResourceDeletion({
+  title,
+  message,
+  opened,
+  onDelete,
+  queryKeyForInvalidation,
+  onClose,
+}: ResourceDeletionProps) {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => onDelete(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeyForInvalidation });
       onClose();
-    }
+    },
   });
 
   return (
     <Modal
-      title={title} size="lg" padding="lg"
-      opened={opened} onClose={onClose}
+      title={title}
+      size="lg"
+      padding="lg"
+      opened={opened}
+      onClose={onClose}
     >
       <div>
         <Box mb="md">
           <Text>{message}</Text>
           <Group justify="center">
             <Button onClick={onClose}>Cancel</Button>
-            <Button onClick={() => mutation.mutate()} color="blue">Delete</Button>
+            <Button onClick={() => mutation.mutate()} color="blue">
+              Delete
+            </Button>
           </Group>
         </Box>
       </div>

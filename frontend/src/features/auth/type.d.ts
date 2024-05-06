@@ -10,9 +10,9 @@ type CurrentUserInfo = {
       write: boolean;
     };
     entities: {
-      repos: {read: boolean; write: boolean};
-      users: {read: boolean; write: boolean};
-      integrations: {read: boolean; write: boolean};
+      repos: { read: boolean; write: boolean };
+      users: { read: boolean; write: boolean };
+      integrations: { read: boolean; write: boolean };
     };
   };
 };

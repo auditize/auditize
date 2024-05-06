@@ -1,30 +1,30 @@
-import { Select } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { Select } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
-export function PaginatedSelector(
-  { label,
-    queryKey,
-    queryFn,
-    enabled = true,
-    onDataLoaded,
-    selectedItem,
-    clearable = true,
-    onChange,
-    itemLabel,
-    itemValue
-  }:
-  { label: string;
-    queryKey: any;
-    queryFn: () => Promise<any[]>;
-    enabled?: boolean;
-    onDataLoaded?: (data: any[]) => void;
-    selectedItem?: string;
-    clearable?: boolean;
-    onChange: (value: string) => void;
-    itemLabel: (item: any) => string;
-    itemValue: (item: any) => string;
-  }) {
+export function PaginatedSelector({
+  label,
+  queryKey,
+  queryFn,
+  enabled = true,
+  onDataLoaded,
+  selectedItem,
+  clearable = true,
+  onChange,
+  itemLabel,
+  itemValue,
+}: {
+  label: string;
+  queryKey: any;
+  queryFn: () => Promise<any[]>;
+  enabled?: boolean;
+  onDataLoaded?: (data: any[]) => void;
+  selectedItem?: string;
+  clearable?: boolean;
+  onChange: (value: string) => void;
+  itemLabel: (item: any) => string;
+  itemValue: (item: any) => string;
+}) {
   const { isPending, error, data } = useQuery({
     queryKey: queryKey,
     queryFn: queryFn,
@@ -32,21 +32,23 @@ export function PaginatedSelector(
   });
 
   useEffect(() => {
-    if (data && onDataLoaded)
-      onDataLoaded(data);
+    if (data && onDataLoaded) onDataLoaded(data);
   }, [data, selectedItem]);
 
-  if (error)
-    return <div>Error: {error.message}</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <Select
-      data={data?.map((item) => ({ label: itemLabel(item), value: itemValue(item) }))}
+      data={data?.map((item) => ({
+        label: itemLabel(item),
+        value: itemValue(item),
+      }))}
       value={selectedItem || null}
       onChange={(value) => onChange(value || "")}
       placeholder={isPending ? "Loading..." : label}
       clearable={clearable}
       display="flex"
-      comboboxProps={{ withinPortal: false }} />
+      comboboxProps={{ withinPortal: false }}
+    />
   );
 }

@@ -1,69 +1,97 @@
-import { useForm, isNotEmpty, UseFormReturnType } from '@mantine/form';
-import { TextInput, Code, Group, Button } from '@mantine/core';
-import { createIntegration, updateIntegration, getIntegration, regenerateIntegrationToken } from '../api';
-import { ResourceCreation, ResourceEdition } from '@/components/ResourceManagement';
-import { useEffect, useState } from 'react';
-import { CopyIcon } from '@/components/CopyIcon';
-import { useMutation } from '@tanstack/react-query';
-import { InlineErrorMessage } from '@/components/InlineErrorMessage';
-import { WithPermissionManagement, emptyPermissions } from '@/features/permissions';
+import { Button, Code, Group, TextInput } from "@mantine/core";
+import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
+import { useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+
+import { CopyIcon } from "@/components/CopyIcon";
+import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import {
+  ResourceCreation,
+  ResourceEdition,
+} from "@/components/ResourceManagement";
+import {
+  emptyPermissions,
+  WithPermissionManagement,
+} from "@/features/permissions";
+
+import {
+  createIntegration,
+  getIntegration,
+  regenerateIntegrationToken,
+  updateIntegration,
+} from "../api";
 
 function useIntegrationForm() {
   return useForm({
     initialValues: {
-      name: '',
+      name: "",
     },
     validate: {
-      name: isNotEmpty('Name is required'),
-    }
+      name: isNotEmpty("Name is required"),
+    },
   });
 }
 
-function BaseIntegrationForm({form, readOnly}: {form: ReturnType<typeof useIntegrationForm>, readOnly: boolean}) {
+function BaseIntegrationForm({
+  form,
+  readOnly,
+}: {
+  form: ReturnType<typeof useIntegrationForm>;
+  readOnly: boolean;
+}) {
   return (
     <>
-      <TextInput label="Name" placeholder="Name" data-autofocus disabled={readOnly} {...form.getInputProps('name')}/>
+      <TextInput
+        label="Name"
+        placeholder="Name"
+        data-autofocus
+        disabled={readOnly}
+        {...form.getInputProps("name")}
+      />
     </>
   );
 }
 
-function IntegrationEditor(
-  {
-    form,
-    permissions,
-    onChange,
-    children,
-    readOnly = false,
-  }:
-  {
-    form: UseFormReturnType<any>,
-    permissions: Auditize.Permissions,
-    onChange: (permissions: Auditize.Permissions) => void,
-    children: React.ReactNode,
-    readOnly?: boolean,
-  }
-) {
+function IntegrationEditor({
+  form,
+  permissions,
+  onChange,
+  children,
+  readOnly = false,
+}: {
+  form: UseFormReturnType<any>;
+  permissions: Auditize.Permissions;
+  onChange: (permissions: Auditize.Permissions) => void;
+  children: React.ReactNode;
+  readOnly?: boolean;
+}) {
   return (
-    <WithPermissionManagement permissions={permissions} onChange={onChange} readOnly={readOnly}>
-      <BaseIntegrationForm form={form} readOnly={readOnly}/>
+    <WithPermissionManagement
+      permissions={permissions}
+      onChange={onChange}
+      readOnly={readOnly}
+    >
+      <BaseIntegrationForm form={form} readOnly={readOnly} />
       {children}
     </WithPermissionManagement>
   );
 }
 
-function Token({value}: {value: string}) {
+function Token({ value }: { value: string }) {
   return (
     <Group>
       <span>Token: </span>
       <Code>{value}</Code>
-      <CopyIcon value={value}/>
+      <CopyIcon value={value} />
     </Group>
   );
 }
 
-export function IntegrationCreation({opened}: {opened?: boolean}) {
+export function IntegrationCreation({ opened }: { opened?: boolean }) {
   const form = useIntegrationForm();
-  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
+    emptyPermissions(),
+  );
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,12 +104,12 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
       title={"Create new integration"}
       opened={!!opened}
       onSubmit={form.onSubmit}
-      onSave={() => createIntegration({...form.values, permissions})}
+      onSave={() => createIntegration({ ...form.values, permissions })}
       onSaveSuccess={(data) => {
         const [_, token] = data as [string, string];
         setToken(token);
       }}
-      queryKeyForInvalidation={['integrations']}
+      queryKeyForInvalidation={["integrations"]}
       disabledSaving={!!token}
     >
       <IntegrationEditor
@@ -89,23 +117,27 @@ export function IntegrationCreation({opened}: {opened?: boolean}) {
         permissions={permissions}
         onChange={(perms) => setPermissions(perms)}
       >
-        {token && <Token value={token}/>}
+        {token && <Token value={token} />}
       </IntegrationEditor>
     </ResourceCreation>
   );
 }
 
-export function TokenRegeneration({integrationId}: {integrationId: string}) {
+export function TokenRegeneration({
+  integrationId,
+}: {
+  integrationId: string;
+}) {
   const [newToken, setNewToken] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const mutation = useMutation({
     mutationFn: () => regenerateIntegrationToken(integrationId),
     onSuccess: (value) => setNewToken(value),
-    onError: (error) => setError(error.message)
+    onError: (error) => setError(error.message),
   });
 
   if (newToken) {
-    return <Token value={newToken}/>;
+    return <Token value={newToken} />;
   } else {
     return (
       <>
@@ -116,40 +148,44 @@ export function TokenRegeneration({integrationId}: {integrationId: string}) {
   }
 }
 
-export function IntegrationEdition({integrationId, readOnly}: {integrationId: string | null, readOnly: boolean}) {
+export function IntegrationEdition({
+  integrationId,
+  readOnly,
+}: {
+  integrationId: string | null;
+  readOnly: boolean;
+}) {
   const form = useIntegrationForm();
-  const [permissions, setPermissions] = useState<Auditize.Permissions>(() => emptyPermissions());
+  const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
+    emptyPermissions(),
+  );
 
   return (
     <ResourceEdition
       resourceId={integrationId}
-      queryKeyForLoad={['integration', integrationId]}
+      queryKeyForLoad={["integration", integrationId]}
       queryFnForLoad={() => getIntegration(integrationId!)}
-      onDataLoaded={
-        (data) => {
-          form.setValues(data);
-          setPermissions(data.permissions);
-        }
-      }
+      onDataLoaded={(data) => {
+        form.setValues(data);
+        setPermissions(data.permissions);
+      }}
       title={`Edit integration`}
       onSubmit={form.onSubmit}
-      onSave={
-        () => updateIntegration(integrationId!, {...form.values, permissions})
+      onSave={() =>
+        updateIntegration(integrationId!, { ...form.values, permissions })
       }
-      queryKeyForInvalidation={['integrations']}
+      queryKeyForInvalidation={["integrations"]}
       disabledSaving={readOnly}
     >
       <IntegrationEditor
         form={form}
         permissions={permissions}
-        onChange={
-          (perms) => {
-            setPermissions(perms);
-          }
-        }
+        onChange={(perms) => {
+          setPermissions(perms);
+        }}
         readOnly={readOnly}
       >
-        {!readOnly && <TokenRegeneration integrationId={integrationId!}/>}
+        {!readOnly && <TokenRegeneration integrationId={integrationId!} />}
       </IntegrationEditor>
     </ResourceEdition>
   );

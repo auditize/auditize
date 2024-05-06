@@ -4,7 +4,7 @@ export function emptyPermissions(): Auditize.Permissions {
     logs: {
       read: false,
       write: false,
-      repos: {}
+      repos: {},
     },
     entities: {
       repos: {
@@ -19,6 +19,6 @@ export function emptyPermissions(): Auditize.Permissions {
         read: false,
         write: false,
       },
-    }
-  }
+    },
+  };
 }

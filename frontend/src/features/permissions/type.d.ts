@@ -16,5 +16,5 @@ declare namespace Auditize {
       users: ReadWritePermissions;
       integrations: ReadWritePermissions;
     };
-  };
+  }
 }

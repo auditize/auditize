@@ -25,7 +25,7 @@ type LogListResponse = {
   data: Log[];
   pagination: {
     next_cursor: string | null;
-  }
+  };
 };
 
 type LogNode = {

@@ -1,73 +1,112 @@
-import { Table, Anchor } from '@mantine/core';
-import { labelize } from '@/utils/format';
-import { LogDetails } from './LogDetails';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { addQueryParamToLocation } from '@/utils/router';
+import { Anchor, Table } from "@mantine/core";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
-function LogTableRow(
-  { log, onTableFilterChange }:
-  { log: Log; onTableFilterChange: (name: string, value: string) => void; }) {
+import { labelize } from "@/utils/format";
+import { addQueryParamToLocation } from "@/utils/router";
+
+import { LogDetails } from "./LogDetails";
+
+function LogTableRow({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
   const location = useLocation();
   const logLink = addQueryParamToLocation(location, "log", log.id.toString());
 
   return (
     <Table.Tr key={log.id}>
       <Table.Td>
-        <Anchor component={Link} to={logLink} underline='hover'>
+        <Anchor component={Link} to={logLink} underline="hover">
           {log.saved_at}
         </Anchor>
       </Table.Td>
       <Table.Td>
-        <Anchor onClick={() => onTableFilterChange('eventName', log.event.name)} underline='hover'>
+        <Anchor
+          onClick={() => onTableFilterChange("eventName", log.event.name)}
+          underline="hover"
+        >
           {labelize(log.event.name)}
         </Anchor>
       </Table.Td>
       <Table.Td>
-        <Anchor onClick={() => onTableFilterChange('eventCategory', log.event.category)} underline='hover'>
+        <Anchor
+          onClick={() =>
+            onTableFilterChange("eventCategory", log.event.category)
+          }
+          underline="hover"
+        >
           {labelize(log.event.category)}
         </Anchor>
       </Table.Td>
       <Table.Td>
-        {log.actor ?
-          <Anchor onClick={() => onTableFilterChange('actorName', log.actor!.name)} underline='hover'>
+        {log.actor ? (
+          <Anchor
+            onClick={() => onTableFilterChange("actorName", log.actor!.name)}
+            underline="hover"
+          >
             {log.actor.name}
-          </Anchor> :
-          null}
+          </Anchor>
+        ) : null}
       </Table.Td>
       <Table.Td>
-        {log.resource ?
-          <Anchor onClick={() => onTableFilterChange('resourceName', log.resource!.name)} underline='hover'>
+        {log.resource ? (
+          <Anchor
+            onClick={() =>
+              onTableFilterChange("resourceName", log.resource!.name)
+            }
+            underline="hover"
+          >
             {log.resource.name}
-          </Anchor> :
-          null}
+          </Anchor>
+        ) : null}
       </Table.Td>
       <Table.Td>
-        {log.resource ?
-          <Anchor onClick={() => onTableFilterChange('resourceType', log.resource!.type)} underline='hover'>
+        {log.resource ? (
+          <Anchor
+            onClick={() =>
+              onTableFilterChange("resourceType", log.resource!.type)
+            }
+            underline="hover"
+          >
             {log.resource.type}
-          </Anchor> :
-          null}
+          </Anchor>
+        ) : null}
       </Table.Td>
       <Table.Td>
-        {log.node_path.map<React.ReactNode>(
-          (node) => (
+        {log.node_path
+          .map<React.ReactNode>((node) => (
             // FIXME: the filter edition for the node path may not work properly if the selected node
             // has not been already loaded in the TreePicker component
-            <Anchor key={node.id} onClick={() => onTableFilterChange('nodeId', node.id)} underline='hover'>
+            <Anchor
+              key={node.id}
+              onClick={() => onTableFilterChange("nodeId", node.id)}
+              underline="hover"
+            >
               {node.name}
             </Anchor>
-          )
-        ).reduce((prev, curr) => [prev, ' > ', curr])}
+          ))
+          .reduce((prev, curr) => [prev, " > ", curr])}
       </Table.Td>
     </Table.Tr>
   );
 }
 
-export function LogsTable(
-  { repoId, logs, footer, onTableFilterChange }:
-  { repoId: string, logs: Log[]; footer: React.ReactNode; onTableFilterChange: (name: string, value: string) => void; }) {
+export function LogsTable({
+  repoId,
+  logs,
+  footer,
+  onTableFilterChange,
+}: {
+  repoId: string;
+  logs: Log[];
+  footer: React.ReactNode;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
   const [params] = useSearchParams();
-  const logId = params.get('log');
+  const logId = params.get("log");
 
   return (
     <>
@@ -84,7 +123,13 @@ export function LogsTable(
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {logs.map((log) => <LogTableRow key={log.id} log={log} onTableFilterChange={onTableFilterChange} />)}
+          {logs.map((log) => (
+            <LogTableRow
+              key={log.id}
+              log={log}
+              onTableFilterChange={onTableFilterChange}
+            />
+          ))}
         </Table.Tbody>
         <Table.Tfoot>
           <Table.Tr>

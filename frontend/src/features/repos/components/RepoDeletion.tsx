@@ -1,14 +1,23 @@
-import { deleteRepo } from '../api';
-import { ResourceDeletion } from '@/components/ResourceManagement';
+import { ResourceDeletion } from "@/components/ResourceManagement";
 
-export function RepoDeletion({repo, opened, onClose}: {repo: Repo, opened: boolean, onClose: () => void}) {
+import { deleteRepo } from "../api";
+
+export function RepoDeletion({
+  repo,
+  opened,
+  onClose,
+}: {
+  repo: Repo;
+  opened: boolean;
+  onClose: () => void;
+}) {
   return (
     <ResourceDeletion
       title={"Confirm deletion"}
       message={`Do you confirm the deletion of log repository ${repo.name} ?`}
       opened={opened}
       onDelete={() => deleteRepo(repo.id)}
-      queryKeyForInvalidation={['repos']}
+      queryKeyForInvalidation={["repos"]}
       onClose={onClose}
     />
   );

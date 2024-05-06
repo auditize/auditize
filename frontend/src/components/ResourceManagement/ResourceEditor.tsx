@@ -1,8 +1,8 @@
-import { Modal, Box, Group, Button } from "@mantine/core";
+import { Box, Button, Group, Modal } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { FormEventHandler, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 
 interface ResourceEditorProps {
   title: string;
@@ -15,24 +15,28 @@ interface ResourceEditorProps {
   children: React.ReactNode;
 }
 
-function ResourceEditor(
-  { title, opened, onSubmit, disabledSaving = false, onSave, onSaveSuccess, queryKeyForInvalidation, children }:
-  ResourceEditorProps
-) {
+function ResourceEditor({
+  title,
+  opened,
+  onSubmit,
+  disabledSaving = false,
+  onSave,
+  onSaveSuccess,
+  queryKeyForInvalidation,
+  children,
+}: ResourceEditorProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => onSave(),
-    onSuccess: ((data) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeyForInvalidation });
-      if (onSaveSuccess)
-        onSaveSuccess(data);
-      else
-        navigate(-1);
-    }),
+      if (onSaveSuccess) onSaveSuccess(data);
+      else navigate(-1);
+    },
     onError: (error) => {
       setError(error.message);
-    }
+    },
   });
   const [error, setError] = useState<string>("");
 
@@ -44,7 +48,9 @@ function ResourceEditor(
 
   return (
     <Modal
-      title={title} size="lg" padding="lg"
+      title={title}
+      size="lg"
+      padding="lg"
       opened={opened}
       // onClose is called even when the modal is close when the "ESC" key is pressed,
       // if onClose has been set to navigate(-1), it triggers an undesired navigation
@@ -55,22 +61,22 @@ function ResourceEditor(
           <form onSubmit={onSubmit(() => mutation.mutate())}>
             {children}
             <Group justify="center">
-              {
-                ! disabledSaving && (
-                  <>
-                    <Button onClick={onClose}>Cancel</Button>
-                    <Button type='submit' color="blue">Save</Button>
-                  </>
-                )
-              }
-              {
-                disabledSaving && (
-                  <Button onClick={onClose}>Close</Button>
-                )
-              }
+              {!disabledSaving && (
+                <>
+                  <Button onClick={onClose}>Cancel</Button>
+                  <Button type="submit" color="blue">
+                    Save
+                  </Button>
+                </>
+              )}
+              {disabledSaving && <Button onClick={onClose}>Close</Button>}
             </Group>
           </form>
-          {error && <Box mt="md" color="red">{error}</Box>}
+          {error && (
+            <Box mt="md" color="red">
+              {error}
+            </Box>
+          )}
         </Box>
       </div>
     </Modal>
@@ -78,7 +84,7 @@ function ResourceEditor(
 }
 
 export function ResourceCreation(props: ResourceEditorProps) {
-  return (<ResourceEditor {...props} />);
+  return <ResourceEditor {...props} />;
 }
 
 type ResourceEditionProps = Omit<ResourceEditorProps, "opened"> & {
@@ -86,21 +92,24 @@ type ResourceEditionProps = Omit<ResourceEditorProps, "opened"> & {
   queryKeyForLoad: any[];
   queryFnForLoad: () => Promise<any>;
   onDataLoaded: (data: any) => void;
-}
+};
 
-export function ResourceEdition(
-  {resourceId, queryKeyForLoad, queryFnForLoad, onDataLoaded, ...props}: ResourceEditionProps
-) {
+export function ResourceEdition({
+  resourceId,
+  queryKeyForLoad,
+  queryFnForLoad,
+  onDataLoaded,
+  ...props
+}: ResourceEditionProps) {
   const { data, isPending, error } = useQuery({
     queryKey: queryKeyForLoad,
     queryFn: queryFnForLoad,
-    enabled: !!resourceId
+    enabled: !!resourceId,
   });
 
   useEffect(() => {
     if (!!resourceId) {
-      if (data)
-        onDataLoaded(data);
+      if (data) onDataLoaded(data);
     }
   }, [resourceId, data]);
 
@@ -108,5 +117,5 @@ export function ResourceEdition(
     return null;
   }
 
-  return (<ResourceEditor opened={!!resourceId} {...props} />);
+  return <ResourceEditor opened={!!resourceId} {...props} />;
 }

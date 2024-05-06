@@ -1,8 +1,17 @@
-import { useEffect, useRef } from 'react';
-import { DateTimePicker } from '@mantine/dates';
+import { DateTimePicker } from "@mantine/dates";
+import { useEffect, useRef } from "react";
 
-export function CustomDateTimePicker(
-  { placeholder, value, onChange, initToEndOfDay = false }: { placeholder: string; value: Date | null | undefined; onChange: (value: Date | null) => void; initToEndOfDay?: boolean; }) {
+export function CustomDateTimePicker({
+  placeholder,
+  value,
+  onChange,
+  initToEndOfDay = false,
+}: {
+  placeholder: string;
+  value: Date | null | undefined;
+  onChange: (value: Date | null) => void;
+  initToEndOfDay?: boolean;
+}) {
   const previousValueRef = useRef<Date | null>(null);
 
   useEffect(() => {
@@ -20,10 +29,11 @@ export function CustomDateTimePicker(
     <DateTimePicker
       placeholder={placeholder}
       value={value}
-      valueFormat='YYYY-MM-DD HH:mm'
+      valueFormat="YYYY-MM-DD HH:mm"
       onChange={onChange}
       clearable
       w="14rem"
-      popoverProps={{ withinPortal: false }} />
+      popoverProps={{ withinPortal: false }}
+    />
   );
 }

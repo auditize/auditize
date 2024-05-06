@@ -7,11 +7,11 @@ type Repo = {
     last_log_date: string;
     log_count: number;
     storage_size: number;
-  }
+  };
   permissions: {
     read_logs: boolean;
     write_logs: boolean;
-  }
+  };
 };
 
 type RepoUpdate = {

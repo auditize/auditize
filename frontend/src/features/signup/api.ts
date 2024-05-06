@@ -1,13 +1,17 @@
-import camelcaseKeys from 'camelcase-keys';
-import { axiosInstance } from '@/utils/axios';
+import camelcaseKeys from "camelcase-keys";
 
-export async function setPassword(token: string, password: string): Promise<void> {
+import { axiosInstance } from "@/utils/axios";
+
+export async function setPassword(
+  token: string,
+  password: string,
+): Promise<void> {
   await axiosInstance.post(`/users/signup/${token}`, {
-    password
+    password,
   });
 }
 
 export async function getSignupInfo(token: string): Promise<SignupInfo> {
-  const response = await axiosInstance.get('/users/signup/' + token);
+  const response = await axiosInstance.get("/users/signup/" + token);
   return camelcaseKeys(response.data);
 }

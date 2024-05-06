@@ -1,1 +1,1 @@
-export * from './components/IntegrationManagement';
+export * from "./components/IntegrationManagement";

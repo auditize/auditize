@@ -1,2 +1,2 @@
-export { ReposManagement } from './components/ReposManagement';
-export { getAllMyRepos } from './api';
+export { ReposManagement } from "./components/ReposManagement";
+export { getAllMyRepos } from "./api";

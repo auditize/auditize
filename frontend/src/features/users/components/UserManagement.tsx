@@ -1,11 +1,12 @@
-import { UserCreation, UserEdition } from './UserEditor';
-import { UserDeletion } from './UserDeletion';
-import { getUsers } from '../api';
-import { ResourceManagement } from '@/components/ResourceManagement';
-import { useAuthenticatedUser } from '@/features/auth';
+import { ResourceManagement } from "@/components/ResourceManagement";
+import { useAuthenticatedUser } from "@/features/auth";
+
+import { getUsers } from "../api";
+import { UserDeletion } from "./UserDeletion";
+import { UserCreation, UserEdition } from "./UserEditor";
 
 export function UsersManagement() {
-  const {currentUser} = useAuthenticatedUser();
+  const { currentUser } = useAuthenticatedUser();
   const readOnly = currentUser.permissions.entities.users.write === false;
 
   return (
@@ -13,7 +14,7 @@ export function UsersManagement() {
       title="Users Management"
       path="/users"
       resourceName="user"
-      queryKey={(page) => ['users', 'page', page]}
+      queryKey={(page) => ["users", "page", page]}
       queryFn={(page) => () => getUsers(page)}
       columnBuilders={[
         ["Firstname", (user: User) => user.firstName],
@@ -29,10 +30,11 @@ export function UsersManagement() {
           readOnly={readOnly || resourceId === currentUser.id}
         />
       )}
-      resourceDeletionComponentBuilder={(resource, opened, onClose) => (
-        (readOnly || currentUser.id === resource.id) ? undefined : (
+      resourceDeletionComponentBuilder={(resource, opened, onClose) =>
+        readOnly || currentUser.id === resource.id ? undefined : (
           <UserDeletion user={resource} opened={opened} onClose={onClose} />
-      ))}
+        )
+      }
     />
   );
 }
