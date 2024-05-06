@@ -1,0 +1,23 @@
+[project]
+name = "Auditize"
+version="0.1.0-dev"
+description = "Audit logs management system"
+dependencies=[
+    "fastapi",
+    "python-multipart",
+    "uvicorn[standard]",
+    "motor",
+    "aiocache",
+    "certifi",
+    "passlib[bcrypt]",
+    "python-jose[cryptography]",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-xdist",
+    "callee",
+    "httpx",
+    "icecream",
+]
