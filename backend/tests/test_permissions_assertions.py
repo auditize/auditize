@@ -2,19 +2,19 @@ from copy import deepcopy
 
 from icecream import ic
 
-from auditize.permissions.models import Permissions
 from auditize.permissions.assertions import (
-    can_read_logs,
-    can_write_logs,
-    can_read_repos,
-    can_write_repos,
-    can_read_users,
-    can_write_users,
     can_read_integrations,
+    can_read_logs,
+    can_read_repos,
+    can_read_users,
     can_write_integrations,
-    permissions_or,
+    can_write_logs,
+    can_write_repos,
+    can_write_users,
     permissions_and,
+    permissions_or,
 )
+from auditize.permissions.models import Permissions
 
 
 def assert_permission(perms, assertions, result):
@@ -99,20 +99,25 @@ def test_permission_assertions_on_entities_as_specific_permissions():
     permission_assertions = {
         "repos": {"read": can_read_repos(), "write": can_write_repos()},
         "users": {"read": can_read_users(), "write": can_write_users()},
-        "integrations": {"read": can_read_integrations(), "write": can_write_integrations()},
+        "integrations": {
+            "read": can_read_integrations(),
+            "write": can_write_integrations(),
+        },
     }
     for entity_type in "repos", "users", "integrations":
         for perm_type in "read", "write":
             # test authorized with the minimum permissions
-            no_perms_but = {
-                "entities": {entity_type: {perm_type: True}}
-            }
-            assert_authorized(no_perms_but, permission_assertions[entity_type][perm_type])
+            no_perms_but = {"entities": {entity_type: {perm_type: True}}}
+            assert_authorized(
+                no_perms_but, permission_assertions[entity_type][perm_type]
+            )
 
             # test unauthorized with all permissions on entities but not the requested one
             all_perms_but = deepcopy(every_possible_entities_perms)
             all_perms_but["entities"][entity_type][perm_type] = False
-            assert_unauthorized(all_perms_but, permission_assertions[entity_type][perm_type])
+            assert_unauthorized(
+                all_perms_but, permission_assertions[entity_type][perm_type]
+            )
 
 
 def test_permissions_or():

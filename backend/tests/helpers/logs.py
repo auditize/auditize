@@ -1,7 +1,7 @@
 from datetime import datetime
-from bson import ObjectId
 
 import callee
+from bson import ObjectId
 from icecream import ic
 
 from .http import HttpTestHelper
@@ -30,13 +30,8 @@ class PreparedLog:
                 "name": "user_login",
                 "category": "authentication",
             },
-            "node_path": [
-                {
-                    "id": "1",
-                    "name": "Customer 1"
-                }
-            ],
-            **extra
+            "node_path": [{"id": "1", "name": "Customer 1"}],
+            **extra,
         }
 
     def expected_api_response(self, extra=None) -> dict:
@@ -49,7 +44,7 @@ class PreparedLog:
             "attachments": [],
             "id": self.id,
             **self.data,
-            "saved_at": callee.Regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+            "saved_at": callee.Regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"),
         }
         for tag in expected["tags"]:
             tag.setdefault("category", None)
@@ -63,14 +58,22 @@ class PreparedLog:
     @classmethod
     async def create(
         cls,
-        client: HttpTestHelper, repo: PreparedRepo, data: dict = None, *, saved_at: datetime = None
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        data: dict = None,
+        *,
+        saved_at: datetime = None,
     ):
         if data is None:
             data = cls.prepare_data()
-        resp = await client.assert_post(f"/repos/{repo.id}/logs", json=data, expected_status_code=201)
+        resp = await client.assert_post(
+            f"/repos/{repo.id}/logs", json=data, expected_status_code=201
+        )
         log_id = resp.json()["id"]
         if saved_at:
-            repo.db.logs.update_one({"_id": ObjectId(log_id)}, {"$set": {"saved_at": saved_at}})
+            repo.db.logs.update_one(
+                {"_id": ObjectId(log_id)}, {"$set": {"saved_at": saved_at}}
+            )
         return cls(log_id, data, repo)
 
     async def assert_db(self, extra=None):
@@ -80,6 +83,8 @@ class PreparedLog:
         expected["saved_at"] = callee.IsA(datetime)
         del expected["id"]
 
-        db_log = await self.repo.db.logs.find_one({"_id": ObjectId(self.id)}, {"_id": 0})
+        db_log = await self.repo.db.logs.find_one(
+            {"_id": ObjectId(self.id)}, {"_id": 0}
+        )
         ic(db_log)
         assert db_log == expected

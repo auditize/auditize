@@ -1,16 +1,24 @@
-from typing import Annotated, Type, Callable
 import dataclasses
+from typing import Annotated, Callable, Type
 
 from fastapi import Depends, Request
 
 from auditize.common.db import DatabaseManager, get_dbm
-from auditize.common.exceptions import UnknownModelException, AuthenticationFailure, PermissionDenied
+from auditize.common.exceptions import (
+    AuthenticationFailure,
+    PermissionDenied,
+    UnknownModelException,
+)
 from auditize.integrations.models import Integration
 from auditize.integrations.service import get_integration_by_token
-from auditize.users.service import get_user_by_session_token
-from auditize.users.models import User
+from auditize.permissions.assertions import (
+    PermissionAssertion,
+    can_read_logs,
+    can_write_logs,
+)
 from auditize.permissions.models import Permissions
-from auditize.permissions.assertions import PermissionAssertion, can_read_logs, can_write_logs
+from auditize.users.models import User
+from auditize.users.service import get_user_by_session_token
 
 _BEARER_PREFIX = "Bearer "
 
@@ -35,7 +43,9 @@ class Authenticated:
             return self.user.permissions
         if self.integration:
             return self.integration.permissions
-        raise Exception("Authenticated is neither user nor integration")  # pragma: no cover
+        raise Exception(
+            "Authenticated is neither user nor integration"
+        )  # pragma: no cover
 
     def comply(self, assertion: PermissionAssertion) -> bool:
         return assertion(self.permissions)
@@ -47,10 +57,12 @@ def _get_authorization_bearer(request: Request) -> str:
         raise LookupError("Authorization header not found")
     if not authorization.startswith(_BEARER_PREFIX):
         raise LookupError("Authorization header is not a Bearer token")
-    return authorization[len(_BEARER_PREFIX):]
+    return authorization[len(_BEARER_PREFIX) :]
 
 
-async def authenticate_integration(dbm: DatabaseManager, request: Request) -> Authenticated:
+async def authenticate_integration(
+    dbm: DatabaseManager, request: Request
+) -> Authenticated:
     try:
         token = _get_authorization_bearer(request)
     except LookupError as e:
@@ -86,8 +98,7 @@ def looks_like_user_auth(request: Request) -> bool:
 
 
 async def get_authenticated(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    request: Request
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)], request: Request
 ) -> Authenticated:
     if looks_like_integration_auth(request):
         return await authenticate_integration(dbm, request)

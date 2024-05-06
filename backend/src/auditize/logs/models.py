@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from typing import Optional
-from bson import ObjectId
 
-from pydantic import ConfigDict, BaseModel, Field
+from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Log(BaseModel):
@@ -50,9 +50,7 @@ class Log(BaseModel):
     attachments: list[AttachmentMetadata] = Field(default_factory=list)
     node_path: list[Node] = Field(default_factory=list)
 
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True
-    )
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class Node(BaseModel):
@@ -60,4 +58,3 @@ class Node(BaseModel):
     name: str
     parent_node_id: str | None
     has_children: bool
-

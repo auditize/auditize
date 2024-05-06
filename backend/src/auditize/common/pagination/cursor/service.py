@@ -1,9 +1,9 @@
-from datetime import datetime
 import base64
 import binascii
 import json
-from bson import ObjectId
+from datetime import datetime
 
+from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.common.utils import serialize_datetime
@@ -18,6 +18,7 @@ class PaginationCursor:
     """
     This class assumes a pagination sorted by date and _id
     """
+
     def __init__(self, date: datetime, id: ObjectId):
         self.date = date
         self.id = id
@@ -35,15 +36,22 @@ class PaginationCursor:
             raise InvalidPaginationCursor(value)
 
     def serialize(self) -> str:
-        data = {"date": serialize_datetime(self.date, with_milliseconds=True), "id": str(self.id)}
+        data = {
+            "date": serialize_datetime(self.date, with_milliseconds=True),
+            "id": str(self.id),
+        }
         return base64.b64encode(json.dumps(data).encode("utf-8")).decode("utf-8")
 
 
 async def find_paginated_by_cursor(
-    collection: AsyncIOMotorCollection, *,
-    id_field, date_field,
-    filter=None, projection=None,
-    limit: int = 10, pagination_cursor: str = None
+    collection: AsyncIOMotorCollection,
+    *,
+    id_field,
+    date_field,
+    filter=None,
+    projection=None,
+    limit: int = 10,
+    pagination_cursor: str = None,
 ) -> tuple[list, str | None]:
     if filter is None:
         filter = {}
@@ -54,8 +62,13 @@ async def find_paginated_by_cursor(
             **filter,
             "$or": [
                 {"saved_at": {"$lt": cursor.date}},
-                {"$and": [{"saved_at": {"$eq": cursor.date}}, {"_id": {"$lt": cursor.id}}]}
-            ]
+                {
+                    "$and": [
+                        {"saved_at": {"$eq": cursor.date}},
+                        {"_id": {"$lt": cursor.id}},
+                    ]
+                },
+            ],
         }
 
     results = await collection.find(
@@ -66,7 +79,9 @@ async def find_paginated_by_cursor(
     if len(results) == limit + 1:
         # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
         # limit range
-        next_cursor_obj = PaginationCursor(results[-2][date_field], results[-2][id_field])
+        next_cursor_obj = PaginationCursor(
+            results[-2][date_field], results[-2][id_field]
+        )
         next_cursor = next_cursor_obj.serialize()
         # remove the extra log
         results.pop(-1)

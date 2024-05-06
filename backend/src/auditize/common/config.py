@@ -1,5 +1,5 @@
-import os
 import dataclasses
+import os
 from threading import Lock
 
 
@@ -34,8 +34,12 @@ class Config:
         try:
             return cls(
                 base_url=optional("AUDITIZE_BASE_URL", "http://localhost:8000"),
-                user_session_token_signing_key=required("AUDITIZE_USER_SESSION_TOKEN_SIGNING_KEY"),
-                user_session_token_lifetime=optional("AUDITIZE_USER_SESSION_TOKEN_LIFETIME", 60 * 60 * 12, cast=int),
+                user_session_token_signing_key=required(
+                    "AUDITIZE_USER_SESSION_TOKEN_SIGNING_KEY"
+                ),
+                user_session_token_lifetime=optional(
+                    "AUDITIZE_USER_SESSION_TOKEN_LIFETIME", 60 * 60 * 12, cast=int
+                ),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
                 smtp_port=optional("AUDITIZE_SMTP_PORT", cast=int),
                 smtp_username=optional("AUDITIZE_SMTP_USERNAME"),
@@ -44,14 +48,18 @@ class Config:
             )
         except KeyError as e:
             var_name = str(e)
-            raise ValueError(f"Could not load configuration, variable {var_name} is missing")
+            raise ValueError(
+                f"Could not load configuration, variable {var_name} is missing"
+            )
 
     @property
     def smtp_sender(self):
         return self._smtp_sender or self.smtp_username
 
     def is_smtp_enabled(self):
-        return all((self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_password))
+        return all(
+            (self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_password)
+        )
 
 
 _config = None

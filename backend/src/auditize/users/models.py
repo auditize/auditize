@@ -1,8 +1,8 @@
-from typing import Optional
 from datetime import datetime, timezone
+from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.permissions.models import Permissions
 
@@ -22,9 +22,7 @@ class User(BaseModel):
     signup_token: Optional[SignupToken] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True
-    )
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class UserUpdate(BaseModel):

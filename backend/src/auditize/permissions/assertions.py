@@ -15,7 +15,7 @@ __all__ = (
     "can_read_integrations",
     "can_write_integrations",
     "permissions_and",
-    "permissions_or"
+    "permissions_or",
 )
 
 PermissionAssertion = Callable[[Permissions], bool]
@@ -46,7 +46,9 @@ class LogPermissionAssertion:
             repo_perms = perms.logs.repos.get(self.repo_id)
             return bool(repo_perms and repo_perms.write)
 
-        raise Exception(f"Invalid log permission type: {self.permission_type}")  # pragma: no cover, cannot happen
+        raise Exception(
+            f"Invalid log permission type: {self.permission_type}"
+        )  # pragma: no cover, cannot happen
 
 
 def can_read_logs(repo_id: str = None) -> PermissionAssertion:
@@ -73,22 +75,38 @@ class EntityPermissionAssertion:
         elif self.entity_type == "integrations":
             entity_perms = perms.entities.integrations
         else:
-            raise Exception(f"Invalid entity type: {self.entity_type}")  # pragma: no cover, cannot happen
+            raise Exception(
+                f"Invalid entity type: {self.entity_type}"
+            )  # pragma: no cover, cannot happen
 
         if self.permission_type == "read":
             return bool(entity_perms.read)
         if self.permission_type == "write":
             return bool(entity_perms.write)
 
-        raise Exception(f"Invalid entity permission type: {self.permission_type}")  # pragma: no cover, cannot happen
+        raise Exception(
+            f"Invalid entity permission type: {self.permission_type}"
+        )  # pragma: no cover, cannot happen
 
 
-can_read_repos = partial(EntityPermissionAssertion, permission_type="read", entity_type="repos")
-can_write_repos = partial(EntityPermissionAssertion, permission_type="write", entity_type="repos")
-can_read_users = partial(EntityPermissionAssertion, permission_type="read", entity_type="users")
-can_write_users = partial(EntityPermissionAssertion, permission_type="write", entity_type="users")
-can_read_integrations = partial(EntityPermissionAssertion, permission_type="read", entity_type="integrations")
-can_write_integrations = partial(EntityPermissionAssertion, permission_type="write", entity_type="integrations")
+can_read_repos = partial(
+    EntityPermissionAssertion, permission_type="read", entity_type="repos"
+)
+can_write_repos = partial(
+    EntityPermissionAssertion, permission_type="write", entity_type="repos"
+)
+can_read_users = partial(
+    EntityPermissionAssertion, permission_type="read", entity_type="users"
+)
+can_write_users = partial(
+    EntityPermissionAssertion, permission_type="write", entity_type="users"
+)
+can_read_integrations = partial(
+    EntityPermissionAssertion, permission_type="read", entity_type="integrations"
+)
+can_write_integrations = partial(
+    EntityPermissionAssertion, permission_type="write", entity_type="integrations"
+)
 
 
 def permissions_and(*assertions: PermissionAssertion) -> PermissionAssertion:

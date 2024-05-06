@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import sys
 import json
+import sys
 
 import requests
 
@@ -11,9 +11,7 @@ def format_number(number: int, total: int) -> str:
 
 
 def create_value(prefix: str, counter: int, total: int) -> str:
-    return "%s_%s" % (
-        prefix, format_number(counter, total)
-    )
+    return "%s_%s" % (prefix, format_number(counter, total))
 
 
 def create_log(counter: int):
@@ -34,7 +32,9 @@ def create_log(counter: int):
         },
         "context": {
             create_value("more_details", counter, 5): {
-                create_value("some_key", counter, 10): create_value("some_value", counter, 10),
+                create_value("some_key", counter, 10): create_value(
+                    "some_value", counter, 10
+                ),
             },
         },
         "trackings": [
@@ -54,8 +54,8 @@ def create_log(counter: int):
                     "customer_%s_entity" % format_number(counter, 10), counter, 100
                 ),
                 "name": create_value("Entity", counter, 100),
-            }
-        ]
+            },
+        ],
     }
 
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     count = 10_000
 
     for i in range(count):
-        print("Inject log %d of %d" % (i+1, count), end="\r")
+        print("Inject log %d of %d" % (i + 1, count), end="\r")
         log = create_log(i)
         resp = requests.post(f"{base_url}/repos/{repo_id}/logs", json=log)
         if not resp.ok:

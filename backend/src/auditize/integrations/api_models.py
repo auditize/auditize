@@ -1,17 +1,16 @@
 from typing import Annotated, Optional
 
-from pydantic import BaseModel, Field, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, Field
 
-from auditize.integrations.models import Integration, IntegrationUpdate
 from auditize.common.pagination.page.api_models import PagePaginatedResponse
+from auditize.integrations.models import Integration, IntegrationUpdate
 from auditize.permissions.api_models import PermissionsData
 
 
 class IntegrationCreationRequest(BaseModel):
     name: str = Field(description="The integration name")
     permissions: PermissionsData = Field(
-        description="The integration permissions",
-        default_factory=PermissionsData
+        description="The integration permissions", default_factory=PermissionsData
     )
 
     def to_db_model(self):
@@ -21,8 +20,7 @@ class IntegrationCreationRequest(BaseModel):
 class IntegrationUpdateRequest(BaseModel):
     name: Optional[str] = Field(description="The integration name", default=None)
     permissions: Optional[PermissionsData] = Field(
-        description="The integration permissions",
-        default=None
+        description="The integration permissions", default=None
     )
 
     def to_db_model(self):
@@ -38,8 +36,7 @@ class IntegrationReadingResponse(BaseModel):
     id: Annotated[str, BeforeValidator(str)] = Field(description="The integration id")
     name: str = Field(description="The integration name")
     permissions: PermissionsData = Field(
-        description="The integration permissions",
-        default_factory=PermissionsData
+        description="The integration permissions", default_factory=PermissionsData
     )
 
     @classmethod
@@ -47,7 +44,9 @@ class IntegrationReadingResponse(BaseModel):
         return cls.model_validate(integration.model_dump())
 
 
-class IntegrationListResponse(PagePaginatedResponse[Integration, IntegrationReadingResponse]):
+class IntegrationListResponse(
+    PagePaginatedResponse[Integration, IntegrationReadingResponse]
+):
     @classmethod
     def build_item(cls, integration: Integration) -> IntegrationReadingResponse:
         return IntegrationReadingResponse.from_db_model(integration)

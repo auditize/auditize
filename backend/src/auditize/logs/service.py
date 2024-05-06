@@ -1,19 +1,17 @@
 import re
-from typing import Any
 from datetime import datetime
+from typing import Any
 
 from bson import ObjectId
-
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.logs.models import Log, Node
 from auditize.common.db import DatabaseManager
-from auditize.logs.db import LogsDatabase, get_logs_db
 from auditize.common.exceptions import UnknownModelException
-from auditize.common.pagination.page.service import find_paginated_by_page
-from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.pagination.cursor.service import find_paginated_by_cursor
-
+from auditize.common.pagination.page.models import PagePaginationInfo
+from auditize.common.pagination.page.service import find_paginated_by_page
+from auditize.logs.db import LogsDatabase, get_logs_db
+from auditize.logs.models import Log, Node
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
@@ -54,9 +52,10 @@ async def consolidate_log_details(db: LogsDatabase, details: dict[str, dict[str,
 async def consolidate_log_node_path(db: LogsDatabase, node_path: list[Log.Node]):
     parent_node_id = None
     for node in node_path:
-        await db.consolidate_data(db.log_nodes, {
-            "parent_node_id": parent_node_id, "id": node.id, "name": node.name
-        })
+        await db.consolidate_data(
+            db.log_nodes,
+            {"parent_node_id": parent_node_id, "id": node.id, "name": node.name},
+        )
         parent_node_id = node.id
 
 
@@ -85,12 +84,29 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> ObjectId:
     return result.inserted_id
 
 
-async def save_log_attachment(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str, name: str, type: str, mime_type: str, data: bytes):
+async def save_log_attachment(
+    dbm: DatabaseManager,
+    repo_id: str,
+    log_id: ObjectId | str,
+    name: str,
+    type: str,
+    mime_type: str,
+    data: bytes,
+):
     db = await get_logs_db(dbm, repo_id)
 
     await db.logs.update_one(
         {"_id": ObjectId(log_id)},
-        {"$push": {"attachments": {"name": name, "type": type, "mime_type": mime_type, "data": data}}},
+        {
+            "$push": {
+                "attachments": {
+                    "name": name,
+                    "type": type,
+                    "mime_type": mime_type,
+                    "data": data,
+                }
+            }
+        },
     )
 
 
@@ -103,7 +119,9 @@ async def get_log(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str) ->
     return Log(**data)
 
 
-async def get_log_attachment(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str, attachment_idx: int) -> Log.Attachment:
+async def get_log_attachment(
+    dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str, attachment_idx: int
+) -> Log.Attachment:
     db = await get_logs_db(dbm, repo_id)
 
     result = await db.logs.find_one(
@@ -116,23 +134,28 @@ async def get_log_attachment(dbm: DatabaseManager, repo_id: str, log_id: ObjectI
 
 
 def _text_search_filter(text: str) -> dict[str, Any]:
-    return {
-        "$regex": re.compile(re.escape(text), re.IGNORECASE)
-    }
+    return {"$regex": re.compile(re.escape(text), re.IGNORECASE)}
 
 
 async def get_logs(
-    dbm: DatabaseManager, repo_id: str,
+    dbm: DatabaseManager,
+    repo_id: str,
     *,
     event_name: str = None,
     event_category: str = None,
-    actor_type: str = None, actor_name: str = None,
-    resource_type: str = None, resource_name: str = None,
-    tag_category: str = None, tag_name: str = None, tag_id: str = None,
+    actor_type: str = None,
+    actor_name: str = None,
+    resource_type: str = None,
+    resource_name: str = None,
+    tag_category: str = None,
+    tag_name: str = None,
+    tag_id: str = None,
     node_id: str = None,
-    since: datetime = None, until: datetime = None,
-    limit: int = 10, pagination_cursor: str = None
-   ) -> tuple[list[Log], str | None]:
+    since: datetime = None,
+    until: datetime = None,
+    limit: int = 10,
+    pagination_cursor: str = None,
+) -> tuple[list[Log], str | None]:
     db = await get_logs_db(dbm, repo_id)
 
     criteria = {}
@@ -164,13 +187,16 @@ async def get_logs(
             **criteria.get("saved_at", {}),
             # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
             # will also include logs saved at 23:59:59.500 for instance
-            "$lte": until.replace(microsecond=999999)
+            "$lte": until.replace(microsecond=999999),
         }
 
     results, next_cursor = await find_paginated_by_cursor(
         db.logs,
-        id_field="_id", date_field="saved_at",
-        filter=criteria, limit=limit, pagination_cursor=pagination_cursor,
+        id_field="_id",
+        date_field="saved_at",
+        filter=criteria,
+        limit=limit,
+        pagination_cursor=pagination_cursor,
     )
 
     logs = [Log(**result) for result in results]
@@ -179,29 +205,29 @@ async def get_logs(
 
 
 async def _get_consolidated_data_aggregated_field(
-    collection: AsyncIOMotorCollection, field_name: str, *,
+    collection: AsyncIOMotorCollection,
+    field_name: str,
+    *,
     match=None,
-    page=1, page_size=10
+    page=1,
+    page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
     # Get all unique aggregated data field
     results = collection.aggregate(
-        ([{"$match": match}] if match else []) +
-        [
+        ([{"$match": match}] if match else [])
+        + [
             {"$group": {"_id": "$" + field_name}},
             {"$sort": {"_id": 1}},
             {"$skip": (page - 1) * page_size},
-            {"$limit": page_size}
+            {"$limit": page_size},
         ]
     )
     values = [result["_id"] async for result in results]
 
     # Get the total number of unique aggregated field value
     results = collection.aggregate(
-        ([{"$match": match}] if match else []) +
-        [
-            {"$group": {"_id": "$" + field_name}},
-            {"$count": "total"}
-        ]
+        ([{"$match": match}] if match else [])
+        + [{"$group": {"_id": "$" + field_name}}, {"$count": "total"}]
     )
     try:
         total = (await results.next())["total"]
@@ -216,12 +242,17 @@ async def _get_consolidated_data_field(
 ) -> tuple[list[str], PagePaginationInfo]:
     results, pagination = await find_paginated_by_page(
         collection,
-        projection=[field_name], sort={field_name: 1}, page=page, page_size=page_size
+        projection=[field_name],
+        sort={field_name: 1},
+        page=page,
+        page_size=page_size,
     )
     return [result[field_name] async for result in results], pagination
 
 
-async def get_log_event_categories(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
+async def get_log_event_categories(
+    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
+) -> tuple[list[str], PagePaginationInfo]:
     db = await get_logs_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
         db.log_events, "category", page=page, page_size=page_size
@@ -229,55 +260,83 @@ async def get_log_event_categories(dbm: DatabaseManager, repo_id: str, *, page=1
 
 
 async def get_log_events(
-    dbm: DatabaseManager, repo_id: str, *, event_category: str = None, page=1, page_size=10
+    dbm: DatabaseManager,
+    repo_id: str,
+    *,
+    event_category: str = None,
+    page=1,
+    page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
     db = await get_logs_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
-        db.log_events, "name",
-        page=page, page_size=page_size,
-        match={"category": event_category} if event_category else None
+        db.log_events,
+        "name",
+        page=page,
+        page_size=page_size,
+        match={"category": event_category} if event_category else None,
     )
 
 
-async def get_log_actor_types(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
+async def get_log_actor_types(
+    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
+) -> tuple[list[str], PagePaginationInfo]:
     db = await get_logs_db(dbm, repo_id)
-    return await _get_consolidated_data_field(db.log_actor_types, "type", page=page, page_size=page_size)
+    return await _get_consolidated_data_field(
+        db.log_actor_types, "type", page=page, page_size=page_size
+    )
 
 
-async def get_log_resource_types(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
+async def get_log_resource_types(
+    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
+) -> tuple[list[str], PagePaginationInfo]:
     db = await get_logs_db(dbm, repo_id)
-    return await _get_consolidated_data_field(db.log_resource_types, "type", page=page, page_size=page_size)
+    return await _get_consolidated_data_field(
+        db.log_resource_types, "type", page=page, page_size=page_size
+    )
 
 
-async def get_log_tag_categories(dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10) -> tuple[list[str], PagePaginationInfo]:
+async def get_log_tag_categories(
+    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
+) -> tuple[list[str], PagePaginationInfo]:
     db = await get_logs_db(dbm, repo_id)
-    return await _get_consolidated_data_field(db.log_tag_categories, "category", page=page, page_size=page_size)
+    return await _get_consolidated_data_field(
+        db.log_tag_categories, "category", page=page, page_size=page_size
+    )
 
 
 async def _get_log_nodes(db: LogsDatabase, *, match, pipeline_extra=None):
-    return db.log_nodes.aggregate([
-        {"$match": match},
-        {
-            "$lookup": {
-                "from": "log_nodes",
-                "let": {"id": "$id"},
-                "pipeline": [
-                    {"$match": {"$expr": {"$eq": ["$parent_node_id", "$$id"]}}},
-                    {"$limit": 1}
-                ],
-                "as": "first_child_if_any"
-            }
-        },
-        {
-            "$addFields": {
-                "has_children": {"$eq": [{"$size": "$first_child_if_any"}, 1]}
-            }
-        }
-    ] + (pipeline_extra or []))
+    return db.log_nodes.aggregate(
+        [
+            {"$match": match},
+            {
+                "$lookup": {
+                    "from": "log_nodes",
+                    "let": {"id": "$id"},
+                    "pipeline": [
+                        {"$match": {"$expr": {"$eq": ["$parent_node_id", "$$id"]}}},
+                        {"$limit": 1},
+                    ],
+                    "as": "first_child_if_any",
+                }
+            },
+            {
+                "$addFields": {
+                    "has_children": {"$eq": [{"$size": "$first_child_if_any"}, 1]}
+                }
+            },
+        ]
+        + (pipeline_extra or [])
+    )
 
 
-async def get_log_nodes(dbm: DatabaseManager, repo_id: str, *, parent_node_id=NotImplemented, page=1, page_size=10
-                        ) -> tuple[list[Log.Node], PagePaginationInfo]:
+async def get_log_nodes(
+    dbm: DatabaseManager,
+    repo_id: str,
+    *,
+    parent_node_id=NotImplemented,
+    page=1,
+    page_size=10,
+) -> tuple[list[Log.Node], PagePaginationInfo]:
     db = await get_logs_db(dbm, repo_id)
 
     # please note that we use NotImplemented instead of None because None is a valid value for parent_node_id
@@ -287,17 +346,21 @@ async def get_log_nodes(dbm: DatabaseManager, repo_id: str, *, parent_node_id=No
     else:
         filter = {"parent_node_id": parent_node_id}
 
-    results = await _get_log_nodes(db, match=filter, pipeline_extra=[
-        {"$sort": {"name": 1}},
-        {"$skip": (page - 1) * page_size},
-        {"$limit": page_size}
-    ])
+    results = await _get_log_nodes(
+        db,
+        match=filter,
+        pipeline_extra=[
+            {"$sort": {"name": 1}},
+            {"$skip": (page - 1) * page_size},
+            {"$limit": page_size},
+        ],
+    )
 
     total = await db.log_nodes.count_documents(filter or {})
 
     return (
         [Node(**result) async for result in results],
-        PagePaginationInfo.build(page=page, page_size=page_size, total=total)
+        PagePaginationInfo.build(page=page, page_size=page_size, total=total),
     )
 
 

@@ -1,11 +1,10 @@
-from pydantic import BaseModel, Field, ConfigDict
-
+from pydantic import BaseModel, ConfigDict, Field
 
 __all__ = (
     "ReadWritePermissions",
     "EntitiesPermissions",
     "LogsPermissions",
-    "Permissions"
+    "Permissions",
 )
 
 
@@ -13,7 +12,7 @@ class ReadWritePermissions(BaseModel):
     read: bool | None = Field(default=None)
     write: bool | None = Field(default=None)
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
 
     @classmethod
     def no(cls) -> "ReadWritePermissions":
@@ -29,13 +28,13 @@ class EntitiesPermissions(BaseModel):
     users: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
     integrations: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
 
 
 class LogsPermissions(ReadWritePermissions):
     repos: dict[str, ReadWritePermissions] = Field(default_factory=dict)
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
 
     def get_repos(self, *, can_read=False, can_write=False) -> list[str]:
         def perms_ok(perms: ReadWritePermissions):
@@ -51,7 +50,7 @@ class Permissions(BaseModel):
     logs: LogsPermissions = Field(default_factory=LogsPermissions)
     entities: EntitiesPermissions = Field(default_factory=EntitiesPermissions)
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
 
 
 class ApplicablePermissions(BaseModel):
@@ -59,4 +58,4 @@ class ApplicablePermissions(BaseModel):
     logs: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
     entities: EntitiesPermissions = Field(default_factory=EntitiesPermissions)
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")

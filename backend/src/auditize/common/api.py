@@ -6,12 +6,7 @@ class NotFoundResponse(BaseModel):
     detail: str = "Not found"
 
 
-COMMON_RESPONSES = {
-    404: {
-        "description": "Not found",
-        "model": NotFoundResponse
-    }
-}
+COMMON_RESPONSES = {404: {"description": "Not found", "model": NotFoundResponse}}
 
 
 def make_404_response():

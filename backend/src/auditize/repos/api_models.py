@@ -1,12 +1,12 @@
+from datetime import datetime
 from enum import Enum
 from typing import Annotated, Optional
-from datetime import datetime
 
-from pydantic import BaseModel, Field, BeforeValidator, field_serializer
+from pydantic import BaseModel, BeforeValidator, Field, field_serializer
 
-from auditize.repos.models import Repo, RepoUpdate
-from auditize.common.utils import serialize_datetime
 from auditize.common.pagination.page.api_models import PagePaginatedResponse
+from auditize.common.utils import serialize_datetime
+from auditize.repos.models import Repo, RepoUpdate
 
 
 class RepoCreationRequest(BaseModel):
@@ -35,15 +35,21 @@ class RepoStatsData(BaseModel):
 
 
 class RepoLogPermissionsData(BaseModel):
-    read_logs: bool = Field(description="Whether authenticated can read logs on the repository")
-    write_logs: bool = Field(description="Whether authenticated can write logs into the repository")
+    read_logs: bool = Field(
+        description="Whether authenticated can read logs on the repository"
+    )
+    write_logs: bool = Field(
+        description="Whether authenticated can write logs into the repository"
+    )
 
 
 class RepoReadingResponse(BaseModel):
     id: Annotated[str, BeforeValidator(str)] = Field(description="The repository ID")
     name: str = Field(description="The repository name")
     created_at: datetime = Field(description="The creation date")
-    stats: Optional[RepoStatsData] = Field(description="The repository stats", default=None)
+    stats: Optional[RepoStatsData] = Field(
+        description="The repository stats", default=None
+    )
 
     @field_serializer("created_at", when_used="json")
     def serialize_datetime(self, value):
@@ -57,7 +63,9 @@ class RepoReadingResponse(BaseModel):
 class UserRepoReadingResponse(RepoReadingResponse):
     permissions: RepoLogPermissionsData = Field(
         description="The repository permissions",
-        default_factory=lambda: RepoLogPermissionsData(read_logs=False, write_logs=False)
+        default_factory=lambda: RepoLogPermissionsData(
+            read_logs=False, write_logs=False
+        ),
     )
 
 

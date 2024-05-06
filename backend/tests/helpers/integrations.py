@@ -1,8 +1,8 @@
-from datetime import datetime
 import uuid
-from bson import ObjectId
+from datetime import datetime
 
 import callee
+from bson import ObjectId
 
 from auditize.common.db import DatabaseManager
 from auditize.integrations.models import Integration
@@ -22,32 +22,32 @@ class PreparedIntegration:
 
     @staticmethod
     def prepare_data(extra=None):
-        return {
-            "name": f"Integration {uuid.uuid4()}",
-            **(extra or {})
-        }
+        return {"name": f"Integration {uuid.uuid4()}", **(extra or {})}
 
     @classmethod
-    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager, data=None) -> "PreparedIntegration":
+    async def create(
+        cls, client: HttpTestHelper, dbm: DatabaseManager, data=None
+    ) -> "PreparedIntegration":
         if data is None:
             data = cls.prepare_data()
         resp = await client.assert_post(
-            "/integrations", json=data,
+            "/integrations",
+            json=data,
             expected_status_code=201,
         )
         return cls(resp.json()["id"], resp.json()["token"], data, dbm)
 
     @staticmethod
     def prepare_model(*, permissions=None) -> Integration:
-        model = Integration(
-            name=f"Integration {uuid.uuid4()}"
-        )
+        model = Integration(name=f"Integration {uuid.uuid4()}")
         if permissions is not None:
             model.permissions = Permissions.model_validate(permissions)
         return model
 
     @classmethod
-    async def inject_into_db(cls, dbm: DatabaseManager, integration: Integration = None) -> "PreparedIntegration":
+    async def inject_into_db(
+        cls, dbm: DatabaseManager, integration: Integration = None
+    ) -> "PreparedIntegration":
         if integration is None:
             integration = cls.prepare_model()
         integration_id, token = await create_integration(dbm, integration)
@@ -57,11 +57,13 @@ class PreparedIntegration:
             data={
                 "name": integration.name,
             },
-            dbm=dbm
+            dbm=dbm,
         )
 
     @classmethod
-    async def inject_into_db_with_permissions(cls, dbm: DatabaseManager, permissions: dict) -> "PreparedIntegration":
+    async def inject_into_db_with_permissions(
+        cls, dbm: DatabaseManager, permissions: dict
+    ) -> "PreparedIntegration":
         return await cls.inject_into_db(dbm, cls.prepare_model(permissions=permissions))
 
     def expected_document(self, extra=None):
@@ -71,7 +73,7 @@ class PreparedIntegration:
             "token_hash": callee.IsA(str),
             "created_at": callee.IsA(datetime),
             "permissions": DEFAULT_PERMISSIONS,
-            **(extra or {})
+            **(extra or {}),
         }
 
     def expected_api_response(self, extra=None):
@@ -79,7 +81,7 @@ class PreparedIntegration:
             "id": self.id,
             "name": self.data["name"],
             "permissions": DEFAULT_PERMISSIONS,
-            **(extra or {})
+            **(extra or {}),
         }
 
     def client(self) -> HttpTestHelper:

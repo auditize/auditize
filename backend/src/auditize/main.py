@@ -5,13 +5,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
 from pymongo.errors import DuplicateKeyError
 
+from auditize.common.api import (
+    make_401_response,
+    make_403_response,
+    make_404_response,
+    make_409_response,
+)
+from auditize.common.db import get_dbm
+from auditize.common.exceptions import (
+    AuthenticationFailure,
+    PermissionDenied,
+    UnknownModelException,
+)
+from auditize.integrations.api import router as integrations_router
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
-from auditize.integrations.api import router as integrations_router
-from auditize.common.exceptions import UnknownModelException, AuthenticationFailure, PermissionDenied
-from auditize.common.api import make_404_response, make_409_response, make_401_response, make_403_response
-from auditize.common.db import get_dbm
 
 ic.configureOutput(includeContext=True)
 
@@ -37,6 +46,7 @@ app.add_middleware(
 
 
 # Add exception handlers
+
 
 @app.exception_handler(UnknownModelException)
 def resource_not_found_handler(request, exc):

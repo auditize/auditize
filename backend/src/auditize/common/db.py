@@ -1,8 +1,8 @@
 from datetime import timezone
 from functools import lru_cache
 
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from bson.codec_options import CodecOptions
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 
 class Collection:
@@ -12,11 +12,7 @@ class Collection:
     @lru_cache
     def __get__(self, db: "BaseDatabase", _) -> AsyncIOMotorCollection:
         return db.db.get_collection(
-            self.name,
-            codec_options=CodecOptions(
-                tz_aware=True,
-                tzinfo=timezone.utc
-            )
+            self.name, codec_options=CodecOptions(tz_aware=True, tzinfo=timezone.utc)
         )
 
 

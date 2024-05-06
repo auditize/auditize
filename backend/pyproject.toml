@@ -20,4 +20,14 @@ dev = [
     "callee",
     "httpx",
     "icecream",
+    "ruff",
+]
+
+[tool.ruff]
+src = ["src", "tests", "scripts"]
+fix = true
+
+[tool.ruff.lint]
+select = [
+    "I",  # isort
 ]

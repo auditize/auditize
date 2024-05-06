@@ -1,8 +1,8 @@
-from typing import Optional
 from datetime import datetime, timezone
-from bson import ObjectId
+from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Repo(BaseModel):
@@ -10,9 +10,7 @@ class Repo(BaseModel):
     name: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True
-    )
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class RepoUpdate(BaseModel):

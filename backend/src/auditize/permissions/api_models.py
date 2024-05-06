@@ -1,11 +1,10 @@
 from pydantic import BaseModel, Field
 
-
 __all__ = (
     "ReadWritePermissionsData",
     "EntitiesPermissionsData",
     "LogsPermissionsData",
-    "PermissionsData"
+    "PermissionsData",
 )
 
 
@@ -17,7 +16,9 @@ class ReadWritePermissionsData(BaseModel):
 class EntitiesPermissionsData(BaseModel):
     repos: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
     users: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
-    integrations: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
+    integrations: ReadWritePermissionsData = Field(
+        default_factory=ReadWritePermissionsData
+    )
 
 
 class LogsPermissionsData(ReadWritePermissionsData):

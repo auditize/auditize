@@ -1,9 +1,12 @@
 from datetime import datetime
-from bson import ObjectId
-
-from auditize.common.pagination.cursor.service import PaginationCursor, InvalidPaginationCursor
 
 import pytest
+from bson import ObjectId
+
+from auditize.common.pagination.cursor.service import (
+    InvalidPaginationCursor,
+    PaginationCursor,
+)
 
 
 def test_pagination_cursor():

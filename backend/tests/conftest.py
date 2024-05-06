@@ -1,5 +1,5 @@
-from typing import Callable, Awaitable
 import os
+from typing import Awaitable, Callable
 
 import pytest
 
@@ -7,10 +7,10 @@ from auditize.common.db import DatabaseManager
 
 pytest.register_assert_rewrite("helpers")
 from helpers.database import setup_test_dbm, teardown_test_dbm
-from helpers.http import create_http_client, HttpTestHelper
+from helpers.http import HttpTestHelper, create_http_client
+from helpers.integrations import PreparedIntegration
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
-from helpers.integrations import PreparedIntegration
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -21,15 +21,17 @@ def setup_env():
             del os.environ[key]
 
     # set the environment variables (at least the required ones)
-    os.environ.update({
-        "AUDITIZE_USER_SESSION_TOKEN_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73"
-    })
+    os.environ.update(
+        {
+            "AUDITIZE_USER_SESSION_TOKEN_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73"
+        }
+    )
 
 
 @pytest.fixture(scope="session")
 def anyio_backend():
     # Limit the tests to only run on asyncio:
-    return 'asyncio'
+    return "asyncio"
 
 
 @pytest.fixture(scope="function")
@@ -91,6 +93,7 @@ def integration_builder(dbm) -> IntegrationBuilder:
         return await PreparedIntegration.inject_into_db_with_permissions(
             dbm, permissions
         )
+
     return func
 
 
@@ -103,8 +106,9 @@ def user_builder(dbm) -> UserBuilder:
         return await PreparedUser.inject_into_db(
             dbm,
             user=PreparedUser.prepare_model(password="dummy", permissions=permissions),
-            password="dummy"
+            password="dummy",
         )
+
     return func
 
 
@@ -154,7 +158,9 @@ async def integration_write_client(user_builder):
 
 @pytest.fixture(scope="function")
 async def integration_rw_client(user_builder):
-    user = await user_builder({"entities": {"integrations": {"read": True, "write": True}}})
+    user = await user_builder(
+        {"entities": {"integrations": {"read": True, "write": True}}}
+    )
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
@@ -178,7 +184,9 @@ async def user_write_client(integration_builder):
 
 @pytest.fixture(scope="function")
 async def user_rw_client(integration_builder):
-    integration = await integration_builder({"entities": {"users": {"read": True, "write": True}}})
+    integration = await integration_builder(
+        {"entities": {"users": {"read": True, "write": True}}}
+    )
     async with integration.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
@@ -203,4 +211,3 @@ async def log_rw_client(integration_builder):
     integration = await integration_builder({"logs": {"read": True, "write": True}})
     async with integration.client() as client:
         yield client
-

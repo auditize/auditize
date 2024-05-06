@@ -1,12 +1,18 @@
 from copy import deepcopy
 
-from icecream import ic
 import pytest
+from icecream import ic
 
+from auditize.common.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_logs
 from auditize.permissions.models import Permissions
-from auditize.permissions.operations import normalize_permissions, authorize_grant, update_permissions, authorize_access, get_applicable_permissions
-from auditize.common.exceptions import PermissionDenied
+from auditize.permissions.operations import (
+    authorize_access,
+    authorize_grant,
+    get_applicable_permissions,
+    normalize_permissions,
+    update_permissions,
+)
 
 
 def _test_access_perms_normalization(input: dict, expected: dict):
@@ -117,7 +123,7 @@ def test_normalization_read_logs_on_all_repos():
                 "write": False,
                 "repos": {
                     "repo1": {"read": False, "write": True},
-                    "repo2": {"read": False, "write": True}
+                    "repo2": {"read": False, "write": True},
                 },
             },
             "entities": {
@@ -288,9 +294,7 @@ def test_permission_assertions_on_entities_as_specific_permissions():
     }
     for entity_type in "repos", "users", "integrations":
         for perm_type in "read", "write":
-            target_perms = {
-                "entities": {entity_type: {perm_type: True}}
-            }
+            target_perms = {"entities": {entity_type: {perm_type: True}}}
 
             # test authorized with the minimum permissions
             assert_authorized(target_perms, target_perms)
@@ -319,7 +323,7 @@ def test_update_permission_grant_superadmin():
                     "repo1": {"write": True},
                 },
             },
-            "entities": {"repos": {"read": True, "write": True}}
+            "entities": {"repos": {"read": True, "write": True}},
         },
         {"is_superadmin": True},
         {
@@ -348,7 +352,7 @@ def test_update_permission_grant_individual_permissions():
                     "repo1": {"write": True},
                 },
             },
-            "entities": {"repos": {"read": True, "write": True}}
+            "entities": {"repos": {"read": True, "write": True}},
         },
         {
             "logs": {"write": True},

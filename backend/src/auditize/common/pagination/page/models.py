@@ -10,6 +10,8 @@ class PagePaginationInfo(BaseModel):
     @classmethod
     def build(cls, page: int, page_size: int, total: int) -> "PagePaginationInfo":
         return cls(
-            page=page, page_size=page_size, total=total,
-            total_pages=(total + page_size - 1) // page_size
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=(total + page_size - 1) // page_size,
         )

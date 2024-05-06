@@ -1,18 +1,22 @@
-from typing import AsyncIterator
 import uuid
-from datetime import datetime, timedelta, timezone
-from bson import ObjectId
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
+from typing import AsyncIterator
 
-from httpx import Response
 import callee
+from bson import ObjectId
+from httpx import Response
 
 from auditize.common.db import DatabaseManager
-from auditize.users.service import get_user, hash_user_password, build_document_from_user
-from auditize.users.models import User
 from auditize.permissions.models import Permissions
+from auditize.users.models import User
+from auditize.users.service import (
+    build_document_from_user,
+    get_user,
+    hash_user_password,
+)
 
-from .http import HttpTestHelper, get_cookie_by_name, create_http_client
+from .http import HttpTestHelper, create_http_client, get_cookie_by_name
 from .permissions import DEFAULT_PERMISSIONS
 
 
@@ -30,15 +34,18 @@ class PreparedUser:
             "first_name": f"John {rand}",
             "last_name": f"Doe {rand}",
             "email": f"john.doe_{rand}@example.net",
-            **(extra or {})
+            **(extra or {}),
         }
 
     @classmethod
-    async def create(cls, client: HttpTestHelper, dbm: DatabaseManager, data=None) -> "PreparedUser":
+    async def create(
+        cls, client: HttpTestHelper, dbm: DatabaseManager, data=None
+    ) -> "PreparedUser":
         if data is None:
             data = cls.prepare_data()
         resp = await client.assert_post(
-            "/users", json=data,
+            "/users",
+            json=data,
             expected_status_code=201,
         )
         return cls(resp.json()["id"], data, dbm)
@@ -50,14 +57,16 @@ class PreparedUser:
             first_name=f"John {rand}",
             last_name=f"Doe {rand}",
             email=f"john.doe_{rand}@example.net",
-            password_hash=hash_user_password(password)
+            password_hash=hash_user_password(password),
         )
         if permissions is not None:
             model.permissions = Permissions.model_validate(permissions)
         return model
 
     @classmethod
-    async def inject_into_db(cls, dbm: DatabaseManager, user: User = None, password="dummypassword") -> "PreparedUser":
+    async def inject_into_db(
+        cls, dbm: DatabaseManager, user: User = None, password="dummypassword"
+    ) -> "PreparedUser":
         if user is None:
             user = cls.prepare_model(password=password)
         result = await dbm.core_db.users.insert_one(build_document_from_user(user))
@@ -69,13 +78,18 @@ class PreparedUser:
                 "email": user.email,
             },
             password=password,
-            dbm=dbm
+            dbm=dbm,
         )
 
     async def expire_signup_token(self):
         await self.dbm.core_db.users.update_one(
             {"_id": ObjectId(self.id)},
-            {"$set": {"signup_token.expires_at": datetime.now(timezone.utc) - timedelta(days=1)}}
+            {
+                "$set": {
+                    "signup_token.expires_at": datetime.now(timezone.utc)
+                    - timedelta(days=1)
+                }
+            },
         )
 
     @property
@@ -89,8 +103,9 @@ class PreparedUser:
 
     async def log_in(self, client: HttpTestHelper) -> Response:
         return await client.assert_post(
-            "/users/login", json={"email": self.email, "password": self.password},
-            expected_status_code=204
+            "/users/login",
+            json={"email": self.email, "password": self.password},
+            expected_status_code=204,
         )
 
     @asynccontextmanager
@@ -117,7 +132,7 @@ class PreparedUser:
             "password_hash": callee.IsA(str) if self.password else None,
             "created_at": callee.IsA(datetime),
             "signup_token": None if self.password else signup_token,
-            **(extra or {})
+            **(extra or {}),
         }
 
     def expected_api_response(self, extra=None) -> dict:
@@ -127,5 +142,5 @@ class PreparedUser:
             "last_name": self.data["last_name"],
             "email": self.data["email"],
             "permissions": DEFAULT_PERMISSIONS,
-            **(extra or {})
+            **(extra or {}),
         }
