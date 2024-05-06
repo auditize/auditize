@@ -2,10 +2,12 @@ import {
   AppShell,
   Group,
   MantineProvider,
+  Text,
   UnstyledButton,
 } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
+import { modals, ModalsProvider } from "@mantine/modals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createBrowserRouter,
@@ -22,10 +24,24 @@ import { UsersManagement } from "@/features/users";
 import { theme } from "@/theme";
 
 import { VisibleIf } from "./components/VisibleIf";
+import { logOut } from "./features/auth";
 import { IntegrationsManagement } from "./features/integrations";
 
+function logoutModal(notifyLoggedOut: () => void) {
+  return () =>
+    modals.openConfirmModal({
+      title: "Please confirm log-out",
+      children: <Text size="sm">Do you really want to log out?</Text>,
+      labels: { confirm: "Confirm", cancel: "Cancel" },
+      onConfirm: async () => {
+        await logOut();
+        notifyLoggedOut();
+      },
+    });
+}
+
 function Main() {
-  const { currentUser } = useCurrentUser();
+  const { currentUser, notifyLoggedOut } = useCurrentUser();
 
   return (
     <AppShell header={{ height: 60 }}>
@@ -35,6 +51,11 @@ function Main() {
             <VisibleIf condition={!currentUser}>
               <UnstyledButton>
                 <Link to="/log-in">Log-in</Link>
+              </UnstyledButton>
+            </VisibleIf>
+            <VisibleIf condition={!!currentUser}>
+              <UnstyledButton onClick={logoutModal(notifyLoggedOut)}>
+                Log-out
               </UnstyledButton>
             </VisibleIf>
             <VisibleIf condition={!!currentUser}>
@@ -138,11 +159,13 @@ export default function App() {
 
   return (
     <MantineProvider theme={theme}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </QueryClientProvider>
+      <ModalsProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </QueryClientProvider>
+      </ModalsProvider>
     </MantineProvider>
   );
 }

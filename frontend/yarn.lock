@@ -1325,6 +1325,11 @@
   resolved "https://registry.npmjs.org/@mantine/hooks/-/hooks-7.8.1.tgz"
   integrity sha512-zCLqnxTUR2N6Awbt4rv/26UKTc75dXTVmCPsWUb6wdQExuC28fucG6kMoNYHVmOBDq9f3KP9zWOGDelHM2ogZA==
 
+"@mantine/modals@^7.8.1":
+  version "7.8.1"
+  resolved "https://registry.npmjs.org/@mantine/modals/-/modals-7.8.1.tgz"
+  integrity sha512-FCr7c3kLacE8YZhFMRWTRGOPAMDqVeUz6udmHzy0ucxkuPDkRf2p5D/9vZXDBf1u7zx1M6y5V/9g93PUfkxf+w==
+
 "@mdx-js/react@^3.0.0":
   version "3.0.1"
   resolved "https://registry.npmjs.org/@mdx-js/react/-/react-3.0.1.tgz"
