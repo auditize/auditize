@@ -1,15 +1,14 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends
 
-from auditize.auth import Authenticated, Authorized, get_authenticated
+from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import AuthenticationFailure, PermissionDenied
 from auditize.permissions.assertions import can_read_users, can_write_users
 from auditize.permissions.operations import authorize_grant
 from auditize.users import service
 from auditize.users.api_models import (
-    UserAuthenticationRequest,
     UserCreationRequest,
     UserCreationResponse,
     UserListResponse,
@@ -136,30 +135,3 @@ async def set_user_password(
     request: UserSignupSetPasswordRequest,
 ):
     await service.update_user_password_by_signup_token(dbm, token, request.password)
-
-
-@router.post("/users/login", summary="User log-in", tags=["users"], status_code=204)
-async def login_user(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    request: UserAuthenticationRequest,
-    response: Response,
-):
-    token, expires_at = await service.authenticate_user(
-        dbm, request.email, request.password
-    )
-    response.set_cookie(
-        "session",
-        token,
-        httponly=True,
-        samesite="strict",
-        secure=True,
-        expires=expires_at,
-    )
-
-
-@router.post("/users/logout", summary="User log-out", tags=["users"], status_code=204)
-async def logout_user(
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
-    response: Response,
-):
-    response.delete_cookie("session", httponly=True, samesite="strict", secure=True)

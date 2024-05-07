@@ -4,10 +4,10 @@ from unittest.mock import patch
 import pytest
 from jose import jwt
 
-from auditize.auth import get_authenticated
+from auditize.auth.authorizer import get_authenticated
+from auditize.auth.jwt import generate_session_token_payload
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import AuthenticationFailure
-from auditize.users.service import generate_session_token_payload
 from helpers.http import HttpTestHelper, make_http_request
 from helpers.integrations import PreparedIntegration
 from helpers.users import PreparedUser
@@ -93,7 +93,7 @@ async def test_auth_user_invalid_session_token_expired(
 
     # Mock the current time to be 2024-01-01 to generate an already expired token
     with patch(
-        "auditize.users.service.now",
+        "auditize.auth.jwt.now",
         lambda: datetime.fromisoformat("2024-01-01T00:00:00Z"),
     ):
         resp = await user.log_in(client)

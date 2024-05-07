@@ -1,8 +1,7 @@
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from bson import ObjectId
-from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 
 from auditize.common.config import get_config
@@ -21,7 +20,6 @@ from auditize.repos.service import ensure_repos_in_permissions_exist
 from auditize.users.models import SignupToken, User, UserUpdate
 
 _DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
-_JWT_SUB_PREFIX = "user_email:"
 
 password_context = CryptContext(schemes=["bcrypt"])
 
@@ -111,31 +109,6 @@ async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
     return User.model_validate(result)
 
 
-async def get_user_by_session_token(dbm: DatabaseManager, token: str) -> User:
-    # Load JWT token
-    try:
-        payload = jwt.decode(token, get_config().jwt_signing_key, algorithms=["HS256"])
-    except ExpiredSignatureError:
-        raise AuthenticationFailure("JWT token expired")
-    except JWTError:
-        raise AuthenticationFailure("Cannot decode JWT token")
-
-    # Get user email from token
-    try:
-        sub = payload["sub"]
-    except KeyError:
-        raise AuthenticationFailure("Missing 'sub' field in JWT token")
-    if not sub.startswith(_JWT_SUB_PREFIX):
-        raise AuthenticationFailure("Invalid 'sub' field in JWT token")
-    email = sub[len(_JWT_SUB_PREFIX) :]
-
-    # Get user by email
-    try:
-        return await get_user_by_email(dbm, email)
-    except UnknownModelException:
-        raise AuthenticationFailure("User is no longer valid")
-
-
 # NB: this function is let public to be used in tests and to make sure that passwords
 # are hashed in a consistent way
 def hash_user_password(password: str) -> str:
@@ -184,7 +157,7 @@ async def delete_user(dbm: DatabaseManager, user_id: ObjectId | str):
         raise UnknownModelException()
 
 
-async def _authenticate_user(dbm: DatabaseManager, email: str, password: str) -> User:
+async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> User:
     try:
         user = await get_user_by_email(dbm, email)
     except UnknownModelException:
@@ -194,24 +167,3 @@ async def _authenticate_user(dbm: DatabaseManager, email: str, password: str) ->
         raise AuthenticationFailure()
 
     return user
-
-
-# NB: make this function public so can can test valid JWT tokens but signed with another key
-def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
-    expires_at = now() + timedelta(seconds=get_config().user_session_token_lifetime)
-    payload = {"sub": f"{_JWT_SUB_PREFIX}{user_email}", "exp": expires_at}
-    return payload, expires_at
-
-
-def _generate_session_token(user: User) -> tuple[str, datetime]:
-    config = get_config()
-    payload, expires_at = generate_session_token_payload(user.email)
-    token = jwt.encode(payload, config.jwt_signing_key, algorithm="HS256")
-    return token, expires_at
-
-
-async def authenticate_user(
-    dbm: DatabaseManager, email: str, password: str
-) -> tuple[str, datetime]:
-    user = await _authenticate_user(dbm, email, password)
-    return _generate_session_token(user)
