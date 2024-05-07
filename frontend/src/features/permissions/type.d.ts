@@ -17,4 +17,19 @@ declare namespace Auditize {
       integrations: ReadWritePermissions;
     };
   }
+
+  type ApplicableLogPermissionScope = "all" | "partial" | "none";
+
+  export interface ApplicablePermissions {
+    isSuperadmin: boolean;
+    logs: {
+      read: ApplicableLogPermissionScope;
+      write: ApplicableLogPermissionScope;
+    };
+    entities: {
+      repos: ReadWritePermissions;
+      users: ReadWritePermissions;
+      integrations: ReadWritePermissions;
+    };
+  }
 }

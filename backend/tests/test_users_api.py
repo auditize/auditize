@@ -11,7 +11,10 @@ from helpers.database import assert_collection
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
-from helpers.permissions import DEFAULT_APPLICABLE_PERMISSIONS
+from helpers.permissions import (
+    DEFAULT_APPLICABLE_PERMISSIONS,
+    SUPERADMIN_APPLICABLE_PERMISSIONS,
+)
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
@@ -399,8 +402,8 @@ async def test_user_log_out(user_builder: UserBuilder):
         await client.assert_unauthorized_get("/users/me")
 
 
-async def test_get_user_me(dbm: DatabaseManager):
-    user = await PreparedUser.inject_into_db(dbm)
+async def test_get_user_me(user_builder: UserBuilder):
+    user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await client.assert_get(
@@ -412,6 +415,23 @@ async def test_get_user_me(dbm: DatabaseManager):
                 "last_name": user.data["last_name"],
                 "email": user.data["email"],
                 "permissions": DEFAULT_APPLICABLE_PERMISSIONS,
+            },
+        )
+
+
+async def test_get_user_me_superadmin(user_builder: UserBuilder):
+    user = await user_builder({"is_superadmin": True})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_get(
+            "/users/me",
+            expected_status_code=200,
+            expected_json={
+                "id": user.id,
+                "first_name": user.data["first_name"],
+                "last_name": user.data["last_name"],
+                "email": user.data["email"],
+                "permissions": SUPERADMIN_APPLICABLE_PERMISSIONS,
             },
         )
 

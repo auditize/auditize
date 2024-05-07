@@ -1,2 +1,6 @@
 export { WithPermissionManagement } from "./components/WithPermissionManagement";
-export { emptyPermissions } from "./utils";
+export {
+  emptyPermissions,
+  camelcaseResourceWithPermissions,
+  snakecaseResourceWithPermissions,
+} from "./utils";

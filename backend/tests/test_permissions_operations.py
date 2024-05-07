@@ -9,7 +9,7 @@ from auditize.permissions.models import Permissions
 from auditize.permissions.operations import (
     authorize_access,
     authorize_grant,
-    get_applicable_permissions,
+    compute_applicable_permissions,
     normalize_permissions,
     update_permissions,
 )
@@ -418,7 +418,7 @@ def test_update_permission_drop_individual_permissions():
 
 def _test_get_applicable_permissions(input: dict, expected: dict):
     input = Permissions.model_validate(input)
-    assert get_applicable_permissions(input).model_dump() == expected
+    assert compute_applicable_permissions(input).model_dump() == expected
 
 
 def test_get_applicable_permissions_superadmin():
@@ -426,7 +426,7 @@ def test_get_applicable_permissions_superadmin():
         {"is_superadmin": True},
         {
             "is_superadmin": True,
-            "logs": {"read": True, "write": True},
+            "logs": {"read": "all", "write": "all"},
             "entities": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": True},
@@ -440,7 +440,7 @@ def test_get_applicable_permissions_partial_rights():
     _test_get_applicable_permissions(
         {
             "logs": {
-                "read": True,
+                "read": False,
                 "write": False,
                 "repos": {
                     "repo1": {"read": True, "write": False},
@@ -455,7 +455,32 @@ def test_get_applicable_permissions_partial_rights():
         },
         {
             "is_superadmin": False,
-            "logs": {"read": True, "write": False},
+            "logs": {"read": "partial", "write": "partial"},
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_get_applicable_permissions_no_rights():
+    _test_get_applicable_permissions(
+        {
+            "logs": {
+                "read": False,
+                "write": False,
+            },
+            "entities": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": False},
+                "integrations": {"read": False, "write": False},
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {"read": "none", "write": "none"},
             "entities": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},

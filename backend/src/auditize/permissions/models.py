@@ -1,6 +1,11 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 __all__ = (
+    "ApplicableLogPermissions",
+    "ApplicableLogPermissionScope",
+    "ApplicablePermissions",
     "ReadWritePermissions",
     "EntitiesPermissions",
     "LogsPermissions",
@@ -53,9 +58,19 @@ class Permissions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+ApplicableLogPermissionScope = Literal["all", "partial", "none"]
+
+
+class ApplicableLogPermissions(BaseModel):
+    read: ApplicableLogPermissionScope = Field(default="none")
+    write: ApplicableLogPermissionScope = Field(default="none")
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class ApplicablePermissions(BaseModel):
     is_superadmin: bool
-    logs: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
+    logs: ApplicableLogPermissions = Field(default_factory=ApplicableLogPermissions)
     entities: EntitiesPermissions = Field(default_factory=EntitiesPermissions)
 
     model_config = ConfigDict(extra="forbid")

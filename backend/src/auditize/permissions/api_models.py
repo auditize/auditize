@@ -7,6 +7,8 @@ __all__ = (
     "PermissionsData",
 )
 
+from auditize.permissions.models import ApplicableLogPermissionScope
+
 
 class ReadWritePermissionsData(BaseModel):
     read: bool | None = Field(default=None)
@@ -31,7 +33,12 @@ class PermissionsData(BaseModel):
     entities: EntitiesPermissionsData = Field(default_factory=EntitiesPermissionsData)
 
 
+class ApplicableLogPermissions(BaseModel):
+    read: ApplicableLogPermissionScope = Field(default="none")
+    write: ApplicableLogPermissionScope = Field(default="none")
+
+
 class ApplicablePermissionsData(BaseModel):
     is_superadmin: bool
-    logs: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
+    logs: ApplicableLogPermissions = Field(default_factory=ApplicableLogPermissions)
     entities: EntitiesPermissionsData = Field(default_factory=EntitiesPermissionsData)

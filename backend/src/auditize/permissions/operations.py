@@ -1,6 +1,8 @@
 from auditize.common.exceptions import PermissionDenied
 from auditize.permissions.assertions import PermissionAssertion
 from auditize.permissions.models import (
+    ApplicableLogPermissions,
+    ApplicableLogPermissionScope,
     ApplicablePermissions,
     EntitiesPermissions,
     LogsPermissions,
@@ -13,7 +15,7 @@ __all__ = (
     "authorize_grant",
     "update_permissions",
     "authorize_access",
-    "get_applicable_permissions",
+    "compute_applicable_permissions",
     "is_authorized",
 )
 
@@ -84,11 +86,21 @@ def normalize_permissions(perms: Permissions) -> Permissions:
     )
 
 
-def get_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
+def _get_applicable_log_permission_scope(
+    on_all: bool, on_repos: bool
+) -> ApplicableLogPermissionScope:
+    if on_all:
+        return "all"
+    if on_repos:
+        return "partial"
+    return "none"
+
+
+def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
     if perms.is_superadmin:
         return ApplicablePermissions(
             is_superadmin=True,
-            logs=LogsPermissions.yes(),
+            logs=ApplicableLogPermissions(read="all", write="all"),
             entities=EntitiesPermissions(
                 repos=ReadWritePermissions.yes(),
                 users=ReadWritePermissions.yes(),
@@ -98,7 +110,16 @@ def get_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
     else:
         return ApplicablePermissions(
             is_superadmin=False,
-            logs=ReadWritePermissions(read=perms.logs.read, write=perms.logs.write),
+            logs=ApplicableLogPermissions(
+                read=_get_applicable_log_permission_scope(
+                    perms.logs.read,
+                    any(repo_perms.read for repo_perms in perms.logs.repos.values()),
+                ),
+                write=_get_applicable_log_permission_scope(
+                    perms.logs.write,
+                    any(repo_perms.write for repo_perms in perms.logs.repos.values()),
+                ),
+            ),
             entities=perms.entities.model_copy(deep=True),
         )
 

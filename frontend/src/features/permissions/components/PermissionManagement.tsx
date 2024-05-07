@@ -120,7 +120,7 @@ function LogsPermissionManagement({
 }: {
   perms: Auditize.Permissions["logs"];
   onChange: (perms: Auditize.Permissions["logs"]) => void;
-  assignablePerms: Auditize.ReadWritePermissions;
+  assignablePerms: Auditize.ApplicablePermissions["logs"];
   readOnly?: boolean;
 }) {
   const { data, error, isPending } = useQuery({
@@ -142,7 +142,10 @@ function LogsPermissionManagement({
               <Table.Td>
                 <ReadWritePermissionManagement
                   perms={perms}
-                  assignablePerms={assignablePerms}
+                  assignablePerms={{
+                    read: assignablePerms.read === "all",
+                    write: assignablePerms.write === "all",
+                  }}
                   onChange={(logPerms) => onChange({ ...perms, ...logPerms })}
                   readOnly={readOnly}
                 />
@@ -162,11 +165,11 @@ function LogsPermissionManagement({
                     assignablePerms={{
                       read: perms.read
                         ? false
-                        : assignablePerms.read ||
+                        : assignablePerms.read === "all" ||
                           assignableRepo.permissions.read_logs,
                       write: perms.write
                         ? false
-                        : assignablePerms.write ||
+                        : assignablePerms.write === "all" ||
                           assignableRepo.permissions.write_logs,
                     }}
                     onChange={(repoLogsPerms) =>

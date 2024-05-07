@@ -4,7 +4,7 @@ from pydantic import BaseModel, BeforeValidator, Field
 
 from auditize.common.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import ApplicablePermissionsData, PermissionsData
-from auditize.permissions.operations import get_applicable_permissions
+from auditize.permissions.operations import compute_applicable_permissions
 from auditize.users.models import User, UserUpdate
 
 
@@ -91,7 +91,7 @@ class UserMeResponse(BaseModel):
         return cls.model_validate(
             {
                 **user.model_dump(exclude={"permissions"}),
-                "permissions": get_applicable_permissions(
+                "permissions": compute_applicable_permissions(
                     user.permissions
                 ).model_dump(),
             }

@@ -1,14 +1,16 @@
-import camelcaseKeys from "camelcase-keys";
-import snakecaseKeys from "snakecase-keys";
-
 import { axiosInstance } from "@/utils/axios";
+
+import {
+  camelcaseResourceWithPermissions,
+  snakecaseResourceWithPermissions,
+} from "../permissions";
 
 export async function createIntegration(
   integration: Integration,
 ): Promise<[string, string]> {
   const response = await axiosInstance.post(
     "/integrations",
-    snakecaseKeys(integration, { deep: true }),
+    snakecaseResourceWithPermissions(integration),
   );
   return [response.data.id, response.data.token];
 }
@@ -19,7 +21,7 @@ export async function updateIntegration(
 ): Promise<void> {
   await axiosInstance.patch(
     `/integrations/${id}`,
-    snakecaseKeys(update, { deep: true }),
+    snakecaseResourceWithPermissions(update),
   );
 }
 
@@ -30,9 +32,7 @@ export async function getIntegrations(
     params: { page },
   });
   return [
-    response.data.data.map((item: Integration) =>
-      camelcaseKeys(item, { deep: true }),
-    ),
+    response.data.data.map(camelcaseResourceWithPermissions),
     response.data.pagination,
   ];
 }
@@ -41,7 +41,7 @@ export async function getIntegration(
   integrationId: string,
 ): Promise<Integration> {
   const response = await axiosInstance.get("/integrations/" + integrationId);
-  return camelcaseKeys(response.data, { deep: true });
+  return camelcaseResourceWithPermissions(response.data) as Integration;
 }
 
 export async function deleteIntegration(integrationId: string): Promise<void> {
