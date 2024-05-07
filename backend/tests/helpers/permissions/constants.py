@@ -21,7 +21,6 @@ DEFAULT_APPLICABLE_PERMISSIONS = {
     },
 }
 
-
 SUPERADMIN_APPLICABLE_PERMISSIONS = {
     "is_superadmin": True,
     "logs": {

@@ -3,19 +3,21 @@ from unittest.mock import patch
 
 import callee
 import pytest
+from httpx import Response
 from icecream import ic
-from tests.conftest import UserBuilder
 
 from auditize.common.db import DatabaseManager
+from conftest import UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper, get_cookie_by_name
+from helpers.integrations import PreparedIntegration
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
-from helpers.permissions import (
+from helpers.permissions.constants import (
     DEFAULT_APPLICABLE_PERMISSIONS,
     SUPERADMIN_APPLICABLE_PERMISSIONS,
 )
-from helpers.repos import PreparedRepo
+from helpers.permissions.tests import BasePermissionTests
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
@@ -43,67 +45,6 @@ async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManag
 
     user = PreparedUser(resp.json()["id"], data, dbm)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
-
-
-async def test_user_create_custom_permissions(
-    superadmin_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
-):
-    data = PreparedUser.prepare_data(
-        {
-            "permissions": {
-                "entities": {"repos": {"read": True, "write": True}},
-                "logs": {"repos": {repo.id: {"read": True, "write": True}}},
-            }
-        }
-    )
-    resp = await superadmin_client.assert_post(
-        "/users",
-        json=data,
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str)},
-    )
-
-    user = PreparedUser(resp.json()["id"], data, dbm)
-    await assert_collection(
-        dbm.core_db.users,
-        [
-            user.expected_document(
-                {
-                    "permissions": {
-                        "is_superadmin": False,
-                        "logs": {
-                            "read": False,
-                            "write": False,
-                            "repos": {repo.id: {"read": True, "write": True}},
-                        },
-                        "entities": {
-                            "repos": {"read": True, "write": True},
-                            "users": {"read": False, "write": False},
-                            "integrations": {"read": False, "write": False},
-                        },
-                    }
-                }
-            )
-        ],
-    )
-
-
-async def test_create_user_custom_permissions_unknown_repo(
-    superadmin_client: HttpTestHelper,
-):
-    await superadmin_client.assert_post(
-        "/users",
-        json=PreparedUser.prepare_data(
-            {
-                "permissions": {
-                    "logs": {
-                        "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}}
-                    },
-                }
-            }
-        ),
-        expected_status_code=400,
-    )
 
 
 async def test_user_create_missing_parameter(
@@ -163,87 +104,6 @@ async def test_user_update_partial(
     )
 
     await assert_collection(dbm.core_db.users, [user.expected_document(data)])
-
-
-async def test_user_update_permissions(
-    superadmin_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
-):
-    user = await PreparedUser.create(
-        superadmin_client,
-        dbm,
-        PreparedUser.prepare_data(
-            {
-                "permissions": {
-                    "logs": {"read": True, "write": False},
-                    "entities": {
-                        "repos": {"read": True, "write": True},
-                    },
-                }
-            }
-        ),
-    )
-
-    await superadmin_client.assert_patch(
-        f"/users/{user.id}",
-        json={
-            "permissions": {
-                "logs": {
-                    "read": False,
-                    "write": False,
-                    "repos": {repo.id: {"read": True, "write": True}},
-                },
-                "entities": {
-                    "repos": {"read": False, "write": False},
-                    "users": {"read": True, "write": True},
-                },
-            }
-        },
-        expected_status_code=204,
-    )
-
-    await assert_collection(
-        dbm.core_db.users,
-        [
-            user.expected_document(
-                {
-                    "permissions": {
-                        "is_superadmin": False,
-                        "logs": {
-                            "read": False,
-                            "write": False,
-                            "repos": {repo.id: {"read": True, "write": True}},
-                        },
-                        "entities": {
-                            "repos": {"read": False, "write": False},
-                            "users": {"read": True, "write": True},
-                            "integrations": {"read": False, "write": False},
-                        },
-                    }
-                }
-            )
-        ],
-    )
-
-
-async def test_user_update_permissions_unknown_repo(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
-):
-    user = await PreparedUser.create(
-        superadmin_client,
-        dbm,
-    )
-
-    await superadmin_client.assert_patch(
-        f"/users/{user.id}",
-        json={
-            "permissions": {
-                "logs": {
-                    "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}},
-                },
-            }
-        },
-        expected_status_code=400,
-    )
 
 
 async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
@@ -499,3 +359,33 @@ async def test_get_user_me_unauthorized(anon_client: HttpTestHelper):
 
 async def test_get_user_me_as_integration(integration_client: HttpTestHelper):
     await integration_client.assert_unauthorized_get("/users/me")
+
+
+class TestPermissions(BasePermissionTests):
+    @property
+    def base_path(self):
+        return "/users"
+
+    def get_principal_collection(self, dbm: DatabaseManager):
+        return dbm.core_db.users
+
+    async def inject_grantor(
+        self, dbm: DatabaseManager, permissions=None
+    ) -> PreparedIntegration:
+        return await PreparedIntegration.inject_into_db(
+            dbm,
+            PreparedIntegration.prepare_model(permissions=permissions),
+        )
+
+    def prepare_assignee_data(self, permissions=None):
+        return PreparedUser.prepare_data(permissions)
+
+    async def create_assignee(
+        self, client: HttpTestHelper, dbm: DatabaseManager, data=None
+    ) -> PreparedUser:
+        return await PreparedUser.create(client, dbm, data)
+
+    def rebuild_assignee_from_response(
+        self, resp: Response, data: dict, dbm: DatabaseManager
+    ) -> PreparedUser:
+        return PreparedUser(resp.json()["id"], data, dbm)

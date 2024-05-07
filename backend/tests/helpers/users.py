@@ -17,7 +17,7 @@ from auditize.users.service import (
 )
 
 from .http import HttpTestHelper, create_http_client, get_cookie_by_name
-from .permissions import DEFAULT_PERMISSIONS
+from .permissions.constants import DEFAULT_PERMISSIONS
 
 
 class PreparedUser:

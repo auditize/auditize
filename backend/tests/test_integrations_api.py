@@ -1,17 +1,20 @@
 import callee
 import pytest
 from bson import ObjectId
+from httpx import Response
 
 from auditize.common.db import DatabaseManager
-from conftest import IntegrationBuilder, UserBuilder
+from conftest import IntegrationBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper, create_http_client
 from helpers.integrations import PreparedIntegration
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
-from helpers.repos import PreparedRepo
+from helpers.permissions.tests import BasePermissionTests
+from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
+
 
 # Make API calls as a user instead of integration to let an empty integrations collection
 # when testing integrations.
@@ -40,69 +43,6 @@ async def test_integration_create(
         "/integrations",
         headers={"Authorization": f"Bearer {integration.token}"},
         expected_status_code=403,  # 403 means that authentication was successful
-    )
-
-
-async def test_integration_create_custom_permissions(
-    integration_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
-):
-    data = PreparedIntegration.prepare_data(
-        {
-            "permissions": {
-                "entities": {"repos": {"read": True, "write": True}},
-                "logs": {"repos": {repo.id: {"read": True, "write": True}}},
-            }
-        }
-    )
-    resp = await integration_write_client.assert_post(
-        "/integrations",
-        json=data,
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str), "token": callee.IsA(str)},
-    )
-
-    integration = PreparedIntegration(
-        resp.json()["id"], resp.json()["token"], data, dbm
-    )
-    await assert_collection(
-        dbm.core_db.integrations,
-        [
-            integration.expected_document(
-                {
-                    "permissions": {
-                        "is_superadmin": False,
-                        "logs": {
-                            "read": False,
-                            "write": False,
-                            "repos": {repo.id: {"read": True, "write": True}},
-                        },
-                        "entities": {
-                            "repos": {"read": True, "write": True},
-                            "users": {"read": False, "write": False},
-                            "integrations": {"read": False, "write": False},
-                        },
-                    }
-                }
-            )
-        ],
-    )
-
-
-async def test_create_integration_custom_permissions_unknown_repo(
-    superadmin_client: HttpTestHelper,
-):
-    await superadmin_client.assert_post(
-        "/integrations",
-        json=PreparedIntegration.prepare_data(
-            {
-                "permissions": {
-                    "logs": {
-                        "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}}
-                    },
-                }
-            }
-        ),
-        expected_status_code=400,
     )
 
 
@@ -148,87 +88,6 @@ async def test_integration_update(
 
     await assert_collection(
         dbm.core_db.integrations, [integration.expected_document(data)]
-    )
-
-
-async def test_user_update_permissions(
-    integration_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
-):
-    integration = await PreparedIntegration.create(
-        integration_write_client,
-        dbm,
-        PreparedIntegration.prepare_data(
-            {
-                "permissions": {
-                    "logs": {"read": True, "write": False},
-                    "entities": {
-                        "repos": {"read": True, "write": True},
-                    },
-                }
-            }
-        ),
-    )
-
-    await integration_write_client.assert_patch(
-        f"/integrations/{integration.id}",
-        json={
-            "permissions": {
-                "logs": {
-                    "read": False,
-                    "write": False,
-                    "repos": {repo.id: {"read": True, "write": True}},
-                },
-                "entities": {
-                    "repos": {"read": False, "write": False},
-                    "users": {"read": True, "write": True},
-                },
-            }
-        },
-        expected_status_code=204,
-    )
-
-    await assert_collection(
-        dbm.core_db.integrations,
-        [
-            integration.expected_document(
-                {
-                    "permissions": {
-                        "is_superadmin": False,
-                        "logs": {
-                            "read": False,
-                            "write": False,
-                            "repos": {repo.id: {"read": True, "write": True}},
-                        },
-                        "entities": {
-                            "repos": {"read": False, "write": False},
-                            "users": {"read": True, "write": True},
-                            "integrations": {"read": False, "write": False},
-                        },
-                    }
-                }
-            )
-        ],
-    )
-
-
-async def test_integration_update_permissions_unknown_repo(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
-):
-    integrations = await PreparedIntegration.create(
-        superadmin_client,
-        dbm,
-    )
-
-    await superadmin_client.assert_patch(
-        f"/integrations/{integrations.id}",
-        json={
-            "permissions": {
-                "logs": {
-                    "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}},
-                },
-            }
-        },
-        expected_status_code=400,
     )
 
 
@@ -391,3 +250,34 @@ async def test_integration_delete_unauthorized(
 async def test_integration_delete_self(integration: PreparedIntegration):
     async with integration.client() as client:
         await client.assert_forbidden_delete(f"/integrations/{integration.id}")
+
+
+class TestPermissions(BasePermissionTests):
+    @property
+    def base_path(self):
+        return "/integrations"
+
+    def get_principal_collection(self, dbm: DatabaseManager):
+        return dbm.core_db.integrations
+
+    async def inject_grantor(
+        self, dbm: DatabaseManager, permissions=None
+    ) -> PreparedUser:
+        return await PreparedUser.inject_into_db(
+            dbm,
+            user=PreparedUser.prepare_model(password="dummy", permissions=permissions),
+            password="dummy",
+        )
+
+    def prepare_assignee_data(self, permissions=None):
+        return PreparedIntegration.prepare_data(permissions)
+
+    async def create_assignee(
+        self, client: HttpTestHelper, dbm: DatabaseManager, data=None
+    ) -> PreparedIntegration:
+        return await PreparedIntegration.create(client, dbm, data)
+
+    def rebuild_assignee_from_response(
+        self, resp: Response, data: dict, dbm: DatabaseManager
+    ) -> PreparedIntegration:
+        return PreparedIntegration(resp.json()["id"], resp.json()["token"], data, dbm)

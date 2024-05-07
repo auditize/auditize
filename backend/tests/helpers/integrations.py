@@ -10,7 +10,7 @@ from auditize.integrations.service import create_integration
 from auditize.permissions.models import Permissions
 
 from .http import HttpTestHelper, create_http_client
-from .permissions import DEFAULT_PERMISSIONS
+from .permissions.constants import DEFAULT_PERMISSIONS
 
 
 class PreparedIntegration:
