@@ -5,6 +5,7 @@ import pytest
 from httpx import Response
 
 from auditize.common.db import DatabaseManager
+from auditize.common.exceptions import AuthenticationFailure
 from conftest import UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper

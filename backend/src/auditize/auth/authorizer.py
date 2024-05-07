@@ -4,6 +4,7 @@ from typing import Annotated, Callable, Type
 from fastapi import Depends
 from starlette.requests import Request
 
+from auditize.auth.jwt import get_user_email_from_session_token
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import (
     AuthenticationFailure,
@@ -19,7 +20,7 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import Permissions
 from auditize.users.models import User
-from auditize.users.service import get_user_by_session_token
+from auditize.users.service import get_user_by_email
 
 _BEARER_PREFIX = "Bearer "
 
@@ -89,7 +90,11 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     if not session_token:
         raise AuthenticationFailure()
 
-    user = await get_user_by_session_token(dbm, session_token)
+    user_email = get_user_email_from_session_token(session_token)
+    try:
+        user = await get_user_by_email(dbm, user_email)
+    except UnknownModelException:
+        raise AuthenticationFailure("User does not longer exist")
 
     return Authenticated.from_user(user)
 
