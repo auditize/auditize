@@ -102,9 +102,12 @@ function Main() {
                 Log-out
               </UnstyledButton>
             </VisibleIf>
-            <VisibleIf condition={!!currentUser}>
+            <VisibleIf
+              condition={
+                currentUser && currentUser.permissions.logs.read != "none"
+              }
+            >
               {" "}
-              {/* FIXME: actual check depends on https://nde.atlassian.net/browse/ADZ-179 */}
               <UnstyledButton>
                 <Link to="/logs">Logs</Link>
               </UnstyledButton>
