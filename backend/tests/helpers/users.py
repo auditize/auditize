@@ -103,7 +103,7 @@ class PreparedUser:
 
     async def log_in(self, client: HttpTestHelper) -> Response:
         return await client.assert_post(
-            "/users/login",
+            "/auth/user/login",
             json={"email": self.email, "password": self.password},
             expected_status_code=204,
         )
