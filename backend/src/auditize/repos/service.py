@@ -3,7 +3,7 @@ from typing import Sequence
 from bson import ObjectId
 
 from auditize.common.db import DatabaseManager
-from auditize.common.exceptions import UnknownModelException
+from auditize.common.exceptions import UnknownModelException, ValidationError
 from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.logs.db import get_logs_db
@@ -12,6 +12,7 @@ from auditize.permissions.assertions import (
     can_write_logs,
     permissions_and,
 )
+from auditize.permissions.models import Permissions
 from auditize.permissions.operations import is_authorized
 from auditize.repos.models import Repo, RepoStats, RepoUpdate
 from auditize.users.models import User
@@ -131,3 +132,15 @@ async def delete_repo(dbm: DatabaseManager, repo_id: ObjectId | str):
         raise UnknownModelException()
 
     await logs_db.client.drop_database(logs_db.name)
+
+
+async def ensure_repos_in_permissions_exist(
+    dbm: DatabaseManager, permissions: Permissions
+):
+    for repo_id in permissions.logs.get_repos():
+        try:
+            await get_repo(dbm, repo_id)
+        except UnknownModelException:
+            raise ValidationError(
+                f"Repo {repo_id!r} cannot be assigned in log permissions as it does not exist"
+            )

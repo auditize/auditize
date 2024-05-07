@@ -23,3 +23,7 @@ def make_401_response():
 
 def make_403_response():
     return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+
+
+def make_400_response():
+    return JSONResponse(status_code=400, content={"detail": "Bad request"})

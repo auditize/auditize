@@ -13,6 +13,7 @@ from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.utils import now
 from auditize.permissions.operations import normalize_permissions, update_permissions
+from auditize.repos.service import ensure_repos_in_permissions_exist
 from auditize.users.models import SignupToken, User, UserUpdate
 
 _DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
@@ -48,6 +49,7 @@ def build_document_from_user(user: User) -> dict:
 
 
 async def save_user(dbm: DatabaseManager, user: User):
+    await ensure_repos_in_permissions_exist(dbm, user.permissions)
     result = await dbm.core_db.users.insert_one(build_document_from_user(user))
     return result.inserted_id
 
@@ -66,9 +68,9 @@ async def update_user(
     doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
     if update.permissions:
         user = await get_user(dbm, user_id)
-        doc_update["permissions"] = update_permissions(
-            user.permissions, update.permissions
-        ).model_dump()
+        user_permissions = update_permissions(user.permissions, update.permissions)
+        await ensure_repos_in_permissions_exist(dbm, user_permissions)
+        doc_update["permissions"] = user_permissions.model_dump()
 
     result = await dbm.core_db.users.update_one(
         {"_id": ObjectId(user_id)}, {"$set": doc_update}

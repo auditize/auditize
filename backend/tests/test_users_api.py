@@ -15,6 +15,7 @@ from helpers.permissions import (
     DEFAULT_APPLICABLE_PERMISSIONS,
     SUPERADMIN_APPLICABLE_PERMISSIONS,
 )
+from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
@@ -45,10 +46,15 @@ async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManag
 
 
 async def test_user_create_custom_permissions(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
 ):
     data = PreparedUser.prepare_data(
-        extra={"permissions": {"logs": {"read": True, "write": True}}}
+        {
+            "permissions": {
+                "entities": {"repos": {"read": True, "write": True}},
+                "logs": {"repos": {repo.id: {"read": True, "write": True}}},
+            }
+        }
     )
     resp = await superadmin_client.assert_post(
         "/users",
@@ -65,9 +71,13 @@ async def test_user_create_custom_permissions(
                 {
                     "permissions": {
                         "is_superadmin": False,
-                        "logs": {"read": True, "write": True, "repos": {}},
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": {repo.id: {"read": True, "write": True}},
+                        },
                         "entities": {
-                            "repos": {"read": False, "write": False},
+                            "repos": {"read": True, "write": True},
                             "users": {"read": False, "write": False},
                             "integrations": {"read": False, "write": False},
                         },
@@ -75,6 +85,24 @@ async def test_user_create_custom_permissions(
                 }
             )
         ],
+    )
+
+
+async def test_create_user_custom_permissions_unknown_repo(
+    superadmin_client: HttpTestHelper,
+):
+    await superadmin_client.assert_post(
+        "/users",
+        json=PreparedUser.prepare_data(
+            {
+                "permissions": {
+                    "logs": {
+                        "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}}
+                    },
+                }
+            }
+        ),
+        expected_status_code=400,
     )
 
 
@@ -138,7 +166,7 @@ async def test_user_update_partial(
 
 
 async def test_user_update_permissions(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
 ):
     user = await PreparedUser.create(
         superadmin_client,
@@ -159,7 +187,11 @@ async def test_user_update_permissions(
         f"/users/{user.id}",
         json={
             "permissions": {
-                "logs": {"write": True},
+                "logs": {
+                    "read": False,
+                    "write": False,
+                    "repos": {repo.id: {"read": True, "write": True}},
+                },
                 "entities": {
                     "repos": {"read": False, "write": False},
                     "users": {"read": True, "write": True},
@@ -176,7 +208,11 @@ async def test_user_update_permissions(
                 {
                     "permissions": {
                         "is_superadmin": False,
-                        "logs": {"read": True, "write": True, "repos": {}},
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": {repo.id: {"read": True, "write": True}},
+                        },
                         "entities": {
                             "repos": {"read": False, "write": False},
                             "users": {"read": True, "write": True},
@@ -186,6 +222,27 @@ async def test_user_update_permissions(
                 }
             )
         ],
+    )
+
+
+async def test_user_update_permissions_unknown_repo(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    user = await PreparedUser.create(
+        superadmin_client,
+        dbm,
+    )
+
+    await superadmin_client.assert_patch(
+        f"/users/{user.id}",
+        json={
+            "permissions": {
+                "logs": {
+                    "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}},
+                },
+            }
+        },
+        expected_status_code=400,
     )
 
 

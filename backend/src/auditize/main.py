@@ -6,6 +6,7 @@ from icecream import ic
 from pymongo.errors import DuplicateKeyError
 
 from auditize.common.api import (
+    make_400_response,
     make_401_response,
     make_403_response,
     make_404_response,
@@ -16,6 +17,7 @@ from auditize.common.exceptions import (
     AuthenticationFailure,
     PermissionDenied,
     UnknownModelException,
+    ValidationError,
 )
 from auditize.integrations.api import router as integrations_router
 from auditize.logs.api import router as logs_router
@@ -66,6 +68,11 @@ def authentication_failure(request, exc):
 @app.exception_handler(PermissionDenied)
 def permission_denied_handler(request, exc):
     return make_403_response()
+
+
+@app.exception_handler(ValidationError)
+def validation_error_handler(request, exc):
+    return make_400_response()
 
 
 app.include_router(logs_router)

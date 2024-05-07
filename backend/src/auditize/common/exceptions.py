@@ -12,3 +12,7 @@ class AuthenticationFailure(AuditizeException):
 
 class PermissionDenied(AuditizeException):
     pass
+
+
+class ValidationError(AuditizeException):
+    pass

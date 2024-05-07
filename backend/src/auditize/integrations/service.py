@@ -9,6 +9,7 @@ from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.integrations.models import Integration, IntegrationUpdate
 from auditize.permissions.operations import normalize_permissions, update_permissions
+from auditize.repos.service import ensure_repos_in_permissions_exist
 
 
 def _hash_token(token: str) -> str:
@@ -24,6 +25,7 @@ def _generate_token() -> tuple[str, str]:
 async def create_integration(
     dbm: DatabaseManager, integration: Integration
 ) -> tuple[ObjectId, str]:
+    await ensure_repos_in_permissions_exist(dbm, integration.permissions)
     token, token_hash = _generate_token()
     result = await dbm.core_db.integrations.insert_one(
         {
@@ -41,9 +43,11 @@ async def update_integration(
     doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
     if update.permissions:
         integration = await get_integration(dbm, integration_id)
-        doc_update["permissions"] = update_permissions(
+        integration_permissions = update_permissions(
             integration.permissions, update.permissions
-        ).model_dump()
+        )
+        await ensure_repos_in_permissions_exist(dbm, integration_permissions)
+        doc_update["permissions"] = integration_permissions.model_dump()
 
     result = await dbm.core_db.integrations.update_one(
         {"_id": ObjectId(integration_id)}, {"$set": doc_update}

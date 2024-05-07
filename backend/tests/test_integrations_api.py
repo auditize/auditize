@@ -9,6 +9,7 @@ from helpers.http import HttpTestHelper, create_http_client
 from helpers.integrations import PreparedIntegration
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
+from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
 
@@ -43,10 +44,15 @@ async def test_integration_create(
 
 
 async def test_integration_create_custom_permissions(
-    integration_write_client: HttpTestHelper, dbm: DatabaseManager
+    integration_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
 ):
     data = PreparedIntegration.prepare_data(
-        {"permissions": {"entities": {"integrations": {"write": True}}}}
+        {
+            "permissions": {
+                "entities": {"repos": {"read": True, "write": True}},
+                "logs": {"repos": {repo.id: {"read": True, "write": True}}},
+            }
+        }
     )
     resp = await integration_write_client.assert_post(
         "/integrations",
@@ -65,16 +71,38 @@ async def test_integration_create_custom_permissions(
                 {
                     "permissions": {
                         "is_superadmin": False,
-                        "logs": {"read": False, "write": False, "repos": {}},
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": {repo.id: {"read": True, "write": True}},
+                        },
                         "entities": {
-                            "repos": {"read": False, "write": False},
+                            "repos": {"read": True, "write": True},
                             "users": {"read": False, "write": False},
-                            "integrations": {"read": False, "write": True},
+                            "integrations": {"read": False, "write": False},
                         },
                     }
                 }
             )
         ],
+    )
+
+
+async def test_create_integration_custom_permissions_unknown_repo(
+    superadmin_client: HttpTestHelper,
+):
+    await superadmin_client.assert_post(
+        "/integrations",
+        json=PreparedIntegration.prepare_data(
+            {
+                "permissions": {
+                    "logs": {
+                        "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}}
+                    },
+                }
+            }
+        ),
+        expected_status_code=400,
     )
 
 
@@ -124,7 +152,7 @@ async def test_integration_update(
 
 
 async def test_user_update_permissions(
-    integration_write_client: HttpTestHelper, dbm: DatabaseManager
+    integration_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
 ):
     integration = await PreparedIntegration.create(
         integration_write_client,
@@ -145,7 +173,11 @@ async def test_user_update_permissions(
         f"/integrations/{integration.id}",
         json={
             "permissions": {
-                "logs": {"write": True},
+                "logs": {
+                    "read": False,
+                    "write": False,
+                    "repos": {repo.id: {"read": True, "write": True}},
+                },
                 "entities": {
                     "repos": {"read": False, "write": False},
                     "users": {"read": True, "write": True},
@@ -162,7 +194,11 @@ async def test_user_update_permissions(
                 {
                     "permissions": {
                         "is_superadmin": False,
-                        "logs": {"read": True, "write": True, "repos": {}},
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": {repo.id: {"read": True, "write": True}},
+                        },
                         "entities": {
                             "repos": {"read": False, "write": False},
                             "users": {"read": True, "write": True},
@@ -172,6 +208,27 @@ async def test_user_update_permissions(
                 }
             )
         ],
+    )
+
+
+async def test_integration_update_permissions_unknown_repo(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    integrations = await PreparedIntegration.create(
+        superadmin_client,
+        dbm,
+    )
+
+    await superadmin_client.assert_patch(
+        f"/integrations/{integrations.id}",
+        json={
+            "permissions": {
+                "logs": {
+                    "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}},
+                },
+            }
+        },
+        expected_status_code=400,
     )
 
 
