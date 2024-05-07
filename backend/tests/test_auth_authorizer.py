@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from jose import jwt
 
-from auditize.auth import get_authenticated
+from auditize.auth.authorizer import get_authenticated
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import AuthenticationFailure
 from auditize.users.service import generate_session_token_payload

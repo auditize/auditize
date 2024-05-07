@@ -4,11 +4,9 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Path, Response, UploadFile
 from pydantic import BeforeValidator
 
-from auditize.auth import (
-    Authenticated,
+from auditize.auth.authorizer import (
     AuthorizedOnLogsRead,
     AuthorizedOnLogsWrite,
-    get_authenticated,
 )
 from auditize.common.api import COMMON_RESPONSES
 from auditize.common.db import DatabaseManager, get_dbm

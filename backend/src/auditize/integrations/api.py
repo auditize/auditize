@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from auditize.auth import Authenticated, Authorized
+from auditize.auth.authorizer import Authenticated, Authorized
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import PermissionDenied
 from auditize.integrations import service

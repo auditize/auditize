@@ -1,7 +1,8 @@
 import dataclasses
 from typing import Annotated, Callable, Type
 
-from fastapi import Depends, Request
+from fastapi import Depends
+from starlette.requests import Request
 
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import (
