@@ -49,7 +49,7 @@ class BasePermissionTests:
         assignee_data = self.prepare_assignee_data(
             {
                 "permissions": {
-                    "entities": {"repos": {"read": True, "write": True}},
+                    "management": {"repos": {"read": True, "write": True}},
                     "logs": {"repos": {repo.id: {"read": True, "write": True}}},
                 }
             }
@@ -74,7 +74,7 @@ class BasePermissionTests:
                                 "write": False,
                                 "repos": {repo.id: {"read": True, "write": True}},
                             },
-                            "entities": {
+                            "management": {
                                 "repos": {"read": True, "write": True},
                                 "users": {"read": False, "write": False},
                                 "integrations": {"read": False, "write": False},
@@ -106,7 +106,7 @@ class BasePermissionTests:
     async def test_create_forbidden_permissions(self, dbm: DatabaseManager):
         grantor = await self.inject_grantor(
             dbm,
-            {"entities": {"users": {"write": True}, "integrations": {"write": True}}},
+            {"management": {"users": {"write": True}, "integrations": {"write": True}}},
         )
 
         async with grantor.client() as client:
@@ -135,7 +135,7 @@ class BasePermissionTests:
                     {
                         "permissions": {
                             "logs": {"read": True, "write": False},
-                            "entities": {
+                            "management": {
                                 "repos": {"read": True, "write": True},
                             },
                         }
@@ -152,7 +152,7 @@ class BasePermissionTests:
                             "write": False,
                             "repos": {repo.id: {"read": True, "write": True}},
                         },
-                        "entities": {
+                        "management": {
                             "repos": {"read": False, "write": False},
                             "users": {"read": True, "write": True},
                         },
@@ -173,7 +173,7 @@ class BasePermissionTests:
                                 "write": False,
                                 "repos": {repo.id: {"read": True, "write": True}},
                             },
-                            "entities": {
+                            "management": {
                                 "repos": {"read": False, "write": False},
                                 "users": {"read": True, "write": True},
                                 "integrations": {"read": False, "write": False},
@@ -203,7 +203,7 @@ class BasePermissionTests:
     async def test_update_forbidden_permissions(self, dbm: DatabaseManager):
         grantor = await self.inject_grantor(
             dbm,
-            {"entities": {"users": {"write": True}, "integrations": {"write": True}}},
+            {"management": {"users": {"write": True}, "integrations": {"write": True}}},
         )
 
         async with grantor.client() as client:

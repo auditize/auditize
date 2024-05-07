@@ -11,7 +11,7 @@ declare namespace Auditize {
       write: boolean;
       repos: Record<string, ReadWritePermissions>;
     };
-    entities: {
+    management: {
       repos: ReadWritePermissions;
       users: ReadWritePermissions;
       integrations: ReadWritePermissions;
@@ -26,7 +26,7 @@ declare namespace Auditize {
       read: ApplicableLogPermissionScope;
       write: ApplicableLogPermissionScope;
     };
-    entities: {
+    management: {
       repos: ReadWritePermissions;
       users: ReadWritePermissions;
       integrations: ReadWritePermissions;

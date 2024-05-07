@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 __all__ = (
     "ReadWritePermissionsData",
-    "EntitiesPermissionsData",
+    "ManagementPermissionsData",
     "LogsPermissionsData",
     "PermissionsData",
 )
@@ -15,7 +15,7 @@ class ReadWritePermissionsData(BaseModel):
     write: bool | None = Field(default=None)
 
 
-class EntitiesPermissionsData(BaseModel):
+class ManagementPermissionsData(BaseModel):
     repos: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
     users: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
     integrations: ReadWritePermissionsData = Field(
@@ -30,7 +30,9 @@ class LogsPermissionsData(ReadWritePermissionsData):
 class PermissionsData(BaseModel):
     is_superadmin: bool | None = Field(default=None)
     logs: LogsPermissionsData = Field(default_factory=LogsPermissionsData)
-    entities: EntitiesPermissionsData = Field(default_factory=EntitiesPermissionsData)
+    management: ManagementPermissionsData = Field(
+        default_factory=ManagementPermissionsData
+    )
 
 
 class ApplicableLogPermissions(BaseModel):
@@ -41,4 +43,6 @@ class ApplicableLogPermissions(BaseModel):
 class ApplicablePermissionsData(BaseModel):
     is_superadmin: bool
     logs: ApplicableLogPermissions = Field(default_factory=ApplicableLogPermissions)
-    entities: EntitiesPermissionsData = Field(default_factory=EntitiesPermissionsData)
+    management: ManagementPermissionsData = Field(
+        default_factory=ManagementPermissionsData
+    )

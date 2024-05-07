@@ -41,7 +41,7 @@ async def test_repo_create_as_integration(
     integration_builder: IntegrationBuilder, dbm: DatabaseManager
 ):
     integration_builder = await integration_builder(
-        {"entities": {"repos": {"write": True}}}
+        {"management": {"repos": {"write": True}}}
     )
 
     async with integration_builder.client() as client:
@@ -49,7 +49,7 @@ async def test_repo_create_as_integration(
 
 
 async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManager):
-    user_builder = await user_builder({"entities": {"repos": {"write": True}}})
+    user_builder = await user_builder({"management": {"repos": {"write": True}}})
 
     async with user_builder.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -341,7 +341,7 @@ async def test_repo_list_user_repos_with_permissions(
         )
 
     # Test with user having no log permissions (but can manage repos)
-    user = await user_builder({"entities": {"repos": {"read": True, "write": True}}})
+    user = await user_builder({"management": {"repos": {"read": True, "write": True}}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await _test_repo_list_user_repos(

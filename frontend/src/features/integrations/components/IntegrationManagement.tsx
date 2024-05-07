@@ -8,7 +8,7 @@ import { IntegrationCreation, IntegrationEdition } from "./IntegrationEditor";
 export function IntegrationsManagement() {
   const { currentUser } = useAuthenticatedUser();
   const readOnly =
-    currentUser.permissions.entities.integrations.write === false;
+    currentUser.permissions.management.integrations.write === false;
 
   return (
     <ResourceManagement

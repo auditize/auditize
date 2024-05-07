@@ -65,20 +65,20 @@ function EntityPermissionManagement({
   );
 }
 
-function EntitiesPermissionManagement({
+function ManagementPermissionManagement({
   perms,
   onChange,
   assignablePerms,
   readOnly = false,
 }: {
-  perms: Auditize.Permissions["entities"];
-  onChange: (perms: Auditize.Permissions["entities"]) => void;
-  assignablePerms: Auditize.Permissions["entities"];
+  perms: Auditize.Permissions["management"];
+  onChange: (perms: Auditize.Permissions["management"]) => void;
+  assignablePerms: Auditize.Permissions["management"];
   readOnly?: boolean;
 }) {
   return (
-    <Accordion.Item value="entities">
-      <Accordion.Control>Entities</Accordion.Control>
+    <Accordion.Item value="management">
+      <Accordion.Control>Management</Accordion.Control>
       <Accordion.Panel>
         <Table withRowBorders={false}>
           <Table.Tbody>
@@ -215,12 +215,12 @@ export function PermissionManagement({
         }
         disabled={readOnly || !assignablePerms.isSuperadmin}
       />
-      <Accordion multiple defaultValue={["entities", "logs"]}>
-        <EntitiesPermissionManagement
-          perms={perms.entities}
-          assignablePerms={assignablePerms.entities}
-          onChange={(entitiesPerms) =>
-            onChange({ ...perms, entities: entitiesPerms })
+      <Accordion multiple defaultValue={["management", "logs"]}>
+        <ManagementPermissionManagement
+          perms={perms.management}
+          assignablePerms={assignablePerms.management}
+          onChange={(managementPerms) =>
+            onChange({ ...perms, management: entitiesPerms })
           }
           readOnly={readOnly || perms.isSuperadmin}
         />

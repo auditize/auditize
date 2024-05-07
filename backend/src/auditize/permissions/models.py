@@ -7,7 +7,7 @@ __all__ = (
     "ApplicableLogPermissionScope",
     "ApplicablePermissions",
     "ReadWritePermissions",
-    "EntitiesPermissions",
+    "ManagementPermissions",
     "LogsPermissions",
     "Permissions",
 )
@@ -28,7 +28,7 @@ class ReadWritePermissions(BaseModel):
         return cls(read=True, write=True)
 
 
-class EntitiesPermissions(BaseModel):
+class ManagementPermissions(BaseModel):
     repos: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
     users: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
     integrations: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
@@ -53,7 +53,7 @@ class LogsPermissions(ReadWritePermissions):
 class Permissions(BaseModel):
     is_superadmin: bool | None = Field(default=None)
     logs: LogsPermissions = Field(default_factory=LogsPermissions)
-    entities: EntitiesPermissions = Field(default_factory=EntitiesPermissions)
+    management: ManagementPermissions = Field(default_factory=ManagementPermissions)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -71,6 +71,6 @@ class ApplicableLogPermissions(BaseModel):
 class ApplicablePermissions(BaseModel):
     is_superadmin: bool
     logs: ApplicableLogPermissions = Field(default_factory=ApplicableLogPermissions)
-    entities: EntitiesPermissions = Field(default_factory=EntitiesPermissions)
+    management: ManagementPermissions = Field(default_factory=ManagementPermissions)
 
     model_config = ConfigDict(extra="forbid")

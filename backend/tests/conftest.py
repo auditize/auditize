@@ -128,21 +128,21 @@ async def superadmin_client(integration_builder):
 
 @pytest.fixture(scope="function")
 async def repo_read_client(integration_builder):
-    integration = await integration_builder({"entities": {"repos": {"read": True}}})
+    integration = await integration_builder({"management": {"repos": {"read": True}}})
     async with integration.client() as client:
         yield client
 
 
 @pytest.fixture(scope="function")
 async def repo_write_client(integration_builder):
-    integration = await integration_builder({"entities": {"repos": {"write": True}}})
+    integration = await integration_builder({"management": {"repos": {"write": True}}})
     async with integration.client() as client:
         yield client
 
 
 @pytest.fixture(scope="function")
 async def integration_read_client(user_builder):
-    user = await user_builder({"entities": {"integrations": {"read": True}}})
+    user = await user_builder({"management": {"integrations": {"read": True}}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
@@ -150,7 +150,7 @@ async def integration_read_client(user_builder):
 
 @pytest.fixture(scope="function")
 async def integration_write_client(user_builder):
-    user = await user_builder({"entities": {"integrations": {"write": True}}})
+    user = await user_builder({"management": {"integrations": {"write": True}}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
@@ -159,7 +159,7 @@ async def integration_write_client(user_builder):
 @pytest.fixture(scope="function")
 async def integration_rw_client(user_builder):
     user = await user_builder(
-        {"entities": {"integrations": {"read": True, "write": True}}}
+        {"management": {"integrations": {"read": True, "write": True}}}
     )
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -168,7 +168,7 @@ async def integration_rw_client(user_builder):
 
 @pytest.fixture(scope="function")
 async def user_read_client(integration_builder):
-    integration = await integration_builder({"entities": {"users": {"read": True}}})
+    integration = await integration_builder({"management": {"users": {"read": True}}})
     async with integration.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
@@ -176,7 +176,7 @@ async def user_read_client(integration_builder):
 
 @pytest.fixture(scope="function")
 async def user_write_client(integration_builder):
-    integration = await integration_builder({"entities": {"users": {"write": True}}})
+    integration = await integration_builder({"management": {"users": {"write": True}}})
     async with integration.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
@@ -185,7 +185,7 @@ async def user_write_client(integration_builder):
 @pytest.fixture(scope="function")
 async def user_rw_client(integration_builder):
     integration = await integration_builder(
-        {"entities": {"users": {"read": True, "write": True}}}
+        {"management": {"users": {"read": True, "write": True}}}
     )
     async with integration.client() as client:
         client: HttpTestHelper  # make pycharm happy

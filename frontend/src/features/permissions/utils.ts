@@ -9,7 +9,7 @@ export function emptyPermissions(): Auditize.Permissions {
       write: false,
       repos: {},
     },
-    entities: {
+    management: {
       repos: {
         read: false,
         write: false,

@@ -7,7 +7,7 @@ import { RepoCreation, RepoEdition } from "./RepoEditor";
 
 export function ReposManagement() {
   const { currentUser } = useAuthenticatedUser();
-  const readOnly = currentUser.permissions.entities.repos.write === false;
+  const readOnly = currentUser.permissions.management.repos.write === false;
 
   return (
     <ResourceManagement

@@ -122,7 +122,7 @@ async def test_integration_update_forbidden(
 
 async def test_integration_update_self(integration_builder: IntegrationBuilder):
     integration = await integration_builder(
-        {"entities": {"integrations": {"write": True}}}
+        {"management": {"integrations": {"write": True}}}
     )
     async with integration.client() as client:
         await client.assert_forbidden_patch(

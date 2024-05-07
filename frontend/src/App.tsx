@@ -114,7 +114,7 @@ function Main() {
             </VisibleIf>
             <VisibleIf
               condition={
-                currentUser && currentUser.permissions.entities.repos.read
+                currentUser && currentUser.permissions.management.repos.read
               }
             >
               <UnstyledButton>
@@ -123,7 +123,7 @@ function Main() {
             </VisibleIf>
             <VisibleIf
               condition={
-                currentUser && currentUser.permissions.entities.users.read
+                currentUser && currentUser.permissions.management.users.read
               }
             >
               <UnstyledButton>
@@ -133,7 +133,7 @@ function Main() {
             <VisibleIf
               condition={
                 currentUser &&
-                currentUser.permissions.entities.integrations.read
+                currentUser.permissions.management.integrations.read
               }
             >
               <UnstyledButton>

@@ -88,9 +88,9 @@ def test_permission_assertions_on_logs_as_permissions_specific_repos():
     assert_unauthorized(perms, can_write_logs("repo1"), can_read_logs("repo2"))
 
 
-def test_permission_assertions_on_entities_as_specific_permissions():
-    every_possible_entities_perms = {
-        "entities": {
+def test_permission_assertions_on_management_as_specific_permissions():
+    every_possible_management_perms = {
+        "management": {
             "repos": {"read": True, "write": True},
             "users": {"read": True, "write": True},
             "integrations": {"read": True, "write": True},
@@ -107,14 +107,14 @@ def test_permission_assertions_on_entities_as_specific_permissions():
     for entity_type in "repos", "users", "integrations":
         for perm_type in "read", "write":
             # test authorized with the minimum permissions
-            no_perms_but = {"entities": {entity_type: {perm_type: True}}}
+            no_perms_but = {"management": {entity_type: {perm_type: True}}}
             assert_authorized(
                 no_perms_but, permission_assertions[entity_type][perm_type]
             )
 
-            # test unauthorized with all permissions on entities but not the requested one
-            all_perms_but = deepcopy(every_possible_entities_perms)
-            all_perms_but["entities"][entity_type][perm_type] = False
+            # test unauthorized with all permissions on management but not the requested one
+            all_perms_but = deepcopy(every_possible_management_perms)
+            all_perms_but["management"][entity_type][perm_type] = False
             assert_unauthorized(
                 all_perms_but, permission_assertions[entity_type][perm_type]
             )

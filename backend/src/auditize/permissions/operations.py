@@ -4,8 +4,8 @@ from auditize.permissions.models import (
     ApplicableLogPermissions,
     ApplicableLogPermissionScope,
     ApplicablePermissions,
-    EntitiesPermissions,
     LogsPermissions,
+    ManagementPermissions,
     Permissions,
     ReadWritePermissions,
 )
@@ -62,7 +62,7 @@ def normalize_permissions(perms: Permissions) -> Permissions:
         return Permissions(
             is_superadmin=True,
             logs=LogsPermissions(read=False, write=False, repos={}),
-            entities=EntitiesPermissions(
+            management=ManagementPermissions(
                 repos=ReadWritePermissions.no(),
                 users=ReadWritePermissions.no(),
                 integrations=ReadWritePermissions.no(),
@@ -78,10 +78,12 @@ def normalize_permissions(perms: Permissions) -> Permissions:
                 perms.logs.repos, perms.logs.read, perms.logs.write
             ),
         ),
-        entities=EntitiesPermissions(
-            repos=_normalize_read_write_permissions(perms.entities.repos),
-            users=_normalize_read_write_permissions(perms.entities.users),
-            integrations=_normalize_read_write_permissions(perms.entities.integrations),
+        management=ManagementPermissions(
+            repos=_normalize_read_write_permissions(perms.management.repos),
+            users=_normalize_read_write_permissions(perms.management.users),
+            integrations=_normalize_read_write_permissions(
+                perms.management.integrations
+            ),
         ),
     )
 
@@ -101,7 +103,7 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
         return ApplicablePermissions(
             is_superadmin=True,
             logs=ApplicableLogPermissions(read="all", write="all"),
-            entities=EntitiesPermissions(
+            management=ManagementPermissions(
                 repos=ReadWritePermissions.yes(),
                 users=ReadWritePermissions.yes(),
                 integrations=ReadWritePermissions.yes(),
@@ -120,7 +122,7 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
                     any(repo_perms.write for repo_perms in perms.logs.repos.values()),
                 ),
             ),
-            entities=perms.entities.model_copy(deep=True),
+            management=perms.management.model_copy(deep=True),
         )
 
 
@@ -167,16 +169,16 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
                 f"logs write on repo {assignee_repo_id!r}",
             )
 
-    # Check entities.{repos,users,integrations} grants
+    # Check management.{repos,users,integrations} grants
     _authorize_rw_perms_grant(
-        assignee_perms.entities.repos, grantor_perms.entities.repos, "repos"
+        assignee_perms.management.repos, grantor_perms.management.repos, "repos"
     )
     _authorize_rw_perms_grant(
-        assignee_perms.entities.users, grantor_perms.entities.users, "users"
+        assignee_perms.management.users, grantor_perms.management.users, "users"
     )
     _authorize_rw_perms_grant(
-        assignee_perms.entities.integrations,
-        grantor_perms.entities.integrations,
+        assignee_perms.management.integrations,
+        grantor_perms.management.integrations,
         "integrations",
     )
 
@@ -215,15 +217,15 @@ def update_permissions(
             orig_repo_perms, update_repo_perms
         )
 
-    # Update entities permissions
-    new.entities.repos = _update_rw_permissions(
-        orig_perms.entities.repos, update_perms.entities.repos
+    # Update management permissions
+    new.management.repos = _update_rw_permissions(
+        orig_perms.management.repos, update_perms.management.repos
     )
-    new.entities.users = _update_rw_permissions(
-        orig_perms.entities.users, update_perms.entities.users
+    new.management.users = _update_rw_permissions(
+        orig_perms.management.users, update_perms.management.users
     )
-    new.entities.integrations = _update_rw_permissions(
-        orig_perms.entities.integrations, update_perms.entities.integrations
+    new.management.integrations = _update_rw_permissions(
+        orig_perms.management.integrations, update_perms.management.integrations
     )
 
     # Return a normalized result

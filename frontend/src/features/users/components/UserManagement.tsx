@@ -7,7 +7,7 @@ import { UserCreation, UserEdition } from "./UserEditor";
 
 export function UsersManagement() {
   const { currentUser } = useAuthenticatedUser();
-  const readOnly = currentUser.permissions.entities.users.write === false;
+  const readOnly = currentUser.permissions.management.users.write === false;
 
   return (
     <ResourceManagement

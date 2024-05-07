@@ -138,7 +138,7 @@ async def test_user_update_forbidden(
 async def test_user_update_self(user_builder: UserBuilder):
     user = await user_builder(
         {
-            "entities": {
+            "management": {
                 "users": {"read": True, "write": True},
             }
         }
@@ -214,7 +214,7 @@ async def test_user_delete_forbidden(
 async def test_user_delete_self(user_builder: UserBuilder):
     user = await user_builder(
         {
-            "entities": {
+            "management": {
                 "users": {"read": True, "write": True},
             }
         }

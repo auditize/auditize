@@ -31,7 +31,7 @@ def test_normalization_superadmin_only():
                 "write": False,
                 "repos": {},
             },
-            "entities": {
+            "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -44,7 +44,7 @@ def test_normalization_superadmin_with_explicit_permissions():
     _test_access_perms_normalization(
         {
             "is_superadmin": True,
-            "entities": {
+            "management": {
                 "repos": {"read": True},
                 "users": {"write": True},
                 "integrations": {"read": True, "write": True},
@@ -60,7 +60,7 @@ def test_normalization_superadmin_with_explicit_permissions():
         },
         {
             "is_superadmin": True,
-            "entities": {
+            "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -94,7 +94,7 @@ def test_normalization_superadmin_with_log_permissions():
                 "write": False,
                 "repos": {},
             },
-            "entities": {
+            "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -126,7 +126,7 @@ def test_normalization_read_logs_on_all_repos():
                     "repo2": {"read": False, "write": True},
                 },
             },
-            "entities": {
+            "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -158,7 +158,7 @@ def test_normalization_write_logs_on_all_repos():
                     "repo3": {"read": True, "write": False},
                 },
             },
-            "entities": {
+            "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -187,7 +187,7 @@ def test_normalization_read_and_write_logs_on_all_repos():
                 "write": True,
                 "repos": {},
             },
-            "entities": {
+            "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -223,12 +223,12 @@ def test_authorize_grant_as_superadmin():
         {"logs": {"read": False, "write": False}},
         {"logs": {"repos": {"repo1": {"read": True, "write": True}}}},
         {"logs": {"repos": {"repo1": {"read": False, "write": False}}}},
-        {"entities": {"repos": {"read": True, "write": True}}},
-        {"entities": {"repos": {"read": False, "write": False}}},
-        {"entities": {"users": {"read": True, "write": True}}},
-        {"entities": {"users": {"read": False, "write": False}}},
-        {"entities": {"integrations": {"read": True, "write": True}}},
-        {"entities": {"integrations": {"read": False, "write": False}}},
+        {"management": {"repos": {"read": True, "write": True}}},
+        {"management": {"repos": {"read": False, "write": False}}},
+        {"management": {"users": {"read": True, "write": True}}},
+        {"management": {"users": {"read": False, "write": False}}},
+        {"management": {"integrations": {"read": True, "write": True}}},
+        {"management": {"integrations": {"read": False, "write": False}}},
     )
 
 
@@ -242,12 +242,12 @@ def test_authorize_grant_as_no_right():
         {"logs": {"read": False, "write": False}},
         {"logs": {"repos": {"repo1": {"read": True, "write": True}}}},
         {"logs": {"repos": {"repo1": {"read": False, "write": False}}}},
-        {"entities": {"repos": {"read": True, "write": True}}},
-        {"entities": {"repos": {"read": False, "write": False}}},
-        {"entities": {"users": {"read": True, "write": True}}},
-        {"entities": {"users": {"read": False, "write": False}}},
-        {"entities": {"integrations": {"read": True, "write": True}}},
-        {"entities": {"integrations": {"read": False, "write": False}}},
+        {"management": {"repos": {"read": True, "write": True}}},
+        {"management": {"repos": {"read": False, "write": False}}},
+        {"management": {"users": {"read": True, "write": True}}},
+        {"management": {"users": {"read": False, "write": False}}},
+        {"management": {"integrations": {"read": True, "write": True}}},
+        {"management": {"integrations": {"read": False, "write": False}}},
     )
 
 
@@ -284,9 +284,9 @@ def test_permission_assertions_on_logs_as_permissions_specific_repos():
     )
 
 
-def test_permission_assertions_on_entities_as_specific_permissions():
-    every_possible_entities_perms = {
-        "entities": {
+def test_permission_assertions_on_management_as_specific_permissions():
+    every_possible_management_perms = {
+        "management": {
             "repos": {"read": True, "write": True},
             "users": {"read": True, "write": True},
             "integrations": {"read": True, "write": True},
@@ -294,14 +294,14 @@ def test_permission_assertions_on_entities_as_specific_permissions():
     }
     for entity_type in "repos", "users", "integrations":
         for perm_type in "read", "write":
-            target_perms = {"entities": {entity_type: {perm_type: True}}}
+            target_perms = {"management": {entity_type: {perm_type: True}}}
 
             # test authorized with the minimum permissions
             assert_authorized(target_perms, target_perms)
 
-            # test unauthorized with all permissions on entities but not the requested one
-            all_perms_but = deepcopy(every_possible_entities_perms)
-            all_perms_but["entities"][entity_type][perm_type] = False
+            # test unauthorized with all permissions on management but not the requested one
+            all_perms_but = deepcopy(every_possible_management_perms)
+            all_perms_but["management"][entity_type][perm_type] = False
             assert_unauthorized(all_perms_but, target_perms)
 
 
@@ -323,7 +323,7 @@ def test_update_permission_grant_superadmin():
                     "repo1": {"write": True},
                 },
             },
-            "entities": {"repos": {"read": True, "write": True}},
+            "management": {"repos": {"read": True, "write": True}},
         },
         {"is_superadmin": True},
         {
@@ -333,7 +333,7 @@ def test_update_permission_grant_superadmin():
                 "write": False,
                 "repos": {},
             },
-            "entities": {
+            "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -352,11 +352,11 @@ def test_update_permission_grant_individual_permissions():
                     "repo1": {"write": True},
                 },
             },
-            "entities": {"repos": {"read": True, "write": True}},
+            "management": {"repos": {"read": True, "write": True}},
         },
         {
             "logs": {"write": True},
-            "entities": {"users": {"read": True}},
+            "management": {"users": {"read": True}},
         },
         {
             "is_superadmin": False,
@@ -365,7 +365,7 @@ def test_update_permission_grant_individual_permissions():
                 "write": True,
                 "repos": {},
             },
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -383,7 +383,7 @@ def test_update_permission_drop_individual_permissions():
                 "write": True,
                 "repos": {},
             },
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -396,7 +396,7 @@ def test_update_permission_drop_individual_permissions():
                     "repo1": {"write": True},
                 },
             },
-            "entities": {"users": {"read": False}},
+            "management": {"users": {"read": False}},
         },
         {
             "is_superadmin": False,
@@ -407,7 +407,7 @@ def test_update_permission_drop_individual_permissions():
                     "repo1": {"read": False, "write": True},
                 },
             },
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": False, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -427,7 +427,7 @@ def test_get_applicable_permissions_superadmin():
         {
             "is_superadmin": True,
             "logs": {"read": "all", "write": "all"},
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": True},
                 "integrations": {"read": True, "write": True},
@@ -447,7 +447,7 @@ def test_get_applicable_permissions_partial_rights():
                     "repo2": {"read": False, "write": True},
                 },
             },
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -456,7 +456,7 @@ def test_get_applicable_permissions_partial_rights():
         {
             "is_superadmin": False,
             "logs": {"read": "partial", "write": "partial"},
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -472,7 +472,7 @@ def test_get_applicable_permissions_no_rights():
                 "read": False,
                 "write": False,
             },
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
                 "integrations": {"read": False, "write": False},
@@ -481,7 +481,7 @@ def test_get_applicable_permissions_no_rights():
         {
             "is_superadmin": False,
             "logs": {"read": "none", "write": "none"},
-            "entities": {
+            "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
                 "integrations": {"read": False, "write": False},

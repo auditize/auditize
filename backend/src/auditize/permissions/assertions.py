@@ -69,11 +69,11 @@ class EntityPermissionAssertion:
             return True
 
         if self.entity_type == "repos":
-            entity_perms = perms.entities.repos
+            entity_perms = perms.management.repos
         elif self.entity_type == "users":
-            entity_perms = perms.entities.users
+            entity_perms = perms.management.users
         elif self.entity_type == "integrations":
-            entity_perms = perms.entities.integrations
+            entity_perms = perms.management.integrations
         else:
             raise Exception(
                 f"Invalid entity type: {self.entity_type}"
