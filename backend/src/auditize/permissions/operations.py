@@ -139,7 +139,7 @@ def _authorize_rw_perms_grant(
 
 
 def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
-    # optimization: if superadmin, can grant anything
+    # if superadmin, can grant anything
     if grantor_perms.is_superadmin:
         return
 
@@ -150,7 +150,7 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
     _authorize_rw_perms_grant(assignee_perms.logs, grantor_perms.logs, "logs")
 
     # Check logs.repos.{read,write} grants
-    # optimization: if grantor has logs.read and logs.write, he can grant anything:
+    # if grantor has logs.read and logs.write, he can grant anything:
     if not (grantor_perms.logs.read and grantor_perms.logs.write):
         for assignee_repo_id, assignee_repo_perms in assignee_perms.logs.repos.items():
             grantor_repo_perms = grantor_perms.logs.repos.get(

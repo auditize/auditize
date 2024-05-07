@@ -103,6 +103,24 @@ class BasePermissionTests:
             expected_status_code=400,
         )
 
+    async def test_create_forbidden_permissions(self, dbm: DatabaseManager):
+        grantor = await self.inject_grantor(
+            dbm,
+            {"entities": {"users": {"write": True}, "integrations": {"write": True}}},
+        )
+
+        async with grantor.client() as client:
+            await client.assert_forbidden_post(
+                self.base_path,
+                json=self.prepare_assignee_data(
+                    {
+                        "permissions": {
+                            "is_superadmin": True,
+                        }
+                    }
+                ),
+            )
+
     async def test_update_permissions(
         self,
         repo: PreparedRepo,
@@ -181,3 +199,20 @@ class BasePermissionTests:
             },
             expected_status_code=400,
         )
+
+    async def test_update_forbidden_permissions(self, dbm: DatabaseManager):
+        grantor = await self.inject_grantor(
+            dbm,
+            {"entities": {"users": {"write": True}, "integrations": {"write": True}}},
+        )
+
+        async with grantor.client() as client:
+            assignee = await self.create_assignee(client, dbm)
+            await client.assert_forbidden_patch(
+                f"{self.base_path}/{assignee.id}",
+                json={
+                    "permissions": {
+                        "is_superadmin": True,
+                    }
+                },
+            )

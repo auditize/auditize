@@ -6,6 +6,7 @@ from auditize.auth import Authenticated, Authorized, get_authenticated
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import AuthenticationFailure, PermissionDenied
 from auditize.permissions.assertions import can_read_users, can_write_users
+from auditize.permissions.operations import authorize_grant
 from auditize.users import service
 from auditize.users.api_models import (
     UserAuthenticationRequest,
@@ -33,7 +34,9 @@ async def create_user(
     authenticated: Authorized(can_write_users()),
     user: UserCreationRequest,
 ) -> UserCreationResponse:
-    user_id = await service.create_user(dbm, user.to_db_model())
+    user_model = user.to_db_model()
+    authorize_grant(authenticated.permissions, user_model.permissions)
+    user_id = await service.create_user(dbm, user_model)
     return UserCreationResponse(id=user_id)
 
 
@@ -47,7 +50,10 @@ async def update_user(
     user: UserUpdateRequest,
 ):
     _ensure_cannot_alter_own_user(authenticated, user_id)
-    await service.update_user(dbm, user_id, user.to_db_model())
+    user_model = user.to_db_model()
+    if user_model.permissions:
+        authorize_grant(authenticated.permissions, user_model.permissions)
+    await service.update_user(dbm, user_id, user_model)
     return None
 
 

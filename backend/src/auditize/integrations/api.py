@@ -18,6 +18,7 @@ from auditize.permissions.assertions import (
     can_read_integrations,
     can_write_integrations,
 )
+from auditize.permissions.operations import authorize_grant
 
 router = APIRouter()
 
@@ -43,9 +44,9 @@ async def create_integration(
     authenticated: Authorized(can_write_integrations()),
     integration: IntegrationCreationRequest,
 ) -> IntegrationCreationResponse:
-    integration_id, token = await service.create_integration(
-        dbm, integration.to_db_model()
-    )
+    integration_model = integration.to_db_model()
+    authorize_grant(authenticated.permissions, integration_model.permissions)
+    integration_id, token = await service.create_integration(dbm, integration_model)
     return IntegrationCreationResponse(id=integration_id, token=token)
 
 
@@ -62,7 +63,10 @@ async def update_integration(
     integration: IntegrationUpdateRequest,
 ):
     _ensure_cannot_alter_own_integration(authenticated, integration_id)
-    await service.update_integration(dbm, integration_id, integration.to_db_model())
+    integration_model = integration.to_db_model()
+    if integration_model.permissions:
+        authorize_grant(authenticated.permissions, integration_model.permissions)
+    await service.update_integration(dbm, integration_id, integration_model)
 
 
 @router.get(
