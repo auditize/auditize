@@ -224,6 +224,15 @@ async def test_user_delete_self(user_builder: UserBuilder):
         await client.assert_forbidden_delete(f"/users/{user.id}")
 
 
+async def test_user_delete_last_superadmin(
+    user_write_client: HttpTestHelper, user_builder: UserBuilder
+):
+    superadmin = await user_builder({"is_superadmin": True})
+    await user_write_client.assert_delete(
+        f"/users/{superadmin.id}", expected_status_code=409
+    )
+
+
 async def test_user_signup(anon_client: HttpTestHelper, user: PreparedUser):
     await anon_client.assert_get(
         f"/users/signup/{await user.signup_token}",

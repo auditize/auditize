@@ -8,7 +8,11 @@ from passlib.context import CryptContext
 from auditize.common.config import get_config
 from auditize.common.db import DatabaseManager
 from auditize.common.email import send_email
-from auditize.common.exceptions import AuthenticationFailure, UnknownModelException
+from auditize.common.exceptions import (
+    AuthenticationFailure,
+    ConstraintViolation,
+    UnknownModelException,
+)
 from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.common.utils import now
@@ -159,7 +163,22 @@ async def get_users(
     return [User.model_validate(result) async for result in results], page_info
 
 
+async def _forbid_last_superadmin_deletion(
+    dbm: DatabaseManager, user_id: ObjectId | str
+):
+    user = await get_user(dbm, user_id)
+    if user.permissions.is_superadmin:
+        other_superadmin = await dbm.core_db.users.find_one(
+            {"_id": {"$ne": ObjectId(user_id)}, "permissions.is_superadmin": True}
+        )
+        if not other_superadmin:
+            raise ConstraintViolation(
+                "Cannot delete the last user with superadmin permissions"
+            )
+
+
 async def delete_user(dbm: DatabaseManager, user_id: ObjectId | str):
+    await _forbid_last_superadmin_deletion(dbm, user_id)
     result = await dbm.core_db.users.delete_one({"_id": ObjectId(user_id)})
     if result.deleted_count == 0:
         raise UnknownModelException()

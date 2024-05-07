@@ -16,3 +16,7 @@ class PermissionDenied(AuditizeException):
 
 class ValidationError(AuditizeException):
     pass
+
+
+class ConstraintViolation(AuditizeException):
+    pass

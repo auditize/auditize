@@ -15,6 +15,7 @@ from auditize.common.api import (
 from auditize.common.db import get_dbm
 from auditize.common.exceptions import (
     AuthenticationFailure,
+    ConstraintViolation,
     PermissionDenied,
     UnknownModelException,
     ValidationError,
@@ -56,6 +57,11 @@ def resource_not_found_handler(request, exc):
 
 
 @app.exception_handler(DuplicateKeyError)
+def duplicate_key_handler(request, exc):
+    return make_409_response()
+
+
+@app.exception_handler(ConstraintViolation)
 def duplicate_key_handler(request, exc):
     return make_409_response()
 
