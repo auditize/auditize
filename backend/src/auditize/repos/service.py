@@ -130,4 +130,4 @@ async def delete_repo(dbm: DatabaseManager, repo_id: ObjectId | str):
     if result.deleted_count == 0:
         raise UnknownModelException()
 
-    logs_db.client.drop_database(logs_db.name)
+    await logs_db.client.drop_database(logs_db.name)
