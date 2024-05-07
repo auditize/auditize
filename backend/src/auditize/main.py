@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
 from pymongo.errors import DuplicateKeyError
 
+from auditize.auth.api import router as auth_router
 from auditize.common.api import (
     make_400_response,
     make_401_response,
@@ -81,6 +82,7 @@ def validation_error_handler(request, exc):
     return make_400_response()
 
 
+app.include_router(auth_router)
 app.include_router(logs_router)
 app.include_router(repos_router)
 app.include_router(users_router)
