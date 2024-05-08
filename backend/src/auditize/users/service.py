@@ -4,10 +4,10 @@ from datetime import timedelta
 from bson import ObjectId
 from passlib.context import CryptContext
 
+from auditize.common.datetime import now
 from auditize.common.email import send_email
 from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.pagination.page.service import find_paginated_by_page
-from auditize.common.utils import now
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.exceptions import (

@@ -4,8 +4,8 @@ from typing import Annotated, Optional
 
 from pydantic import BaseModel, BeforeValidator, Field, field_serializer
 
+from auditize.common.datetime import serialize_datetime
 from auditize.common.pagination.page.api_models import PagePaginatedResponse
-from auditize.common.utils import serialize_datetime
 from auditize.repos.models import Repo, RepoUpdate
 
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.common.utils import serialize_datetime
+from auditize.common.datetime import serialize_datetime
 
 
 # NB: a custom exception is not 100% necessary, but it make tests easier

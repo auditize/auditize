@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from jose import ExpiredSignatureError, JWTError, jwt
 
-from auditize.common.utils import now
+from auditize.common.datetime import now
 from auditize.config import get_config
 from auditize.exceptions import AuthenticationFailure
 

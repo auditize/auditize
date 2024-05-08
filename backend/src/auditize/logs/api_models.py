@@ -9,9 +9,9 @@ from pydantic import (
     model_validator,
 )
 
+from auditize.common.datetime import serialize_datetime
 from auditize.common.pagination.cursor.api_models import CursorPaginatedResponse
 from auditize.common.pagination.page.api_models import PagePaginatedResponse
-from auditize.common.utils import serialize_datetime
 from auditize.logs.models import Log
 
 
