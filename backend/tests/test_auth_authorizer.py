@@ -2,7 +2,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-from jose import jwt
+from authlib.jose import jwt
 
 from auditize.auth.authorizer import get_authenticated
 from auditize.auth.jwt import generate_session_token_payload
@@ -76,7 +76,7 @@ async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManage
 
     # Prepare a valid JWT session token but sign with a different key
     jwt_payload, _ = generate_session_token_payload(user.data["email"])
-    jwt_token = jwt.encode(jwt_payload, "agreatsigningkey", algorithm="HS256")
+    jwt_token = jwt.encode({"alg": "HS256"}, jwt_payload, key="agreatsigningkey")
 
     request = make_http_request(headers={"Cookie": f"session={jwt_token}"})
 

@@ -10,7 +10,7 @@ dependencies=[
     "aiocache",
     "certifi",
     "bcrypt",
-    "python-jose[cryptography]",
+    "Authlib",
 ]
 
 [project.optional-dependencies]
