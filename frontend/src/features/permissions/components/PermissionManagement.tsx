@@ -220,7 +220,7 @@ export function PermissionManagement({
           perms={perms.management}
           assignablePerms={assignablePerms.management}
           onChange={(managementPerms) =>
-            onChange({ ...perms, management: entitiesPerms })
+            onChange({ ...perms, management: managementPerms })
           }
           readOnly={readOnly || perms.isSuperadmin}
         />
