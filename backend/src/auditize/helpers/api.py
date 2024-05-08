@@ -1,5 +1,26 @@
+from typing import TypeVar
+
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from pymongo.errors import DuplicateKeyError
+
+from auditize.exceptions import (
+    AuthenticationFailure,
+    ConstraintViolation,
+    PermissionDenied,
+    UnknownModelException,
+    ValidationError,
+)
+
+_EXCEPTION_RESPONSES = {
+    ValidationError: (400, "Bad request"),
+    AuthenticationFailure: (401, "Unauthorized"),
+    PermissionDenied: (403, "Forbidden"),
+    UnknownModelException: (404, "Not found"),
+    # FIXME: DuplicateKeyError must be re-raised as ConstraintViolation
+    DuplicateKeyError: (409, "Resource already exists"),
+    ConstraintViolation: (409, "Resource already exists"),
+}
 
 
 class NotFoundResponse(BaseModel):
@@ -8,22 +29,16 @@ class NotFoundResponse(BaseModel):
 
 COMMON_RESPONSES = {404: {"description": "Not found", "model": NotFoundResponse}}
 
-
-def make_404_response():
-    return JSONResponse(status_code=404, content={"detail": "Not found"})
+E = TypeVar("E", bound=Exception)
 
 
-def make_409_response():
-    return JSONResponse(status_code=409, content={"detail": "Resource already exists"})
+def make_response_from_exception(exc: E):
+    status_code, default_error_message = _EXCEPTION_RESPONSES.get(
+        exc.__class__, (500, "Internal server error")
+    )
+    if str(exc) and status_code != 500:
+        error_message = str(exc)
+    else:
+        error_message = default_error_message
 
-
-def make_401_response():
-    return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
-
-
-def make_403_response():
-    return JSONResponse(status_code=403, content={"detail": "Forbidden"})
-
-
-def make_400_response():
-    return JSONResponse(status_code=400, content={"detail": "Bad request"})
+    return JSONResponse(status_code=status_code, content={"detail": error_message})

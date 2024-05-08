@@ -38,7 +38,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper, dbm: DatabaseM
     await apikey_client.assert_get(
         "/apikeys",
         headers={"Authorization": f"Bearer {apikey.token}"},
-        expected_status_code=403,  # 403 means that authentication was successful
+        expected_status_code=403,  # 403 means that authentication was successful, otherwise it would be 401
     )
 
 

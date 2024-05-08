@@ -8,19 +8,9 @@ from pymongo.errors import DuplicateKeyError
 from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
 from auditize.database import get_dbm
-from auditize.exceptions import (
-    AuthenticationFailure,
-    ConstraintViolation,
-    PermissionDenied,
-    UnknownModelException,
-    ValidationError,
-)
+from auditize.exceptions import AuditizeException
 from auditize.helpers.api import (
-    make_400_response,
-    make_401_response,
-    make_403_response,
-    make_404_response,
-    make_409_response,
+    make_response_from_exception,
 )
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
@@ -39,7 +29,11 @@ async def setup_db(_):
 
 app = FastAPI(lifespan=setup_db)
 
+###
 # Allow CORS for the frontend (FIXME: make this configurable)
+###
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:5174"],
@@ -49,38 +43,24 @@ app.add_middleware(
 )
 
 
-# Add exception handlers
+###
+# Exception handlers
+###
 
 
-@app.exception_handler(UnknownModelException)
-def resource_not_found_handler(request, exc):
-    return make_404_response()
+@app.exception_handler(AuditizeException)
+def resource_not_found_handler(_, exc):
+    return make_response_from_exception(exc)
 
 
 @app.exception_handler(DuplicateKeyError)
-def duplicate_key_handler(request, exc):
-    return make_409_response()
+def duplicate_key_handler(_, exc):
+    return make_response_from_exception(exc)
 
 
-@app.exception_handler(ConstraintViolation)
-def duplicate_key_handler(request, exc):
-    return make_409_response()
-
-
-@app.exception_handler(AuthenticationFailure)
-def authentication_failure(request, exc):
-    return make_401_response()
-
-
-@app.exception_handler(PermissionDenied)
-def permission_denied_handler(request, exc):
-    return make_403_response()
-
-
-@app.exception_handler(ValidationError)
-def validation_error_handler(request, exc):
-    return make_400_response()
-
+###
+# Routers
+###
 
 app.include_router(auth_router)
 app.include_router(logs_router)
