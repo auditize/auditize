@@ -3,7 +3,6 @@ from datetime import datetime
 
 import callee
 import pytest
-from tests.conftest import ApikeyBuilder
 
 from auditize.database import DatabaseManager
 from auditize.logs.models import Log
@@ -14,6 +13,7 @@ from auditize.logs.service import (
     consolidate_log_resource,
     consolidate_log_tags,
 )
+from conftest import ApikeyBuilder
 from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog
 from helpers.pagination import (
