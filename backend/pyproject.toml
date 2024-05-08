@@ -9,7 +9,7 @@ dependencies=[
     "motor",
     "aiocache",
     "certifi",
-    "passlib[bcrypt]",
+    "bcrypt",
     "python-jose[cryptography]",
 ]
 

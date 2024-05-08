@@ -1,8 +1,8 @@
 import secrets
 from datetime import timedelta
 
+import bcrypt
 from bson import ObjectId
-from passlib.context import CryptContext
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager
@@ -26,8 +26,6 @@ from auditize.repos.service import ensure_repos_in_permissions_exist
 from auditize.users.models import SignupToken, User, UserUpdate
 
 _DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
-
-password_context = CryptContext(schemes=["bcrypt"])
 
 
 def _generate_signup_token() -> SignupToken:
@@ -106,7 +104,7 @@ async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
 # NB: this function is let public to be used in tests and to make sure that passwords
 # are hashed in a consistent way
 def hash_user_password(password: str) -> str:
-    return password_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 async def update_user_password_by_signup_token(
@@ -152,7 +150,7 @@ async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> 
     except UnknownModelException:
         raise AuthenticationFailure()
 
-    if not password_context.verify(password, user.password_hash):
+    if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
         raise AuthenticationFailure()
 
     return user
