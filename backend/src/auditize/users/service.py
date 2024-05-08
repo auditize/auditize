@@ -15,6 +15,12 @@ from auditize.helpers.datetime import now
 from auditize.helpers.email import send_email
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
+from auditize.helpers.resources.service import (
+    create_resource_document,
+    delete_resource_document,
+    get_resource_document,
+    update_resource_document,
+)
 from auditize.permissions.operations import normalize_permissions, update_permissions
 from auditize.repos.service import ensure_repos_in_permissions_exist
 from auditize.users.models import SignupToken, User, UserUpdate
@@ -52,8 +58,9 @@ def build_document_from_user(user: User) -> dict:
 
 async def save_user(dbm: DatabaseManager, user: User) -> str:
     await ensure_repos_in_permissions_exist(dbm, user.permissions)
-    result = await dbm.core_db.users.insert_one(build_document_from_user(user))
-    return str(result.inserted_id)
+    return await create_resource_document(
+        dbm.core_db.users, build_document_from_user(user)
+    )
 
 
 async def create_user(dbm: DatabaseManager, user: User) -> str:
@@ -72,18 +79,11 @@ async def update_user(dbm: DatabaseManager, user_id: str, update: UserUpdate):
         await ensure_repos_in_permissions_exist(dbm, user_permissions)
         doc_update["permissions"] = user_permissions.model_dump()
 
-    result = await dbm.core_db.users.update_one(
-        {"_id": ObjectId(user_id)}, {"$set": doc_update}
-    )
-    if result.matched_count == 0:
-        raise UnknownModelException()
+    await update_resource_document(dbm.core_db.users, user_id, doc_update)
 
 
 async def _get_user(dbm: DatabaseManager, filter: dict) -> User:
-    result = await dbm.core_db.users.find_one(filter)
-    if result is None:
-        raise UnknownModelException()
-
+    result = await get_resource_document(dbm.core_db.users, filter)
     return User.model_validate(result)
 
 
@@ -100,11 +100,7 @@ def _build_signup_token_filter(token: str):
 
 
 async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
-    result = await dbm.core_db.users.find_one(_build_signup_token_filter(token))
-    if result is None:
-        raise UnknownModelException()
-
-    return User.model_validate(result)
+    return await _get_user(dbm, _build_signup_token_filter(token))
 
 
 # NB: this function is let public to be used in tests and to make sure that passwords
@@ -117,12 +113,11 @@ async def update_user_password_by_signup_token(
     dbm: DatabaseManager, token: str, password: str
 ):
     password_hash = hash_user_password(password)
-    result = await dbm.core_db.users.update_one(
+    await update_resource_document(
+        dbm.core_db.users,
         _build_signup_token_filter(token),
-        {"$set": {"password_hash": password_hash, "signup_token": None}},
+        {"password_hash": password_hash, "signup_token": None},
     )
-    if result.modified_count == 0:
-        raise UnknownModelException()
 
 
 async def get_users(
@@ -148,9 +143,7 @@ async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: str):
 
 async def delete_user(dbm: DatabaseManager, user_id: str):
     await _forbid_last_superadmin_deletion(dbm, user_id)
-    result = await dbm.core_db.users.delete_one({"_id": ObjectId(user_id)})
-    if result.deleted_count == 0:
-        raise UnknownModelException()
+    await delete_resource_document(dbm.core_db.users, user_id)
 
 
 async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> User:

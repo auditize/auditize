@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
-from pymongo.errors import DuplicateKeyError
 
 from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
@@ -50,11 +49,6 @@ app.add_middleware(
 
 @app.exception_handler(AuditizeException)
 def resource_not_found_handler(_, exc):
-    return make_response_from_exception(exc)
-
-
-@app.exception_handler(DuplicateKeyError)
-def duplicate_key_handler(_, exc):
     return make_response_from_exception(exc)
 
 

@@ -6,6 +6,12 @@ from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
+from auditize.helpers.resources.service import (
+    create_resource_document,
+    delete_resource_document,
+    get_resource_document,
+    update_resource_document,
+)
 from auditize.logs.db import get_logs_db
 from auditize.permissions.assertions import (
     can_read_logs,
@@ -19,23 +25,15 @@ from auditize.users.models import User
 
 
 async def create_repo(dbm: DatabaseManager, repo: Repo) -> str:
-    result = await dbm.core_db.repos.insert_one(repo.model_dump(exclude={"id"}))
-    return str(result.inserted_id)
+    return await create_resource_document(dbm.core_db.repos, repo)
 
 
 async def update_repo(dbm: DatabaseManager, repo_id: str, update: RepoUpdate):
-    result = await dbm.core_db.repos.update_one(
-        {"_id": ObjectId(repo_id)}, {"$set": update.model_dump(exclude_unset=True)}
-    )
-    if result.matched_count == 0:
-        raise UnknownModelException()
+    await update_resource_document(dbm.core_db.repos, repo_id, update)
 
 
 async def get_repo(dbm: DatabaseManager, repo_id: str) -> Repo:
-    result = await dbm.core_db.repos.find_one({"_id": ObjectId(repo_id)})
-    if result is None:
-        raise UnknownModelException()
-
+    result = await get_resource_document(dbm.core_db.repos, repo_id)
     return Repo.model_validate(result)
 
 
@@ -132,10 +130,7 @@ async def get_repos(
 
 async def delete_repo(dbm: DatabaseManager, repo_id: str):
     logs_db = await get_logs_db(dbm, repo_id)
-    result = await dbm.core_db.repos.delete_one({"_id": ObjectId(repo_id)})
-    if result.deleted_count == 0:
-        raise UnknownModelException()
-
+    await delete_resource_document(dbm.core_db.repos, repo_id)
     await logs_db.client.drop_database(logs_db.name)
 
 

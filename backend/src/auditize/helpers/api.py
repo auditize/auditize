@@ -2,7 +2,6 @@ from typing import TypeVar
 
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from pymongo.errors import DuplicateKeyError
 
 from auditize.exceptions import (
     AuthenticationFailure,
@@ -17,8 +16,6 @@ _EXCEPTION_RESPONSES = {
     AuthenticationFailure: (401, "Unauthorized"),
     PermissionDenied: (403, "Forbidden"),
     UnknownModelException: (404, "Not found"),
-    # FIXME: DuplicateKeyError must be re-raised as ConstraintViolation
-    DuplicateKeyError: (409, "Resource already exists"),
     ConstraintViolation: (409, "Resource already exists"),
 }
 
