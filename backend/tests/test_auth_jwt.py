@@ -6,7 +6,7 @@ from icecream import ic
 from jose import jwt
 
 from auditize.auth.jwt import generate_session_token
-from auditize.common.config import get_config
+from auditize.config import get_config
 
 pytestmark = pytest.mark.anyio
 

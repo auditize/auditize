@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 
 from jose import ExpiredSignatureError, JWTError, jwt
 
-from auditize.common.config import get_config
 from auditize.common.exceptions import AuthenticationFailure
 from auditize.common.utils import now
+from auditize.config import get_config
 
 _JWT_SUB_PREFIX = "user_email:"
 

@@ -4,7 +4,7 @@ import ssl
 import certifi
 from icecream import ic
 
-from .config import get_config
+from auditize.config import get_config
 
 
 def send_email(to, subject, body):
