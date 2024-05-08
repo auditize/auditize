@@ -50,13 +50,13 @@ def build_document_from_user(user: User) -> dict:
     }
 
 
-async def save_user(dbm: DatabaseManager, user: User):
+async def save_user(dbm: DatabaseManager, user: User) -> str:
     await ensure_repos_in_permissions_exist(dbm, user.permissions)
     result = await dbm.core_db.users.insert_one(build_document_from_user(user))
-    return result.inserted_id
+    return str(result.inserted_id)
 
 
-async def create_user(dbm: DatabaseManager, user: User):
+async def create_user(dbm: DatabaseManager, user: User) -> str:
     user = user.model_copy()
     user.signup_token = _generate_signup_token()
     user_id = await save_user(dbm, user)
@@ -64,9 +64,7 @@ async def create_user(dbm: DatabaseManager, user: User):
     return user_id
 
 
-async def update_user(
-    dbm: DatabaseManager, user_id: ObjectId | str, update: UserUpdate
-):
+async def update_user(dbm: DatabaseManager, user_id: str, update: UserUpdate):
     doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
     if update.permissions:
         user = await get_user(dbm, user_id)
@@ -89,7 +87,7 @@ async def _get_user(dbm: DatabaseManager, filter: dict) -> User:
     return User.model_validate(result)
 
 
-async def get_user(dbm: DatabaseManager, user_id: ObjectId | str) -> User:
+async def get_user(dbm: DatabaseManager, user_id: str) -> User:
     return await _get_user(dbm, {"_id": ObjectId(user_id)})
 
 
@@ -136,9 +134,7 @@ async def get_users(
     return [User.model_validate(result) async for result in results], page_info
 
 
-async def _forbid_last_superadmin_deletion(
-    dbm: DatabaseManager, user_id: ObjectId | str
-):
+async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: str):
     user = await get_user(dbm, user_id)
     if user.permissions.is_superadmin:
         other_superadmin = await dbm.core_db.users.find_one(
@@ -150,7 +146,7 @@ async def _forbid_last_superadmin_deletion(
             )
 
 
-async def delete_user(dbm: DatabaseManager, user_id: ObjectId | str):
+async def delete_user(dbm: DatabaseManager, user_id: str):
     await _forbid_last_superadmin_deletion(dbm, user_id)
     result = await dbm.core_db.users.delete_one({"_id": ObjectId(user_id)})
     if result.deleted_count == 0:

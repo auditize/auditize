@@ -18,14 +18,12 @@ from auditize.repos.models import Repo, RepoStats, RepoUpdate
 from auditize.users.models import User
 
 
-async def create_repo(dbm: DatabaseManager, repo: Repo) -> ObjectId:
+async def create_repo(dbm: DatabaseManager, repo: Repo) -> str:
     result = await dbm.core_db.repos.insert_one(repo.model_dump(exclude={"id"}))
-    return result.inserted_id
+    return str(result.inserted_id)
 
 
-async def update_repo(
-    dbm: DatabaseManager, repo_id: ObjectId | str, update: RepoUpdate
-):
+async def update_repo(dbm: DatabaseManager, repo_id: str, update: RepoUpdate):
     result = await dbm.core_db.repos.update_one(
         {"_id": ObjectId(repo_id)}, {"$set": update.model_dump(exclude_unset=True)}
     )
@@ -33,7 +31,7 @@ async def update_repo(
         raise UnknownModelException()
 
 
-async def get_repo(dbm: DatabaseManager, repo_id: ObjectId | str) -> Repo:
+async def get_repo(dbm: DatabaseManager, repo_id: str) -> Repo:
     result = await dbm.core_db.repos.find_one({"_id": ObjectId(repo_id)})
     if result is None:
         raise UnknownModelException()
@@ -41,7 +39,7 @@ async def get_repo(dbm: DatabaseManager, repo_id: ObjectId | str) -> Repo:
     return Repo.model_validate(result)
 
 
-async def get_repo_stats(dbm: DatabaseManager, repo_id: ObjectId | str) -> RepoStats:
+async def get_repo_stats(dbm: DatabaseManager, repo_id: str) -> RepoStats:
     logs_db = await get_logs_db(dbm, repo_id)
     results = await logs_db.logs.aggregate(
         [
@@ -132,7 +130,7 @@ async def get_repos(
     return [Repo.model_validate(result) async for result in results], page_info
 
 
-async def delete_repo(dbm: DatabaseManager, repo_id: ObjectId | str):
+async def delete_repo(dbm: DatabaseManager, repo_id: str):
     logs_db = await get_logs_db(dbm, repo_id)
     result = await dbm.core_db.repos.delete_one({"_id": ObjectId(repo_id)})
     if result.deleted_count == 0:

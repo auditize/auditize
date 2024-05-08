@@ -22,7 +22,7 @@ def _generate_token() -> tuple[str, str]:
     return value, _hash_token(value)
 
 
-async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[ObjectId, str]:
+async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[str, str]:
     await ensure_repos_in_permissions_exist(dbm, apikey.permissions)
     token, token_hash = _generate_token()
     result = await dbm.core_db.apikeys.insert_one(
@@ -32,12 +32,10 @@ async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[ObjectId,
             "permissions": normalize_permissions(apikey.permissions).model_dump(),
         }
     )
-    return result.inserted_id, token
+    return str(result.inserted_id), token
 
 
-async def update_apikey(
-    dbm: DatabaseManager, apikey_id: ObjectId | str, update: ApikeyUpdate
-):
+async def update_apikey(dbm: DatabaseManager, apikey_id: str, update: ApikeyUpdate):
     doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
     if update.permissions:
         apikey = await get_apikey(dbm, apikey_id)
@@ -52,9 +50,7 @@ async def update_apikey(
         raise UnknownModelException()
 
 
-async def regenerate_apikey_token(
-    dbm: DatabaseManager, apikey_id: ObjectId | str
-) -> str:
+async def regenerate_apikey_token(dbm: DatabaseManager, apikey_id: str) -> str:
     token, token_hash = _generate_token()
     result = await dbm.core_db.apikeys.update_one(
         {"_id": ObjectId(apikey_id)}, {"$set": {"token_hash": token_hash}}
@@ -65,7 +61,7 @@ async def regenerate_apikey_token(
     return token
 
 
-async def get_apikey(dbm: DatabaseManager, apikey_id: ObjectId | str) -> Apikey:
+async def get_apikey(dbm: DatabaseManager, apikey_id: str) -> Apikey:
     result = await dbm.core_db.apikeys.find_one({"_id": ObjectId(apikey_id)})
     if result is None:
         raise UnknownModelException()
@@ -90,7 +86,7 @@ async def get_apikeys(
     return [Apikey.model_validate(result) async for result in results], page_info
 
 
-async def delete_apikey(dbm: DatabaseManager, apikey_id: ObjectId | str):
+async def delete_apikey(dbm: DatabaseManager, apikey_id: str):
     result = await dbm.core_db.apikeys.delete_one({"_id": ObjectId(apikey_id)})
     if result.deleted_count == 0:
         raise UnknownModelException()
