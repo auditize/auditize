@@ -12,8 +12,8 @@ from auditize.apikeys.api_models import (
     ApikeyUpdateRequest,
 )
 from auditize.auth.authorizer import Authenticated, Authorized
-from auditize.common.exceptions import PermissionDenied
 from auditize.database import DatabaseManager, get_dbm
+from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import (
     can_read_apikeys,
     can_write_apikeys,

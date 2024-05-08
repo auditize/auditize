@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 from icecream import ic
 
-from auditize.common.exceptions import PermissionDenied
+from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_logs
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import (

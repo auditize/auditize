@@ -6,8 +6,8 @@ from jose import jwt
 
 from auditize.auth.authorizer import get_authenticated
 from auditize.auth.jwt import generate_session_token_payload
-from auditize.common.exceptions import AuthenticationFailure
 from auditize.database import DatabaseManager
+from auditize.exceptions import AuthenticationFailure
 from helpers.apikeys import PreparedApikey
 from helpers.http import HttpTestHelper, make_http_request
 from helpers.users import PreparedUser

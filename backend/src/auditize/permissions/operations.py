@@ -1,4 +1,4 @@
-from auditize.common.exceptions import PermissionDenied
+from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import PermissionAssertion
 from auditize.permissions.models import (
     ApplicableLogPermissions,
