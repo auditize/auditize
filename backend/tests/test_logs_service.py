@@ -2,7 +2,7 @@ import callee
 import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from auditize.logs.models import Log
 from auditize.logs.service import save_log
 from helpers.database import assert_collection

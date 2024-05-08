@@ -2,7 +2,7 @@ from aiocache import Cache
 from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
-from auditize.common.db import BaseDatabase, Collection, DatabaseManager
+from auditize.database import BaseDatabase, Collection, DatabaseManager
 
 
 class LogsDatabase(BaseDatabase):

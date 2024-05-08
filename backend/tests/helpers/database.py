@@ -2,7 +2,7 @@ import random
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
-from auditize.common.db import DatabaseManager, get_dbm
+from auditize.database import DatabaseManager, get_dbm
 from auditize.logs.db import get_logs_db_name
 from auditize.main import app
 

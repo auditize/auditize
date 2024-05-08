@@ -14,7 +14,6 @@ from auditize.common.api import (
     make_404_response,
     make_409_response,
 )
-from auditize.common.db import get_dbm
 from auditize.common.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
@@ -22,6 +21,7 @@ from auditize.common.exceptions import (
     UnknownModelException,
     ValidationError,
 )
+from auditize.database import get_dbm
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router

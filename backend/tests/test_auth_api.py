@@ -3,7 +3,7 @@ import time
 import pytest
 from icecream import ic
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from conftest import UserBuilder
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.users import PreparedUser

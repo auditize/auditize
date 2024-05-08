@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, Query
 from auditize.apikeys.models import ApikeyUpdate
 from auditize.apikeys.service import update_apikey
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
-from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import AuthenticationFailure
+from auditize.database import DatabaseManager, get_dbm
 from auditize.permissions.assertions import (
     can_read_logs,
     can_read_repos,

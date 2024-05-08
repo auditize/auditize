@@ -6,7 +6,7 @@ from bson import ObjectId
 
 from auditize.apikeys.models import Apikey
 from auditize.apikeys.service import create_apikey
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from auditize.permissions.models import Permissions
 
 from .http import HttpTestHelper, create_http_client

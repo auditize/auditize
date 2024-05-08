@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
-from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import AuthenticationFailure, PermissionDenied
+from auditize.database import DatabaseManager, get_dbm
 from auditize.permissions.assertions import can_read_users, can_write_users
 from auditize.permissions.operations import authorize_grant
 from auditize.users import service

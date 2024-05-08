@@ -1,6 +1,6 @@
 from httpx import Response
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 
 from ..apikeys import PreparedApikey
 from ..database import assert_collection

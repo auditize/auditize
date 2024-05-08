@@ -7,12 +7,12 @@ from starlette.requests import Request
 from auditize.apikeys.models import Apikey
 from auditize.apikeys.service import get_apikey_by_token
 from auditize.auth.jwt import get_user_email_from_session_token
-from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import (
     AuthenticationFailure,
     PermissionDenied,
     UnknownModelException,
 )
+from auditize.database import DatabaseManager, get_dbm
 from auditize.permissions.assertions import (
     PermissionAssertion,
     can_read_logs,

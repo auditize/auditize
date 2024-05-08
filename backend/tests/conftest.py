@@ -3,7 +3,7 @@ from typing import Awaitable, Callable
 
 import pytest
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 
 pytest.register_assert_rewrite("helpers")
 from helpers.apikeys import PreparedApikey

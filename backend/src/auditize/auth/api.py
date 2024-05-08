@@ -5,7 +5,7 @@ from starlette.responses import Response
 
 from auditize.auth.authorizer import Authenticated, get_authenticated
 from auditize.auth.jwt import generate_session_token
-from auditize.common.db import DatabaseManager, get_dbm
+from auditize.database import DatabaseManager, get_dbm
 from auditize.users import service
 from auditize.users.api_models import UserAuthenticationRequest
 

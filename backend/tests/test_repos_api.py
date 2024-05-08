@@ -5,7 +5,7 @@ import pytest
 from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper

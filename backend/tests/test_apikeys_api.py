@@ -3,7 +3,7 @@ import pytest
 from bson import ObjectId
 from httpx import Response
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection

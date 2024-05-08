@@ -7,7 +7,7 @@ import callee
 from bson import ObjectId
 from httpx import Response
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from auditize.permissions.models import Permissions
 from auditize.users.models import User
 from auditize.users.service import (

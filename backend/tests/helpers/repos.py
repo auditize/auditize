@@ -4,7 +4,7 @@ from datetime import datetime
 import callee
 from bson import ObjectId
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from auditize.logs.db import LogsDatabase, get_logs_db
 from auditize.repos.models import Repo
 from auditize.repos.service import create_repo

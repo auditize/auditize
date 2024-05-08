@@ -5,7 +5,7 @@ import callee
 import pytest
 from tests.conftest import ApikeyBuilder
 
-from auditize.common.db import DatabaseManager
+from auditize.database import DatabaseManager
 from auditize.logs.models import Log
 from auditize.logs.service import (
     consolidate_log_actor,

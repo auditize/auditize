@@ -2,10 +2,10 @@ from typing import Sequence
 
 from bson import ObjectId
 
-from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import UnknownModelException, ValidationError
 from auditize.common.pagination.page.models import PagePaginationInfo
 from auditize.common.pagination.page.service import find_paginated_by_page
+from auditize.database import DatabaseManager
 from auditize.logs.db import get_logs_db
 from auditize.permissions.assertions import (
     can_read_logs,

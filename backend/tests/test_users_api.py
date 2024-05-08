@@ -4,8 +4,7 @@ import callee
 import pytest
 from httpx import Response
 
-from auditize.common.db import DatabaseManager
-from auditize.common.exceptions import AuthenticationFailure
+from auditize.database import DatabaseManager
 from conftest import UserBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection

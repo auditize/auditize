@@ -9,9 +9,9 @@ from auditize.auth.authorizer import (
     AuthorizedOnLogsWrite,
 )
 from auditize.common.api import COMMON_RESPONSES
-from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.pagination.page.api_models import PagePaginationParams
 from auditize.common.utils import validate_datetime
+from auditize.database import DatabaseManager, get_dbm
 from auditize.logs import service
 from auditize.logs.api_models import (
     LogActorTypeListResponse,
