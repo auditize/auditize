@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 from pydantic import BaseModel, BeforeValidator, Field
 
 from auditize.apikeys.models import Apikey, ApikeyUpdate
-from auditize.common.pagination.page.api_models import PagePaginatedResponse
+from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import PermissionsData
 
 

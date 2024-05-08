@@ -2,7 +2,7 @@ from typing import Annotated, Optional
 
 from pydantic import BaseModel, BeforeValidator, Field
 
-from auditize.common.pagination.page.api_models import PagePaginatedResponse
+from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import ApplicablePermissionsData, PermissionsData
 from auditize.permissions.operations import compute_applicable_permissions
 from auditize.users.models import User, UserUpdate

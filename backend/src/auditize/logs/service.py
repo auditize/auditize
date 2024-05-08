@@ -5,11 +5,11 @@ from typing import Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.common.pagination.cursor.service import find_paginated_by_cursor
-from auditize.common.pagination.page.models import PagePaginationInfo
-from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException
+from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
+from auditize.helpers.pagination.page.models import PagePaginationInfo
+from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.logs.db import LogsDatabase, get_logs_db
 from auditize.logs.models import Log, Node
 

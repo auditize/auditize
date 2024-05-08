@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 from bson import ObjectId
 
-from auditize.common.pagination.cursor.service import (
+from auditize.helpers.pagination.cursor.service import (
     InvalidPaginationCursor,
     PaginationCursor,
 )

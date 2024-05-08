@@ -4,10 +4,10 @@ import secrets
 from bson import ObjectId
 
 from auditize.apikeys.models import Apikey, ApikeyUpdate
-from auditize.common.pagination.page.models import PagePaginationInfo
-from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException
+from auditize.helpers.pagination.page.models import PagePaginationInfo
+from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.permissions.operations import normalize_permissions, update_permissions
 from auditize.repos.service import ensure_repos_in_permissions_exist
 

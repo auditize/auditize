@@ -2,7 +2,7 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
-from auditize.common.pagination.page.models import PagePaginationInfo
+from auditize.helpers.pagination.page.models import PagePaginationInfo
 
 
 class PagePaginationParams(BaseModel):

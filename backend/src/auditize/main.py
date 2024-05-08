@@ -7,13 +7,6 @@ from pymongo.errors import DuplicateKeyError
 
 from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
-from auditize.common.api import (
-    make_400_response,
-    make_401_response,
-    make_403_response,
-    make_404_response,
-    make_409_response,
-)
 from auditize.database import get_dbm
 from auditize.exceptions import (
     AuthenticationFailure,
@@ -21,6 +14,13 @@ from auditize.exceptions import (
     PermissionDenied,
     UnknownModelException,
     ValidationError,
+)
+from auditize.helpers.api import (
+    make_400_response,
+    make_401_response,
+    make_403_response,
+    make_404_response,
+    make_409_response,
 )
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router

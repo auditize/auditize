@@ -4,10 +4,6 @@ from datetime import timedelta
 from bson import ObjectId
 from passlib.context import CryptContext
 
-from auditize.common.datetime import now
-from auditize.common.email import send_email
-from auditize.common.pagination.page.models import PagePaginationInfo
-from auditize.common.pagination.page.service import find_paginated_by_page
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.exceptions import (
@@ -15,6 +11,10 @@ from auditize.exceptions import (
     ConstraintViolation,
     UnknownModelException,
 )
+from auditize.helpers.datetime import now
+from auditize.helpers.email import send_email
+from auditize.helpers.pagination.page.models import PagePaginationInfo
+from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.permissions.operations import normalize_permissions, update_permissions
 from auditize.repos.service import ensure_repos_in_permissions_exist
 from auditize.users.models import SignupToken, User, UserUpdate
