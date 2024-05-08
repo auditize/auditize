@@ -7,9 +7,9 @@ from httpx import Response
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import AuthenticationFailure
 from conftest import UserBuilder
+from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
-from helpers.integrations import PreparedIntegration
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.constants import (
@@ -335,8 +335,8 @@ async def test_get_user_me_unauthorized(anon_client: HttpTestHelper):
     await anon_client.assert_unauthorized_get("/users/me")
 
 
-async def test_get_user_me_as_integration(integration_client: HttpTestHelper):
-    await integration_client.assert_unauthorized_get("/users/me")
+async def test_get_user_me_as_apikey(apikey_client: HttpTestHelper):
+    await apikey_client.assert_unauthorized_get("/users/me")
 
 
 class TestPermissions(BasePermissionTests):
@@ -349,10 +349,10 @@ class TestPermissions(BasePermissionTests):
 
     async def inject_grantor(
         self, dbm: DatabaseManager, permissions=None
-    ) -> PreparedIntegration:
-        return await PreparedIntegration.inject_into_db(
+    ) -> PreparedApikey:
+        return await PreparedApikey.inject_into_db(
             dbm,
-            PreparedIntegration.prepare_model(permissions=permissions),
+            PreparedApikey.prepare_model(permissions=permissions),
         )
 
     def prepare_assignee_data(self, permissions=None):

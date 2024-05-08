@@ -3,7 +3,7 @@ from datetime import datetime
 
 import callee
 import pytest
-from tests.conftest import IntegrationBuilder
+from tests.conftest import ApikeyBuilder
 
 from auditize.common.db import DatabaseManager
 from auditize.logs.models import Log
@@ -26,14 +26,14 @@ pytestmark = pytest.mark.anyio
 
 
 async def test_log_repo_access_control(
-    integration_builder: IntegrationBuilder, dbm: DatabaseManager
+    apikey_builder: ApikeyBuilder, dbm: DatabaseManager
 ):
     # Test that access control based on repo_id is properly enforced by the API
 
     repo_1 = await PreparedRepo.create(dbm)
     repo_2 = await PreparedRepo.create(dbm)
 
-    integration = await integration_builder(
+    apikey = await apikey_builder(
         {
             "logs": {
                 "repos": {
@@ -43,7 +43,7 @@ async def test_log_repo_access_control(
         }
     )
 
-    async with integration.client() as client:
+    async with apikey.client() as client:
         await client.assert_post(
             f"/repos/{repo_1.id}/logs",
             json=PreparedLog.prepare_data(),

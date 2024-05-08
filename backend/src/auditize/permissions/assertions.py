@@ -12,8 +12,8 @@ __all__ = (
     "can_write_repos",
     "can_read_users",
     "can_write_users",
-    "can_read_integrations",
-    "can_write_integrations",
+    "can_read_apikeys",
+    "can_write_apikeys",
     "permissions_and",
     "permissions_or",
 )
@@ -62,7 +62,7 @@ def can_write_logs(repo_id: str = None) -> PermissionAssertion:
 @dataclass
 class EntityPermissionAssertion:
     permission_type: str  # "read" or "write"
-    entity_type: str  # "repos", "users" or "integrations"
+    entity_type: str  # "repos", "users" or "apikeys"
 
     def __call__(self, perms: Permissions) -> bool:
         if perms.is_superadmin:
@@ -72,8 +72,8 @@ class EntityPermissionAssertion:
             entity_perms = perms.management.repos
         elif self.entity_type == "users":
             entity_perms = perms.management.users
-        elif self.entity_type == "integrations":
-            entity_perms = perms.management.integrations
+        elif self.entity_type == "apikeys":
+            entity_perms = perms.management.apikeys
         else:
             raise Exception(
                 f"Invalid entity type: {self.entity_type}"
@@ -101,11 +101,11 @@ can_read_users = partial(
 can_write_users = partial(
     EntityPermissionAssertion, permission_type="write", entity_type="users"
 )
-can_read_integrations = partial(
-    EntityPermissionAssertion, permission_type="read", entity_type="integrations"
+can_read_apikeys = partial(
+    EntityPermissionAssertion, permission_type="read", entity_type="apikeys"
 )
-can_write_integrations = partial(
-    EntityPermissionAssertion, permission_type="write", entity_type="integrations"
+can_write_apikeys = partial(
+    EntityPermissionAssertion, permission_type="write", entity_type="apikeys"
 )
 
 

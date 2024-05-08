@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from auditize.permissions.models import Permissions
 
 
-class Integration(BaseModel):
+class Apikey(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     name: str
     token_hash: Optional[str] = Field(default=None)
@@ -17,6 +17,6 @@ class Integration(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class IntegrationUpdate(BaseModel):
+class ApikeyUpdate(BaseModel):
     name: Optional[str] = None
     permissions: Optional[Permissions] = None

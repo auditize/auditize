@@ -4,7 +4,7 @@ DEFAULT_PERMISSIONS = {
     "management": {
         "repos": {"read": False, "write": False},
         "users": {"read": False, "write": False},
-        "integrations": {"read": False, "write": False},
+        "apikeys": {"read": False, "write": False},
     },
 }
 
@@ -17,7 +17,7 @@ DEFAULT_APPLICABLE_PERMISSIONS = {
     "management": {
         "repos": {"read": False, "write": False},
         "users": {"read": False, "write": False},
-        "integrations": {"read": False, "write": False},
+        "apikeys": {"read": False, "write": False},
     },
 }
 
@@ -30,6 +30,6 @@ SUPERADMIN_APPLICABLE_PERMISSIONS = {
     "management": {
         "repos": {"read": True, "write": True},
         "users": {"read": True, "write": True},
-        "integrations": {"read": True, "write": True},
+        "apikeys": {"read": True, "write": True},
     },
 }

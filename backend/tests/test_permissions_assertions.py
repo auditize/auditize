@@ -3,11 +3,11 @@ from copy import deepcopy
 from icecream import ic
 
 from auditize.permissions.assertions import (
-    can_read_integrations,
+    can_read_apikeys,
     can_read_logs,
     can_read_repos,
     can_read_users,
-    can_write_integrations,
+    can_write_apikeys,
     can_write_logs,
     can_write_repos,
     can_write_users,
@@ -42,8 +42,8 @@ def test_permission_assertions_as_superadmin():
         can_write_repos(),
         can_read_users(),
         can_write_users(),
-        can_read_integrations(),
-        can_write_integrations(),
+        can_read_apikeys(),
+        can_write_apikeys(),
     )
 
 
@@ -56,8 +56,8 @@ def test_permission_assertions_as_no_right():
         can_write_repos(),
         can_read_users(),
         can_write_users(),
-        can_read_integrations(),
-        can_write_integrations(),
+        can_read_apikeys(),
+        can_write_apikeys(),
     )
 
 
@@ -93,18 +93,18 @@ def test_permission_assertions_on_management_as_specific_permissions():
         "management": {
             "repos": {"read": True, "write": True},
             "users": {"read": True, "write": True},
-            "integrations": {"read": True, "write": True},
+            "apikeys": {"read": True, "write": True},
         }
     }
     permission_assertions = {
         "repos": {"read": can_read_repos(), "write": can_write_repos()},
         "users": {"read": can_read_users(), "write": can_write_users()},
-        "integrations": {
-            "read": can_read_integrations(),
-            "write": can_write_integrations(),
+        "apikeys": {
+            "read": can_read_apikeys(),
+            "write": can_write_apikeys(),
         },
     }
-    for entity_type in "repos", "users", "integrations":
+    for entity_type in "repos", "users", "apikeys":
         for perm_type in "read", "write":
             # test authorized with the minimum permissions
             no_perms_but = {"management": {entity_type: {perm_type: True}}}

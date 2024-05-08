@@ -26,8 +26,8 @@ import { UsersManagement } from "@/features/users";
 import { theme } from "@/theme";
 
 import { VisibleIf } from "./components/VisibleIf";
+import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
-import { IntegrationsManagement } from "./features/integrations";
 import { interceptStatusCode } from "./utils/axios";
 
 function logoutConfirmationModal(notifyLoggedOut: () => void) {
@@ -132,12 +132,11 @@ function Main() {
             </VisibleIf>
             <VisibleIf
               condition={
-                currentUser &&
-                currentUser.permissions.management.integrations.read
+                currentUser && currentUser.permissions.management.apikeys.read
               }
             >
               <UnstyledButton>
-                <Link to="/integrations">Integration Management</Link>
+                <Link to="/apikeys">Apikey Management</Link>
               </UnstyledButton>
             </VisibleIf>
           </Group>
@@ -172,8 +171,8 @@ function AppRoutes() {
               element: <UsersManagement />,
             },
             {
-              path: "integrations",
-              element: <IntegrationsManagement />,
+              path: "apikeys",
+              element: <ApikeysManagement />,
             },
           ],
         }

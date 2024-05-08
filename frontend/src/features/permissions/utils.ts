@@ -18,7 +18,7 @@ export function emptyPermissions(): Auditize.Permissions {
         read: false,
         write: false,
       },
-      integrations: {
+      apikeys: {
         read: false,
         write: false,
       },

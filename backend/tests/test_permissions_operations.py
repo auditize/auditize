@@ -34,7 +34,7 @@ def test_normalization_superadmin_only():
             "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -47,7 +47,7 @@ def test_normalization_superadmin_with_explicit_permissions():
             "management": {
                 "repos": {"read": True},
                 "users": {"write": True},
-                "integrations": {"read": True, "write": True},
+                "apikeys": {"read": True, "write": True},
             },
             "logs": {
                 "read": True,
@@ -63,7 +63,7 @@ def test_normalization_superadmin_with_explicit_permissions():
             "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
             "logs": {
                 "read": False,
@@ -97,7 +97,7 @@ def test_normalization_superadmin_with_log_permissions():
             "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -129,7 +129,7 @@ def test_normalization_read_logs_on_all_repos():
             "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -161,7 +161,7 @@ def test_normalization_write_logs_on_all_repos():
             "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -190,7 +190,7 @@ def test_normalization_read_and_write_logs_on_all_repos():
             "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -227,8 +227,8 @@ def test_authorize_grant_as_superadmin():
         {"management": {"repos": {"read": False, "write": False}}},
         {"management": {"users": {"read": True, "write": True}}},
         {"management": {"users": {"read": False, "write": False}}},
-        {"management": {"integrations": {"read": True, "write": True}}},
-        {"management": {"integrations": {"read": False, "write": False}}},
+        {"management": {"apikeys": {"read": True, "write": True}}},
+        {"management": {"apikeys": {"read": False, "write": False}}},
     )
 
 
@@ -246,8 +246,8 @@ def test_authorize_grant_as_no_right():
         {"management": {"repos": {"read": False, "write": False}}},
         {"management": {"users": {"read": True, "write": True}}},
         {"management": {"users": {"read": False, "write": False}}},
-        {"management": {"integrations": {"read": True, "write": True}}},
-        {"management": {"integrations": {"read": False, "write": False}}},
+        {"management": {"apikeys": {"read": True, "write": True}}},
+        {"management": {"apikeys": {"read": False, "write": False}}},
     )
 
 
@@ -289,10 +289,10 @@ def test_permission_assertions_on_management_as_specific_permissions():
         "management": {
             "repos": {"read": True, "write": True},
             "users": {"read": True, "write": True},
-            "integrations": {"read": True, "write": True},
+            "apikeys": {"read": True, "write": True},
         }
     }
-    for entity_type in "repos", "users", "integrations":
+    for entity_type in "repos", "users", "apikeys":
         for perm_type in "read", "write":
             target_perms = {"management": {entity_type: {perm_type: True}}}
 
@@ -336,7 +336,7 @@ def test_update_permission_grant_superadmin():
             "management": {
                 "repos": {"read": False, "write": False},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -368,7 +368,7 @@ def test_update_permission_grant_individual_permissions():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -386,7 +386,7 @@ def test_update_permission_drop_individual_permissions():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
         {
@@ -410,7 +410,7 @@ def test_update_permission_drop_individual_permissions():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": False, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -430,7 +430,7 @@ def test_get_applicable_permissions_superadmin():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": True},
-                "integrations": {"read": True, "write": True},
+                "apikeys": {"read": True, "write": True},
             },
         },
     )
@@ -450,7 +450,7 @@ def test_get_applicable_permissions_partial_rights():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
         {
@@ -459,7 +459,7 @@ def test_get_applicable_permissions_partial_rights():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )
@@ -475,7 +475,7 @@ def test_get_applicable_permissions_no_rights():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
         {
@@ -484,7 +484,7 @@ def test_get_applicable_permissions_no_rights():
             "management": {
                 "repos": {"read": True, "write": True},
                 "users": {"read": True, "write": False},
-                "integrations": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
             },
         },
     )

@@ -8,31 +8,29 @@ from auditize.auth.authorizer import get_authenticated
 from auditize.auth.jwt import generate_session_token_payload
 from auditize.common.db import DatabaseManager
 from auditize.common.exceptions import AuthenticationFailure
+from helpers.apikeys import PreparedApikey
 from helpers.http import HttpTestHelper, make_http_request
-from helpers.integrations import PreparedIntegration
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
 
 
-async def test_auth_no_auth(dbm: DatabaseManager, integration: PreparedIntegration):
+async def test_auth_no_auth(dbm: DatabaseManager, apikey: PreparedApikey):
     request = make_http_request()
 
     with pytest.raises(AuthenticationFailure):
         await get_authenticated(dbm, request)
 
 
-async def test_auth_integration(dbm: DatabaseManager, integration: PreparedIntegration):
-    request = make_http_request(
-        headers={"Authorization": f"Bearer {integration.token}"}
-    )
+async def test_auth_apikey(dbm: DatabaseManager, apikey: PreparedApikey):
+    request = make_http_request(headers={"Authorization": f"Bearer {apikey.token}"})
     authenticated = await get_authenticated(dbm, request)
     assert authenticated
-    assert authenticated.name == integration.data["name"]
+    assert authenticated.name == apikey.data["name"]
 
 
 async def test_auth_invalid_authorization_header(
-    dbm: DatabaseManager, integration: PreparedIntegration
+    dbm: DatabaseManager, apikey: PreparedApikey
 ):
     request = make_http_request(
         headers={
@@ -45,7 +43,7 @@ async def test_auth_invalid_authorization_header(
 
 
 async def test_auth_invalid_authorization_bearer(
-    dbm: DatabaseManager, integration: PreparedIntegration
+    dbm: DatabaseManager, apikey: PreparedApikey
 ):
     request = make_http_request(
         headers={
@@ -53,7 +51,7 @@ async def test_auth_invalid_authorization_bearer(
             "Authorization": f"Bearer intgr-BOg6yxarq9oJ-y98VOMvy4gERijPxtcjta6YVxKiAaU"
         }
     )
-    with pytest.raises(AuthenticationFailure, match="Invalid integration token"):
+    with pytest.raises(AuthenticationFailure, match="Invalid apikey token"):
         await get_authenticated(dbm, request)
 
 

@@ -4,6 +4,8 @@ from typing import Annotated, Callable, Type
 from fastapi import Depends
 from starlette.requests import Request
 
+from auditize.apikeys.models import Apikey
+from auditize.apikeys.service import get_apikey_by_token
 from auditize.auth.jwt import get_user_email_from_session_token
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import (
@@ -11,8 +13,6 @@ from auditize.common.exceptions import (
     PermissionDenied,
     UnknownModelException,
 )
-from auditize.integrations.models import Integration
-from auditize.integrations.service import get_integration_by_token
 from auditize.permissions.assertions import (
     PermissionAssertion,
     can_read_logs,
@@ -29,25 +29,23 @@ _BEARER_PREFIX = "Bearer "
 class Authenticated:
     name: str
     user: User = None
-    integration: Integration = None
+    apikey: Apikey = None
 
     @classmethod
     def from_user(cls, user: User):
         return cls(name=user.email, user=user)
 
     @classmethod
-    def from_integration(cls, integration: Integration):
-        return cls(name=integration.name, integration=integration)
+    def from_apikey(cls, apikey: Apikey):
+        return cls(name=apikey.name, apikey=apikey)
 
     @property
     def permissions(self) -> Permissions:
         if self.user:
             return self.user.permissions
-        if self.integration:
-            return self.integration.permissions
-        raise Exception(
-            "Authenticated is neither user nor integration"
-        )  # pragma: no cover
+        if self.apikey:
+            return self.apikey.permissions
+        raise Exception("Authenticated is neither user nor apikey")  # pragma: no cover
 
     def comply(self, assertion: PermissionAssertion) -> bool:
         return assertion(self.permissions)
@@ -62,23 +60,21 @@ def _get_authorization_bearer(request: Request) -> str:
     return authorization[len(_BEARER_PREFIX) :]
 
 
-async def authenticate_integration(
-    dbm: DatabaseManager, request: Request
-) -> Authenticated:
+async def authenticate_apikey(dbm: DatabaseManager, request: Request) -> Authenticated:
     try:
         token = _get_authorization_bearer(request)
     except LookupError as e:
         raise AuthenticationFailure(str(e))
 
     try:
-        integration = await get_integration_by_token(dbm, token)
+        apikey = await get_apikey_by_token(dbm, token)
     except UnknownModelException:
-        raise AuthenticationFailure("Invalid integration token")
+        raise AuthenticationFailure("Invalid apikey token")
 
-    return Authenticated.from_integration(integration)
+    return Authenticated.from_apikey(apikey)
 
 
-def looks_like_integration_auth(request: Request) -> bool:
+def looks_like_apikey_auth(request: Request) -> bool:
     return bool(request.headers.get("Authorization"))
 
 
@@ -106,8 +102,8 @@ def looks_like_user_auth(request: Request) -> bool:
 async def get_authenticated(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)], request: Request
 ) -> Authenticated:
-    if looks_like_integration_auth(request):
-        return await authenticate_integration(dbm, request)
+    if looks_like_apikey_auth(request):
+        return await authenticate_apikey(dbm, request)
 
     if looks_like_user_auth(request):
         return await authenticate_user(dbm, request)

@@ -2,11 +2,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from auditize.apikeys.models import ApikeyUpdate
+from auditize.apikeys.service import update_apikey
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.common.db import DatabaseManager, get_dbm
 from auditize.common.exceptions import AuthenticationFailure
-from auditize.integrations.models import IntegrationUpdate
-from auditize.integrations.service import update_integration
 from auditize.permissions.assertions import (
     can_read_logs,
     can_read_repos,
@@ -50,11 +50,11 @@ async def create_repo(
         grant_rw_on_repo_logs = Permissions(
             logs=LogsPermissions(repos={str(repo_id): ReadWritePermissions.yes()})
         )
-        if authenticated.integration:
-            await update_integration(
+        if authenticated.apikey:
+            await update_apikey(
                 dbm,
-                authenticated.integration.id,
-                IntegrationUpdate(permissions=grant_rw_on_repo_logs),
+                authenticated.apikey.id,
+                ApikeyUpdate(permissions=grant_rw_on_repo_logs),
             )
         if authenticated.user:
             await update_user(

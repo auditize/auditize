@@ -1,10 +1,10 @@
-type Integration = {
+type Apikey = {
   id?: string;
   name: string;
   permissions: Auditize.Permissions;
 };
 
-type IntegrationUpdate = {
+type ApikeyUpdate = {
   name?: string;
   permissions?: Auditize.Permissions;
 };

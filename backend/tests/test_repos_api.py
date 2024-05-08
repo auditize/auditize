@@ -6,7 +6,7 @@ from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.common.db import DatabaseManager
-from conftest import IntegrationBuilder, UserBuilder
+from conftest import ApikeyBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_OBJECT_ID
@@ -37,15 +37,13 @@ async def _test_repo_create(
     }
 
 
-async def test_repo_create_as_integration(
-    integration_builder: IntegrationBuilder, dbm: DatabaseManager
+async def test_repo_create_as_apikey(
+    apikey_builder: ApikeyBuilder, dbm: DatabaseManager
 ):
-    integration_builder = await integration_builder(
-        {"management": {"repos": {"write": True}}}
-    )
+    apikey_builder = await apikey_builder({"management": {"repos": {"write": True}}})
 
-    async with integration_builder.client() as client:
-        await _test_repo_create(client, dbm, dbm.core_db.integrations)
+    async with apikey_builder.client() as client:
+        await _test_repo_create(client, dbm, dbm.core_db.apikeys)
 
 
 async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManager):

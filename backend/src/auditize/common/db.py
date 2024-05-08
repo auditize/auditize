@@ -30,12 +30,12 @@ class CoreDatabase(BaseDatabase):
     async def setup(self):
         await self.repos.create_index("name", unique=True)
         await self.users.create_index("email", unique=True)
-        await self.integrations.create_index("name", unique=True)
+        await self.apikeys.create_index("name", unique=True)
 
     # Collections
     repos = Collection("repos")
     users = Collection("users")
-    integrations = Collection("integrations")
+    apikeys = Collection("apikeys")
 
 
 _mongo_client = AsyncIOMotorClient()

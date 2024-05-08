@@ -31,7 +31,7 @@ class ReadWritePermissions(BaseModel):
 class ManagementPermissions(BaseModel):
     repos: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
     users: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
-    integrations: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
+    apikeys: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
 
     model_config = ConfigDict(extra="forbid")
 

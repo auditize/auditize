@@ -97,12 +97,12 @@ function ManagementPermissionManagement({
               readOnly={readOnly}
             />
             <EntityPermissionManagement
-              name="Integrations"
-              perms={perms.integrations}
+              name="Apikeys"
+              perms={perms.apikeys}
               onChange={(intgrPerms) =>
-                onChange({ ...perms, integrations: intgrPerms })
+                onChange({ ...perms, apikeys: intgrPerms })
               }
-              assignablePerms={assignablePerms.integrations}
+              assignablePerms={assignablePerms.apikeys}
               readOnly={readOnly}
             />
           </Table.Tbody>

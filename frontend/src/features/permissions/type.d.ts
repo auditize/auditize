@@ -14,7 +14,7 @@ declare namespace Auditize {
     management: {
       repos: ReadWritePermissions;
       users: ReadWritePermissions;
-      integrations: ReadWritePermissions;
+      apikeys: ReadWritePermissions;
     };
   }
 
@@ -29,7 +29,7 @@ declare namespace Auditize {
     management: {
       repos: ReadWritePermissions;
       users: ReadWritePermissions;
-      integrations: ReadWritePermissions;
+      apikeys: ReadWritePermissions;
     };
   }
 }

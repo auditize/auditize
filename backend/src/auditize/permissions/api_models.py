@@ -18,9 +18,7 @@ class ReadWritePermissionsData(BaseModel):
 class ManagementPermissionsData(BaseModel):
     repos: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
     users: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
-    integrations: ReadWritePermissionsData = Field(
-        default_factory=ReadWritePermissionsData
-    )
+    apikeys: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
 
 
 class LogsPermissionsData(ReadWritePermissionsData):

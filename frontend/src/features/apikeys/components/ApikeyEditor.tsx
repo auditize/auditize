@@ -15,13 +15,13 @@ import {
 } from "@/features/permissions";
 
 import {
-  createIntegration,
-  getIntegration,
-  regenerateIntegrationToken,
-  updateIntegration,
+  createApikey,
+  getApikey,
+  regenerateApikeyToken,
+  updateApikey,
 } from "../api";
 
-function useIntegrationForm() {
+function useApikeyForm() {
   return useForm({
     initialValues: {
       name: "",
@@ -32,11 +32,11 @@ function useIntegrationForm() {
   });
 }
 
-function BaseIntegrationForm({
+function BaseApikeyForm({
   form,
   readOnly,
 }: {
-  form: ReturnType<typeof useIntegrationForm>;
+  form: ReturnType<typeof useApikeyForm>;
   readOnly: boolean;
 }) {
   return (
@@ -52,7 +52,7 @@ function BaseIntegrationForm({
   );
 }
 
-function IntegrationEditor({
+function ApikeyEditor({
   form,
   permissions,
   onChange,
@@ -71,7 +71,7 @@ function IntegrationEditor({
       onChange={onChange}
       readOnly={readOnly}
     >
-      <BaseIntegrationForm form={form} readOnly={readOnly} />
+      <BaseApikeyForm form={form} readOnly={readOnly} />
       {children}
     </WithPermissionManagement>
   );
@@ -87,8 +87,8 @@ function Token({ value }: { value: string }) {
   );
 }
 
-export function IntegrationCreation({ opened }: { opened?: boolean }) {
-  const form = useIntegrationForm();
+export function ApikeyCreation({ opened }: { opened?: boolean }) {
+  const form = useApikeyForm();
   const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
     emptyPermissions(),
   );
@@ -101,37 +101,33 @@ export function IntegrationCreation({ opened }: { opened?: boolean }) {
 
   return (
     <ResourceCreation
-      title={"Create new integration"}
+      title={"Create new apikey"}
       opened={!!opened}
       onSubmit={form.onSubmit}
-      onSave={() => createIntegration({ ...form.values, permissions })}
+      onSave={() => createApikey({ ...form.values, permissions })}
       onSaveSuccess={(data) => {
         const [_, token] = data as [string, string];
         setToken(token);
       }}
-      queryKeyForInvalidation={["integrations"]}
+      queryKeyForInvalidation={["apikeys"]}
       disabledSaving={!!token}
     >
-      <IntegrationEditor
+      <ApikeyEditor
         form={form}
         permissions={permissions}
         onChange={(perms) => setPermissions(perms)}
       >
         {token && <Token value={token} />}
-      </IntegrationEditor>
+      </ApikeyEditor>
     </ResourceCreation>
   );
 }
 
-export function TokenRegeneration({
-  integrationId,
-}: {
-  integrationId: string;
-}) {
+export function TokenRegeneration({ apikeyId }: { apikeyId: string }) {
   const [newToken, setNewToken] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const mutation = useMutation({
-    mutationFn: () => regenerateIntegrationToken(integrationId),
+    mutationFn: () => regenerateApikeyToken(apikeyId),
     onSuccess: (value) => setNewToken(value),
     onError: (error) => setError(error.message),
   });
@@ -148,36 +144,34 @@ export function TokenRegeneration({
   }
 }
 
-export function IntegrationEdition({
-  integrationId,
+export function ApikeyEdition({
+  apikeyId,
   readOnly,
 }: {
-  integrationId: string | null;
+  apikeyId: string | null;
   readOnly: boolean;
 }) {
-  const form = useIntegrationForm();
+  const form = useApikeyForm();
   const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
     emptyPermissions(),
   );
 
   return (
     <ResourceEdition
-      resourceId={integrationId}
-      queryKeyForLoad={["integration", integrationId]}
-      queryFnForLoad={() => getIntegration(integrationId!)}
+      resourceId={apikeyId}
+      queryKeyForLoad={["apikey", apikeyId]}
+      queryFnForLoad={() => getApikey(apikeyId!)}
       onDataLoaded={(data) => {
         form.setValues(data);
         setPermissions(data.permissions);
       }}
-      title={`Edit integration`}
+      title={`Edit apikey`}
       onSubmit={form.onSubmit}
-      onSave={() =>
-        updateIntegration(integrationId!, { ...form.values, permissions })
-      }
-      queryKeyForInvalidation={["integrations"]}
+      onSave={() => updateApikey(apikeyId!, { ...form.values, permissions })}
+      queryKeyForInvalidation={["apikeys"]}
       disabledSaving={readOnly}
     >
-      <IntegrationEditor
+      <ApikeyEditor
         form={form}
         permissions={permissions}
         onChange={(perms) => {
@@ -185,8 +179,8 @@ export function IntegrationEdition({
         }}
         readOnly={readOnly}
       >
-        {!readOnly && <TokenRegeneration integrationId={integrationId!} />}
-      </IntegrationEditor>
+        {!readOnly && <TokenRegeneration apikeyId={apikeyId!} />}
+      </ApikeyEditor>
     </ResourceEdition>
   );
 }

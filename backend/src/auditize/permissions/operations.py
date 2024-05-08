@@ -65,7 +65,7 @@ def normalize_permissions(perms: Permissions) -> Permissions:
             management=ManagementPermissions(
                 repos=ReadWritePermissions.no(),
                 users=ReadWritePermissions.no(),
-                integrations=ReadWritePermissions.no(),
+                apikeys=ReadWritePermissions.no(),
             ),
         )
 
@@ -81,9 +81,7 @@ def normalize_permissions(perms: Permissions) -> Permissions:
         management=ManagementPermissions(
             repos=_normalize_read_write_permissions(perms.management.repos),
             users=_normalize_read_write_permissions(perms.management.users),
-            integrations=_normalize_read_write_permissions(
-                perms.management.integrations
-            ),
+            apikeys=_normalize_read_write_permissions(perms.management.apikeys),
         ),
     )
 
@@ -106,7 +104,7 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
             management=ManagementPermissions(
                 repos=ReadWritePermissions.yes(),
                 users=ReadWritePermissions.yes(),
-                integrations=ReadWritePermissions.yes(),
+                apikeys=ReadWritePermissions.yes(),
             ),
         )
     else:
@@ -169,7 +167,7 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
                 f"logs write on repo {assignee_repo_id!r}",
             )
 
-    # Check management.{repos,users,integrations} grants
+    # Check management.{repos,users,apikeys} grants
     _authorize_rw_perms_grant(
         assignee_perms.management.repos, grantor_perms.management.repos, "repos"
     )
@@ -177,9 +175,9 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
         assignee_perms.management.users, grantor_perms.management.users, "users"
     )
     _authorize_rw_perms_grant(
-        assignee_perms.management.integrations,
-        grantor_perms.management.integrations,
-        "integrations",
+        assignee_perms.management.apikeys,
+        grantor_perms.management.apikeys,
+        "apikeys",
     )
 
 
@@ -224,8 +222,8 @@ def update_permissions(
     new.management.users = _update_rw_permissions(
         orig_perms.management.users, update_perms.management.users
     )
-    new.management.integrations = _update_rw_permissions(
-        orig_perms.management.integrations, update_perms.management.integrations
+    new.management.apikeys = _update_rw_permissions(
+        orig_perms.management.apikeys, update_perms.management.apikeys
     )
 
     # Return a normalized result

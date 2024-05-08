@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
 from pymongo.errors import DuplicateKeyError
 
+from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
 from auditize.common.api import (
     make_400_response,
@@ -21,7 +22,6 @@ from auditize.common.exceptions import (
     UnknownModelException,
     ValidationError,
 )
-from auditize.integrations.api import router as integrations_router
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
@@ -86,4 +86,4 @@ app.include_router(auth_router)
 app.include_router(logs_router)
 app.include_router(repos_router)
 app.include_router(users_router)
-app.include_router(integrations_router)
+app.include_router(apikeys_router)

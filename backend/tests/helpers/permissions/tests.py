@@ -2,9 +2,9 @@ from httpx import Response
 
 from auditize.common.db import DatabaseManager
 
+from ..apikeys import PreparedApikey
 from ..database import assert_collection
 from ..http import HttpTestHelper
-from ..integrations import PreparedIntegration
 from ..logs import UNKNOWN_OBJECT_ID
 from ..repos import PreparedRepo
 from ..users import PreparedUser
@@ -14,7 +14,7 @@ class BasePermissionTests:
     # workaround circular imports
 
     """
-    Common tests related to permissions for users and integrations.
+    Common tests related to permissions for users and apikeys.
     """
 
     @property
@@ -26,7 +26,7 @@ class BasePermissionTests:
 
     async def inject_grantor(
         self, dbm: DatabaseManager, permissions=None
-    ) -> PreparedUser | PreparedIntegration:
+    ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
     def prepare_assignee_data(self, permissions=None) -> dict:
@@ -34,12 +34,12 @@ class BasePermissionTests:
 
     async def create_assignee(
         self, client: HttpTestHelper, dbm: DatabaseManager, data: dict = None
-    ) -> PreparedUser | PreparedIntegration:
+    ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
     def rebuild_assignee_from_response(
         self, resp: Response, data: dict, dbm: DatabaseManager
-    ) -> PreparedUser | PreparedIntegration:
+    ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
     async def test_create_custom_permissions(
@@ -77,7 +77,7 @@ class BasePermissionTests:
                             "management": {
                                 "repos": {"read": True, "write": True},
                                 "users": {"read": False, "write": False},
-                                "integrations": {"read": False, "write": False},
+                                "apikeys": {"read": False, "write": False},
                             },
                         }
                     }
@@ -106,7 +106,7 @@ class BasePermissionTests:
     async def test_create_forbidden_permissions(self, dbm: DatabaseManager):
         grantor = await self.inject_grantor(
             dbm,
-            {"management": {"users": {"write": True}, "integrations": {"write": True}}},
+            {"management": {"users": {"write": True}, "apikeys": {"write": True}}},
         )
 
         async with grantor.client() as client:
@@ -176,7 +176,7 @@ class BasePermissionTests:
                             "management": {
                                 "repos": {"read": False, "write": False},
                                 "users": {"read": True, "write": True},
-                                "integrations": {"read": False, "write": False},
+                                "apikeys": {"read": False, "write": False},
                             },
                         }
                     }
@@ -203,7 +203,7 @@ class BasePermissionTests:
     async def test_update_forbidden_permissions(self, dbm: DatabaseManager):
         grantor = await self.inject_grantor(
             dbm,
-            {"management": {"users": {"write": True}, "integrations": {"write": True}}},
+            {"management": {"users": {"write": True}, "apikeys": {"write": True}}},
         )
 
         async with grantor.client() as client:
