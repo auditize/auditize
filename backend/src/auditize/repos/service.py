@@ -77,19 +77,26 @@ def _get_authorized_repo_ids_for_user(
             is_authorized(
                 user.permissions, permissions_and(can_read_logs(), can_write_logs())
             ),
-            is_authorized(user.permissions, can_read_logs())
-            and (has_read_perm and not has_write_perm),
-            is_authorized(user.permissions, can_write_logs())
-            and (has_write_perm and not has_read_perm),
+            (
+                is_authorized(user.permissions, can_read_logs())
+                and (has_read_perm and not has_write_perm)
+            ),
+            (
+                is_authorized(user.permissions, can_write_logs())
+                and (has_write_perm and not has_read_perm)
+            ),
         )
     )
     if no_filtering_needed:
         return None
 
     return user.permissions.logs.get_repos(
-        can_read=has_read_perm and not is_authorized(user.permissions, can_read_logs()),
-        can_write=has_write_perm
-        and not is_authorized(user.permissions, can_write_logs()),
+        can_read=(
+            has_read_perm and not is_authorized(user.permissions, can_read_logs())
+        ),
+        can_write=(
+            has_write_perm and not is_authorized(user.permissions, can_write_logs())
+        ),
     )
 
 
