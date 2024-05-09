@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Annotated, Optional
 
-from bson import ObjectId
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
 class Log(BaseModel):
@@ -39,7 +38,10 @@ class Log(BaseModel):
         id: str
         name: str
 
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    id: Annotated[Optional[str], BeforeValidator(str)] = Field(
+        default=None,
+        alias="_id",
+    )
     event: Event
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: dict[str, str] = Field(default_factory=dict)

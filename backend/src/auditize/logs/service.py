@@ -59,7 +59,7 @@ async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
         parent_node_id = node.id
 
 
-async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> ObjectId:
+async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
     db = await get_logs_db(dbm, repo_id)
 
     result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
@@ -81,13 +81,13 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> ObjectId:
 
     await consolidate_log_node_path(db, log.node_path)
 
-    return result.inserted_id
+    return str(result.inserted_id)
 
 
 async def save_log_attachment(
     dbm: DatabaseManager,
     repo_id: str,
-    log_id: ObjectId | str,
+    log_id: str,
     name: str,
     type: str,
     mime_type: str,
@@ -110,7 +110,7 @@ async def save_log_attachment(
     )
 
 
-async def get_log(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str) -> Log:
+async def get_log(dbm: DatabaseManager, repo_id: str, log_id: str) -> Log:
     db = await get_logs_db(dbm, repo_id)
 
     data = await db.logs.find_one(ObjectId(log_id), _EXCLUDE_ATTACHMENT_DATA)
@@ -120,7 +120,7 @@ async def get_log(dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str) ->
 
 
 async def get_log_attachment(
-    dbm: DatabaseManager, repo_id: str, log_id: ObjectId | str, attachment_idx: int
+    dbm: DatabaseManager, repo_id: str, log_id: str, attachment_idx: int
 ) -> Log.Attachment:
     db = await get_logs_db(dbm, repo_id)
 
@@ -158,7 +158,7 @@ async def get_logs(
 ) -> tuple[list[Log], str | None]:
     db = await get_logs_db(dbm, repo_id)
 
-    criteria = {}
+    criteria: dict[str, Any] = {}
     if event_name:
         criteria["event.name"] = event_name
     if event_category:
