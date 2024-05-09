@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from auditize.database import BaseDatabase, Collection, DatabaseManager
 
 
-class LogsDatabase(BaseDatabase):
+class LogDatabase(BaseDatabase):
     def __init__(self, name: str, client: AsyncIOMotorClient):
         super().__init__(name, client)
         self._cache = Cache(Cache.MEMORY)
@@ -40,8 +40,8 @@ def get_logs_db_name(dbm: DatabaseManager, repo_id: str) -> str:
     return f"{dbm.name_prefix}_repo_{repo_id}"
 
 
-async def get_logs_db(dbm: DatabaseManager, repo_id: str) -> LogsDatabase:
+async def get_logs_db(dbm: DatabaseManager, repo_id: str) -> LogDatabase:
     from auditize.repos.service import get_repo  # avoid circular import
 
     await get_repo(dbm, repo_id)  # ensure repo exists
-    return LogsDatabase(get_logs_db_name(dbm, repo_id), dbm.client)
+    return LogDatabase(get_logs_db_name(dbm, repo_id), dbm.client)

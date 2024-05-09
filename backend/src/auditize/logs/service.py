@@ -10,38 +10,38 @@ from auditize.exceptions import UnknownModelException
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
-from auditize.logs.db import LogsDatabase, get_logs_db
+from auditize.logs.db import LogDatabase, get_logs_db
 from auditize.logs.models import Log, Node
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 
 
-async def consolidate_log_event(db: LogsDatabase, event: Log.Event):
+async def consolidate_log_event(db: LogDatabase, event: Log.Event):
     await db.consolidate_data(
         db.log_events, {"category": event.category, "name": event.name}
     )
 
 
-async def consolidate_log_actor(db: LogsDatabase, actor: Log.Actor):
+async def consolidate_log_actor(db: LogDatabase, actor: Log.Actor):
     await db.consolidate_data(db.log_actor_types, {"type": actor.type})
     for key in actor.extra:
         await db.consolidate_data(db.log_actor_extra_keys, {"key": key})
 
 
-async def consolidate_log_resource(db: LogsDatabase, resource: Log.Resource):
+async def consolidate_log_resource(db: LogDatabase, resource: Log.Resource):
     await db.consolidate_data(db.log_resource_types, {"type": resource.type})
     for key in resource.extra:
         await db.consolidate_data(db.log_resource_extra_keys, {"key": key})
 
 
-async def consolidate_log_tags(db: LogsDatabase, tags: list[Log.Tag]):
+async def consolidate_log_tags(db: LogDatabase, tags: list[Log.Tag]):
     for tag in tags:
         if tag.category:
             await db.consolidate_data(db.log_tag_categories, {"category": tag.category})
 
 
-async def consolidate_log_details(db: LogsDatabase, details: dict[str, dict[str, str]]):
+async def consolidate_log_details(db: LogDatabase, details: dict[str, dict[str, str]]):
     for level1_key, sub_keys in details.items():
         for level2_key in sub_keys:
             await db.consolidate_data(
@@ -49,7 +49,7 @@ async def consolidate_log_details(db: LogsDatabase, details: dict[str, dict[str,
             )
 
 
-async def consolidate_log_node_path(db: LogsDatabase, node_path: list[Log.Node]):
+async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
     parent_node_id = None
     for node in node_path:
         await db.consolidate_data(
@@ -304,7 +304,7 @@ async def get_log_tag_categories(
     )
 
 
-async def _get_log_nodes(db: LogsDatabase, *, match, pipeline_extra=None):
+async def _get_log_nodes(db: LogDatabase, *, match, pipeline_extra=None):
     return db.log_nodes.aggregate(
         [
             {"$match": match},

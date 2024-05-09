@@ -5,7 +5,7 @@ import callee
 from bson import ObjectId
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogsDatabase, get_logs_db
+from auditize.logs.db import LogDatabase, get_logs_db
 from auditize.repos.models import Repo
 from auditize.repos.service import create_repo
 
@@ -13,7 +13,7 @@ from .http import HttpTestHelper
 
 
 class PreparedRepo:
-    def __init__(self, id: str, data: dict, db: LogsDatabase):
+    def __init__(self, id: str, data: dict, db: LogDatabase):
         self.id = id
         self.data = data
         self.db = db
