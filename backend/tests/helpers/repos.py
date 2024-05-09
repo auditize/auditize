@@ -47,9 +47,9 @@ class PreparedRepo:
             **(extra or {}),
         }
 
-    def create_log(
+    async def create_log(
         self, client: HttpTestHelper, data: dict = None, saved_at: datetime = None
     ) -> "PreparedLog":
         from .logs import PreparedLog  # avoid circular import
 
-        return PreparedLog.create(client, self, data, saved_at=saved_at)
+        return await PreparedLog.create(client, self, data, saved_at=saved_at)
