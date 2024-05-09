@@ -129,7 +129,7 @@ async def list_repos(
 
 @router.get(
     "/users/me/repos",
-    summary="List user log repositories",
+    summary="List user accessible repositories",
     tags=["users"],
     response_model=UserRepoListResponse,
 )

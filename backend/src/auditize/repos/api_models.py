@@ -43,9 +43,16 @@ class RepoLogPermissionsData(BaseModel):
     )
 
 
-class RepoReadingResponse(BaseModel):
+class _BaseRepoReadingResponse(BaseModel):
     id: str = Field(description="The repository ID")
     name: str = Field(description="The repository name")
+
+    @classmethod
+    def from_repo(cls, repo: Repo):
+        return cls.model_validate(repo.model_dump())
+
+
+class RepoReadingResponse(_BaseRepoReadingResponse):
     created_at: datetime = Field(description="The creation date")
     stats: Optional[RepoStatsData] = Field(
         description="The repository stats", default=None
@@ -55,12 +62,8 @@ class RepoReadingResponse(BaseModel):
     def serialize_datetime(self, value):
         return serialize_datetime(value)
 
-    @classmethod
-    def from_repo(cls, repo: Repo):
-        return cls.model_validate(repo.model_dump())
 
-
-class UserRepoReadingResponse(RepoReadingResponse):
+class UserRepoReadingResponse(_BaseRepoReadingResponse):
     permissions: RepoLogPermissionsData = Field(
         description="The repository permissions",
         default_factory=lambda: RepoLogPermissionsData(

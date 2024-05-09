@@ -12,6 +12,7 @@ from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repos import PreparedRepo
+from helpers.utils import strip_dict_keys
 
 pytestmark = pytest.mark.anyio
 
@@ -231,13 +232,16 @@ async def test_repo_list_user_repos_simple(
 
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await client.assert_get(
+        await client.assert_get_ok(
             "/users/me/repos",
-            expected_status_code=200,
             expected_json={
                 "data": [
-                    repo.expected_api_response(
-                        {"permissions": {"read_logs": True, "write_logs": True}}
+                    strip_dict_keys(
+                        repo.expected_api_response(
+                            {"permissions": {"read_logs": True, "write_logs": True}}
+                        ),
+                        "created_at",
+                        "stats",
                     )
                 ],
                 "pagination": {
@@ -253,10 +257,9 @@ async def test_repo_list_user_repos_simple(
 async def _test_repo_list_user_repos(
     client: HttpTestHelper, params: dict, expected: dict[str, dict]
 ):
-    resp = await client.assert_get(
+    resp = await client.assert_get_ok(
         "/users/me/repos",
         params=params,
-        expected_status_code=200,
     )
     data = resp.json()["data"]
     assert len(data) == len(expected)
