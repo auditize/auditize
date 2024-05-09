@@ -226,6 +226,14 @@ async def add_attachment(
             json_schema_extra={"nullable": True, "example": "config.json"},
         ),
     ] = None,
+    description: Annotated[
+        str,
+        Form(
+            title="Attachment description",
+            description="An optional description of the attachment",
+            json_schema_extra={"nullable": True, "example": "Configuration file"},
+        ),
+    ] = None,
     mime_type: Annotated[
         str,
         Form(
@@ -240,10 +248,11 @@ async def add_attachment(
         dbm,
         repo_id,
         log_id,
-        name or file.filename,
-        type,
-        mime_type or file.content_type,
-        await file.read(),
+        description=description,
+        name=name or file.filename,
+        type=type,
+        mime_type=mime_type or file.content_type,
+        data=await file.read(),
     )
 
 

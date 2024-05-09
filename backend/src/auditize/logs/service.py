@@ -92,7 +92,9 @@ async def save_log_attachment(
     dbm: DatabaseManager,
     repo_id: str,
     log_id: str,
+    *,
     name: str,
+    description: str,
     type: str,
     mime_type: str,
     data: bytes,
@@ -104,6 +106,7 @@ async def save_log_attachment(
         {
             "attachments": {
                 "name": name,
+                "description": description,
                 "type": type,
                 "mime_type": mime_type,
                 "data": data,

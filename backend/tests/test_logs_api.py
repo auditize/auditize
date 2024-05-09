@@ -156,6 +156,7 @@ async def test_add_attachment_text_and_minimal_fields(
             "attachments": [
                 {
                     "name": "test.txt",
+                    "description": None,
                     "type": "text",
                     "mime_type": "text/plain",
                     "data": b"test data",
@@ -180,6 +181,7 @@ async def test_add_attachment_binary_and_all_fields(
         data={
             "type": "binary",
             "name": "test_file.bin",
+            "description": "A binary file",
             "mime_type": "application/octet-stream",
         },
         expected_status_code=204,
@@ -189,6 +191,7 @@ async def test_add_attachment_binary_and_all_fields(
             "attachments": [
                 {
                     "name": "test_file.bin",
+                    "description": "A binary file",
                     "type": "binary",
                     "mime_type": "application/octet-stream",
                     "data": data,
@@ -267,9 +270,27 @@ async def test_get_log_all_fields(
         }
     )
     log = await repo.create_log(log_write_client, data)
+    await log_write_client.assert_post(
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
+        files={"file": ("test.txt", "test data")},
+        data={"type": "text"},
+        expected_status_code=204,
+    )
 
     await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/{log.id}", expected_json=log.expected_api_response()
+        f"/repos/{repo.id}/logs/{log.id}",
+        expected_json=log.expected_api_response(
+            {
+                "attachments": [
+                    {
+                        "name": "test.txt",
+                        "description": None,
+                        "type": "text",
+                        "mime_type": "text/plain",
+                    }
+                ]
+            }
+        ),
     )
 
 
@@ -387,6 +408,39 @@ async def test_get_logs(
         f"/repos/{repo.id}/logs",
         expected_json={
             "data": [log2.expected_api_response(), log1.expected_api_response()],
+            "pagination": {"next_cursor": None},
+        },
+    )
+
+
+async def test_get_logs_with_attachment(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(log_rw_client)
+    await log_rw_client.assert_post(
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
+        files={"file": ("file.txt", "test data")},
+        data={"type": "text file", "description": "A text file"},
+        expected_status_code=204,
+    )
+
+    await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs",
+        expected_json={
+            "data": [
+                log.expected_api_response(
+                    {
+                        "attachments": [
+                            {
+                                "name": "file.txt",
+                                "description": "A text file",
+                                "type": "text file",
+                                "mime_type": "text/plain",
+                            }
+                        ]
+                    }
+                )
+            ],
             "pagination": {"next_cursor": None},
         },
     )

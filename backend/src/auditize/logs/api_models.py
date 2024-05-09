@@ -158,6 +158,7 @@ class LogCreationResponse(BaseModel):
 class _LogReadingResponse(BaseModel):
     class Attachment(BaseModel):
         name: str
+        description: Optional[str]
         type: str
         mime_type: str
 
