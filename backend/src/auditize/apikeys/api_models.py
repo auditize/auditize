@@ -1,6 +1,6 @@
-from typing import Annotated, Optional
+from typing import Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, Field
 
 from auditize.apikeys.models import Apikey, ApikeyUpdate
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
@@ -28,12 +28,12 @@ class ApikeyUpdateRequest(BaseModel):
 
 
 class ApikeyCreationResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(description="The apikey id")
+    id: str = Field(description="The apikey id")
     key: str = Field(description="The actual key")
 
 
 class ApikeyReadingResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(description="The apikey id")
+    id: str = Field(description="The apikey id")
     name: str = Field(description="The apikey name")
     permissions: PermissionsData = Field(
         description="The apikey permissions", default_factory=PermissionsData

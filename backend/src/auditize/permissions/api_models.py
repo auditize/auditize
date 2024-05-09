@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 __all__ = (
+    "ApplicablePermissionsData",
     "ReadWritePermissionsData",
     "ManagementPermissionsData",
     "LogsPermissionsData",

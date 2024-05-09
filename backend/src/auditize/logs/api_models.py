@@ -1,9 +1,8 @@
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Optional
 
 from pydantic import (
     BaseModel,
-    BeforeValidator,
     Field,
     field_serializer,
     model_validator,
@@ -153,7 +152,7 @@ class LogCreationRequest(_LogBase):
 
 
 class LogCreationResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)]
+    id: str
 
 
 class _LogReadingResponse(BaseModel):
@@ -162,7 +161,7 @@ class _LogReadingResponse(BaseModel):
         type: str
         mime_type: str
 
-    id: Annotated[str, BeforeValidator(str)]
+    id: str
     saved_at: datetime
     attachments: list[Attachment] = Field(default_factory=list)
 

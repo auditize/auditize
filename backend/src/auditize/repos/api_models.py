@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Optional
 
-from pydantic import BaseModel, BeforeValidator, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
@@ -24,7 +24,7 @@ class RepoUpdateRequest(BaseModel):
 
 
 class RepoCreationResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(description="The repository ID")
+    id: str = Field(description="The repository ID")
 
 
 class RepoStatsData(BaseModel):
@@ -44,7 +44,7 @@ class RepoLogPermissionsData(BaseModel):
 
 
 class RepoReadingResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(description="The repository ID")
+    id: str = Field(description="The repository ID")
     name: str = Field(description="The repository name")
     created_at: datetime = Field(description="The creation date")
     stats: Optional[RepoStatsData] = Field(

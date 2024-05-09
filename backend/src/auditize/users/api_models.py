@@ -1,6 +1,6 @@
-from typing import Annotated, Optional
+from typing import Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, Field
 
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import ApplicablePermissionsData, PermissionsData
@@ -33,11 +33,11 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserCreationResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(description="The user id")
+    id: str = Field(description="The user id")
 
 
 class UserReadingResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(description="The user id")
+    id: str = Field(description="The user id")
     first_name: str = Field(description="The user first name")
     last_name: str = Field(description="The user last name")
     email: str = Field(description="The user email")
@@ -76,9 +76,7 @@ class UserAuthenticationRequest(BaseModel):
 
 
 class UserMeResponse(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(
-        description="The authenticated user id"
-    )
+    id: str = Field(description="The authenticated user id")
     first_name: str = Field(description="The authenticated user first name")
     last_name: str = Field(description="The authenticated user last name")
     email: str = Field(description="The authenticated user email")
