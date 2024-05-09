@@ -11,7 +11,7 @@ from auditize.auth.authorizer import (
 from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PayloadTooLarge
-from auditize.helpers.api import COMMON_RESPONSES
+from auditize.helpers.api.errors import COMMON_RESPONSES
 from auditize.helpers.datetime import validate_datetime
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service

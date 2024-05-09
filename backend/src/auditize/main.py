@@ -8,7 +8,7 @@ from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
 from auditize.database import get_dbm
 from auditize.exceptions import AuditizeException
-from auditize.helpers.api import (
+from auditize.helpers.api.errors import (
     make_response_from_exception,
 )
 from auditize.logs.api import router as logs_router
