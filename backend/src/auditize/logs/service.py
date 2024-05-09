@@ -14,7 +14,7 @@ from auditize.helpers.resources.service import (
     get_resource_document,
     update_resource_document,
 )
-from auditize.logs.db import LogDatabase, get_logs_db
+from auditize.logs.db import LogDatabase, get_log_db
 from auditize.logs.models import Log, Node
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
@@ -64,7 +64,7 @@ async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
 
 
 async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
 
     log_id = await create_resource_document(db.logs, log)
 
@@ -97,7 +97,7 @@ async def save_log_attachment(
     mime_type: str,
     data: bytes,
 ):
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     await update_resource_document(
         db.logs,
         log_id,
@@ -114,7 +114,7 @@ async def save_log_attachment(
 
 
 async def get_log(dbm: DatabaseManager, repo_id: str, log_id: str) -> Log:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     document = await get_resource_document(
         db.logs, log_id, projection=_EXCLUDE_ATTACHMENT_DATA
     )
@@ -124,7 +124,7 @@ async def get_log(dbm: DatabaseManager, repo_id: str, log_id: str) -> Log:
 async def get_log_attachment(
     dbm: DatabaseManager, repo_id: str, log_id: str, attachment_idx: int
 ) -> Log.Attachment:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     doc = await get_resource_document(
         db.logs, log_id, projection={"attachments": {"$slice": [attachment_idx, 1]}}
     )
@@ -156,7 +156,7 @@ async def get_logs(
     limit: int = 10,
     pagination_cursor: str = None,
 ) -> tuple[list[Log], str | None]:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
 
     criteria: dict[str, Any] = {}
     if event_name:
@@ -253,7 +253,7 @@ async def _get_consolidated_data_field(
 async def get_log_event_categories(
     dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
         db.log_events, "category", page=page, page_size=page_size
     )
@@ -267,7 +267,7 @@ async def get_log_events(
     page=1,
     page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
         db.log_events,
         "name",
@@ -280,7 +280,7 @@ async def get_log_events(
 async def get_log_actor_types(
     dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_field(
         db.log_actor_types, "type", page=page, page_size=page_size
     )
@@ -289,7 +289,7 @@ async def get_log_actor_types(
 async def get_log_resource_types(
     dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_field(
         db.log_resource_types, "type", page=page, page_size=page_size
     )
@@ -298,7 +298,7 @@ async def get_log_resource_types(
 async def get_log_tag_categories(
     dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_field(
         db.log_tag_categories, "category", page=page, page_size=page_size
     )
@@ -337,7 +337,7 @@ async def get_log_nodes(
     page=1,
     page_size=10,
 ) -> tuple[list[Log.Node], PagePaginationInfo]:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
 
     # please note that we use NotImplemented instead of None because None is a valid value for parent_node_id
     # (it means filtering on top nodes)
@@ -365,7 +365,7 @@ async def get_log_nodes(
 
 
 async def get_log_node(dbm: DatabaseManager, repo_id: str, node_id: str) -> Log.Node:
-    db = await get_logs_db(dbm, repo_id)
+    db = await get_log_db(dbm, repo_id)
 
     results = await (await _get_log_nodes(db, match={"id": node_id})).to_list(None)
     try:

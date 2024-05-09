@@ -5,7 +5,7 @@ import callee
 from bson import ObjectId
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogDatabase, get_logs_db
+from auditize.logs.db import LogDatabase, get_log_db
 from auditize.repos.models import Repo
 from auditize.repos.service import create_repo
 
@@ -27,7 +27,7 @@ class PreparedRepo:
         if not data:
             data = cls.prepare_data()
         repo_id = await create_repo(dbm, Repo(**data))
-        logs_db = await get_logs_db(dbm, repo_id)
+        logs_db = await get_log_db(dbm, repo_id)
         return cls(str(repo_id), data, logs_db)
 
     def expected_document(self, extra=None):

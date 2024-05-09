@@ -36,12 +36,12 @@ class LogDatabase(BaseDatabase):
     log_nodes = Collection("log_nodes")
 
 
-def get_logs_db_name(dbm: DatabaseManager, repo_id: str) -> str:
+def get_log_db_name(dbm: DatabaseManager, repo_id: str) -> str:
     return f"{dbm.name_prefix}_repo_{repo_id}"
 
 
-async def get_logs_db(dbm: DatabaseManager, repo_id: str) -> LogDatabase:
+async def get_log_db(dbm: DatabaseManager, repo_id: str) -> LogDatabase:
     from auditize.repos.service import get_repo  # avoid circular import
 
     await get_repo(dbm, repo_id)  # ensure repo exists
-    return LogDatabase(get_logs_db_name(dbm, repo_id), dbm.client)
+    return LogDatabase(get_log_db_name(dbm, repo_id), dbm.client)
