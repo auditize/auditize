@@ -27,14 +27,18 @@ async def create_resource_document(
 
 
 async def update_resource_document(
-    collection: AsyncIOMotorCollection, filter: str | dict, update: dict | BaseModel
+    collection: AsyncIOMotorCollection,
+    filter: str | dict,
+    update: dict | BaseModel,
+    *,
+    operator="$set",
 ):
     if isinstance(update, BaseModel):
         update = update.model_dump(exclude_unset=True)
 
     try:
         result = await collection.update_one(
-            _normalize_filter(filter), {"$set": update}
+            _normalize_filter(filter), {operator: update}
         )
     except DuplicateKeyError:
         raise ConstraintViolation()
@@ -43,8 +47,10 @@ async def update_resource_document(
         raise UnknownModelException()
 
 
-async def get_resource_document(collection: AsyncIOMotorCollection, filter: str | dict):
-    result = await collection.find_one(_normalize_filter(filter))
+async def get_resource_document(
+    collection: AsyncIOMotorCollection, filter: str | dict, projection: dict = None
+):
+    result = await collection.find_one(_normalize_filter(filter), projection=projection)
     if not result:
         raise UnknownModelException()
     return result

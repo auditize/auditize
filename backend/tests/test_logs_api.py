@@ -198,6 +198,18 @@ async def test_add_attachment_binary_and_all_fields(
     )
 
 
+async def test_add_attachment_unknown_log(
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    await log_write_client.assert_post(
+        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}/attachments",
+        files={"file": ("test.txt", "test data")},
+        data={"type": "text"},
+        expected_status_code=404,
+    )
+
+
 async def test_add_attachment_forbidden(
     log_write_client: HttpTestHelper,
     no_permission_client: HttpTestHelper,

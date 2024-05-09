@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 from typing import Any
 
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
@@ -10,6 +9,11 @@ from auditize.exceptions import UnknownModelException
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
+from auditize.helpers.resources.service import (
+    create_resource_document,
+    get_resource_document,
+    update_resource_document,
+)
 from auditize.logs.db import LogDatabase, get_logs_db
 from auditize.logs.models import Log, Node
 
@@ -62,7 +66,7 @@ async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
 async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
     db = await get_logs_db(dbm, repo_id)
 
-    result = await db.logs.insert_one(log.model_dump(exclude={"id"}))
+    log_id = await create_resource_document(db.logs, log)
 
     await consolidate_log_event(db, log.event)
 
@@ -81,7 +85,7 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
 
     await consolidate_log_node_path(db, log.node_path)
 
-    return str(result.inserted_id)
+    return log_id
 
 
 async def save_log_attachment(
@@ -94,43 +98,39 @@ async def save_log_attachment(
     data: bytes,
 ):
     db = await get_logs_db(dbm, repo_id)
-
-    await db.logs.update_one(
-        {"_id": ObjectId(log_id)},
+    await update_resource_document(
+        db.logs,
+        log_id,
         {
-            "$push": {
-                "attachments": {
-                    "name": name,
-                    "type": type,
-                    "mime_type": mime_type,
-                    "data": data,
-                }
+            "attachments": {
+                "name": name,
+                "type": type,
+                "mime_type": mime_type,
+                "data": data,
             }
         },
+        operator="$push",
     )
 
 
 async def get_log(dbm: DatabaseManager, repo_id: str, log_id: str) -> Log:
     db = await get_logs_db(dbm, repo_id)
-
-    data = await db.logs.find_one(ObjectId(log_id), _EXCLUDE_ATTACHMENT_DATA)
-    if data is None:
-        raise UnknownModelException(log_id)
-    return Log(**data)
+    document = await get_resource_document(
+        db.logs, log_id, projection=_EXCLUDE_ATTACHMENT_DATA
+    )
+    return Log.model_validate(document)
 
 
 async def get_log_attachment(
     dbm: DatabaseManager, repo_id: str, log_id: str, attachment_idx: int
 ) -> Log.Attachment:
     db = await get_logs_db(dbm, repo_id)
-
-    result = await db.logs.find_one(
-        {"_id": ObjectId(log_id)},
-        {"attachments": {"$slice": [attachment_idx, 1]}},
+    doc = await get_resource_document(
+        db.logs, log_id, projection={"attachments": {"$slice": [attachment_idx, 1]}}
     )
-    if result is None or len(result["attachments"]) == 0:
+    if len(doc["attachments"]) == 0:
         raise UnknownModelException()
-    return Log.Attachment(**result["attachments"][0])
+    return Log.Attachment(**doc["attachments"][0])
 
 
 def _text_search_filter(text: str) -> dict[str, Any]:
