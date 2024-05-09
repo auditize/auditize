@@ -23,7 +23,7 @@ async def test_auth_no_auth(dbm: DatabaseManager, apikey: PreparedApikey):
 
 
 async def test_auth_apikey(dbm: DatabaseManager, apikey: PreparedApikey):
-    request = make_http_request(headers={"Authorization": f"Bearer {apikey.token}"})
+    request = make_http_request(headers={"Authorization": f"Bearer {apikey.key}"})
     authenticated = await get_authenticated(dbm, request)
     assert authenticated
     assert authenticated.name == apikey.data["name"]
@@ -38,7 +38,7 @@ async def test_auth_invalid_authorization_header(
         }
     )
 
-    with pytest.raises(AuthenticationFailure, match="not a Bearer token"):
+    with pytest.raises(AuthenticationFailure, match="not a Bearer"):
         await get_authenticated(dbm, request)
 
 
@@ -51,7 +51,7 @@ async def test_auth_invalid_authorization_bearer(
             "Authorization": f"Bearer intgr-BOg6yxarq9oJ-y98VOMvy4gERijPxtcjta6YVxKiAaU"
         }
     )
-    with pytest.raises(AuthenticationFailure, match="Invalid apikey token"):
+    with pytest.raises(AuthenticationFailure, match="Invalid API key"):
         await get_authenticated(dbm, request)
 
 

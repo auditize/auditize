@@ -1,11 +1,8 @@
 import hashlib
 import secrets
 
-from bson import ObjectId
-
 from auditize.apikeys.models import Apikey, ApikeyUpdate
 from auditize.database import DatabaseManager
-from auditize.exceptions import UnknownModelException
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.helpers.resources.service import (
@@ -18,28 +15,28 @@ from auditize.permissions.operations import normalize_permissions, update_permis
 from auditize.repos.service import ensure_repos_in_permissions_exist
 
 
-def _hash_token(token: str) -> str:
-    # Generate a non-salted hash of the token, so it can be looked up afterward
-    return hashlib.sha256(token.encode()).hexdigest()
+def _hash_key(key: str) -> str:
+    # Generate a non-salted hash of the key, so it can be looked up afterward
+    return hashlib.sha256(key.encode()).hexdigest()
 
 
-def _generate_token() -> tuple[str, str]:
-    value = "intgr-" + secrets.token_urlsafe(32)
-    return value, _hash_token(value)
+def _generate_key() -> tuple[str, str]:
+    value = "aak-" + secrets.token_urlsafe(32)
+    return value, _hash_key(value)
 
 
 async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[str, str]:
     await ensure_repos_in_permissions_exist(dbm, apikey.permissions)
-    token, token_hash = _generate_token()
+    key, key_hash = _generate_key()
     apikey_id = await create_resource_document(
         dbm.core_db.apikeys,
         {
-            **apikey.model_dump(exclude={"id", "token_hash", "permissions"}),
-            "token_hash": token_hash,
+            **apikey.model_dump(exclude={"id", "key_hash", "permissions"}),
+            "key_hash": key_hash,
             "permissions": normalize_permissions(apikey.permissions).model_dump(),
         },
     )
-    return apikey_id, token
+    return apikey_id, key
 
 
 async def update_apikey(dbm: DatabaseManager, apikey_id: str, update: ApikeyUpdate):
@@ -53,12 +50,12 @@ async def update_apikey(dbm: DatabaseManager, apikey_id: str, update: ApikeyUpda
     await update_resource_document(dbm.core_db.apikeys, apikey_id, doc_update)
 
 
-async def regenerate_apikey_token(dbm: DatabaseManager, apikey_id: str) -> str:
-    token, token_hash = _generate_token()
+async def regenerate_apikey(dbm: DatabaseManager, apikey_id: str) -> str:
+    key, key_hash = _generate_key()
     await update_resource_document(
-        dbm.core_db.apikeys, apikey_id, {"token_hash": token_hash}
+        dbm.core_db.apikeys, apikey_id, {"key_hash": key_hash}
     )
-    return token
+    return key
 
 
 async def _get_apikey(dbm: DatabaseManager, filter: any) -> Apikey:
@@ -70,8 +67,8 @@ async def get_apikey(dbm: DatabaseManager, apikey_id: str) -> Apikey:
     return await _get_apikey(dbm, apikey_id)
 
 
-async def get_apikey_by_token(dbm: DatabaseManager, token: str) -> Apikey:
-    return await _get_apikey(dbm, {"token_hash": _hash_token(token)})
+async def get_apikey_by_key(dbm: DatabaseManager, key: str) -> Apikey:
+    return await _get_apikey(dbm, {"key_hash": _hash_key(key)})
 
 
 async def get_apikeys(

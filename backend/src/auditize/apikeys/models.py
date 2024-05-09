@@ -12,7 +12,7 @@ class Apikey(BaseModel):
         alias="_id",
     )
     name: str
-    token_hash: Optional[str] = Field(default=None)
+    key_hash: Optional[str] = Field(default=None)
     permissions: Permissions = Field(default_factory=Permissions)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

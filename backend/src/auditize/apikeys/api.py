@@ -8,7 +8,7 @@ from auditize.apikeys.api_models import (
     ApikeyCreationResponse,
     ApikeyListResponse,
     ApikeyReadingResponse,
-    ApikeyTokenGenerationResponse,
+    ApikeyRegenerationResponse,
     ApikeyUpdateRequest,
 )
 from auditize.auth.authorizer import Authenticated, Authorized
@@ -41,8 +41,8 @@ async def create_apikey(
 ) -> ApikeyCreationResponse:
     apikey_model = apikey.to_db_model()
     authorize_grant(authenticated.permissions, apikey_model.permissions)
-    apikey_id, token = await service.create_apikey(dbm, apikey_model)
-    return ApikeyCreationResponse(id=apikey_id, token=token)
+    apikey_id, key = await service.create_apikey(dbm, apikey_model)
+    return ApikeyCreationResponse(id=apikey_id, key=key)
 
 
 @router.patch(
@@ -111,16 +111,16 @@ async def delete_apikey(
 
 
 @router.post(
-    "/apikeys/{apikey_id}/token",
-    summary="Re-regenerate apikey password",
+    "/apikeys/{apikey_id}/key",
+    summary="Re-regenerate apikey",
     tags=["apikeys"],
     status_code=200,
 )
-async def regenerate_apikey_token(
+async def regenerate_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_apikeys()),
     apikey_id: str,
 ):
     _ensure_cannot_alter_own_apikey(authenticated, apikey_id)
-    token = await service.regenerate_apikey_token(dbm, apikey_id)
-    return ApikeyTokenGenerationResponse(token=token)
+    key = await service.regenerate_apikey(dbm, apikey_id)
+    return ApikeyRegenerationResponse(key=key)

@@ -27,17 +27,17 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper, dbm: DatabaseM
         "/apikeys",
         json=data,
         expected_status_code=201,
-        expected_json={"id": callee.IsA(str), "token": callee.IsA(str)},
+        expected_json={"id": callee.IsA(str), "key": callee.IsA(str)},
     )
 
-    apikey = PreparedApikey(resp.json()["id"], resp.json()["token"], data, dbm)
+    apikey = PreparedApikey(resp.json()["id"], resp.json()["key"], data, dbm)
     await assert_collection(dbm.core_db.apikeys, [apikey.expected_document()])
 
-    # Test that the token actually works
+    # Test that the key actually works
     apikey_client = create_http_client()
     await apikey_client.assert_get(
         "/apikeys",
-        headers={"Authorization": f"Bearer {apikey.token}"},
+        headers={"Authorization": f"Bearer {apikey.key}"},
         expected_status_code=403,  # 403 means that authentication was successful, otherwise it would be 401
     )
 
@@ -120,7 +120,7 @@ async def test_apikey_update_self(apikey_builder: ApikeyBuilder):
         )
 
 
-async def test_apikey_regenerate_token(
+async def test_apikey_regenerate_key(
     apikey_write_client: HttpTestHelper,
     apikey: PreparedApikey,
     dbm: DatabaseManager,
@@ -128,20 +128,21 @@ async def test_apikey_regenerate_token(
     mongo_document = await dbm.core_db.apikeys.find_one({"_id": ObjectId(apikey.id)})
 
     await apikey_write_client.assert_post(
-        f"/apikeys/{apikey.id}/token",
+        f"/apikeys/{apikey.id}/key",
         expected_status_code=200,
-        expected_json={"token": callee.IsA(str)},
+        expected_json={"key": callee.IsA(str)},
     )
 
-    # make sure the token has changed
+    # make sure the key has changed
     await assert_collection(
         dbm.core_db.apikeys,
         [
             apikey.expected_document(
                 {
-                    "token_hash": callee.Matching(
-                        lambda val: type(val) is str
-                        and val != mongo_document["token_hash"]
+                    "key_hash": callee.Matching(
+                        lambda val: (
+                            type(val) is str and val != mongo_document["key_hash"]
+                        )
                     )
                 }
             )
@@ -149,15 +150,15 @@ async def test_apikey_regenerate_token(
     )
 
 
-async def test_apikey_regenerate_token_forbidden(
+async def test_apikey_regenerate_key_forbidden(
     no_permission_client: HttpTestHelper, apikey: PreparedApikey
 ):
-    await no_permission_client.assert_post_forbidden(f"/apikeys/{apikey.id}/token")
+    await no_permission_client.assert_post_forbidden(f"/apikeys/{apikey.id}/key")
 
 
-async def test_apikey_regenerate_token_self(apikey: PreparedApikey):
+async def test_apikey_regenerate_key_self(apikey: PreparedApikey):
     async with apikey.client() as client:
-        await client.assert_post_forbidden(f"/apikeys/{apikey.id}/token")
+        await client.assert_post_forbidden(f"/apikeys/{apikey.id}/key")
 
 
 async def test_apikey_get(apikey_read_client: HttpTestHelper, apikey: PreparedApikey):
@@ -254,4 +255,4 @@ class TestPermissions(BasePermissionTests):
     def rebuild_assignee_from_response(
         self, resp: Response, data: dict, dbm: DatabaseManager
     ) -> PreparedApikey:
-        return PreparedApikey(resp.json()["id"], resp.json()["token"], data, dbm)
+        return PreparedApikey(resp.json()["id"], resp.json()["key"], data, dbm)

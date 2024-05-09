@@ -29,7 +29,7 @@ class ApikeyUpdateRequest(BaseModel):
 
 class ApikeyCreationResponse(BaseModel):
     id: Annotated[str, BeforeValidator(str)] = Field(description="The apikey id")
-    token: str = Field(description="The apikey token")
+    key: str = Field(description="The actual key")
 
 
 class ApikeyReadingResponse(BaseModel):
@@ -50,5 +50,5 @@ class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyReadingResponse]):
         return ApikeyReadingResponse.from_db_model(apikey)
 
 
-class ApikeyTokenGenerationResponse(BaseModel):
-    token: str = Field(description="The apikey token")
+class ApikeyRegenerationResponse(BaseModel):
+    key: str = Field(description="The new key")

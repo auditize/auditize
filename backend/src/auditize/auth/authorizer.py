@@ -5,7 +5,7 @@ from fastapi import Depends
 from starlette.requests import Request
 
 from auditize.apikeys.models import Apikey
-from auditize.apikeys.service import get_apikey_by_token
+from auditize.apikeys.service import get_apikey_by_key
 from auditize.auth.jwt import get_user_email_from_session_token
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import (
@@ -56,20 +56,20 @@ def _get_authorization_bearer(request: Request) -> str:
     if not authorization:
         raise LookupError("Authorization header not found")
     if not authorization.startswith(_BEARER_PREFIX):
-        raise LookupError("Authorization header is not a Bearer token")
+        raise LookupError("Authorization header is not a Bearer")
     return authorization[len(_BEARER_PREFIX) :]
 
 
 async def authenticate_apikey(dbm: DatabaseManager, request: Request) -> Authenticated:
     try:
-        token = _get_authorization_bearer(request)
+        key = _get_authorization_bearer(request)
     except LookupError as e:
         raise AuthenticationFailure(str(e))
 
     try:
-        apikey = await get_apikey_by_token(dbm, token)
+        apikey = await get_apikey_by_key(dbm, key)
     except UnknownModelException:
-        raise AuthenticationFailure("Invalid apikey token")
+        raise AuthenticationFailure("Invalid API key")
 
     return Authenticated.from_apikey(apikey)
 

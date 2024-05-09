@@ -10,7 +10,7 @@ export async function createApikey(apikey: Apikey): Promise<[string, string]> {
     "/apikeys",
     snakecaseResourceWithPermissions(apikey),
   );
-  return [response.data.id, response.data.token];
+  return [response.data.id, response.data.key];
 }
 
 export async function updateApikey(
@@ -44,7 +44,7 @@ export async function deleteApikey(apikeyId: string): Promise<void> {
   await axiosInstance.delete("/apikeys/" + apikeyId);
 }
 
-export async function regenerateApikeyToken(apikeyId: string): Promise<string> {
-  const response = await axiosInstance.post(`/apikeys/${apikeyId}/token`);
-  return response.data.token;
+export async function regenerateApikey(apikeyId: string): Promise<string> {
+  const response = await axiosInstance.post(`/apikeys/${apikeyId}/key`);
+  return response.data.key;
 }

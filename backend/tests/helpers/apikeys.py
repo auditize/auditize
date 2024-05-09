@@ -14,9 +14,9 @@ from .permissions.constants import DEFAULT_PERMISSIONS
 
 
 class PreparedApikey:
-    def __init__(self, id: str, token: str, data: dict, dbm: DatabaseManager):
+    def __init__(self, id: str, key: str, data: dict, dbm: DatabaseManager):
         self.id = id
-        self.token = token
+        self.key = key
         self.data = data
         self.dbm = dbm
 
@@ -35,7 +35,7 @@ class PreparedApikey:
             json=data,
             expected_status_code=201,
         )
-        return cls(resp.json()["id"], resp.json()["token"], data, dbm)
+        return cls(resp.json()["id"], resp.json()["key"], data, dbm)
 
     @staticmethod
     def prepare_model(*, permissions=None) -> Apikey:
@@ -50,10 +50,10 @@ class PreparedApikey:
     ) -> "PreparedApikey":
         if apikey is None:
             apikey = cls.prepare_model()
-        apikey_id, token = await create_apikey(dbm, apikey)
+        apikey_id, key = await create_apikey(dbm, apikey)
         return cls(
             id=str(apikey_id),
-            token=token,
+            key=key,
             data={
                 "name": apikey.name,
             },
@@ -70,7 +70,7 @@ class PreparedApikey:
         return {
             "_id": ObjectId(self.id),
             "name": self.data["name"],
-            "token_hash": callee.IsA(str),
+            "key_hash": callee.IsA(str),
             "created_at": callee.IsA(datetime),
             "permissions": DEFAULT_PERMISSIONS,
             **(extra or {}),
@@ -86,5 +86,5 @@ class PreparedApikey:
 
     def client(self) -> HttpTestHelper:
         c = create_http_client()
-        c.headers["Authorization"] = f"Bearer {self.token}"
+        c.headers["Authorization"] = f"Bearer {self.key}"
         return c

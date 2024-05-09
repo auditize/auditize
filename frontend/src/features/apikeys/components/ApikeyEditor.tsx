@@ -17,7 +17,7 @@ import {
 import {
   createApikey,
   getApikey,
-  regenerateApikeyToken,
+  regenerateApikey,
   updateApikey,
 } from "../api";
 
@@ -77,10 +77,10 @@ function ApikeyEditor({
   );
 }
 
-function Token({ value }: { value: string }) {
+function Key({ value }: { value: string }) {
   return (
     <Group>
-      <span>Token: </span>
+      <span>Key: </span>
       <Code>{value}</Code>
       <CopyIcon value={value} />
     </Group>
@@ -92,11 +92,11 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
   const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
     emptyPermissions(),
   );
-  const [token, setToken] = useState<string | null>(null);
+  const [key, setKey] = useState<string | null>(null);
 
   useEffect(() => {
     form.reset();
-    setToken(null);
+    setKey(null);
   }, [opened]);
 
   return (
@@ -106,38 +106,38 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
       onSubmit={form.onSubmit}
       onSave={() => createApikey({ ...form.values, permissions })}
       onSaveSuccess={(data) => {
-        const [_, token] = data as [string, string];
-        setToken(token);
+        const [_, key] = data as [string, string];
+        setKey(key);
       }}
       queryKeyForInvalidation={["apikeys"]}
-      disabledSaving={!!token}
+      disabledSaving={!!key}
     >
       <ApikeyEditor
         form={form}
         permissions={permissions}
         onChange={(perms) => setPermissions(perms)}
       >
-        {token && <Token value={token} />}
+        {key && <Key value={key} />}
       </ApikeyEditor>
     </ResourceCreation>
   );
 }
 
-export function TokenRegeneration({ apikeyId }: { apikeyId: string }) {
-  const [newToken, setNewToken] = useState<string | null>(null);
+export function KeyRegeneration({ apikeyId }: { apikeyId: string }) {
+  const [newKey, setNewKey] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const mutation = useMutation({
-    mutationFn: () => regenerateApikeyToken(apikeyId),
-    onSuccess: (value) => setNewToken(value),
+    mutationFn: () => regenerateApikey(apikeyId),
+    onSuccess: (value) => setNewKey(value),
     onError: (error) => setError(error.message),
   });
 
-  if (newToken) {
-    return <Token value={newToken} />;
+  if (newKey) {
+    return <Key value={newKey} />;
   } else {
     return (
       <>
-        <Button onClick={() => mutation.mutate()}>Regenerate token</Button>
+        <Button onClick={() => mutation.mutate()}>Regenerate key</Button>
         <InlineErrorMessage>{error}</InlineErrorMessage>
       </>
     );
@@ -179,7 +179,7 @@ export function ApikeyEdition({
         }}
         readOnly={readOnly}
       >
-        {!readOnly && <TokenRegeneration apikeyId={apikeyId!} />}
+        {!readOnly && <KeyRegeneration apikeyId={apikeyId!} />}
       </ApikeyEditor>
     </ResourceEdition>
   );
