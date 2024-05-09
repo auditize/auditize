@@ -10,6 +10,7 @@ from auditize.repos.models import Repo
 from auditize.repos.service import create_repo
 
 from .http import HttpTestHelper
+from .logs import PreparedLog
 
 
 class PreparedRepo:
@@ -49,7 +50,15 @@ class PreparedRepo:
 
     async def create_log(
         self, client: HttpTestHelper, data: dict = None, saved_at: datetime = None
-    ) -> "PreparedLog":
-        from .logs import PreparedLog  # avoid circular import
-
-        return await PreparedLog.create(client, self, data, saved_at=saved_at)
+    ) -> PreparedLog:
+        if data is None:
+            data = PreparedLog.prepare_data()
+        resp = await client.assert_post(
+            f"/repos/{self.id}/logs", json=data, expected_status_code=201
+        )
+        log_id = resp.json()["id"]
+        if saved_at:
+            self.db.logs.update_one(
+                {"_id": ObjectId(log_id)}, {"$set": {"saved_at": saved_at}}
+            )
+        return PreparedLog(log_id, data, self)

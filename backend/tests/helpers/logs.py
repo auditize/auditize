@@ -5,17 +5,18 @@ from bson import ObjectId
 from icecream import ic
 
 from .http import HttpTestHelper
-from .repos import PreparedRepo
 
 # A valid ObjectId, but not existing in the database
 UNKNOWN_OBJECT_ID = "65fab045f097fe0b9b664c99"
 
 
 class PreparedLog:
-    def __init__(self, id: str, data: dict, repo: PreparedRepo):
+    def __init__(self, id: str, data: dict, repo):
+        from .repos import PreparedRepo  # avoid circular import
+
         self.id = id
         self.data = data
-        self.repo = repo
+        self.repo: PreparedRepo = repo
 
     @staticmethod
     def prepare_data(extra=None) -> dict:
@@ -54,27 +55,6 @@ class PreparedLog:
         if expected["resource"]:
             expected["resource"].setdefault("extra", {})
         return {**expected, **(extra or {})}
-
-    @classmethod
-    async def create(
-        cls,
-        client: HttpTestHelper,
-        repo: PreparedRepo,
-        data: dict = None,
-        *,
-        saved_at: datetime = None,
-    ):
-        if data is None:
-            data = cls.prepare_data()
-        resp = await client.assert_post(
-            f"/repos/{repo.id}/logs", json=data, expected_status_code=201
-        )
-        log_id = resp.json()["id"]
-        if saved_at:
-            repo.db.logs.update_one(
-                {"_id": ObjectId(log_id)}, {"$set": {"saved_at": saved_at}}
-            )
-        return cls(log_id, data, repo)
 
     async def assert_db(self, extra=None):
         expected = self.expected_api_response(extra)
