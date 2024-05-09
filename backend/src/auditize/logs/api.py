@@ -287,6 +287,20 @@ async def get_log(
     summary="Download a log attachment",
     operation_id="get_log_attachment",
     tags=["logs"],
+    response_class=Response,
+    responses={
+        200: {
+            "description": (
+                "Attachment content. The actual MIME type will be the MIME type "
+                "of the attachment when it was uploaded."
+            ),
+            "content": {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary", "example": None}
+                }
+            },
+        },
+    },
 )
 async def get_log_attachment(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
