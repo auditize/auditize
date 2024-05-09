@@ -13,6 +13,7 @@ from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PayloadTooLarge
 from auditize.helpers.api.errors import COMMON_RESPONSES
 from auditize.helpers.datetime import validate_datetime
+from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service
 from auditize.logs.api_models import (
@@ -312,6 +313,7 @@ async def get_logs(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
+    page_params: Annotated[CursorPaginationParams, Depends()],
     event_name: str = None,
     event_category: str = None,
     actor_type: str = None,
@@ -324,8 +326,6 @@ async def get_logs(
     node_id: str = None,
     since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
     until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
-    limit: int = 10,
-    cursor: str = None,
 ) -> LogsReadingResponse:
     # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
@@ -343,7 +343,7 @@ async def get_logs(
         node_id=node_id,
         since=since,
         until=until,
-        limit=limit,
-        pagination_cursor=cursor,
+        limit=page_params.limit,
+        pagination_cursor=page_params.cursor,
     )
     return LogsReadingResponse.build(logs, next_cursor)

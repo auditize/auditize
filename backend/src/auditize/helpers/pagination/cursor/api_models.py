@@ -1,6 +1,21 @@
-from typing import Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from pydantic import BaseModel, Field
+
+
+class CursorPaginationParams(BaseModel):
+    cursor: Optional[str] = Field(
+        description="The cursor value previously returned in 'next_cursor' "
+        "field of the response or no value for the first page.",
+        default=None,
+    )
+    limit: int = Field(
+        description="The number of items per page",
+        default=10,
+        ge=1,
+        le=100,
+        json_schema_extra={"example": 10},
+    )
 
 
 class CursorPaginationData(BaseModel):
