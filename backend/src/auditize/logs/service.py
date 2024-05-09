@@ -194,6 +194,7 @@ async def get_logs(
         db.logs,
         id_field="_id",
         date_field="saved_at",
+        projection=_EXCLUDE_ATTACHMENT_DATA,
         filter=criteria,
         limit=limit,
         pagination_cursor=pagination_cursor,
