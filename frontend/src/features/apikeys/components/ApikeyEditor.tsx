@@ -97,6 +97,7 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
   useEffect(() => {
     form.reset();
     setKey(null);
+    setPermissions(emptyPermissions());
   }, [opened]);
 
   return (

@@ -99,8 +99,8 @@ function ManagementPermissionManagement({
             <EntityPermissionManagement
               name="Apikeys"
               perms={perms.apikeys}
-              onChange={(intgrPerms) =>
-                onChange({ ...perms, apikeys: intgrPerms })
+              onChange={(apikeyPerms) =>
+                onChange({ ...perms, apikeys: apikeyPerms })
               }
               assignablePerms={assignablePerms.apikeys}
               readOnly={readOnly}

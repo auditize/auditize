@@ -6,7 +6,6 @@ import {
   ResourceCreation,
   ResourceEdition,
 } from "@/components/ResourceManagement";
-import { useAuthenticatedUser } from "@/features/auth";
 import {
   emptyPermissions,
   WithPermissionManagement,
