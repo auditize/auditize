@@ -4,7 +4,7 @@ import callee
 from bson import ObjectId
 from icecream import ic
 
-from .http import HttpTestHelper
+from .utils import DATETIME_FORMAT
 
 # A valid ObjectId, but not existing in the database
 UNKNOWN_OBJECT_ID = "65fab045f097fe0b9b664c99"
@@ -45,7 +45,7 @@ class PreparedLog:
             "attachments": [],
             "id": self.id,
             **self.data,
-            "saved_at": callee.Regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"),
+            "saved_at": DATETIME_FORMAT,
         }
         for tag in expected["tags"]:
             tag.setdefault("category", None)

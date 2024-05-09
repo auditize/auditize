@@ -161,6 +161,11 @@ class _LogReadingResponse(BaseModel):
         description: Optional[str]
         type: str
         mime_type: str
+        saved_at: datetime
+
+        @field_serializer("saved_at", when_used="json")
+        def serialize_datetime(self, value):
+            return serialize_datetime(value)
 
     id: str
     saved_at: datetime

@@ -21,6 +21,7 @@ from helpers.pagination import (
     do_test_page_pagination_empty_data,
 )
 from helpers.repos import PreparedRepo
+from helpers.utils import DATETIME_FORMAT
 
 pytestmark = pytest.mark.anyio
 
@@ -287,6 +288,7 @@ async def test_get_log_all_fields(
                         "description": None,
                         "type": "text",
                         "mime_type": "text/plain",
+                        "saved_at": DATETIME_FORMAT,
                     }
                 ]
             }
@@ -436,6 +438,7 @@ async def test_get_logs_with_attachment(
                                 "description": "A text file",
                                 "type": "text file",
                                 "mime_type": "text/plain",
+                                "saved_at": DATETIME_FORMAT,
                             }
                         ]
                     }
