@@ -12,7 +12,7 @@ from auditize.users.api_models import UserAuthenticationRequest
 router = APIRouter()
 
 
-@router.post("/auth/user/login", summary="User log-in", tags=["users"], status_code=204)
+@router.post("/auth/user/login", summary="User log-in", tags=["auth"], status_code=204)
 async def login_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     request: UserAuthenticationRequest,
@@ -32,7 +32,7 @@ async def login_user(
 
 
 @router.post(
-    "/auth/user/logout", summary="User log-out", tags=["users"], status_code=204
+    "/auth/user/logout", summary="User log-out", tags=["auth"], status_code=204
 )
 async def logout_user(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
