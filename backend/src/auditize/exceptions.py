@@ -20,3 +20,7 @@ class ValidationError(AuditizeException):
 
 class ConstraintViolation(AuditizeException):
     pass
+
+
+class PayloadTooLarge(AuditizeException):
+    pass

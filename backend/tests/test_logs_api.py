@@ -202,6 +202,19 @@ async def test_add_attachment_binary_and_all_fields(
     )
 
 
+async def test_add_attachment_too_large(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log = await repo.create_log(log_rw_client)
+    await log_rw_client.assert_post(
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
+        files={"file": ("test.txt", "A" * 2048)},
+        data={"type": "text"},
+        expected_status_code=413,
+    )
+
+
 async def test_add_attachment_unknown_log(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,

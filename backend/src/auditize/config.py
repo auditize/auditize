@@ -2,12 +2,15 @@ import dataclasses
 import os
 from threading import Lock
 
+_DEFAULT_ATTACHMENT_MAX_SIZE = 1024 * 1024 * 5  # 5MB
+
 
 @dataclasses.dataclass
 class Config:
     base_url: str
     jwt_signing_key: str
     user_session_token_lifetime: int
+    attachment_max_size: int
     smtp_server: str
     smtp_port: int
     smtp_username: str
@@ -37,6 +40,11 @@ class Config:
                 jwt_signing_key=required("AUDITIZE_JWT_SIGNING_KEY"),
                 user_session_token_lifetime=optional(
                     "AUDITIZE_USER_SESSION_TOKEN_LIFETIME", 60 * 60 * 12, cast=int
+                ),
+                attachment_max_size=optional(
+                    "AUDITIZE_ATTACHMENT_MAX_SIZE",
+                    default=_DEFAULT_ATTACHMENT_MAX_SIZE,
+                    cast=int,
                 ),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
                 smtp_port=optional("AUDITIZE_SMTP_PORT", cast=int),

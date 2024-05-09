@@ -8,7 +8,9 @@ from auditize.auth.authorizer import (
     AuthorizedOnLogsRead,
     AuthorizedOnLogsWrite,
 )
+from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
+from auditize.exceptions import PayloadTooLarge
 from auditize.helpers.api import COMMON_RESPONSES
 from auditize.helpers.datetime import validate_datetime
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
@@ -244,6 +246,12 @@ async def add_attachment(
         ),
     ] = None,
 ) -> None:
+    config = get_config()
+    data = await file.read(config.attachment_max_size + 1)
+    if len(data) > config.attachment_max_size:
+        raise PayloadTooLarge(
+            f"Attachment size exceeds the maximum allowed size ({config.attachment_max_size} bytes)"
+        )
     await service.save_log_attachment(
         dbm,
         repo_id,
@@ -252,7 +260,7 @@ async def add_attachment(
         name=name or file.filename,
         type=type,
         mime_type=mime_type or file.content_type,
-        data=await file.read(),
+        data=data,
     )
 
 

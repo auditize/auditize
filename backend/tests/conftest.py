@@ -23,7 +23,8 @@ def setup_env():
     # set the environment variables (at least the required ones)
     os.environ.update(
         {
-            "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73"
+            "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
+            "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
         }
     )
 

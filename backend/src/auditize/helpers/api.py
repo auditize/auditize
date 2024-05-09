@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from auditize.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
+    PayloadTooLarge,
     PermissionDenied,
     UnknownModelException,
     ValidationError,
@@ -17,6 +18,7 @@ _EXCEPTION_RESPONSES = {
     PermissionDenied: (403, "Forbidden"),
     UnknownModelException: (404, "Not found"),
     ConstraintViolation: (409, "Resource already exists"),
+    PayloadTooLarge: (413, "Payload too large"),
 }
 
 
