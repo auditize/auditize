@@ -69,8 +69,13 @@ class HttpTestHelper(AsyncClient):
             expected_json=expected_json,
         )
 
-    assert_unauthorized_post = partialmethod(assert_post, expected_status_code=401)
-    assert_forbidden_post = partialmethod(assert_post, expected_status_code=403)
+    assert_post_bad_request = partialmethod(assert_post, expected_status_code=400)
+    assert_post_unauthorized = partialmethod(assert_post, expected_status_code=401)
+    assert_post_forbidden = partialmethod(assert_post, expected_status_code=403)
+    assert_post_not_found = partialmethod(assert_post, expected_status_code=404)
+    assert_post_constraint_violation = partialmethod(
+        assert_post, expected_status_code=409
+    )
 
     async def assert_patch(
         self,
@@ -92,8 +97,13 @@ class HttpTestHelper(AsyncClient):
             expected_json=expected_json,
         )
 
-    assert_unauthorized_patch = partialmethod(assert_patch, expected_status_code=401)
-    assert_forbidden_patch = partialmethod(assert_patch, expected_status_code=403)
+    assert_patch_bad_request = partialmethod(assert_patch, expected_status_code=400)
+    assert_patch_unauthorized = partialmethod(assert_patch, expected_status_code=401)
+    assert_patch_forbidden = partialmethod(assert_patch, expected_status_code=403)
+    assert_patch_not_found = partialmethod(assert_patch, expected_status_code=404)
+    assert_patch_constraint_violation = partialmethod(
+        assert_patch, expected_status_code=409
+    )
 
     async def assert_delete(
         self, path, *, expected_status_code=204, expected_json=None
@@ -105,8 +115,12 @@ class HttpTestHelper(AsyncClient):
             expected_json=expected_json,
         )
 
-    assert_unauthorized_delete = partialmethod(assert_delete, expected_status_code=401)
-    assert_forbidden_delete = partialmethod(assert_delete, expected_status_code=403)
+    assert_delete_unauthorized = partialmethod(assert_delete, expected_status_code=401)
+    assert_delete_forbidden = partialmethod(assert_delete, expected_status_code=403)
+    assert_delete_not_found = partialmethod(assert_delete, expected_status_code=404)
+    assert_delete_constraint_violation = partialmethod(
+        assert_delete, expected_status_code=409
+    )
 
     async def assert_get(
         self,
@@ -126,8 +140,10 @@ class HttpTestHelper(AsyncClient):
             expected_json=expected_json,
         )
 
-    assert_unauthorized_get = partialmethod(assert_get, expected_status_code=401)
-    assert_forbidden_get = partialmethod(assert_get, expected_status_code=403)
+    assert_get_bad_request = partialmethod(assert_get, expected_status_code=400)
+    assert_get_unauthorized = partialmethod(assert_get, expected_status_code=401)
+    assert_get_forbidden = partialmethod(assert_get, expected_status_code=403)
+    assert_get_not_found = partialmethod(assert_get, expected_status_code=404)
 
 
 def create_http_client() -> HttpTestHelper:

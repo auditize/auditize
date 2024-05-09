@@ -63,13 +63,13 @@ async def test_repo_create_missing_name(
 async def test_repo_create_already_used_name(
     repo_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await repo_write_client.assert_post(
-        "/repos", json={"name": repo.data["name"]}, expected_status_code=409
+    await repo_write_client.assert_post_constraint_violation(
+        "/repos", json={"name": repo.data["name"]}
     )
 
 
 async def test_repo_create_forbidden(no_permission_client: HttpTestHelper):
-    await no_permission_client.assert_forbidden_post("/repos", json={"name": "myrepo"})
+    await no_permission_client.assert_post_forbidden("/repos", json={"name": "myrepo"})
 
 
 async def test_repo_update(
@@ -85,10 +85,9 @@ async def test_repo_update(
 
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
-    await repo_write_client.assert_patch(
+    await repo_write_client.assert_patch_not_found(
         f"/repos/{UNKNOWN_OBJECT_ID}",
         json={"name": "Repo Updated"},
-        expected_status_code=404,
     )
 
 
@@ -98,17 +97,16 @@ async def test_repo_update_already_used_name(
     repo1 = await PreparedRepo.create(dbm)
     repo2 = await PreparedRepo.create(dbm)
 
-    await repo_write_client.assert_patch(
+    await repo_write_client.assert_patch_constraint_violation(
         f"/repos/{repo1.id}",
         json={"name": repo2.data["name"]},
-        expected_status_code=409,
     )
 
 
 async def test_repo_update_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_patch(
+    await no_permission_client.assert_patch_forbidden(
         f"/repos/{repo.id}", json={"name": "Repo Updated"}
     )
 
@@ -169,15 +167,13 @@ async def test_repo_get_with_stats(
 async def test_repo_get_unknown_id(
     repo_read_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    await repo_read_client.assert_get(
-        f"/repos/{UNKNOWN_OBJECT_ID}", expected_status_code=404
-    )
+    await repo_read_client.assert_get_not_found(f"/repos/{UNKNOWN_OBJECT_ID}")
 
 
 async def test_repo_get_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(f"/repos/{repo.id}")
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}")
 
 
 async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager):
@@ -222,7 +218,7 @@ async def test_repo_list_with_stats(
 
 
 async def test_repo_list_forbidden(no_permission_client: HttpTestHelper):
-    await no_permission_client.assert_forbidden_get("/repos")
+    await no_permission_client.assert_get_forbidden("/repos")
 
 
 async def test_repo_list_user_repos_simple(
@@ -358,7 +354,7 @@ async def test_repo_list_user_repo_unauthorized(no_permission_client: HttpTestHe
     # /users/me/repos does not require any permission (as its job is to
     # return authorized repos for log access)
     # but the user must be authenticated
-    await no_permission_client.assert_unauthorized_get("/users/me/repos")
+    await no_permission_client.assert_get_unauthorized("/users/me/repos")
 
 
 async def test_repo_delete(
@@ -372,12 +368,10 @@ async def test_repo_delete(
 async def test_repo_delete_unknown_id(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    await repo_write_client.assert_delete(
-        f"/repos/{UNKNOWN_OBJECT_ID}", expected_status_code=404
-    )
+    await repo_write_client.assert_delete_not_found(f"/repos/{UNKNOWN_OBJECT_ID}")
 
 
 async def test_repo_delete_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_delete(f"/repos/{repo.id}")
+    await no_permission_client.assert_delete_forbidden(f"/repos/{repo.id}")

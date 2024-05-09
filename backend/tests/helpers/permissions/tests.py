@@ -89,7 +89,7 @@ class BasePermissionTests:
         self,
         superadmin_client: HttpTestHelper,
     ):
-        await superadmin_client.assert_post(
+        await superadmin_client.assert_post_bad_request(
             self.base_path,
             json=self.prepare_assignee_data(
                 {
@@ -100,7 +100,6 @@ class BasePermissionTests:
                     }
                 }
             ),
-            expected_status_code=400,
         )
 
     async def test_create_forbidden_permissions(self, dbm: DatabaseManager):
@@ -110,7 +109,7 @@ class BasePermissionTests:
         )
 
         async with grantor.client() as client:
-            await client.assert_forbidden_post(
+            await client.assert_post_forbidden(
                 self.base_path,
                 json=self.prepare_assignee_data(
                     {
@@ -188,7 +187,7 @@ class BasePermissionTests:
         self, superadmin_client: HttpTestHelper, dbm: DatabaseManager
     ):
         assignee = await self.create_assignee(superadmin_client, dbm)
-        await superadmin_client.assert_patch(
+        await superadmin_client.assert_patch_bad_request(
             f"{self.base_path}/{assignee.id}",
             json={
                 "permissions": {
@@ -197,7 +196,6 @@ class BasePermissionTests:
                     },
                 }
             },
-            expected_status_code=400,
         )
 
     async def test_update_forbidden_permissions(self, dbm: DatabaseManager):
@@ -208,7 +206,7 @@ class BasePermissionTests:
 
         async with grantor.client() as client:
             assignee = await self.create_assignee(client, dbm)
-            await client.assert_forbidden_patch(
+            await client.assert_patch_forbidden(
                 f"{self.base_path}/{assignee.id}",
                 json={
                     "permissions": {

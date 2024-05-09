@@ -70,7 +70,7 @@ async def test_create_log_minimal_fields(
 async def test_create_log_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_post(
+    await no_permission_client.assert_post_forbidden(
         f"/repos/{repo.id}/logs", json=PreparedLog.prepare_data()
     )
 
@@ -202,11 +202,10 @@ async def test_add_attachment_unknown_log(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
 ):
-    await log_write_client.assert_post(
+    await log_write_client.assert_post_not_found(
         f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}/attachments",
         files={"file": ("test.txt", "test data")},
         data={"type": "text"},
-        expected_status_code=404,
     )
 
 
@@ -216,7 +215,7 @@ async def test_add_attachment_forbidden(
     repo: PreparedRepo,
 ):
     log = await repo.create_log(log_write_client)
-    await no_permission_client.assert_forbidden_post(
+    await no_permission_client.assert_post_forbidden(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("test.txt", "test data")},
         data={"type": "text"},
@@ -275,14 +274,14 @@ async def test_get_log_all_fields(
 
 
 async def test_get_log_not_found(log_read_client: HttpTestHelper, repo: PreparedRepo):
-    await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}", expected_status_code=404
+    await log_read_client.assert_get_not_found(
+        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}"
     )
 
 
 async def test_get_log_unknown_repo(log_read_client: HttpTestHelper):
-    await log_read_client.assert_get(
-        f"/repos/{UNKNOWN_OBJECT_ID}/logs/{UNKNOWN_OBJECT_ID}", expected_status_code=404
+    await log_read_client.assert_get_not_found(
+        f"/repos/{UNKNOWN_OBJECT_ID}/logs/{UNKNOWN_OBJECT_ID}"
     )
 
 
@@ -292,7 +291,7 @@ async def test_get_log_forbidden(
     repo: PreparedRepo,
 ):
     log = await repo.create_log(log_write_client)
-    await no_permission_client.assert_forbidden_get(f"/repos/{repo.id}/logs/{log.id}")
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/{log.id}")
 
 
 async def test_get_log_attachment_text_and_minimal_fields(
@@ -343,9 +342,8 @@ async def test_get_log_attachment_binary_and_all_fields(
 async def test_get_log_attachment_not_found_log_id(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}/attachments/0",
-        expected_status_code=404,
+    await log_read_client.assert_get_not_found(
+        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}/attachments/0"
     )
 
 
@@ -353,8 +351,8 @@ async def test_get_log_attachment_not_found_attachment_idx(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     log = await repo.create_log(log_rw_client)
-    await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs/{log.id}/attachments/0", expected_status_code=404
+    await log_rw_client.assert_get_not_found(
+        f"/repos/{repo.id}/logs/{log.id}/attachments/0"
     )
 
 
@@ -372,7 +370,7 @@ async def test_get_log_attachment_forbidden(
         expected_status_code=204,
     )
 
-    await no_permission_client.assert_forbidden_get(
+    await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/{log.id}/attachments/0"
     )
 
@@ -397,15 +395,13 @@ async def test_get_logs(
 async def test_get_logs_unknown_repo(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await log_read_client.assert_get(
-        f"/repos/{UNKNOWN_OBJECT_ID}/logs", expected_status_code=404
-    )
+    await log_read_client.assert_get_not_found(f"/repos/{UNKNOWN_OBJECT_ID}/logs")
 
 
 async def test_get_logs_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(f"/repos/{repo.id}/logs")
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs")
 
 
 async def test_get_logs_limit(log_rw_client: HttpTestHelper, repo: PreparedRepo):
@@ -754,15 +750,15 @@ async def test_get_log_event_categories(
 async def test_get_log_event_categories_unknown_repo(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await log_read_client.assert_get(
-        f"/repos/{UNKNOWN_OBJECT_ID}/logs/event-categories", expected_status_code=404
+    await log_read_client.assert_get_not_found(
+        f"/repos/{UNKNOWN_OBJECT_ID}/logs/event-categories"
     )
 
 
 async def test_get_log_event_categories_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(
+    await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/event-categories"
     )
 
@@ -811,7 +807,7 @@ async def test_get_log_event_names_empty(
 async def test_get_log_event_names_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(f"/repos/{repo.id}/logs/events")
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/events")
 
 
 async def test_get_log_actor_types(log_read_client: HttpTestHelper, repo: PreparedRepo):
@@ -838,7 +834,7 @@ async def test_get_log_actor_types_empty(
 async def test_get_log_actor_types_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(
+    await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/actor-types"
     )
 
@@ -869,7 +865,7 @@ async def test_get_log_resource_types_empty(
 async def test_get_log_resource_types_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(
+    await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/resource-types"
     )
 
@@ -904,7 +900,7 @@ async def test_get_log_tag_categories_empty(
 async def test_get_log_tag_categories_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(
+    await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/tag-categories"
     )
 
@@ -997,7 +993,7 @@ async def test_get_log_nodes_empty(log_read_client: HttpTestHelper, repo: Prepar
 async def test_get_log_nodes_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(f"/repos/{repo.id}/logs/nodes")
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/nodes")
 
 
 async def test_get_log_node(log_read_client: HttpTestHelper, repo: PreparedRepo):
@@ -1033,6 +1029,6 @@ async def test_get_log_node(log_read_client: HttpTestHelper, repo: PreparedRepo)
 async def test_get_log_node_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_forbidden_get(
+    await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/nodes/some_value"
     )

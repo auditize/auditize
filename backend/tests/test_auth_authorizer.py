@@ -108,4 +108,4 @@ async def test_auth_user_invalid_session_token_expired(
 
 
 async def test_auth_http_request(anon_client: HttpTestHelper):
-    await anon_client.assert_unauthorized_get("/repos")
+    await anon_client.assert_get_unauthorized("/repos")

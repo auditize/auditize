@@ -58,15 +58,14 @@ async def test_apikey_create_missing_parameter(
 async def test_apikey_create_already_used_name(
     apikey_write_client: HttpTestHelper, apikey: PreparedApikey
 ):
-    await apikey_write_client.assert_post(
+    await apikey_write_client.assert_post_constraint_violation(
         "/apikeys",
         json={"name": apikey.data["name"]},
-        expected_status_code=409,
     )
 
 
 async def test_apikey_create_forbidden(no_permission_client: HttpTestHelper):
-    await no_permission_client.assert_forbidden_post(
+    await no_permission_client.assert_post_forbidden(
         "/apikeys",
         json=PreparedApikey.prepare_data(),
     )
@@ -86,10 +85,9 @@ async def test_apikey_update(
 
 
 async def test_apikey_update_unknown_id(apikey_write_client: HttpTestHelper):
-    await apikey_write_client.assert_patch(
+    await apikey_write_client.assert_patch_not_found(
         f"/apikeys/{UNKNOWN_OBJECT_ID}",
         json={"name": "update"},
-        expected_status_code=404,
     )
 
 
@@ -99,17 +97,16 @@ async def test_apikey_update_name_already_used(
     apikey1 = await PreparedApikey.create(apikey_write_client, dbm)
     apikey2 = await PreparedApikey.create(apikey_write_client, dbm)
 
-    await apikey_write_client.assert_patch(
+    await apikey_write_client.assert_patch_constraint_violation(
         f"/apikeys/{apikey1.id}",
         json={"name": apikey2.data["name"]},
-        expected_status_code=409,
     )
 
 
 async def test_apikey_update_forbidden(
     no_permission_client: HttpTestHelper, apikey: PreparedApikey
 ):
-    await no_permission_client.assert_forbidden_patch(
+    await no_permission_client.assert_patch_forbidden(
         f"/apikeys/{apikey.id}", json={"name": "Apikey Updated"}
     )
 
@@ -117,7 +114,7 @@ async def test_apikey_update_forbidden(
 async def test_apikey_update_self(apikey_builder: ApikeyBuilder):
     apikey = await apikey_builder({"management": {"apikeys": {"write": True}}})
     async with apikey.client() as client:
-        await client.assert_forbidden_patch(
+        await client.assert_patch_forbidden(
             f"/apikeys/{apikey.id}",
             json={"name": "Apikey Updated"},
         )
@@ -155,12 +152,12 @@ async def test_apikey_regenerate_token(
 async def test_apikey_regenerate_token_forbidden(
     no_permission_client: HttpTestHelper, apikey: PreparedApikey
 ):
-    await no_permission_client.assert_forbidden_post(f"/apikeys/{apikey.id}/token")
+    await no_permission_client.assert_post_forbidden(f"/apikeys/{apikey.id}/token")
 
 
 async def test_apikey_regenerate_token_self(apikey: PreparedApikey):
     async with apikey.client() as client:
-        await client.assert_forbidden_post(f"/apikeys/{apikey.id}/token")
+        await client.assert_post_forbidden(f"/apikeys/{apikey.id}/token")
 
 
 async def test_apikey_get(apikey_read_client: HttpTestHelper, apikey: PreparedApikey):
@@ -172,15 +169,13 @@ async def test_apikey_get(apikey_read_client: HttpTestHelper, apikey: PreparedAp
 
 
 async def test_apikey_get_unknown_id(apikey_read_client: HttpTestHelper):
-    await apikey_read_client.assert_get(
-        f"/apikeys/{UNKNOWN_OBJECT_ID}", expected_status_code=404
-    )
+    await apikey_read_client.assert_get_not_found(f"/apikeys/{UNKNOWN_OBJECT_ID}")
 
 
 async def test_apikey_get_forbidden(
     no_permission_client: HttpTestHelper, apikey: PreparedApikey
 ):
-    await no_permission_client.assert_forbidden_get(f"/apikeys/{apikey.id}")
+    await no_permission_client.assert_get_forbidden(f"/apikeys/{apikey.id}")
 
 
 async def test_apikey_list(
@@ -201,7 +196,7 @@ async def test_apikey_list(
 
 
 async def test_apikey_list_forbidden(no_permission_client: HttpTestHelper):
-    await no_permission_client.assert_forbidden_get("/apikeys")
+    await no_permission_client.assert_get_forbidden("/apikeys")
 
 
 async def test_apikey_delete(
@@ -217,20 +212,18 @@ async def test_apikey_delete(
 
 
 async def test_apikey_delete_unknown_id(apikey_write_client: HttpTestHelper):
-    await apikey_write_client.assert_delete(
-        f"/apikeys/{UNKNOWN_OBJECT_ID}", expected_status_code=404
-    )
+    await apikey_write_client.assert_delete_not_found(f"/apikeys/{UNKNOWN_OBJECT_ID}")
 
 
 async def test_apikey_delete_unauthorized(
     no_permission_client: HttpTestHelper, apikey: PreparedApikey
 ):
-    await no_permission_client.assert_forbidden_delete(f"/apikeys/{apikey.id}")
+    await no_permission_client.assert_delete_forbidden(f"/apikeys/{apikey.id}")
 
 
 async def test_apikey_delete_self(apikey: PreparedApikey):
     async with apikey.client() as client:
-        await client.assert_forbidden_delete(f"/apikeys/{apikey.id}")
+        await client.assert_delete_forbidden(f"/apikeys/{apikey.id}")
 
 
 class TestPermissions(BasePermissionTests):

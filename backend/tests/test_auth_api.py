@@ -34,7 +34,7 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
 
 
 async def test_user_log_in_unknown_email(anon_client: HttpTestHelper):
-    await anon_client.assert_unauthorized_post(
+    await anon_client.assert_post_unauthorized(
         "/auth/user/login",
         json={"email": "unknown.guy@example.net", "password": "somepassword"},
     )
@@ -44,7 +44,7 @@ async def test_user_log_in_wrong_password(user_builder: UserBuilder):
     user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await client.assert_unauthorized_post(
+        await client.assert_post_unauthorized(
             "/auth/user/login",
             json={"email": user.email, "password": "wrongpassword"},
         )
@@ -55,4 +55,4 @@ async def test_user_log_out(user_builder: UserBuilder):
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await client.assert_post("/auth/user/logout", expected_status_code=204)
-        await client.assert_unauthorized_get("/users/me")
+        await client.assert_get_unauthorized("/users/me")

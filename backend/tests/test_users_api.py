@@ -61,19 +61,18 @@ async def test_user_create_missing_parameter(
 async def test_user_create_already_used_email(
     user_write_client: HttpTestHelper, user: PreparedUser
 ):
-    await user_write_client.assert_post(
+    await user_write_client.assert_post_constraint_violation(
         "/users",
         json={
             "email": user.data["email"],
             "first_name": "Another John",
             "last_name": "Another Doe",
         },
-        expected_status_code=409,
     )
 
 
 async def test_user_create_forbidden(no_permission_client: HttpTestHelper):
-    await no_permission_client.assert_forbidden_post(
+    await no_permission_client.assert_post_forbidden(
         "/users", json=PreparedUser.prepare_data()
     )
 
@@ -105,10 +104,9 @@ async def test_user_update_partial(
 
 
 async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
-    await user_write_client.assert_patch(
+    await user_write_client.assert_patch_not_found(
         f"/users/{UNKNOWN_OBJECT_ID}",
         json={"first_name": "John Updated"},
-        expected_status_code=404,
     )
 
 
@@ -118,17 +116,16 @@ async def test_user_update_already_used_email(
     user1 = await PreparedUser.create(user_write_client, dbm)
     user2 = await PreparedUser.create(user_write_client, dbm)
 
-    await user_write_client.assert_patch(
+    await user_write_client.assert_patch_constraint_violation(
         f"/users/{user1.id}",
         json={"email": user2.data["email"]},
-        expected_status_code=409,
     )
 
 
 async def test_user_update_forbidden(
     no_permission_client: HttpTestHelper, user: PreparedUser
 ):
-    await no_permission_client.assert_forbidden_patch(
+    await no_permission_client.assert_patch_forbidden(
         f"/users/{user.id}", json={"first_name": "John Updated"}
     )
 
@@ -143,7 +140,7 @@ async def test_user_update_self(user_builder: UserBuilder):
     )
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await client.assert_forbidden_patch(
+        await client.assert_patch_forbidden(
             f"/users/{user.id}", json={"first_name": "John Updated"}
         )
 
@@ -157,15 +154,13 @@ async def test_user_get(user_read_client: HttpTestHelper, user: PreparedUser):
 
 
 async def test_user_get_unknown_id(user_read_client: HttpTestHelper):
-    await user_read_client.assert_get(
-        f"/users/{UNKNOWN_OBJECT_ID}", expected_status_code=404
-    )
+    await user_read_client.assert_get_not_found(f"/users/{UNKNOWN_OBJECT_ID}")
 
 
 async def test_user_get_forbidden(
     no_permission_client: HttpTestHelper, user: PreparedUser
 ):
-    await no_permission_client.assert_forbidden_get(f"/users/{user.id}")
+    await no_permission_client.assert_get_forbidden(f"/users/{user.id}")
 
 
 async def test_user_list(
@@ -186,7 +181,7 @@ async def test_user_list(
 
 
 async def test_user_list_forbidden(no_permission_client: HttpTestHelper):
-    await no_permission_client.assert_forbidden_get("/users")
+    await no_permission_client.assert_get_forbidden("/users")
 
 
 async def test_user_delete(
@@ -198,15 +193,13 @@ async def test_user_delete(
 
 
 async def test_user_delete_unknown_id(user_write_client: HttpTestHelper):
-    await user_write_client.assert_delete(
-        f"/users/{UNKNOWN_OBJECT_ID}", expected_status_code=404
-    )
+    await user_write_client.assert_delete_not_found(f"/users/{UNKNOWN_OBJECT_ID}")
 
 
 async def test_user_delete_forbidden(
     no_permission_client: HttpTestHelper, user: PreparedUser
 ):
-    await no_permission_client.assert_forbidden_delete(f"/users/{user.id}")
+    await no_permission_client.assert_delete_forbidden(f"/users/{user.id}")
 
 
 async def test_user_delete_self(user_builder: UserBuilder):
@@ -219,15 +212,15 @@ async def test_user_delete_self(user_builder: UserBuilder):
     )
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await client.assert_forbidden_delete(f"/users/{user.id}")
+        await client.assert_delete_forbidden(f"/users/{user.id}")
 
 
 async def test_user_delete_last_superadmin(
     user_write_client: HttpTestHelper, user_builder: UserBuilder
 ):
     superadmin = await user_builder({"is_superadmin": True})
-    await user_write_client.assert_delete(
-        f"/users/{superadmin.id}", expected_status_code=409
+    await user_write_client.assert_delete_constraint_violation(
+        f"/users/{superadmin.id}"
     )
 
 
@@ -245,16 +238,14 @@ async def test_user_signup(anon_client: HttpTestHelper, user: PreparedUser):
 
 async def test_user_signup_expired(anon_client: HttpTestHelper, user: PreparedUser):
     await user.expire_signup_token()
-    await anon_client.assert_get(
+    await anon_client.assert_get_not_found(
         f"/users/signup/{await user.signup_token}",
-        expected_status_code=404,
     )
 
 
 async def test_user_signup_unknown(anon_client: HttpTestHelper):
-    await anon_client.assert_get(
+    await anon_client.assert_get_not_found(
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
-        expected_status_code=404,
     )
 
 
@@ -281,18 +272,16 @@ async def test_user_signup_set_password_token_expired(
     anon_client: HttpTestHelper, user: PreparedUser
 ):
     await user.expire_signup_token()
-    await anon_client.assert_post(
+    await anon_client.assert_post_not_found(
         f"/users/signup/{await user.signup_token}",
         json={"password": "new_password"},
-        expected_status_code=404,
     )
 
 
 async def test_user_signup_set_password_token_unknown(anon_client: HttpTestHelper):
-    await anon_client.assert_post(
+    await anon_client.assert_post_not_found(
         f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
         json={"password": "new_password"},
-        expected_status_code=404,
     )
 
 
@@ -331,11 +320,11 @@ async def test_get_user_me_superadmin(user_builder: UserBuilder):
 
 
 async def test_get_user_me_unauthorized(anon_client: HttpTestHelper):
-    await anon_client.assert_unauthorized_get("/users/me")
+    await anon_client.assert_get_unauthorized("/users/me")
 
 
 async def test_get_user_me_as_apikey(apikey_client: HttpTestHelper):
-    await apikey_client.assert_unauthorized_get("/users/me")
+    await apikey_client.assert_get_unauthorized("/users/me")
 
 
 class TestPermissions(BasePermissionTests):
