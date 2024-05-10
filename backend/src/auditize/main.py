@@ -6,6 +6,7 @@ from icecream import ic
 
 from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
+from auditize.config import get_config
 from auditize.database import get_dbm
 from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
@@ -26,20 +27,30 @@ async def setup_db(_):
     yield
 
 
+def setup_cors():
+    config = get_config()
+    if not config.is_cors_enabled():
+        return
+
+    # FIXME: CORS is currently untested as the app is loaded once the module is imported
+    # putting this under tests would require to to build the app through a function.
+    # Please note that is directly supported by uvicorn through the --factory option.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.cors_allow_origins,
+        allow_credentials=config.cors_allow_credentials,
+        allow_methods=config.cors_allow_methods,
+        allow_headers=config.cors_allow_headers,
+    )
+
+
 app = FastAPI(lifespan=setup_db)
 
 ###
-# Allow CORS for the frontend (FIXME: make this configurable)
+# Setup CORS according to the configuration
 ###
 
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+setup_cors()
 
 
 ###

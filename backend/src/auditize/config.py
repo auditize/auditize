@@ -1,4 +1,5 @@
 import dataclasses
+import json
 import os
 from threading import Lock
 
@@ -18,6 +19,18 @@ class Config:
     smtp_username: str
     smtp_password: str
     _smtp_sender: str
+    cors_allow_origins: list[str]
+    cors_allow_credentials: bool
+    cors_allow_methods: list[str]
+    cors_allow_headers: list[str]
+
+    @staticmethod
+    def _cast_list(value):
+        return value.split(",")
+
+    @staticmethod
+    def _cast_bool(value):
+        return value.lower() in ("true", "yes", "1")
 
     def _validate(self):
         smtp_values_required = (
@@ -71,6 +84,24 @@ class Config:
                 smtp_username=optional("AUDITIZE_SMTP_USERNAME"),
                 smtp_password=optional("AUDITIZE_SMTP_PASSWORD"),
                 _smtp_sender=optional("AUDITIZE_SMTP_SENDER"),
+                cors_allow_origins=optional(
+                    "AUDITIZE_CORS_ALLOW_ORIGINS", cast=cls._cast_list, default=[]
+                ),
+                cors_allow_credentials=optional(
+                    "AUDITIZE_CORS_ALLOW_CREDENTIALS",
+                    cast=cls._cast_bool,
+                    default=False,
+                ),
+                cors_allow_methods=optional(
+                    "AUDITIZE_CORS_ALLOW_METHODS",
+                    cast=cls._cast_list,
+                    default=[],
+                ),
+                cors_allow_headers=optional(
+                    "AUDITIZE_CORS_ALLOW_HEADERS",
+                    cast=cls._cast_list,
+                    default=[],
+                ),
             )
         except KeyError as e:
             var_name = str(e)
@@ -89,6 +120,9 @@ class Config:
     def is_smtp_enabled(self):
         return self.smtp_sender is not None
 
+    def is_cors_enabled(self):
+        return bool(self.cors_allow_origins)
+
 
 _config = None
 _config_lock = Lock()
@@ -102,3 +136,13 @@ def get_config() -> Config:
             if _config is None:
                 _config = Config.load_from_env()
     return _config
+
+
+def _print_config():
+    config = Config.load_from_env()
+    print(json.dumps(dataclasses.asdict(config), ensure_ascii=False, indent=4))
+
+
+# Print the actual auditize configuration with "python -m auditize.config"
+if __name__ == "__main__":
+    _print_config()

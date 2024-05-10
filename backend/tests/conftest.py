@@ -3,6 +3,25 @@ from typing import Awaitable, Callable
 
 import pytest
 
+# We must initialize the environment before the auditize modules (and more specifically
+# auditize.config) get loaded.
+# Otherwise, the FastAPI app will be loaded with a configuration based on
+# the system, non-controlled, environment.
+# Unfortunately, we can't use the pytest-env plugin because it does not support clearing
+# environment variables.
+
+for key in os.environ:
+    if key.startswith("AUDITIZE_"):
+        del os.environ[key]
+
+os.environ.update(
+    # set the environment variables (at least the required ones)
+    {
+        "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
+        "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
+    }
+)
+
 from auditize.database import DatabaseManager
 
 pytest.register_assert_rewrite("helpers")
@@ -11,22 +30,6 @@ from helpers.database import setup_test_dbm, teardown_test_dbm
 from helpers.http import HttpTestHelper, create_http_client
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_env():
-    # clean slate
-    for key in os.environ:
-        if key.startswith("AUDITIZE_"):
-            del os.environ[key]
-
-    # set the environment variables (at least the required ones)
-    os.environ.update(
-        {
-            "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
-            "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
-        }
-    )
 
 
 @pytest.fixture(scope="session")
