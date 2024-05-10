@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Tree } from "rsuite";
 import "rsuite/dist/rsuite-no-reset.min.css";
@@ -81,13 +82,17 @@ export function NodeSelector({
 }) {
   const [items, setItems] = useState<ItemDataType<string>[]>([]);
   const currentNodeIdRef = useRef<string>("");
+  const queryClient = useQueryClient();
 
   // load top-level nodes
   useEffect(() => {
     if (repoId) {
-      getAllLogNodes(repoId).then((nodes) =>
-        setItems(nodes.map(logNodeToItem)),
-      );
+      queryClient
+        .ensureQueryData({
+          queryKey: ["nodes", repoId],
+          queryFn: () => getAllLogNodes(repoId),
+        })
+        .then((nodes) => setItems(nodes.map(logNodeToItem)));
     }
   }, [repoId]);
 
@@ -132,9 +137,14 @@ export function NodeSelector({
       getChildren={async (item) => {
         // NB: beware that items are changed under the hood without using setItems by the Tree component
         // after getChildren has been called
-        return getAllLogNodes(repoId!, item.value as string).then((nodes) => {
-          return nodes.map(logNodeToItem);
-        });
+        return queryClient
+          .ensureQueryData({
+            queryKey: ["nodes", repoId, item.value],
+            queryFn: () => getAllLogNodes(repoId!, item.value as string),
+          })
+          .then((nodes) => {
+            return nodes.map(logNodeToItem);
+          });
       }}
       searchable={false}
       style={{ width: 200, height: 250 }}
