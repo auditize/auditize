@@ -1,6 +1,12 @@
 import { Permissions } from "@/features/permissions";
-import { PagePaginationInfo } from "@/utils/api";
-import { axiosInstance } from "@/utils/axios";
+import {
+  PagePaginationInfo,
+  reqDelete,
+  reqGet,
+  reqGetPaginated,
+  reqPatch,
+  reqPost,
+} from "@/utils/api";
 
 import {
   camelcaseResourceWithPermissions,
@@ -24,45 +30,56 @@ export type ApikeyUpdate = {
 export async function createApikey(
   apikey: ApikeyCreation,
 ): Promise<[string, string]> {
-  const response = await axiosInstance.post(
+  const data = await reqPost(
     "/apikeys",
     snakecaseResourceWithPermissions(apikey),
+    { disableCaseNormalization: true },
   );
-  return [response.data.id, response.data.key];
+  return [data.id, data.key];
 }
 
 export async function updateApikey(
   id: string,
   update: ApikeyUpdate,
 ): Promise<void> {
-  await axiosInstance.patch(
-    `/apikeys/${id}`,
-    snakecaseResourceWithPermissions(update),
-  );
+  await reqPatch(`/apikeys/${id}`, snakecaseResourceWithPermissions(update), {
+    disableCaseNormalization: true,
+  });
 }
 
 export async function getApikeys(
   page = 1,
 ): Promise<[Apikey[], PagePaginationInfo]> {
-  const response = await axiosInstance.get("/apikeys", {
-    params: { page },
-  });
-  return [
-    response.data.data.map(camelcaseResourceWithPermissions),
-    response.data.pagination,
-  ];
+  const [data, pagination] = await reqGetPaginated(
+    "/apikeys",
+    { page },
+    { disableCaseNormalization: true },
+  );
+  return [data.map(camelcaseResourceWithPermissions) as Apikey[], pagination];
 }
 
 export async function getApikey(apikeyId: string): Promise<Apikey> {
-  const response = await axiosInstance.get("/apikeys/" + apikeyId);
-  return camelcaseResourceWithPermissions(response.data) as Apikey;
+  const data = await reqGet(
+    `/apikeys/${apikeyId}`,
+    {},
+    {
+      disableCaseNormalization: true,
+    },
+  );
+  return camelcaseResourceWithPermissions(data) as Apikey;
 }
 
 export async function deleteApikey(apikeyId: string): Promise<void> {
-  await axiosInstance.delete("/apikeys/" + apikeyId);
+  await reqDelete(`/apikeys/${apikeyId}`);
 }
 
 export async function regenerateApikey(apikeyId: string): Promise<string> {
-  const response = await axiosInstance.post(`/apikeys/${apikeyId}/key`);
-  return response.data.key;
+  const data = await reqPost(
+    `/apikeys/${apikeyId}/regenerate`,
+    {},
+    {
+      disableCaseNormalization: true,
+    },
+  );
+  return data.key;
 }

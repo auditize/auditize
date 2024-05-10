@@ -50,7 +50,7 @@ export function LogDetails({
               <td>
                 <Text fw={700}>Date</Text>
               </td>
-              <td>{log.saved_at}</td>
+              <td>{log.savedAt}</td>
             </tr>
             <tr>
               <td>
@@ -105,7 +105,7 @@ export function LogDetails({
               Node
             </Accordion.Control>
             <Accordion.Panel>
-              {log.node_path.map((node) => node.name).join(" > ")}
+              {log.nodePath.map((node) => node.name).join(" > ")}
             </Accordion.Panel>
           </Accordion.Item>
         </Accordion>

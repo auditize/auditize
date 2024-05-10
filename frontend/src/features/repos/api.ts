@@ -1,19 +1,26 @@
-import { getAllPagePaginatedItems, PagePaginationInfo } from "@/utils/api";
-import { axiosInstance } from "@/utils/axios";
+import {
+  getAllPagePaginatedItems,
+  PagePaginationInfo,
+  reqDelete,
+  reqGet,
+  reqGetPaginated,
+  reqPatch,
+  reqPost,
+} from "@/utils/api";
 
 export type Repo = {
   id: string;
   name: string;
-  created_at: string;
+  createdAt: string;
   stats?: {
-    first_log_date: string;
-    last_log_date: string;
-    log_count: number;
-    storage_size: number;
+    firstLogDate: string;
+    lastLogDate: string;
+    logCount: number;
+    storageSize: number;
   };
   permissions: {
-    read_logs: boolean;
-    write_logs: boolean;
+    readLogs: boolean;
+    writeLogs: boolean;
   };
 };
 
@@ -22,25 +29,25 @@ export type RepoUpdate = {
 };
 
 export async function createRepo({ name }: { name: string }): Promise<string> {
-  const response = await axiosInstance.post("/repos", { name });
-  return response.data.id;
+  const resp = await reqPost("/repos", { name });
+  return resp.id;
 }
 
 export async function updateRepo(
   id: string,
   update: RepoUpdate,
 ): Promise<void> {
-  await axiosInstance.patch(`/repos/${id}`, update);
+  await reqPatch(`/repos/${id}`, update);
 }
 
 export async function getRepos(
   page = 1,
   { includeStats } = { includeStats: false },
 ): Promise<[Repo[], PagePaginationInfo]> {
-  const response = await axiosInstance.get("/repos", {
-    params: { page, ...(includeStats && { include: "stats" }) },
+  return await reqGetPaginated("/repos", {
+    page,
+    include: includeStats ? "stats" : undefined,
   });
-  return [response.data.data, response.data.pagination];
 }
 
 export async function getAllMyRepos({
@@ -50,17 +57,20 @@ export async function getAllMyRepos({
   hasReadPermission?: boolean;
   hasWritePermission?: boolean;
 }): Promise<Repo[]> {
-  return await getAllPagePaginatedItems<Repo>("/users/me/repos", {
-    has_read_permission: hasReadPermission,
-    has_write_permission: hasWritePermission,
-  });
+  return await getAllPagePaginatedItems<Repo>(
+    "/users/me/repos",
+    {
+      has_read_permission: hasReadPermission,
+      has_write_permission: hasWritePermission,
+    },
+    { disableCaseNormalization: false },
+  );
 }
 
 export async function getRepo(repoId: string): Promise<Repo> {
-  const response = await axiosInstance.get("/repos/" + repoId);
-  return response.data;
+  return await reqGet("/repos/" + repoId);
 }
 
 export async function deleteRepo(repoId: string): Promise<void> {
-  await axiosInstance.delete("/repos/" + repoId);
+  await reqDelete("/repos/" + repoId);
 }

@@ -23,7 +23,7 @@ function logNodeToItem(node: LogNode): ItemDataType<string> {
   return {
     value: node.id,
     label: node.name,
-    children: node.has_children ? [] : undefined,
+    children: node.hasChildren ? [] : undefined,
   };
 }
 
@@ -38,10 +38,7 @@ async function buildTreeBranch(
   if (item) item.label = node.name;
 
   // get all sibling nodes
-  const siblingNodes = await getAllLogNodes(
-    repoId,
-    node.parent_node_id || null,
-  );
+  const siblingNodes = await getAllLogNodes(repoId, node.parentNodeId || null);
   const siblingItems = siblingNodes.map(logNodeToItem);
 
   if (item) {
@@ -54,21 +51,21 @@ async function buildTreeBranch(
     }
   }
 
-  if (node.parent_node_id === null) {
+  if (node.parentNodeId === null) {
     // no more parent, we just fetch the top nodes (the node selector has not been opened yet probably)
     return [null, siblingItems];
   } else {
-    const parentItem = lookupItem(node.parent_node_id, items);
+    const parentItem = lookupItem(node.parentNodeId, items);
     if (parentItem) {
       // we reached an already fetched parent node in the tree, return it alongside its children
       return [parentItem, siblingItems];
     } else {
       // we need to fetch the parent node and its children
       const parentItem = {
-        value: node.parent_node_id,
+        value: node.parentNodeId,
         children: siblingItems,
       };
-      return buildTreeBranch(repoId, node.parent_node_id, parentItem, items);
+      return buildTreeBranch(repoId, node.parentNodeId, parentItem, items);
     }
   }
 }

@@ -172,11 +172,11 @@ function LogsPermissionManagement({
                       read: perms.read
                         ? false
                         : assignablePerms.read === "all" ||
-                          assignableRepo.permissions.read_logs,
+                          assignableRepo.permissions.readLogs,
                       write: perms.write
                         ? false
                         : assignablePerms.write === "all" ||
-                          assignableRepo.permissions.write_logs,
+                          assignableRepo.permissions.writeLogs,
                     }}
                     onChange={(repoLogsPerms) =>
                       onChange({

@@ -21,7 +21,7 @@ function LogTableRow({
     <Table.Tr key={log.id}>
       <Table.Td>
         <Anchor component={Link} to={logLink} underline="hover">
-          {log.saved_at}
+          {log.savedAt}
         </Anchor>
       </Table.Td>
       <Table.Td>
@@ -77,7 +77,7 @@ function LogTableRow({
         ) : null}
       </Table.Td>
       <Table.Td>
-        {log.node_path
+        {log.nodePath
           .map<React.ReactNode>((node) => (
             // FIXME: the filter edition for the node path may not work properly if the selected node
             // has not been already loaded in the TreePicker component

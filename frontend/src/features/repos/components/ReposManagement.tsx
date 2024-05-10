@@ -18,11 +18,11 @@ export function ReposManagement() {
       queryFn={(page) => () => getRepos(page, { includeStats: true })}
       columnBuilders={[
         ["Name", (repo: Repo) => repo.name],
-        ["Creation date", (repo: Repo) => repo.created_at],
-        ["First log date", (repo: Repo) => repo.stats!.first_log_date || "n/a"],
-        ["Last log date", (repo: Repo) => repo.stats!.last_log_date || "n/a"],
-        ["Log count", (repo: Repo) => repo.stats!.log_count],
-        ["Storage size", (repo: Repo) => repo.stats!.storage_size],
+        ["Creation date", (repo: Repo) => repo.createdAt],
+        ["First log date", (repo: Repo) => repo.stats!.firstLogDate || "n/a"],
+        ["Last log date", (repo: Repo) => repo.stats!.lastLogDate || "n/a"],
+        ["Log count", (repo: Repo) => repo.stats!.logCount],
+        ["Storage size", (repo: Repo) => repo.stats!.storageSize],
       ]}
       resourceCreationComponentBuilder={
         readOnly ? undefined : (opened) => <RepoCreation opened={opened} />

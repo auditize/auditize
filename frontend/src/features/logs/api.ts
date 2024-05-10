@@ -1,15 +1,14 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
-import { getAllPagePaginatedItems } from "@/utils/api";
-import { axiosInstance } from "@/utils/axios";
+import { getAllPagePaginatedItems, reqGet } from "@/utils/api";
 import { serializeDate } from "@/utils/date";
 
 dayjs.extend(utc);
 
 export type Log = {
   id: number;
-  saved_at: string;
+  savedAt: string;
   event: {
     name: string;
     category: string;
@@ -24,7 +23,7 @@ export type Log = {
     id: string;
     name: string;
   };
-  node_path: {
+  nodePath: {
     id: string;
     name: string;
   }[];
@@ -33,8 +32,8 @@ export type Log = {
 export type LogNode = {
   id: string;
   name: string;
-  parent_node_id: string | null;
-  has_children: boolean;
+  parentNodeId: string | null;
+  hasChildren: boolean;
 };
 
 export type LogsFilterParams = {
@@ -76,32 +75,30 @@ export async function getLogs(
   filter?: LogsFilterParams,
   limit = 3,
 ): Promise<{ logs: Log[]; nextCursor: string | null }> {
-  const response = await axiosInstance.get(`/repos/${filter!.repoId}/logs`, {
-    params: {
-      limit,
-      since: filter?.since ? serializeDate(filter.since) : undefined,
-      until: filter?.until ? serializeDate(filter.until) : undefined,
-      event_category: filter?.eventCategory,
-      event_name: filter?.eventName,
-      actor_type: filter?.actorType,
-      actor_name: filter?.actorName,
-      resource_type: filter?.resourceType,
-      resource_name: filter?.resourceName,
-      tag_category: filter?.tagCategory,
-      tag_name: filter?.tagName,
-      tag_id: filter?.tagId,
-      node_id: filter?.nodeId,
-      ...(cursor && { cursor }),
-    },
+  const data = await reqGet(`/repos/${filter!.repoId}/logs`, {
+    limit,
+    since: filter?.since ? serializeDate(filter.since) : undefined,
+    until: filter?.until ? serializeDate(filter.until) : undefined,
+    eventCategory: filter?.eventCategory,
+    eventName: filter?.eventName,
+    actorType: filter?.actorType,
+    actorName: filter?.actorName,
+    resourceType: filter?.resourceType,
+    resourceName: filter?.resourceName,
+    tagCategory: filter?.tagCategory,
+    tagName: filter?.tagName,
+    tagId: filter?.tagId,
+    nodeId: filter?.nodeId,
+    ...(cursor && { cursor }),
   });
   return {
-    logs: response.data.data,
-    nextCursor: response.data.pagination.next_cursor,
+    logs: data.data,
+    nextCursor: data.pagination.nextCursor,
   };
 }
 
 export async function getLog(repoId: string, logId: string): Promise<Log> {
-  return (await axiosInstance.get(`/repos/${repoId}/logs/${logId}`)).data;
+  return await reqGet(`/repos/${repoId}/logs/${logId}`);
 }
 
 export async function getAllLogEventCategories(
@@ -109,6 +106,8 @@ export async function getAllLogEventCategories(
 ): Promise<string[]> {
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/event-categories`,
+    {},
+    { disableCaseNormalization: false },
   );
 }
 
@@ -119,11 +118,16 @@ export async function getAllLogEventNames(
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/events`,
     category ? { category } : {},
+    { disableCaseNormalization: false },
   );
 }
 
 export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
-  return getAllPagePaginatedItems<string>(`/repos/${repoId}/logs/actor-types`);
+  return getAllPagePaginatedItems<string>(
+    `/repos/${repoId}/logs/actor-types`,
+    {},
+    { disableCaseNormalization: false },
+  );
 }
 
 export async function getAllLogResourceTypes(
@@ -131,6 +135,8 @@ export async function getAllLogResourceTypes(
 ): Promise<string[]> {
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/resource-types`,
+    {},
+    { disableCaseNormalization: false },
   );
 }
 
@@ -139,16 +145,19 @@ export async function getAllLogTagCategories(
 ): Promise<string[]> {
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/tag-categories`,
+    {},
+    { disableCaseNormalization: false },
   );
 }
 
 export async function getAllLogNodes(
   repoId: string,
-  parent_node_id?: string | null,
+  parentNodeId?: string | null,
 ): Promise<LogNode[]> {
   return getAllPagePaginatedItems<LogNode>(
     `/repos/${repoId}/logs/nodes`,
-    parent_node_id ? { parent_node_id } : { root: true },
+    parentNodeId ? { parentNodeId: parentNodeId } : { root: true },
+    { disableCaseNormalization: false },
   );
 }
 
@@ -156,6 +165,5 @@ export async function getLogNode(
   repoId: string,
   nodeId: string,
 ): Promise<LogNode> {
-  return (await axiosInstance.get(`/repos/${repoId}/logs/nodes/${nodeId}`))
-    .data;
+  return await reqGet(`/repos/${repoId}/logs/nodes/${nodeId}`);
 }

@@ -3,8 +3,14 @@ import {
   Permissions,
   snakecaseResourceWithPermissions,
 } from "@/features/permissions";
-import { PagePaginationInfo } from "@/utils/api";
-import { axiosInstance } from "@/utils/axios";
+import {
+  PagePaginationInfo,
+  reqDelete,
+  reqGet,
+  reqGetPaginated,
+  reqPatch,
+  reqPost,
+} from "@/utils/api";
 
 export interface UserCreation {
   firstName: string;
@@ -25,40 +31,48 @@ export type UserUpdate = {
 };
 
 export async function createUser(user: UserCreation): Promise<string> {
-  const response = await axiosInstance.post(
-    "/users",
-    snakecaseResourceWithPermissions(user),
-  );
-  return response.data.id;
+  const data = await reqPost("/users", snakecaseResourceWithPermissions(user), {
+    disableCaseNormalization: true,
+  });
+  return data.id;
 }
 
 export async function updateUser(
   id: string,
   update: UserUpdate,
 ): Promise<void> {
-  await axiosInstance.patch(
-    `/users/${id}`,
-    snakecaseResourceWithPermissions(update),
-  );
+  await reqPatch(`/users/${id}`, snakecaseResourceWithPermissions(update), {
+    disableCaseNormalization: true,
+  });
 }
 
 export async function getUsers(
   page = 1,
 ): Promise<[User[], PagePaginationInfo]> {
-  const response = await axiosInstance.get("/users", { params: { page } });
+  const [data, pagination] = await reqGetPaginated(
+    "/users",
+    { page },
+    {
+      disableCaseNormalization: true,
+    },
+  );
   return [
-    response.data.data.map((item: User) =>
-      camelcaseResourceWithPermissions(item),
-    ),
-    response.data.pagination,
+    data.map((item) => camelcaseResourceWithPermissions(item) as User),
+    pagination,
   ];
 }
 
 export async function getUser(userId: string): Promise<User> {
-  const response = await axiosInstance.get("/users/" + userId);
-  return camelcaseResourceWithPermissions(response.data) as User;
+  const data = await reqGet(
+    `/users/${userId}`,
+    {},
+    {
+      disableCaseNormalization: true,
+    },
+  );
+  return camelcaseResourceWithPermissions(data) as User;
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  await axiosInstance.delete("/users/" + userId);
+  await reqDelete("/users/" + userId);
 }
