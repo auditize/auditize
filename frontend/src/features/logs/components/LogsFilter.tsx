@@ -210,7 +210,9 @@ function filterParamsReducer(
   switch (action.type) {
     case "setParam":
       const update = { [action.name]: action.value };
-      if (action.name === "eventCategory") update["eventName"] = "";
+      if (action.name === "eventCategory") {
+        update["eventName"] = "";
+      }
       return { ...state, ...update };
     case "resetParams":
       const newParams = buildEmptyLogsFilterParams();
