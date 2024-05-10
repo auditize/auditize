@@ -1,7 +1,7 @@
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 
-import { getRepos } from "../api";
+import { getRepos, Repo } from "../api";
 import { RepoDeletion } from "./RepoDeletion";
 import { RepoCreation, RepoEdition } from "./RepoEditor";
 

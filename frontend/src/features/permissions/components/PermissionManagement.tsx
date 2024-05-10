@@ -4,15 +4,21 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthenticatedUser } from "@/features/auth";
 import { getAllMyRepos } from "@/features/repos";
 
+import {
+  ApplicablePermissions,
+  Permissions,
+  ReadWritePermissions,
+} from "../types";
+
 function ReadWritePermissionManagement({
   perms,
   onChange,
   assignablePerms,
   readOnly = false,
 }: {
-  perms: Auditize.ReadWritePermissions;
-  onChange: (perms: Auditize.ReadWritePermissions) => void;
-  assignablePerms: Auditize.ReadWritePermissions;
+  perms: ReadWritePermissions;
+  onChange: (perms: ReadWritePermissions) => void;
+  assignablePerms: ReadWritePermissions;
   readOnly?: boolean;
 }) {
   return (
@@ -45,9 +51,9 @@ function EntityPermissionManagement({
   readOnly = false,
 }: {
   name: string;
-  perms: Auditize.ReadWritePermissions;
-  onChange: (perms: Auditize.ReadWritePermissions) => void;
-  assignablePerms: Auditize.ReadWritePermissions;
+  perms: ReadWritePermissions;
+  onChange: (perms: ReadWritePermissions) => void;
+  assignablePerms: ReadWritePermissions;
   readOnly?: boolean;
 }) {
   return (
@@ -71,9 +77,9 @@ function ManagementPermissionManagement({
   assignablePerms,
   readOnly = false,
 }: {
-  perms: Auditize.Permissions["management"];
-  onChange: (perms: Auditize.Permissions["management"]) => void;
-  assignablePerms: Auditize.Permissions["management"];
+  perms: Permissions["management"];
+  onChange: (perms: Permissions["management"]) => void;
+  assignablePerms: Permissions["management"];
   readOnly?: boolean;
 }) {
   return (
@@ -118,9 +124,9 @@ function LogsPermissionManagement({
   assignablePerms,
   readOnly = false,
 }: {
-  perms: Auditize.Permissions["logs"];
-  onChange: (perms: Auditize.Permissions["logs"]) => void;
-  assignablePerms: Auditize.ApplicablePermissions["logs"];
+  perms: Permissions["logs"];
+  onChange: (perms: Permissions["logs"]) => void;
+  assignablePerms: ApplicablePermissions["logs"];
   readOnly?: boolean;
 }) {
   const { data, error, isPending } = useQuery({
@@ -198,8 +204,8 @@ export function PermissionManagement({
   onChange,
   readOnly = false,
 }: {
-  perms: Auditize.Permissions;
-  onChange: (perms: Auditize.Permissions) => void;
+  perms: Permissions;
+  onChange: (perms: Permissions) => void;
   readOnly?: boolean;
 }) {
   const { currentUser } = useAuthenticatedUser();

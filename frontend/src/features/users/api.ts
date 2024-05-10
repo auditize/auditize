@@ -1,11 +1,30 @@
-import { axiosInstance } from "@/utils/axios";
-
 import {
   camelcaseResourceWithPermissions,
+  Permissions,
   snakecaseResourceWithPermissions,
-} from "../permissions";
+} from "@/features/permissions";
+import { PagePaginationInfo } from "@/utils/api";
+import { axiosInstance } from "@/utils/axios";
 
-export async function createUser(user: User): Promise<string> {
+export interface UserCreation {
+  firstName: string;
+  lastName: string;
+  email: string;
+  permissions: Permissions;
+}
+
+export interface User extends UserCreation {
+  id: string;
+}
+
+export type UserUpdate = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  permissions?: Permissions;
+};
+
+export async function createUser(user: UserCreation): Promise<string> {
   const response = await axiosInstance.post(
     "/users",
     snakecaseResourceWithPermissions(user),

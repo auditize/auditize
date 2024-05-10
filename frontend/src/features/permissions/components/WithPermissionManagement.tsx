@@ -1,5 +1,6 @@
 import { Tabs } from "@mantine/core";
 
+import { Permissions } from "../types";
 import { PermissionManagement } from "./PermissionManagement";
 
 export function WithPermissionManagement({
@@ -8,8 +9,8 @@ export function WithPermissionManagement({
   children,
   readOnly = false,
 }: {
-  permissions: Auditize.Permissions;
-  onChange: (permissions: Auditize.Permissions) => void;
+  permissions: Permissions;
+  onChange: (permissions: Permissions) => void;
   children: React.ReactNode;
   readOnly?: boolean;
 }) {

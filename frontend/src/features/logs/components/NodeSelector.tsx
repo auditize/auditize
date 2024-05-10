@@ -3,7 +3,7 @@ import { Tree } from "rsuite";
 import "rsuite/dist/rsuite-no-reset.min.css";
 import { ItemDataType } from "rsuite/esm/@types/common";
 
-import { getAllLogNodes, getLogNode } from "../api";
+import { getAllLogNodes, getLogNode, LogNode } from "../api";
 
 function lookupItem(
   itemValue: string,

@@ -2,6 +2,12 @@ import camelcaseKeys from "camelcase-keys";
 
 import { axiosInstance } from "@/utils/axios";
 
+type SignupInfo = {
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 export async function setPassword(
   token: string,
   password: string,

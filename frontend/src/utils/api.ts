@@ -1,5 +1,12 @@
 import { axiosInstance } from "./axios";
 
+export type PagePaginationInfo = {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+};
+
 export async function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

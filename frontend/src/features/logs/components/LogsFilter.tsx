@@ -1,6 +1,6 @@
 import { Button, Group, Space, TextInput } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer } from "react";
 
 import {
   CustomDateTimePicker,
@@ -8,6 +8,7 @@ import {
   PopoverForm,
 } from "@/components";
 import { getAllMyRepos } from "@/features/repos";
+import { Repo } from "@/features/repos";
 import { labelize } from "@/utils/format";
 
 import {

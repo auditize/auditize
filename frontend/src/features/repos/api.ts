@@ -1,5 +1,25 @@
-import { getAllPagePaginatedItems } from "@/utils/api";
+import { getAllPagePaginatedItems, PagePaginationInfo } from "@/utils/api";
 import { axiosInstance } from "@/utils/axios";
+
+export type Repo = {
+  id: string;
+  name: string;
+  created_at: string;
+  stats?: {
+    first_log_date: string;
+    last_log_date: string;
+    log_count: number;
+    storage_size: number;
+  };
+  permissions: {
+    read_logs: boolean;
+    write_logs: boolean;
+  };
+};
+
+export type RepoUpdate = {
+  name?: string;
+};
 
 export async function createRepo({ name }: { name: string }): Promise<string> {
   const response = await axiosInstance.post("/repos", { name });

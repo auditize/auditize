@@ -1,6 +1,15 @@
 import camelcaseKeys from "camelcase-keys";
 
+import { ApplicablePermissions } from "@/features/permissions";
 import { axiosInstance } from "@/utils/axios";
+
+export type CurrentUserInfo = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  permissions: ApplicablePermissions;
+};
 
 export async function logIn(email: string, password: string): Promise<void> {
   await axiosInstance.post("/auth/user/login", {

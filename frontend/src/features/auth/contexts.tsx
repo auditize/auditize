@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useState } from "react";
 
-import { getCurrentUserInfo } from "./api";
+import { CurrentUserInfo, getCurrentUserInfo } from "./api";
 
 type AuthContextProps = {
   currentUser: CurrentUserInfo | null;

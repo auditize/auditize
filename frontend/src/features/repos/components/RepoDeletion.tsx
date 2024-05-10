@@ -1,6 +1,6 @@
 import { ResourceDeletion } from "@/components/ResourceManagement";
 
-import { deleteRepo } from "../api";
+import { deleteRepo, Repo } from "../api";
 
 export function RepoDeletion({
   repo,

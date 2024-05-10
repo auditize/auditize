@@ -1,6 +1,6 @@
 import { ResourceDeletion } from "@/components/ResourceManagement";
 
-import { deleteApikey } from "../api";
+import { Apikey, deleteApikey } from "../api";
 
 export function ApikeyDeletion({
   apikey,

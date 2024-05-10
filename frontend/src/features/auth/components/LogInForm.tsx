@@ -1,4 +1,4 @@
-import { Box, Button, Center, Stack, TextInput, Title } from "@mantine/core";
+import { Button, Center, Stack, TextInput, Title } from "@mantine/core";
 import { isEmail, useForm } from "@mantine/form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";

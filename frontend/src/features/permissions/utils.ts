@@ -1,7 +1,9 @@
 import camelcaseKeys from "camelcase-keys";
 import snakecaseKeys from "snakecase-keys";
 
-export function emptyPermissions(): Auditize.Permissions {
+import { Permissions } from "./types";
+
+export function emptyPermissions(): Permissions {
   return {
     isSuperadmin: false,
     logs: {

@@ -4,6 +4,7 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { labelize } from "@/utils/format";
 import { addQueryParamToLocation } from "@/utils/router";
 
+import { Log } from "../api";
 import { LogDetails } from "./LogDetails";
 
 function LogTableRow({

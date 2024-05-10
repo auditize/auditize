@@ -13,6 +13,7 @@ import {
   emptyPermissions,
   WithPermissionManagement,
 } from "@/features/permissions";
+import { Permissions } from "@/features/permissions/types";
 
 import {
   createApikey,
@@ -60,8 +61,8 @@ function ApikeyEditor({
   readOnly = false,
 }: {
   form: UseFormReturnType<any>;
-  permissions: Auditize.Permissions;
-  onChange: (permissions: Auditize.Permissions) => void;
+  permissions: Permissions;
+  onChange: (permissions: Permissions) => void;
   children: React.ReactNode;
   readOnly?: boolean;
 }) {
@@ -89,7 +90,7 @@ function Key({ value }: { value: string }) {
 
 export function ApikeyCreation({ opened }: { opened?: boolean }) {
   const form = useApikeyForm();
-  const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
+  const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
   );
   const [key, setKey] = useState<string | null>(null);
@@ -153,7 +154,7 @@ export function ApikeyEdition({
   readOnly: boolean;
 }) {
   const form = useApikeyForm();
-  const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
+  const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
   );
 

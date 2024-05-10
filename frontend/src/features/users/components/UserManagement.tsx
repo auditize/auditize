@@ -1,7 +1,7 @@
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 
-import { getUsers } from "../api";
+import { getUsers, User } from "../api";
 import { UserDeletion } from "./UserDeletion";
 import { UserCreation, UserEdition } from "./UserEditor";
 

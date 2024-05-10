@@ -8,6 +8,7 @@ import {
 } from "@/components/ResourceManagement";
 import {
   emptyPermissions,
+  Permissions,
   WithPermissionManagement,
 } from "@/features/permissions";
 
@@ -36,8 +37,8 @@ function UserEditor({
   readOnly = false,
 }: {
   form: UseFormReturnType<any>;
-  permissions: Auditize.Permissions;
-  onChange: (permissions: Auditize.Permissions) => void;
+  permissions: Permissions;
+  onChange: (permissions: Permissions) => void;
   readOnly?: boolean;
 }) {
   return (
@@ -73,7 +74,7 @@ function UserEditor({
 
 export function UserCreation({ opened }: { opened?: boolean }) {
   const form = useUserForm({});
-  const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
+  const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
   );
 
@@ -107,7 +108,7 @@ export function UserEdition({
   readOnly: boolean;
 }) {
   const form = useUserForm({});
-  const [permissions, setPermissions] = useState<Auditize.Permissions>(() =>
+  const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
   );
 

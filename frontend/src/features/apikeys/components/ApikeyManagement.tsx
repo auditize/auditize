@@ -1,7 +1,7 @@
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 
-import { getApikeys } from "../api";
+import { Apikey, getApikeys } from "../api";
 import { ApikeyDeletion } from "./ApikeyDeletion";
 import { ApikeyCreation, ApikeyEdition } from "./ApikeyEditor";
 

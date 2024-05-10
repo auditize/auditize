@@ -1,3 +1,5 @@
+import { Permissions } from "@/features/permissions";
+import { PagePaginationInfo } from "@/utils/api";
 import { axiosInstance } from "@/utils/axios";
 
 import {
@@ -5,7 +7,23 @@ import {
   snakecaseResourceWithPermissions,
 } from "../permissions";
 
-export async function createApikey(apikey: Apikey): Promise<[string, string]> {
+export interface ApikeyCreation {
+  name: string;
+  permissions: Permissions;
+}
+
+export interface Apikey extends ApikeyCreation {
+  id: string;
+}
+
+export type ApikeyUpdate = {
+  name?: string;
+  permissions?: Permissions;
+};
+
+export async function createApikey(
+  apikey: ApikeyCreation,
+): Promise<[string, string]> {
   const response = await axiosInstance.post(
     "/apikeys",
     snakecaseResourceWithPermissions(apikey),

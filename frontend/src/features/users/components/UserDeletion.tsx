@@ -1,6 +1,6 @@
 import { ResourceDeletion } from "@/components/ResourceManagement";
 
-import { deleteUser } from "../api";
+import { deleteUser, User } from "../api";
 
 export function UserDeletion({
   user,
