@@ -2,6 +2,10 @@ class AuditizeException(Exception):
     pass
 
 
+class ConfigError(AuditizeException):
+    pass
+
+
 class UnknownModelException(AuditizeException):
     pass
 

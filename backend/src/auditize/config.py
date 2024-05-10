@@ -2,6 +2,8 @@ import dataclasses
 import os
 from threading import Lock
 
+from auditize.exceptions import ConfigError
+
 _DEFAULT_ATTACHMENT_MAX_SIZE = 1024 * 1024 * 5  # 5MB
 
 
@@ -16,6 +18,24 @@ class Config:
     smtp_username: str
     smtp_password: str
     _smtp_sender: str
+
+    def _validate(self):
+        smtp_values_required = (
+            self.smtp_server,
+            self.smtp_port,
+            self.smtp_username,
+            self.smtp_password,
+        )
+        smtp_values = smtp_values_required + (self._smtp_sender,)
+
+        if any(smtp_values) and not all(smtp_values_required):
+            raise ConfigError(
+                "SMTP configuration is incomplete, please provide all of the following environment variables:\n"
+                "- AUDITIZE_SMTP_SERVER\n"
+                "- AUDITIZE_SMTP_PORT\n"
+                "- AUDITIZE_SMTP_USERNAME\n"
+                "- AUDITIZE_SMTP_PASSWORD\n"
+            )
 
     @classmethod
     def load_from_env(cls, env=None):
@@ -35,7 +55,7 @@ class Config:
                 return default
 
         try:
-            return cls(
+            config = cls(
                 base_url=optional("AUDITIZE_BASE_URL", "http://localhost:8000"),
                 jwt_signing_key=required("AUDITIZE_JWT_SIGNING_KEY"),
                 user_session_token_lifetime=optional(
@@ -54,18 +74,20 @@ class Config:
             )
         except KeyError as e:
             var_name = str(e)
-            raise ValueError(
+            raise ConfigError(
                 f"Could not load configuration, variable {var_name} is missing"
             )
+
+        config._validate()
+
+        return config
 
     @property
     def smtp_sender(self):
         return self._smtp_sender or self.smtp_username
 
     def is_smtp_enabled(self):
-        return all(
-            (self.smtp_server, self.smtp_port, self.smtp_username, self.smtp_password)
-        )
+        return self.smtp_sender is not None
 
 
 _config = None
