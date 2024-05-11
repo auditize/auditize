@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Annotated, Optional
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 
 class Log(BaseModel):
@@ -53,8 +53,6 @@ class Log(BaseModel):
     tags: list[Tag] = Field(default_factory=list)
     attachments: list[AttachmentMetadata] = Field(default_factory=list)
     node_path: list[Node] = Field(default_factory=list)
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class Node(BaseModel):
