@@ -46,11 +46,11 @@ def create_log(counter: int):
         ],
         "node_path": [
             {
-                "id": create_value("customer", counter, 10),
+                "ref": create_value("customer", counter, 10),
                 "name": create_value("Customer", counter, 10),
             },
             {
-                "id": create_value(
+                "ref": create_value(
                     "customer_%s_entity" % format_number(counter, 10), counter, 100
                 ),
                 "name": create_value("Entity", counter, 100),
@@ -60,17 +60,22 @@ def create_log(counter: int):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("Usage: %s REPO_ID" % sys.argv[0])
+    if len(sys.argv) != 3:
+        sys.exit("Usage: %s REPO_ID API_KEY" % sys.argv[0])
 
     base_url = "http://localhost:8000"
     repo_id = sys.argv[1]
+    api_key = sys.argv[2]
     count = 10_000
 
     for i in range(count):
         print("Inject log %d of %d" % (i + 1, count), end="\r")
         log = create_log(i)
-        resp = requests.post(f"{base_url}/repos/{repo_id}/logs", json=log)
+        resp = requests.post(
+            f"{base_url}/repos/{repo_id}/logs",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json=log,
+        )
         if not resp.ok:
             print()
             print("Error: %s" % json.dumps(resp.json(), indent=4, ensure_ascii=False))

@@ -24,15 +24,15 @@ export type Log = {
     name: string;
   };
   nodePath: {
-    id: string;
+    ref: string;
     name: string;
   }[];
 };
 
 export type LogNode = {
-  id: string;
+  ref: string;
   name: string;
-  parentNodeId: string | null;
+  parentNodeRef: string | null;
   hasChildren: boolean;
 };
 
@@ -47,7 +47,7 @@ export type LogsFilterParams = {
   tagCategory?: string;
   tagName?: string;
   tagId?: string;
-  nodeId?: string;
+  nodeRef?: string;
   since?: Date | null;
   until?: Date | null;
 };
@@ -64,7 +64,7 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
     tagCategory: "",
     tagName: "",
     tagId: "",
-    nodeId: "",
+    nodeRef: "",
     since: null,
     until: null,
   };
@@ -88,7 +88,7 @@ export async function getLogs(
     tagCategory: filter?.tagCategory,
     tagName: filter?.tagName,
     tagId: filter?.tagId,
-    nodeId: filter?.nodeId,
+    nodeRef: filter?.nodeRef,
     ...(cursor && { cursor }),
   });
   return {
@@ -147,17 +147,17 @@ export async function getAllLogTagCategories(
 
 export async function getAllLogNodes(
   repoId: string,
-  parentNodeId?: string | null,
+  parentNodeRef?: string | null,
 ): Promise<LogNode[]> {
   return getAllPagePaginatedItems<LogNode>(
     `/repos/${repoId}/logs/nodes`,
-    parentNodeId ? { parentNodeId: parentNodeId } : { root: true },
+    parentNodeRef ? { parentNodeRef: parentNodeRef } : { root: true },
   );
 }
 
 export async function getLogNode(
   repoId: string,
-  nodeId: string,
+  nodeRef: string,
 ): Promise<LogNode> {
-  return await reqGet(`/repos/${repoId}/logs/nodes/${nodeId}`);
+  return await reqGet(`/repos/${repoId}/logs/nodes/ref:${nodeRef}`);
 }

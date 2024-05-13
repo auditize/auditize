@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Path, Response, UploadFile
+from fastapi import APIRouter, Depends, Form, Path, Response, UploadFile
 from pydantic import BeforeValidator
 
 from auditize.auth.authorizer import (
@@ -10,7 +10,7 @@ from auditize.auth.authorizer import (
 )
 from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
-from auditize.exceptions import PayloadTooLarge
+from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.api.errors import COMMON_RESPONSES
 from auditize.helpers.datetime import validate_datetime
 from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
@@ -139,18 +139,18 @@ async def get_log_nodes(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     root: bool = False,
-    parent_node_id: str = None,
+    parent_node_ref: str = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> LogNodeListResponse:
-    if root and parent_node_id is not None:
-        raise HTTPException(
-            400, "Parameters 'root' and 'parent_node_id' are mutually exclusive."
+    if root and parent_node_ref is not None:
+        raise ValidationError(
+            "Parameters 'root' and 'parent_node_ref' are mutually exclusive."
         )
 
     if root:
-        filter_args = {"parent_node_id": None}
-    elif parent_node_id:
-        filter_args = {"parent_node_id": parent_node_id}
+        filter_args = {"parent_node_ref": None}
+    elif parent_node_ref:
+        filter_args = {"parent_node_ref": parent_node_ref}
     else:
         filter_args = {}
 
@@ -165,7 +165,7 @@ async def get_log_nodes(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/nodes/{node_id}",
+    "/repos/{repo_id}/logs/nodes/ref:{node_ref}",
     summary="Get a log node",
     operation_id="get_log_node",
     tags=["logs"],
@@ -174,9 +174,9 @@ async def get_log_node(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
-    node_id: Annotated[str, Path(title="Node ID")],
+    node_ref: Annotated[str, Path(title="Node ref")],
 ):
-    node = await service.get_log_node(dbm, repo_id, node_id)
+    node = await service.get_log_node(dbm, repo_id, node_ref)
     return LogNodeResponse.from_node(node)
 
 
@@ -337,7 +337,7 @@ async def get_logs(
     tag_category: str = None,
     tag_name: str = None,
     tag_id: str = None,
-    node_id: str = None,
+    node_ref: str = None,
     since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
     until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
 ) -> LogsReadingResponse:
@@ -354,7 +354,7 @@ async def get_logs(
         tag_category=tag_category,
         tag_name=tag_name,
         tag_id=tag_id,
-        node_id=node_id,
+        node_ref=node_ref,
         since=since,
         until=until,
         limit=page_params.limit,

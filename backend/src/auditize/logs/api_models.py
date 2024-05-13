@@ -93,7 +93,7 @@ class _LogBase(BaseModel):
         }
 
     class Node(BaseModel):
-        id: str = Field(title="Node ID")
+        ref: str = Field(title="Node ref")
         name: str = Field(title="Node name")
 
     event: Event
@@ -126,8 +126,8 @@ class _LogBase(BaseModel):
         "This array must at least contain one item.",
         json_schema_extra={
             "example": [
-                {"id": "customer:1", "name": "Customer 1"},
-                {"id": "entity:1", "name": "Entity 1"},
+                {"ref": "customer:1", "name": "Customer 1"},
+                {"ref": "entity:1", "name": "Entity 1"},
             ]
         },
     )
@@ -209,7 +209,7 @@ class LogTagCategoryListResponse(PagePaginatedResponse[str, str]):
 
 
 class NodeItem(_LogBase.Node):
-    parent_node_id: str | None = Field(
+    parent_node_ref: str | None = Field(
         description="The ID of the parent node. It is null for top-level nodes."
     )
     has_children: bool = Field(

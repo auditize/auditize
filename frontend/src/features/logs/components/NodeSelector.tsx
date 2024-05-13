@@ -22,7 +22,7 @@ function lookupItem(
 
 function logNodeToItem(node: LogNode): ItemDataType<string> {
   return {
-    value: node.id,
+    value: node.ref,
     label: node.name,
     children: node.hasChildren ? [] : undefined,
   };
@@ -30,58 +30,58 @@ function logNodeToItem(node: LogNode): ItemDataType<string> {
 
 async function buildTreeBranch(
   repoId: string,
-  nodeId: string,
+  nodeRef: string,
   item: ItemDataType<string> | null,
   items: ItemDataType<string>[],
 ): Promise<[ItemDataType<string> | null, ItemDataType<string>[]]> {
-  const node = await getLogNode(repoId, nodeId);
+  const node = await getLogNode(repoId, nodeRef);
   // now we have the full node, we can update the item label
   if (item) item.label = node.name;
 
   // get all sibling nodes
-  const siblingNodes = await getAllLogNodes(repoId, node.parentNodeId || null);
+  const siblingNodes = await getAllLogNodes(repoId, node.parentNodeRef || null);
   const siblingItems = siblingNodes.map(logNodeToItem);
 
   if (item) {
     // restore the item with its children we got from the previous call
     for (let i = 0; i < siblingItems.length; i++) {
-      if (siblingItems[i].value === nodeId) {
+      if (siblingItems[i].value === nodeRef) {
         siblingItems[i] = item;
         break;
       }
     }
   }
 
-  if (node.parentNodeId === null) {
+  if (node.parentNodeRef === null) {
     // no more parent, we just fetch the top nodes (the node selector has not been opened yet probably)
     return [null, siblingItems];
   } else {
-    const parentItem = lookupItem(node.parentNodeId, items);
+    const parentItem = lookupItem(node.parentNodeRef, items);
     if (parentItem) {
       // we reached an already fetched parent node in the tree, return it alongside its children
       return [parentItem, siblingItems];
     } else {
       // we need to fetch the parent node and its children
       const parentItem = {
-        value: node.parentNodeId,
+        value: node.parentNodeRef,
         children: siblingItems,
       };
-      return buildTreeBranch(repoId, node.parentNodeId, parentItem, items);
+      return buildTreeBranch(repoId, node.parentNodeRef, parentItem, items);
     }
   }
 }
 
 export function NodeSelector({
   repoId,
-  nodeId,
+  nodeRef,
   onChange,
 }: {
   repoId: string | null;
-  nodeId: string | null;
+  nodeRef: string | null;
   onChange: (value: string) => void;
 }) {
   const [items, setItems] = useState<ItemDataType<string>[]>([]);
-  const currentNodeIdRef = useRef<string>("");
+  const currentNodeRef = useRef<string>("");
   const queryClient = useQueryClient();
 
   // load top-level nodes
@@ -100,9 +100,9 @@ export function NodeSelector({
   useEffect(() => {
     let enabled = true;
 
-    if (!nodeId || lookupItem(nodeId, items)) return;
+    if (!nodeRef || lookupItem(nodeRef, items)) return;
 
-    buildTreeBranch(repoId!, nodeId, null, items).then(
+    buildTreeBranch(repoId!, nodeRef, null, items).then(
       ([parentItem, childrenItems]) => {
         if (!enabled) return;
 
@@ -118,19 +118,19 @@ export function NodeSelector({
         };
       },
     );
-  }, [nodeId]);
+  }, [nodeRef]);
 
   return (
     <Tree
       data={items}
-      value={nodeId || ""}
+      value={nodeRef || ""}
       onSelect={(item) => {
         // implement an unselect behavior, which is not supported by the Tree component
-        if (item.value === currentNodeIdRef.current) {
-          currentNodeIdRef.current = "";
+        if (item.value === currentNodeRef.current) {
+          currentNodeRef.current = "";
           onChange("");
         } else {
-          currentNodeIdRef.current = item.value as string;
+          currentNodeRef.current = item.value as string;
           onChange(item.value as string);
         }
       }}

@@ -20,8 +20,8 @@ class LogDatabase(BaseDatabase):
         if await self._cache.exists(cache_key):
             return
         ic(f"storing {collection.name!r} {data!r}")
-        await collection.update_one(data, {"$set": {}}, upsert=True)
-        await self._cache.set(cache_key, True)
+        result = await collection.update_one(data, {"$set": {}}, upsert=True)
+        await self._cache.set(cache_key, result)
 
     # Collections
     logs = Collection("logs")
