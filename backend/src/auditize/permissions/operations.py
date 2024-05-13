@@ -158,13 +158,8 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
     # if grantor has logs.read and logs.write, he can grant anything:
     if not (grantor_perms.logs.read and grantor_perms.logs.write):
         for assignee_repo_perms in assignee_perms.logs.repos:
-            grantor_repo_perms = next(
-                (
-                    perms
-                    for perms in grantor_perms.logs.repos
-                    if perms.repo_id == assignee_repo_perms.repo_id
-                ),
-                ReadWritePermissions.no(),
+            grantor_repo_perms = grantor_perms.logs.get_repo_permissions(
+                assignee_repo_perms.repo_id
             )
             _authorize_grant(
                 assignee_repo_perms.read,
@@ -218,19 +213,16 @@ def update_permissions(
     new.logs.read = _update_permission(orig_perms.logs.read, update_perms.logs.read)
     new.logs.write = _update_permission(orig_perms.logs.write, update_perms.logs.write)
     for update_repo_perms in update_perms.logs.repos:
-        orig_repo_perm_read, orig_repo_perm_write = next(
-            (
-                (orig_perms.read, orig_perms.write)
-                for orig_perms in orig_perms.logs.repos
-                if orig_perms.repo_id == update_repo_perms.repo_id
-            ),
-            (False, False),
+        orig_repo_perms = orig_perms.logs.get_repo_permissions(
+            update_repo_perms.repo_id
         )
         new.logs.repos.append(
             RepoLogPermissions(
                 repo_id=update_repo_perms.repo_id,
-                read=_update_permission(orig_repo_perm_read, update_repo_perms.read),
-                write=_update_permission(orig_repo_perm_write, update_repo_perms.write),
+                read=_update_permission(orig_repo_perms.read, update_repo_perms.read),
+                write=_update_permission(
+                    orig_repo_perms.write, update_repo_perms.write
+                ),
             )
         )
 
