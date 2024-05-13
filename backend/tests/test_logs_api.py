@@ -37,9 +37,9 @@ async def test_log_repo_access_control(
     apikey = await apikey_builder(
         {
             "logs": {
-                "repos": {
-                    repo_1.id: {"write": True},
-                }
+                "repos": [
+                    {"repo_id": repo_1.id, "write": True},
+                ]
             }
         }
     )

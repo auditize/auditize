@@ -18,6 +18,7 @@ from auditize.permissions.models import (
     LogPermissions,
     Permissions,
     ReadWritePermissions,
+    RepoLogPermissions,
 )
 from auditize.repos import service
 from auditize.repos.api_models import (
@@ -48,7 +49,9 @@ async def create_repo(
     # Ensure that authenticated will have read & write logs permissions on the repo he created
     if not authenticated.comply(permissions_and(can_read_logs(), can_write_logs())):
         grant_rw_on_repo_logs = Permissions(
-            logs=LogPermissions(repos={str(repo_id): ReadWritePermissions.yes()})
+            logs=LogPermissions(
+                repos=[RepoLogPermissions(repo_id=repo_id, read=True, write=True)]
+            ),
         )
         if authenticated.apikey:
             await update_apikey(
