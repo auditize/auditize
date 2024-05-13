@@ -1,6 +1,6 @@
 DEFAULT_PERMISSIONS = {
     "is_superadmin": False,
-    "logs": {"read": False, "write": False, "repos": {}},
+    "logs": {"read": False, "write": False, "repos": []},
     "management": {
         "repos": {"read": False, "write": False},
         "users": {"read": False, "write": False},

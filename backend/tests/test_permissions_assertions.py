@@ -78,10 +78,10 @@ def test_permission_assertions_on_logs_as_permissions_on_all_repos():
 def test_permission_assertions_on_logs_as_permissions_specific_repos():
     perms = {
         "logs": {
-            "repos": {
-                "repo1": {"read": True, "write": False},
-                "repo2": {"read": False, "write": True},
-            }
+            "repos": [
+                {"repo_id": "repo1", "read": True, "write": False},
+                {"repo_id": "repo2", "read": False, "write": True},
+            ]
         }
     }
     assert_authorized(perms, can_read_logs("repo1"), can_write_logs("repo2"))

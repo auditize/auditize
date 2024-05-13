@@ -35,16 +35,20 @@ class LogPermissionAssertion:
                 return True
             if self.repo_id is None:
                 return False
-            repo_perms = perms.logs.repos.get(self.repo_id)
-            return bool(repo_perms and repo_perms.read)
+            return any(
+                repo_perms.repo_id == self.repo_id and repo_perms.read
+                for repo_perms in perms.logs.repos
+            )
 
         if self.permission_type == "write":
             if perms.logs.write:
                 return True
             if self.repo_id is None:
                 return False
-            repo_perms = perms.logs.repos.get(self.repo_id)
-            return bool(repo_perms and repo_perms.write)
+            return any(
+                repo_perms.repo_id == self.repo_id and repo_perms.write
+                for repo_perms in perms.logs.repos
+            )
 
         raise Exception(
             f"Invalid log permission type: {self.permission_type}"

@@ -33,9 +33,9 @@ async def _test_repo_create(
 
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
-    assert permission_holder["permissions"]["logs"]["repos"] == {
-        repo.id: {"read": True, "write": True}
-    }
+    assert permission_holder["permissions"]["logs"]["repos"] == [
+        {"repo_id": repo.id, "read": True, "write": True}
+    ]
 
 
 async def test_repo_create_as_apikey(
@@ -296,11 +296,11 @@ async def test_repo_list_user_repos_with_permissions(
     user = await user_builder(
         {
             "logs": {
-                "repos": {
-                    repo_1.id: {"read": True, "write": False},
-                    repo_2.id: {"read": False, "write": True},
-                    repo_3.id: {"read": True, "write": True},
-                }
+                "repos": [
+                    {"repo_id": repo_1.id, "read": True, "write": False},
+                    {"repo_id": repo_2.id, "read": False, "write": True},
+                    {"repo_id": repo_3.id, "read": True, "write": True},
+                ]
             }
         }
     )

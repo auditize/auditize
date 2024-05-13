@@ -22,8 +22,12 @@ class ManagementPermissionsData(BaseModel):
     apikeys: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
 
 
+class RepoLogPermissionsData(ReadWritePermissionsData):
+    repo_id: str
+
+
 class LogPermissionsData(ReadWritePermissionsData):
-    repos: dict[str, ReadWritePermissionsData] = Field(default_factory=dict)
+    repos: list[RepoLogPermissionsData] = Field(default_factory=list)
 
 
 class PermissionsData(BaseModel):

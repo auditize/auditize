@@ -8,6 +8,7 @@ from auditize.permissions.models import (
     ManagementPermissions,
     Permissions,
     ReadWritePermissions,
+    RepoLogPermissions,
 )
 
 __all__ = (
@@ -21,24 +22,28 @@ __all__ = (
 
 
 def _normalize_repo_permissions(
-    repo_perms: dict[str, ReadWritePermissions],
+    repo_perms: list[RepoLogPermissions],
     global_read: bool = False,
     global_write: bool = False,
-) -> dict[str, ReadWritePermissions]:
+) -> list[RepoLogPermissions]:
     if global_read and global_write:  # shortcut / optimization
-        return {}
+        return []
 
+    # the function uses internally a dict to normalize the permissions to handle possible duplicates
+    # between repo_id (the last permission line wins)
     normalized: dict[str, ReadWritePermissions] = {}
 
-    for repo_id, repo_perms in repo_perms.items():
-        normalized_repo_perms = ReadWritePermissions(
-            read=False if global_read else (repo_perms.read or False),
-            write=False if global_write else (repo_perms.write or False),
+    for single_repo_perms in repo_perms:
+        normalized[single_repo_perms.repo_id] = ReadWritePermissions(
+            read=False if global_read else (single_repo_perms.read or False),
+            write=False if global_write else (single_repo_perms.write or False),
         )
-        if normalized_repo_perms.read or normalized_repo_perms.write:
-            normalized[repo_id] = normalized_repo_perms
 
-    return normalized
+    return [
+        RepoLogPermissions(repo_id=repo_id, read=perms.read, write=perms.write)
+        for repo_id, perms in normalized.items()
+        if perms.read or perms.write
+    ]
 
 
 def _normalize_read_write_permissions(
@@ -61,7 +66,7 @@ def normalize_permissions(perms: Permissions) -> Permissions:
     if perms.is_superadmin:
         return Permissions(
             is_superadmin=True,
-            logs=LogPermissions(read=False, write=False, repos={}),
+            logs=LogPermissions(read=False, write=False, repos=[]),
             management=ManagementPermissions(
                 repos=ReadWritePermissions.no(),
                 users=ReadWritePermissions.no(),
@@ -113,11 +118,11 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
             logs=ApplicableLogPermissions(
                 read=_get_applicable_log_permission_scope(
                     perms.logs.read,
-                    any(repo_perms.read for repo_perms in perms.logs.repos.values()),
+                    any(repo_perms.read for repo_perms in perms.logs.repos),
                 ),
                 write=_get_applicable_log_permission_scope(
                     perms.logs.write,
-                    any(repo_perms.write for repo_perms in perms.logs.repos.values()),
+                    any(repo_perms.write for repo_perms in perms.logs.repos),
                 ),
             ),
             management=perms.management.model_copy(deep=True),
@@ -152,19 +157,19 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
     # Check logs.repos.{read,write} grants
     # if grantor has logs.read and logs.write, he can grant anything:
     if not (grantor_perms.logs.read and grantor_perms.logs.write):
-        for assignee_repo_id, assignee_repo_perms in assignee_perms.logs.repos.items():
-            grantor_repo_perms = grantor_perms.logs.repos.get(
-                assignee_repo_id, ReadWritePermissions.no()
+        for assignee_repo_perms in assignee_perms.logs.repos:
+            grantor_repo_perms = grantor_perms.logs.get_repo_permissions(
+                assignee_repo_perms.repo_id
             )
             _authorize_grant(
                 assignee_repo_perms.read,
                 grantor_repo_perms.read or grantor_perms.logs.read,
-                f"logs read on repo {assignee_repo_id!r}",
+                f"logs read on repo {assignee_repo_perms.repo_id!r}",
             )
             _authorize_grant(
                 assignee_repo_perms.write,
                 grantor_repo_perms.write or grantor_perms.logs.write,
-                f"logs write on repo {assignee_repo_id!r}",
+                f"logs write on repo {assignee_repo_perms.repo_id!r}",
             )
 
     # Check management.{repos,users,apikeys} grants
@@ -207,12 +212,18 @@ def update_permissions(
     # Update logs permissions
     new.logs.read = _update_permission(orig_perms.logs.read, update_perms.logs.read)
     new.logs.write = _update_permission(orig_perms.logs.write, update_perms.logs.write)
-    for update_repo_id, update_repo_perms in update_perms.logs.repos.items():
-        orig_repo_perms = orig_perms.logs.repos.get(
-            update_repo_id, ReadWritePermissions.no()
+    for update_repo_perms in update_perms.logs.repos:
+        orig_repo_perms = orig_perms.logs.get_repo_permissions(
+            update_repo_perms.repo_id
         )
-        new.logs.repos[update_repo_id] = _update_rw_permissions(
-            orig_repo_perms, update_repo_perms
+        new.logs.repos.append(
+            RepoLogPermissions(
+                repo_id=update_repo_perms.repo_id,
+                read=_update_permission(orig_repo_perms.read, update_repo_perms.read),
+                write=_update_permission(
+                    orig_repo_perms.write, update_repo_perms.write
+                ),
+            )
         )
 
     # Update management permissions

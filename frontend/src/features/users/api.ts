@@ -1,8 +1,4 @@
-import {
-  camelcaseResourceWithPermissions,
-  Permissions,
-  snakecaseResourceWithPermissions,
-} from "@/features/permissions";
+import { Permissions } from "@/features/permissions";
 import {
   PagePaginationInfo,
   reqDelete,
@@ -31,9 +27,7 @@ export type UserUpdate = {
 };
 
 export async function createUser(user: UserCreation): Promise<string> {
-  const data = await reqPost("/users", snakecaseResourceWithPermissions(user), {
-    disableCaseNormalization: true,
-  });
+  const data = await reqPost("/users", user);
   return data.id;
 }
 
@@ -41,36 +35,17 @@ export async function updateUser(
   id: string,
   update: UserUpdate,
 ): Promise<void> {
-  await reqPatch(`/users/${id}`, snakecaseResourceWithPermissions(update), {
-    disableCaseNormalization: true,
-  });
+  await reqPatch(`/users/${id}`, update);
 }
 
 export async function getUsers(
   page = 1,
 ): Promise<[User[], PagePaginationInfo]> {
-  const [data, pagination] = await reqGetPaginated(
-    "/users",
-    { page },
-    {
-      disableCaseNormalization: true,
-    },
-  );
-  return [
-    data.map((item) => camelcaseResourceWithPermissions(item) as User),
-    pagination,
-  ];
+  return await reqGetPaginated("/users", { page });
 }
 
 export async function getUser(userId: string): Promise<User> {
-  const data = await reqGet(
-    `/users/${userId}`,
-    {},
-    {
-      disableCaseNormalization: true,
-    },
-  );
-  return camelcaseResourceWithPermissions(data) as User;
+  return await reqGet(`/users/${userId}`);
 }
 
 export async function deleteUser(userId: string): Promise<void> {

@@ -3,12 +3,16 @@ export interface ReadWritePermissions {
   write: boolean;
 }
 
+export interface RepoLogPermissions extends ReadWritePermissions {
+  repoId: string;
+}
+
 export interface Permissions {
   isSuperadmin: boolean;
   logs: {
     read: boolean;
     write: boolean;
-    repos: Record<string, ReadWritePermissions>;
+    repos: Array<RepoLogPermissions>;
   };
   management: {
     repos: ReadWritePermissions;

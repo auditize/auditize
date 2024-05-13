@@ -8,6 +8,7 @@ __all__ = (
     "ApplicablePermissions",
     "ReadWritePermissions",
     "ManagementPermissions",
+    "RepoLogPermissions",
     "LogPermissions",
     "Permissions",
 )
@@ -36,8 +37,14 @@ class ManagementPermissions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class RepoLogPermissions(ReadWritePermissions):
+    repo_id: str
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class LogPermissions(ReadWritePermissions):
-    repos: dict[str, ReadWritePermissions] = Field(default_factory=dict)
+    repos: list[RepoLogPermissions] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -47,7 +54,13 @@ class LogPermissions(ReadWritePermissions):
             write_ok = perms.write if can_write else True
             return read_ok and write_ok
 
-        return [repo_id for repo_id, perms in self.repos.items() if perms_ok(perms)]
+        return [perms.repo_id for perms in self.repos if perms_ok(perms)]
+
+    def get_repo_permissions(self, repo_id: str) -> ReadWritePermissions:
+        for perms in self.repos:
+            if perms.repo_id == repo_id:
+                return perms
+        return ReadWritePermissions.no()
 
 
 class Permissions(BaseModel):

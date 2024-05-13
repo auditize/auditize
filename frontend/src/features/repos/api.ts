@@ -57,14 +57,10 @@ export async function getAllMyRepos({
   hasReadPermission?: boolean;
   hasWritePermission?: boolean;
 }): Promise<Repo[]> {
-  return await getAllPagePaginatedItems<Repo>(
-    "/users/me/repos",
-    {
-      has_read_permission: hasReadPermission,
-      has_write_permission: hasWritePermission,
-    },
-    { disableCaseNormalization: false },
-  );
+  return await getAllPagePaginatedItems<Repo>("/users/me/repos", {
+    has_read_permission: hasReadPermission,
+    has_write_permission: hasWritePermission,
+  });
 }
 
 export async function getRepo(repoId: string): Promise<Repo> {

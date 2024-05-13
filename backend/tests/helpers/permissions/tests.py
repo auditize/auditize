@@ -50,7 +50,9 @@ class BasePermissionTests:
             {
                 "permissions": {
                     "management": {"repos": {"read": True, "write": True}},
-                    "logs": {"repos": {repo.id: {"read": True, "write": True}}},
+                    "logs": {
+                        "repos": [{"repo_id": repo.id, "read": True, "write": True}]
+                    },
                 }
             }
         )
@@ -72,7 +74,9 @@ class BasePermissionTests:
                             "logs": {
                                 "read": False,
                                 "write": False,
-                                "repos": {repo.id: {"read": True, "write": True}},
+                                "repos": [
+                                    {"repo_id": repo.id, "read": True, "write": True}
+                                ],
                             },
                             "management": {
                                 "repos": {"read": True, "write": True},
@@ -95,7 +99,13 @@ class BasePermissionTests:
                 {
                     "permissions": {
                         "logs": {
-                            "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}}
+                            "repos": [
+                                {
+                                    "repo_id": UNKNOWN_OBJECT_ID,
+                                    "read": True,
+                                    "write": True,
+                                }
+                            ]
                         },
                     }
                 }
@@ -149,7 +159,9 @@ class BasePermissionTests:
                         "logs": {
                             "read": False,
                             "write": False,
-                            "repos": {repo.id: {"read": True, "write": True}},
+                            "repos": [
+                                {"repo_id": repo.id, "read": True, "write": True}
+                            ],
                         },
                         "management": {
                             "repos": {"read": False, "write": False},
@@ -170,7 +182,9 @@ class BasePermissionTests:
                             "logs": {
                                 "read": False,
                                 "write": False,
-                                "repos": {repo.id: {"read": True, "write": True}},
+                                "repos": [
+                                    {"repo_id": repo.id, "read": True, "write": True}
+                                ],
                             },
                             "management": {
                                 "repos": {"read": False, "write": False},
@@ -192,7 +206,9 @@ class BasePermissionTests:
             json={
                 "permissions": {
                     "logs": {
-                        "repos": {UNKNOWN_OBJECT_ID: {"read": True, "write": True}},
+                        "repos": [
+                            {"repo_id": UNKNOWN_OBJECT_ID, "read": True, "write": True}
+                        ],
                     },
                 }
             },
