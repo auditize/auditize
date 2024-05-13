@@ -54,13 +54,13 @@ async def consolidate_log_details(db: LogDatabase, details: dict[str, dict[str, 
 
 
 async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
-    parent_node_id = None
+    parent_node_ref = None
     for node in node_path:
         await db.consolidate_data(
             db.log_nodes,
-            {"parent_node_id": parent_node_id, "id": node.id, "name": node.name},
+            {"parent_node_ref": parent_node_ref, "ref": node.ref, "name": node.name},
         )
-        parent_node_id = node.id
+        parent_node_ref = node.ref
 
 
 async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
@@ -153,7 +153,7 @@ async def get_logs(
     tag_category: str = None,
     tag_name: str = None,
     tag_id: str = None,
-    node_id: str = None,
+    node_ref: str = None,
     since: datetime = None,
     until: datetime = None,
     limit: int = 10,
@@ -180,8 +180,8 @@ async def get_logs(
         criteria["tags.name"] = _text_search_filter(tag_name)
     if tag_id:
         criteria["tags.id"] = tag_id
-    if node_id:
-        criteria["node_path.id"] = node_id
+    if node_ref:
+        criteria["node_path.ref"] = node_ref
     if since:
         criteria["saved_at"] = {"$gte": since}
     if until:
@@ -315,9 +315,9 @@ async def _get_log_nodes(db: LogDatabase, *, match, pipeline_extra=None):
             {
                 "$lookup": {
                     "from": "log_nodes",
-                    "let": {"id": "$id"},
+                    "let": {"ref": "$ref"},
                     "pipeline": [
-                        {"$match": {"$expr": {"$eq": ["$parent_node_id", "$$id"]}}},
+                        {"$match": {"$expr": {"$eq": ["$parent_node_ref", "$$ref"]}}},
                         {"$limit": 1},
                     ],
                     "as": "first_child_if_any",
@@ -337,18 +337,18 @@ async def get_log_nodes(
     dbm: DatabaseManager,
     repo_id: str,
     *,
-    parent_node_id=NotImplemented,
+    parent_node_ref=NotImplemented,
     page=1,
     page_size=10,
 ) -> tuple[list[Log.Node], PagePaginationInfo]:
     db = await get_log_db(dbm, repo_id)
 
-    # please note that we use NotImplemented instead of None because None is a valid value for parent_node_id
+    # please note that we use NotImplemented instead of None because None is a valid value for parent_node_ref
     # (it means filtering on top nodes)
-    if parent_node_id is NotImplemented:
+    if parent_node_ref is NotImplemented:
         filter = {}
     else:
-        filter = {"parent_node_id": parent_node_id}
+        filter = {"parent_node_ref": parent_node_ref}
 
     results = await _get_log_nodes(
         db,
@@ -368,13 +368,13 @@ async def get_log_nodes(
     )
 
 
-async def get_log_node(dbm: DatabaseManager, repo_id: str, node_id: str) -> Log.Node:
+async def get_log_node(dbm: DatabaseManager, repo_id: str, node_ref: str) -> Log.Node:
     db = await get_log_db(dbm, repo_id)
 
-    results = await (await _get_log_nodes(db, match={"id": node_id})).to_list(None)
+    results = await (await _get_log_nodes(db, match={"ref": node_ref})).to_list(None)
     try:
         result = results[0]
     except IndexError:
-        raise UnknownModelException(node_id)
+        raise UnknownModelException(node_ref)
 
     return Node(**result)

@@ -37,7 +37,7 @@ class Log(BaseModel):
         data: bytes
 
     class Node(BaseModel):
-        id: str
+        ref: str
         name: str
 
     id: Annotated[Optional[str], BeforeValidator(str)] = Field(
@@ -56,7 +56,10 @@ class Log(BaseModel):
 
 
 class Node(BaseModel):
-    id: str
+    id: Annotated[str, BeforeValidator(str)] = Field(
+        alias="_id",
+    )
+    ref: str
     name: str
-    parent_node_id: str | None
+    parent_node_ref: str | None
     has_children: bool

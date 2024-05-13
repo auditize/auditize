@@ -22,7 +22,7 @@ def make_log_data(**extra) -> Log:
         "actor": Log.Actor(type="user", id="user:123", name="User 123"),
         "resource": Log.Resource(type="module", id="core", name="Core Module"),
         "tags": [Log.Tag(id="simple_tag")],
-        "node_path": [Log.Node(id="1", name="Customer 1")],
+        "node_path": [Log.Node(ref="1", name="Customer 1")],
         **extra,
     }
 
@@ -49,7 +49,7 @@ async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     assert list(db_log["actor"].keys()) == ["type", "id", "name", "extra"]
     assert list(db_log["resource"].keys()) == ["type", "id", "name", "extra"]
     assert list(db_log["tags"][0].keys()) == ["id", "category", "name"]
-    assert list(db_log["node_path"][0].keys()) == ["id", "name"]
+    assert list(db_log["node_path"][0].keys()) == ["ref", "name"]
 
 
 async def assert_consolidated_data(
@@ -84,7 +84,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     )
     await assert_consolidated_data(repo.db.log_tag_categories, {"category": "rich_tag"})
     await assert_consolidated_data(
-        repo.db.log_nodes, {"parent_node_id": None, "id": "1", "name": "Customer 1"}
+        repo.db.log_nodes, {"parent_node_ref": None, "ref": "1", "name": "Customer 1"}
     )
 
     # second log
@@ -99,7 +99,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         Log.Tag(id="tag_id", category="rich_tag_bis", name="rich_tag_name"),
         Log.Tag(id="simple_tag"),
     ]
-    log.node_path.append(Log.Node(id="1:1", name="Entity A"))
+    log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
     await save_log(dbm, repo.id, log)
     await assert_consolidated_data(
         repo.db.log_events,
@@ -137,7 +137,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     await assert_consolidated_data(
         repo.db.log_nodes,
         [
-            {"parent_node_id": None, "id": "1", "name": "Customer 1"},
-            {"parent_node_id": "1", "id": "1:1", "name": "Entity A"},
+            {"parent_node_ref": None, "ref": "1", "name": "Customer 1"},
+            {"parent_node_ref": "1", "ref": "1:1", "name": "Entity A"},
         ],
     )

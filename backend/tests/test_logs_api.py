@@ -630,11 +630,11 @@ async def test_get_logs_filter_node_id_exact_node(
 ):
     def func(log):
         log["node_path"] = [
-            {"id": "find_me:1", "name": "Customer 1"},
-            {"id": "find_me:2", "name": "Customer 2"},
+            {"ref": "find_me:1", "name": "Customer 1"},
+            {"ref": "find_me:2", "name": "Customer 2"},
         ]
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"node_id": "find_me:2"})
+    await _test_get_logs_filter(log_rw_client, repo, func, {"node_ref": "find_me:2"})
 
 
 async def test_get_logs_filter_node_id_ascendant_node(
@@ -642,11 +642,11 @@ async def test_get_logs_filter_node_id_ascendant_node(
 ):
     def func(log):
         log["node_path"] = [
-            {"id": "find_me:1", "name": "Customer 1"},
-            {"id": "find_me:2", "name": "Customer 2"},
+            {"ref": "find_me:1", "name": "Customer 1"},
+            {"ref": "find_me:2", "name": "Customer 2"},
         ]
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"node_id": "find_me:1"})
+    await _test_get_logs_filter(log_rw_client, repo, func, {"node_ref": "find_me:1"})
 
 
 async def test_get_logs_filter_since(log_rw_client: HttpTestHelper, repo: PreparedRepo):
@@ -982,8 +982,8 @@ async def test_get_log_nodes_without_filters(
         await consolidate_log_node_path(
             repo.db,
             [
-                Log.Node(id=f"customer", name=f"Customer"),
-                Log.Node(id=f"entity:{i}", name=f"Entity {i}"),
+                Log.Node(ref=f"customer", name=f"Customer"),
+                Log.Node(ref=f"entity:{i}", name=f"Entity {i}"),
             ],
         )
 
@@ -992,17 +992,17 @@ async def test_get_log_nodes_without_filters(
         f"/repos/{repo.id}/logs/nodes",
         [
             {
-                "id": "customer",
+                "ref": "customer",
                 "name": "Customer",
-                "parent_node_id": None,
+                "parent_node_ref": None,
                 "has_children": True,
             }
         ]
         + [
             {
-                "id": f"entity:{i}",
+                "ref": f"entity:{i}",
                 "name": f"Entity {i}",
-                "parent_node_id": "customer",
+                "parent_node_ref": "customer",
                 "has_children": False,
             }
             for i in range(4)
@@ -1018,8 +1018,8 @@ async def test_get_log_nodes_with_filters(
             await consolidate_log_node_path(
                 repo.db,
                 [
-                    Log.Node(id=f"customer:{i}", name=f"Customer {i}"),
-                    Log.Node(id=f"entity:{i}-{j}", name=f"Entity {j}"),
+                    Log.Node(ref=f"customer:{i}", name=f"Customer {i}"),
+                    Log.Node(ref=f"entity:{i}-{j}", name=f"Entity {j}"),
                 ],
             )
 
@@ -1029,9 +1029,9 @@ async def test_get_log_nodes_with_filters(
         f"/repos/{repo.id}/logs/nodes?root=true",
         [
             {
-                "id": f"customer:{i}",
+                "ref": f"customer:{i}",
                 "name": f"Customer {i}",
-                "parent_node_id": None,
+                "parent_node_ref": None,
                 "has_children": True,
             }
             for i in range(5)
@@ -1041,12 +1041,12 @@ async def test_get_log_nodes_with_filters(
     # test non-top-level nodes
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/nodes?parent_node_id=customer:2",
+        f"/repos/{repo.id}/logs/nodes?parent_node_ref=customer:2",
         [
             {
-                "id": f"entity:2-{j}",
+                "ref": f"entity:2-{j}",
                 "name": f"Entity {j}",
-                "parent_node_id": "customer:2",
+                "parent_node_ref": "customer:2",
                 "has_children": False,
             }
             for j in ("a", "b", "c", "d", "e")
@@ -1070,27 +1070,27 @@ async def test_get_log_node(log_read_client: HttpTestHelper, repo: PreparedRepo)
     await consolidate_log_node_path(
         repo.db,
         [
-            Log.Node(id="customer", name="Customer"),
-            Log.Node(id="entity", name="Entity"),
+            Log.Node(ref="customer", name="Customer"),
+            Log.Node(ref="entity", name="Entity"),
         ],
     )
 
     await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/nodes/customer",
+        f"/repos/{repo.id}/logs/nodes/ref:customer",
         expected_json={
-            "id": "customer",
+            "ref": "customer",
             "name": "Customer",
-            "parent_node_id": None,
+            "parent_node_ref": None,
             "has_children": True,
         },
     )
 
     await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/nodes/entity",
+        f"/repos/{repo.id}/logs/nodes/ref:entity",
         expected_json={
-            "id": "entity",
+            "ref": "entity",
             "name": "Entity",
-            "parent_node_id": "customer",
+            "parent_node_ref": "customer",
             "has_children": False,
         },
     )
@@ -1100,5 +1100,5 @@ async def test_get_log_node_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/nodes/some_value"
+        f"/repos/{repo.id}/logs/nodes/ref:some_value"
     )
