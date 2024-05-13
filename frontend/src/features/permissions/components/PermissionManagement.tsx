@@ -135,6 +135,23 @@ function LogsPermissionManagement({
     placeholderData: [],
   });
 
+  // Convert the array of repo permissions to an object for easier handling
+  const repoPerms = Object.fromEntries(
+    perms.repos.map((repoPerms) => [
+      repoPerms.repoId,
+      { read: repoPerms.read, write: repoPerms.write },
+    ]),
+  ) as Record<string, ReadWritePermissions>;
+
+  // Convert back the "repoPerm" object to an array to fit the expected type
+  const normalizeRepoPerms = (
+    permsObject: Record<string, ReadWritePermissions>,
+  ) =>
+    Object.entries(permsObject).map(([repoId, perms]) => ({
+      repoId,
+      ...perms,
+    }));
+
   return (
     <Accordion.Item value="logs">
       <Accordion.Control>Logs</Accordion.Control>
@@ -163,7 +180,7 @@ function LogsPermissionManagement({
                 <Table.Td>
                   <ReadWritePermissionManagement
                     perms={
-                      perms.repos[assignableRepo.id] || {
+                      repoPerms[assignableRepo.id] || {
                         read: false,
                         write: false,
                       }
@@ -181,10 +198,10 @@ function LogsPermissionManagement({
                     onChange={(repoLogsPerms) =>
                       onChange({
                         ...perms,
-                        repos: {
-                          ...perms.repos,
+                        repos: normalizeRepoPerms({
+                          ...repoPerms,
                           [assignableRepo.id]: repoLogsPerms,
-                        },
+                        }),
                       })
                     }
                     readOnly={readOnly}

@@ -9,7 +9,7 @@ export function emptyPermissions(): Permissions {
     logs: {
       read: false,
       write: false,
-      repos: {},
+      repos: [],
     },
     management: {
       repos: {
