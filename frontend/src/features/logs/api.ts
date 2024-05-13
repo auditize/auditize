@@ -107,7 +107,6 @@ export async function getAllLogEventCategories(
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/event-categories`,
     {},
-    { disableCaseNormalization: false },
   );
 }
 
@@ -118,7 +117,6 @@ export async function getAllLogEventNames(
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/events`,
     category ? { category } : {},
-    { disableCaseNormalization: false },
   );
 }
 
@@ -126,7 +124,6 @@ export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/actor-types`,
     {},
-    { disableCaseNormalization: false },
   );
 }
 
@@ -136,7 +133,6 @@ export async function getAllLogResourceTypes(
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/resource-types`,
     {},
-    { disableCaseNormalization: false },
   );
 }
 
@@ -146,7 +142,6 @@ export async function getAllLogTagCategories(
   return getAllPagePaginatedItems<string>(
     `/repos/${repoId}/logs/tag-categories`,
     {},
-    { disableCaseNormalization: false },
   );
 }
 
@@ -157,7 +152,6 @@ export async function getAllLogNodes(
   return getAllPagePaginatedItems<LogNode>(
     `/repos/${repoId}/logs/nodes`,
     parentNodeId ? { parentNodeId: parentNodeId } : { root: true },
-    { disableCaseNormalization: false },
   );
 }
 

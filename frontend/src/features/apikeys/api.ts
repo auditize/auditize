@@ -39,11 +39,7 @@ export async function updateApikey(
 export async function getApikeys(
   page = 1,
 ): Promise<[Apikey[], PagePaginationInfo]> {
-  return await reqGetPaginated(
-    "/apikeys",
-    { page },
-    { disableCaseNormalization: false },
-  );
+  return await reqGetPaginated("/apikeys", { page });
 }
 
 export async function getApikey(apikeyId: string): Promise<Apikey> {

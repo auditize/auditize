@@ -41,13 +41,7 @@ export async function updateUser(
 export async function getUsers(
   page = 1,
 ): Promise<[User[], PagePaginationInfo]> {
-  return await reqGetPaginated(
-    "/users",
-    { page },
-    {
-      disableCaseNormalization: false,
-    },
-  );
+  return await reqGetPaginated("/users", { page });
 }
 
 export async function getUser(userId: string): Promise<User> {
