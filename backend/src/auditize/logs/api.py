@@ -10,7 +10,7 @@ from auditize.auth.authorizer import (
 )
 from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
-from auditize.exceptions import PayloadTooLarge
+from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.api.errors import COMMON_RESPONSES
 from auditize.helpers.datetime import validate_datetime
 from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
@@ -143,8 +143,8 @@ async def get_log_nodes(
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> LogNodeListResponse:
     if root and parent_node_id is not None:
-        raise HTTPException(
-            400, "Parameters 'root' and 'parent_node_id' are mutually exclusive."
+        raise ValidationError(
+            "Parameters 'root' and 'parent_node_id' are mutually exclusive."
         )
 
     if root:
