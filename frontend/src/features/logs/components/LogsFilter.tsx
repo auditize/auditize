@@ -254,7 +254,7 @@ export function LogsFilter({
     editedParams.tagName ||
     editedParams.tagId
   );
-  const hasNode = !!editedParams.nodeId;
+  const hasNode = !!editedParams.nodeRef;
   const hasFilter =
     hasDate || hasEvent || hasActor || hasResource || hasTag || hasNode;
 
@@ -356,11 +356,11 @@ export function LogsFilter({
       </PopoverForm>
 
       {/* Node criteria */}
-      <PopoverForm title="Node" isFilled={!!editedParams.nodeId}>
+      <PopoverForm title="Node" isFilled={!!editedParams.nodeRef}>
         <NodeSelector
           repoId={editedParams.repoId || null}
-          nodeId={editedParams.nodeId || null}
-          onChange={changeParamHandler("nodeId")}
+          nodeRef={editedParams.nodeRef || null}
+          onChange={changeParamHandler("nodeRef")}
         />
       </PopoverForm>
 

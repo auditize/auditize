@@ -82,8 +82,8 @@ function LogTableRow({
             // FIXME: the filter edition for the node path may not work properly if the selected node
             // has not been already loaded in the TreePicker component
             <Anchor
-              key={node.id}
-              onClick={() => onTableFilterChange("nodeId", node.id)}
+              key={node.ref}
+              onClick={() => onTableFilterChange("nodeRef", node.ref)}
               underline="hover"
             >
               {node.name}
