@@ -8,7 +8,7 @@ __all__ = (
     "ApplicablePermissions",
     "ReadWritePermissions",
     "ManagementPermissions",
-    "LogsPermissions",
+    "LogPermissions",
     "Permissions",
 )
 
@@ -36,7 +36,7 @@ class ManagementPermissions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class LogsPermissions(ReadWritePermissions):
+class LogPermissions(ReadWritePermissions):
     repos: dict[str, ReadWritePermissions] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="forbid")
@@ -52,7 +52,7 @@ class LogsPermissions(ReadWritePermissions):
 
 class Permissions(BaseModel):
     is_superadmin: bool | None = Field(default=None)
-    logs: LogsPermissions = Field(default_factory=LogsPermissions)
+    logs: LogPermissions = Field(default_factory=LogPermissions)
     management: ManagementPermissions = Field(default_factory=ManagementPermissions)
 
     model_config = ConfigDict(extra="forbid")

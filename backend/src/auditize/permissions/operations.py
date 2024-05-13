@@ -4,7 +4,7 @@ from auditize.permissions.models import (
     ApplicableLogPermissions,
     ApplicableLogPermissionScope,
     ApplicablePermissions,
-    LogsPermissions,
+    LogPermissions,
     ManagementPermissions,
     Permissions,
     ReadWritePermissions,
@@ -61,7 +61,7 @@ def normalize_permissions(perms: Permissions) -> Permissions:
     if perms.is_superadmin:
         return Permissions(
             is_superadmin=True,
-            logs=LogsPermissions(read=False, write=False, repos={}),
+            logs=LogPermissions(read=False, write=False, repos={}),
             management=ManagementPermissions(
                 repos=ReadWritePermissions.no(),
                 users=ReadWritePermissions.no(),
@@ -71,7 +71,7 @@ def normalize_permissions(perms: Permissions) -> Permissions:
 
     return Permissions(
         is_superadmin=False,
-        logs=LogsPermissions(
+        logs=LogPermissions(
             read=perms.logs.read or False,
             write=perms.logs.write or False,
             repos=_normalize_repo_permissions(

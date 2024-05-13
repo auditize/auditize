@@ -4,7 +4,7 @@ __all__ = (
     "ApplicablePermissionsData",
     "ReadWritePermissionsData",
     "ManagementPermissionsData",
-    "LogsPermissionsData",
+    "LogPermissionsData",
     "PermissionsData",
 )
 
@@ -22,13 +22,13 @@ class ManagementPermissionsData(BaseModel):
     apikeys: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
 
 
-class LogsPermissionsData(ReadWritePermissionsData):
+class LogPermissionsData(ReadWritePermissionsData):
     repos: dict[str, ReadWritePermissionsData] = Field(default_factory=dict)
 
 
 class PermissionsData(BaseModel):
     is_superadmin: bool | None = Field(default=None)
-    logs: LogsPermissionsData = Field(default_factory=LogsPermissionsData)
+    logs: LogPermissionsData = Field(default_factory=LogPermissionsData)
     management: ManagementPermissionsData = Field(
         default_factory=ManagementPermissionsData
     )
