@@ -51,7 +51,7 @@ class Log(BaseModel):
     )
     action: Action
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    source: dict[str, str] = Field(default_factory=dict)
+    source: list[CustomField] = Field(default_factory=list)
     actor: Optional[Actor] = Field(default=None)
     resource: Optional[Resource] = Field(default=None)
     details: dict[str, dict[str, str]] = Field(default_factory=dict)

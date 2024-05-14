@@ -69,8 +69,8 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
 
     await consolidate_log_action(db, log.action)
 
-    for key in log.source:
-        await db.consolidate_data(db.log_source_keys, {"key": key})
+    for field in log.source:
+        await db.consolidate_data(db.log_source_fields, {"name": field.name})
 
     if log.actor:
         await consolidate_log_actor(db, log.actor)

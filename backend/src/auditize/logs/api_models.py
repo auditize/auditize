@@ -108,10 +108,15 @@ class _LogBase(BaseModel):
         name: str = Field(title="Node name")
 
     action: Action
-    source: dict[str, str] = Field(
-        default_factory=dict,
+    source: list[CustomFieldData] = Field(
+        default_factory=list,
         description="Various information about the source of the event such as IP address, User-Agent, etc...",
-        json_schema_extra={"example": {"ip": "1.2.3.4", "user_agent": "Mozilla/5.0"}},
+        json_schema_extra={
+            "example": [
+                {"name": "ip", "value": "127.0.0.1"},
+                {"name": "user_agent", "value": "Mozilla/5.0"},
+            ]
+        },
     )
     actor: Optional[Actor] = Field(default=None, json_schema_extra={"nullable": True})
     resource: Optional[Resource] = Field(

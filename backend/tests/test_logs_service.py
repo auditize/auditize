@@ -65,7 +65,7 @@ async def assert_consolidated_data(
 
 async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     # first log
-    log = make_log_data(source={"ip": "127.0.0.1"})
+    log = make_log_data(source=[{"name": "ip", "value": "127.0.0.1"}])
     log.actor.extra.append(CustomField(name="role", value="admin"))
     log.resource.extra.append(CustomField(name="some_key", value="some_value"))
     log.details = {"level1": {"level2": "value"}}
@@ -74,7 +74,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     await assert_consolidated_data(
         repo.db.log_actions, {"category": "authentication", "type": "login"}
     )
-    await assert_consolidated_data(repo.db.log_source_keys, {"key": "ip"})
+    await assert_consolidated_data(repo.db.log_source_fields, {"name": "ip"})
     await assert_consolidated_data(repo.db.log_actor_types, {"type": "user"})
     await assert_consolidated_data(repo.db.log_actor_extra_fields, {"name": "role"})
     await assert_consolidated_data(repo.db.log_resource_types, {"type": "module"})
@@ -90,7 +90,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     )
 
     # second log
-    log = make_log_data(source={"ip_bis": "127.0.0.1"})
+    log = make_log_data(source=[{"name": "ip_bis", "value": "127.0.0.1"}])
     log.action.category += "_bis"
     log.actor.type += "_bis"
     log.actor.extra.append(CustomField(name="role_bis", value="admin"))
@@ -111,7 +111,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         ],
     )
     await assert_consolidated_data(
-        repo.db.log_source_keys, [{"key": "ip"}, {"key": "ip_bis"}]
+        repo.db.log_source_fields, [{"name": "ip"}, {"name": "ip_bis"}]
     )
     await assert_consolidated_data(
         repo.db.log_actor_types, [{"type": "user"}, {"type": "user_bis"}]

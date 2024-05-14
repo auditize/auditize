@@ -81,7 +81,10 @@ async def test_create_log_all_fields(
 ):
     data = PreparedLog.prepare_data(
         {
-            "source": {"ip": "1.1.1.1", "user_agent": "Mozilla/5.0"},
+            "source": [
+                {"name": "ip", "value": "1.1.1.1"},
+                {"name": "user_agent", "value": "Mozilla/5.0"},
+            ],
             "actor": {
                 "type": "user",
                 "ref": "user:123",
@@ -258,7 +261,10 @@ async def test_get_log_all_fields(
 ):
     data = PreparedLog.prepare_data(
         {
-            "source": {"ip": "1.1.1.1", "user_agent": "Mozilla/5.0"},
+            "source": [
+                {"name": "ip", "value": "1.1.1.1"},
+                {"name": "user_agent", "value": "Mozilla/5.0"},
+            ],
             "actor": {
                 "type": "user",
                 "ref": "user:123",

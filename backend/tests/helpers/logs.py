@@ -37,7 +37,7 @@ class PreparedLog:
 
     def expected_api_response(self, extra=None) -> dict:
         expected: dict[str, any] = {
-            "source": {},
+            "source": [],
             "actor": None,
             "resource": None,
             "details": {},
