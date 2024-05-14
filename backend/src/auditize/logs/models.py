@@ -15,14 +15,14 @@ class Log(BaseModel):
         category: str
 
     class Actor(BaseModel):
-        type: str
         ref: str
+        type: str
         name: str
         extra: list[CustomField] = Field(default_factory=list)
 
     class Resource(BaseModel):
+        ref: str
         type: str
-        id: str
         name: str
         extra: dict[str, str] = Field(default_factory=dict)
 

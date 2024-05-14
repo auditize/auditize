@@ -47,14 +47,13 @@ class _LogBase(BaseModel):
         )
 
     class Resource(BaseModel):
+        ref: str = Field(
+            title="Resource ref",
+            description="Resource ref must be unique for a given resource",
+            json_schema_extra={"example": "123"},
+        )
         type: str = Field(
             title="Resource type", json_schema_extra={"example": "config-profile"}
-        )
-        id: str = Field(
-            title="Resource ID",
-            description="It must be unique for a given resource type such as the resource type and the resource ID"
-            "combined represent a unique resource",
-            json_schema_extra={"example": "123"},
         )
         name: str = Field(
             title="Resource name", json_schema_extra={"example": "Config Profile 123"}

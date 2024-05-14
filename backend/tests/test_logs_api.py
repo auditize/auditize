@@ -89,8 +89,8 @@ async def test_create_log_all_fields(
                 "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
+                "ref": "core",
                 "type": "module",
-                "id": "core",
                 "name": "Core Module",
                 "extra": {"creator": "xyz"},
             },
@@ -266,8 +266,8 @@ async def test_get_log_all_fields(
                 "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
+                "ref": "core",
                 "type": "module",
-                "id": "core",
                 "name": "Core Module",
                 "extra": {"creator": "xyz"},
             },
@@ -573,7 +573,7 @@ async def test_get_logs_filter_resource_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["resource"] = {"type": "find_me", "id": "core", "name": "Core Module"}
+        log["resource"] = {"ref": "core", "type": "find_me", "name": "Core Module"}
 
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_type": "find_me"})
 
@@ -582,7 +582,7 @@ async def test_get_logs_filter_resource_name(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["resource"] = {"type": "module", "id": "core", "name": "find_me"}
+        log["resource"] = {"ref": "core", "type": "module", "name": "find_me"}
 
     # filter on resource_name is substring and case-insensitive
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_name": "FIND"})
@@ -955,7 +955,7 @@ async def test_get_log_resource_types(
 ):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_resource(
-            repo.db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}")
+            repo.db, Log.Resource(ref=f"ref_{i}", type=f"type_{i}", name=f"name_{i}")
         )
 
     await do_test_page_pagination_common_scenarios(
