@@ -100,9 +100,9 @@ async def test_create_log_all_fields(
             },
             "tags": [
                 {
-                    "id": "simple_tag",
+                    "type": "simple_tag",
                 },
-                {"id": "rich_tag:1", "category": "rich_tag", "name": "Rich tag"},
+                {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
             ],
         }
     )
@@ -129,8 +129,8 @@ async def test_create_log_invalid_rich_tag(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
     invalid_tags = (
-        {"id": "some_tag", "category": "rich_tag"},
-        {"id": "some_other_tag", "name": "Rich tag"},
+        {"ref": "some_tag", "type": "rich_tag"},
+        {"ref": "some_other_tag", "name": "Rich tag"},
     )
 
     for invalid_tag in invalid_tags:
@@ -277,9 +277,9 @@ async def test_get_log_all_fields(
             },
             "tags": [
                 {
-                    "id": "simple_tag",
+                    "type": "simple_tag",
                 },
-                {"id": "rich_tag:1", "category": "rich_tag", "name": "Rich tag"},
+                {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
             ],
         }
     )
@@ -588,16 +588,16 @@ async def test_get_logs_filter_resource_name(
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_name": "FIND"})
 
 
-async def test_get_logs_filter_tag_category(
+async def test_get_logs_filter_tag_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
         log["tags"] = [
-            {"id": "simple_tag"},
-            {"id": "rich_tag:1", "category": "find_me", "name": "Rich tag"},
+            {"type": "simple_tag"},
+            {"ref": "rich_tag:1", "type": "find_me", "name": "Rich tag"},
         ]
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"tag_category": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, func, {"tag_type": "find_me"})
 
 
 async def test_get_logs_filter_tag_name(
@@ -605,24 +605,24 @@ async def test_get_logs_filter_tag_name(
 ):
     def func(log):
         log["tags"] = [
-            {"id": "simple_tag"},
-            {"id": "rich_tag:1", "category": "rich_tag", "name": "find_me"},
+            {"type": "simple_tag"},
+            {"ref": "rich_tag:1", "type": "rich_tag", "name": "find_me"},
         ]
 
     # filter on tag_name is substring and case-insensitive
     await _test_get_logs_filter(log_rw_client, repo, func, {"tag_name": "FIND"})
 
 
-async def test_get_logs_filter_tag_id(
+async def test_get_logs_filter_tag_ref(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
         log["tags"] = [
-            {"id": "simple_tag"},
-            {"id": "find_me", "category": "rich_tag", "name": "Rich tag"},
+            {"type": "simple_tag"},
+            {"ref": "find_me", "type": "rich_tag", "name": "Rich tag"},
         ]
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"tag_id": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, func, {"tag_ref": "find_me"})
 
 
 async def test_get_logs_filter_node_id_exact_node(
@@ -773,9 +773,9 @@ async def test_get_logs_empty_string_filter_params(
             "actor_name": "",
             "resource_type": "",
             "resource_name": "",
-            "tag_category": "",
+            "tag_ref": "",
+            "tag_type": "",
             "tag_name": "",
-            "tag_id": "",
             "node_id": "",
             "since": "",
             "until": "",
@@ -981,22 +981,18 @@ async def test_get_log_resource_types_forbidden(
     )
 
 
-async def test_get_log_tag_categories(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    for i in reversed(range(5)):
+async def test_get_log_tag_types(log_read_client: HttpTestHelper, repo: PreparedRepo):
+    for i in reversed(range(4)):
         await consolidate_log_tags(
             repo.db,
-            [Log.Tag(id=f"tag_{i}", category=f"category_{i}", name=f"name_{i}")],
+            [Log.Tag(ref=f"tag_{i}", type=f"type_{i}", name=f"name_{i}")],
         )
-    await consolidate_log_tags(
-        repo.db, [Log.Tag(id="simple_tag")]
-    )  # no category, it must not be returned
+    await consolidate_log_tags(repo.db, [Log.Tag(type="simple_tag")])
 
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/tag-categories",
-        [f"category_{i}" for i in range(5)],
+        f"/repos/{repo.id}/logs/tags/types",
+        [{"name": "simple_tag"}] + [{"name": f"type_{i}"} for i in range(4)],
     )
 
 
@@ -1004,16 +1000,14 @@ async def test_get_log_tag_categories_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/tag-categories"
+        log_read_client, f"/repos/{repo.id}/logs/tags/types"
     )
 
 
 async def test_get_log_tag_categories_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/tag-categories"
-    )
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/tags/types")
 
 
 async def test_get_log_nodes_without_filters(

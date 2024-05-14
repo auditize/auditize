@@ -41,8 +41,7 @@ async def consolidate_log_resource(db: LogDatabase, resource: Log.Resource):
 
 async def consolidate_log_tags(db: LogDatabase, tags: list[Log.Tag]):
     for tag in tags:
-        if tag.category:
-            await db.consolidate_data(db.log_tag_categories, {"category": tag.category})
+        await db.consolidate_data(db.log_tag_types, {"type": tag.type})
 
 
 async def consolidate_log_details(db: LogDatabase, details: dict[str, dict[str, str]]):
@@ -150,9 +149,9 @@ async def get_logs(
     actor_name: str = None,
     resource_type: str = None,
     resource_name: str = None,
-    tag_category: str = None,
+    tag_ref: str = None,
+    tag_type: str = None,
     tag_name: str = None,
-    tag_id: str = None,
     node_ref: str = None,
     since: datetime = None,
     until: datetime = None,
@@ -174,12 +173,12 @@ async def get_logs(
         criteria["resource.type"] = resource_type
     if resource_name:
         criteria["resource.name"] = _text_search_filter(resource_name)
-    if tag_category:
-        criteria["tags.category"] = tag_category
+    if tag_ref:
+        criteria["tags.ref"] = tag_ref
+    if tag_type:
+        criteria["tags.type"] = tag_type
     if tag_name:
         criteria["tags.name"] = _text_search_filter(tag_name)
-    if tag_id:
-        criteria["tags.id"] = tag_id
     if node_ref:
         criteria["node_path.ref"] = node_ref
     if since:
@@ -308,12 +307,12 @@ async def get_log_resource_types(
     )
 
 
-async def get_log_tag_categories(
+async def get_log_tag_types(
     dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:
     db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_field(
-        db.log_tag_categories, "category", page=page, page_size=page_size
+        db.log_tag_types, "type", page=page, page_size=page_size
     )
 
 

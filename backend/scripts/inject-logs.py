@@ -37,11 +37,11 @@ def create_log(counter: int):
                 ),
             },
         },
-        "trackings": [
+        "tags": [
             {
+                "ref": create_value("tracking_ref", counter, 1000),
                 "type": create_value("tracking", counter, 3),
-                "id": create_value("tracking_id", counter, 1000),
-                "name": create_value("tracking_id", counter, 1000),
+                "name": create_value("tracking_name", counter, 1000),
             }
         ],
         "node_path": [
