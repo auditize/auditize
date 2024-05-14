@@ -13,16 +13,16 @@ import { labelize } from "@/utils/format";
 
 import {
   buildEmptyLogsFilterParams,
+  getAllLogActionCategories,
+  getAllLogActionTypes,
   getAllLogActorTypes,
-  getAllLogEventCategories,
-  getAllLogEventNames,
   getAllLogResourceTypes,
   getAllLogTagCategories,
   LogsFilterParams,
 } from "../api";
 import { NodeSelector } from "./NodeSelector";
 
-function EventCategorySelector({
+function ActionCategorySelector({
   repoId,
   category,
   onChange,
@@ -33,9 +33,13 @@ function EventCategorySelector({
 }) {
   return (
     <PaginatedSelector
-      label="Event category"
-      queryKey={["logEventCategory", repoId]}
-      queryFn={() => getAllLogEventCategories(repoId!)}
+      label="Action category"
+      queryKey={["logActionCategory", repoId]}
+      queryFn={() =>
+        getAllLogActionCategories(repoId!).then((categories) =>
+          categories.map((category) => category.name),
+        )
+      }
       enabled={!!repoId}
       selectedItem={category}
       onChange={onChange}
@@ -45,24 +49,28 @@ function EventCategorySelector({
   );
 }
 
-function EventNameSelector({
+function ActionTypeSelector({
   repoId,
-  name,
+  type,
   category,
   onChange,
 }: {
   repoId?: string;
-  name?: string;
+  type?: string;
   category?: string;
   onChange: (value: string) => void;
 }) {
   return (
     <PaginatedSelector
-      label="Event name"
-      queryKey={["logEventNames", repoId, category]}
-      queryFn={() => getAllLogEventNames(repoId!, category)}
+      label="Action type"
+      queryKey={["logActionTypes", repoId, category]}
+      queryFn={() =>
+        getAllLogActionTypes(repoId!, category).then((types) =>
+          types.map((type) => type.name),
+        )
+      }
       enabled={!!repoId}
-      selectedItem={name}
+      selectedItem={type}
       onChange={onChange}
       itemLabel={(item) => labelize(item)}
       itemValue={(item) => item}
@@ -210,8 +218,8 @@ function filterParamsReducer(
   switch (action.type) {
     case "setParam":
       const update = { [action.name]: action.value };
-      if (action.name === "eventCategory") {
-        update["eventName"] = "";
+      if (action.name === "actionCategory") {
+        update["actionType"] = "";
       }
       return { ...state, ...update };
     case "resetParams":
@@ -244,7 +252,7 @@ export function LogsFilter({
       dispatch({ type: "setParam", name, value: e.target.value });
 
   const hasDate = !!(editedParams.since || editedParams.until);
-  const hasEvent = !!(editedParams.eventCategory || editedParams.eventName);
+  const hasAction = !!(editedParams.actionCategory || editedParams.actionType);
   const hasActor = !!(editedParams.actorType || editedParams.actorName);
   const hasResource = !!(
     editedParams.resourceType || editedParams.resourceName
@@ -256,7 +264,7 @@ export function LogsFilter({
   );
   const hasNode = !!editedParams.nodeRef;
   const hasFilter =
-    hasDate || hasEvent || hasActor || hasResource || hasTag || hasNode;
+    hasDate || hasAction || hasActor || hasResource || hasTag || hasNode;
 
   return (
     <Group p="1rem">
@@ -289,18 +297,18 @@ export function LogsFilter({
         />
       </PopoverForm>
 
-      {/* Event criteria */}
-      <PopoverForm title="Event" isFilled={hasEvent}>
-        <EventCategorySelector
+      {/* Action criteria */}
+      <PopoverForm title="Action" isFilled={hasAction}>
+        <ActionCategorySelector
           repoId={editedParams.repoId}
-          category={editedParams.eventCategory}
-          onChange={changeParamHandler("eventCategory")}
+          category={editedParams.actionCategory}
+          onChange={changeParamHandler("actionCategory")}
         />
-        <EventNameSelector
+        <ActionTypeSelector
           repoId={editedParams.repoId}
-          name={editedParams.eventName}
-          category={editedParams.eventCategory}
-          onChange={changeParamHandler("eventName")}
+          type={editedParams.actionType}
+          category={editedParams.actionCategory}
+          onChange={changeParamHandler("actionType")}
         />
       </PopoverForm>
 
