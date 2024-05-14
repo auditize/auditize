@@ -27,8 +27,8 @@ class PreparedLog:
         extra = extra or {}
 
         return {
-            "event": {
-                "name": "user_login",
+            "action": {
+                "type": "user_login",
                 "category": "authentication",
             },
             "node_path": [{"ref": "1", "name": "Customer 1"}],

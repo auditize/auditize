@@ -18,7 +18,7 @@ def make_log_data(**extra) -> Log:
     """
 
     kwargs = {
-        "event": Log.Event(name="login", category="authentication"),
+        "action": Log.Action(type="login", category="authentication"),
         "actor": Log.Actor(type="user", id="user:123", name="User 123"),
         "resource": Log.Resource(type="module", id="core", name="Core Module"),
         "tags": [Log.Tag(id="simple_tag")],
@@ -35,7 +35,7 @@ async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     db_log = await repo.db.logs.find_one({"_id": ObjectId(log_id)})
     assert list(db_log.keys()) == [
         "_id",
-        "event",
+        "action",
         "saved_at",
         "source",
         "actor",
@@ -45,7 +45,7 @@ async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
         "attachments",
         "node_path",
     ]
-    assert list(db_log["event"].keys()) == ["name", "category"]
+    assert list(db_log["action"].keys()) == ["type", "category"]
     assert list(db_log["actor"].keys()) == ["type", "id", "name", "extra"]
     assert list(db_log["resource"].keys()) == ["type", "id", "name", "extra"]
     assert list(db_log["tags"][0].keys()) == ["id", "category", "name"]
@@ -72,7 +72,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.tags = [Log.Tag(id="tag_id", category="rich_tag", name="rich_tag_name")]
     await save_log(dbm, repo.id, log)
     await assert_consolidated_data(
-        repo.db.log_events, {"category": "authentication", "name": "login"}
+        repo.db.log_actions, {"category": "authentication", "type": "login"}
     )
     await assert_consolidated_data(repo.db.log_source_keys, {"key": "ip"})
     await assert_consolidated_data(repo.db.log_actor_types, {"type": "user"})
@@ -89,7 +89,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
 
     # second log
     log = make_log_data(source={"ip_bis": "127.0.0.1"})
-    log.event.category += "_bis"
+    log.action.category += "_bis"
     log.actor.type += "_bis"
     log.actor.extra = {"role_bis": "admin"}
     log.resource.type += "_bis"
@@ -102,10 +102,10 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
     await save_log(dbm, repo.id, log)
     await assert_consolidated_data(
-        repo.db.log_events,
+        repo.db.log_actions,
         [
-            {"category": "authentication", "name": "login"},
-            {"category": "authentication_bis", "name": "login"},
+            {"category": "authentication", "type": "login"},
+            {"category": "authentication_bis", "type": "login"},
         ],
     )
     await assert_consolidated_data(
