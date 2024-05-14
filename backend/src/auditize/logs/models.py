@@ -4,6 +4,11 @@ from typing import Annotated, Optional
 from pydantic import BaseModel, BeforeValidator, Field
 
 
+class ExtraInfoField(BaseModel):
+    name: str
+    value: str
+
+
 class Log(BaseModel):
     class Action(BaseModel):
         type: str
@@ -13,7 +18,7 @@ class Log(BaseModel):
         type: str
         ref: str
         name: str
-        extra: dict[str, str] = Field(default_factory=dict)
+        extra: list[ExtraInfoField] = Field(default_factory=list)
 
     class Resource(BaseModel):
         type: str

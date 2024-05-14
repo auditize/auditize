@@ -86,7 +86,7 @@ async def test_create_log_all_fields(
                 "type": "user",
                 "ref": "user:123",
                 "name": "User 123",
-                "extra": {"role": "admin"},
+                "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
                 "type": "module",
@@ -263,7 +263,7 @@ async def test_get_log_all_fields(
                 "type": "user",
                 "ref": "user:123",
                 "name": "User 123",
-                "extra": {"role": "admin"},
+                "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
                 "type": "module",

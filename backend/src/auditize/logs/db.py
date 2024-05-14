@@ -28,7 +28,7 @@ class LogDatabase(BaseDatabase):
     log_actions = Collection("log_actions")
     log_source_keys = Collection("log_source_keys")
     log_actor_types = Collection("log_actor_types")
-    log_actor_extra_keys = Collection("log_actor_extra_keys")
+    log_actor_extra_fields = Collection("log_actor_extra_fields")
     log_resource_types = Collection("log_resource_types")
     log_resource_extra_keys = Collection("log_resource_extra_keys")
     log_detail_keys = Collection("log_detail_keys")

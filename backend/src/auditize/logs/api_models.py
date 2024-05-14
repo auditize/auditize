@@ -14,6 +14,11 @@ from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logs.models import Log
 
 
+class ExtraInfoFieldData(BaseModel):
+    name: str
+    value: str
+
+
 class _LogBase(BaseModel):
     class Action(BaseModel):
         type: str = Field(
@@ -32,10 +37,13 @@ class _LogBase(BaseModel):
         )
         type: str = Field(title="Actor type", json_schema_extra={"example": "user"})
         name: str = Field(title="Actor name", json_schema_extra={"example": "John Doe"})
-        extra: dict[str, str] = Field(
-            default_factory=dict,
+        extra: list[ExtraInfoFieldData] = Field(
+            default_factory=list,
             title="Extra actor information",
-            json_schema_extra={"example": {"role": "admin"}, "nullable": True},
+            json_schema_extra={
+                "example": [{"name": "role", "value": "admin"}],
+                "nullable": True,
+            },
         )
 
     class Resource(BaseModel):

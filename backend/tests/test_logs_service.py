@@ -4,7 +4,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
-from auditize.logs.models import Log
+from auditize.logs.models import ExtraInfoField, Log
 from auditize.logs.service import save_log
 from helpers.database import assert_collection
 from helpers.repos import PreparedRepo
@@ -66,7 +66,7 @@ async def assert_consolidated_data(
 async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     # first log
     log = make_log_data(source={"ip": "127.0.0.1"})
-    log.actor.extra = {"role": "admin"}
+    log.actor.extra.append(ExtraInfoField(name="role", value="admin"))
     log.resource.extra = {"some_key": "some_value"}
     log.details = {"level1": {"level2": "value"}}
     log.tags = [Log.Tag(id="tag_id", category="rich_tag", name="rich_tag_name")]
@@ -76,7 +76,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     )
     await assert_consolidated_data(repo.db.log_source_keys, {"key": "ip"})
     await assert_consolidated_data(repo.db.log_actor_types, {"type": "user"})
-    await assert_consolidated_data(repo.db.log_actor_extra_keys, {"key": "role"})
+    await assert_consolidated_data(repo.db.log_actor_extra_fields, {"name": "role"})
     await assert_consolidated_data(repo.db.log_resource_types, {"type": "module"})
     await assert_consolidated_data(repo.db.log_resource_extra_keys, {"key": "some_key"})
     await assert_consolidated_data(
@@ -91,7 +91,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data(source={"ip_bis": "127.0.0.1"})
     log.action.category += "_bis"
     log.actor.type += "_bis"
-    log.actor.extra = {"role_bis": "admin"}
+    log.actor.extra.append(ExtraInfoField(name="role_bis", value="admin"))
     log.resource.type += "_bis"
     log.resource.extra = {"some_key_bis": "some_value"}
     log.details = {"level1_bis": {"level2_bis": "value"}}
@@ -115,7 +115,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         repo.db.log_actor_types, [{"type": "user"}, {"type": "user_bis"}]
     )
     await assert_consolidated_data(
-        repo.db.log_actor_extra_keys, [{"key": "role"}, {"key": "role_bis"}]
+        repo.db.log_actor_extra_fields, [{"name": "role"}, {"name": "role_bis"}]
     )
     await assert_consolidated_data(
         repo.db.log_resource_types, [{"type": "module"}, {"type": "module_bis"}]
