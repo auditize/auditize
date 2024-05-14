@@ -131,11 +131,9 @@ export async function getAllLogActorTypes(repoId: string): Promise<Named[]> {
   );
 }
 
-export async function getAllLogResourceTypes(
-  repoId: string,
-): Promise<string[]> {
-  return getAllPagePaginatedItems<string>(
-    `/repos/${repoId}/logs/resource-types`,
+export async function getAllLogResourceTypes(repoId: string): Promise<Named[]> {
+  return getAllPagePaginatedItems<Named>(
+    `/repos/${repoId}/logs/resources/types`,
     {},
   );
 }

@@ -118,7 +118,11 @@ function ResourceTypeSelector({
     <PaginatedSelector
       label="Resource type"
       queryKey={["logResourceType", repoId]}
-      queryFn={() => getAllLogResourceTypes(repoId!)}
+      queryFn={() =>
+        getAllLogResourceTypes(repoId!).then((types) =>
+          types.map((type) => type.name),
+        )
+      }
       enabled={!!repoId}
       selectedItem={type}
       onChange={onChange}
