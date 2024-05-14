@@ -16,9 +16,9 @@ def create_value(prefix: str, counter: int, total: int) -> str:
 
 def create_log(counter: int):
     return {
-        "event": {
-            "category": create_value("event_category", counter, 10),
-            "name": create_value("event_name", counter, 100),
+        "action": {
+            "category": create_value("action_category", counter, 10),
+            "type": create_value("action_type", counter, 100),
         },
         "actor": {
             "type": "user",
@@ -60,13 +60,13 @@ def create_log(counter: int):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit("Usage: %s REPO_ID API_KEY" % sys.argv[0])
+    if len(sys.argv) != 4:
+        sys.exit("Usage: %s COUNT REPO_ID API_KEY" % sys.argv[0])
 
     base_url = "http://localhost:8000"
-    repo_id = sys.argv[1]
-    api_key = sys.argv[2]
-    count = 10_000
+    count = int(sys.argv[1])
+    repo_id = sys.argv[2]
+    api_key = sys.argv[3]
 
     for i in range(count):
         print("Inject log %d of %d" % (i + 1, count), end="\r")

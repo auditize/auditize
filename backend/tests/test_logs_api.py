@@ -7,8 +7,8 @@ import pytest
 from auditize.database import DatabaseManager
 from auditize.logs.models import Log
 from auditize.logs.service import (
+    consolidate_log_action,
     consolidate_log_actor,
-    consolidate_log_event,
     consolidate_log_node_path,
     consolidate_log_resource,
     consolidate_log_tags,
@@ -115,11 +115,11 @@ async def test_create_log_all_fields(
     )
 
 
-async def test_create_log_missing_event_name(
+async def test_create_log_missing_action_type(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
     data = PreparedLog.prepare_data()
-    del data["event"]["name"]
+    del data["action"]["type"]
     await log_write_client.assert_post(
         f"/repos/{repo.id}/logs", json=data, expected_status_code=422
     )
@@ -530,23 +530,23 @@ async def _test_get_logs_filter(
     )
 
 
-async def test_get_logs_filter_event_name(
+async def test_get_logs_filter_action_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["event"]["name"] = "find_me"
+        log["action"]["type"] = "find_me"
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"event_name": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, func, {"action_type": "find_me"})
 
 
-async def test_get_logs_filter_event_category(
+async def test_get_logs_filter_action_category(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["event"]["category"] = "find_me"
+        log["action"]["category"] = "find_me"
 
     await _test_get_logs_filter(
-        log_rw_client, repo, func, {"event_category": "find_me"}
+        log_rw_client, repo, func, {"action_category": "find_me"}
     )
 
 
@@ -732,25 +732,25 @@ async def test_get_logs_filter_multiple_criteria(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     log1_data = PreparedLog.prepare_data()
-    log1_data["event"]["name"] = "find_me:event_name"
+    log1_data["action"]["type"] = "find_me:action_type"
     log1 = await repo.create_log(log_rw_client, log1_data)
 
     log2_data = PreparedLog.prepare_data()
-    log2_data["event"]["category"] = "find_me:event_category"
+    log2_data["action"]["category"] = "find_me:action_category"
     log2 = await repo.create_log(log_rw_client, log2_data)
 
     log3_data = PreparedLog.prepare_data()
-    log3_data["event"] = {
-        "name": "find_me:event_name",
-        "category": "find_me:event_category",
+    log3_data["action"] = {
+        "type": "find_me:action_type",
+        "category": "find_me:action_category",
     }
     log3 = await repo.create_log(log_rw_client, log3_data)
 
     await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs",
         params={
-            "event_name": "find_me:event_name",
-            "event_category": "find_me:event_category",
+            "action_type": "find_me:action_type",
+            "action_category": "find_me:action_category",
         },
         expected_json={
             "data": [log3.expected_api_response()],
@@ -767,8 +767,8 @@ async def test_get_logs_empty_string_filter_params(
     resp = await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs",
         params={
-            "event_name": "",
-            "event_category": "",
+            "action_type": "",
+            "action_category": "",
             "actor_type": "",
             "actor_name": "",
             "resource_type": "",
@@ -794,90 +794,94 @@ async def test_get_logs_filter_no_result(
 
     await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs",
-        params={"event_name": "not to be found"},
+        params={"action_type": "not to be found"},
         expected_json={"data": [], "pagination": {"next_cursor": None}},
     )
 
 
-async def test_get_log_event_categories(
+async def test_get_log_action_categories(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_event(
-            repo.db, Log.Event(category=f"category_{i}", name=f"name_{i}")
+        await consolidate_log_action(
+            repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
         )
-        await consolidate_log_event(
-            repo.db, Log.Event(category=f"category_{i}", name=f"name_{i + 10}")
+        await consolidate_log_action(
+            repo.db, Log.Action(category=f"category_{i}", type=f"type_{i + 10}")
         )
 
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/event-categories",
-        [f"category_{i}" for i in range(5)],
+        f"/repos/{repo.id}/logs/actions/categories",
+        [{"name": f"category_{i}"} for i in range(5)],
     )
 
 
-async def test_get_log_event_categories_unknown_repo(
+async def test_get_log_action_categories_unknown_repo(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await log_read_client.assert_get_not_found(
-        f"/repos/{UNKNOWN_OBJECT_ID}/logs/event-categories"
+        f"/repos/{UNKNOWN_OBJECT_ID}/logs/actions/categories"
     )
 
 
-async def test_get_log_event_categories_forbidden(
+async def test_get_log_action_categories_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/event-categories"
+        f"/repos/{repo.id}/logs/actions/categories"
     )
 
 
-async def test_get_log_event_categories_empty(
+async def test_get_log_action_categories_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/event-categories"
+        log_read_client, f"/repos/{repo.id}/logs/actions/categories"
     )
 
 
-async def test_get_log_event_names(log_read_client: HttpTestHelper, repo: PreparedRepo):
+async def test_get_log_action_types(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_event(
-            repo.db, Log.Event(category=f"category_{i}", name=f"name_{i}")
+        await consolidate_log_action(
+            repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
         )
-        await consolidate_log_event(
-            repo.db, Log.Event(category=f"category_{i + 10}", name=f"name_{i}")
+        await consolidate_log_action(
+            repo.db, Log.Action(category=f"category_{i + 10}", type=f"type_{i}")
         )
 
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/events",
-        [f"name_{i}" for i in range(5)],
+        f"/repos/{repo.id}/logs/actions/types",
+        [{"name": f"type_{i}"} for i in range(5)],
     )
 
     # test category parameter
     await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/events?category=category_2",
+        f"/repos/{repo.id}/logs/actions/types?category=category_2",
         expected_json={
-            "data": [f"name_{2}"],
+            "data": [{"name": f"type_{2}"}],
             "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1},
         },
     )
 
 
-async def test_get_log_event_names_empty(
+async def test_get_log_action_types_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/events"
+        log_read_client, f"/repos/{repo.id}/logs/actions/types"
     )
 
 
-async def test_get_log_event_names_forbidden(
+async def test_get_log_action_types_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/events")
+    await no_permission_client.assert_get_forbidden(
+        f"/repos/{repo.id}/logs/actions/types"
+    )
 
 
 async def test_get_log_actor_types(log_read_client: HttpTestHelper, repo: PreparedRepo):

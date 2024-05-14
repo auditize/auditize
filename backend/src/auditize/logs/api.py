@@ -17,11 +17,11 @@ from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service
 from auditize.logs.api_models import (
+    LogActionCategoryListResponse,
+    LogActionTypeListResponse,
     LogActorTypeListResponse,
     LogCreationRequest,
     LogCreationResponse,
-    LogEventCategoryListResponse,
-    LogEventNameListResponse,
     LogNodeListResponse,
     LogNodeResponse,
     LogReadingResponse,
@@ -34,44 +34,44 @@ router = APIRouter()
 
 
 @router.get(
-    "/repos/{repo_id}/logs/events",
-    summary="Get log event names",
-    operation_id="get_log_event_names",
+    "/repos/{repo_id}/logs/actions/types",
+    summary="Get log action types",
+    operation_id="get_log_action_types",
     tags=["logs"],
 )
-async def get_log_event_names(
+async def get_log_action_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
     category: str = None,
-) -> LogEventNameListResponse:
-    events, pagination = await service.get_log_events(
+) -> LogActionTypeListResponse:
+    types, pagination = await service.get_log_action_types(
         dbm,
         repo_id,
-        event_category=category,
+        action_category=category,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    return LogEventNameListResponse.build(events, pagination)
+    return LogActionTypeListResponse.build(types, pagination)
 
 
 @router.get(
-    "/repos/{repo_id}/logs/event-categories",
-    summary="Get log event categories",
-    operation_id="get_log_event_categories",
+    "/repos/{repo_id}/logs/actions/categories",
+    summary="Get log action categories",
+    operation_id="get_log_action_categories",
     tags=["logs"],
 )
-async def get_log_event_categories(
+async def get_log_action_categories(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogEventCategoryListResponse:
-    categories, pagination = await service.get_log_event_categories(
+) -> LogActionCategoryListResponse:
+    categories, pagination = await service.get_log_action_categories(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogEventCategoryListResponse.build(categories, pagination)
+    return LogActionCategoryListResponse.build(categories, pagination)
 
 
 @router.get(
@@ -328,8 +328,8 @@ async def get_logs(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    event_name: str = None,
-    event_category: str = None,
+    action_type: str = None,
+    action_category: str = None,
     actor_type: str = None,
     actor_name: str = None,
     resource_type: str = None,
@@ -345,8 +345,8 @@ async def get_logs(
     logs, next_cursor = await service.get_logs(
         dbm,
         repo_id,
-        event_name=event_name,
-        event_category=event_category,
+        action_type=action_type,
+        action_category=action_category,
         actor_type=actor_type,
         actor_name=actor_name,
         resource_type=resource_type,

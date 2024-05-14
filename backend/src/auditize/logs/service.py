@@ -21,9 +21,9 @@ from auditize.logs.models import Log, Node
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 
 
-async def consolidate_log_event(db: LogDatabase, event: Log.Event):
+async def consolidate_log_action(db: LogDatabase, action: Log.Action):
     await db.consolidate_data(
-        db.log_events, {"category": event.category, "name": event.name}
+        db.log_actions, {"category": action.category, "type": action.type}
     )
 
 
@@ -68,7 +68,7 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
 
     log_id = await create_resource_document(db.logs, log)
 
-    await consolidate_log_event(db, log.event)
+    await consolidate_log_action(db, log.action)
 
     for key in log.source:
         await db.consolidate_data(db.log_source_keys, {"key": key})
@@ -144,8 +144,8 @@ async def get_logs(
     dbm: DatabaseManager,
     repo_id: str,
     *,
-    event_name: str = None,
-    event_category: str = None,
+    action_type: str = None,
+    action_category: str = None,
     actor_type: str = None,
     actor_name: str = None,
     resource_type: str = None,
@@ -162,10 +162,10 @@ async def get_logs(
     db = await get_log_db(dbm, repo_id)
 
     criteria: dict[str, Any] = {}
-    if event_name:
-        criteria["event.name"] = event_name
-    if event_category:
-        criteria["event.category"] = event_category
+    if action_type:
+        criteria["action.type"] = action_type
+    if action_category:
+        criteria["action.category"] = action_category
     if actor_type:
         criteria["actor.type"] = actor_type
     if actor_name:
@@ -254,30 +254,30 @@ async def _get_consolidated_data_field(
     return [result[field_name] async for result in results], pagination
 
 
-async def get_log_event_categories(
+async def get_log_action_categories(
     dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:
     db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
-        db.log_events, "category", page=page, page_size=page_size
+        db.log_actions, "category", page=page, page_size=page_size
     )
 
 
-async def get_log_events(
+async def get_log_action_types(
     dbm: DatabaseManager,
     repo_id: str,
     *,
-    event_category: str = None,
+    action_category: str = None,
     page=1,
     page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
     db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
-        db.log_events,
-        "name",
+        db.log_actions,
+        "type",
         page=page,
         page_size=page_size,
-        match={"category": event_category} if event_category else None,
+        match={"category": action_category} if action_category else None,
     )
 
 

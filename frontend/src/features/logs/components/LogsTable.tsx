@@ -26,20 +26,20 @@ function LogTableRow({
       </Table.Td>
       <Table.Td>
         <Anchor
-          onClick={() => onTableFilterChange("eventName", log.event.name)}
+          onClick={() => onTableFilterChange("actionType", log.action.type)}
           underline="hover"
         >
-          {labelize(log.event.name)}
+          {labelize(log.action.type)}
         </Anchor>
       </Table.Td>
       <Table.Td>
         <Anchor
           onClick={() =>
-            onTableFilterChange("eventCategory", log.event.category)
+            onTableFilterChange("actionCategory", log.action.category)
           }
           underline="hover"
         >
-          {labelize(log.event.category)}
+          {labelize(log.action.category)}
         </Anchor>
       </Table.Td>
       <Table.Td>
@@ -115,8 +115,8 @@ export function LogsTable({
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Date</Table.Th>
-            <Table.Th>Event name</Table.Th>
-            <Table.Th>Event category</Table.Th>
+            <Table.Th>Action type</Table.Th>
+            <Table.Th>Action category</Table.Th>
             <Table.Th>Actor name</Table.Th>
             <Table.Th>Resource name</Table.Th>
             <Table.Th>Resource type</Table.Th>

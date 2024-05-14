@@ -5,8 +5,8 @@ from pydantic import BaseModel, BeforeValidator, Field
 
 
 class Log(BaseModel):
-    class Event(BaseModel):
-        name: str
+    class Action(BaseModel):
+        type: str
         category: str
 
     class Actor(BaseModel):
@@ -44,7 +44,7 @@ class Log(BaseModel):
         default=None,
         alias="_id",
     )
-    event: Event
+    action: Action
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: dict[str, str] = Field(default_factory=dict)
     actor: Optional[Actor] = Field(default=None)

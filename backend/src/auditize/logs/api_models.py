@@ -15,13 +15,13 @@ from auditize.logs.models import Log
 
 
 class _LogBase(BaseModel):
-    class Event(BaseModel):
-        name: str = Field(
-            title="Event name",
+    class Action(BaseModel):
+        type: str = Field(
+            title="Action type",
             json_schema_extra={"example": "create_configuration_profile"},
         )
         category: str = Field(
-            title="Event category", json_schema_extra={"example": "configuration"}
+            title="Action category", json_schema_extra={"example": "configuration"}
         )
 
     class Actor(BaseModel):
@@ -96,7 +96,7 @@ class _LogBase(BaseModel):
         ref: str = Field(title="Node ref")
         name: str = Field(title="Node name")
 
-    event: Event
+    action: Action
     source: dict[str, str] = Field(
         default_factory=dict,
         description="Various information about the source of the event such as IP address, User-Agent, etc...",
@@ -188,11 +188,21 @@ class LogsReadingResponse(CursorPaginatedResponse[Log, LogReadingResponse]):
         return LogReadingResponse.from_log(log)
 
 
-class LogEventCategoryListResponse(PagePaginatedResponse[str, str]):
+class NameData(BaseModel):
+    name: str
+
+
+class NameListResponse(PagePaginatedResponse[str, NameData]):
+    @classmethod
+    def build_item(cls, name: str) -> NameData:
+        return NameData(name=name)
+
+
+class LogActionCategoryListResponse(NameListResponse):
     pass
 
 
-class LogEventNameListResponse(PagePaginatedResponse[str, str]):
+class LogActionTypeListResponse(NameListResponse):
     pass
 
 

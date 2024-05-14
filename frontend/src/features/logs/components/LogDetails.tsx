@@ -54,15 +54,15 @@ export function LogDetails({
             </tr>
             <tr>
               <td>
-                <Text fw={700}>Event name</Text>
+                <Text fw={700}>Action type</Text>
               </td>
-              <td>{labelize(log.event.name)}</td>
+              <td>{labelize(log.action.type)}</td>
             </tr>
             <tr>
               <td>
-                <Text fw={700}>Event category</Text>
+                <Text fw={700}>Action category</Text>
               </td>
-              <td>{labelize(log.event.category)}</td>
+              <td>{labelize(log.action.category)}</td>
             </tr>
           </tbody>
         </table>

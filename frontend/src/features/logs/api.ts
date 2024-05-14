@@ -6,11 +6,15 @@ import { serializeDate } from "@/utils/date";
 
 dayjs.extend(utc);
 
+export type Named = {
+  name: string;
+};
+
 export type Log = {
   id: number;
   savedAt: string;
-  event: {
-    name: string;
+  action: {
+    type: string;
     category: string;
   };
   actor?: {
@@ -38,8 +42,8 @@ export type LogNode = {
 
 export type LogsFilterParams = {
   repoId?: string;
-  eventCategory?: string;
-  eventName?: string;
+  actionCategory?: string;
+  actionType?: string;
   actorType?: string;
   actorName?: string;
   resourceType?: string;
@@ -55,8 +59,8 @@ export type LogsFilterParams = {
 export function buildEmptyLogsFilterParams(): LogsFilterParams {
   return {
     repoId: "",
-    eventCategory: "",
-    eventName: "",
+    actionCategory: "",
+    actionType: "",
     actorType: "",
     actorName: "",
     resourceType: "",
@@ -79,8 +83,8 @@ export async function getLogs(
     limit,
     since: filter?.since ? serializeDate(filter.since) : undefined,
     until: filter?.until ? serializeDate(filter.until) : undefined,
-    eventCategory: filter?.eventCategory,
-    eventName: filter?.eventName,
+    actionCategory: filter?.actionCategory,
+    actionType: filter?.actionType,
     actorType: filter?.actorType,
     actorName: filter?.actorName,
     resourceType: filter?.resourceType,
@@ -101,21 +105,21 @@ export async function getLog(repoId: string, logId: string): Promise<Log> {
   return await reqGet(`/repos/${repoId}/logs/${logId}`);
 }
 
-export async function getAllLogEventCategories(
+export async function getAllLogActionCategories(
   repoId: string,
-): Promise<string[]> {
-  return getAllPagePaginatedItems<string>(
-    `/repos/${repoId}/logs/event-categories`,
+): Promise<Named[]> {
+  return getAllPagePaginatedItems<Named>(
+    `/repos/${repoId}/logs/actions/categories`,
     {},
   );
 }
 
-export async function getAllLogEventNames(
+export async function getAllLogActionTypes(
   repoId: string,
   category?: string,
-): Promise<string[]> {
-  return getAllPagePaginatedItems<string>(
-    `/repos/${repoId}/logs/events`,
+): Promise<Named[]> {
+  return getAllPagePaginatedItems<Named>(
+    `/repos/${repoId}/logs/actions/types`,
     category ? { category } : {},
   );
 }
