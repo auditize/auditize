@@ -27,8 +27,8 @@ class Log(BaseModel):
         extra: list[CustomField] = Field(default_factory=list)
 
     class Tag(BaseModel):
-        id: str
-        category: Optional[str] = Field(default=None)
+        ref: Optional[str] = Field(default=None)
+        type: str
         name: Optional[str] = Field(default=None)
 
     class AttachmentMetadata(BaseModel):

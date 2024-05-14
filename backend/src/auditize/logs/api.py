@@ -28,7 +28,7 @@ from auditize.logs.api_models import (
     LogReadingResponse,
     LogResourceTypeListResponse,
     LogsReadingResponse,
-    LogTagCategoryListResponse,
+    LogTagTypeListResponse,
 )
 
 router = APIRouter()
@@ -131,21 +131,21 @@ async def get_log_resource_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/tag-categories",
-    summary="Get log tag categories",
-    operation_id="get_log_tag_categories",
+    "/repos/{repo_id}/logs/tags/types",
+    summary="Get log tag types",
+    operation_id="get_log_tag_types",
     tags=["logs"],
 )
-async def get_log_tag_categories(
+async def get_log_tag_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogTagCategoryListResponse:
-    tag_categories, pagination = await service.get_log_tag_categories(
+) -> LogTagTypeListResponse:
+    tag_types, pagination = await service.get_log_tag_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogTagCategoryListResponse.build(tag_categories, pagination)
+    return LogTagTypeListResponse.build(tag_types, pagination)
 
 
 @router.get(
@@ -354,9 +354,9 @@ async def get_logs(
     actor_name: str = None,
     resource_type: str = None,
     resource_name: str = None,
-    tag_category: str = None,
+    tag_ref: str = None,
+    tag_type: str = None,
     tag_name: str = None,
-    tag_id: str = None,
     node_ref: str = None,
     since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
     until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
@@ -371,9 +371,9 @@ async def get_logs(
         actor_name=actor_name,
         resource_type=resource_type,
         resource_name=resource_name,
-        tag_category=tag_category,
+        tag_type=tag_type,
         tag_name=tag_name,
-        tag_id=tag_id,
+        tag_ref=tag_ref,
         node_ref=node_ref,
         since=since,
         until=until,

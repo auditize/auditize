@@ -48,7 +48,7 @@ class PreparedLog:
             "saved_at": DATETIME_FORMAT,
         }
         for tag in expected["tags"]:
-            tag.setdefault("category", None)
+            tag.setdefault("ref", None)
             tag.setdefault("name", None)
         if expected["actor"]:
             expected["actor"].setdefault("extra", [])

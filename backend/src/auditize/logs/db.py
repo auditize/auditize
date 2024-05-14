@@ -32,7 +32,7 @@ class LogDatabase(BaseDatabase):
     log_resource_types = Collection("log_resource_types")
     log_resource_extra_fields = Collection("log_resource_extra_fields")
     log_detail_keys = Collection("log_detail_keys")
-    log_tag_categories = Collection("log_tag_categories")
+    log_tag_types = Collection("log_tag_types")
     log_nodes = Collection("log_nodes")
 
 

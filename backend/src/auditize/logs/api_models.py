@@ -73,19 +73,19 @@ class _LogBase(BaseModel):
         )
 
     class Tag(BaseModel):
-        id: str = Field(
-            title="Tag ID",
-            description="Tag ID is the only field required for a 'simple' tag",
-        )
-        name: Optional[str] = Field(
-            title="Tag name",
-            description="If name is set then category must also be set to represent a valid 'rich' tag",
+        ref: Optional[str] = Field(
+            title="Tag ref",
+            description="Tag ref is required for 'rich' tags",
             default=None,
             json_schema_extra={"nullable": True},
         )
-        category: Optional[str] = Field(
-            title="Tag category",
-            description="If category is set then name must also be set to represent a valid 'rich' tag",
+        type: str = Field(
+            title="Tag type",
+            description="If only type is set then it represents a 'simple' tag",
+        )
+        name: Optional[str] = Field(
+            title="Tag name",
+            description="Tag name is required for 'rich' tags",
             default=None,
             json_schema_extra={"nullable": True},
         )
@@ -93,9 +93,9 @@ class _LogBase(BaseModel):
         model_config = {
             "json_schema_extra": {
                 "examples": [
-                    {"id": "security"},
+                    {"type": "security"},
                     {
-                        "id": "config-profile:123",
+                        "ref": "config-profile:123",
                         "type": "config-profile",
                         "name": "Config Profile 123",
                     },
@@ -146,7 +146,7 @@ class _LogBase(BaseModel):
     @model_validator(mode="after")
     def validate_tags(self):
         for tag in self.tags:
-            if bool(tag.category) ^ bool(tag.name):
+            if bool(tag.ref) ^ bool(tag.name):
                 raise ValueError("Rich tags require both category and name attributes")
         return self
 
@@ -229,7 +229,7 @@ class LogResourceTypeListResponse(NameListResponse):
     pass
 
 
-class LogTagCategoryListResponse(PagePaginatedResponse[str, str]):
+class LogTagTypeListResponse(NameListResponse):
     pass
 
 

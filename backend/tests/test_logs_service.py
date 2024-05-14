@@ -21,7 +21,7 @@ def make_log_data(**extra) -> Log:
         "action": Log.Action(type="login", category="authentication"),
         "actor": Log.Actor(type="user", ref="user:123", name="User 123"),
         "resource": Log.Resource(ref="core", type="module", name="Core Module"),
-        "tags": [Log.Tag(id="simple_tag")],
+        "tags": [Log.Tag(type="simple_tag")],
         "node_path": [Log.Node(ref="1", name="Customer 1")],
         **extra,
     }
@@ -48,7 +48,7 @@ async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     assert list(db_log["action"].keys()) == ["type", "category"]
     assert list(db_log["actor"].keys()) == ["ref", "type", "name", "extra"]
     assert list(db_log["resource"].keys()) == ["ref", "type", "name", "extra"]
-    assert list(db_log["tags"][0].keys()) == ["id", "category", "name"]
+    assert list(db_log["tags"][0].keys()) == ["ref", "type", "name"]
     assert list(db_log["node_path"][0].keys()) == ["ref", "name"]
 
 
@@ -69,7 +69,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.actor.extra.append(CustomField(name="role", value="admin"))
     log.resource.extra.append(CustomField(name="some_key", value="some_value"))
     log.details = {"level1": {"level2": "value"}}
-    log.tags = [Log.Tag(id="tag_id", category="rich_tag", name="rich_tag_name")]
+    log.tags = [Log.Tag(ref="tag_ref", type="rich_tag", name="rich_tag_name")]
     await save_log(dbm, repo.id, log)
     await assert_consolidated_data(
         repo.db.log_actions, {"category": "authentication", "type": "login"}
@@ -84,7 +84,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     await assert_consolidated_data(
         repo.db.log_detail_keys, {"level1_key": "level1", "level2_key": "level2"}
     )
-    await assert_consolidated_data(repo.db.log_tag_categories, {"category": "rich_tag"})
+    await assert_consolidated_data(repo.db.log_tag_types, {"type": "rich_tag"})
     await assert_consolidated_data(
         repo.db.log_nodes, {"parent_node_ref": None, "ref": "1", "name": "Customer 1"}
     )
@@ -98,8 +98,8 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.resource.extra.append(CustomField(name="some_key_bis", value="some_value"))
     log.details = {"level1_bis": {"level2_bis": "value"}}
     log.tags = [
-        Log.Tag(id="tag_id", category="rich_tag_bis", name="rich_tag_name"),
-        Log.Tag(id="simple_tag"),
+        Log.Tag(ref="tag_ref", type="rich_tag_bis", name="rich_tag_name"),
+        Log.Tag(type="simple_tag"),
     ]
     log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
     await save_log(dbm, repo.id, log)
@@ -134,8 +134,8 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         ],
     )
     await assert_consolidated_data(
-        repo.db.log_tag_categories,
-        [{"category": "rich_tag"}, {"category": "rich_tag_bis"}],
+        repo.db.log_tag_types,
+        [{"type": "rich_tag"}, {"type": "rich_tag_bis"}, {"type": "simple_tag"}],
     )
     await assert_consolidated_data(
         repo.db.log_nodes,

@@ -17,7 +17,7 @@ import {
   getAllLogActionTypes,
   getAllLogActorTypes,
   getAllLogResourceTypes,
-  getAllLogTagCategories,
+  getAllLogTagTypes,
   LogsFilterParams,
 } from "../api";
 import { NodeSelector } from "./NodeSelector";
@@ -132,22 +132,26 @@ function ResourceTypeSelector({
   );
 }
 
-function TagCategorySelector({
+function TagTypeSelector({
   repoId,
-  category,
+  type,
   onChange,
 }: {
   repoId?: string;
-  category?: string;
+  type?: string;
   onChange: (value: string) => void;
 }) {
   return (
     <PaginatedSelector
-      label="Tag category"
-      queryKey={["logTagCategory", repoId]}
-      queryFn={() => getAllLogTagCategories(repoId!)}
+      label="Tag type"
+      queryKey={["logTagTypes", repoId]}
+      queryFn={() =>
+        getAllLogTagTypes(repoId!).then((types) =>
+          types.map((type) => type.name),
+        )
+      }
       enabled={!!repoId}
-      selectedItem={category}
+      selectedItem={type}
       onChange={onChange}
       itemLabel={(item) => labelize(item)}
       itemValue={(item) => item}
@@ -266,9 +270,9 @@ export function LogsFilter({
     editedParams.resourceType || editedParams.resourceName
   );
   const hasTag = !!(
-    editedParams.tagCategory ||
+    editedParams.tagType ||
     editedParams.tagName ||
-    editedParams.tagId
+    editedParams.tagRef
   );
   const hasNode = !!editedParams.nodeRef;
   const hasFilter =
@@ -352,10 +356,10 @@ export function LogsFilter({
 
       {/* Tag criteria */}
       <PopoverForm title="Tag" isFilled={hasTag}>
-        <TagCategorySelector
+        <TagTypeSelector
           repoId={editedParams.repoId}
-          category={editedParams.tagCategory}
-          onChange={changeParamHandler("tagCategory")}
+          type={editedParams.tagType}
+          onChange={changeParamHandler("tagType")}
         />
         <TextInput
           placeholder="Tag name"
@@ -365,7 +369,7 @@ export function LogsFilter({
         />
         <TextInput
           placeholder="Tag id"
-          value={editedParams.tagId}
+          value={editedParams.tagRef}
           onChange={changeTextInputParamHandler("tagId")}
           display="flex"
         />

@@ -48,9 +48,9 @@ export type LogsFilterParams = {
   actorName?: string;
   resourceType?: string;
   resourceName?: string;
-  tagCategory?: string;
+  tagRef?: string;
+  tagType?: string;
   tagName?: string;
-  tagId?: string;
   nodeRef?: string;
   since?: Date | null;
   until?: Date | null;
@@ -65,9 +65,9 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
     actorName: "",
     resourceType: "",
     resourceName: "",
-    tagCategory: "",
+    tagType: "",
     tagName: "",
-    tagId: "",
+    tagRef: "",
     nodeRef: "",
     since: null,
     until: null,
@@ -89,9 +89,9 @@ export async function getLogs(
     actorName: filter?.actorName,
     resourceType: filter?.resourceType,
     resourceName: filter?.resourceName,
-    tagCategory: filter?.tagCategory,
+    tagRef: filter?.tagRef,
+    tagType: filter?.tagType,
     tagName: filter?.tagName,
-    tagId: filter?.tagId,
     nodeRef: filter?.nodeRef,
     ...(cursor && { cursor }),
   });
@@ -138,11 +138,9 @@ export async function getAllLogResourceTypes(repoId: string): Promise<Named[]> {
   );
 }
 
-export async function getAllLogTagCategories(
-  repoId: string,
-): Promise<string[]> {
-  return getAllPagePaginatedItems<string>(
-    `/repos/${repoId}/logs/tag-categories`,
+export async function getAllLogTagTypes(repoId: string): Promise<Named[]> {
+  return getAllPagePaginatedItems<Named>(
+    `/repos/${repoId}/logs/tags/types`,
     {},
   );
 }
