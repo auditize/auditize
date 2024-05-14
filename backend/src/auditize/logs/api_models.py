@@ -14,6 +14,11 @@ from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logs.models import Log
 
 
+class ExtraInfoFieldData(BaseModel):
+    name: str
+    value: str
+
+
 class _LogBase(BaseModel):
     class Action(BaseModel):
         type: str = Field(
@@ -25,18 +30,20 @@ class _LogBase(BaseModel):
         )
 
     class Actor(BaseModel):
-        type: str = Field(title="Actor type", json_schema_extra={"example": "user"})
-        id: str = Field(
-            title="Actor ID",
-            description="It must be unique for a given actor type such as"
-            "the actor type and the actor ID combined represent a unique actor",
-            json_schema_extra={"example": "123"},
+        ref: str = Field(
+            title="Actor ref",
+            description="Actor ref must be unique for a given actor",
+            json_schema_extra={"example": "user:123"},
         )
+        type: str = Field(title="Actor type", json_schema_extra={"example": "user"})
         name: str = Field(title="Actor name", json_schema_extra={"example": "John Doe"})
-        extra: dict[str, str] = Field(
-            default_factory=dict,
+        extra: list[ExtraInfoFieldData] = Field(
+            default_factory=list,
             title="Extra actor information",
-            json_schema_extra={"example": {"role": "admin"}, "nullable": True},
+            json_schema_extra={
+                "example": [{"name": "role", "value": "admin"}],
+                "nullable": True,
+            },
         )
 
     class Resource(BaseModel):
@@ -206,7 +213,7 @@ class LogActionTypeListResponse(NameListResponse):
     pass
 
 
-class LogActorTypeListResponse(PagePaginatedResponse[str, str]):
+class LogActorTypeListResponse(NameListResponse):
     pass
 
 

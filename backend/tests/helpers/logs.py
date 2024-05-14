@@ -36,7 +36,7 @@ class PreparedLog:
         }
 
     def expected_api_response(self, extra=None) -> dict:
-        expected = {
+        expected: dict[str, any] = {
             "source": {},
             "actor": None,
             "resource": None,
@@ -51,7 +51,7 @@ class PreparedLog:
             tag.setdefault("category", None)
             tag.setdefault("name", None)
         if expected["actor"]:
-            expected["actor"].setdefault("extra", {})
+            expected["actor"].setdefault("extra", [])
         if expected["resource"]:
             expected["resource"].setdefault("extra", {})
         return {**expected, **(extra or {})}

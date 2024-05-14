@@ -84,9 +84,9 @@ async def test_create_log_all_fields(
             "source": {"ip": "1.1.1.1", "user_agent": "Mozilla/5.0"},
             "actor": {
                 "type": "user",
-                "id": "user:123",
+                "ref": "user:123",
                 "name": "User 123",
-                "extra": {"role": "admin"},
+                "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
                 "type": "module",
@@ -261,9 +261,9 @@ async def test_get_log_all_fields(
             "source": {"ip": "1.1.1.1", "user_agent": "Mozilla/5.0"},
             "actor": {
                 "type": "user",
-                "id": "user:123",
+                "ref": "user:123",
                 "name": "User 123",
-                "extra": {"role": "admin"},
+                "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
                 "type": "module",
@@ -554,7 +554,7 @@ async def test_get_logs_filter_actor_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["actor"] = {"type": "find_me", "id": "user:123", "name": "User 123"}
+        log["actor"] = {"type": "find_me", "ref": "user:123", "name": "User 123"}
 
     await _test_get_logs_filter(log_rw_client, repo, func, {"actor_type": "find_me"})
 
@@ -563,7 +563,7 @@ async def test_get_logs_filter_actor_name(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["actor"] = {"type": "user", "id": "user:123", "name": "find_me"}
+        log["actor"] = {"type": "user", "ref": "user:123", "name": "find_me"}
 
     # filter on actor_name is substring and case-insensitive
     await _test_get_logs_filter(log_rw_client, repo, func, {"actor_name": "FIND"})
@@ -887,13 +887,13 @@ async def test_get_log_action_types_forbidden(
 async def test_get_log_actor_types(log_read_client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_actor(
-            repo.db, Log.Actor(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}")
+            repo.db, Log.Actor(type=f"type_{i}", ref=f"id_{i}", name=f"name_{i}")
         )
 
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/actor-types",
-        [f"type_{i}" for i in range(5)],
+        f"/repos/{repo.id}/logs/actors/types",
+        [{"name": f"type_{i}"} for i in range(5)],
     )
 
 
@@ -901,7 +901,7 @@ async def test_get_log_actor_types_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/actor-types"
+        log_read_client, f"/repos/{repo.id}/logs/actors/types"
     )
 
 
@@ -909,7 +909,7 @@ async def test_get_log_actor_types_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/actor-types"
+        f"/repos/{repo.id}/logs/actors/types"
     )
 
 
