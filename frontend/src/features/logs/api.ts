@@ -23,8 +23,8 @@ export type Log = {
     name: string;
   };
   resource?: {
+    ref: string;
     type: string;
-    id: string;
     name: string;
   };
   nodePath: {
