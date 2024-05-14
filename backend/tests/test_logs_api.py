@@ -960,8 +960,8 @@ async def test_get_log_resource_types(
 
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/resource-types",
-        [f"type_{i}" for i in range(5)],
+        f"/repos/{repo.id}/logs/resources/types",
+        [{"name": f"type_{i}"} for i in range(5)],
     )
 
 
@@ -969,7 +969,7 @@ async def test_get_log_resource_types_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/resource-types"
+        log_read_client, f"/repos/{repo.id}/logs/resources/types"
     )
 
 
@@ -977,7 +977,7 @@ async def test_get_log_resource_types_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/resource-types"
+        f"/repos/{repo.id}/logs/resources/types"
     )
 
 

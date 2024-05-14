@@ -113,7 +113,7 @@ async def get_log_actor_extras(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/resource-types",
+    "/repos/{repo_id}/logs/resources/types",
     summary="Get log resource types",
     operation_id="get_log_resource_types",
     tags=["logs"],

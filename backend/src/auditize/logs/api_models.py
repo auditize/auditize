@@ -220,7 +220,7 @@ class LogActorExtraListResponse(NameListResponse):
     pass
 
 
-class LogResourceTypeListResponse(PagePaginatedResponse[str, str]):
+class LogResourceTypeListResponse(NameListResponse):
     pass
 
 
