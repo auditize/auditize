@@ -19,6 +19,7 @@ from auditize.logs import service
 from auditize.logs.api_models import (
     LogActionCategoryListResponse,
     LogActionTypeListResponse,
+    LogActorExtraInfoFieldListResponse,
     LogActorTypeListResponse,
     LogCreationRequest,
     LogCreationResponse,
@@ -90,6 +91,24 @@ async def get_log_actor_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
     return LogActorTypeListResponse.build(actor_types, pagination)
+
+
+@router.get(
+    "/repos/{repo_id}/logs/actors/extra-fields",
+    summary="Get log actor extra field names",
+    operation_id="get_log_actor_extra_fields",
+    tags=["logs"],
+)
+async def get_log_actor_extra_fields(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> LogActorExtraInfoFieldListResponse:
+    extra_fields, pagination = await service.get_log_actor_extra_fields(
+        dbm, repo_id, page=page_params.page, page_size=page_params.page_size
+    )
+    return LogActorExtraInfoFieldListResponse.build(extra_fields, pagination)
 
 
 @router.get(

@@ -217,6 +217,10 @@ class LogActorTypeListResponse(NameListResponse):
     pass
 
 
+class LogActorExtraInfoFieldListResponse(NameListResponse):
+    pass
+
+
 class LogResourceTypeListResponse(PagePaginatedResponse[str, str]):
     pass
 

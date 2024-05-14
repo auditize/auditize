@@ -5,7 +5,7 @@ import callee
 import pytest
 
 from auditize.database import DatabaseManager
-from auditize.logs.models import Log
+from auditize.logs.models import ExtraInfoField, Log
 from auditize.logs.service import (
     consolidate_log_action,
     consolidate_log_actor,
@@ -910,6 +910,43 @@ async def test_get_log_actor_types_forbidden(
 ):
     await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/actors/types"
+    )
+
+
+async def test_get_log_actor_extra_fields(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    for i in reversed(range(5)):  # insert in reverse order to test sorting
+        await consolidate_log_actor(
+            repo.db,
+            Log.Actor(
+                type=f"type_{i}",
+                ref=f"id_{i}",
+                name=f"name_{i}",
+                extra=[ExtraInfoField(name=f"field_{i}", value="value")],
+            ),
+        )
+
+    await do_test_page_pagination_common_scenarios(
+        log_read_client,
+        f"/repos/{repo.id}/logs/actors/extra-fields",
+        [{"name": f"field_{i}"} for i in range(5)],
+    )
+
+
+async def test_get_log_actor_extra_fields_empty(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await do_test_page_pagination_empty_data(
+        log_read_client, f"/repos/{repo.id}/logs/actors/extra-fields"
+    )
+
+
+async def test_get_log_actor_extra_fields_forbidden(
+    no_permission_client: HttpTestHelper, repo: PreparedRepo
+):
+    await no_permission_client.assert_get_forbidden(
+        f"/repos/{repo.id}/logs/actors/extra-fields"
     )
 
 
