@@ -47,23 +47,27 @@ class _LogBase(BaseModel):
         )
 
     class Resource(BaseModel):
+        ref: str = Field(
+            title="Resource ref",
+            description="Resource ref must be unique for a given resource",
+            json_schema_extra={"example": "config-profile:123"},
+        )
         type: str = Field(
             title="Resource type", json_schema_extra={"example": "config-profile"}
-        )
-        id: str = Field(
-            title="Resource ID",
-            description="It must be unique for a given resource type such as the resource type and the resource ID"
-            "combined represent a unique resource",
-            json_schema_extra={"example": "123"},
         )
         name: str = Field(
             title="Resource name", json_schema_extra={"example": "Config Profile 123"}
         )
-        extra: dict[str, str] = Field(
-            default_factory=dict,
+        extra: list[CustomFieldData] = Field(
+            default_factory=list,
             description="Extra resource information",
             json_schema_extra={
-                "example": {"description": "Description of the configuration profile"},
+                "example": [
+                    {
+                        "name": "description",
+                        "value": "Description of the configuration profile",
+                    }
+                ],
                 "nullable": True,
             },
         )
@@ -221,7 +225,7 @@ class LogActorExtraListResponse(NameListResponse):
     pass
 
 
-class LogResourceTypeListResponse(PagePaginatedResponse[str, str]):
+class LogResourceTypeListResponse(NameListResponse):
     pass
 
 

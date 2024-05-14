@@ -89,10 +89,10 @@ async def test_create_log_all_fields(
                 "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
+                "ref": "core",
                 "type": "module",
-                "id": "core",
                 "name": "Core Module",
-                "extra": {"creator": "xyz"},
+                "extra": [{"name": "creator", "value": "xyz"}],
             },
             "details": {
                 "more_details": {"some_key": "some_value"},
@@ -266,10 +266,10 @@ async def test_get_log_all_fields(
                 "extra": [{"name": "role", "value": "admin"}],
             },
             "resource": {
+                "ref": "core",
                 "type": "module",
-                "id": "core",
                 "name": "Core Module",
-                "extra": {"creator": "xyz"},
+                "extra": [{"name": "creator", "value": "xyz"}],
             },
             "details": {
                 "more_details": {"some_key": "some_value"},
@@ -573,7 +573,7 @@ async def test_get_logs_filter_resource_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["resource"] = {"type": "find_me", "id": "core", "name": "Core Module"}
+        log["resource"] = {"ref": "core", "type": "find_me", "name": "Core Module"}
 
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_type": "find_me"})
 
@@ -582,7 +582,7 @@ async def test_get_logs_filter_resource_name(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     def func(log):
-        log["resource"] = {"type": "module", "id": "core", "name": "find_me"}
+        log["resource"] = {"ref": "core", "type": "module", "name": "find_me"}
 
     # filter on resource_name is substring and case-insensitive
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_name": "FIND"})
@@ -955,13 +955,13 @@ async def test_get_log_resource_types(
 ):
     for i in reversed(range(5)):  # insert in reverse order to test sorting
         await consolidate_log_resource(
-            repo.db, Log.Resource(type=f"type_{i}", id=f"id_{i}", name=f"name_{i}")
+            repo.db, Log.Resource(ref=f"ref_{i}", type=f"type_{i}", name=f"name_{i}")
         )
 
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/resource-types",
-        [f"type_{i}" for i in range(5)],
+        f"/repos/{repo.id}/logs/resources/types",
+        [{"name": f"type_{i}"} for i in range(5)],
     )
 
 
@@ -969,7 +969,7 @@ async def test_get_log_resource_types_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/resource-types"
+        log_read_client, f"/repos/{repo.id}/logs/resources/types"
     )
 
 
@@ -977,7 +977,7 @@ async def test_get_log_resource_types_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/resource-types"
+        f"/repos/{repo.id}/logs/resources/types"
     )
 
 

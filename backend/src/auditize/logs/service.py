@@ -35,8 +35,8 @@ async def consolidate_log_actor(db: LogDatabase, actor: Log.Actor):
 
 async def consolidate_log_resource(db: LogDatabase, resource: Log.Resource):
     await db.consolidate_data(db.log_resource_types, {"type": resource.type})
-    for key in resource.extra:
-        await db.consolidate_data(db.log_resource_extra_keys, {"key": key})
+    for field in resource.extra:
+        await db.consolidate_data(db.log_resource_extra_fields, {"name": field.name})
 
 
 async def consolidate_log_tags(db: LogDatabase, tags: list[Log.Tag]):
