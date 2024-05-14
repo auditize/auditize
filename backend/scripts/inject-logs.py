@@ -22,7 +22,7 @@ def create_log(counter: int):
         },
         "actor": {
             "type": "user",
-            "id": create_value("user", counter, 1000),
+            "ref": create_value("user", counter, 1000),
             "name": create_value("user", counter, 1000),
         },
         "resource": {
