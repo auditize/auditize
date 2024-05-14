@@ -27,7 +27,7 @@ def create_log(counter: int):
         },
         "resource": {
             "type": create_value("resource", counter, 50),
-            "id": create_value("resource", counter, 1000),
+            "ref": create_value("resource", counter, 1000),
             "name": create_value("resource", counter, 1000),
         },
         "context": {
