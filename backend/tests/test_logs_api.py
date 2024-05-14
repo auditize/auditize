@@ -92,7 +92,7 @@ async def test_create_log_all_fields(
                 "ref": "core",
                 "type": "module",
                 "name": "Core Module",
-                "extra": {"creator": "xyz"},
+                "extra": [{"name": "creator", "value": "xyz"}],
             },
             "details": {
                 "more_details": {"some_key": "some_value"},
@@ -269,7 +269,7 @@ async def test_get_log_all_fields(
                 "ref": "core",
                 "type": "module",
                 "name": "Core Module",
-                "extra": {"creator": "xyz"},
+                "extra": [{"name": "creator", "value": "xyz"}],
             },
             "details": {
                 "more_details": {"some_key": "some_value"},

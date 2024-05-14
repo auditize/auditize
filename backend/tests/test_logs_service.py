@@ -67,7 +67,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     # first log
     log = make_log_data(source={"ip": "127.0.0.1"})
     log.actor.extra.append(CustomField(name="role", value="admin"))
-    log.resource.extra = {"some_key": "some_value"}
+    log.resource.extra.append(CustomField(name="some_key", value="some_value"))
     log.details = {"level1": {"level2": "value"}}
     log.tags = [Log.Tag(id="tag_id", category="rich_tag", name="rich_tag_name")]
     await save_log(dbm, repo.id, log)
@@ -78,7 +78,9 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     await assert_consolidated_data(repo.db.log_actor_types, {"type": "user"})
     await assert_consolidated_data(repo.db.log_actor_extra_fields, {"name": "role"})
     await assert_consolidated_data(repo.db.log_resource_types, {"type": "module"})
-    await assert_consolidated_data(repo.db.log_resource_extra_keys, {"key": "some_key"})
+    await assert_consolidated_data(
+        repo.db.log_resource_extra_fields, {"name": "some_key"}
+    )
     await assert_consolidated_data(
         repo.db.log_detail_keys, {"level1_key": "level1", "level2_key": "level2"}
     )
@@ -93,7 +95,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.actor.type += "_bis"
     log.actor.extra.append(CustomField(name="role_bis", value="admin"))
     log.resource.type += "_bis"
-    log.resource.extra = {"some_key_bis": "some_value"}
+    log.resource.extra.append(CustomField(name="some_key_bis", value="some_value"))
     log.details = {"level1_bis": {"level2_bis": "value"}}
     log.tags = [
         Log.Tag(id="tag_id", category="rich_tag_bis", name="rich_tag_name"),
@@ -121,7 +123,8 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         repo.db.log_resource_types, [{"type": "module"}, {"type": "module_bis"}]
     )
     await assert_consolidated_data(
-        repo.db.log_resource_extra_keys, [{"key": "some_key"}, {"key": "some_key_bis"}]
+        repo.db.log_resource_extra_fields,
+        [{"name": "some_key"}, {"name": "some_key_bis"}],
     )
     await assert_consolidated_data(
         repo.db.log_detail_keys,

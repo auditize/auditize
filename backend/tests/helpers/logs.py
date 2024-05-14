@@ -53,7 +53,7 @@ class PreparedLog:
         if expected["actor"]:
             expected["actor"].setdefault("extra", [])
         if expected["resource"]:
-            expected["resource"].setdefault("extra", {})
+            expected["resource"].setdefault("extra", [])
         return {**expected, **(extra or {})}
 
     async def assert_db(self, extra=None):

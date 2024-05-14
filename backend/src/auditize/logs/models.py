@@ -24,7 +24,7 @@ class Log(BaseModel):
         ref: str
         type: str
         name: str
-        extra: dict[str, str] = Field(default_factory=dict)
+        extra: list[CustomField] = Field(default_factory=list)
 
     class Tag(BaseModel):
         id: str
