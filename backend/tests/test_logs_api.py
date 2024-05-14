@@ -892,8 +892,8 @@ async def test_get_log_actor_types(log_read_client: HttpTestHelper, repo: Prepar
 
     await do_test_page_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/actor-types",
-        [f"type_{i}" for i in range(5)],
+        f"/repos/{repo.id}/logs/actors/types",
+        [{"name": f"type_{i}"} for i in range(5)],
     )
 
 
@@ -901,7 +901,7 @@ async def test_get_log_actor_types_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/actor-types"
+        log_read_client, f"/repos/{repo.id}/logs/actors/types"
     )
 
 
@@ -909,7 +909,7 @@ async def test_get_log_actor_types_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/actor-types"
+        f"/repos/{repo.id}/logs/actors/types"
     )
 
 

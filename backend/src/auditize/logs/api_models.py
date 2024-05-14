@@ -205,7 +205,7 @@ class LogActionTypeListResponse(NameListResponse):
     pass
 
 
-class LogActorTypeListResponse(PagePaginatedResponse[str, str]):
+class LogActorTypeListResponse(NameListResponse):
     pass
 
 

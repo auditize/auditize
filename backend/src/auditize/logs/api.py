@@ -75,7 +75,7 @@ async def get_log_action_categories(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/actor-types",
+    "/repos/{repo_id}/logs/actors/types",
     summary="Get log actor types",
     operation_id="get_log_actor_types",
     tags=["logs"],
