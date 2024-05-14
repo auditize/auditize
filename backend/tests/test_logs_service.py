@@ -4,7 +4,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
-from auditize.logs.models import ExtraInfoField, Log
+from auditize.logs.models import CustomField, Log
 from auditize.logs.service import save_log
 from helpers.database import assert_collection
 from helpers.repos import PreparedRepo
@@ -66,7 +66,7 @@ async def assert_consolidated_data(
 async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     # first log
     log = make_log_data(source={"ip": "127.0.0.1"})
-    log.actor.extra.append(ExtraInfoField(name="role", value="admin"))
+    log.actor.extra.append(CustomField(name="role", value="admin"))
     log.resource.extra = {"some_key": "some_value"}
     log.details = {"level1": {"level2": "value"}}
     log.tags = [Log.Tag(id="tag_id", category="rich_tag", name="rich_tag_name")]
@@ -91,7 +91,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data(source={"ip_bis": "127.0.0.1"})
     log.action.category += "_bis"
     log.actor.type += "_bis"
-    log.actor.extra.append(ExtraInfoField(name="role_bis", value="admin"))
+    log.actor.extra.append(CustomField(name="role_bis", value="admin"))
     log.resource.type += "_bis"
     log.resource.extra = {"some_key_bis": "some_value"}
     log.details = {"level1_bis": {"level2_bis": "value"}}

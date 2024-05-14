@@ -14,7 +14,7 @@ from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logs.models import Log
 
 
-class ExtraInfoFieldData(BaseModel):
+class CustomFieldData(BaseModel):
     name: str
     value: str
 
@@ -37,7 +37,7 @@ class _LogBase(BaseModel):
         )
         type: str = Field(title="Actor type", json_schema_extra={"example": "user"})
         name: str = Field(title="Actor name", json_schema_extra={"example": "John Doe"})
-        extra: list[ExtraInfoFieldData] = Field(
+        extra: list[CustomFieldData] = Field(
             default_factory=list,
             title="Extra actor information",
             json_schema_extra={
@@ -217,7 +217,7 @@ class LogActorTypeListResponse(NameListResponse):
     pass
 
 
-class LogActorExtraInfoFieldListResponse(NameListResponse):
+class LogActorExtraListResponse(NameListResponse):
     pass
 
 
