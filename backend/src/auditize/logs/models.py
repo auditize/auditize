@@ -11,7 +11,7 @@ class Log(BaseModel):
 
     class Actor(BaseModel):
         type: str
-        id: str
+        ref: str
         name: str
         extra: dict[str, str] = Field(default_factory=dict)
 

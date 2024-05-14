@@ -19,7 +19,7 @@ def make_log_data(**extra) -> Log:
 
     kwargs = {
         "action": Log.Action(type="login", category="authentication"),
-        "actor": Log.Actor(type="user", id="user:123", name="User 123"),
+        "actor": Log.Actor(type="user", ref="user:123", name="User 123"),
         "resource": Log.Resource(type="module", id="core", name="Core Module"),
         "tags": [Log.Tag(id="simple_tag")],
         "node_path": [Log.Node(ref="1", name="Customer 1")],
@@ -46,7 +46,7 @@ async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
         "node_path",
     ]
     assert list(db_log["action"].keys()) == ["type", "category"]
-    assert list(db_log["actor"].keys()) == ["type", "id", "name", "extra"]
+    assert list(db_log["actor"].keys()) == ["type", "ref", "name", "extra"]
     assert list(db_log["resource"].keys()) == ["type", "id", "name", "extra"]
     assert list(db_log["tags"][0].keys()) == ["id", "category", "name"]
     assert list(db_log["node_path"][0].keys()) == ["ref", "name"]
