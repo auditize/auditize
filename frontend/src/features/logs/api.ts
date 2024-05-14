@@ -18,8 +18,8 @@ export type Log = {
     category: string;
   };
   actor?: {
+    ref: string;
     type: string;
-    id: string;
     name: string;
   };
   resource?: {
