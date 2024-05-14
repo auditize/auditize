@@ -91,7 +91,11 @@ function ActorTypeSelector({
     <PaginatedSelector
       label="Actor type"
       queryKey={["logActorType", repoId]}
-      queryFn={() => getAllLogActorTypes(repoId!)}
+      queryFn={() =>
+        getAllLogActorTypes(repoId!).then((types) =>
+          types.map((type) => type.name),
+        )
+      }
       enabled={!!repoId}
       selectedItem={type}
       onChange={onChange}
