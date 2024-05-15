@@ -26,6 +26,7 @@ from auditize.logs.api_models import (
     LogNodeListResponse,
     LogNodeResponse,
     LogReadingResponse,
+    LogResourceExtraListResponse,
     LogResourceTypeListResponse,
     LogsReadingResponse,
     LogTagTypeListResponse,
@@ -128,6 +129,25 @@ async def get_log_resource_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
     return LogResourceTypeListResponse.build(resource_types, pagination)
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/extras",
+    summary="Get log resource extra field names",
+    operation_id="get_log_resource_extras",
+    tags=["logs"],
+    response_model=LogResourceExtraListResponse,
+)
+async def get_log_resource_extras(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> LogResourceExtraListResponse:
+    extra_fields, pagination = await service.get_log_resource_extra_fields(
+        dbm, repo_id, page=page_params.page, page_size=page_params.page_size
+    )
+    return LogResourceExtraListResponse.build(extra_fields, pagination)
 
 
 @router.get(

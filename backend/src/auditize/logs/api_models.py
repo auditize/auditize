@@ -233,6 +233,10 @@ class LogResourceTypeListResponse(NameListResponse):
     pass
 
 
+class LogResourceExtraListResponse(NameListResponse):
+    pass
+
+
 class LogTagTypeListResponse(NameListResponse):
     pass
 

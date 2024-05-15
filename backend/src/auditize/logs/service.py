@@ -304,6 +304,15 @@ async def get_log_resource_types(
     )
 
 
+async def get_log_resource_extra_fields(
+    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
+) -> tuple[list[str], PagePaginationInfo]:
+    db = await get_log_db(dbm, repo_id)
+    return await _get_consolidated_data_field(
+        db.log_resource_extra_fields, "name", page=page, page_size=page_size
+    )
+
+
 async def get_log_tag_types(
     dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
 ) -> tuple[list[str], PagePaginationInfo]:

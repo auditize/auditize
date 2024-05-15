@@ -987,6 +987,43 @@ async def test_get_log_resource_types_forbidden(
     )
 
 
+async def test_get_log_resource_extras(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    for i in reversed(range(5)):  # insert in reverse order to test sorting
+        await consolidate_log_resource(
+            repo.db,
+            Log.Resource(
+                type=f"type_{i}",
+                ref=f"id_{i}",
+                name=f"name_{i}",
+                extra=[CustomField(name=f"field_{i}", value="value")],
+            ),
+        )
+
+    await do_test_page_pagination_common_scenarios(
+        log_read_client,
+        f"/repos/{repo.id}/logs/resources/extras",
+        [{"name": f"field_{i}"} for i in range(5)],
+    )
+
+
+async def test_get_log_resource_extras_empty(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await do_test_page_pagination_empty_data(
+        log_read_client, f"/repos/{repo.id}/logs/resources/extras"
+    )
+
+
+async def test_get_log_resource_extras_forbidden(
+    no_permission_client: HttpTestHelper, repo: PreparedRepo
+):
+    await no_permission_client.assert_get_forbidden(
+        f"/repos/{repo.id}/logs/resources/extras"
+    )
+
+
 async def test_get_log_tag_types(log_read_client: HttpTestHelper, repo: PreparedRepo):
     for i in reversed(range(4)):
         await consolidate_log_tags(
