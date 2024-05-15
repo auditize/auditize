@@ -213,34 +213,6 @@ class NameListResponse(PagePaginatedResponse[str, NameData]):
         return NameData(name=name)
 
 
-class LogActionCategoryListResponse(NameListResponse):
-    pass
-
-
-class LogActionTypeListResponse(NameListResponse):
-    pass
-
-
-class LogActorTypeListResponse(NameListResponse):
-    pass
-
-
-class LogActorExtraListResponse(NameListResponse):
-    pass
-
-
-class LogResourceTypeListResponse(NameListResponse):
-    pass
-
-
-class LogResourceExtraListResponse(NameListResponse):
-    pass
-
-
-class LogTagTypeListResponse(NameListResponse):
-    pass
-
-
 class NodeItem(_LogBase.Node):
     parent_node_ref: str | None = Field(
         description="The ID of the parent node. It is null for top-level nodes."

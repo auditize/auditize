@@ -17,19 +17,13 @@ from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service
 from auditize.logs.api_models import (
-    LogActionCategoryListResponse,
-    LogActionTypeListResponse,
-    LogActorExtraListResponse,
-    LogActorTypeListResponse,
     LogCreationRequest,
     LogCreationResponse,
     LogNodeListResponse,
     LogNodeResponse,
     LogReadingResponse,
-    LogResourceExtraListResponse,
-    LogResourceTypeListResponse,
     LogsReadingResponse,
-    LogTagTypeListResponse,
+    NameListResponse,
 )
 
 router = APIRouter()
@@ -47,7 +41,7 @@ async def get_log_action_types(
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
     category: str = None,
-) -> LogActionTypeListResponse:
+) -> NameListResponse:
     types, pagination = await service.get_log_action_types(
         dbm,
         repo_id,
@@ -55,7 +49,7 @@ async def get_log_action_types(
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    return LogActionTypeListResponse.build(types, pagination)
+    return NameListResponse.build(types, pagination)
 
 
 @router.get(
@@ -69,11 +63,11 @@ async def get_log_action_categories(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogActionCategoryListResponse:
+) -> NameListResponse:
     categories, pagination = await service.get_log_action_categories(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogActionCategoryListResponse.build(categories, pagination)
+    return NameListResponse.build(categories, pagination)
 
 
 @router.get(
@@ -87,11 +81,11 @@ async def get_log_actor_types(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogActorTypeListResponse:
+) -> NameListResponse:
     actor_types, pagination = await service.get_log_actor_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogActorTypeListResponse.build(actor_types, pagination)
+    return NameListResponse.build(actor_types, pagination)
 
 
 @router.get(
@@ -99,18 +93,18 @@ async def get_log_actor_types(
     summary="Get log actor extra field names",
     operation_id="get_log_actor_extras",
     tags=["logs"],
-    response_model=LogActorExtraListResponse,
+    response_model=NameListResponse,
 )
 async def get_log_actor_extras(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogActorExtraListResponse:
+) -> NameListResponse:
     extra_fields, pagination = await service.get_log_actor_extra_fields(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogActorExtraListResponse.build(extra_fields, pagination)
+    return NameListResponse.build(extra_fields, pagination)
 
 
 @router.get(
@@ -124,11 +118,11 @@ async def get_log_resource_types(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogResourceTypeListResponse:
+) -> NameListResponse:
     resource_types, pagination = await service.get_log_resource_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogResourceTypeListResponse.build(resource_types, pagination)
+    return NameListResponse.build(resource_types, pagination)
 
 
 @router.get(
@@ -136,18 +130,18 @@ async def get_log_resource_types(
     summary="Get log resource extra field names",
     operation_id="get_log_resource_extras",
     tags=["logs"],
-    response_model=LogResourceExtraListResponse,
+    response_model=NameListResponse,
 )
 async def get_log_resource_extras(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogResourceExtraListResponse:
+) -> NameListResponse:
     extra_fields, pagination = await service.get_log_resource_extra_fields(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogResourceExtraListResponse.build(extra_fields, pagination)
+    return NameListResponse.build(extra_fields, pagination)
 
 
 @router.get(
@@ -161,11 +155,11 @@ async def get_log_tag_types(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogTagTypeListResponse:
+) -> NameListResponse:
     tag_types, pagination = await service.get_log_tag_types(
         dbm, repo_id, page=page_params.page, page_size=page_params.page_size
     )
-    return LogTagTypeListResponse.build(tag_types, pagination)
+    return NameListResponse.build(tag_types, pagination)
 
 
 @router.get(
