@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from functools import partial
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -205,7 +206,9 @@ async def get_logs(
 
 
 async def _get_consolidated_data_aggregated_field(
-    collection: AsyncIOMotorCollection,
+    dbm: DatabaseManager,
+    repo_id: str,
+    collection_name: str,
     field_name: str,
     *,
     match=None,
@@ -213,6 +216,8 @@ async def _get_consolidated_data_aggregated_field(
     page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
     # Get all unique aggregated data field
+    db = await get_log_db(dbm, repo_id)
+    collection = db.get_collection(collection_name)
     results = collection.aggregate(
         ([{"$match": match}] if match else [])
         + [
@@ -238,10 +243,17 @@ async def _get_consolidated_data_aggregated_field(
 
 
 async def _get_consolidated_data_field(
-    collection: AsyncIOMotorCollection, field_name: str, *, page=1, page_size=10
+    dbm: DatabaseManager,
+    repo_id,
+    collection_name,
+    field_name: str,
+    *,
+    page=1,
+    page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
+    db = await get_log_db(dbm, repo_id)
     results, pagination = await find_paginated_by_page(
-        collection,
+        db.get_collection(collection_name),
         projection=[field_name],
         sort={field_name: 1},
         page=page,
@@ -250,13 +262,11 @@ async def _get_consolidated_data_field(
     return [result[field_name] async for result in results], pagination
 
 
-async def get_log_action_categories(
-    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
-) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db(dbm, repo_id)
-    return await _get_consolidated_data_aggregated_field(
-        db.log_actions, "category", page=page, page_size=page_size
-    )
+get_log_action_categories = partial(
+    _get_consolidated_data_aggregated_field,
+    collection_name="log_actions",
+    field_name="category",
+)
 
 
 async def get_log_action_types(
@@ -267,59 +277,49 @@ async def get_log_action_types(
     page=1,
     page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db(dbm, repo_id)
     return await _get_consolidated_data_aggregated_field(
-        db.log_actions,
-        "type",
+        dbm,
+        repo_id,
+        collection_name="log_actions",
+        field_name="type",
         page=page,
         page_size=page_size,
         match={"category": action_category} if action_category else None,
     )
 
 
-async def get_log_actor_types(
-    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
-) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db(dbm, repo_id)
-    return await _get_consolidated_data_field(
-        db.log_actor_types, "type", page=page, page_size=page_size
-    )
+get_log_actor_types = partial(
+    _get_consolidated_data_field,
+    collection_name="log_actor_types",
+    field_name="type",
+)
+
+get_log_actor_extra_fields = partial(
+    _get_consolidated_data_field,
+    collection_name="log_actor_extra_fields",
+    field_name="name",
+)
 
 
-async def get_log_actor_extra_fields(
-    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
-) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db(dbm, repo_id)
-    return await _get_consolidated_data_field(
-        db.log_actor_extra_fields, "name", page=page, page_size=page_size
-    )
+get_log_resource_types = partial(
+    _get_consolidated_data_field,
+    collection_name="log_resource_types",
+    field_name="type",
+)
 
 
-async def get_log_resource_types(
-    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
-) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db(dbm, repo_id)
-    return await _get_consolidated_data_field(
-        db.log_resource_types, "type", page=page, page_size=page_size
-    )
+get_log_resource_extra_fields = partial(
+    _get_consolidated_data_field,
+    collection_name="log_resource_extra_fields",
+    field_name="name",
+)
 
 
-async def get_log_resource_extra_fields(
-    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
-) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db(dbm, repo_id)
-    return await _get_consolidated_data_field(
-        db.log_resource_extra_fields, "name", page=page, page_size=page_size
-    )
-
-
-async def get_log_tag_types(
-    dbm: DatabaseManager, repo_id: str, *, page=1, page_size=10
-) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db(dbm, repo_id)
-    return await _get_consolidated_data_field(
-        db.log_tag_types, "type", page=page, page_size=page_size
-    )
+get_log_tag_types = partial(
+    _get_consolidated_data_field,
+    collection_name="log_tag_types",
+    field_name="type",
+)
 
 
 async def _get_log_nodes(db: LogDatabase, *, match, pipeline_extra=None):
