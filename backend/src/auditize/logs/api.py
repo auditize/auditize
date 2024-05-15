@@ -191,6 +191,48 @@ async def get_log_tag_types(
 
 
 @router.get(
+    "/repos/{repo_id}/logs/sources",
+    summary="Get log source field names",
+    operation_id="get_log_source_fields",
+    tags=["logs"],
+    response_model=NameListResponse,
+)
+async def get_log_source_fields(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> NameListResponse:
+    return await _get_consolidated_data(
+        dbm,
+        repo_id,
+        service.get_log_source_fields,
+        page_params,
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/details",
+    summary="Get log detail field names",
+    operation_id="get_log_detail_fields",
+    tags=["logs"],
+    response_model=NameListResponse,
+)
+async def get_log_detail_fields(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> NameListResponse:
+    return await _get_consolidated_data(
+        dbm,
+        repo_id,
+        service.get_log_detail_fields,
+        page_params,
+    )
+
+
+@router.get(
     "/repos/{repo_id}/logs/nodes",
     summary="Get log nodes",
     operation_id="get_log_nodes",

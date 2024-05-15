@@ -9,8 +9,10 @@ from auditize.logs.models import CustomField, Log
 from auditize.logs.service import (
     consolidate_log_action,
     consolidate_log_actor,
+    consolidate_log_details,
     consolidate_log_node_path,
     consolidate_log_resource,
+    consolidate_log_source,
     consolidate_log_tags,
 )
 from conftest import ApikeyBuilder
@@ -852,7 +854,7 @@ class TestLogActionCategories(_ConsolidatedDataTest):
                 repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
             )
             await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i+10}")
+                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i + 10}")
             )
         return [f"category_{i}" for i in range(5)]
 
@@ -971,6 +973,34 @@ class TestLogTagTypes(_ConsolidatedDataTest):
         await consolidate_log_tags(repo.db, [Log.Tag(type="simple_tag")])
 
         return ["simple_tag"] + [f"type_{i}" for i in range(4)]
+
+
+class TestLogSourceFields(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "sources"
+
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_source(
+                repo.db, [CustomField(name=f"field_{i}", value=f"value_{i}")]
+            )
+
+        return [f"field_{i}" for i in range(5)]
+
+
+class TestLogDetailFields(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "details"
+
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_details(
+                repo.db, [CustomField(name=f"field_{i}", value=f"value_{i}")]
+            )
+
+        return [f"field_{i}" for i in range(5)]
 
 
 async def test_get_log_nodes_without_filters(

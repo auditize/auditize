@@ -28,6 +28,11 @@ async def consolidate_log_action(db: LogDatabase, action: Log.Action):
     )
 
 
+async def consolidate_log_source(db: LogDatabase, source: list[CustomField]):
+    for field in source:
+        await db.consolidate_data(db.log_source_fields, {"name": field.name})
+
+
 async def consolidate_log_actor(db: LogDatabase, actor: Log.Actor):
     await db.consolidate_data(db.log_actor_types, {"type": actor.type})
     for field in actor.extra:
@@ -67,8 +72,7 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
 
     await consolidate_log_action(db, log.action)
 
-    for field in log.source:
-        await db.consolidate_data(db.log_source_fields, {"name": field.name})
+    await consolidate_log_source(db, log.source)
 
     if log.actor:
         await consolidate_log_actor(db, log.actor)
@@ -319,6 +323,20 @@ get_log_tag_types = partial(
     _get_consolidated_data_field,
     collection_name="log_tag_types",
     field_name="type",
+)
+
+
+get_log_source_fields = partial(
+    _get_consolidated_data_field,
+    collection_name="log_source_fields",
+    field_name="name",
+)
+
+
+get_log_detail_fields = partial(
+    _get_consolidated_data_field,
+    collection_name="log_detail_fields",
+    field_name="name",
 )
 
 
