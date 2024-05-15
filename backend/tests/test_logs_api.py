@@ -815,18 +815,18 @@ class _ConsolidatedDataTest:
     def get_path(self, repo_id: str) -> str:
         return f"/repos/{repo_id}/logs/{self.relative_path}"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        """
-        Must return a list of exactly 5 items.
-        """
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
         raise NotImplementedError()
 
     async def test_nominal(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
-        items = await self.create_consolidated_data(repo)
+        values = list(reversed(range(5)))  # insert in reverse order to test sorting
+        items = await self.create_consolidated_data(repo, values)
         await do_test_page_pagination_common_scenarios(
             log_read_client,
             self.get_path(repo.id),
-            [{"name": item} for item in items],
+            [{"name": item} for item in reversed(items)],
         )
 
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
@@ -848,15 +848,17 @@ class TestLogActionCategories(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "actions/categories"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
+                repo.db, Log.Action(category=f"category_{val}", type=f"type_{val}")
             )
             await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i + 10}")
+                repo.db, Log.Action(category=f"category_{val}", type=f"type_{val + 10}")
             )
-        return [f"category_{i}" for i in range(5)]
+        return [f"category_{val}" for val in values]
 
 
 class TestLogActionTypes(_ConsolidatedDataTest):
@@ -864,20 +866,22 @@ class TestLogActionTypes(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "actions/types"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
+                repo.db, Log.Action(category=f"category_{val}", type=f"type_{val}")
             )
             await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{i + 10}", type=f"type_{i}")
+                repo.db, Log.Action(category=f"category_{val + 10}", type=f"type_{val}")
             )
-        return [f"type_{i}" for i in range(5)]
+        return [f"type_{val}" for val in values]
 
     async def test_param_category(
         self, log_read_client: HttpTestHelper, repo: PreparedRepo
     ):
-        await self.create_consolidated_data(repo)
+        await self.create_consolidated_data(repo, list(reversed(range(5))))
 
         # test category parameter
         await log_read_client.assert_get(
@@ -899,12 +903,15 @@ class TestLogActorTypes(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "actors/types"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_actor(
-                repo.db, Log.Actor(type=f"type_{i}", ref=f"id_{i}", name=f"name_{i}")
+                repo.db,
+                Log.Actor(type=f"type_{val}", ref=f"id_{val}", name=f"name_{val}"),
             )
-        return [f"type_{i}" for i in range(5)]
+        return [f"type_{val}" for val in values]
 
 
 class TestLogActorExtras(_ConsolidatedDataTest):
@@ -912,18 +919,20 @@ class TestLogActorExtras(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "actors/extras"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_actor(
                 repo.db,
                 Log.Actor(
-                    type=f"type_{i}",
-                    ref=f"id_{i}",
-                    name=f"name_{i}",
-                    extra=[CustomField(name=f"field_{i}", value="value")],
+                    type=f"type_{val}",
+                    ref=f"id_{val}",
+                    name=f"name_{val}",
+                    extra=[CustomField(name=f"field_{val}", value="value")],
                 ),
             )
-        return [f"field_{i}" for i in range(5)]
+        return [f"field_{val}" for val in values]
 
 
 class TestLogResourceTypes(_ConsolidatedDataTest):
@@ -931,13 +940,15 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "resources/types"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_resource(
                 repo.db,
-                Log.Resource(ref=f"ref_{i}", type=f"type_{i}", name=f"name_{i}"),
+                Log.Resource(ref=f"ref_{val}", type=f"type_{val}", name=f"name_{val}"),
             )
-        return [f"type_{i}" for i in range(5)]
+        return [f"type_{val}" for val in values]
 
 
 class TestLogResourceExtras(_ConsolidatedDataTest):
@@ -945,18 +956,20 @@ class TestLogResourceExtras(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "resources/extras"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_resource(
                 repo.db,
                 Log.Resource(
-                    ref=f"ref_{i}",
-                    type=f"type_{i}",
-                    name=f"name_{i}",
-                    extra=[CustomField(name=f"field_{i}", value="value")],
+                    ref=f"ref_{val}",
+                    type=f"type_{val}",
+                    name=f"name_{val}",
+                    extra=[CustomField(name=f"field_{val}", value="value")],
                 ),
             )
-        return [f"field_{i}" for i in range(5)]
+        return [f"field_{val}" for val in values]
 
 
 class TestLogTagTypes(_ConsolidatedDataTest):
@@ -964,15 +977,17 @@ class TestLogTagTypes(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "tags/types"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(4)):
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values[:-1]:
             await consolidate_log_tags(
                 repo.db,
-                [Log.Tag(ref=f"tag_{i}", type=f"type_{i}", name=f"name_{i}")],
+                [Log.Tag(ref=f"tag_{val}", type=f"type_{val}", name=f"name_{val}")],
             )
         await consolidate_log_tags(repo.db, [Log.Tag(type="simple_tag")])
 
-        return ["simple_tag"] + [f"type_{i}" for i in range(4)]
+        return [f"type_{val}" for val in values[:-1]] + ["simple_tag"]
 
 
 class TestLogSourceFields(_ConsolidatedDataTest):
@@ -980,13 +995,15 @@ class TestLogSourceFields(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "sources"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[str]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_source(
-                repo.db, [CustomField(name=f"field_{i}", value=f"value_{i}")]
+                repo.db, [CustomField(name=f"field_{val}", value=f"value_{val}")]
             )
 
-        return [f"field_{i}" for i in range(5)]
+        return [f"field_{val}" for val in values]
 
 
 class TestLogDetailFields(_ConsolidatedDataTest):
@@ -994,13 +1011,15 @@ class TestLogDetailFields(_ConsolidatedDataTest):
     def relative_path(self) -> str:
         return "details"
 
-    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
-        for i in reversed(range(5)):  # insert in reverse order to test sorting
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
             await consolidate_log_details(
-                repo.db, [CustomField(name=f"field_{i}", value=f"value_{i}")]
+                repo.db, [CustomField(name=f"field_{val}", value=f"value_{val}")]
             )
 
-        return [f"field_{i}" for i in range(5)]
+        return [f"field_{val}" for val in values]
 
 
 async def test_get_log_nodes_without_filters(
