@@ -125,15 +125,14 @@ class _LogBase(BaseModel):
             "nullable": True,
         },
     )
-    details: dict[str, dict[str, str]] = Field(
-        description="Details of the event, organized as nested objects",
-        default_factory=dict,
+    details: list[CustomFieldData] = Field(
+        description="Details about the action",
+        default_factory=list,
         json_schema_extra={
-            "nullable": True,
-            "example": {
-                "old_values": {"description": "Former description"},
-                "new_values": {"description": "New description"},
-            },
+            "example": [
+                {"name": "old_values", "description": "Former description"},
+                {"name": "new_values", "description": "New description"},
+            ],
         },
     )
     tags: list[Tag] = Field(default_factory=list)

@@ -97,10 +97,10 @@ async def test_create_log_all_fields(
                 "name": "Core Module",
                 "extra": [{"name": "creator", "value": "xyz"}],
             },
-            "details": {
-                "more_details": {"some_key": "some_value"},
-                "other_details": {"other_key": "other_value"},
-            },
+            "details": [
+                {"name": "some_key", "value": "some_value"},
+                {"name": "other_key", "value": "other_value"},
+            ],
             "tags": [
                 {
                     "type": "simple_tag",
@@ -277,10 +277,10 @@ async def test_get_log_all_fields(
                 "name": "Core Module",
                 "extra": [{"name": "creator", "value": "xyz"}],
             },
-            "details": {
-                "more_details": {"some_key": "some_value"},
-                "other_details": {"other_key": "other_value"},
-            },
+            "details": [
+                {"name": "some_key", "value": "some_value"},
+                {"name": "other_key", "value": "other_value"},
+            ],
             "tags": [
                 {
                     "type": "simple_tag",

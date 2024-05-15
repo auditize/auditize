@@ -15,7 +15,7 @@ from auditize.helpers.resources.service import (
     update_resource_document,
 )
 from auditize.logs.db import LogDatabase, get_log_db
-from auditize.logs.models import Log, Node
+from auditize.logs.models import CustomField, Log, Node
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
@@ -44,12 +44,9 @@ async def consolidate_log_tags(db: LogDatabase, tags: list[Log.Tag]):
         await db.consolidate_data(db.log_tag_types, {"type": tag.type})
 
 
-async def consolidate_log_details(db: LogDatabase, details: dict[str, dict[str, str]]):
-    for level1_key, sub_keys in details.items():
-        for level2_key in sub_keys:
-            await db.consolidate_data(
-                db.log_detail_keys, {"level1_key": level1_key, "level2_key": level2_key}
-            )
+async def consolidate_log_details(db: LogDatabase, details: list[CustomField]):
+    for field in details:
+        await db.consolidate_data(db.log_detail_fields, {"name": field.name})
 
 
 async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
