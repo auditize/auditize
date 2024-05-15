@@ -805,252 +805,172 @@ async def test_get_logs_filter_no_result(
     )
 
 
-async def test_get_log_action_categories(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_action(
-            repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
-        )
-        await consolidate_log_action(
-            repo.db, Log.Action(category=f"category_{i}", type=f"type_{i + 10}")
-        )
+class _ConsolidatedDataTest:
+    @property
+    def relative_path(self) -> str:
+        raise NotImplementedError()
 
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/actions/categories",
-        [{"name": f"category_{i}"} for i in range(5)],
-    )
+    def get_path(self, repo_id: str) -> str:
+        return f"/repos/{repo_id}/logs/{self.relative_path}"
 
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        """
+        Must return a list of exactly 5 items.
+        """
+        raise NotImplementedError()
 
-async def test_get_log_action_categories_unknown_repo(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await log_read_client.assert_get_not_found(
-        f"/repos/{UNKNOWN_OBJECT_ID}/logs/actions/categories"
-    )
-
-
-async def test_get_log_action_categories_forbidden(
-    no_permission_client: HttpTestHelper, repo: PreparedRepo
-):
-    await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/actions/categories"
-    )
-
-
-async def test_get_log_action_categories_empty(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/actions/categories"
-    )
-
-
-async def test_get_log_action_types(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_action(
-            repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
-        )
-        await consolidate_log_action(
-            repo.db, Log.Action(category=f"category_{i + 10}", type=f"type_{i}")
+    async def test_nominal(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        items = await self.create_consolidated_data(repo)
+        await do_test_page_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id),
+            [{"name": item} for item in items],
         )
 
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/actions/types",
-        [{"name": f"type_{i}"} for i in range(5)],
-    )
-
-    # test category parameter
-    await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/actions/types?category=category_2",
-        expected_json={
-            "data": [{"name": f"type_{2}"}],
-            "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1},
-        },
-    )
-
-
-async def test_get_log_action_types_empty(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/actions/types"
-    )
-
-
-async def test_get_log_action_types_forbidden(
-    no_permission_client: HttpTestHelper, repo: PreparedRepo
-):
-    await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/actions/types"
-    )
-
-
-async def test_get_log_actor_types(log_read_client: HttpTestHelper, repo: PreparedRepo):
-    for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_actor(
-            repo.db, Log.Actor(type=f"type_{i}", ref=f"id_{i}", name=f"name_{i}")
+    async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await do_test_page_pagination_empty_data(
+            log_read_client, self.get_path(repo.id)
         )
 
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/actors/types",
-        [{"name": f"type_{i}"} for i in range(5)],
-    )
+    async def test_not_found(self, log_read_client: HttpTestHelper):
+        await log_read_client.assert_get_not_found(self.get_path(UNKNOWN_OBJECT_ID))
+
+    async def test_forbidden(
+        self, no_permission_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await no_permission_client.assert_get_forbidden(self.get_path(repo.id))
 
 
-async def test_get_log_actor_types_empty(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/actors/types"
-    )
+class TestLogActionCategories(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "actions/categories"
+
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_action(
+                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
+            )
+            await consolidate_log_action(
+                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i+10}")
+            )
+        return [f"category_{i}" for i in range(5)]
 
 
-async def test_get_log_actor_types_forbidden(
-    no_permission_client: HttpTestHelper, repo: PreparedRepo
-):
-    await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/actors/types"
-    )
+class TestLogActionTypes(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "actions/types"
 
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_action(
+                repo.db, Log.Action(category=f"category_{i}", type=f"type_{i}")
+            )
+            await consolidate_log_action(
+                repo.db, Log.Action(category=f"category_{i + 10}", type=f"type_{i}")
+            )
+        return [f"type_{i}" for i in range(5)]
 
-async def test_get_log_actor_extras(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_actor(
-            repo.db,
-            Log.Actor(
-                type=f"type_{i}",
-                ref=f"id_{i}",
-                name=f"name_{i}",
-                extra=[CustomField(name=f"field_{i}", value="value")],
-            ),
+    async def test_param_category(
+        self, log_read_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await self.create_consolidated_data(repo)
+
+        # test category parameter
+        await log_read_client.assert_get(
+            f"/repos/{repo.id}/logs/actions/types?category=category_2",
+            expected_json={
+                "data": [{"name": f"type_{2}"}],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
         )
 
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/actors/extras",
-        [{"name": f"field_{i}"} for i in range(5)],
-    )
+
+class TestLogActorTypes(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "actors/types"
+
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_actor(
+                repo.db, Log.Actor(type=f"type_{i}", ref=f"id_{i}", name=f"name_{i}")
+            )
+        return [f"type_{i}" for i in range(5)]
 
 
-async def test_get_log_actor_extras_empty(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/actors/extras"
-    )
+class TestLogActorExtras(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "actors/extras"
+
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_actor(
+                repo.db,
+                Log.Actor(
+                    type=f"type_{i}",
+                    ref=f"id_{i}",
+                    name=f"name_{i}",
+                    extra=[CustomField(name=f"field_{i}", value="value")],
+                ),
+            )
+        return [f"field_{i}" for i in range(5)]
 
 
-async def test_get_log_actor_extras_forbidden(
-    no_permission_client: HttpTestHelper, repo: PreparedRepo
-):
-    await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/actors/extras"
-    )
+class TestLogResourceTypes(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "resources/types"
+
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_resource(
+                repo.db,
+                Log.Resource(ref=f"ref_{i}", type=f"type_{i}", name=f"name_{i}"),
+            )
+        return [f"type_{i}" for i in range(5)]
 
 
-async def test_get_log_resource_types(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_resource(
-            repo.db, Log.Resource(ref=f"ref_{i}", type=f"type_{i}", name=f"name_{i}")
-        )
+class TestLogResourceExtras(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "resources/extras"
 
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/resources/types",
-        [{"name": f"type_{i}"} for i in range(5)],
-    )
-
-
-async def test_get_log_resource_types_empty(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/resources/types"
-    )
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(5)):  # insert in reverse order to test sorting
+            await consolidate_log_resource(
+                repo.db,
+                Log.Resource(
+                    ref=f"ref_{i}",
+                    type=f"type_{i}",
+                    name=f"name_{i}",
+                    extra=[CustomField(name=f"field_{i}", value="value")],
+                ),
+            )
+        return [f"field_{i}" for i in range(5)]
 
 
-async def test_get_log_resource_types_forbidden(
-    no_permission_client: HttpTestHelper, repo: PreparedRepo
-):
-    await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/resources/types"
-    )
+class TestLogTagTypes(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "tags/types"
 
+    async def create_consolidated_data(self, repo: PreparedRepo) -> list[str]:
+        for i in reversed(range(4)):
+            await consolidate_log_tags(
+                repo.db,
+                [Log.Tag(ref=f"tag_{i}", type=f"type_{i}", name=f"name_{i}")],
+            )
+        await consolidate_log_tags(repo.db, [Log.Tag(type="simple_tag")])
 
-async def test_get_log_resource_extras(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    for i in reversed(range(5)):  # insert in reverse order to test sorting
-        await consolidate_log_resource(
-            repo.db,
-            Log.Resource(
-                type=f"type_{i}",
-                ref=f"id_{i}",
-                name=f"name_{i}",
-                extra=[CustomField(name=f"field_{i}", value="value")],
-            ),
-        )
-
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/resources/extras",
-        [{"name": f"field_{i}"} for i in range(5)],
-    )
-
-
-async def test_get_log_resource_extras_empty(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/resources/extras"
-    )
-
-
-async def test_get_log_resource_extras_forbidden(
-    no_permission_client: HttpTestHelper, repo: PreparedRepo
-):
-    await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/resources/extras"
-    )
-
-
-async def test_get_log_tag_types(log_read_client: HttpTestHelper, repo: PreparedRepo):
-    for i in reversed(range(4)):
-        await consolidate_log_tags(
-            repo.db,
-            [Log.Tag(ref=f"tag_{i}", type=f"type_{i}", name=f"name_{i}")],
-        )
-    await consolidate_log_tags(repo.db, [Log.Tag(type="simple_tag")])
-
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/tags/types",
-        [{"name": "simple_tag"}] + [{"name": f"type_{i}"} for i in range(4)],
-    )
-
-
-async def test_get_log_tag_categories_empty(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/tags/types"
-    )
-
-
-async def test_get_log_tag_categories_forbidden(
-    no_permission_client: HttpTestHelper, repo: PreparedRepo
-):
-    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/tags/types")
+        return ["simple_tag"] + [f"type_{i}" for i in range(4)]
 
 
 async def test_get_log_nodes_without_filters(
