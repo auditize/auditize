@@ -1,14 +1,15 @@
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     Field,
     field_serializer,
     model_validator,
 )
 
-from auditize.helpers.datetime import serialize_datetime
+from auditize.helpers.datetime import serialize_datetime, validate_datetime
 from auditize.helpers.pagination.cursor.api_models import CursorPaginatedResponse
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logs.models import Log
@@ -232,3 +233,22 @@ class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItem]):
     @classmethod
     def build_item(cls, node: Log.Node) -> NodeItem:
         return NodeItem.model_validate(node.model_dump())
+
+
+class LogSearchParams(BaseModel):
+    action_type: Optional[str] = Field(default=None)
+    action_category: Optional[str] = Field(default=None)
+    actor_type: Optional[str] = Field(default=None)
+    actor_name: Optional[str] = Field(default=None)
+    resource_type: Optional[str] = Field(default=None)
+    resource_name: Optional[str] = Field(default=None)
+    tag_ref: Optional[str] = Field(default=None)
+    tag_type: Optional[str] = Field(default=None)
+    tag_name: Optional[str] = Field(default=None)
+    node_ref: Optional[str] = Field(default=None)
+    since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
+        default=None
+    )
+    until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
+        default=None
+    )

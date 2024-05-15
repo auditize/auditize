@@ -4,9 +4,17 @@ from datetime import datetime, timezone
 DATETIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
-def validate_datetime(value: str):
+def validate_datetime(value: str | datetime | None):
+    # NB: consider empty string as None
     if not value:
         return None
+
+    # please note that the function also accepts datetime as value because FastAPI seems to
+    # call validators twice (the first time with a str, the second time with this str converted into a datetime)
+    # when the validator is used with BeforeValidator
+    if isinstance(value, datetime):
+        return value
+
     if not DATETIME_PATTERN.match(value):
         raise ValueError(
             f'invalid datetime format, expected "{DATETIME_PATTERN.pattern}", got "{value}"'
