@@ -25,6 +25,9 @@ class BaseDatabase:
     def db(self):
         return self.client.get_database(self.name)
 
+    def get_collection(self, name):
+        return self.db.get_collection(name)
+
 
 class CoreDatabase(BaseDatabase):
     async def setup(self):
