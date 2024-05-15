@@ -31,7 +31,7 @@ class LogDatabase(BaseDatabase):
     log_actor_extra_fields = Collection("log_actor_extra_fields")
     log_resource_types = Collection("log_resource_types")
     log_resource_extra_fields = Collection("log_resource_extra_fields")
-    log_detail_keys = Collection("log_detail_keys")
+    log_detail_fields = Collection("log_detail_fields")
     log_tag_types = Collection("log_tag_types")
     log_nodes = Collection("log_nodes")
 

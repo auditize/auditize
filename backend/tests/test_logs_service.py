@@ -68,7 +68,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data(source=[{"name": "ip", "value": "127.0.0.1"}])
     log.actor.extra.append(CustomField(name="role", value="admin"))
     log.resource.extra.append(CustomField(name="some_key", value="some_value"))
-    log.details = {"level1": {"level2": "value"}}
+    log.details.append(CustomField(name="detail_name", value="detail_value"))
     log.tags = [Log.Tag(ref="tag_ref", type="rich_tag", name="rich_tag_name")]
     await save_log(dbm, repo.id, log)
     await assert_consolidated_data(
@@ -81,9 +81,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     await assert_consolidated_data(
         repo.db.log_resource_extra_fields, {"name": "some_key"}
     )
-    await assert_consolidated_data(
-        repo.db.log_detail_keys, {"level1_key": "level1", "level2_key": "level2"}
-    )
+    await assert_consolidated_data(repo.db.log_detail_fields, {"name": "detail_name"})
     await assert_consolidated_data(repo.db.log_tag_types, {"type": "rich_tag"})
     await assert_consolidated_data(
         repo.db.log_nodes, {"parent_node_ref": None, "ref": "1", "name": "Customer 1"}
@@ -96,7 +94,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.actor.extra.append(CustomField(name="role_bis", value="admin"))
     log.resource.type += "_bis"
     log.resource.extra.append(CustomField(name="some_key_bis", value="some_value"))
-    log.details = {"level1_bis": {"level2_bis": "value"}}
+    log.details.append(CustomField(name="detail_name_bis", value="detail_value_bis"))
     log.tags = [
         Log.Tag(ref="tag_ref", type="rich_tag_bis", name="rich_tag_name"),
         Log.Tag(type="simple_tag"),
@@ -127,10 +125,10 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         [{"name": "some_key"}, {"name": "some_key_bis"}],
     )
     await assert_consolidated_data(
-        repo.db.log_detail_keys,
+        repo.db.log_detail_fields,
         [
-            {"level1_key": "level1", "level2_key": "level2"},
-            {"level1_key": "level1_bis", "level2_key": "level2_bis"},
+            {"name": "detail_name"},
+            {"name": "detail_name_bis"},
         ],
     )
     await assert_consolidated_data(

@@ -40,7 +40,7 @@ class PreparedLog:
             "source": [],
             "actor": None,
             "resource": None,
-            "details": {},
+            "details": [],
             "tags": [],
             "attachments": [],
             "id": self.id,

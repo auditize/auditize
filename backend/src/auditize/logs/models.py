@@ -54,7 +54,7 @@ class Log(BaseModel):
     source: list[CustomField] = Field(default_factory=list)
     actor: Optional[Actor] = Field(default=None)
     resource: Optional[Resource] = Field(default=None)
-    details: dict[str, dict[str, str]] = Field(default_factory=dict)
+    details: list[CustomField] = Field(default_factory=list)
     tags: list[Tag] = Field(default_factory=list)
     attachments: list[AttachmentMetadata] = Field(default_factory=list)
     node_path: list[Node] = Field(default_factory=list)
