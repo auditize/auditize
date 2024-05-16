@@ -105,43 +105,53 @@ export async function getLog(repoId: string, logId: string): Promise<Log> {
   return await reqGet(`/repos/${repoId}/logs/${logId}`);
 }
 
+async function getNames(promise: Promise<Named[]>): Promise<string[]> {
+  return promise.then((named) => named.map((n) => n.name));
+}
+
 export async function getAllLogActionCategories(
   repoId: string,
-): Promise<Named[]> {
-  return getAllPagePaginatedItems<Named>(
-    `/repos/${repoId}/logs/actions/categories`,
-    {},
+): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(
+      `/repos/${repoId}/logs/actions/categories`,
+      {},
+    ),
   );
 }
 
 export async function getAllLogActionTypes(
   repoId: string,
   category?: string,
-): Promise<Named[]> {
-  return getAllPagePaginatedItems<Named>(
-    `/repos/${repoId}/logs/actions/types`,
-    category ? { category } : {},
+): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(
+      `/repos/${repoId}/logs/actions/types`,
+      category ? { category } : {},
+    ),
   );
 }
 
-export async function getAllLogActorTypes(repoId: string): Promise<Named[]> {
-  return getAllPagePaginatedItems<Named>(
-    `/repos/${repoId}/logs/actors/types`,
-    {},
+export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
   );
 }
 
-export async function getAllLogResourceTypes(repoId: string): Promise<Named[]> {
-  return getAllPagePaginatedItems<Named>(
-    `/repos/${repoId}/logs/resources/types`,
-    {},
+export async function getAllLogResourceTypes(
+  repoId: string,
+): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(
+      `/repos/${repoId}/logs/resources/types`,
+      {},
+    ),
   );
 }
 
-export async function getAllLogTagTypes(repoId: string): Promise<Named[]> {
-  return getAllPagePaginatedItems<Named>(
-    `/repos/${repoId}/logs/tags/types`,
-    {},
+export async function getAllLogTagTypes(repoId: string): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
   );
 }
 

@@ -35,11 +35,7 @@ function ActionCategorySelector({
     <PaginatedSelector
       label="Action category"
       queryKey={["logActionCategory", repoId]}
-      queryFn={() =>
-        getAllLogActionCategories(repoId!).then((categories) =>
-          categories.map((category) => category.name),
-        )
-      }
+      queryFn={() => getAllLogActionCategories(repoId!)}
       enabled={!!repoId}
       selectedItem={category}
       onChange={onChange}
@@ -64,11 +60,7 @@ function ActionTypeSelector({
     <PaginatedSelector
       label="Action type"
       queryKey={["logActionTypes", repoId, category]}
-      queryFn={() =>
-        getAllLogActionTypes(repoId!, category).then((types) =>
-          types.map((type) => type.name),
-        )
-      }
+      queryFn={() => getAllLogActionTypes(repoId!, category)}
       enabled={!!repoId}
       selectedItem={type}
       onChange={onChange}
@@ -91,11 +83,7 @@ function ActorTypeSelector({
     <PaginatedSelector
       label="Actor type"
       queryKey={["logActorType", repoId]}
-      queryFn={() =>
-        getAllLogActorTypes(repoId!).then((types) =>
-          types.map((type) => type.name),
-        )
-      }
+      queryFn={() => getAllLogActorTypes(repoId!)}
       enabled={!!repoId}
       selectedItem={type}
       onChange={onChange}
@@ -118,11 +106,7 @@ function ResourceTypeSelector({
     <PaginatedSelector
       label="Resource type"
       queryKey={["logResourceType", repoId]}
-      queryFn={() =>
-        getAllLogResourceTypes(repoId!).then((types) =>
-          types.map((type) => type.name),
-        )
-      }
+      queryFn={() => getAllLogResourceTypes(repoId!)}
       enabled={!!repoId}
       selectedItem={type}
       onChange={onChange}
@@ -145,11 +129,7 @@ function TagTypeSelector({
     <PaginatedSelector
       label="Tag type"
       queryKey={["logTagTypes", repoId]}
-      queryFn={() =>
-        getAllLogTagTypes(repoId!).then((types) =>
-          types.map((type) => type.name),
-        )
-      }
+      queryFn={() => getAllLogTagTypes(repoId!)}
       enabled={!!repoId}
       selectedItem={type}
       onChange={onChange}
