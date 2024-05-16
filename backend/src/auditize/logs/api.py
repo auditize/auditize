@@ -443,6 +443,7 @@ async def get_logs(
         source=search_params.get_source_search_params(request),
         actor_type=search_params.actor_type,
         actor_name=search_params.actor_name,
+        actor_extra=search_params.get_actor_extra_search_params(request),
         resource_type=search_params.resource_type,
         resource_name=search_params.resource_name,
         details=search_params.get_detail_search_params(request),

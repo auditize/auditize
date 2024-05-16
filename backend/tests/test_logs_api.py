@@ -671,6 +671,47 @@ async def test_get_logs_filter_source(
     )
 
 
+async def test_get_logs_filter_actor_extra(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        to_be_found=PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "user:123",
+                    "name": "User 123",
+                    "extra": [
+                        {"name": "field_1", "value": "foo"},
+                        {"name": "field_2", "value": "bar"},
+                    ],
+                }
+            }
+        ),
+        not_to_be_found=[
+            PreparedLog.prepare_data(
+                {
+                    "actor": {
+                        "type": "user",
+                        "ref": "user:123",
+                        "name": "User 123",
+                        "extra": [
+                            {"name": "field_1", "value": "bar"},
+                            {"name": "field_2", "value": "foo"},
+                        ],
+                    }
+                }
+            ),
+        ],
+        search_params={
+            "actor[field_1]": "foo",
+            "actor[field_2]": "bar",
+        },
+    )
+
+
 async def test_get_logs_filter_tag_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):

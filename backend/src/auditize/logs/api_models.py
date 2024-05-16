@@ -241,6 +241,7 @@ class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItem]):
 class LogSearchParams(BaseModel):
     _DETAILS_REGEXP = re.compile(r"^details\[(.+)\]$")
     _SOURCE_REGEXP = re.compile(r"^source\[(.+)\]$")
+    _ACTOR_EXTRA_REGEXP = re.compile(r"^actor\[(.+)\]$")
 
     action_type: Optional[str] = Field(default=None)
     action_category: Optional[str] = Field(default=None)
@@ -275,4 +276,8 @@ class LogSearchParams(BaseModel):
 
     get_source_search_params = partialmethod(
         _get_custom_field_search_params, regexp=_SOURCE_REGEXP
+    )
+
+    get_actor_extra_search_params = partialmethod(
+        _get_custom_field_search_params, regexp=_ACTOR_EXTRA_REGEXP
     )
