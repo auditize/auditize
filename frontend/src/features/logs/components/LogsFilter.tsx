@@ -15,11 +15,13 @@ import {
   buildEmptyLogsFilterParams,
   getAllLogActionCategories,
   getAllLogActionTypes,
+  getAllLogActorExtraFields,
   getAllLogActorTypes,
   getAllLogResourceTypes,
   getAllLogTagTypes,
   LogsFilterParams,
 } from "../api";
+import { CustomFieldSelector } from "./CustomFieldSelector";
 import { NodeSelector } from "./NodeSelector";
 
 function ActionCategorySelector({
@@ -89,6 +91,28 @@ function ActorTypeSelector({
       onChange={onChange}
       itemLabel={(item) => labelize(item)}
       itemValue={(item) => item}
+    />
+  );
+}
+
+function ActorExtraFieldSelector({
+  repoId,
+  value,
+  onChange,
+}: {
+  repoId?: string;
+  value: Map<string, string>;
+  onChange: (value: Map<string, string>) => void;
+}) {
+  return (
+    <CustomFieldSelector
+      label="Custom fields"
+      queryKey={["logActorExtraFields", repoId]}
+      queryFn={() => getAllLogActorExtraFields(repoId!)}
+      enabled={!!repoId}
+      value={value}
+      onChange={onChange}
+      itemLabel={(item) => labelize(item)}
     />
   );
 }
@@ -245,7 +269,11 @@ export function LogsFilter({
 
   const hasDate = !!(editedParams.since || editedParams.until);
   const hasAction = !!(editedParams.actionCategory || editedParams.actionType);
-  const hasActor = !!(editedParams.actorType || editedParams.actorName);
+  const hasActor = !!(
+    editedParams.actorType ||
+    editedParams.actorName ||
+    editedParams.actorExtra!.size > 0
+  );
   const hasResource = !!(
     editedParams.resourceType || editedParams.resourceName
   );
@@ -257,6 +285,8 @@ export function LogsFilter({
   const hasNode = !!editedParams.nodeRef;
   const hasFilter =
     hasDate || hasAction || hasActor || hasResource || hasTag || hasNode;
+
+  console.log("editedParams", editedParams);
 
   return (
     <Group p="1rem">
@@ -316,6 +346,11 @@ export function LogsFilter({
           value={editedParams.actorName}
           onChange={changeTextInputParamHandler("actorName")}
           display={"flex"}
+        />
+        <ActorExtraFieldSelector
+          repoId={editedParams.repoId}
+          value={editedParams.actorExtra!}
+          onChange={changeParamHandler("actorExtra")}
         />
       </PopoverForm>
 

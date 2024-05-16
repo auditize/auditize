@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import snakecaseKeys from "snakecase-keys";
 
 import { getAllPagePaginatedItems, reqGet } from "@/utils/api";
 import { serializeDate } from "@/utils/date";
@@ -46,6 +47,7 @@ export type LogsFilterParams = {
   actionType?: string;
   actorType?: string;
   actorName?: string;
+  actorExtra?: Map<string, string>;
   resourceType?: string;
   resourceName?: string;
   tagRef?: string;
@@ -63,6 +65,7 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
     actionType: "",
     actorType: "",
     actorName: "",
+    actorExtra: new Map(),
     resourceType: "",
     resourceName: "",
     tagType: "",
@@ -74,27 +77,55 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
   };
 }
 
+function prepareCustomFieldsForApi(
+  fields: Map<string, string>,
+  prefix: string,
+): object {
+  return Object.fromEntries(
+    Array.from(fields.entries()).map(([name, value]) => [
+      `${prefix}[${name}]`,
+      value,
+    ]),
+  );
+}
+
+export function prepareLogFilterForApi(filter: LogsFilterParams): object {
+  return {
+    repoId: filter.repoId,
+    since: filter.since ? serializeDate(filter.since) : undefined,
+    until: filter.until ? serializeDate(filter.until) : undefined,
+    actionCategory: filter.actionCategory,
+    actionType: filter.actionType,
+    actorType: filter.actorType,
+    actorName: filter.actorName,
+    ...prepareCustomFieldsForApi(filter.actorExtra!, "actor"),
+    resourceType: filter.resourceType,
+    resourceName: filter.resourceName,
+    tagRef: filter.tagRef,
+    tagType: filter.tagType,
+    tagName: filter.tagName,
+    nodeRef: filter.nodeRef,
+  };
+}
+
 export async function getLogs(
   cursor: string | null,
   filter?: LogsFilterParams,
   limit = 3,
 ): Promise<{ logs: Log[]; nextCursor: string | null }> {
-  const data = await reqGet(`/repos/${filter!.repoId}/logs`, {
-    limit,
-    since: filter?.since ? serializeDate(filter.since) : undefined,
-    until: filter?.until ? serializeDate(filter.until) : undefined,
-    actionCategory: filter?.actionCategory,
-    actionType: filter?.actionType,
-    actorType: filter?.actorType,
-    actorName: filter?.actorName,
-    resourceType: filter?.resourceType,
-    resourceName: filter?.resourceName,
-    tagRef: filter?.tagRef,
-    tagType: filter?.tagType,
-    tagName: filter?.tagName,
-    nodeRef: filter?.nodeRef,
-    ...(cursor && { cursor }),
-  });
+  const data = await reqGet(
+    `/repos/${filter!.repoId}/logs`,
+    snakecaseKeys(
+      {
+        limit,
+        ...(filter ? prepareLogFilterForApi(filter) : {}),
+        repoId: undefined, // remove repoId from the query params
+        ...(cursor && { cursor }),
+      },
+      { exclude: [/.*\[.*/] },
+    ),
+    { disableParamsSnakecase: true },
+  );
   return {
     logs: data.data,
     nextCursor: data.pagination.nextCursor,
@@ -135,6 +166,14 @@ export async function getAllLogActionTypes(
 export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
+  );
+}
+
+export async function getAllLogActorExtraFields(
+  repoId: string,
+): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/extras`, {}),
   );
 }
 

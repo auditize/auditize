@@ -3,19 +3,8 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import deepEqual from "deep-equal";
 import { useEffect, useRef } from "react";
 
-import { serializeDate } from "@/utils/date";
-
-import { getLogs, LogsFilterParams } from "../api";
+import { getLogs, LogsFilterParams, prepareLogFilterForApi } from "../api";
 import { LogsTable } from "./LogsTable";
-
-function serializeFilterForQueryKey(filter: LogsFilterParams) {
-  // react-query doesn't work properly with Date objects, let's serialize them to strings
-  return {
-    ...filter,
-    since: filter.since ? serializeDate(filter.since) : undefined,
-    until: filter.until ? serializeDate(filter.until) : undefined,
-  };
-}
 
 export function LogsLoader({
   filter = {},
@@ -32,7 +21,7 @@ export function LogsLoader({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["logs", "list", serializeFilterForQueryKey(filter)],
+    queryKey: ["logs", "list", prepareLogFilterForApi(filter)],
     queryFn: async ({ pageParam }: { pageParam: string | null }) =>
       await getLogs(pageParam, filter),
     enabled: !!filter.repoId,
