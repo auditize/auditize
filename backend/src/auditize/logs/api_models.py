@@ -242,6 +242,7 @@ class LogSearchParams(BaseModel):
     _DETAILS_REGEXP = re.compile(r"^details\[(.+)\]$")
     _SOURCE_REGEXP = re.compile(r"^source\[(.+)\]$")
     _ACTOR_EXTRA_REGEXP = re.compile(r"^actor\[(.+)\]$")
+    _RESOURCE_EXTRA_REGEXP = re.compile(r"^resource\[(.+)\]$")
 
     action_type: Optional[str] = Field(default=None)
     action_category: Optional[str] = Field(default=None)
@@ -280,4 +281,8 @@ class LogSearchParams(BaseModel):
 
     get_actor_extra_search_params = partialmethod(
         _get_custom_field_search_params, regexp=_ACTOR_EXTRA_REGEXP
+    )
+
+    get_resource_extra_search_params = partialmethod(
+        _get_custom_field_search_params, regexp=_RESOURCE_EXTRA_REGEXP
     )

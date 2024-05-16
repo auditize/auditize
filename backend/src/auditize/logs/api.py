@@ -446,6 +446,7 @@ async def get_logs(
         actor_extra=search_params.get_actor_extra_search_params(request),
         resource_type=search_params.resource_type,
         resource_name=search_params.resource_name,
+        resource_extra=search_params.get_resource_extra_search_params(request),
         details=search_params.get_detail_search_params(request),
         tag_type=search_params.tag_type,
         tag_name=search_params.tag_name,
