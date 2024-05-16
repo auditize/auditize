@@ -159,6 +159,7 @@ async def get_logs(
     resource_type: str = None,
     resource_name: str = None,
     details: dict = None,
+    source: dict = None,
     tag_ref: str = None,
     tag_type: str = None,
     tag_name: str = None,
@@ -175,6 +176,8 @@ async def get_logs(
         criteria["action.type"] = action_type
     if action_category:
         criteria["action.category"] = action_category
+    if source:
+        criteria["source"] = _custom_field_search_filter(source)
     if actor_type:
         criteria["actor.type"] = actor_type
     if actor_name:

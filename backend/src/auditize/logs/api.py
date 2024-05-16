@@ -440,6 +440,7 @@ async def get_logs(
         repo_id,
         action_type=search_params.action_type,
         action_category=search_params.action_category,
+        source=search_params.get_source_search_params(request),
         actor_type=search_params.actor_type,
         actor_name=search_params.actor_name,
         resource_type=search_params.resource_type,
