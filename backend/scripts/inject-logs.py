@@ -21,22 +21,39 @@ def create_log(counter: int):
             "type": create_value("action_type", counter, 100),
         },
         "actor": {
-            "type": "user",
             "ref": create_value("user", counter, 1000),
+            "type": "user",
             "name": create_value("user", counter, 1000),
+            "extra": [
+                {
+                    "name": create_value("actor_extra_name", counter, 3),
+                    "value": create_value("actor_extra_value", counter, 10),
+                }
+            ],
         },
+        "source": [
+            {
+                "name": create_value("source_name", counter, 5),
+                "value": create_value("source_value", counter, 50),
+            }
+        ],
         "resource": {
-            "type": create_value("resource", counter, 50),
             "ref": create_value("resource", counter, 1000),
+            "type": create_value("resource", counter, 50),
             "name": create_value("resource", counter, 1000),
+            "extra": [
+                {
+                    "name": create_value("resource_extra_name", counter, 3),
+                    "value": create_value("resource_extra_value", counter, 10),
+                }
+            ],
         },
-        "context": {
-            create_value("more_details", counter, 5): {
-                create_value("some_key", counter, 10): create_value(
-                    "some_value", counter, 10
-                ),
-            },
-        },
+        "details": [
+            {
+                "name": create_value("detail_name", counter, 10),
+                "value": create_value("detail_value", counter, 100),
+            }
+        ],
         "tags": [
             {
                 "ref": create_value("tracking_ref", counter, 1000),
