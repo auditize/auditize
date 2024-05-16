@@ -19,8 +19,11 @@ from auditize.logs.models import Log
 
 
 class CustomFieldData(BaseModel):
-    name: str
-    value: str
+    # No brackets, dots or colons in field names:
+    # - brackets are used in the query string to access nested fields (e.g. details[foo])
+    # - dots and colons may be used for special usage in the future
+    name: str = Field(title="Field name", pattern=r"^[^\[\].:]+$")
+    value: str = Field(title="Field value")
 
 
 class _LogBase(BaseModel):

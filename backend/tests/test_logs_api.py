@@ -146,30 +146,22 @@ async def test_create_log_invalid_rich_tag(
         )
 
 
-async def test_add_attachment_text_and_minimal_fields(
+async def test_create_log_invalid_custom_field_name(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    log = await repo.create_log(log_write_client)
+    async def test_invalid_field(extra):
+        await log_write_client.assert_post(
+            f"/repos/{repo.id}/logs",
+            json=PreparedLog.prepare_data(extra),
+            expected_status_code=422,
+        )
 
-    await log_write_client.assert_post(
-        f"/repos/{repo.id}/logs/{log.id}/attachments",
-        files={"file": ("test.txt", "test data")},
-        data={"type": "text"},
-        expected_status_code=204,
-    )
-    await log.assert_db(
-        {
-            "attachments": [
-                {
-                    "name": "test.txt",
-                    "description": None,
-                    "type": "text",
-                    "mime_type": "text/plain",
-                    "data": b"test data",
-                }
-            ]
-        }
-    )
+    for invalid_field_name in "foo.bar", "foo[bar]", "foo:bar":
+        invalid_field = {"name": invalid_field_name, "value": "some_value"}
+        await test_invalid_field({"details": [invalid_field]})
+        await test_invalid_field({"source": [invalid_field]})
+        await test_invalid_field({"actor": {"extra": [invalid_field]}})
+        await test_invalid_field({"resource": {"extra": [invalid_field]}})
 
 
 async def test_add_attachment_binary_and_all_fields(
