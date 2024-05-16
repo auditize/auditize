@@ -1,6 +1,9 @@
+import re
 from datetime import datetime
+from functools import partialmethod
 from typing import Annotated, Optional
 
+from fastapi import Request
 from pydantic import (
     BaseModel,
     BeforeValidator,
@@ -251,4 +254,18 @@ class LogSearchParams(BaseModel):
     )
     until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
         default=None
+    )
+
+    @staticmethod
+    def _get_custom_field_search_params(
+        request: Request, prefix_name: str
+    ) -> dict[str, str]:
+        params = {}
+        for param_name, param_value in request.query_params.items():
+            if match := re.match(rf"^{prefix_name}\[(.+)\]$", param_name):
+                params[match.group(1)] = param_value
+        return params
+
+    get_detail_search_params = partialmethod(
+        _get_custom_field_search_params, prefix_name="details"
     )

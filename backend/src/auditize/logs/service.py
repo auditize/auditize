@@ -3,8 +3,6 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
-from motor.motor_asyncio import AsyncIOMotorCollection
-
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
@@ -141,6 +139,15 @@ def _text_search_filter(text: str) -> dict[str, Any]:
     return {"$regex": re.compile(re.escape(text), re.IGNORECASE)}
 
 
+def _custom_field_search_filter(params: dict[str, str]) -> dict:
+    return {
+        "$all": [
+            {"$elemMatch": {"name": name, "value": _text_search_filter(value)}}
+            for name, value in params.items()
+        ]
+    }
+
+
 async def get_logs(
     dbm: DatabaseManager,
     repo_id: str,
@@ -151,6 +158,7 @@ async def get_logs(
     actor_name: str = None,
     resource_type: str = None,
     resource_name: str = None,
+    details: dict = None,
     tag_ref: str = None,
     tag_type: str = None,
     tag_name: str = None,
@@ -175,6 +183,8 @@ async def get_logs(
         criteria["resource.type"] = resource_type
     if resource_name:
         criteria["resource.name"] = _text_search_filter(resource_name)
+    if details:
+        criteria["details"] = _custom_field_search_filter(details)
     if tag_ref:
         criteria["tags.ref"] = tag_ref
     if tag_type:
@@ -304,13 +314,11 @@ get_log_actor_extra_fields = partial(
     field_name="name",
 )
 
-
 get_log_resource_types = partial(
     _get_consolidated_data_field,
     collection_name="log_resource_types",
     field_name="type",
 )
-
 
 get_log_resource_extra_fields = partial(
     _get_consolidated_data_field,
@@ -318,20 +326,17 @@ get_log_resource_extra_fields = partial(
     field_name="name",
 )
 
-
 get_log_tag_types = partial(
     _get_consolidated_data_field,
     collection_name="log_tag_types",
     field_name="type",
 )
 
-
 get_log_source_fields = partial(
     _get_consolidated_data_field,
     collection_name="log_source_fields",
     field_name="name",
 )
-
 
 get_log_detail_fields = partial(
     _get_consolidated_data_field,
