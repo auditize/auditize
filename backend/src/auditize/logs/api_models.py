@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from functools import partialmethod
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Pattern
 
 from fastapi import Request
 from pydantic import (
@@ -239,6 +239,8 @@ class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItem]):
 
 
 class LogSearchParams(BaseModel):
+    _DETAILS_REGEXP = re.compile(r"^details\[(.+)\]$")
+
     action_type: Optional[str] = Field(default=None)
     action_category: Optional[str] = Field(default=None)
     actor_type: Optional[str] = Field(default=None)
@@ -258,14 +260,14 @@ class LogSearchParams(BaseModel):
 
     @staticmethod
     def _get_custom_field_search_params(
-        request: Request, prefix_name: str
+        request: Request, regexp: Pattern
     ) -> dict[str, str]:
         params = {}
         for param_name, param_value in request.query_params.items():
-            if match := re.match(rf"^{prefix_name}\[(.+)\]$", param_name):
+            if match := regexp.match(param_name):
                 params[match.group(1)] = param_value
         return params
 
     get_detail_search_params = partialmethod(
-        _get_custom_field_search_params, prefix_name="details"
+        _get_custom_field_search_params, regexp=_DETAILS_REGEXP
     )
