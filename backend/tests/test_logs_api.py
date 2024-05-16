@@ -146,30 +146,22 @@ async def test_create_log_invalid_rich_tag(
         )
 
 
-async def test_add_attachment_text_and_minimal_fields(
+async def test_create_log_invalid_custom_field_name(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    log = await repo.create_log(log_write_client)
+    async def test_invalid_field(extra):
+        await log_write_client.assert_post(
+            f"/repos/{repo.id}/logs",
+            json=PreparedLog.prepare_data(extra),
+            expected_status_code=422,
+        )
 
-    await log_write_client.assert_post(
-        f"/repos/{repo.id}/logs/{log.id}/attachments",
-        files={"file": ("test.txt", "test data")},
-        data={"type": "text"},
-        expected_status_code=204,
-    )
-    await log.assert_db(
-        {
-            "attachments": [
-                {
-                    "name": "test.txt",
-                    "description": None,
-                    "type": "text",
-                    "mime_type": "text/plain",
-                    "data": b"test data",
-                }
-            ]
-        }
-    )
+    for invalid_field_name in "foo.bar", "foo[bar]", "foo:bar":
+        invalid_field = {"name": invalid_field_name, "value": "some_value"}
+        await test_invalid_field({"details": [invalid_field]})
+        await test_invalid_field({"source": [invalid_field]})
+        await test_invalid_field({"actor": {"extra": [invalid_field]}})
+        await test_invalid_field({"resource": {"extra": [invalid_field]}})
 
 
 async def test_add_attachment_binary_and_all_fields(
@@ -521,18 +513,31 @@ async def test_get_logs_limit_and_cursor(
 
 
 async def _test_get_logs_filter(
-    client: HttpTestHelper, repo: PreparedRepo, func, params
+    client: HttpTestHelper,
+    repo: PreparedRepo,
+    to_be_found,
+    search_params,
+    *,
+    not_to_be_found=None,
 ):
-    await repo.create_log(client)  # a log not be seen in the response
-    log2_data = PreparedLog.prepare_data()
-    func(log2_data)
-    log2 = await repo.create_log(client, log2_data)
+    # Create logs that are not supposed to be returned
+    if not not_to_be_found:
+        not_to_be_found = [PreparedLog.prepare_data()]
+    for other in not_to_be_found:
+        await repo.create_log(client, other)
+
+    if callable(to_be_found):
+        log_data = PreparedLog.prepare_data()
+        to_be_found(log_data)
+    else:
+        log_data = to_be_found
+    log = await repo.create_log(client, log_data)
 
     await client.assert_get(
         f"/repos/{repo.id}/logs",
-        params=params,
+        params=search_params,
         expected_json={
-            "data": [log2.expected_api_response()],
+            "data": [log.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -594,6 +599,150 @@ async def test_get_logs_filter_resource_name(
 
     # filter on resource_name is substring and case-insensitive
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_name": "FIND"})
+
+
+async def test_get_logs_filter_details(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        to_be_found=PreparedLog.prepare_data(
+            {
+                "details": [
+                    {"name": "field_1", "value": "foo"},
+                    {"name": "field_2", "value": "bar"},
+                ]
+            }
+        ),
+        not_to_be_found=[
+            PreparedLog.prepare_data(
+                {
+                    "details": [
+                        {"name": "field_1", "value": "bar"},
+                        {"name": "field_2", "value": "foo"},
+                    ]
+                }
+            ),
+        ],
+        search_params={
+            "details[field_1]": "foo",
+            "details[field_2]": "bar",
+        },
+    )
+
+
+async def test_get_logs_filter_source(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        to_be_found=PreparedLog.prepare_data(
+            {
+                "source": [
+                    {"name": "field_1", "value": "foo"},
+                    {"name": "field_2", "value": "bar"},
+                ]
+            }
+        ),
+        not_to_be_found=[
+            PreparedLog.prepare_data(
+                {
+                    "source": [
+                        {"name": "field_1", "value": "bar"},
+                        {"name": "field_2", "value": "foo"},
+                    ]
+                }
+            ),
+        ],
+        search_params={
+            "source[field_1]": "foo",
+            "source[field_2]": "bar",
+        },
+    )
+
+
+async def test_get_logs_filter_actor_extra(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        to_be_found=PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "user:123",
+                    "name": "User 123",
+                    "extra": [
+                        {"name": "field_1", "value": "foo"},
+                        {"name": "field_2", "value": "bar"},
+                    ],
+                }
+            }
+        ),
+        not_to_be_found=[
+            PreparedLog.prepare_data(
+                {
+                    "actor": {
+                        "type": "user",
+                        "ref": "user:123",
+                        "name": "User 123",
+                        "extra": [
+                            {"name": "field_1", "value": "bar"},
+                            {"name": "field_2", "value": "foo"},
+                        ],
+                    }
+                }
+            ),
+        ],
+        search_params={
+            "actor[field_1]": "foo",
+            "actor[field_2]": "bar",
+        },
+    )
+
+
+async def test_get_logs_filter_resource_extra(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        to_be_found=PreparedLog.prepare_data(
+            {
+                "resource": {
+                    "type": "config-profile",
+                    "ref": "config-profile:123",
+                    "name": "Config Profile 123",
+                    "extra": [
+                        {"name": "field_1", "value": "foo"},
+                        {"name": "field_2", "value": "bar"},
+                    ],
+                }
+            }
+        ),
+        not_to_be_found=[
+            PreparedLog.prepare_data(
+                {
+                    "resource": {
+                        "type": "config-profile",
+                        "ref": "config-profile:123",
+                        "name": "Config Profile 123",
+                        "extra": [
+                            {"name": "field_1", "value": "bar"},
+                            {"name": "field_2", "value": "foo"},
+                        ],
+                    }
+                }
+            ),
+        ],
+        search_params={
+            "resource[field_1]": "foo",
+            "resource[field_2]": "bar",
+        },
+    )
 
 
 async def test_get_logs_filter_tag_type(

@@ -1,8 +1,6 @@
-from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Path, Response, UploadFile
-from pydantic import BeforeValidator
 
 from auditize.auth.authorizer import (
     AuthorizedOnLogsRead,
@@ -12,7 +10,6 @@ from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.api.errors import COMMON_RESPONSES
-from auditize.helpers.datetime import validate_datetime
 from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service
@@ -22,6 +19,7 @@ from auditize.logs.api_models import (
     LogNodeListResponse,
     LogNodeResponse,
     LogReadingResponse,
+    LogSearchParams,
     LogsReadingResponse,
     NameListResponse,
 )
@@ -431,36 +429,29 @@ async def get_logs(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
+    search_params: Annotated[LogSearchParams, Depends()],
     page_params: Annotated[CursorPaginationParams, Depends()],
-    action_type: str = None,
-    action_category: str = None,
-    actor_type: str = None,
-    actor_name: str = None,
-    resource_type: str = None,
-    resource_name: str = None,
-    tag_ref: str = None,
-    tag_type: str = None,
-    tag_name: str = None,
-    node_ref: str = None,
-    since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
-    until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = None,
 ) -> LogsReadingResponse:
     # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
         dbm,
         repo_id,
-        action_type=action_type,
-        action_category=action_category,
-        actor_type=actor_type,
-        actor_name=actor_name,
-        resource_type=resource_type,
-        resource_name=resource_name,
-        tag_type=tag_type,
-        tag_name=tag_name,
-        tag_ref=tag_ref,
-        node_ref=node_ref,
-        since=since,
-        until=until,
+        action_type=search_params.action_type,
+        action_category=search_params.action_category,
+        source=search_params.source,
+        actor_type=search_params.actor_type,
+        actor_name=search_params.actor_name,
+        actor_extra=search_params.actor_extra,
+        resource_type=search_params.resource_type,
+        resource_name=search_params.resource_name,
+        resource_extra=search_params.resource_extra,
+        details=search_params.details,
+        tag_type=search_params.tag_type,
+        tag_name=search_params.tag_name,
+        tag_ref=search_params.tag_ref,
+        node_ref=search_params.node_ref,
+        since=search_params.since,
+        until=search_params.until,
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,
     )

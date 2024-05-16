@@ -1,22 +1,29 @@
+import re
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional, Pattern
 
+from fastapi import Request
 from pydantic import (
     BaseModel,
+    BeforeValidator,
+    ConfigDict,
     Field,
     field_serializer,
     model_validator,
 )
 
-from auditize.helpers.datetime import serialize_datetime
+from auditize.helpers.datetime import serialize_datetime, validate_datetime
 from auditize.helpers.pagination.cursor.api_models import CursorPaginatedResponse
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logs.models import Log
 
 
 class CustomFieldData(BaseModel):
-    name: str
-    value: str
+    # No brackets, dots or colons in field names:
+    # - brackets are used in the query string to access nested fields (e.g. details[foo])
+    # - dots and colons may be used for special usage in the future
+    name: str = Field(title="Field name", pattern=r"^[^\[\].:]+$")
+    value: str = Field(title="Field value")
 
 
 class _LogBase(BaseModel):
@@ -232,3 +239,53 @@ class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItem]):
     @classmethod
     def build_item(cls, node: Log.Node) -> NodeItem:
         return NodeItem.model_validate(node.model_dump())
+
+
+class LogSearchParams(BaseModel):
+    _DETAILS_REGEXP = re.compile(r"^details\[(.+)\]$")
+    _SOURCE_REGEXP = re.compile(r"^source\[(.+)\]$")
+    _ACTOR_EXTRA_REGEXP = re.compile(r"^actor\[(.+)\]$")
+    _RESOURCE_EXTRA_REGEXP = re.compile(r"^resource\[(.+)\]$")
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    request: Request
+    action_type: Optional[str] = Field(default=None)
+    action_category: Optional[str] = Field(default=None)
+    actor_type: Optional[str] = Field(default=None)
+    actor_name: Optional[str] = Field(default=None)
+    resource_type: Optional[str] = Field(default=None)
+    resource_name: Optional[str] = Field(default=None)
+    tag_ref: Optional[str] = Field(default=None)
+    tag_type: Optional[str] = Field(default=None)
+    tag_name: Optional[str] = Field(default=None)
+    node_ref: Optional[str] = Field(default=None)
+    since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
+        default=None
+    )
+    until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
+        default=None
+    )
+
+    def _get_custom_field_search_params(self, regexp: Pattern) -> dict[str, str]:
+        params = {}
+        for param_name, param_value in self.request.query_params.items():
+            if match := regexp.match(param_name):
+                params[match.group(1)] = param_value
+        return params
+
+    @property
+    def details(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._DETAILS_REGEXP)
+
+    @property
+    def source(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._SOURCE_REGEXP)
+
+    @property
+    def actor_extra(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._ACTOR_EXTRA_REGEXP)
+
+    @property
+    def resource_extra(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._RESOURCE_EXTRA_REGEXP)
