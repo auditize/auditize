@@ -1,7 +1,6 @@
-import re
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Path, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, Form, Path, Response, UploadFile
 
 from auditize.auth.authorizer import (
     AuthorizedOnLogsRead,
@@ -432,7 +431,6 @@ async def get_logs(
     repo_id: str,
     search_params: Annotated[LogSearchParams, Depends()],
     page_params: Annotated[CursorPaginationParams, Depends()],
-    request: Request,
 ) -> LogsReadingResponse:
     # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
@@ -440,14 +438,14 @@ async def get_logs(
         repo_id,
         action_type=search_params.action_type,
         action_category=search_params.action_category,
-        source=search_params.get_source_search_params(request),
+        source=search_params.source,
         actor_type=search_params.actor_type,
         actor_name=search_params.actor_name,
-        actor_extra=search_params.get_actor_extra_search_params(request),
+        actor_extra=search_params.actor_extra,
         resource_type=search_params.resource_type,
         resource_name=search_params.resource_name,
-        resource_extra=search_params.get_resource_extra_search_params(request),
-        details=search_params.get_detail_search_params(request),
+        resource_extra=search_params.resource_extra,
+        details=search_params.details,
         tag_type=search_params.tag_type,
         tag_name=search_params.tag_name,
         tag_ref=search_params.tag_ref,

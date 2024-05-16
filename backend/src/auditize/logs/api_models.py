@@ -1,12 +1,12 @@
 import re
 from datetime import datetime
-from functools import partialmethod
 from typing import Annotated, Optional, Pattern
 
 from fastapi import Request
 from pydantic import (
     BaseModel,
     BeforeValidator,
+    ConfigDict,
     Field,
     field_serializer,
     model_validator,
@@ -247,6 +247,9 @@ class LogSearchParams(BaseModel):
     _ACTOR_EXTRA_REGEXP = re.compile(r"^actor\[(.+)\]$")
     _RESOURCE_EXTRA_REGEXP = re.compile(r"^resource\[(.+)\]$")
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    request: Request
     action_type: Optional[str] = Field(default=None)
     action_category: Optional[str] = Field(default=None)
     actor_type: Optional[str] = Field(default=None)
@@ -264,28 +267,25 @@ class LogSearchParams(BaseModel):
         default=None
     )
 
-    @staticmethod
-    def _get_custom_field_search_params(
-        request: Request, regexp: Pattern
-    ) -> dict[str, str]:
+    def _get_custom_field_search_params(self, regexp: Pattern) -> dict[str, str]:
         params = {}
-        for param_name, param_value in request.query_params.items():
+        for param_name, param_value in self.request.query_params.items():
             if match := regexp.match(param_name):
                 params[match.group(1)] = param_value
         return params
 
-    get_detail_search_params = partialmethod(
-        _get_custom_field_search_params, regexp=_DETAILS_REGEXP
-    )
+    @property
+    def details(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._DETAILS_REGEXP)
 
-    get_source_search_params = partialmethod(
-        _get_custom_field_search_params, regexp=_SOURCE_REGEXP
-    )
+    @property
+    def source(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._SOURCE_REGEXP)
 
-    get_actor_extra_search_params = partialmethod(
-        _get_custom_field_search_params, regexp=_ACTOR_EXTRA_REGEXP
-    )
+    @property
+    def actor_extra(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._ACTOR_EXTRA_REGEXP)
 
-    get_resource_extra_search_params = partialmethod(
-        _get_custom_field_search_params, regexp=_RESOURCE_EXTRA_REGEXP
-    )
+    @property
+    def resource_extra(self) -> dict[str, str]:
+        return self._get_custom_field_search_params(self._RESOURCE_EXTRA_REGEXP)
