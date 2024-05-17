@@ -47,10 +47,12 @@ export type LogsFilterParams = {
   actionType?: string;
   actorType?: string;
   actorName?: string;
+  actorRef?: string;
   actorExtra?: Map<string, string>;
   source?: Map<string, string>;
   resourceType?: string;
   resourceName?: string;
+  resourceRef?: string;
   resourceExtra?: Map<string, string>;
   details?: Map<string, string>;
   tagRef?: string;
@@ -68,10 +70,12 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
     actionType: "",
     actorType: "",
     actorName: "",
+    actorRef: "",
     actorExtra: new Map(),
     source: new Map(),
     resourceType: "",
     resourceName: "",
+    resourceRef: "",
     resourceExtra: new Map(),
     details: new Map(),
     tagType: "",
@@ -110,6 +114,7 @@ export function prepareLogFilterForApi(filter: LogsFilterParams): object {
     // Actor
     actorType: filter.actorType,
     actorName: filter.actorName,
+    actorRef: filter.actorRef,
     ...prepareCustomFieldsForApi(filter.actorExtra!, "actor"),
 
     // Source
@@ -118,6 +123,7 @@ export function prepareLogFilterForApi(filter: LogsFilterParams): object {
     // Resource
     resourceType: filter.resourceType,
     resourceName: filter.resourceName,
+    resourceRef: filter.resourceRef,
     ...prepareCustomFieldsForApi(filter.resourceExtra!, "resource"),
 
     // Details

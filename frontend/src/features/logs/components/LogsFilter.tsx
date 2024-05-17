@@ -341,12 +341,14 @@ export function LogsFilter({
   const hasActor = !!(
     editedParams.actorType ||
     editedParams.actorName ||
+    editedParams.actorRef ||
     editedParams.actorExtra!.size > 0
   );
   const hasSource = editedParams.source!.size > 0;
   const hasResource = !!(
     editedParams.resourceType ||
     editedParams.resourceName ||
+    editedParams.resourceRef ||
     editedParams.resourceExtra!.size > 0
   );
   const hasDetails = editedParams.details!.size > 0;
@@ -425,6 +427,12 @@ export function LogsFilter({
           onChange={changeTextInputParamHandler("actorName")}
           display={"flex"}
         />
+        <TextInput
+          placeholder="Actor ref"
+          value={editedParams.actorRef}
+          onChange={changeTextInputParamHandler("actorRef")}
+          display={"flex"}
+        />
         <ActorCustomFieldSelector
           repoId={editedParams.repoId}
           value={editedParams.actorExtra!}
@@ -452,6 +460,12 @@ export function LogsFilter({
           placeholder="Resource name"
           value={editedParams.resourceName}
           onChange={changeTextInputParamHandler("resourceName")}
+          display={"flex"}
+        />
+        <TextInput
+          placeholder="Resource ref"
+          value={editedParams.resourceRef}
+          onChange={changeTextInputParamHandler("resourceRef")}
           display={"flex"}
         />
         <ResourceCustomFieldSelector
@@ -484,9 +498,9 @@ export function LogsFilter({
           display="flex"
         />
         <TextInput
-          placeholder="Tag id"
+          placeholder="Tag ref"
           value={editedParams.tagRef}
-          onChange={changeTextInputParamHandler("tagId")}
+          onChange={changeTextInputParamHandler("tagRef")}
           display="flex"
         />
       </PopoverForm>
