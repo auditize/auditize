@@ -19,6 +19,7 @@ import {
   getAllLogActorTypes,
   getAllLogResourceCustomFields,
   getAllLogResourceTypes,
+  getAllLogSourceFields,
   getAllLogTagTypes,
   LogsFilterParams,
 } from "../api";
@@ -110,6 +111,28 @@ function ActorCustomFieldSelector({
       label="Custom fields"
       queryKey={["logActorCustomFields", repoId]}
       queryFn={() => getAllLogActorCustomFields(repoId!)}
+      enabled={!!repoId}
+      value={value}
+      onChange={onChange}
+      itemLabel={(item) => labelize(item)}
+    />
+  );
+}
+
+function SourceFieldSelector({
+  repoId,
+  value,
+  onChange,
+}: {
+  repoId?: string;
+  value: Map<string, string>;
+  onChange: (value: Map<string, string>) => void;
+}) {
+  return (
+    <CustomFieldSelector
+      label="Source fields"
+      queryKey={["logSourceFields", repoId]}
+      queryFn={() => getAllLogSourceFields(repoId!)}
       enabled={!!repoId}
       value={value}
       onChange={onChange}
@@ -297,6 +320,7 @@ export function LogsFilter({
     editedParams.actorName ||
     editedParams.actorExtra!.size > 0
   );
+  const hasSource = editedParams.source!.size > 0;
   const hasResource = !!(
     editedParams.resourceType ||
     editedParams.resourceName ||
@@ -309,7 +333,13 @@ export function LogsFilter({
   );
   const hasNode = !!editedParams.nodeRef;
   const hasFilter =
-    hasDate || hasAction || hasActor || hasResource || hasTag || hasNode;
+    hasDate ||
+    hasAction ||
+    hasActor ||
+    hasSource ||
+    hasResource ||
+    hasTag ||
+    hasNode;
 
   return (
     <Group p="1rem">
@@ -374,6 +404,15 @@ export function LogsFilter({
           repoId={editedParams.repoId}
           value={editedParams.actorExtra!}
           onChange={changeParamHandler("actorExtra")}
+        />
+      </PopoverForm>
+
+      {/* Source criteria */}
+      <PopoverForm title="Source" isFilled={hasSource}>
+        <SourceFieldSelector
+          repoId={editedParams.repoId}
+          value={editedParams.source!}
+          onChange={changeParamHandler("source")}
         />
       </PopoverForm>
 

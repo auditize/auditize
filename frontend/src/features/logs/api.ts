@@ -48,6 +48,7 @@ export type LogsFilterParams = {
   actorType?: string;
   actorName?: string;
   actorExtra?: Map<string, string>;
+  source?: Map<string, string>;
   resourceType?: string;
   resourceName?: string;
   resourceExtra?: Map<string, string>;
@@ -67,6 +68,7 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
     actorType: "",
     actorName: "",
     actorExtra: new Map(),
+    source: new Map(),
     resourceType: "",
     resourceName: "",
     resourceExtra: new Map(),
@@ -94,19 +96,34 @@ function prepareCustomFieldsForApi(
 export function prepareLogFilterForApi(filter: LogsFilterParams): object {
   return {
     repoId: filter.repoId,
+
+    // Dates
     since: filter.since ? serializeDate(filter.since) : undefined,
     until: filter.until ? serializeDate(filter.until) : undefined,
+
+    // Action
     actionCategory: filter.actionCategory,
     actionType: filter.actionType,
+
+    // Actor
     actorType: filter.actorType,
     actorName: filter.actorName,
     ...prepareCustomFieldsForApi(filter.actorExtra!, "actor"),
+
+    // Source
+    ...prepareCustomFieldsForApi(filter.source!, "source"),
+
+    // Resource
     resourceType: filter.resourceType,
     resourceName: filter.resourceName,
     ...prepareCustomFieldsForApi(filter.resourceExtra!, "resource"),
+
+    // Tag
     tagRef: filter.tagRef,
     tagType: filter.tagType,
     tagName: filter.tagName,
+
+    // Node
     nodeRef: filter.nodeRef,
   };
 }
@@ -177,6 +194,12 @@ export async function getAllLogActorCustomFields(
 ): Promise<string[]> {
   return getNames(
     getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/extras`, {}),
+  );
+}
+
+export async function getAllLogSourceFields(repoId: string): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/sources`, {}),
   );
 }
 

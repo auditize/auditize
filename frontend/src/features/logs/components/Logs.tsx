@@ -39,6 +39,7 @@ function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
     until: obj.until ? deserializeDate(obj.until) : null,
     actorExtra: extractCustomFieldsFromSearchParams(params, "actor"),
     resourceExtra: extractCustomFieldsFromSearchParams(params, "resource"),
+    source: extractCustomFieldsFromSearchParams(params, "source"),
   };
 }
 
