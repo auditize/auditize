@@ -582,6 +582,16 @@ async def test_get_logs_filter_actor_name(
     await _test_get_logs_filter(log_rw_client, repo, func, {"actor_name": "FIND"})
 
 
+async def test_get_logs_filter_actor_ref(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    def func(log):
+        log["actor"] = {"type": "user", "ref": "user:123", "name": "find_me"}
+
+    # filter on actor_name is substring and case-insensitive
+    await _test_get_logs_filter(log_rw_client, repo, func, {"actor_ref": "user:123"})
+
+
 async def test_get_logs_filter_actor_extra(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -640,6 +650,16 @@ async def test_get_logs_filter_resource_name(
 
     # filter on resource_name is substring and case-insensitive
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_name": "FIND"})
+
+
+async def test_get_logs_filter_resource_ref(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    def func(log):
+        log["resource"] = {"ref": "core", "type": "module", "name": "find_me"}
+
+    # filter on resource_name is substring and case-insensitive
+    await _test_get_logs_filter(log_rw_client, repo, func, {"resource_ref": "core"})
 
 
 async def test_get_logs_filter_resource_extra(
