@@ -27,7 +27,9 @@ export async function getAllPagePaginatedItems<T>(
     });
     const { data, pagination } = response.data;
     items.push(...camelcaseKeys(data, { deep: true }));
-    if (pagination.page >= pagination.total_pages) break;
+    if (pagination.page >= pagination.total_pages) {
+      break;
+    }
     page++;
   }
 
@@ -50,9 +52,13 @@ export async function reqDelete(path: string): Promise<void> {
   await axiosInstance.delete(path);
 }
 
-export async function reqGet(path: string, params = {}): Promise<any> {
+export async function reqGet(
+  path: string,
+  params = {},
+  { disableParamsSnakecase }: { disableParamsSnakecase?: boolean } = {},
+): Promise<any> {
   const response = await axiosInstance.get(path, {
-    params: snakecaseKeys(params),
+    params: disableParamsSnakecase ? params : snakecaseKeys(params),
   });
   return camelcaseKeys(response.data, { deep: true });
 }

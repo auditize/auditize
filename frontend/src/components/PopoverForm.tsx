@@ -22,6 +22,7 @@ export function PopoverForm({
       position="bottom"
       withArrow
       keepMounted={true}
+      width="20rem"
     >
       <Popover.Target>
         <Button

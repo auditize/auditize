@@ -1,11 +1,30 @@
 import { Container } from "@mantine/core";
 import { useSearchParams } from "react-router-dom";
 
-import { deserializeDate, serializeDate } from "@/utils/date";
+import { deserializeDate } from "@/utils/date";
 
-import { buildEmptyLogsFilterParams, LogsFilterParams } from "../api";
+import {
+  buildEmptyLogsFilterParams,
+  LogsFilterParams,
+  prepareLogFilterForApi,
+} from "../api";
 import { LogsFilter } from "./LogsFilter";
 import { LogsLoader } from "./LogsLoader";
+
+function extractCustomFieldsFromSearchParams(
+  params: URLSearchParams,
+  prefix: string,
+): Map<string, string> {
+  const regexp = new RegExp(`^${prefix}\\[(.+)\\]$`);
+  const customFields = new Map<string, string>();
+  for (const [name, value] of params.entries()) {
+    const match = name.match(regexp);
+    if (match) {
+      customFields.set(match[1], value);
+    }
+  }
+  return customFields;
+}
 
 function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
   // filter the params from the LogsFilterParams available keys (white list)
@@ -18,23 +37,23 @@ function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
     ...obj,
     since: obj.since ? deserializeDate(obj.since) : null,
     until: obj.until ? deserializeDate(obj.until) : null,
+    actorExtra: extractCustomFieldsFromSearchParams(params, "actor"),
+    resourceExtra: extractCustomFieldsFromSearchParams(params, "resource"),
+    source: extractCustomFieldsFromSearchParams(params, "source"),
+    details: extractCustomFieldsFromSearchParams(params, "details"),
   };
 }
 
 function stripEmptyStringsFromObject(obj: any): any {
   // Make the query string prettier by avoid query keys without values
   return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => value !== ""),
+    Object.entries(obj).filter(([_, value]) => (value !== "" && value !== undefined)), // prettier-ignore
   );
 }
 
 function filterToSearchParams(filter: LogsFilterParams): URLSearchParams {
   return new URLSearchParams(
-    stripEmptyStringsFromObject({
-      ...filter,
-      since: filter.since ? serializeDate(filter.since) : "",
-      until: filter.until ? serializeDate(filter.until) : "",
-    }),
+    stripEmptyStringsFromObject(prepareLogFilterForApi(filter)),
   );
 }
 
