@@ -115,19 +115,21 @@ export function prepareLogFilterForApi(filter: LogsFilterParams): object {
     actorType: filter.actorType,
     actorName: filter.actorName,
     actorRef: filter.actorRef,
-    ...prepareCustomFieldsForApi(filter.actorExtra!, "actor"),
+    ...(filter.actorExtra &&
+      prepareCustomFieldsForApi(filter.actorExtra, "actor")),
 
     // Source
-    ...prepareCustomFieldsForApi(filter.source!, "source"),
+    ...(filter.source && prepareCustomFieldsForApi(filter.source, "source")),
 
     // Resource
     resourceType: filter.resourceType,
     resourceName: filter.resourceName,
     resourceRef: filter.resourceRef,
-    ...prepareCustomFieldsForApi(filter.resourceExtra!, "resource"),
+    ...(filter.resourceExtra &&
+      prepareCustomFieldsForApi(filter.resourceExtra, "resource")),
 
     // Details
-    ...prepareCustomFieldsForApi(filter.details!, "details"),
+    ...(filter.details && prepareCustomFieldsForApi(filter.details, "details")),
 
     // Tag
     tagRef: filter.tagRef,
