@@ -15,8 +15,9 @@ import {
   buildEmptyLogsFilterParams,
   getAllLogActionCategories,
   getAllLogActionTypes,
-  getAllLogActorExtraFields,
+  getAllLogActorCustomFields,
   getAllLogActorTypes,
+  getAllLogResourceCustomFields,
   getAllLogResourceTypes,
   getAllLogTagTypes,
   LogsFilterParams,
@@ -95,7 +96,7 @@ function ActorTypeSelector({
   );
 }
 
-function ActorExtraFieldSelector({
+function ActorCustomFieldSelector({
   repoId,
   value,
   onChange,
@@ -107,8 +108,8 @@ function ActorExtraFieldSelector({
   return (
     <CustomFieldSelector
       label="Custom fields"
-      queryKey={["logActorExtraFields", repoId]}
-      queryFn={() => getAllLogActorExtraFields(repoId!)}
+      queryKey={["logActorCustomFields", repoId]}
+      queryFn={() => getAllLogActorCustomFields(repoId!)}
       enabled={!!repoId}
       value={value}
       onChange={onChange}
@@ -136,6 +137,28 @@ function ResourceTypeSelector({
       onChange={onChange}
       itemLabel={(item) => labelize(item)}
       itemValue={(item) => item}
+    />
+  );
+}
+
+function ResourceCustomFieldSelector({
+  repoId,
+  value,
+  onChange,
+}: {
+  repoId?: string;
+  value: Map<string, string>;
+  onChange: (value: Map<string, string>) => void;
+}) {
+  return (
+    <CustomFieldSelector
+      label="Custom fields"
+      queryKey={["logResourceCustomFields", repoId]}
+      queryFn={() => getAllLogResourceCustomFields(repoId!)}
+      enabled={!!repoId}
+      value={value}
+      onChange={onChange}
+      itemLabel={(item) => labelize(item)}
     />
   );
 }
@@ -275,7 +298,9 @@ export function LogsFilter({
     editedParams.actorExtra!.size > 0
   );
   const hasResource = !!(
-    editedParams.resourceType || editedParams.resourceName
+    editedParams.resourceType ||
+    editedParams.resourceName ||
+    editedParams.resourceExtra!.size > 0
   );
   const hasTag = !!(
     editedParams.tagType ||
@@ -285,8 +310,6 @@ export function LogsFilter({
   const hasNode = !!editedParams.nodeRef;
   const hasFilter =
     hasDate || hasAction || hasActor || hasResource || hasTag || hasNode;
-
-  console.log("editedParams", editedParams);
 
   return (
     <Group p="1rem">
@@ -347,7 +370,7 @@ export function LogsFilter({
           onChange={changeTextInputParamHandler("actorName")}
           display={"flex"}
         />
-        <ActorExtraFieldSelector
+        <ActorCustomFieldSelector
           repoId={editedParams.repoId}
           value={editedParams.actorExtra!}
           onChange={changeParamHandler("actorExtra")}
@@ -366,6 +389,11 @@ export function LogsFilter({
           value={editedParams.resourceName}
           onChange={changeTextInputParamHandler("resourceName")}
           display={"flex"}
+        />
+        <ResourceCustomFieldSelector
+          repoId={editedParams.repoId}
+          value={editedParams.resourceExtra!}
+          onChange={changeParamHandler("resourceExtra")}
         />
       </PopoverForm>
 

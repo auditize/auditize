@@ -50,6 +50,7 @@ export type LogsFilterParams = {
   actorExtra?: Map<string, string>;
   resourceType?: string;
   resourceName?: string;
+  resourceExtra?: Map<string, string>;
   tagRef?: string;
   tagType?: string;
   tagName?: string;
@@ -68,6 +69,7 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
     actorExtra: new Map(),
     resourceType: "",
     resourceName: "",
+    resourceExtra: new Map(),
     tagType: "",
     tagName: "",
     tagRef: "",
@@ -101,6 +103,7 @@ export function prepareLogFilterForApi(filter: LogsFilterParams): object {
     ...prepareCustomFieldsForApi(filter.actorExtra!, "actor"),
     resourceType: filter.resourceType,
     resourceName: filter.resourceName,
+    ...prepareCustomFieldsForApi(filter.resourceExtra!, "resource"),
     tagRef: filter.tagRef,
     tagType: filter.tagType,
     tagName: filter.tagName,
@@ -169,7 +172,7 @@ export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
   );
 }
 
-export async function getAllLogActorExtraFields(
+export async function getAllLogActorCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
@@ -183,6 +186,17 @@ export async function getAllLogResourceTypes(
   return getNames(
     getAllPagePaginatedItems<Named>(
       `/repos/${repoId}/logs/resources/types`,
+      {},
+    ),
+  );
+}
+
+export async function getAllLogResourceCustomFields(
+  repoId: string,
+): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(
+      `/repos/${repoId}/logs/resources/extras`,
       {},
     ),
   );

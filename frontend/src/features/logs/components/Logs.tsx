@@ -1,7 +1,7 @@
 import { Container } from "@mantine/core";
 import { useSearchParams } from "react-router-dom";
 
-import { deserializeDate, serializeDate } from "@/utils/date";
+import { deserializeDate } from "@/utils/date";
 
 import {
   buildEmptyLogsFilterParams,
@@ -38,6 +38,7 @@ function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
     since: obj.since ? deserializeDate(obj.since) : null,
     until: obj.until ? deserializeDate(obj.until) : null,
     actorExtra: extractCustomFieldsFromSearchParams(params, "actor"),
+    resourceExtra: extractCustomFieldsFromSearchParams(params, "resource"),
   };
 }
 
