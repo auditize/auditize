@@ -582,6 +582,47 @@ async def test_get_logs_filter_actor_name(
     await _test_get_logs_filter(log_rw_client, repo, func, {"actor_name": "FIND"})
 
 
+async def test_get_logs_filter_actor_extra(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        to_be_found=PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "user:123",
+                    "name": "User 123",
+                    "extra": [
+                        {"name": "field_1", "value": "foo"},
+                        {"name": "field_2", "value": "bar"},
+                    ],
+                }
+            }
+        ),
+        not_to_be_found=[
+            PreparedLog.prepare_data(
+                {
+                    "actor": {
+                        "type": "user",
+                        "ref": "user:123",
+                        "name": "User 123",
+                        "extra": [
+                            {"name": "field_1", "value": "bar"},
+                            {"name": "field_2", "value": "foo"},
+                        ],
+                    }
+                }
+            ),
+        ],
+        search_params={
+            "actor[field_1]": "foo",
+            "actor[field_2]": "bar",
+        },
+    )
+
+
 async def test_get_logs_filter_resource_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -599,6 +640,47 @@ async def test_get_logs_filter_resource_name(
 
     # filter on resource_name is substring and case-insensitive
     await _test_get_logs_filter(log_rw_client, repo, func, {"resource_name": "FIND"})
+
+
+async def test_get_logs_filter_resource_extra(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        to_be_found=PreparedLog.prepare_data(
+            {
+                "resource": {
+                    "type": "config-profile",
+                    "ref": "config-profile:123",
+                    "name": "Config Profile 123",
+                    "extra": [
+                        {"name": "field_1", "value": "foo"},
+                        {"name": "field_2", "value": "bar"},
+                    ],
+                }
+            }
+        ),
+        not_to_be_found=[
+            PreparedLog.prepare_data(
+                {
+                    "resource": {
+                        "type": "config-profile",
+                        "ref": "config-profile:123",
+                        "name": "Config Profile 123",
+                        "extra": [
+                            {"name": "field_1", "value": "bar"},
+                            {"name": "field_2", "value": "foo"},
+                        ],
+                    }
+                }
+            ),
+        ],
+        search_params={
+            "resource[field_1]": "foo",
+            "resource[field_2]": "bar",
+        },
+    )
 
 
 async def test_get_logs_filter_details(
@@ -659,88 +741,6 @@ async def test_get_logs_filter_source(
         search_params={
             "source[field_1]": "foo",
             "source[field_2]": "bar",
-        },
-    )
-
-
-async def test_get_logs_filter_actor_extra(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        to_be_found=PreparedLog.prepare_data(
-            {
-                "actor": {
-                    "type": "user",
-                    "ref": "user:123",
-                    "name": "User 123",
-                    "extra": [
-                        {"name": "field_1", "value": "foo"},
-                        {"name": "field_2", "value": "bar"},
-                    ],
-                }
-            }
-        ),
-        not_to_be_found=[
-            PreparedLog.prepare_data(
-                {
-                    "actor": {
-                        "type": "user",
-                        "ref": "user:123",
-                        "name": "User 123",
-                        "extra": [
-                            {"name": "field_1", "value": "bar"},
-                            {"name": "field_2", "value": "foo"},
-                        ],
-                    }
-                }
-            ),
-        ],
-        search_params={
-            "actor[field_1]": "foo",
-            "actor[field_2]": "bar",
-        },
-    )
-
-
-async def test_get_logs_filter_resource_extra(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        to_be_found=PreparedLog.prepare_data(
-            {
-                "resource": {
-                    "type": "config-profile",
-                    "ref": "config-profile:123",
-                    "name": "Config Profile 123",
-                    "extra": [
-                        {"name": "field_1", "value": "foo"},
-                        {"name": "field_2", "value": "bar"},
-                    ],
-                }
-            }
-        ),
-        not_to_be_found=[
-            PreparedLog.prepare_data(
-                {
-                    "resource": {
-                        "type": "config-profile",
-                        "ref": "config-profile:123",
-                        "name": "Config Profile 123",
-                        "extra": [
-                            {"name": "field_1", "value": "bar"},
-                            {"name": "field_2", "value": "foo"},
-                        ],
-                    }
-                }
-            ),
-        ],
-        search_params={
-            "resource[field_1]": "foo",
-            "resource[field_2]": "bar",
         },
     )
 
