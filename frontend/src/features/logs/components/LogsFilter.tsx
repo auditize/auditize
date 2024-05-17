@@ -17,6 +17,7 @@ import {
   getAllLogActionTypes,
   getAllLogActorCustomFields,
   getAllLogActorTypes,
+  getAllLogDetailFields,
   getAllLogResourceCustomFields,
   getAllLogResourceTypes,
   getAllLogSourceFields,
@@ -186,6 +187,28 @@ function ResourceCustomFieldSelector({
   );
 }
 
+function DetailFieldSelector({
+  repoId,
+  value,
+  onChange,
+}: {
+  repoId?: string;
+  value: Map<string, string>;
+  onChange: (value: Map<string, string>) => void;
+}) {
+  return (
+    <CustomFieldSelector
+      label="Detail fields"
+      queryKey={["logDetailFields", repoId]}
+      queryFn={() => getAllLogDetailFields(repoId!)}
+      enabled={!!repoId}
+      value={value}
+      onChange={onChange}
+      itemLabel={(item) => labelize(item)}
+    />
+  );
+}
+
 function TagTypeSelector({
   repoId,
   type,
@@ -326,6 +349,7 @@ export function LogsFilter({
     editedParams.resourceName ||
     editedParams.resourceExtra!.size > 0
   );
+  const hasDetails = editedParams.details!.size > 0;
   const hasTag = !!(
     editedParams.tagType ||
     editedParams.tagName ||
@@ -338,6 +362,7 @@ export function LogsFilter({
     hasActor ||
     hasSource ||
     hasResource ||
+    hasDetails ||
     hasTag ||
     hasNode;
 
@@ -433,6 +458,15 @@ export function LogsFilter({
           repoId={editedParams.repoId}
           value={editedParams.resourceExtra!}
           onChange={changeParamHandler("resourceExtra")}
+        />
+      </PopoverForm>
+
+      {/* Detail criteria */}
+      <PopoverForm title="Details" isFilled={hasDetails}>
+        <DetailFieldSelector
+          repoId={editedParams.repoId}
+          value={editedParams.details!}
+          onChange={changeParamHandler("details")}
         />
       </PopoverForm>
 

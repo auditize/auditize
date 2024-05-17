@@ -52,6 +52,7 @@ export type LogsFilterParams = {
   resourceType?: string;
   resourceName?: string;
   resourceExtra?: Map<string, string>;
+  details?: Map<string, string>;
   tagRef?: string;
   tagType?: string;
   tagName?: string;
@@ -72,6 +73,7 @@ export function buildEmptyLogsFilterParams(): LogsFilterParams {
     resourceType: "",
     resourceName: "",
     resourceExtra: new Map(),
+    details: new Map(),
     tagType: "",
     tagName: "",
     tagRef: "",
@@ -117,6 +119,9 @@ export function prepareLogFilterForApi(filter: LogsFilterParams): object {
     resourceType: filter.resourceType,
     resourceName: filter.resourceName,
     ...prepareCustomFieldsForApi(filter.resourceExtra!, "resource"),
+
+    // Details
+    ...prepareCustomFieldsForApi(filter.details!, "details"),
 
     // Tag
     tagRef: filter.tagRef,
@@ -222,6 +227,12 @@ export async function getAllLogResourceCustomFields(
       `/repos/${repoId}/logs/resources/extras`,
       {},
     ),
+  );
+}
+
+export async function getAllLogDetailFields(repoId: string): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/details`, {}),
   );
 }
 

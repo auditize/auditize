@@ -40,6 +40,7 @@ function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
     actorExtra: extractCustomFieldsFromSearchParams(params, "actor"),
     resourceExtra: extractCustomFieldsFromSearchParams(params, "resource"),
     source: extractCustomFieldsFromSearchParams(params, "source"),
+    details: extractCustomFieldsFromSearchParams(params, "details"),
   };
 }
 
