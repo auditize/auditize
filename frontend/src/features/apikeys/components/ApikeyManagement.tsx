@@ -11,7 +11,7 @@ export function ApikeysManagement() {
 
   return (
     <ResourceManagement
-      title="Apikey Management"
+      title="API keys"
       path="/apikeys"
       resourceName="apikey"
       queryKey={(page) => ["apikeys", "page", page]}

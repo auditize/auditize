@@ -11,7 +11,7 @@ export function ReposManagement() {
 
   return (
     <ResourceManagement
-      title="Repos Management"
+      title="Repositories"
       path="/repos"
       resourceName="repo"
       queryKey={(page) => ["repos", "page", page, { includeStats: true }]}

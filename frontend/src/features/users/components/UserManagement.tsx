@@ -11,7 +11,7 @@ export function UsersManagement() {
 
   return (
     <ResourceManagement
-      title="Users Management"
+      title="Users"
       path="/users"
       resourceName="user"
       queryKey={(page) => ["users", "page", page]}
