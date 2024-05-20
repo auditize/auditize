@@ -36,11 +36,10 @@ export function LogInForm({ onLogged }: { onLogged: () => void }) {
 
   return (
     <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
-      <Center>
+      <Center pt="4rem">
         <Stack align="center">
-          <Title order={1}>Welcome on Auditize !</Title>
-          <Title order={2}>Please enter you credentials to log-in.</Title>
-          <Stack>
+          <Title order={1}>Welcome on Auditize</Title>
+          <Stack pt="1rem" gap="1.25rem">
             <TextInput
               {...form.getInputProps("email")}
               key={form.key("email")}
@@ -54,7 +53,7 @@ export function LogInForm({ onLogged }: { onLogged: () => void }) {
               placeholder="Enter your password"
               type="password"
             />
-            <Button type="submit">Submit</Button>
+            <Button type="submit">Sign in</Button>
             <InlineErrorMessage>{error}</InlineErrorMessage>
           </Stack>
         </Stack>
