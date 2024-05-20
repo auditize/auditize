@@ -1,4 +1,3 @@
-import { Container } from "@mantine/core";
 import { useSearchParams } from "react-router-dom";
 
 import { deserializeDate } from "@/utils/date";
@@ -62,7 +61,7 @@ export function Logs() {
   const filter = searchParamsToFilter(searchParams);
 
   return (
-    <Container size="xl" p="20px">
+    <>
       <LogsFilter
         params={filter}
         onChange={(newFilter) => {
@@ -89,6 +88,6 @@ export function Logs() {
           });
         }}
       />
-    </Container>
+    </>
   );
 }

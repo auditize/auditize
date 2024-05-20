@@ -85,7 +85,7 @@ function Main() {
   return (
     <AppShell header={{ height: 60 }}>
       <AppShell.Header>
-        <Group h="100%" px="6rem" justify="space-between">
+        <Group h="100%" px="4rem" justify="space-between">
           <Navbar>
             <NavbarItem label="Log-in" url="/log-in" condition={!currentUser} />
             <NavbarItem
@@ -137,7 +137,7 @@ function Main() {
           </Tooltip>
         </Group>
       </AppShell.Header>
-      <AppShell.Main>
+      <AppShell.Main px="4rem">
         <Outlet />
       </AppShell.Main>
     </AppShell>
