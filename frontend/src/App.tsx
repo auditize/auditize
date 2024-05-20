@@ -3,20 +3,17 @@ import {
   Button,
   Group,
   MantineProvider,
+  Space,
   Text,
-  UnstyledButton,
+  Tooltip,
 } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
+import { IconLogout } from "@tabler/icons-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
-import {
-  createBrowserRouter,
-  Link,
-  Outlet,
-  RouterProvider,
-} from "react-router-dom";
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
 
 import { AuthProvider, LogInForm, useCurrentUser } from "@/features/auth";
 import { Logs } from "@/features/logs";
@@ -25,7 +22,7 @@ import { Signup } from "@/features/signup";
 import { UsersManagement } from "@/features/users";
 import { theme } from "@/theme";
 
-import { VisibleIf } from "./components/VisibleIf";
+import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
 import { interceptStatusCode } from "./utils/axios";
@@ -88,58 +85,56 @@ function Main() {
   return (
     <AppShell header={{ height: 60 }}>
       <AppShell.Header>
-        <Group h="100%" px="md" justify="right">
-          <Group ml="xl">
-            <VisibleIf condition={!currentUser}>
-              <UnstyledButton>
-                <Link to="/log-in">Log-in</Link>
-              </UnstyledButton>
-            </VisibleIf>
-            <VisibleIf condition={!!currentUser}>
-              <UnstyledButton
+        <Group h="100%" px="6rem" justify="space-between">
+          <Navbar>
+            <NavbarItem label="Log-in" url="/log-in" condition={!currentUser} />
+            <NavbarItem
+              label="Logs"
+              url="/logs"
+              condition={
+                !!(currentUser && currentUser.permissions.logs.read != "none")
+              }
+            />
+            <NavbarItemGroup label="Management">
+              <NavbarItem
+                label="Repositories"
+                url="/repos"
+                condition={
+                  !!(
+                    currentUser && currentUser.permissions.management.repos.read
+                  )
+                }
+              />
+              <NavbarItem
+                label="Users"
+                url="/users"
+                condition={
+                  !!(
+                    currentUser && currentUser.permissions.management.users.read
+                  )
+                }
+              />
+              <NavbarItem
+                label="API keys"
+                url="/apikeys"
+                condition={
+                  !!(
+                    currentUser &&
+                    currentUser.permissions.management.apikeys.read
+                  )
+                }
+              />
+            </NavbarItemGroup>
+          </Navbar>
+          <Space w="6rem" />
+          <Tooltip label="Log-out">
+            <div style={{ cursor: "pointer" }}>
+              <IconLogout
                 onClick={logoutConfirmationModal(notifyLoggedOut)}
-              >
-                Log-out
-              </UnstyledButton>
-            </VisibleIf>
-            <VisibleIf
-              condition={
-                currentUser && currentUser.permissions.logs.read != "none"
-              }
-            >
-              {" "}
-              <UnstyledButton>
-                <Link to="/logs">Logs</Link>
-              </UnstyledButton>
-            </VisibleIf>
-            <VisibleIf
-              condition={
-                currentUser && currentUser.permissions.management.repos.read
-              }
-            >
-              <UnstyledButton>
-                <Link to="/repos">Repository Management</Link>
-              </UnstyledButton>
-            </VisibleIf>
-            <VisibleIf
-              condition={
-                currentUser && currentUser.permissions.management.users.read
-              }
-            >
-              <UnstyledButton>
-                <Link to="/users">User Management</Link>
-              </UnstyledButton>
-            </VisibleIf>
-            <VisibleIf
-              condition={
-                currentUser && currentUser.permissions.management.apikeys.read
-              }
-            >
-              <UnstyledButton>
-                <Link to="/apikeys">Apikey Management</Link>
-              </UnstyledButton>
-            </VisibleIf>
-          </Group>
+                size={"1.3rem"}
+              />
+            </div>
+          </Tooltip>
         </Group>
       </AppShell.Header>
       <AppShell.Main>
