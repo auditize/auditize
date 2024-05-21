@@ -33,6 +33,10 @@ class RepoStatsData(BaseModel):
     log_count: int = Field(description="The log count")
     storage_size: int = Field(description="The storage size")
 
+    @field_serializer("first_log_date", "last_log_date", when_used="json")
+    def serialize_datetime(self, value):
+        return serialize_datetime(value) if value else None
+
 
 class RepoLogPermissionsData(BaseModel):
     read_logs: bool = Field(
