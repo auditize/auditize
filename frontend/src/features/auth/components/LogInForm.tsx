@@ -9,14 +9,35 @@ import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import { CurrentUserInfo, logIn } from "../api";
 import { useCurrentUser } from "../contexts";
 
+function getDefaultPageForUser(
+  user: CurrentUserInfo,
+  searchParams: URLSearchParams,
+): string {
+  if (searchParams.get("redirect")) {
+    return decodeURIComponent(searchParams.get("redirect")!);
+  }
+  if (user.permissions.logs.read !== "none") {
+    return "/logs";
+  }
+  if (user.permissions.management.users.read) {
+    return "/users";
+  }
+  if (user.permissions.management.apikeys.read) {
+    return "/apikeys";
+  }
+  if (user.permissions.management.repos.read) {
+    return "/repos";
+  }
+  return "/";
+}
+
 export function LogInForm({
   onLogged,
 }: {
   onLogged: (user: CurrentUserInfo) => void;
 }) {
-  const { isAuthenticated } = useCurrentUser();
+  const { currentUser } = useCurrentUser();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/logs";
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
@@ -35,15 +56,17 @@ export function LogInForm({
       logIn(values.email, values.password),
     onSuccess: (user) => {
       onLogged(user);
-      navigate(decodeURIComponent(redirectTo), { replace: true });
+      navigate(getDefaultPageForUser(user, searchParams), { replace: true });
     },
     onError: (error) => {
       setError(error.message);
     },
   });
 
-  if (isAuthenticated) {
-    return <Navigate to={redirectTo} replace />;
+  if (currentUser) {
+    return (
+      <Navigate to={getDefaultPageForUser(currentUser, searchParams)} replace />
+    );
   }
 
   return (
