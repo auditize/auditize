@@ -105,7 +105,7 @@ class PreparedUser:
         return await client.assert_post(
             "/auth/user/login",
             json={"email": self.email, "password": self.password},
-            expected_status_code=204,
+            expected_status_code=200,
         )
 
     @asynccontextmanager

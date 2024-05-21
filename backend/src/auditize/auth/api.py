@@ -7,12 +7,18 @@ from auditize.auth.authorizer import Authenticated, get_authenticated
 from auditize.auth.jwt import generate_session_token
 from auditize.database import DatabaseManager, get_dbm
 from auditize.users import service
-from auditize.users.api_models import UserAuthenticationRequest
+from auditize.users.api_models import UserAuthenticationRequest, UserMeResponse
 
 router = APIRouter()
 
 
-@router.post("/auth/user/login", summary="User log-in", tags=["auth"], status_code=204)
+@router.post(
+    "/auth/user/login",
+    summary="User log-in",
+    tags=["auth"],
+    status_code=200,
+    response_model=UserMeResponse,
+)
 async def login_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     request: UserAuthenticationRequest,
@@ -29,6 +35,8 @@ async def login_user(
         secure=True,
         expires=expires_at,
     )
+
+    return UserMeResponse.from_db_model(user)
 
 
 @router.post(

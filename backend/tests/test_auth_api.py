@@ -6,6 +6,7 @@ from icecream import ic
 from auditize.database import DatabaseManager
 from conftest import UserBuilder
 from helpers.http import HttpTestHelper, get_cookie_by_name
+from helpers.permissions.constants import DEFAULT_APPLICABLE_PERMISSIONS
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
@@ -17,7 +18,14 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
     resp = await anon_client.assert_post(
         "/auth/user/login",
         json={"email": user.email, "password": user.password},
-        expected_status_code=204,
+        expected_status_code=200,
+        expected_json={
+            "id": user.id,
+            "first_name": user.data["first_name"],
+            "last_name": user.data["last_name"],
+            "email": user.data["email"],
+            "permissions": DEFAULT_APPLICABLE_PERMISSIONS,
+        },
     )
     ic(resp.cookies)
     cookie = get_cookie_by_name(resp, "session")
