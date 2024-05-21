@@ -1,3 +1,5 @@
+import { IconKey } from "@tabler/icons-react";
+
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { PermissionSummary } from "@/features/permissions";
@@ -12,7 +14,12 @@ export function ApikeysManagement() {
 
   return (
     <ResourceManagement
-      title="API keys"
+      title={
+        <>
+          <IconKey />
+          API keys
+        </>
+      }
       name="API key"
       path="/apikeys"
       resourceName="apikey"

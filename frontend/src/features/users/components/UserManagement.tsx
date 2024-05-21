@@ -1,3 +1,5 @@
+import { IconUsers } from "@tabler/icons-react";
+
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { PermissionSummary } from "@/features/permissions";
@@ -12,7 +14,11 @@ export function UsersManagement() {
 
   return (
     <ResourceManagement
-      title="Users"
+      title={
+        <>
+          <IconUsers /> Users
+        </>
+      }
       name="User"
       path="/users"
       resourceName="user"

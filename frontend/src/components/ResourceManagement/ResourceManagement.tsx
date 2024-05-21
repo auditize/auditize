@@ -91,7 +91,7 @@ export function ResourceManagement({
   resourceEditionComponentBuilder,
   resourceDeletionComponentBuilder,
 }: {
-  title: string;
+  title: React.ReactNode;
   name: string;
   path: string;
   resourceName: string;

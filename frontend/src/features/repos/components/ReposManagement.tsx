@@ -1,3 +1,4 @@
+import { IconArchive } from "@tabler/icons-react";
 import { filesize } from "filesize";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
@@ -14,7 +15,12 @@ export function ReposManagement() {
 
   return (
     <ResourceManagement
-      title="Repositories"
+      title={
+        <>
+          <IconArchive />
+          Repositories
+        </>
+      }
       name="Repository"
       path="/repos"
       resourceName="repo"
