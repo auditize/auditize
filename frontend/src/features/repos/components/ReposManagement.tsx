@@ -1,5 +1,8 @@
+import { filesize } from "filesize";
+
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
+import { humanizeDate } from "@/utils/date";
 
 import { getRepos, Repo } from "../api";
 import { RepoDeletion } from "./RepoDeletion";
@@ -19,11 +22,13 @@ export function ReposManagement() {
       queryFn={(page) => () => getRepos(page, { includeStats: true })}
       columnBuilders={[
         ["Name", (repo: Repo) => repo.name],
-        ["Creation date", (repo: Repo) => repo.createdAt],
-        ["First log date", (repo: Repo) => repo.stats!.firstLogDate || "n/a"],
-        ["Last log date", (repo: Repo) => repo.stats!.lastLogDate || "n/a"],
-        ["Log count", (repo: Repo) => repo.stats!.logCount],
-        ["Storage size", (repo: Repo) => repo.stats!.storageSize],
+        ["Creation date", (repo: Repo) => humanizeDate(repo.createdAt)],
+        [
+          "Last log date",
+          (repo: Repo) => humanizeDate(repo.stats!.lastLogDate) || "n/a",
+        ],
+        ["Logs", (repo: Repo) => repo.stats!.logCount.toLocaleString()],
+        ["Storage size", (repo: Repo) => filesize(repo.stats!.storageSize)],
       ]}
       resourceCreationComponentBuilder={
         readOnly ? undefined : (opened) => <RepoCreation opened={opened} />
