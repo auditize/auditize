@@ -1,5 +1,14 @@
-import { Anchor, Button, Divider, Pagination, Table } from "@mantine/core";
+import {
+  Anchor,
+  Button,
+  Container,
+  Divider,
+  Pagination,
+  Stack,
+  Table,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { createElement } from "react";
 import {
@@ -35,7 +44,9 @@ function ResourceDeletionAction({
 
   return (
     <>
-      <Anchor onClick={() => open()}>Delete</Anchor>
+      <Anchor onClick={() => open()} px={"0.25rem"}>
+        Delete
+      </Anchor>
       {component}
     </>
   );
@@ -66,24 +77,14 @@ function ResourceTableRow({
 
   return (
     <Table.Tr>
-      <Table.Td>
-        <Anchor component={Link} to={resourceLink}>
-          {resource.id}
-        </Anchor>
-      </Table.Td>
       {rowValueBuilders.map((builder, i) => (
         <Table.Td key={i}>{builder(resource)}</Table.Td>
       ))}
-      <Table.Td>
-        <Anchor component={Link} to={resourceLink}>
+      <Table.Td style={{ textAlign: "right" }}>
+        <Anchor component={Link} to={resourceLink} px={"0.25rem"}>
           Edit
         </Anchor>
-        {resourceDeletionAction && (
-          <>
-            <Divider size="sm" orientation="vertical" />
-            {resourceDeletionAction}
-          </>
-        )}
+        {resourceDeletionAction && <>{resourceDeletionAction}</>}
       </Table.Td>
     </Table.Tr>
   );
@@ -91,6 +92,7 @@ function ResourceTableRow({
 
 export function ResourceManagement({
   title,
+  name,
   path,
   resourceName,
   queryKey,
@@ -101,6 +103,7 @@ export function ResourceManagement({
   resourceDeletionComponentBuilder,
 }: {
   title: string;
+  name: string;
   path: string;
   resourceName: string;
   queryKey: (page: number) => any[];
@@ -140,30 +143,38 @@ export function ResourceManagement({
   return (
     <div>
       <h1>{title}</h1>
-      <Table>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>ID</Table.Th>
-            {columnBuilders.map(([name, _], i) => (
-              <Table.Th key={i}>{name}</Table.Th>
-            ))}
-            <Table.Th>Actions</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
-      <Pagination
-        total={pagination.total_pages}
-        value={pagination.page}
-        onChange={(value) => {
-          navigate(addQueryParamToLocation(location, "page", value.toString()));
-        }}
-      />
-      {resourceCreationComponentBuilder && (
-        <Link to={addQueryParamToLocation(location, "new")}>
-          <Button>Create</Button>
-        </Link>
-      )}
+      <Container px={0} mx={0} py="md">
+        {resourceCreationComponentBuilder && (
+          <Link to={addQueryParamToLocation(location, "new")}>
+            <Button leftSection={<IconPlus size={"1.3rem"} />}>
+              Add {name}
+            </Button>
+          </Link>
+        )}
+      </Container>
+      <Stack align="center">
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              {columnBuilders.map(([name, _], i) => (
+                <Table.Th key={i}>{name}</Table.Th>
+              ))}
+              <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>{rows}</Table.Tbody>
+        </Table>
+        <Pagination
+          total={pagination.total_pages}
+          value={pagination.page}
+          onChange={(value) => {
+            navigate(
+              addQueryParamToLocation(location, "page", value.toString()),
+            );
+          }}
+          py="md"
+        />
+      </Stack>
       {resourceCreationComponentBuilder &&
         resourceCreationComponentBuilder(newResource)}
       {resourceEditionComponentBuilder(resourceId)}
