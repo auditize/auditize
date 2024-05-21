@@ -1,6 +1,7 @@
 import { Anchor, Table } from "@mantine/core";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 
+import { humanizeDate } from "@/utils/date";
 import { labelize } from "@/utils/format";
 import { addQueryParamToLocation } from "@/utils/router";
 
@@ -21,7 +22,7 @@ function LogTableRow({
     <Table.Tr key={log.id}>
       <Table.Td>
         <Anchor component={Link} to={logLink} underline="hover">
-          {log.savedAt}
+          {humanizeDate(log.savedAt)}
         </Anchor>
       </Table.Td>
       <Table.Td>

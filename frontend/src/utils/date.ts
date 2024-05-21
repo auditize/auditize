@@ -7,3 +7,7 @@ export function serializeDate(date: Date) {
 export function deserializeDate(date: string) {
   return dayjs(date).toDate();
 }
+
+export function humanizeDate(date: string) {
+  return dayjs(date).format("YYYY-MM-DD HH:mm:ss");
+}
