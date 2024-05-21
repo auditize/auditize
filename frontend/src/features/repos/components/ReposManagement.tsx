@@ -28,13 +28,13 @@ export function ReposManagement() {
       queryFn={(page) => () => getRepos(page, { includeStats: true })}
       columnBuilders={[
         ["Name", (repo: Repo) => repo.name],
-        ["Creation date", (repo: Repo) => humanizeDate(repo.createdAt)],
+        ["Created", (repo: Repo) => humanizeDate(repo.createdAt)],
         [
-          "Last log date",
+          "Last log",
           (repo: Repo) => humanizeDate(repo.stats!.lastLogDate) || "n/a",
         ],
         ["Logs", (repo: Repo) => repo.stats!.logCount.toLocaleString()],
-        ["Storage size", (repo: Repo) => filesize(repo.stats!.storageSize)],
+        ["Storage", (repo: Repo) => filesize(repo.stats!.storageSize)],
       ]}
       resourceCreationComponentBuilder={
         readOnly ? undefined : (opened) => <RepoCreation opened={opened} />
