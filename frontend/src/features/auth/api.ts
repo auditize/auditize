@@ -11,11 +11,15 @@ export type CurrentUserInfo = {
   permissions: ApplicablePermissions;
 };
 
-export async function logIn(email: string, password: string): Promise<void> {
-  await axiosInstance.post("/auth/user/login", {
+export async function logIn(
+  email: string,
+  password: string,
+): Promise<CurrentUserInfo> {
+  const response = await axiosInstance.post("/auth/user/login", {
     email,
     password,
   });
+  return camelcaseKeys(response.data, { deep: true });
 }
 
 export async function logOut(): Promise<void> {

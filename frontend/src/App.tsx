@@ -13,7 +13,13 @@ import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { IconLogout } from "@tabler/icons-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+  useLocation,
+} from "react-router-dom";
 
 import { AuthProvider, LogInForm, useCurrentUser } from "@/features/auth";
 import { Logs } from "@/features/logs";
@@ -27,7 +33,7 @@ import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
 import { interceptStatusCode } from "./utils/axios";
 
-function logoutConfirmationModal(notifyLoggedOut: () => void) {
+function logoutConfirmationModal(onLogOut: () => void) {
   return () =>
     modals.openConfirmModal({
       title: "Please confirm log-out",
@@ -35,7 +41,7 @@ function logoutConfirmationModal(notifyLoggedOut: () => void) {
       labels: { confirm: "Confirm", cancel: "Cancel" },
       onConfirm: async () => {
         await logOut();
-        notifyLoggedOut();
+        onLogOut();
       },
     });
 }
@@ -44,7 +50,7 @@ function LoggedOutModal({
   context,
   id,
   innerProps,
-}: ContextModalProps<{ notifyLoggedOut: () => void }>) {
+}: ContextModalProps<{ onLogOut: () => void }>) {
   return (
     <>
       <Text size="sm">Your session has expired, you need to log-in again.</Text>
@@ -52,7 +58,7 @@ function LoggedOutModal({
         fullWidth
         mt="md"
         onClick={() => {
-          innerProps.notifyLoggedOut();
+          innerProps.onLogOut();
           context.closeModal(id);
         }}
       >
@@ -63,7 +69,7 @@ function LoggedOutModal({
 }
 
 function Main() {
-  const { currentUser, notifyLoggedOut } = useCurrentUser();
+  const { currentUser, declareLoggedOut } = useCurrentUser();
 
   useEffect(() => {
     let alreadyIntercepted = false;
@@ -74,7 +80,7 @@ function Main() {
           alreadyIntercepted = true; // avoid multiple modals in a row when we have multiple 401 responses
           modals.openContextModal({
             modal: "loggedOut",
-            innerProps: { notifyLoggedOut },
+            innerProps: { onLogOut: declareLoggedOut },
           });
         }
       });
@@ -130,7 +136,7 @@ function Main() {
           <Tooltip label="Log-out">
             <div style={{ cursor: "pointer" }}>
               <IconLogout
-                onClick={logoutConfirmationModal(notifyLoggedOut)}
+                onClick={logoutConfirmationModal(declareLoggedOut)}
                 size={"1.3rem"}
               />
             </div>
@@ -144,8 +150,27 @@ function Main() {
   );
 }
 
+function CatchAll() {
+  const { isRefreshingAuthData } = useCurrentUser();
+  const location = useLocation();
+
+  // Do not try to render or redirect anything until we know if the user
+  // is authenticated or not to avoid flickering
+  if (isRefreshingAuthData) {
+    return null;
+  }
+
+  let path = "/log-in";
+  if (location.pathname) {
+    path +=
+      "?redirect=" + encodeURIComponent(location.pathname + location.search);
+  }
+
+  return <Navigate to={path} replace />;
+}
+
 function AppRoutes() {
-  const { isAuthenticated, refreshUser } = useCurrentUser();
+  const { isAuthenticated, declareLoggedIn } = useCurrentUser();
 
   const router = createBrowserRouter([
     isAuthenticated
@@ -173,7 +198,7 @@ function AppRoutes() {
         }
       : {
           path: "*",
-          element: <Main />,
+          element: <CatchAll />,
         },
     {
       path: "/signup/:token",
@@ -181,7 +206,7 @@ function AppRoutes() {
     },
     {
       path: "/log-in",
-      element: <LogInForm onLogged={refreshUser} />,
+      element: <LogInForm onLogged={declareLoggedIn} />,
     },
   ]);
 

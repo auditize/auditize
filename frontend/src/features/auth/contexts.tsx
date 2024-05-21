@@ -5,33 +5,40 @@ import { CurrentUserInfo, getCurrentUserInfo } from "./api";
 
 type AuthContextProps = {
   currentUser: CurrentUserInfo | null;
-  refreshUser: () => void;
-  notifyLoggedOut: () => void;
+  declareLoggedIn: (user: CurrentUserInfo) => void;
+  declareLoggedOut: () => void;
   isAuthenticated: boolean;
+  isRefreshingAuthData: boolean;
 };
 
 const AuthContext = createContext<AuthContextProps | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [lastRefresh, setLastRefresh] = useState<Date>(() => new Date());
+  const [loggedIn, setLoggedIn] = useState<CurrentUserInfo | null>(null);
   const [loggedOut, setLoggedOut] = useState<boolean>(false);
-  const { data } = useQuery({
-    queryKey: ["current-user", lastRefresh],
+  const { data: defaultAuthData, isPending } = useQuery({
+    queryKey: ["/users/me"],
     // FIXME: handle possible errors and make a distinction between 401 and others
     queryFn: () => getCurrentUserInfo(),
     staleTime: Infinity,
   });
 
+  const currentUser = loggedOut ? null : loggedIn || defaultAuthData || null;
+
   return (
     <AuthContext.Provider
       value={{
-        currentUser: data && !loggedOut ? data : null,
-        refreshUser: () => {
-          setLastRefresh(new Date());
+        currentUser: currentUser,
+        declareLoggedIn: (user: CurrentUserInfo) => {
+          setLoggedIn(user);
           setLoggedOut(false);
         },
-        notifyLoggedOut: () => setLoggedOut(true),
-        isAuthenticated: !!data && !loggedOut,
+        declareLoggedOut: () => {
+          setLoggedIn(null);
+          setLoggedOut(true);
+        },
+        isAuthenticated: currentUser !== null,
+        isRefreshingAuthData: isPending,
       }}
     >
       {children}
