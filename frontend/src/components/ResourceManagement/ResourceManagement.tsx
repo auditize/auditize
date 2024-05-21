@@ -3,6 +3,7 @@ import {
   Button,
   Container,
   Divider,
+  Group,
   Pagination,
   Stack,
   Table,
@@ -30,28 +31,6 @@ type ResourceDeletionComponentBuilder = (
   onClose: () => void,
 ) => React.ReactNode;
 
-function ResourceDeletionAction({
-  resource,
-  componentBuilder,
-}: {
-  resource: any;
-  componentBuilder: ResourceDeletionComponentBuilder;
-}) {
-  const [opened, { open, close }] = useDisclosure();
-  const component = componentBuilder(resource, opened, close);
-
-  if (!component) return null;
-
-  return (
-    <>
-      <Anchor onClick={() => open()} px={"0.25rem"}>
-        Delete
-      </Anchor>
-      {component}
-    </>
-  );
-}
-
 function ResourceTableRow({
   resourceName,
   resource,
@@ -64,16 +43,18 @@ function ResourceTableRow({
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
   const location = useLocation();
+  const [opened, { open, close }] = useDisclosure();
   const resourceLink = addQueryParamToLocation(
     location,
     resourceName,
     resource.id,
   );
 
-  const resourceDeletionAction = createElement(ResourceDeletionAction, {
-    resource: resource,
-    componentBuilder: resourceDeletionComponentBuilder,
-  });
+  const deletionConfirmModal = resourceDeletionComponentBuilder(
+    resource,
+    opened,
+    close,
+  );
 
   return (
     <Table.Tr>
@@ -81,10 +62,18 @@ function ResourceTableRow({
         <Table.Td key={i}>{builder(resource)}</Table.Td>
       ))}
       <Table.Td style={{ textAlign: "right" }}>
-        <Anchor component={Link} to={resourceLink} px={"0.25rem"}>
-          Edit
-        </Anchor>
-        {resourceDeletionAction && <>{resourceDeletionAction}</>}
+        <Group justify="flex-end" gap={"md"}>
+          <Anchor component={Link} to={resourceLink}>
+            Edit
+          </Anchor>
+          {deletionConfirmModal && (
+            <>
+              <Divider orientation="vertical" />
+              <Anchor onClick={() => open()}>Delete</Anchor>
+              {deletionConfirmModal}
+            </>
+          )}
+        </Group>
       </Table.Td>
     </Table.Tr>
   );
