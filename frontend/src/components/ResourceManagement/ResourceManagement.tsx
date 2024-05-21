@@ -142,7 +142,7 @@ export function ResourceManagement({
         )}
       </Container>
       <Stack align="center">
-        <Table>
+        <Table highlightOnHover>
           <Table.Thead>
             <Table.Tr>
               {columnBuilders.map(([name, _], i) => (
