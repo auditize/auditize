@@ -1,7 +1,6 @@
 import {
   Anchor,
   Button,
-  Container,
   Divider,
   Group,
   Pagination,
@@ -11,7 +10,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import React, { createElement } from "react";
+import React from "react";
 import {
   Link,
   useLocation,
@@ -132,7 +131,7 @@ export function ResourceManagement({
   return (
     <div>
       <h1>{title}</h1>
-      <Container px={0} mx={0} py="md">
+      <Stack align="flex-end" pb="md">
         {resourceCreationComponentBuilder && (
           <Link to={addQueryParamToLocation(location, "new")}>
             <Button leftSection={<IconPlus size={"1.3rem"} />}>
@@ -140,7 +139,7 @@ export function ResourceManagement({
             </Button>
           </Link>
         )}
-      </Container>
+      </Stack>
       <Stack align="center">
         <Table highlightOnHover>
           <Table.Thead>
