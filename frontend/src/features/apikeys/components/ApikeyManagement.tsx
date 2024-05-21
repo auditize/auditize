@@ -1,5 +1,6 @@
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
+import { PermissionSummary } from "@/features/permissions";
 
 import { Apikey, getApikeys } from "../api";
 import { ApikeyDeletion } from "./ApikeyDeletion";
@@ -17,7 +18,15 @@ export function ApikeysManagement() {
       resourceName="apikey"
       queryKey={(page) => ["apikeys", "page", page]}
       queryFn={(page) => () => getApikeys(page)}
-      columnBuilders={[["Name", (apikey: Apikey) => apikey.name]]}
+      columnBuilders={[
+        ["Name", (apikey: Apikey) => apikey.name],
+        [
+          "Permissions",
+          (apikey: Apikey) => (
+            <PermissionSummary permissions={apikey.permissions} />
+          ),
+        ],
+      ]}
       resourceCreationComponentBuilder={
         readOnly ? undefined : (opened) => <ApikeyCreation opened={opened} />
       }

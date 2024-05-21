@@ -1,5 +1,6 @@
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
+import { PermissionSummary } from "@/features/permissions";
 
 import { getUsers, User } from "../api";
 import { UserDeletion } from "./UserDeletion";
@@ -18,9 +19,19 @@ export function UsersManagement() {
       queryKey={(page) => ["users", "page", page]}
       queryFn={(page) => () => getUsers(page)}
       columnBuilders={[
-        ["Firstname", (user: User) => user.firstName],
-        ["Lastname", (user: User) => user.lastName],
+        [
+          "Name",
+          (user: User) => (
+            <span>
+              {user.firstName} {user.lastName}
+            </span>
+          ),
+        ],
         ["Email", (user: User) => user.email],
+        [
+          "Permissions",
+          (user: User) => <PermissionSummary permissions={user.permissions} />,
+        ],
       ]}
       resourceCreationComponentBuilder={
         readOnly ? undefined : (opened) => <UserCreation opened={opened} />
