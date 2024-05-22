@@ -57,10 +57,10 @@ function ResourceEditor({
       onClose={() => opened && onClose()}
     >
       <div>
-        <Box mb="md">
+        <Box px={"lg"}>
           <form onSubmit={onSubmit(() => mutation.mutate())}>
             {children}
-            <Group justify="center">
+            <Group justify="center" pt="md">
               {!disabledSaving && (
                 <>
                   <Button onClick={onClose}>Cancel</Button>

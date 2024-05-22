@@ -21,8 +21,10 @@ export function WithPermissionManagement({
         <Tabs.Tab value="permissions">Permissions</Tabs.Tab>
       </Tabs.List>
 
-      <Tabs.Panel value="general">{children}</Tabs.Panel>
-      <Tabs.Panel value="permissions">
+      <Tabs.Panel value="general" pt="sm">
+        {children}
+      </Tabs.Panel>
+      <Tabs.Panel value="permissions" pt="sm">
         <PermissionManagement
           perms={permissions}
           onChange={onChange}

@@ -1,4 +1,4 @@
-import { TextInput } from "@mantine/core";
+import { Stack, TextInput } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect, useState } from "react";
 
@@ -47,27 +47,29 @@ function UserEditor({
       onChange={onChange}
       readOnly={readOnly}
     >
-      <TextInput
-        label="Firstname"
-        placeholder="Firstname"
-        data-autofocus
-        {...form.getInputProps("firstName")}
-        disabled={readOnly}
-      />
-      <TextInput
-        label="Lastname"
-        placeholder="Lastname"
-        data-autofocus
-        {...form.getInputProps("lastName")}
-        disabled={readOnly}
-      />
-      <TextInput
-        label="Email"
-        placeholder="Email"
-        data-autofocus
-        {...form.getInputProps("email")}
-        disabled={readOnly}
-      />
+      <Stack gap={"sm"}>
+        <TextInput
+          label="Firstname"
+          placeholder="Enter firstname"
+          data-autofocus
+          {...form.getInputProps("firstName")}
+          disabled={readOnly}
+        />
+        <TextInput
+          label="Lastname"
+          placeholder="Enter lastname"
+          data-autofocus
+          {...form.getInputProps("lastName")}
+          disabled={readOnly}
+        />
+        <TextInput
+          label="Email"
+          placeholder="Enter email"
+          data-autofocus
+          {...form.getInputProps("email")}
+          disabled={readOnly}
+        />
+      </Stack>
     </WithPermissionManagement>
   );
 }

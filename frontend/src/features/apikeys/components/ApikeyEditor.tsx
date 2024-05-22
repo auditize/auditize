@@ -44,7 +44,7 @@ function BaseApikeyForm({
     <>
       <TextInput
         label="Name"
-        placeholder="Name"
+        placeholder="Enter name"
         data-autofocus
         disabled={readOnly}
         {...form.getInputProps("name")}
