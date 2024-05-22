@@ -1,4 +1,4 @@
-import { ActionIcon, TextInput } from "@mantine/core";
+import { ActionIcon, Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { IconRefresh } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
@@ -73,8 +73,10 @@ function ApikeyEditor({
       onChange={onChange}
       readOnly={readOnly}
     >
-      <BaseApikeyForm form={form} readOnly={readOnly} />
-      {children}
+      <Stack gap={"sm"}>
+        <BaseApikeyForm form={form} readOnly={readOnly} />
+        {children}
+      </Stack>
     </WithPermissionManagement>
   );
 }
