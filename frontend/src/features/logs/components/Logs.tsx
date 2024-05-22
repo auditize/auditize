@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@mantine/hooks";
 import { useSearchParams } from "react-router-dom";
 
 import { deserializeDate } from "@/utils/date";
@@ -59,6 +60,7 @@ function filterToSearchParams(filter: LogsFilterParams): URLSearchParams {
 export function Logs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = searchParamsToFilter(searchParams);
+  useDocumentTitle("Logs");
 
   return (
     <>

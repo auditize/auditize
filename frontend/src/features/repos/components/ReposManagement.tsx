@@ -1,4 +1,5 @@
 import { Code, CopyButton, Tooltip, UnstyledButton } from "@mantine/core";
+import { useDocumentTitle } from "@mantine/hooks";
 import { IconArchive } from "@tabler/icons-react";
 import { filesize } from "filesize";
 
@@ -27,6 +28,7 @@ function RepoId({ value }: { value: string }) {
 export function ReposManagement() {
   const { currentUser } = useAuthenticatedUser();
   const readOnly = currentUser.permissions.management.repos.write === false;
+  useDocumentTitle("Repositories");
 
   return (
     <ResourceManagement

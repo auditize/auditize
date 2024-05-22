@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@mantine/hooks";
 import { IconKey } from "@tabler/icons-react";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
@@ -11,6 +12,7 @@ import { ApikeyCreation, ApikeyEdition } from "./ApikeyEditor";
 export function ApikeysManagement() {
   const { currentUser } = useAuthenticatedUser();
   const readOnly = currentUser.permissions.management.apikeys.write === false;
+  useDocumentTitle("API keys");
 
   return (
     <ResourceManagement

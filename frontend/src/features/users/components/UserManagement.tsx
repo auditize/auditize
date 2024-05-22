@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@mantine/hooks";
 import { IconUsers } from "@tabler/icons-react";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
@@ -11,6 +12,7 @@ import { UserCreation, UserEdition } from "./UserEditor";
 export function UsersManagement() {
   const { currentUser } = useAuthenticatedUser();
   const readOnly = currentUser.permissions.management.users.write === false;
+  useDocumentTitle("Users");
 
   return (
     <ResourceManagement

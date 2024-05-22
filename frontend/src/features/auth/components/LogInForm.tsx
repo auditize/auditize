@@ -1,5 +1,6 @@
 import { Button, Center, Stack, TextInput, Title } from "@mantine/core";
 import { isEmail, useForm } from "@mantine/form";
+import { useDocumentTitle } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -62,6 +63,7 @@ export function LogInForm({
       setError(error.message);
     },
   });
+  useDocumentTitle("Login");
 
   if (currentUser) {
     return (
