@@ -1,7 +1,8 @@
 import {
   AppShell,
   Button,
-  Group,
+  Center,
+  Flex,
   MantineProvider,
   Space,
   Text,
@@ -90,8 +91,8 @@ function Main() {
 
   return (
     <AppShell header={{ height: 60 }}>
-      <AppShell.Header>
-        <Group h="100%" px="4rem" justify="space-between">
+      <AppShell.Header bg="#fbfbfb">
+        <Flex h="100%" px="4rem" justify="space-between" align="center">
           <Navbar>
             <NavbarItem label="Log-in" url="/log-in" condition={!currentUser} />
             <NavbarItem
@@ -134,14 +135,14 @@ function Main() {
           </Navbar>
           <Space w="6rem" />
           <Tooltip label="Log-out">
-            <div style={{ cursor: "pointer" }}>
+            <Center style={{ cursor: "pointer" }}>
               <IconLogout
                 onClick={logoutConfirmationModal(declareLoggedOut)}
                 size={"1.3rem"}
               />
-            </div>
+            </Center>
           </Tooltip>
-        </Group>
+        </Flex>
       </AppShell.Header>
       <AppShell.Main px="4rem">
         <Outlet />
