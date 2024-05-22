@@ -1,4 +1,4 @@
-import { Box, Button, Group, Modal } from "@mantine/core";
+import { Box, Button, Group, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { FormEventHandler, useEffect, useState } from "react";
@@ -48,7 +48,7 @@ function ResourceEditor({
 
   return (
     <Modal
-      title={title}
+      title={<Text fw={600}>{title}</Text>}
       size="lg"
       padding="lg"
       opened={opened}
