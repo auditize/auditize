@@ -1,6 +1,7 @@
-import { Accordion, Checkbox, Group, Table } from "@mantine/core";
+import { Checkbox, Group, Stack, Table } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 
+import { Section } from "@/components/Section";
 import { useAuthenticatedUser } from "@/features/auth";
 import { getAllMyRepos } from "@/features/repos";
 
@@ -58,7 +59,7 @@ function EntityPermissionManagement({
 }) {
   return (
     <Table.Tr>
-      <Table.Td>{name}</Table.Td>
+      <Table.Td width="35%">{name}</Table.Td>
       <Table.Td>
         <ReadWritePermissionManagement
           perms={perms}
@@ -83,38 +84,35 @@ function ManagementPermissionManagement({
   readOnly?: boolean;
 }) {
   return (
-    <Accordion.Item value="management">
-      <Accordion.Control>Management</Accordion.Control>
-      <Accordion.Panel>
-        <Table withRowBorders={false}>
-          <Table.Tbody>
-            <EntityPermissionManagement
-              name="Repositories"
-              perms={perms.repos}
-              onChange={(repoPerms) => onChange({ ...perms, repos: repoPerms })}
-              assignablePerms={assignablePerms.repos}
-              readOnly={readOnly}
-            />
-            <EntityPermissionManagement
-              name="Users"
-              perms={perms.users}
-              onChange={(userPerms) => onChange({ ...perms, users: userPerms })}
-              assignablePerms={assignablePerms.users}
-              readOnly={readOnly}
-            />
-            <EntityPermissionManagement
-              name="Apikeys"
-              perms={perms.apikeys}
-              onChange={(apikeyPerms) =>
-                onChange({ ...perms, apikeys: apikeyPerms })
-              }
-              assignablePerms={assignablePerms.apikeys}
-              readOnly={readOnly}
-            />
-          </Table.Tbody>
-        </Table>
-      </Accordion.Panel>
-    </Accordion.Item>
+    <Section title="Management">
+      <Table withRowBorders={false}>
+        <Table.Tbody>
+          <EntityPermissionManagement
+            name="Repositories"
+            perms={perms.repos}
+            onChange={(repoPerms) => onChange({ ...perms, repos: repoPerms })}
+            assignablePerms={assignablePerms.repos}
+            readOnly={readOnly}
+          />
+          <EntityPermissionManagement
+            name="Users"
+            perms={perms.users}
+            onChange={(userPerms) => onChange({ ...perms, users: userPerms })}
+            assignablePerms={assignablePerms.users}
+            readOnly={readOnly}
+          />
+          <EntityPermissionManagement
+            name="API keys"
+            perms={perms.apikeys}
+            onChange={(apikeyPerms) =>
+              onChange({ ...perms, apikeys: apikeyPerms })
+            }
+            assignablePerms={assignablePerms.apikeys}
+            readOnly={readOnly}
+          />
+        </Table.Tbody>
+      </Table>
+    </Section>
   );
 }
 
@@ -153,13 +151,12 @@ function LogsPermissionManagement({
     }));
 
   return (
-    <Accordion.Item value="logs">
-      <Accordion.Control>Logs</Accordion.Control>
-      <Accordion.Panel>
+    <>
+      <Section title="Logs">
         <Table withRowBorders={false}>
           <Table.Tbody>
             <Table.Tr>
-              <Table.Td>
+              <Table.Td width="35%">
                 <b>All repositories</b>
               </Table.Td>
               <Table.Td>
@@ -211,8 +208,8 @@ function LogsPermissionManagement({
             ))}
           </Table.Tbody>
         </Table>
-      </Accordion.Panel>
-    </Accordion.Item>
+      </Section>
+    </>
   );
 }
 
@@ -229,31 +226,33 @@ export function PermissionManagement({
   const assignablePerms = currentUser.permissions;
 
   return (
-    <div>
+    <Stack pt="xs">
       <Checkbox
-        label="Superadmin"
+        label="Superadmin (grant all permissions)"
         checked={perms.isSuperadmin}
         onChange={(event) =>
-          onChange({ ...perms, isSuperadmin: event.currentTarget.checked })
+          onChange({
+            ...perms,
+            isSuperadmin: event.currentTarget.checked,
+          })
         }
         disabled={readOnly || !assignablePerms.isSuperadmin}
+        pl="xs"
       />
-      <Accordion multiple defaultValue={["management", "logs"]}>
-        <ManagementPermissionManagement
-          perms={perms.management}
-          assignablePerms={assignablePerms.management}
-          onChange={(managementPerms) =>
-            onChange({ ...perms, management: managementPerms })
-          }
-          readOnly={readOnly || perms.isSuperadmin}
-        />
-        <LogsPermissionManagement
-          perms={perms.logs}
-          assignablePerms={assignablePerms.logs}
-          onChange={(logsPerms) => onChange({ ...perms, logs: logsPerms })}
-          readOnly={readOnly || perms.isSuperadmin}
-        />
-      </Accordion>
-    </div>
+      <ManagementPermissionManagement
+        perms={perms.management}
+        assignablePerms={assignablePerms.management}
+        onChange={(managementPerms) =>
+          onChange({ ...perms, management: managementPerms })
+        }
+        readOnly={readOnly || perms.isSuperadmin}
+      />
+      <LogsPermissionManagement
+        perms={perms.logs}
+        assignablePerms={assignablePerms.logs}
+        onChange={(logsPerms) => onChange({ ...perms, logs: logsPerms })}
+        readOnly={readOnly || perms.isSuperadmin}
+      />
+    </Stack>
   );
 }
