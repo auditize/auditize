@@ -17,6 +17,7 @@ export function Section({
         style={{
           borderWidth: "0px 0px 1px 0px",
           borderStyle: "solid",
+          borderColor: "var(--mantine-primary-color-filled)",
         }}
       >
         {title}
