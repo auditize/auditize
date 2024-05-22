@@ -13,8 +13,11 @@ export function ApikeyDeletion({
 }) {
   return (
     <ResourceDeletion
-      title={"Confirm deletion"}
-      message={`Do you confirm the deletion of apikey ${apikey.name} ?`}
+      message={
+        <>
+          Do you confirm the deletion of API key <b>{apikey.name}</b> ?
+        </>
+      }
       opened={opened}
       onDelete={() => deleteApikey(apikey.id)}
       queryKeyForInvalidation={["apikeys"]}

@@ -13,8 +13,15 @@ export function UserDeletion({
 }) {
   return (
     <ResourceDeletion
-      title={"Confirm deletion"}
-      message={`Do you confirm the deletion of user ${user.email} ?`}
+      message={
+        <>
+          Do you confirm the deletion of user{" "}
+          <b>
+            {user.firstName} {user.lastName}
+          </b>
+          ?
+        </>
+      }
       opened={opened}
       onDelete={() => deleteUser(user.id)}
       queryKeyForInvalidation={["users"]}

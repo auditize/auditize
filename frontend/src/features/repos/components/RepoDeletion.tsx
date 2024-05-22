@@ -13,8 +13,11 @@ export function RepoDeletion({
 }) {
   return (
     <ResourceDeletion
-      title={"Confirm deletion"}
-      message={`Do you confirm the deletion of log repository ${repo.name} ?`}
+      message={
+        <>
+          Do you confirm the deletion of log repository <b>{repo.name}</b> ?
+        </>
+      }
       opened={opened}
       onDelete={() => deleteRepo(repo.id)}
       queryKeyForInvalidation={["repos"]}

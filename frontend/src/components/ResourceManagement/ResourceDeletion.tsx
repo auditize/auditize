@@ -1,9 +1,9 @@
 import { Box, Button, Group, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react";
 
 interface ResourceDeletionProps {
-  title: string;
-  message: string;
+  message: React.ReactNode;
   opened: boolean;
   onDelete: () => Promise<any>;
   queryKeyForInvalidation: any[];
@@ -11,7 +11,6 @@ interface ResourceDeletionProps {
 }
 
 export function ResourceDeletion({
-  title,
   message,
   opened,
   onDelete,
@@ -29,18 +28,20 @@ export function ResourceDeletion({
 
   return (
     <Modal
-      title={title}
+      title={<Text fw={600}>Confirm Deletion</Text>}
       size="lg"
       padding="lg"
       opened={opened}
       onClose={onClose}
     >
       <div>
-        <Box mb="md">
-          <Text>{message}</Text>
+        <Box>
+          <Text pb="sm">{message}</Text>
           <Group justify="center">
-            <Button onClick={onClose}>Cancel</Button>
-            <Button onClick={() => mutation.mutate()} color="blue">
+            <Button onClick={onClose} size="xs" variant="outline">
+              Cancel
+            </Button>
+            <Button onClick={() => mutation.mutate()} size="xs" color="red">
               Delete
             </Button>
           </Group>
