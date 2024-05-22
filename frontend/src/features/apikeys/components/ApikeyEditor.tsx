@@ -1,7 +1,8 @@
-import { Button, Code, Group, TextInput } from "@mantine/core";
+import { ActionIcon, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
+import { IconRefresh } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 
 import { CopyIcon } from "@/components/CopyIcon";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
@@ -78,14 +79,58 @@ function ApikeyEditor({
   );
 }
 
-function Key({ value }: { value: string }) {
+function Secret({ value, button }: { value: string; button?: ReactElement }) {
   return (
-    <Group>
-      <span>Key: </span>
-      <Code>{value}</Code>
-      <CopyIcon value={value} />
-    </Group>
+    <TextInput
+      label="Key (secret)"
+      disabled
+      value={value}
+      rightSection={button}
+    />
   );
+}
+
+function SecretCreation({ value }: { value: string | null }) {
+  return (
+    <Secret
+      value={
+        value || "The secret key will appear once the API key has been saved"
+      }
+      button={value ? <CopyIcon value={value} /> : undefined}
+    />
+  );
+}
+
+function SecretUpdate({ apikeyId }: { apikeyId: string }) {
+  const [secret, setSecret] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
+  const mutation = useMutation({
+    mutationFn: () => regenerateApikey(apikeyId),
+    onSuccess: (value) => setSecret(value),
+    onError: (error) => setError(error.message),
+  });
+
+  if (secret) {
+    return <Secret value={secret} button={<CopyIcon value={secret} />} />;
+  } else {
+    return (
+      <>
+        <Secret
+          value={"You can generate a new key by clicking the refresh button"}
+          button={
+            <ActionIcon
+              onClick={() => mutation.mutate()}
+              variant="subtle"
+              size="sm"
+            >
+              <IconRefresh />
+            </ActionIcon>
+          }
+        />
+        <InlineErrorMessage>{error}</InlineErrorMessage>
+      </>
+    );
+  }
 }
 
 export function ApikeyCreation({ opened }: { opened?: boolean }) {
@@ -93,11 +138,11 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
   const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
   );
-  const [key, setKey] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
 
   useEffect(() => {
     form.reset();
-    setKey(null);
+    setSecret(null);
     setPermissions(emptyPermissions());
   }, [opened]);
 
@@ -109,41 +154,21 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
       onSave={() => createApikey({ ...form.values, permissions })}
       onSaveSuccess={(data) => {
         const [_, key] = data as [string, string];
-        setKey(key);
+        setSecret(key);
       }}
       queryKeyForInvalidation={["apikeys"]}
-      disabledSaving={!!key}
+      disabledSaving={!!secret}
     >
       <ApikeyEditor
         form={form}
         permissions={permissions}
         onChange={(perms) => setPermissions(perms)}
+        readOnly={!!secret}
       >
-        {key && <Key value={key} />}
+        <SecretCreation value={secret} />
       </ApikeyEditor>
     </ResourceCreation>
   );
-}
-
-export function KeyRegeneration({ apikeyId }: { apikeyId: string }) {
-  const [newKey, setNewKey] = useState<string | null>(null);
-  const [error, setError] = useState<string>("");
-  const mutation = useMutation({
-    mutationFn: () => regenerateApikey(apikeyId),
-    onSuccess: (value) => setNewKey(value),
-    onError: (error) => setError(error.message),
-  });
-
-  if (newKey) {
-    return <Key value={newKey} />;
-  } else {
-    return (
-      <>
-        <Button onClick={() => mutation.mutate()}>Regenerate key</Button>
-        <InlineErrorMessage>{error}</InlineErrorMessage>
-      </>
-    );
-  }
 }
 
 export function ApikeyEdition({
@@ -181,7 +206,7 @@ export function ApikeyEdition({
         }}
         readOnly={readOnly}
       >
-        {!readOnly && <KeyRegeneration apikeyId={apikeyId!} />}
+        {!readOnly && <SecretUpdate apikeyId={apikeyId!} />}
       </ApikeyEditor>
     </ResourceEdition>
   );
