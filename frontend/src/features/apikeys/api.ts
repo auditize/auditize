@@ -51,6 +51,6 @@ export async function deleteApikey(apikeyId: string): Promise<void> {
 }
 
 export async function regenerateApikey(apikeyId: string): Promise<string> {
-  const data = await reqPost(`/apikeys/${apikeyId}/regenerate`, {});
+  const data = await reqPost(`/apikeys/${apikeyId}/key`, {});
   return data.key;
 }
