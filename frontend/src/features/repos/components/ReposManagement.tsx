@@ -1,3 +1,4 @@
+import { Code, CopyButton, Tooltip, UnstyledButton } from "@mantine/core";
 import { IconArchive } from "@tabler/icons-react";
 import { filesize } from "filesize";
 
@@ -8,6 +9,20 @@ import { humanizeDate } from "@/utils/date";
 import { getRepos, Repo } from "../api";
 import { RepoDeletion } from "./RepoDeletion";
 import { RepoCreation, RepoEdition } from "./RepoEditor";
+
+function RepoId({ value }: { value: string }) {
+  return (
+    <CopyButton value={value} timeout={2000}>
+      {({ copied, copy }) => (
+        <Tooltip label={copied ? "Copied" : "Copy"} withArrow position="bottom">
+          <UnstyledButton onClick={copy}>
+            <Code>{value}</Code>
+          </UnstyledButton>
+        </Tooltip>
+      )}
+    </CopyButton>
+  );
+}
 
 export function ReposManagement() {
   const { currentUser } = useAuthenticatedUser();
@@ -28,6 +43,7 @@ export function ReposManagement() {
       queryFn={(page) => () => getRepos(page, { includeStats: true })}
       columnBuilders={[
         ["Name", (repo: Repo) => repo.name],
+        ["ID", (repo: Repo) => <RepoId value={repo.id} />],
         ["Logs", (repo: Repo) => repo.stats!.logCount.toLocaleString()],
         ["Storage", (repo: Repo) => filesize(repo.stats!.storageSize)],
         ["Created", (repo: Repo) => humanizeDate(repo.createdAt)],
