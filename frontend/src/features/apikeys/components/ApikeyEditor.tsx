@@ -103,7 +103,7 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
 
   return (
     <ResourceCreation
-      title={"Create new apikey"}
+      title={"Create new API key"}
       opened={!!opened}
       onSubmit={form.onSubmit}
       onSave={() => createApikey({ ...form.values, permissions })}
@@ -167,7 +167,7 @@ export function ApikeyEdition({
         form.setValues(data);
         setPermissions(data.permissions);
       }}
-      title={`Edit apikey`}
+      title={`Edit API key`}
       onSubmit={form.onSubmit}
       onSave={() => updateApikey(apikeyId!, { ...form.values, permissions })}
       queryKeyForInvalidation={["apikeys"]}
