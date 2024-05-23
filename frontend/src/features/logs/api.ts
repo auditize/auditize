@@ -41,7 +41,7 @@ export type LogNode = {
   hasChildren: boolean;
 };
 
-export type LogsFilterParams = {
+export type LogSearchParams = {
   repoId?: string;
   actionCategory?: string;
   actionType?: string;
@@ -63,7 +63,7 @@ export type LogsFilterParams = {
   until?: Date | null;
 };
 
-export function buildEmptyLogsFilterParams(): LogsFilterParams {
+export function buildLogSearchParams(): LogSearchParams {
   return {
     repoId: "",
     actionCategory: "",
@@ -99,7 +99,7 @@ function prepareCustomFieldsForApi(
   );
 }
 
-export function prepareLogFilterForApi(filter: LogsFilterParams): object {
+export function prepareLogFilterForApi(filter: LogSearchParams): object {
   return {
     repoId: filter.repoId,
 
@@ -143,7 +143,7 @@ export function prepareLogFilterForApi(filter: LogsFilterParams): object {
 
 export async function getLogs(
   cursor: string | null,
-  filter?: LogsFilterParams,
+  filter?: LogSearchParams,
   limit = 3,
 ): Promise<{ logs: Log[]; nextCursor: string | null }> {
   const data = await reqGet(

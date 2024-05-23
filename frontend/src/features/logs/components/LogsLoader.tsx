@@ -3,14 +3,14 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import deepEqual from "deep-equal";
 import { useEffect, useRef } from "react";
 
-import { getLogs, LogsFilterParams, prepareLogFilterForApi } from "../api";
+import { getLogs, LogSearchParams, prepareLogFilterForApi } from "../api";
 import { LogsTable } from "./LogsTable";
 
 export function LogsLoader({
   filter = {},
   onTableFilterChange,
 }: {
-  filter: LogsFilterParams;
+  filter: LogSearchParams;
   onTableFilterChange: (name: string, value: string) => void;
 }) {
   const {
@@ -28,7 +28,7 @@ export function LogsLoader({
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
-  const currentFilterRef = useRef<LogsFilterParams | null>(null);
+  const currentFilterRef = useRef<LogSearchParams | null>(null);
   const queryClient = useQueryClient();
 
   // If the user apply filter A, then filter B, then filter A again, he will see the logs of filter A

@@ -4,11 +4,11 @@ import { useSearchParams } from "react-router-dom";
 import { deserializeDate } from "@/utils/date";
 
 import {
-  buildEmptyLogsFilterParams,
-  LogsFilterParams,
+  buildLogSearchParams,
+  LogSearchParams,
   prepareLogFilterForApi,
 } from "../api";
-import { LogsFilter } from "./LogsFilter";
+import { LogFilters } from "./LogsFilter";
 import { LogsLoader } from "./LogsLoader";
 
 function extractCustomFieldsFromSearchParams(
@@ -26,10 +26,10 @@ function extractCustomFieldsFromSearchParams(
   return customFields;
 }
 
-function searchParamsToFilter(params: URLSearchParams): LogsFilterParams {
+function searchParamsToFilter(params: URLSearchParams): LogSearchParams {
   // filter the params from the LogsFilterParams available keys (white list)
   // in order to avoid possible undesired keys in LogsFilterParams resulting object
-  const template = buildEmptyLogsFilterParams();
+  const template = buildLogSearchParams();
   const obj = Object.fromEntries(
     Object.keys(template).map((key) => [key, params.get(key) || ""]),
   );
@@ -51,7 +51,7 @@ function stripEmptyStringsFromObject(obj: any): any {
   );
 }
 
-function filterToSearchParams(filter: LogsFilterParams): URLSearchParams {
+function filterToSearchParams(filter: LogSearchParams): URLSearchParams {
   return new URLSearchParams(
     stripEmptyStringsFromObject(prepareLogFilterForApi(filter)),
   );
@@ -64,7 +64,7 @@ export function Logs() {
 
   return (
     <>
-      <LogsFilter
+      <LogFilters
         params={filter}
         onChange={(newFilter) => {
           // Do not keep the "repo auto-select redirect" in the history,

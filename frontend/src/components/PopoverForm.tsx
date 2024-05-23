@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { iconSize } from "@/utils/ui";
 
+// NB: this component is no longer used as time of writing
 export function PopoverForm({
   title,
   children,

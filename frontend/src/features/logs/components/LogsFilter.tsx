@@ -1,18 +1,24 @@
-import { Button, Group, Space, TextInput } from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
-import { useEffect, useReducer } from "react";
-
 import {
-  CustomDateTimePicker,
-  PaginatedSelector,
-  PopoverForm,
-} from "@/components";
+  Button,
+  Group,
+  MultiSelect,
+  Space,
+  Stack,
+  TextInput,
+} from "@mantine/core";
+import { useDisclosure, useLocalStorage } from "@mantine/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useReducer, useRef, useState } from "react";
+
+import { CustomDateTimePicker, PaginatedSelector } from "@/components";
+import { CustomMultiSelect } from "@/components/CustomMultiSelect";
+import { RemovablePopover } from "@/components/RemovablePopover";
 import { getAllMyRepos } from "@/features/repos";
 import { Repo } from "@/features/repos";
 import { labelize } from "@/utils/format";
 
 import {
-  buildEmptyLogsFilterParams,
+  buildLogSearchParams,
   getAllLogActionCategories,
   getAllLogActionTypes,
   getAllLogActorCustomFields,
@@ -22,215 +28,9 @@ import {
   getAllLogResourceTypes,
   getAllLogSourceFields,
   getAllLogTagTypes,
-  LogsFilterParams,
+  LogSearchParams,
 } from "../api";
-import { CustomFieldSelector } from "./CustomFieldSelector";
 import { NodeSelector } from "./NodeSelector";
-
-function ActionCategorySelector({
-  repoId,
-  category,
-  onChange,
-}: {
-  repoId?: string;
-  category?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <PaginatedSelector
-      label="Action category"
-      queryKey={["logActionCategory", repoId]}
-      queryFn={() => getAllLogActionCategories(repoId!)}
-      enabled={!!repoId}
-      selectedItem={category}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-      itemValue={(item) => item}
-    />
-  );
-}
-
-function ActionTypeSelector({
-  repoId,
-  type,
-  category,
-  onChange,
-}: {
-  repoId?: string;
-  type?: string;
-  category?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <PaginatedSelector
-      label="Action type"
-      queryKey={["logActionTypes", repoId, category]}
-      queryFn={() => getAllLogActionTypes(repoId!, category)}
-      enabled={!!repoId}
-      selectedItem={type}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-      itemValue={(item) => item}
-    />
-  );
-}
-
-function ActorTypeSelector({
-  repoId,
-  type,
-  onChange,
-}: {
-  repoId?: string;
-  type?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <PaginatedSelector
-      label="Actor type"
-      queryKey={["logActorType", repoId]}
-      queryFn={() => getAllLogActorTypes(repoId!)}
-      enabled={!!repoId}
-      selectedItem={type}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-      itemValue={(item) => item}
-    />
-  );
-}
-
-function ActorCustomFieldSelector({
-  repoId,
-  value,
-  onChange,
-}: {
-  repoId?: string;
-  value: Map<string, string>;
-  onChange: (value: Map<string, string>) => void;
-}) {
-  return (
-    <CustomFieldSelector
-      label="Custom fields"
-      queryKey={["logActorCustomFields", repoId]}
-      queryFn={() => getAllLogActorCustomFields(repoId!)}
-      enabled={!!repoId}
-      value={value}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-    />
-  );
-}
-
-function SourceFieldSelector({
-  repoId,
-  value,
-  onChange,
-}: {
-  repoId?: string;
-  value: Map<string, string>;
-  onChange: (value: Map<string, string>) => void;
-}) {
-  return (
-    <CustomFieldSelector
-      label="Source fields"
-      queryKey={["logSourceFields", repoId]}
-      queryFn={() => getAllLogSourceFields(repoId!)}
-      enabled={!!repoId}
-      value={value}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-    />
-  );
-}
-
-function ResourceTypeSelector({
-  repoId,
-  type,
-  onChange,
-}: {
-  repoId?: string;
-  type?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <PaginatedSelector
-      label="Resource type"
-      queryKey={["logResourceType", repoId]}
-      queryFn={() => getAllLogResourceTypes(repoId!)}
-      enabled={!!repoId}
-      selectedItem={type}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-      itemValue={(item) => item}
-    />
-  );
-}
-
-function ResourceCustomFieldSelector({
-  repoId,
-  value,
-  onChange,
-}: {
-  repoId?: string;
-  value: Map<string, string>;
-  onChange: (value: Map<string, string>) => void;
-}) {
-  return (
-    <CustomFieldSelector
-      label="Custom fields"
-      queryKey={["logResourceCustomFields", repoId]}
-      queryFn={() => getAllLogResourceCustomFields(repoId!)}
-      enabled={!!repoId}
-      value={value}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-    />
-  );
-}
-
-function DetailFieldSelector({
-  repoId,
-  value,
-  onChange,
-}: {
-  repoId?: string;
-  value: Map<string, string>;
-  onChange: (value: Map<string, string>) => void;
-}) {
-  return (
-    <CustomFieldSelector
-      label="Detail fields"
-      queryKey={["logDetailFields", repoId]}
-      queryFn={() => getAllLogDetailFields(repoId!)}
-      enabled={!!repoId}
-      value={value}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-    />
-  );
-}
-
-function TagTypeSelector({
-  repoId,
-  type,
-  onChange,
-}: {
-  repoId?: string;
-  type?: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <PaginatedSelector
-      label="Tag type"
-      queryKey={["logTagTypes", repoId]}
-      queryFn={() => getAllLogTagTypes(repoId!)}
-      enabled={!!repoId}
-      selectedItem={type}
-      onChange={onChange}
-      itemLabel={(item) => labelize(item)}
-      itemValue={(item) => item}
-    />
-  );
-}
 
 function RepoSelector({
   repoId,
@@ -284,6 +84,539 @@ function RepoSelector({
   );
 }
 
+function useAvailableFilterFields(repoId: string) {
+  const { data: actorCustomFields } = useQuery({
+    queryKey: ["logActorCustomFields", repoId],
+    queryFn: () => getAllLogActorCustomFields(repoId),
+    enabled: !!repoId,
+  });
+  const { data: resourceCustomFields } = useQuery({
+    queryKey: ["logResourceCustomFields", repoId],
+    queryFn: () => getAllLogResourceCustomFields(repoId),
+    enabled: !!repoId,
+  });
+  const { data: detailFields } = useQuery({
+    queryKey: ["logDetailFields", repoId],
+    queryFn: () => getAllLogDetailFields(repoId),
+    enabled: !!repoId,
+  });
+  const { data: sourceFields } = useQuery({
+    queryKey: ["logSourceFields", repoId],
+    queryFn: () => getAllLogSourceFields(repoId),
+    enabled: !!repoId,
+  });
+
+  return {
+    fields: [
+      { group: "Date", items: [{ value: "date", label: "Date" }] },
+      {
+        group: "Action",
+        items: [
+          { value: "actionCategory", label: "Action category" },
+          { value: "actionType", label: "Action type" },
+        ],
+      },
+      {
+        group: "Actor",
+        items: [
+          { value: "actorType", label: "Actor type" },
+          { value: "actorName", label: "Actor name" },
+          { value: "actorRef", label: "Actor ref" },
+          ...(actorCustomFields ?? []).map((field) => ({
+            value: `actor.${field}`,
+            label: `Actor ${field}`,
+          })),
+        ],
+      },
+      {
+        group: "Source",
+        items: (sourceFields ?? []).map((field) => ({
+          value: `source.${field}`,
+          label: field,
+        })),
+      },
+      {
+        group: "Resource",
+        items: [
+          { value: "resourceType", label: "Resource type" },
+          { value: "resourceName", label: "Resource name" },
+          { value: "resourceRef", label: "Resource ref" },
+          ...(resourceCustomFields ?? []).map((field) => ({
+            value: `resource.${field}`,
+            label: `Resource ${field}`,
+          })),
+        ],
+      },
+      {
+        group: "Details",
+        items: (detailFields ?? []).map((field) => ({
+          value: `details.${field}`,
+          label: field,
+        })),
+      },
+      {
+        group: "Tag",
+        items: [
+          { value: "tagType", label: "Tag type" },
+          { value: "tagName", label: "Tag name" },
+          { value: "tagRef", label: "Tag ref" },
+        ],
+      },
+      {
+        group: "Node",
+        items: [{ value: "node", label: "Node" }],
+      },
+    ],
+  };
+}
+
+function FilterFieldSelect({
+  label,
+  searchParams,
+  searchParamName,
+  items,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  label: string;
+  searchParams: LogSearchParams;
+  searchParamName: string;
+  items: (repoId: string) => Promise<string[]>;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const [opened, { toggle }] = useDisclosure(openedByDefault);
+  const value = searchParams[
+    searchParamName as keyof LogSearchParams
+  ] as string;
+  return (
+    <RemovablePopover
+      title={label}
+      opened={opened}
+      isSet={!!value}
+      onChange={toggle}
+      onRemove={() => onRemove(searchParamName)}
+    >
+      <PaginatedSelector.WithoutDropdown
+        label={label}
+        queryKey={["logConsolidatedData", searchParamName, searchParams.repoId]}
+        queryFn={() => items(searchParams.repoId!)}
+        enabled={!!searchParams.repoId}
+        selectedItem={value}
+        onChange={(value) => onChange(searchParamName, value)}
+        itemLabel={(item) => labelize(item)}
+        itemValue={(item) => item}
+      />
+    </RemovablePopover>
+  );
+}
+
+function BaseFilterFieldTextInput({
+  label,
+  name,
+  value,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  openedByDefault: boolean;
+  onChange: (value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const [opened, { toggle }] = useDisclosure(openedByDefault);
+  return (
+    <RemovablePopover
+      title={label}
+      opened={opened}
+      isSet={!!value}
+      onChange={toggle}
+      onRemove={() => onRemove(name)}
+    >
+      <TextInput
+        placeholder={label}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
+    </RemovablePopover>
+  );
+}
+
+function FilterFieldTextInput({
+  label,
+  searchParams,
+  searchParamName,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  label: string;
+  searchParams: LogSearchParams;
+  searchParamName: string;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const value = searchParams[
+    searchParamName as keyof LogSearchParams
+  ] as string;
+  return (
+    <BaseFilterFieldTextInput
+      label={label}
+      name={searchParamName}
+      value={value}
+      openedByDefault={openedByDefault}
+      onChange={(value) => onChange(searchParamName, value)}
+      onRemove={onRemove}
+    />
+  );
+}
+
+function FilterField({
+  name,
+  searchParams,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  name: string;
+  searchParams: LogSearchParams;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  if (name === "date") {
+    const [opened, { toggle }] = useDisclosure(openedByDefault);
+    return (
+      <RemovablePopover
+        title="Date"
+        onRemove={() => onRemove("date")}
+        isSet={!!(searchParams.since || searchParams.until)}
+        opened={opened}
+        onChange={toggle}
+      >
+        <Stack>
+          <CustomDateTimePicker
+            placeholder="From"
+            value={searchParams.since}
+            onChange={(value) => onChange("since", value)}
+          />
+          <CustomDateTimePicker
+            placeholder="To"
+            value={searchParams.until}
+            onChange={(value) => onChange("until", value)}
+            initToEndOfDay
+          />
+        </Stack>
+      </RemovablePopover>
+    );
+  }
+
+  if (name === "actionCategory") {
+    return (
+      <FilterFieldSelect
+        label="Action category"
+        searchParams={searchParams}
+        searchParamName="actionCategory"
+        items={getAllLogActionCategories}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "actionType") {
+    return (
+      <FilterFieldSelect
+        label="Action type"
+        searchParams={searchParams}
+        searchParamName="actionType"
+        items={(repoId) =>
+          getAllLogActionTypes(repoId, searchParams.actionCategory!)
+        }
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "actorType") {
+    return (
+      <FilterFieldSelect
+        label="Actor type"
+        searchParams={searchParams}
+        searchParamName="actorType"
+        items={getAllLogActorTypes}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "actorName") {
+    return (
+      <FilterFieldTextInput
+        label="Actor name"
+        searchParams={searchParams}
+        searchParamName="actorName"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "actorRef") {
+    return (
+      <FilterFieldTextInput
+        label="Actor ref"
+        searchParams={searchParams}
+        searchParamName="actorRef"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name.startsWith("actor.")) {
+    const fieldName = name.replace("actor.", "");
+    return (
+      <BaseFilterFieldTextInput
+        label={`Actor ${labelize(fieldName)}`}
+        name={name}
+        value={searchParams.actorExtra!.get(fieldName) ?? ""}
+        openedByDefault={openedByDefault}
+        onChange={(value) =>
+          onChange(
+            "actorExtra",
+            new Map([...searchParams.actorExtra!, [fieldName, value]]),
+          )
+        }
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name.startsWith("source.")) {
+    const fieldName = name.replace("source.", "");
+    return (
+      <BaseFilterFieldTextInput
+        label={labelize(fieldName)}
+        name={name}
+        value={searchParams.source!.get(fieldName) ?? ""}
+        openedByDefault={openedByDefault}
+        onChange={(value) =>
+          onChange(
+            "source",
+            new Map([...searchParams.source!, [fieldName, value]]),
+          )
+        }
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "resourceType") {
+    return (
+      <FilterFieldSelect
+        label="Resource type"
+        searchParams={searchParams}
+        searchParamName="resourceType"
+        items={getAllLogResourceTypes}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "resourceName") {
+    return (
+      <FilterFieldTextInput
+        label="Resource name"
+        searchParams={searchParams}
+        searchParamName="resourceName"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "resourceRef") {
+    return (
+      <FilterFieldTextInput
+        label="Resource ref"
+        searchParams={searchParams}
+        searchParamName="resourceRef"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name.startsWith("resource.")) {
+    const fieldName = name.replace("resource.", "");
+    return (
+      <BaseFilterFieldTextInput
+        label={`Resource ${labelize(fieldName)}`}
+        name={name}
+        value={searchParams.resourceExtra!.get(fieldName) ?? ""}
+        openedByDefault={openedByDefault}
+        onChange={(value) =>
+          onChange(
+            "resourceExtra",
+            new Map([...searchParams.resourceExtra!, [fieldName, value]]),
+          )
+        }
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name.startsWith("details.")) {
+    const fieldName = name.replace("details.", "");
+    return (
+      <BaseFilterFieldTextInput
+        label={labelize(fieldName)}
+        name={name}
+        value={searchParams.details!.get(fieldName) ?? ""}
+        openedByDefault={openedByDefault}
+        onChange={(value) =>
+          onChange(
+            "details",
+            new Map([...searchParams.details!, [fieldName, value]]),
+          )
+        }
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "tagType") {
+    return (
+      <FilterFieldSelect
+        label="Tag type"
+        searchParams={searchParams}
+        searchParamName="tagType"
+        items={getAllLogTagTypes}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "tagName") {
+    return (
+      <FilterFieldTextInput
+        label="Tag name"
+        searchParams={searchParams}
+        searchParamName="tagName"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "tagRef") {
+    return (
+      <FilterFieldTextInput
+        label="Tag ref"
+        searchParams={searchParams}
+        searchParamName="tagRef"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "node") {
+    const [opened, { toggle }] = useDisclosure(openedByDefault);
+    return (
+      <RemovablePopover
+        title="Node"
+        opened={opened}
+        isSet={!!searchParams.nodeRef}
+        onChange={toggle}
+        onRemove={() => onRemove("node")}
+      >
+        <NodeSelector
+          repoId={searchParams.repoId || null}
+          nodeRef={searchParams.nodeRef || null}
+          onChange={(value) => onChange("nodeRef", value)}
+        />
+      </RemovablePopover>
+    );
+  }
+
+  return null;
+}
+
+function FilterFields({
+  names,
+  added,
+  searchParams,
+  onChange,
+  onRemove,
+}: {
+  names: Set<string>;
+  added: string | null;
+  searchParams: LogSearchParams;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  return (
+    <>
+      {Array.from(names).map((name) => (
+        <FilterField
+          key={name}
+          name={name}
+          searchParams={searchParams}
+          openedByDefault={name === added}
+          onChange={onChange}
+          onRemove={onRemove}
+        />
+      ))}
+    </>
+  );
+}
+
+function FilterSelector({
+  repoId,
+  selected,
+  onFilterAdded,
+  onFilterRemoved,
+}: {
+  repoId: string;
+  selected: Set<string>;
+  onFilterAdded: (name: string) => void;
+  onFilterRemoved: (name: string) => void;
+}) {
+  const { fields: availableFields } = useAvailableFilterFields(repoId);
+
+  return (
+    <CustomMultiSelect
+      placeholder="More filters"
+      data={availableFields}
+      value={Array.from(selected)}
+      onOptionSubmit={onFilterAdded}
+      onRemove={onFilterRemoved}
+    />
+  );
+}
+
 interface SetParamAction {
   type: "setParam";
   name: string;
@@ -292,13 +625,13 @@ interface SetParamAction {
 
 interface ResetParamsAction {
   type: "resetParams";
-  params?: LogsFilterParams;
+  params?: LogSearchParams;
 }
 
 function filterParamsReducer(
-  state: LogsFilterParams,
+  state: LogSearchParams,
   action: SetParamAction | ResetParamsAction,
-): LogsFilterParams {
+): LogSearchParams {
   console.log("filterParamsReducer", action);
   switch (action.type) {
     case "setParam":
@@ -308,65 +641,196 @@ function filterParamsReducer(
       }
       return { ...state, ...update };
     case "resetParams":
-      const newParams = buildEmptyLogsFilterParams();
+      const newParams = buildLogSearchParams();
       return action.params ? { ...newParams, ...action.params } : newParams;
   }
 }
 
-export function LogsFilter({
+function searchParamsToFilterNames(searchParams: LogSearchParams): Set<string> {
+  const filterNames = new Set<string>();
+
+  // Date
+  if (searchParams.since || searchParams.until) {
+    filterNames.add("date");
+  }
+
+  // Action
+  if (searchParams.actionCategory) {
+    filterNames.add("actionCategory");
+  }
+  if (searchParams.actionType) {
+    filterNames.add("actionType");
+  }
+
+  // Actor
+  if (searchParams.actorRef) {
+    filterNames.add("actorRef");
+  }
+  if (searchParams.actorType) {
+    filterNames.add("actorType");
+  }
+  if (searchParams.actorName) {
+    filterNames.add("actorName");
+  }
+  searchParams.actorExtra!.forEach((_, name) => {
+    filterNames.add("actor." + name);
+  });
+
+  // Source
+  searchParams.source!.forEach((_, name) => {
+    filterNames.add("source." + name);
+  });
+
+  // Resource
+  if (searchParams.resourceRef) {
+    filterNames.add("resourceRef");
+  }
+  if (searchParams.resourceType) {
+    filterNames.add("resourceType");
+  }
+  if (searchParams.resourceName) {
+    filterNames.add("resourceName");
+  }
+  searchParams.resourceExtra!.forEach((_, name) => {
+    filterNames.add("resource." + name);
+  });
+
+  // Details
+  searchParams.details!.forEach((_, name) => {
+    filterNames.add("details." + name);
+  });
+
+  // Tag
+  if (searchParams.tagRef) {
+    filterNames.add("tagRef");
+  }
+  if (searchParams.tagType) {
+    filterNames.add("tagType");
+  }
+  if (searchParams.tagName) {
+    filterNames.add("tagName");
+  }
+
+  // Node
+  if (searchParams.nodeRef) {
+    filterNames.add("node");
+  }
+
+  return filterNames;
+}
+
+function removeSearchParam(
+  filterName: string,
+  searchParams: LogSearchParams,
+  setSearchParam: (name: string, value: any) => void,
+) {
+  // Handle search params whose names are equivalent to filter names
+  const equivalentSearchParams = [
+    "actionCategory",
+    "actionType",
+    "actorRef",
+    "actorType",
+    "actorName",
+    "resourceRef",
+    "resourceType",
+    "resourceName",
+    "tagRef",
+    "tagType",
+    "tagName",
+    "nodeRef",
+  ];
+  if (equivalentSearchParams.includes(filterName)) {
+    setSearchParam(filterName, "");
+    return;
+  }
+
+  // Handle date
+  if (filterName === "date") {
+    setSearchParam("since", null);
+    setSearchParam("until", null);
+    return;
+  }
+
+  // Handle source
+  if (filterName.startsWith("source.")) {
+    const fieldName = filterName.replace("source.", "");
+    setSearchParam(
+      "source",
+      new Map([...searchParams.source!].filter(([name]) => name !== fieldName)),
+    );
+    return;
+  }
+
+  // Handle details
+  if (filterName.startsWith("details.")) {
+    const fieldName = filterName.replace("details.", "");
+    setSearchParam(
+      "details",
+      new Map(
+        [...searchParams.details!].filter(([name]) => name !== fieldName),
+      ),
+    );
+    return;
+  }
+
+  // Handle actor custom fields
+  if (filterName.startsWith("actor.")) {
+    const fieldName = filterName.replace("actor.", "");
+    setSearchParam(
+      "actorExtra",
+      new Map(
+        [...searchParams.actorExtra!].filter(([name]) => name !== fieldName),
+      ),
+    );
+    return;
+  }
+
+  // Handle resource custom fields
+  if (filterName.startsWith("resource.")) {
+    const fieldName = filterName.replace("resource.", "");
+    setSearchParam(
+      "resourceExtra",
+      new Map(
+        [...searchParams.resourceExtra!].filter(([name]) => name !== fieldName),
+      ),
+    );
+    return;
+  }
+
+  // Handle node
+  if (filterName === "node") {
+    setSearchParam("nodeRef", "");
+    return;
+  }
+
+  throw new Error(`Unknown filter name: ${filterName}`);
+}
+
+export function LogFilters({
   params,
   onChange,
 }: {
-  params: LogsFilterParams;
-  onChange: (filter: LogsFilterParams) => void;
+  params: LogSearchParams;
+  onChange: (filter: LogSearchParams) => void;
 }) {
-  const [editedParams, dispatch] = useReducer(
-    filterParamsReducer,
-    buildEmptyLogsFilterParams(),
+  const [editedParams, dispatch] = useReducer(filterParamsReducer, params);
+  const [filterNames, setFilterNames] = useState<Set<string>>(
+    searchParamsToFilterNames(params),
   );
+  const [addedFilterName, setAddedFilterName] = useState<string | null>(null);
 
   // Typically, an inline filter has been applied from logs table
   useEffect(() => {
     dispatch({ type: "resetParams", params });
+    setFilterNames(searchParamsToFilterNames(params));
   }, [params]);
 
-  const changeParamHandler = (name: string) => (value: any) =>
-    dispatch({ type: "setParam", name, value });
-  const changeTextInputParamHandler =
-    (name: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-      dispatch({ type: "setParam", name, value: e.target.value });
-
-  const hasDate = !!(editedParams.since || editedParams.until);
-  const hasAction = !!(editedParams.actionCategory || editedParams.actionType);
-  const hasActor = !!(
-    editedParams.actorType ||
-    editedParams.actorName ||
-    editedParams.actorRef ||
-    editedParams.actorExtra!.size > 0
-  );
-  const hasSource = editedParams.source!.size > 0;
-  const hasResource = !!(
-    editedParams.resourceType ||
-    editedParams.resourceName ||
-    editedParams.resourceRef ||
-    editedParams.resourceExtra!.size > 0
-  );
-  const hasDetails = editedParams.details!.size > 0;
-  const hasTag = !!(
-    editedParams.tagType ||
-    editedParams.tagName ||
-    editedParams.tagRef
-  );
-  const hasNode = !!editedParams.nodeRef;
-  const hasFilter =
-    hasDate ||
-    hasAction ||
-    hasActor ||
-    hasSource ||
-    hasResource ||
-    hasDetails ||
-    hasTag ||
-    hasNode;
+  const removeFilter = (name: string) => {
+    setFilterNames(new Set([...filterNames].filter((n) => n !== name)));
+    removeSearchParam(name, editedParams, (name, value) =>
+      dispatch({ type: "setParam", name, value }),
+    );
+  };
 
   return (
     <Group p="1rem">
@@ -384,135 +848,23 @@ export function LogsFilter({
         }}
       />
 
-      {/* Time criteria */}
-      <PopoverForm title="Date" isFilled={hasDate}>
-        <CustomDateTimePicker
-          placeholder="From"
-          value={editedParams.since}
-          onChange={changeParamHandler("since")}
-        />
-        <CustomDateTimePicker
-          placeholder="To"
-          value={editedParams.until}
-          onChange={changeParamHandler("until")}
-          initToEndOfDay
-        />
-      </PopoverForm>
-
-      {/* Action criteria */}
-      <PopoverForm title="Action" isFilled={hasAction}>
-        <ActionCategorySelector
-          repoId={editedParams.repoId}
-          category={editedParams.actionCategory}
-          onChange={changeParamHandler("actionCategory")}
-        />
-        <ActionTypeSelector
-          repoId={editedParams.repoId}
-          type={editedParams.actionType}
-          category={editedParams.actionCategory}
-          onChange={changeParamHandler("actionType")}
-        />
-      </PopoverForm>
-
-      {/* Actor criteria */}
-      <PopoverForm title="Actor" isFilled={hasActor}>
-        <ActorTypeSelector
-          repoId={editedParams.repoId}
-          type={editedParams.actorType}
-          onChange={changeParamHandler("actorType")}
-        />
-        <TextInput
-          placeholder="Actor name"
-          value={editedParams.actorName}
-          onChange={changeTextInputParamHandler("actorName")}
-          display={"flex"}
-        />
-        <TextInput
-          placeholder="Actor ref"
-          value={editedParams.actorRef}
-          onChange={changeTextInputParamHandler("actorRef")}
-          display={"flex"}
-        />
-        <ActorCustomFieldSelector
-          repoId={editedParams.repoId}
-          value={editedParams.actorExtra!}
-          onChange={changeParamHandler("actorExtra")}
-        />
-      </PopoverForm>
-
-      {/* Source criteria */}
-      <PopoverForm title="Source" isFilled={hasSource}>
-        <SourceFieldSelector
-          repoId={editedParams.repoId}
-          value={editedParams.source!}
-          onChange={changeParamHandler("source")}
-        />
-      </PopoverForm>
-
-      {/* Resource criteria */}
-      <PopoverForm title="Resource" isFilled={hasResource}>
-        <ResourceTypeSelector
-          repoId={editedParams.repoId}
-          type={editedParams.resourceType}
-          onChange={changeParamHandler("resourceType")}
-        />
-        <TextInput
-          placeholder="Resource name"
-          value={editedParams.resourceName}
-          onChange={changeTextInputParamHandler("resourceName")}
-          display={"flex"}
-        />
-        <TextInput
-          placeholder="Resource ref"
-          value={editedParams.resourceRef}
-          onChange={changeTextInputParamHandler("resourceRef")}
-          display={"flex"}
-        />
-        <ResourceCustomFieldSelector
-          repoId={editedParams.repoId}
-          value={editedParams.resourceExtra!}
-          onChange={changeParamHandler("resourceExtra")}
-        />
-      </PopoverForm>
-
-      {/* Detail criteria */}
-      <PopoverForm title="Details" isFilled={hasDetails}>
-        <DetailFieldSelector
-          repoId={editedParams.repoId}
-          value={editedParams.details!}
-          onChange={changeParamHandler("details")}
-        />
-      </PopoverForm>
-
-      {/* Tag criteria */}
-      <PopoverForm title="Tag" isFilled={hasTag}>
-        <TagTypeSelector
-          repoId={editedParams.repoId}
-          type={editedParams.tagType}
-          onChange={changeParamHandler("tagType")}
-        />
-        <TextInput
-          placeholder="Tag name"
-          value={editedParams.tagName}
-          onChange={changeTextInputParamHandler("tagName")}
-          display="flex"
-        />
-        <TextInput
-          placeholder="Tag ref"
-          value={editedParams.tagRef}
-          onChange={changeTextInputParamHandler("tagRef")}
-          display="flex"
-        />
-      </PopoverForm>
-
-      {/* Node criteria */}
-      <PopoverForm title="Node" isFilled={!!editedParams.nodeRef}>
-        <NodeSelector
-          repoId={editedParams.repoId || null}
-          nodeRef={editedParams.nodeRef || null}
-          onChange={changeParamHandler("nodeRef")}
-        />
-      </PopoverForm>
+      {/* Filters */}
+      <FilterFields
+        names={filterNames}
+        added={addedFilterName}
+        searchParams={editedParams}
+        onChange={(name, value) => dispatch({ type: "setParam", name, value })}
+        onRemove={removeFilter}
+      />
+      <FilterSelector
+        repoId={editedParams.repoId!}
+        selected={filterNames}
+        onFilterAdded={(name) => {
+          setFilterNames(new Set([...filterNames, name]));
+          setAddedFilterName(name);
+        }}
+        onFilterRemoved={removeFilter}
+      />
 
       {/* Apply & clear buttons */}
       <Space w="l" />
@@ -524,7 +876,6 @@ export function LogsFilter({
             params: { repoId: editedParams.repoId },
           })
         }
-        disabled={!hasFilter}
         variant="default"
       >
         Clear
