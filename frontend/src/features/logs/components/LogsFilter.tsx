@@ -116,65 +116,79 @@ function useAvailableFilterFields(repoId: string) {
     enabled: !!repoId,
   });
 
+  const _ = ({ value, label }: { value: string; label: string }) => ({
+    value,
+    label,
+    disabled: FIXED_FILTER_NAMES.has(value),
+  });
+
   return {
     fields: [
-      { group: "Date", items: [{ value: "date", label: "Date" }] },
+      { group: "Date", items: [_({ value: "date", label: "Date" })] },
       {
         group: "Action",
         items: [
-          { value: "actionCategory", label: "Action category" },
-          { value: "actionType", label: "Action type" },
+          _({ value: "actionCategory", label: "Action category" }),
+          _({ value: "actionType", label: "Action type" }),
         ],
       },
       {
         group: "Actor",
         items: [
-          { value: "actorType", label: "Actor type" },
-          { value: "actorName", label: "Actor name" },
-          { value: "actorRef", label: "Actor ref" },
-          ...(actorCustomFields ?? []).map((field) => ({
-            value: `actor.${field}`,
-            label: `Actor ${field}`,
-          })),
+          _({ value: "actorType", label: "Actor type" }),
+          _({ value: "actorName", label: "Actor name" }),
+          _({ value: "actorRef", label: "Actor ref" }),
+          ...(actorCustomFields ?? []).map((field) =>
+            _({
+              value: `actor.${field}`,
+              label: `Actor ${field}`,
+            }),
+          ),
         ],
       },
       {
         group: "Source",
-        items: (sourceFields ?? []).map((field) => ({
-          value: `source.${field}`,
-          label: field,
-        })),
+        items: (sourceFields ?? []).map((field) =>
+          _({
+            value: `source.${field}`,
+            label: field,
+          }),
+        ),
       },
       {
         group: "Resource",
         items: [
-          { value: "resourceType", label: "Resource type" },
-          { value: "resourceName", label: "Resource name" },
-          { value: "resourceRef", label: "Resource ref" },
-          ...(resourceCustomFields ?? []).map((field) => ({
-            value: `resource.${field}`,
-            label: `Resource ${field}`,
-          })),
+          _({ value: "resourceType", label: "Resource type" }),
+          _({ value: "resourceName", label: "Resource name" }),
+          _({ value: "resourceRef", label: "Resource ref" }),
+          ...(resourceCustomFields ?? []).map((field) =>
+            _({
+              value: `resource.${field}`,
+              label: `Resource ${field}`,
+            }),
+          ),
         ],
       },
       {
         group: "Details",
-        items: (detailFields ?? []).map((field) => ({
-          value: `details.${field}`,
-          label: field,
-        })),
+        items: (detailFields ?? []).map((field) =>
+          _({
+            value: `details.${field}`,
+            label: field,
+          }),
+        ),
       },
       {
         group: "Tag",
         items: [
-          { value: "tagType", label: "Tag type" },
-          { value: "tagName", label: "Tag name" },
-          { value: "tagRef", label: "Tag ref" },
+          _({ value: "tagType", label: "Tag type" }),
+          _({ value: "tagName", label: "Tag name" }),
+          _({ value: "tagRef", label: "Tag ref" }),
         ],
       },
       {
         group: "Node",
-        items: [{ value: "node", label: "Node" }],
+        items: [_({ value: "node", label: "Node" })],
       },
     ],
   };

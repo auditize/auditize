@@ -17,7 +17,11 @@ function buildComboboxOptions(
       {data.map((group) => (
         <Combobox.Group key={group.group} label={group.group}>
           {group.items.map((item) => (
-            <Combobox.Option key={item.value} value={item.value}>
+            <Combobox.Option
+              key={item.value}
+              value={item.value}
+              disabled={item.disabled}
+            >
               <Group gap="sm">
                 {selected.includes(item.value) ? <CheckIcon size={12} /> : null}
                 <span>{item.label}</span>
