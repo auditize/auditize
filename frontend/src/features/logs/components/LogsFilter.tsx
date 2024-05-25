@@ -833,7 +833,7 @@ export function LogFilters({
   };
 
   return (
-    <Group p="1rem">
+    <Group p="1rem" gap="xs">
       {/* Repository selector */}
       <RepoSelector
         repoId={editedParams.repoId}

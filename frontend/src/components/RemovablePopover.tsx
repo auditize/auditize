@@ -1,5 +1,4 @@
-import { Button, Popover } from "@mantine/core";
-import { useEffect, useState } from "react";
+import { Button, CloseButton, Popover } from "@mantine/core";
 
 export function RemovablePopover({
   title,
@@ -19,17 +18,19 @@ export function RemovablePopover({
   return (
     <Popover opened={opened} onChange={onChange}>
       <Popover.Target>
-        <Button.Group>
-          <Button
-            variant={isSet ? "filled" : "outline"}
-            onClick={() => onChange(!opened)}
-          >
-            {title}
-          </Button>
-          <Button variant="outline" onClick={onRemove}>
-            X
-          </Button>
-        </Button.Group>
+        <Button
+          onClick={() => onChange(!opened)}
+          rightSection={
+            <CloseButton
+              onClick={onRemove}
+              component="a" // a button cannot be a child of a button
+              variant="transparent"
+            />
+          }
+          variant={isSet ? "light" : "outline"}
+        >
+          {title}
+        </Button>
       </Popover.Target>
       <Popover.Dropdown>{children}</Popover.Dropdown>
     </Popover>
