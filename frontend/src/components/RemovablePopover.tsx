@@ -4,6 +4,7 @@ export function RemovablePopover({
   title,
   opened,
   isSet,
+  removable = true,
   onChange,
   onRemove,
   children,
@@ -11,6 +12,7 @@ export function RemovablePopover({
   title: string;
   opened: boolean;
   isSet: boolean;
+  removable?: boolean;
   onChange: (opened: boolean) => void;
   onRemove: () => void;
   children: React.ReactNode;
@@ -21,11 +23,13 @@ export function RemovablePopover({
         <Button
           onClick={() => onChange(!opened)}
           rightSection={
-            <CloseButton
-              onClick={onRemove}
-              component="a" // a button cannot be a child of a button
-              variant="transparent"
-            />
+            removable && (
+              <CloseButton
+                onClick={onRemove}
+                component="a" // a button cannot be a child of a button
+                variant="transparent"
+              />
+            )
           }
           variant={isSet ? "light" : "outline"}
         >

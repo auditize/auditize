@@ -1,15 +1,7 @@
-import {
-  Button,
-  Flex,
-  Group,
-  MultiSelect,
-  Space,
-  Stack,
-  TextInput,
-} from "@mantine/core";
+import { Button, Flex, Group, Space, Stack, TextInput } from "@mantine/core";
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -32,6 +24,13 @@ import {
   LogSearchParams,
 } from "../api";
 import { NodeSelector } from "./NodeSelector";
+
+const FIXED_FILTER_NAMES = new Set([
+  "date",
+  "actionCategory",
+  "actionType",
+  "node",
+]);
 
 function RepoSelector({
   repoId,
@@ -198,6 +197,7 @@ function FilterFieldSelect({
       opened={opened}
       isSet={!!value}
       onChange={toggle}
+      removable={!FIXED_FILTER_NAMES.has(searchParamName)}
       onRemove={() => onRemove(searchParamName)}
     >
       <PaginatedSelector.WithoutDropdown
@@ -236,6 +236,7 @@ function BaseFilterFieldTextInput({
       opened={opened}
       isSet={!!value}
       onChange={toggle}
+      removable={!FIXED_FILTER_NAMES.has(name)}
       onRemove={() => onRemove(name)}
     >
       <TextInput
@@ -295,6 +296,7 @@ function FilterField({
     return (
       <RemovablePopover
         title="Date"
+        removable={!FIXED_FILTER_NAMES.has("date")}
         onRemove={() => onRemove("date")}
         isSet={!!(searchParams.since || searchParams.until)}
         opened={opened}
@@ -551,6 +553,7 @@ function FilterField({
         opened={opened}
         isSet={!!searchParams.nodeRef}
         onChange={toggle}
+        removable={!FIXED_FILTER_NAMES.has("node")}
         onRemove={() => onRemove("node")}
       >
         <NodeSelector
@@ -648,7 +651,7 @@ function filterParamsReducer(
 }
 
 function searchParamsToFilterNames(searchParams: LogSearchParams): Set<string> {
-  const filterNames = new Set<string>();
+  const filterNames = new Set<string>(FIXED_FILTER_NAMES);
 
   // Date
   if (searchParams.since || searchParams.until) {
