@@ -1,5 +1,6 @@
 import {
   Button,
+  Flex,
   Group,
   MultiSelect,
   Space,
@@ -833,53 +834,59 @@ export function LogFilters({
   };
 
   return (
-    <Group p="1rem" gap="xs">
-      {/* Repository selector */}
-      <RepoSelector
-        repoId={editedParams.repoId}
-        onChange={(repoId) => {
-          // Trigger a log search when the log repository is selected for the first time
-          // so that the logs table can be populated when the page is loaded without any explicit filter
-          if (!editedParams.repoId) {
-            onChange({ ...editedParams, repoId });
-          } else {
-            dispatch({ type: "setParam", name: "repoId", value: repoId });
-          }
-        }}
-      />
+    <Flex justify="space-between" align="center">
+      <Group gap="xs">
+        {/* Repository selector */}
+        <RepoSelector
+          repoId={editedParams.repoId}
+          onChange={(repoId) => {
+            // Trigger a log search when the log repository is selected for the first time
+            // so that the logs table can be populated when the page is loaded without any explicit filter
+            if (!editedParams.repoId) {
+              onChange({ ...editedParams, repoId });
+            } else {
+              dispatch({ type: "setParam", name: "repoId", value: repoId });
+            }
+          }}
+        />
 
-      {/* Filters */}
-      <FilterFields
-        names={filterNames}
-        added={addedFilterName}
-        searchParams={editedParams}
-        onChange={(name, value) => dispatch({ type: "setParam", name, value })}
-        onRemove={removeFilter}
-      />
-      <FilterSelector
-        repoId={editedParams.repoId!}
-        selected={filterNames}
-        onFilterAdded={(name) => {
-          setFilterNames(new Set([...filterNames, name]));
-          setAddedFilterName(name);
-        }}
-        onFilterRemoved={removeFilter}
-      />
+        {/* Filters */}
+        <FilterFields
+          names={filterNames}
+          added={addedFilterName}
+          searchParams={editedParams}
+          onChange={(name, value) =>
+            dispatch({ type: "setParam", name, value })
+          }
+          onRemove={removeFilter}
+        />
+        <FilterSelector
+          repoId={editedParams.repoId!}
+          selected={filterNames}
+          onFilterAdded={(name) => {
+            setFilterNames(new Set([...filterNames, name]));
+            setAddedFilterName(name);
+          }}
+          onFilterRemoved={removeFilter}
+        />
+      </Group>
 
       {/* Apply & clear buttons */}
       <Space w="l" />
-      <Button onClick={() => onChange(editedParams)}>Apply</Button>
-      <Button
-        onClick={() =>
-          dispatch({
-            type: "resetParams",
-            params: { repoId: editedParams.repoId },
-          })
-        }
-        variant="default"
-      >
-        Clear
-      </Button>
-    </Group>
+      <Group>
+        <Button onClick={() => onChange(editedParams)}>Apply</Button>
+        <Button
+          onClick={() =>
+            dispatch({
+              type: "resetParams",
+              params: { repoId: editedParams.repoId },
+            })
+          }
+          variant="default"
+        >
+          Clear
+        </Button>
+      </Group>
+    </Flex>
   );
 }

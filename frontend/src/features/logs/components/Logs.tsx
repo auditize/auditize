@@ -1,3 +1,4 @@
+import { Stack } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { useSearchParams } from "react-router-dom";
 
@@ -63,7 +64,7 @@ export function Logs() {
   useDocumentTitle("Logs");
 
   return (
-    <>
+    <Stack gap="lg" pt="xs">
       <LogFilters
         params={filter}
         onChange={(newFilter) => {
@@ -90,6 +91,6 @@ export function Logs() {
           });
         }}
       />
-    </>
+    </Stack>
   );
 }
