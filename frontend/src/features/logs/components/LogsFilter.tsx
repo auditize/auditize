@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Button,
   Flex,
   Group,
@@ -8,6 +9,7 @@ import {
   useCombobox,
 } from "@mantine/core";
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
+import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useReducer, useState } from "react";
 
@@ -628,7 +630,7 @@ function FilterSelector({
       onRemove={onFilterRemoved}
     >
       <Button onClick={() => comboboxStore.toggleDropdown()}>
-        More filters
+        <IconPlus />
       </Button>
     </CustomMultiSelect>
   );
