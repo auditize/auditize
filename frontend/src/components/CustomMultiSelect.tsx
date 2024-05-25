@@ -1,5 +1,4 @@
 import {
-  Button,
   CheckIcon,
   Combobox,
   ComboboxItem,
@@ -31,40 +30,44 @@ function buildComboboxOptions(
   );
 }
 
+// This component is a replacement for `MultiSelect` because it enforce a textinput
+// with a summary of the selected values which is in our case:
+// - not useful
+// - be problematic in term of UI once two or more values are selected
+//
 // keep the function signature as close as possible to `MultiSelect`
 export function CustomMultiSelect({
-  placeholder,
   data,
   value,
+  comboboxStore,
   onOptionSubmit,
   onRemove,
+  children,
 }: {
-  placeholder: string;
   data: ComboboxItemGroup<ComboboxItem>[];
   value: string[];
+  comboboxStore: ReturnType<typeof useCombobox>;
   onOptionSubmit: (value: string) => void;
   onRemove: (value: string) => void;
+  children: React.ReactNode;
 }) {
-  const combobox = useCombobox({});
   const handleOnOptionSubmit = (changed: string) => {
     if (value.includes(changed)) {
       onRemove(changed);
     } else {
       onOptionSubmit(changed);
     }
-    combobox.closeDropdown();
+    comboboxStore.closeDropdown();
   };
 
   return (
     <Combobox
-      store={combobox}
+      store={comboboxStore}
       onOptionSubmit={handleOnOptionSubmit}
       withinPortal={false}
       width="max-content"
     >
-      <Combobox.DropdownTarget>
-        <Button onClick={() => combobox.toggleDropdown()}>{placeholder}</Button>
-      </Combobox.DropdownTarget>
+      <Combobox.DropdownTarget>{children}</Combobox.DropdownTarget>
 
       <Combobox.Dropdown>
         <Combobox.Options>

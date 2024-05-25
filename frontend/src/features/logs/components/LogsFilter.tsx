@@ -1,4 +1,12 @@
-import { Button, Flex, Group, Space, Stack, TextInput } from "@mantine/core";
+import {
+  Button,
+  Flex,
+  Group,
+  Space,
+  Stack,
+  TextInput,
+  useCombobox,
+} from "@mantine/core";
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useReducer, useState } from "react";
@@ -609,15 +617,20 @@ function FilterSelector({
   onFilterRemoved: (name: string) => void;
 }) {
   const { fields: availableFields } = useAvailableFilterFields(repoId);
+  const comboboxStore = useCombobox();
 
   return (
     <CustomMultiSelect
-      placeholder="More filters"
+      comboboxStore={comboboxStore}
       data={availableFields}
       value={Array.from(selected)}
       onOptionSubmit={onFilterAdded}
       onRemove={onFilterRemoved}
-    />
+    >
+      <Button onClick={() => comboboxStore.toggleDropdown()}>
+        More filters
+      </Button>
+    </CustomMultiSelect>
   );
 }
 
