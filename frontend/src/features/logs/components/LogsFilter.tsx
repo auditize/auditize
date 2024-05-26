@@ -1,8 +1,9 @@
 import {
-  ActionIcon,
   Button,
+  CloseButton,
   Flex,
   Group,
+  Popover,
   Space,
   Stack,
   TextInput,
@@ -15,7 +16,6 @@ import { useEffect, useReducer, useState } from "react";
 
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
-import { RemovablePopover } from "@/components/RemovablePopover";
 import { getAllMyRepos } from "@/features/repos";
 import { Repo } from "@/features/repos";
 import { labelize } from "@/utils/format";
@@ -41,6 +41,47 @@ const FIXED_FILTER_NAMES = new Set([
   "actionType",
   "node",
 ]);
+
+function FilterFieldPopover({
+  title,
+  opened,
+  isSet,
+  removable = true,
+  onChange,
+  onRemove,
+  children,
+}: {
+  title: string;
+  opened: boolean;
+  isSet: boolean;
+  removable?: boolean;
+  onChange: (opened: boolean) => void;
+  onRemove: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Popover opened={opened} onChange={onChange}>
+      <Popover.Target>
+        <Button
+          onClick={() => onChange(!opened)}
+          rightSection={
+            removable && (
+              <CloseButton
+                onClick={onRemove}
+                component="a" // a button cannot be a child of a button
+                variant="transparent"
+              />
+            )
+          }
+          variant={isSet ? "light" : "outline"}
+        >
+          {title}
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown>{children}</Popover.Dropdown>
+    </Popover>
+  );
+}
 
 function RepoSelector({
   repoId,
@@ -216,7 +257,7 @@ function FilterFieldSelect({
     searchParamName as keyof LogSearchParams
   ] as string;
   return (
-    <RemovablePopover
+    <FilterFieldPopover
       title={label}
       opened={opened}
       isSet={!!value}
@@ -234,7 +275,7 @@ function FilterFieldSelect({
         itemLabel={(item) => labelize(item)}
         itemValue={(item) => item}
       />
-    </RemovablePopover>
+    </FilterFieldPopover>
   );
 }
 
@@ -255,7 +296,7 @@ function BaseFilterFieldTextInput({
 }) {
   const [opened, { toggle }] = useDisclosure(openedByDefault);
   return (
-    <RemovablePopover
+    <FilterFieldPopover
       title={label}
       opened={opened}
       isSet={!!value}
@@ -268,7 +309,7 @@ function BaseFilterFieldTextInput({
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
-    </RemovablePopover>
+    </FilterFieldPopover>
   );
 }
 
@@ -318,7 +359,7 @@ function FilterField({
   if (name === "date") {
     const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
-      <RemovablePopover
+      <FilterFieldPopover
         title="Date"
         removable={!FIXED_FILTER_NAMES.has("date")}
         onRemove={() => onRemove("date")}
@@ -339,7 +380,7 @@ function FilterField({
             initToEndOfDay
           />
         </Stack>
-      </RemovablePopover>
+      </FilterFieldPopover>
     );
   }
 
@@ -572,7 +613,7 @@ function FilterField({
   if (name === "node") {
     const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
-      <RemovablePopover
+      <FilterFieldPopover
         title="Node"
         opened={opened}
         isSet={!!searchParams.nodeRef}
@@ -585,7 +626,7 @@ function FilterField({
           nodeRef={searchParams.nodeRef || null}
           onChange={(value) => onChange("nodeRef", value)}
         />
-      </RemovablePopover>
+      </FilterFieldPopover>
     );
   }
 
