@@ -11,6 +11,11 @@ export type Named = {
   name: string;
 };
 
+type CustomField = {
+  name: string;
+  value: string;
+};
+
 export type Log = {
   id: number;
   savedAt: string;
@@ -22,11 +27,13 @@ export type Log = {
     ref: string;
     type: string;
     name: string;
+    extra: CustomField[];
   };
   resource?: {
     ref: string;
     type: string;
     name: string;
+    extra: CustomField[];
   };
   nodePath: {
     ref: string;
