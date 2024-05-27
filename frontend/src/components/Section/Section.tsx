@@ -5,14 +5,13 @@ export function Section({
   title,
   icon,
   children,
-  ...props
 }: {
   title: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <Box {...props}>
+    <Box mb="md">
       <Group
         gap="0px"
         style={{

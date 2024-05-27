@@ -1,5 +1,10 @@
 import { Code, Divider, Modal, Table, Text } from "@mantine/core";
-import { IconCylinder, IconHierarchy, IconUser } from "@tabler/icons-react";
+import {
+  IconCylinder,
+  IconHierarchy,
+  IconListDetails,
+  IconUser,
+} from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -124,6 +129,22 @@ export function LogDetails({
                     ],
                 ),
               ]}
+            />
+          </Section>
+        )}
+        {log.details && (
+          <Section
+            title="Details"
+            icon={<IconListDetails style={iconSize("1.15rem")} />}
+          >
+            <KeyValueTable
+              data={log.details.map(
+                (field) =>
+                  [labelize(field.name), field.value] as [
+                    React.ReactNode,
+                    React.ReactNode,
+                  ],
+              )}
             />
           </Section>
         )}

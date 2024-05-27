@@ -35,6 +35,7 @@ export type Log = {
     name: string;
     extra: CustomField[];
   };
+  details: CustomField[];
   nodePath: {
     ref: string;
     name: string;
