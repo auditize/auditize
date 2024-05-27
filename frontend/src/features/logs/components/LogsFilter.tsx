@@ -2,6 +2,7 @@ import {
   Button,
   CloseButton,
   Flex,
+  FocusTrap,
   Group,
   Popover,
   Space,
@@ -385,11 +386,14 @@ function BaseFilterFieldTextInput({
       removable={!FIXED_FILTER_NAMES.has(name)}
       onRemove={() => onRemove(name)}
     >
-      <TextInput
-        placeholder={label}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-      />
+      <FocusTrap active>
+        <TextInput
+          placeholder={label}
+          value={value}
+          onChange={(event) => onChange(event.currentTarget.value)}
+          data-autofocus
+        />
+      </FocusTrap>
     </FilterFieldPopover>
   );
 }
