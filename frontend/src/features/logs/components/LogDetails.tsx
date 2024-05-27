@@ -1,8 +1,8 @@
-import { Accordion, Divider, Modal, Text, Title } from "@mantine/core";
-import { IconCylinder, IconHierarchy, IconUser } from "@tabler/icons-react";
+import { Divider, Modal, Text } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
+import { Section } from "@/components/Section";
 import { labelize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
@@ -67,48 +67,26 @@ export function LogDetails({
           </tbody>
         </table>
         <Divider my="md" size="md" color="blue" />
-        <Accordion
-          multiple
-          defaultValue={["actor", "resource", "node"]}
-          variant="default"
-        >
-          <Accordion.Item key="actor" value="actor">
-            <Accordion.Control icon={<IconUser style={iconSize("1.15rem")} />}>
-              Actor
-            </Accordion.Control>
-            <Accordion.Panel>
-              {log.actor ? (
-                <p>
-                  {log.actor.name} ({labelize(log.actor.type)})
-                </p>
-              ) : null}
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="resource" value="resource">
-            <Accordion.Control
-              icon={<IconCylinder style={iconSize("1.15rem")} />}
-            >
-              Resource
-            </Accordion.Control>
-            <Accordion.Panel>
-              {log.resource ? (
-                <p>
-                  {log.resource.name} ({labelize(log.resource.type)})
-                </p>
-              ) : null}
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item key="node" value="node">
-            <Accordion.Control
-              icon={<IconHierarchy style={iconSize("1.15rem")} />}
-            >
-              Node
-            </Accordion.Control>
-            <Accordion.Panel>
-              {log.nodePath.map((node) => node.name).join(" > ")}
-            </Accordion.Panel>
-          </Accordion.Item>
-        </Accordion>
+        {/* <IconUser style={iconSize("1.15rem")} */}
+        <Section title="Actor">
+          {log.actor ? (
+            <p>
+              {log.actor.name} ({labelize(log.actor.type)})
+            </p>
+          ) : null}
+        </Section>
+        {/* <IconCylinder style={iconSize("1.15rem")} /> */}
+        <Section title="Resource">
+          {log.resource ? (
+            <p>
+              {log.resource.name} ({labelize(log.resource.type)})
+            </p>
+          ) : null}
+        </Section>
+        {/* <IconHierarchy style={iconSize("1.15rem")} /> */}
+        <Section title="Node">
+          {log.nodePath.map((node) => node.name).join(" > ")}
+        </Section>
       </div>
     </Modal>
   );
