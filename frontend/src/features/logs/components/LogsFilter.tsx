@@ -28,6 +28,7 @@ import {
   getAllLogActorCustomFields,
   getAllLogActorTypes,
   getAllLogDetailFields,
+  getAllLogNodes,
   getAllLogResourceCustomFields,
   getAllLogResourceTypes,
   getAllLogSourceFields,
@@ -247,6 +248,41 @@ function useAvailableFilterFields(repoId: string) {
   };
 }
 
+function useLogConsolidatedDataPrefetch(repoId: string) {
+  const { isPending: actionCategoryPending } = useQuery({
+    queryKey: ["logConsolidatedData", "actionCategory", repoId],
+    queryFn: () => getAllLogActionCategories(repoId),
+  });
+  const { isPending: actionTypePending } = useQuery({
+    queryKey: ["logConsolidatedData", "actionType", repoId],
+    queryFn: () => getAllLogActionTypes(repoId),
+  });
+  const { isPending: actorTypePending } = useQuery({
+    queryKey: ["logConsolidatedData", "actorType", repoId],
+    queryFn: () => getAllLogActorTypes(repoId),
+  });
+  const { isPending: resourceTypePending } = useQuery({
+    queryKey: ["logConsolidatedData", "resourceType", repoId],
+    queryFn: () => getAllLogResourceTypes(repoId),
+  });
+  const { isPending: tagTypePending } = useQuery({
+    queryKey: ["logConsolidatedData", "tagType", repoId],
+    queryFn: () => getAllLogTagTypes(repoId),
+  });
+  const { isPending: nodePending } = useQuery({
+    queryKey: ["logConsolidatedData", "node", repoId],
+    queryFn: () => getAllLogNodes(repoId),
+  });
+  return (
+    actionCategoryPending ||
+    actionTypePending ||
+    actorTypePending ||
+    resourceTypePending ||
+    tagTypePending ||
+    nodePending
+  );
+}
+
 function FilterFieldSelect({
   label,
   searchParams,
@@ -361,6 +397,42 @@ function FilterFieldTextInput({
       onChange={(value) => onChange(searchParamName, value)}
       onRemove={onRemove}
     />
+  );
+}
+
+function FilterFieldNode({
+  searchParams,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  searchParams: LogSearchParams;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const { isPending } = useQuery({
+    queryKey: ["logConsolidatedData", "node", searchParams.repoId],
+    queryFn: () => getAllLogNodes(searchParams.repoId!),
+    enabled: !!searchParams.repoId,
+  });
+  const [opened, { toggle }] = useDisclosure(openedByDefault);
+  return (
+    <FilterFieldPopover
+      title="Node"
+      opened={opened}
+      isSet={!!searchParams.nodeRef}
+      onChange={toggle}
+      removable={!FIXED_FILTER_NAMES.has("node")}
+      onRemove={() => onRemove("node")}
+      loading={isPending}
+    >
+      <NodeSelector
+        repoId={searchParams.repoId || null}
+        nodeRef={searchParams.nodeRef || null}
+        onChange={(value) => onChange("nodeRef", value)}
+      />
+    </FilterFieldPopover>
   );
 }
 
@@ -632,22 +704,13 @@ function FilterField({
   }
 
   if (name === "node") {
-    const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
-      <FilterFieldPopover
-        title="Node"
-        opened={opened}
-        isSet={!!searchParams.nodeRef}
-        onChange={toggle}
-        removable={!FIXED_FILTER_NAMES.has("node")}
-        onRemove={() => onRemove("node")}
-      >
-        <NodeSelector
-          repoId={searchParams.repoId || null}
-          nodeRef={searchParams.nodeRef || null}
-          onChange={(value) => onChange("nodeRef", value)}
-        />
-      </FilterFieldPopover>
+      <FilterFieldNode
+        searchParams={searchParams}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
     );
   }
 
@@ -694,7 +757,8 @@ function FilterSelector({
   onFilterAdded: (name: string) => void;
   onFilterRemoved: (name: string) => void;
 }) {
-  const { fields, loading } = useAvailableFilterFields(repoId);
+  const { fields, loading: fieldLoading } = useAvailableFilterFields(repoId);
+  const logConsolidatedDataLoading = useLogConsolidatedDataPrefetch(repoId);
   const comboboxStore = useCombobox();
 
   return (
@@ -707,7 +771,7 @@ function FilterSelector({
     >
       <Button
         onClick={() => comboboxStore.toggleDropdown()}
-        loading={loading}
+        loading={fieldLoading || logConsolidatedDataLoading}
         loaderProps={{ type: "dots" }}
       >
         <IconPlus />

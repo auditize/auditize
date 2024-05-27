@@ -89,7 +89,7 @@ export function NodeSelector({
     if (repoId) {
       queryClient
         .ensureQueryData({
-          queryKey: ["nodes", repoId],
+          queryKey: ["logConsolidatedData", "node", repoId],
           queryFn: () => getAllLogNodes(repoId),
         })
         .then((nodes) => setItems(nodes.map(logNodeToItem)));
@@ -139,7 +139,7 @@ export function NodeSelector({
         // after getChildren has been called
         return queryClient
           .ensureQueryData({
-            queryKey: ["nodes", repoId, item.value],
+            queryKey: ["logConsolidatedData", "node", repoId, item.value],
             queryFn: () => getAllLogNodes(repoId!, item.value as string),
           })
           .then((nodes) => {
