@@ -16,6 +16,7 @@ import { useEffect, useReducer, useState } from "react";
 
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
+import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import { getAllMyRepos } from "@/features/repos";
 import { Repo } from "@/features/repos";
 import { labelize } from "@/utils/format";
@@ -47,6 +48,7 @@ function FilterFieldPopover({
   opened,
   isSet,
   removable = true,
+  loading = false,
   onChange,
   onRemove,
   children,
@@ -55,6 +57,7 @@ function FilterFieldPopover({
   opened: boolean;
   isSet: boolean;
   removable?: boolean;
+  loading?: boolean;
   onChange: (opened: boolean) => void;
   onRemove: () => void;
   children: React.ReactNode;
@@ -64,6 +67,8 @@ function FilterFieldPopover({
       <Popover.Target>
         <Button
           onClick={() => onChange(!opened)}
+          loading={loading}
+          loaderProps={{ type: "dots" }}
           rightSection={
             removable && (
               <CloseButton
@@ -259,6 +264,11 @@ function FilterFieldSelect({
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
 }) {
+  const { isPending, error, data } = useQuery({
+    queryKey: ["logConsolidatedData", searchParamName, searchParams.repoId],
+    queryFn: () => items(searchParams.repoId!),
+    enabled: !!searchParams.repoId,
+  });
   const [opened, { toggle }] = useDisclosure(openedByDefault);
   const value = searchParams[
     searchParamName as keyof LogSearchParams
@@ -271,16 +281,20 @@ function FilterFieldSelect({
       onChange={toggle}
       removable={!FIXED_FILTER_NAMES.has(searchParamName)}
       onRemove={() => onRemove(searchParamName)}
+      loading={isPending}
     >
-      <PaginatedSelector.WithoutDropdown
-        label={label}
-        queryKey={["logConsolidatedData", searchParamName, searchParams.repoId]}
-        queryFn={() => items(searchParams.repoId!)}
-        enabled={!!searchParams.repoId}
-        selectedItem={value}
+      <SelectWithoutDropdown
+        data={
+          data
+            ? data.map((item) => ({
+                label: labelize(item),
+                value: item,
+              }))
+            : []
+        }
+        value={value}
         onChange={(value) => onChange(searchParamName, value)}
-        itemLabel={(item) => labelize(item)}
-        itemValue={(item) => item}
+        placeholder={label}
       />
     </FilterFieldPopover>
   );
