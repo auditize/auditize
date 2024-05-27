@@ -50,6 +50,7 @@ export function PaginatedSelector({
       value={selectedItem || null}
       onChange={(value) => onChange(value || "")}
       placeholder={isPending ? "Loading..." : label}
+      disabled={isPending}
       clearable={clearable}
       display="flex"
       comboboxProps={{ withinPortal: false }}
