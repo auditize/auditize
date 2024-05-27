@@ -23,6 +23,7 @@ export type Log = {
     type: string;
     category: string;
   };
+  source: CustomField[];
   actor?: {
     ref: string;
     type: string;

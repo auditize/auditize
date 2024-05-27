@@ -1,14 +1,17 @@
-import { Code, Divider, Modal, Table, Text } from "@mantine/core";
+import { Code, Divider, Group, Modal, Table, Text, Title } from "@mantine/core";
 import {
+  IconCalendarClock,
   IconCylinder,
   IconHierarchy,
   IconListDetails,
+  IconRoute,
   IconUser,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { Section } from "@/components/Section";
+import { humanizeDate } from "@/utils/date";
 import { labelize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
@@ -60,36 +63,39 @@ export function LogDetails({
 
   return (
     <Modal
-      title={"Log details"}
+      title={
+        <Title order={3} size="h2">
+          {labelize(log.action.type)} ({labelize(log.action.category)})
+        </Title>
+      }
       size="lg"
       padding="lg"
       opened={opened}
       onClose={() => navigate(-1)}
     >
+      <Group mb="lg">
+        <IconCalendarClock />
+        {humanizeDate(log.savedAt)}
+      </Group>
+
+      {log.source && (
+        <Section
+          title="Source"
+          icon={<IconRoute style={iconSize("1.15rem")} />}
+        >
+          <KeyValueTable
+            data={log.source.map(
+              (field) =>
+                [labelize(field.name), field.value] as [
+                  React.ReactNode,
+                  React.ReactNode,
+                ],
+            )}
+          />
+        </Section>
+      )}
+
       <div>
-        <table>
-          <tbody>
-            <tr>
-              <td>
-                <Text fw={700}>Date</Text>
-              </td>
-              <td>{log.savedAt}</td>
-            </tr>
-            <tr>
-              <td>
-                <Text fw={700}>Action type</Text>
-              </td>
-              <td>{labelize(log.action.type)}</td>
-            </tr>
-            <tr>
-              <td>
-                <Text fw={700}>Action category</Text>
-              </td>
-              <td>{labelize(log.action.category)}</td>
-            </tr>
-          </tbody>
-        </table>
-        <Divider my="md" size="md" color="blue" />
         {log.actor && (
           <Section
             title="Actor"
