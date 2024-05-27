@@ -220,6 +220,7 @@ export default function App() {
       queries: {
         refetchOnWindowFocus: false,
         retry: false,
+        staleTime: Infinity,
       },
     },
   });
