@@ -90,9 +90,9 @@ function Main() {
   }, [currentUser]);
 
   return (
-    <AppShell header={{ height: 60 }}>
+    <AppShell header={{ height: 55 }} padding="lg">
       <AppShell.Header bg="#fbfbfb">
-        <Flex h="100%" px="4rem" justify="space-between" align="center">
+        <Flex h="100%" px="lg" justify="space-between" align="center">
           <Navbar>
             <NavbarItem label="Log-in" url="/log-in" condition={!currentUser} />
             <NavbarItem
@@ -144,7 +144,7 @@ function Main() {
           </Tooltip>
         </Flex>
       </AppShell.Header>
-      <AppShell.Main px="4rem">
+      <AppShell.Main>
         <Outlet />
       </AppShell.Main>
     </AppShell>
