@@ -23,6 +23,8 @@ import { labelize } from "@/utils/format";
 
 import {
   buildLogSearchParams,
+  getAllAttachmentMimeTypes,
+  getAllAttachmentTypes,
   getAllLogActionCategories,
   getAllLogActionTypes,
   getAllLogActorCustomFields,
@@ -236,6 +238,18 @@ function useAvailableFilterFields(repoId: string) {
         ],
       },
       {
+        group: "Attachment",
+        items: [
+          _({ value: "attachmentName", label: "Attachment name" }),
+          _({
+            value: "attachmentDescription",
+            label: "Attachment description",
+          }),
+          _({ value: "attachmentType", label: "Attachment type" }),
+          _({ value: "attachmentMimeType", label: "Attachment MIME type" }),
+        ],
+      },
+      {
         group: "Node",
         items: [_({ value: "node", label: "Node" })],
       },
@@ -269,6 +283,14 @@ function useLogConsolidatedDataPrefetch(repoId: string) {
     queryKey: ["logConsolidatedData", "tagType", repoId],
     queryFn: () => getAllLogTagTypes(repoId),
   });
+  const { isPending: attachmentTypePending } = useQuery({
+    queryKey: ["logConsolidatedData", "attachmentType", repoId],
+    queryFn: () => getAllAttachmentTypes(repoId),
+  });
+  const { isPending: attachmentMimeTypePending } = useQuery({
+    queryKey: ["logConsolidatedData", "attachmentMimeType", repoId],
+    queryFn: () => getAllAttachmentMimeTypes(repoId),
+  });
   const { isPending: nodePending } = useQuery({
     queryKey: ["logConsolidatedData", "node", repoId],
     queryFn: () => getAllLogNodes(repoId),
@@ -279,6 +301,8 @@ function useLogConsolidatedDataPrefetch(repoId: string) {
     actorTypePending ||
     resourceTypePending ||
     tagTypePending ||
+    attachmentTypePending ||
+    attachmentMimeTypePending ||
     nodePending
   );
 }
@@ -703,6 +727,60 @@ function FilterField({
     );
   }
 
+  if (name === "attachmentName") {
+    return (
+      <FilterFieldTextInput
+        label="Attachment name"
+        searchParams={searchParams}
+        searchParamName="attachmentName"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "attachmentDescription") {
+    return (
+      <FilterFieldTextInput
+        label="Attachment description"
+        searchParams={searchParams}
+        searchParamName="attachmentDescription"
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "attachmentType") {
+    return (
+      <FilterFieldSelect
+        label="Attachment type"
+        searchParams={searchParams}
+        searchParamName="attachmentType"
+        items={(repoId) => getAllAttachmentTypes(repoId)}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "attachmentMimeType") {
+    return (
+      <FilterFieldSelect
+        label="Attachment MIME type"
+        searchParams={searchParams}
+        searchParamName="attachmentMimeType"
+        items={(repoId) => getAllAttachmentMimeTypes(repoId)}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
   if (name === "node") {
     return (
       <FilterFieldNode
@@ -874,6 +952,20 @@ function searchParamsToFilterNames(searchParams: LogSearchParams): Set<string> {
     filterNames.add("tagName");
   }
 
+  // Attachment
+  if (searchParams.attachmentName) {
+    filterNames.add("attachmentName");
+  }
+  if (searchParams.attachmentDescription) {
+    filterNames.add("attachmentDescription");
+  }
+  if (searchParams.attachmentType) {
+    filterNames.add("attachmentType");
+  }
+  if (searchParams.attachmentMimeType) {
+    filterNames.add("attachmentMimeType");
+  }
+
   // Node
   if (searchParams.nodeRef) {
     filterNames.add("node");
@@ -883,8 +975,8 @@ function searchParamsToFilterNames(searchParams: LogSearchParams): Set<string> {
 }
 
 function removeSearchParam(
-  filterName: string,
   searchParams: LogSearchParams,
+  filterName: string,
   setSearchParam: (name: string, value: any) => void,
 ) {
   // Handle search params whose names are equivalent to filter names
@@ -900,6 +992,10 @@ function removeSearchParam(
     "tagRef",
     "tagType",
     "tagName",
+    "attachmentName",
+    "attachmentDescription",
+    "attachmentType",
+    "attachmentMimeType",
     "nodeRef",
   ];
   if (equivalentSearchParams.includes(filterName)) {
@@ -990,7 +1086,7 @@ export function LogFilters({
 
   const removeFilter = (name: string) => {
     setFilterNames(new Set([...filterNames].filter((n) => n !== name)));
-    removeSearchParam(name, editedParams, (name, value) =>
+    removeSearchParam(editedParams, name, (name, value) =>
       dispatch({ type: "setParam", name, value }),
     );
   };

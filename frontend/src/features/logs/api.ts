@@ -58,6 +58,10 @@ export type LogSearchParams = {
   tagRef?: string;
   tagType?: string;
   tagName?: string;
+  attachmentName?: string;
+  attachmentDescription?: string;
+  attachmentType?: string;
+  attachmentMimeType?: string;
   nodeRef?: string;
   since?: Date | null;
   until?: Date | null;
@@ -81,6 +85,10 @@ export function buildLogSearchParams(): LogSearchParams {
     tagType: "",
     tagName: "",
     tagRef: "",
+    attachmentName: "",
+    attachmentDescription: "",
+    attachmentType: "",
+    attachmentMimeType: "",
     nodeRef: "",
     since: null,
     until: null,
@@ -136,6 +144,12 @@ export function prepareLogFilterForApi(filter: LogSearchParams): object {
     tagType: filter.tagType,
     tagName: filter.tagName,
 
+    // Attachment
+    attachmentName: filter.attachmentName,
+    attachmentDescription: filter.attachmentDescription,
+    attachmentType: filter.attachmentType,
+    attachmentMimeType: filter.attachmentMimeType,
+
     // Node
     nodeRef: filter.nodeRef,
   };
@@ -152,7 +166,7 @@ export async function getLogs(
       {
         limit,
         ...(filter ? prepareLogFilterForApi(filter) : {}),
-        repoId: undefined, // remove repoId from the query params
+        repoId: undefined, // the repoId is in the URL
         ...(cursor && { cursor }),
       },
       { exclude: [/.*\[.*/] },
@@ -247,6 +261,26 @@ export async function getAllLogDetailFields(repoId: string): Promise<string[]> {
 export async function getAllLogTagTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
+  );
+}
+
+export async function getAllAttachmentTypes(repoId: string): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(
+      `/repos/${repoId}/logs/attachments/types`,
+      {},
+    ),
+  );
+}
+
+export async function getAllAttachmentMimeTypes(
+  repoId: string,
+): Promise<string[]> {
+  return getNames(
+    getAllPagePaginatedItems<Named>(
+      `/repos/${repoId}/logs/attachments/mime-types`,
+      {},
+    ),
   );
 }
 
