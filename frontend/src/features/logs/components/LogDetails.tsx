@@ -1,4 +1,5 @@
 import { Divider, Modal, Text } from "@mantine/core";
+import { IconCylinder, IconHierarchy, IconUser } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -67,25 +68,28 @@ export function LogDetails({
           </tbody>
         </table>
         <Divider my="md" size="md" color="blue" />
-        {/* <IconUser style={iconSize("1.15rem")} */}
-        <Section title="Actor">
+        <Section title="Actor" icon={<IconUser style={iconSize("1.15rem")} />}>
           {log.actor ? (
             <p>
               {log.actor.name} ({labelize(log.actor.type)})
             </p>
           ) : null}
         </Section>
-        {/* <IconCylinder style={iconSize("1.15rem")} /> */}
-        <Section title="Resource">
+        <Section
+          title="Resource"
+          icon={<IconCylinder style={iconSize("1.15rem")} />}
+        >
           {log.resource ? (
             <p>
               {log.resource.name} ({labelize(log.resource.type)})
             </p>
           ) : null}
         </Section>
-        {/* <IconHierarchy style={iconSize("1.15rem")} /> */}
-        <Section title="Node">
-          {log.nodePath.map((node) => node.name).join(" > ")}
+        <Section
+          title="Node"
+          icon={<IconHierarchy style={iconSize("1.15rem")} />}
+        >
+          <p>{log.nodePath.map((node) => node.name).join(" > ")}</p>
         </Section>
       </div>
     </Modal>
