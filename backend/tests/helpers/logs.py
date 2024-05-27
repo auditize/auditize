@@ -4,6 +4,7 @@ import callee
 from bson import ObjectId
 from icecream import ic
 
+from .http import HttpTestHelper
 from .utils import DATETIME_FORMAT
 
 # A valid ObjectId, but not existing in the database
@@ -16,6 +17,7 @@ class PreparedLog:
 
         self.id = id
         self.data = data
+        self._attachments = []
         self.repo: PreparedRepo = repo
 
     @staticmethod
@@ -35,6 +37,35 @@ class PreparedLog:
             **extra,
         }
 
+    async def upload_attachment(
+        self,
+        client: HttpTestHelper,
+        *,
+        data: bytes,
+        name=None,
+        description=None,
+        type=None,
+        mime_type=None,
+    ) -> "PreparedLog":
+        await client.assert_post(
+            f"/repos/{self.repo.id}/logs/{self.id}/attachments",
+            files={"file": (name, data)},
+            data={
+                "description": description,
+                "type": type,
+                "mime_type": mime_type,
+            },
+            expected_status_code=204,
+        )
+        self._attachments.append(
+            {
+                "name": name,
+                "description": description,
+                "type": type,
+                "mime_type": mime_type,
+            }
+        )
+
     def expected_api_response(self, extra=None) -> dict:
         expected: dict[str, any] = {
             "source": [],
@@ -42,7 +73,7 @@ class PreparedLog:
             "resource": None,
             "details": [],
             "tags": [],
-            "attachments": [],
+            "attachments": self._attachments,
             "id": self.id,
             **self.data,
             "saved_at": DATETIME_FORMAT,
@@ -54,6 +85,8 @@ class PreparedLog:
             expected["actor"].setdefault("extra", [])
         if expected["resource"]:
             expected["resource"].setdefault("extra", [])
+        for attachment in expected["attachments"]:
+            attachment["saved_at"] = DATETIME_FORMAT
         return {**expected, **(extra or {})}
 
     async def assert_db(self, extra=None):

@@ -526,12 +526,18 @@ async def _test_get_logs_filter(
     for other in not_to_be_found:
         await repo.create_log(client, other)
 
-    if callable(to_be_found):
-        log_data = PreparedLog.prepare_data()
-        to_be_found(log_data)
+    # to_be_found is a PreparedLog instance of an already created log
+    if isinstance(to_be_found, PreparedLog):
+        log = to_be_found
     else:
-        log_data = to_be_found
-    log = await repo.create_log(client, log_data)
+        # to_be_found is a function that will modify a log data template
+        if callable(to_be_found):
+            log_data = PreparedLog.prepare_data()
+            to_be_found(log_data)
+        # to be found is the actual log data
+        else:
+            log_data = to_be_found
+        log = await repo.create_log(client, log_data)
 
     await client.assert_get(
         f"/repos/{repo.id}/logs",
@@ -800,6 +806,70 @@ async def test_get_logs_filter_tag_ref(
         ]
 
     await _test_get_logs_filter(log_rw_client, repo, func, {"tag_ref": "find_me"})
+
+
+async def test_get_logs_filter_attachment_name(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(log_rw_client)
+    await log.upload_attachment(
+        log_rw_client,
+        data=b"test data",
+        name="find_me",
+        description="A test attachment",
+        type="text",
+        mime_type="text/plain",
+    )
+    await _test_get_logs_filter(log_rw_client, repo, log, {"attachment_name": "FIND"})
+
+
+async def test_get_logs_filter_attachment_description(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(log_rw_client)
+    await log.upload_attachment(
+        log_rw_client,
+        data=b"test data",
+        name="attachment",
+        description="find_me",
+        type="text",
+        mime_type="text/plain",
+    )
+    await _test_get_logs_filter(
+        log_rw_client, repo, log, {"attachment_description": "FIND"}
+    )
+
+
+async def test_get_logs_filter_attachment_type(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(log_rw_client)
+    await log.upload_attachment(
+        log_rw_client,
+        data=b"test data",
+        name="attachment",
+        type="find_me",
+        mime_type="text/plain",
+    )
+    await _test_get_logs_filter(
+        log_rw_client, repo, log, {"attachment_type": "find_me"}
+    )
+
+
+async def test_get_logs_filter_attachment_mime_type(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(log_rw_client)
+    await log.upload_attachment(
+        log_rw_client,
+        data=b"test data",
+        name="attachment",
+        type="text",
+        mime_type="text/plain",
+    )
+    await _test_get_logs_filter(
+        log_rw_client, repo, log, {"attachment_mime_type": "text/plain"}
+    )
 
 
 async def test_get_logs_filter_node_id_exact_node(

@@ -187,6 +187,10 @@ async def get_logs(
     tag_ref: str = None,
     tag_type: str = None,
     tag_name: str = None,
+    attachment_name: str = None,
+    attachment_description: str = None,
+    attachment_type: str = None,
+    attachment_mime_type: str = None,
     node_ref: str = None,
     since: datetime = None,
     until: datetime = None,
@@ -226,6 +230,16 @@ async def get_logs(
         criteria["tags.type"] = tag_type
     if tag_name:
         criteria["tags.name"] = _text_search_filter(tag_name)
+    if attachment_name:
+        criteria["attachments.name"] = _text_search_filter(attachment_name)
+    if attachment_description:
+        criteria["attachments.description"] = _text_search_filter(
+            attachment_description
+        )
+    if attachment_type:
+        criteria["attachments.type"] = attachment_type
+    if attachment_mime_type:
+        criteria["attachments.mime_type"] = attachment_mime_type
     if node_ref:
         criteria["node_path.ref"] = node_ref
     if since:
