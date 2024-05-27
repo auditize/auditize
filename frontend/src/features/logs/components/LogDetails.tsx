@@ -9,12 +9,16 @@ import { iconSize } from "@/utils/ui";
 
 import { getLog } from "../api";
 
-function DataTable({ data }: { data: [React.ReactNode, React.ReactNode][] }) {
+function KeyValueTable({
+  data,
+}: {
+  data: [React.ReactNode, React.ReactNode][];
+}) {
   return (
     <Table withRowBorders={false} verticalSpacing="0.25rem" layout="auto">
       {data.map(([name, value], index) => (
         <Table.Tr key={index}>
-          <Table.Td>{name}</Table.Td>
+          <Table.Td width="30%">{name}</Table.Td>
           <Table.Td>{value}</Table.Td>
         </Table.Tr>
       ))}
@@ -86,34 +90,20 @@ export function LogDetails({
             title="Actor"
             icon={<IconUser style={iconSize("1.15rem")} />}
           >
-            <Table
-              withRowBorders={false}
-              verticalSpacing="0.25rem"
-              layout="auto"
-            >
-              <Table.Tr>
-                <Table.Td>Name</Table.Td>
-                <Table.Td>
-                  <b>{log.actor.name}</b>
-                </Table.Td>
-              </Table.Tr>
-              <Table.Tr>
-                <Table.Td width="30%">Type</Table.Td>
-                <Table.Td>{labelize(log.actor.type)}</Table.Td>
-              </Table.Tr>
-              <Table.Tr>
-                <Table.Td>Ref</Table.Td>
-                <Table.Td>
-                  <Code>{log.actor.ref}</Code>
-                </Table.Td>
-              </Table.Tr>
-              {log.actor.extra.map((field) => (
-                <Table.Tr key={field.name}>
-                  <Table.Td>{labelize(field.name)}</Table.Td>
-                  <Table.Td>{field.value}</Table.Td>
-                </Table.Tr>
-              ))}
-            </Table>
+            <KeyValueTable
+              data={[
+                ["Name", <b>{log.actor.name}</b>],
+                ["Type", labelize(log.actor.type)],
+                ["Ref", <Code>{log.actor.ref}</Code>],
+                ...log.actor.extra.map(
+                  (field) =>
+                    [labelize(field.name), field.value] as [
+                      React.ReactNode,
+                      React.ReactNode,
+                    ],
+                ),
+              ]}
+            />
           </Section>
         )}
         {log.resource && (
@@ -121,34 +111,20 @@ export function LogDetails({
             title="Resource"
             icon={<IconCylinder style={iconSize("1.15rem")} />}
           >
-            <Table
-              withRowBorders={false}
-              verticalSpacing="0.25rem"
-              layout="auto"
-            >
-              <Table.Tr>
-                <Table.Td>Name</Table.Td>
-                <Table.Td>
-                  <b>{log.resource.name}</b>
-                </Table.Td>
-              </Table.Tr>
-              <Table.Tr>
-                <Table.Td width="30%">Type</Table.Td>
-                <Table.Td>{labelize(log.resource.type)}</Table.Td>
-              </Table.Tr>
-              <Table.Tr>
-                <Table.Td>Ref</Table.Td>
-                <Table.Td>
-                  <Code>{log.resource.ref}</Code>
-                </Table.Td>
-              </Table.Tr>
-              {log.resource.extra.map((field) => (
-                <Table.Tr key={field.name}>
-                  <Table.Td>{labelize(field.name)}</Table.Td>
-                  <Table.Td>{field.value}</Table.Td>
-                </Table.Tr>
-              ))}
-            </Table>
+            <KeyValueTable
+              data={[
+                ["Name", <b>{log.resource.name}</b>],
+                ["Type", labelize(log.resource.type)],
+                ["Ref", <Code>{log.resource.ref}</Code>],
+                ...log.resource.extra.map(
+                  (field) =>
+                    [labelize(field.name), field.value] as [
+                      React.ReactNode,
+                      React.ReactNode,
+                    ],
+                ),
+              ]}
+            />
           </Section>
         )}
         <Section
