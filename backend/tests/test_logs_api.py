@@ -9,6 +9,7 @@ from auditize.logs.models import CustomField, Log
 from auditize.logs.service import (
     consolidate_log_action,
     consolidate_log_actor,
+    consolidate_log_attachments,
     consolidate_log_details,
     consolidate_log_node_path,
     consolidate_log_resource,
@@ -1259,6 +1260,50 @@ class TestLogDetailFields(_ConsolidatedDataTest):
             )
 
         return [f"field_{val}" for val in values]
+
+
+class TestLogAttachmentTypes(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "attachments/types"
+
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
+            await consolidate_log_attachments(
+                repo.db,
+                [
+                    Log.AttachmentMetadata(
+                        name="attachment.txt",
+                        type=f"type_{val}",
+                        mime_type="text/plain",
+                    )
+                ],
+            )
+        return [f"type_{val}" for val in values]
+
+
+class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
+    @property
+    def relative_path(self) -> str:
+        return "attachments/mime-types"
+
+    async def create_consolidated_data(
+        self, repo: PreparedRepo, values: list[int]
+    ) -> list[str]:
+        for val in values:
+            await consolidate_log_attachments(
+                repo.db,
+                [
+                    Log.AttachmentMetadata(
+                        name="attachment.txt",
+                        type=f"type",
+                        mime_type=f"text/plain{val}",
+                    )
+                ],
+            )
+        return [f"text/plain{val}" for val in values]
 
 
 async def test_get_log_nodes_without_filters(

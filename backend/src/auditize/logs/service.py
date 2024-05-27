@@ -393,6 +393,18 @@ get_log_detail_fields = partial(
     field_name="name",
 )
 
+get_log_attachment_types = partial(
+    _get_consolidated_data_field,
+    collection_name="log_attachment_types",
+    field_name="type",
+)
+
+get_log_attachment_mime_types = partial(
+    _get_consolidated_data_field,
+    collection_name="log_attachment_mime_types",
+    field_name="mime_type",
+)
+
 
 async def _get_log_nodes(db: LogDatabase, *, match, pipeline_extra=None):
     return db.log_nodes.aggregate(

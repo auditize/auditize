@@ -231,6 +231,48 @@ async def get_log_detail_fields(
 
 
 @router.get(
+    "/repos/{repo_id}/logs/attachments/types",
+    summary="Get log attachment types",
+    operation_id="get_log_attachment_types",
+    tags=["logs"],
+    response_model=NameListResponse,
+)
+async def get_log_attachment_types(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> NameListResponse:
+    return await _get_consolidated_data(
+        dbm,
+        repo_id,
+        service.get_log_attachment_types,
+        page_params,
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/attachments/mime-types",
+    summary="Get log attachment MIME types",
+    operation_id="get_log_attachment_mime_types",
+    tags=["logs"],
+    response_model=NameListResponse,
+)
+async def get_log_attachment_mime_types(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> NameListResponse:
+    return await _get_consolidated_data(
+        dbm,
+        repo_id,
+        service.get_log_attachment_mime_types,
+        page_params,
+    )
+
+
+@router.get(
     "/repos/{repo_id}/logs/nodes",
     summary="Get log nodes",
     operation_id="get_log_nodes",
