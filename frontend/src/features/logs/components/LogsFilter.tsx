@@ -136,22 +136,24 @@ function RepoSelector({
 }
 
 function useAvailableFilterFields(repoId: string) {
-  const { data: actorCustomFields } = useQuery({
-    queryKey: ["logActorCustomFields", repoId],
-    queryFn: () => getAllLogActorCustomFields(repoId),
-    enabled: !!repoId,
-  });
-  const { data: resourceCustomFields } = useQuery({
-    queryKey: ["logResourceCustomFields", repoId],
-    queryFn: () => getAllLogResourceCustomFields(repoId),
-    enabled: !!repoId,
-  });
-  const { data: detailFields } = useQuery({
+  const { data: actorCustomFields, isPending: actorCustomFieldsPending } =
+    useQuery({
+      queryKey: ["logActorCustomFields", repoId],
+      queryFn: () => getAllLogActorCustomFields(repoId),
+      enabled: !!repoId,
+    });
+  const { data: resourceCustomFields, isPending: resourceCustomFieldsPending } =
+    useQuery({
+      queryKey: ["logResourceCustomFields", repoId],
+      queryFn: () => getAllLogResourceCustomFields(repoId),
+      enabled: !!repoId,
+    });
+  const { data: detailFields, isPending: detailFieldsPending } = useQuery({
     queryKey: ["logDetailFields", repoId],
     queryFn: () => getAllLogDetailFields(repoId),
     enabled: !!repoId,
   });
-  const { data: sourceFields } = useQuery({
+  const { data: sourceFields, isPending: sourceFieldsPending } = useQuery({
     queryKey: ["logSourceFields", repoId],
     queryFn: () => getAllLogSourceFields(repoId),
     enabled: !!repoId,
@@ -232,6 +234,11 @@ function useAvailableFilterFields(repoId: string) {
         items: [_({ value: "node", label: "Node" })],
       },
     ],
+    loading:
+      actorCustomFieldsPending ||
+      resourceCustomFieldsPending ||
+      detailFieldsPending ||
+      sourceFieldsPending,
   };
 }
 
@@ -673,18 +680,22 @@ function FilterSelector({
   onFilterAdded: (name: string) => void;
   onFilterRemoved: (name: string) => void;
 }) {
-  const { fields: availableFields } = useAvailableFilterFields(repoId);
+  const { fields, loading } = useAvailableFilterFields(repoId);
   const comboboxStore = useCombobox();
 
   return (
     <CustomMultiSelect
       comboboxStore={comboboxStore}
-      data={availableFields}
+      data={fields}
       value={Array.from(selected)}
       onOptionSubmit={onFilterAdded}
       onRemove={onFilterRemoved}
     >
-      <Button onClick={() => comboboxStore.toggleDropdown()}>
+      <Button
+        onClick={() => comboboxStore.toggleDropdown()}
+        loading={loading}
+        loaderProps={{ type: "dots" }}
+      >
         <IconPlus />
       </Button>
     </CustomMultiSelect>

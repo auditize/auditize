@@ -85,7 +85,9 @@ function PaginatedSelectorWithoutDropdown({
   });
 
   useEffect(() => {
-    if (data && onDataLoaded) onDataLoaded(data);
+    if (data && onDataLoaded) {
+      onDataLoaded(data);
+    }
   }, [data, selectedItem]);
 
   if (error) {
