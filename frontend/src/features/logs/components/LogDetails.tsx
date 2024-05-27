@@ -1,4 +1,13 @@
-import { Code, Divider, Group, Modal, Table, Text, Title } from "@mantine/core";
+import {
+  Badge,
+  Code,
+  Group,
+  HoverCard,
+  Modal,
+  Table,
+  Text,
+  Title,
+} from "@mantine/core";
 import {
   IconCalendarClock,
   IconCylinder,
@@ -32,6 +41,31 @@ function KeyValueTable({
       ))}
     </Table>
   );
+}
+
+function Tag({
+  value,
+}: {
+  value: { type: string; name: string | null; ref: string | null };
+}) {
+  if (value.name && value.ref) {
+    return (
+      <HoverCard width={280} shadow="md">
+        <HoverCard.Target>
+          <Badge color="blue">
+            {labelize(value.type)}: {value.name}
+          </Badge>
+        </HoverCard.Target>
+        <HoverCard.Dropdown>
+          <Text size="sm">
+            Ref: <Code>{value.ref}</Code>
+          </Text>
+        </HoverCard.Dropdown>
+      </HoverCard>
+    );
+  } else {
+    return <Badge color="blue">{labelize(value.type)}</Badge>;
+  }
 }
 
 export function LogDetails({
@@ -76,6 +110,11 @@ export function LogDetails({
       <Group mb="lg">
         <IconCalendarClock />
         {humanizeDate(log.savedAt)}
+      </Group>
+      <Group mb="lg">
+        {log.tags.map((tag, index) => (
+          <Tag key={index} value={tag} />
+        ))}
       </Group>
 
       {log.source && (

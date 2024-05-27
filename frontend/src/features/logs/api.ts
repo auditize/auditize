@@ -16,6 +16,12 @@ type CustomField = {
   value: string;
 };
 
+type Tag = {
+  ref: string | null;
+  type: string;
+  name: string | null;
+};
+
 export type Log = {
   id: number;
   savedAt: string;
@@ -41,6 +47,7 @@ export type Log = {
     ref: string;
     name: string;
   }[];
+  tags: Tag[];
 };
 
 export type LogNode = {
