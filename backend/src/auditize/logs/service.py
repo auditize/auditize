@@ -63,6 +63,24 @@ async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
         parent_node_ref = node.ref
 
 
+async def consolidate_log_attachments(
+    db: LogDatabase, attachments: list[Log.AttachmentMetadata]
+):
+    for attachment in attachments:
+        await db.consolidate_data(
+            db.log_attachment_types,
+            {
+                "type": attachment.type,
+            },
+        )
+        await db.consolidate_data(
+            db.log_attachment_mime_types,
+            {
+                "mime_type": attachment.mime_type,
+            },
+        )
+
+
 async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
     db = await get_log_db(dbm, repo_id)
 
@@ -83,6 +101,8 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
     await consolidate_log_tags(db, log.tags)
 
     await consolidate_log_node_path(db, log.node_path)
+
+    await consolidate_log_attachments(db, log.attachments)
 
     return log_id
 

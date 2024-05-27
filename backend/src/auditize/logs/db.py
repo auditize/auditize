@@ -33,6 +33,8 @@ class LogDatabase(BaseDatabase):
     log_resource_extra_fields = Collection("log_resource_extra_fields")
     log_detail_fields = Collection("log_detail_fields")
     log_tag_types = Collection("log_tag_types")
+    log_attachment_types = Collection("log_attachment_types")
+    log_attachment_mime_types = Collection("log_attachment_mime_types")
     log_nodes = Collection("log_nodes")
 
 

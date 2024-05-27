@@ -99,6 +99,11 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         Log.Tag(ref="tag_ref", type="rich_tag_bis", name="rich_tag_name"),
         Log.Tag(type="simple_tag"),
     ]
+    log.attachments = [
+        Log.Attachment(
+            name="file.txt", type="text", mime_type="text/plain", data=b"hello"
+        )
+    ]
     log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
     await save_log(dbm, repo.id, log)
     await assert_consolidated_data(
@@ -134,6 +139,14 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     await assert_consolidated_data(
         repo.db.log_tag_types,
         [{"type": "rich_tag"}, {"type": "rich_tag_bis"}, {"type": "simple_tag"}],
+    )
+    await assert_consolidated_data(
+        repo.db.log_attachment_types,
+        [{"type": "text"}],
+    )
+    await assert_consolidated_data(
+        repo.db.log_attachment_mime_types,
+        [{"mime_type": "text/plain"}],
     )
     await assert_consolidated_data(
         repo.db.log_nodes,
