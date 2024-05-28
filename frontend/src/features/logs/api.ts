@@ -22,6 +22,13 @@ type Tag = {
   name: string | null;
 };
 
+type Attachment = {
+  name: string;
+  description: string;
+  type: string;
+  mimeType: string;
+};
+
 export type Log = {
   id: number;
   savedAt: string;
@@ -48,6 +55,7 @@ export type Log = {
     name: string;
   }[];
   tags: Tag[];
+  attachments: Attachment[];
 };
 
 export type LogNode = {

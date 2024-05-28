@@ -18,11 +18,12 @@ import {
   IconCylinder,
   IconHierarchy,
   IconListDetails,
+  IconPaperclip,
   IconRoute,
   IconUser,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Breadcrumb } from "rsuite";
 
 import { Section } from "@/components/Section";
@@ -233,6 +234,26 @@ export function LogDetails({
                         React.ReactNode,
                         React.ReactNode,
                       ],
+                  )}
+                />
+              </Section>
+            )}
+            {log.attachments && (
+              <Section
+                title="Attachments"
+                icon={<IconPaperclip style={iconSize("1.15rem")} />}
+              >
+                <KeyValueTable
+                  data={log.attachments.map(
+                    (field, index) =>
+                      [
+                        labelize(field.type),
+                        <Anchor
+                          href={`http://localhost:8000/repos/${repoId}/logs/${log.id}/attachments/${index}`}
+                        >
+                          {field.description || field.name}
+                        </Anchor>,
+                      ] as [React.ReactNode, React.ReactNode],
                   )}
                 />
               </Section>
