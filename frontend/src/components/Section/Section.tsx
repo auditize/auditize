@@ -1,4 +1,4 @@
-import { Box, Group, Text, Title } from "@mantine/core";
+import { Box, Group, Text } from "@mantine/core";
 import React from "react";
 
 export function Section({

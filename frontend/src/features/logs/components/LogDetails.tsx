@@ -33,12 +33,14 @@ function KeyValueTable({
 }) {
   return (
     <Table withRowBorders={false} verticalSpacing="0.25rem" layout="auto">
-      {data.map(([name, value], index) => (
-        <Table.Tr key={index}>
-          <Table.Td width="30%">{name}</Table.Td>
-          <Table.Td>{value}</Table.Td>
-        </Table.Tr>
-      ))}
+      <Table.Tbody>
+        {data.map(([name, value], index) => (
+          <Table.Tr key={index}>
+            <Table.Td width="30%">{name}</Table.Td>
+            <Table.Td>{value}</Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
     </Table>
   );
 }
