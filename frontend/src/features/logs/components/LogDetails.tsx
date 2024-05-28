@@ -98,110 +98,116 @@ export function LogDetails({
   }
 
   return (
-    <Modal
-      title={
-        <Title order={3} size="h2">
-          {labelize(log.action.type)} ({labelize(log.action.category)})
-        </Title>
-      }
+    <Modal.Root
       size="lg"
       padding="lg"
       opened={opened}
       onClose={() => navigate(-1)}
     >
-      <Group mb="lg">
-        <IconCalendarClock />
-        {humanizeDate(log.savedAt)}
-      </Group>
-      <Group mb="lg">
-        {log.tags.map((tag, index) => (
-          <Tag key={index} value={tag} />
-        ))}
-      </Group>
+      <Modal.Overlay />
+      <Modal.Content>
+        <Modal.Header>
+          <Title order={2}>
+            {labelize(log.action.type)} ({labelize(log.action.category)})
+          </Title>
+          <Modal.CloseButton />
+        </Modal.Header>
+        <Modal.Body>
+          <Group mb="lg">
+            <IconCalendarClock />
+            {humanizeDate(log.savedAt)}
+          </Group>
+          <Group mb="lg">
+            {log.tags.map((tag, index) => (
+              <Tag key={index} value={tag} />
+            ))}
+          </Group>
 
-      {log.source && (
-        <Section
-          title="Source"
-          icon={<IconRoute style={iconSize("1.15rem")} />}
-        >
-          <KeyValueTable
-            data={log.source.map(
-              (field) =>
-                [labelize(field.name), field.value] as [
-                  React.ReactNode,
-                  React.ReactNode,
-                ],
+          {log.source && (
+            <Section
+              title="Source"
+              icon={<IconRoute style={iconSize("1.15rem")} />}
+            >
+              <KeyValueTable
+                data={log.source.map(
+                  (field) =>
+                    [labelize(field.name), field.value] as [
+                      React.ReactNode,
+                      React.ReactNode,
+                    ],
+                )}
+              />
+            </Section>
+          )}
+
+          <div>
+            {log.actor && (
+              <Section
+                title="Actor"
+                icon={<IconUser style={iconSize("1.15rem")} />}
+              >
+                <KeyValueTable
+                  data={[
+                    ["Name", <b>{log.actor.name}</b>],
+                    ["Type", labelize(log.actor.type)],
+                    ["Ref", <Code>{log.actor.ref}</Code>],
+                    ...log.actor.extra.map(
+                      (field) =>
+                        [labelize(field.name), field.value] as [
+                          React.ReactNode,
+                          React.ReactNode,
+                        ],
+                    ),
+                  ]}
+                />
+              </Section>
             )}
-          />
-        </Section>
-      )}
-
-      <div>
-        {log.actor && (
-          <Section
-            title="Actor"
-            icon={<IconUser style={iconSize("1.15rem")} />}
-          >
-            <KeyValueTable
-              data={[
-                ["Name", <b>{log.actor.name}</b>],
-                ["Type", labelize(log.actor.type)],
-                ["Ref", <Code>{log.actor.ref}</Code>],
-                ...log.actor.extra.map(
-                  (field) =>
-                    [labelize(field.name), field.value] as [
-                      React.ReactNode,
-                      React.ReactNode,
-                    ],
-                ),
-              ]}
-            />
-          </Section>
-        )}
-        {log.resource && (
-          <Section
-            title="Resource"
-            icon={<IconCylinder style={iconSize("1.15rem")} />}
-          >
-            <KeyValueTable
-              data={[
-                ["Name", <b>{log.resource.name}</b>],
-                ["Type", labelize(log.resource.type)],
-                ["Ref", <Code>{log.resource.ref}</Code>],
-                ...log.resource.extra.map(
-                  (field) =>
-                    [labelize(field.name), field.value] as [
-                      React.ReactNode,
-                      React.ReactNode,
-                    ],
-                ),
-              ]}
-            />
-          </Section>
-        )}
-        {log.details && (
-          <Section
-            title="Details"
-            icon={<IconListDetails style={iconSize("1.15rem")} />}
-          >
-            <KeyValueTable
-              data={log.details.map(
-                (field) =>
-                  [labelize(field.name), field.value] as [
-                    React.ReactNode,
-                    React.ReactNode,
-                  ],
-              )}
-            />
-          </Section>
-        )}
-        <Section
-          title="Node"
-          icon={<IconHierarchy style={iconSize("1.15rem")} />}
-        >
-          <p>{log.nodePath.map((node) => node.name).join(" > ")}</p>
-        </Section>
-      </div>
-    </Modal>
+            {log.resource && (
+              <Section
+                title="Resource"
+                icon={<IconCylinder style={iconSize("1.15rem")} />}
+              >
+                <KeyValueTable
+                  data={[
+                    ["Name", <b>{log.resource.name}</b>],
+                    ["Type", labelize(log.resource.type)],
+                    ["Ref", <Code>{log.resource.ref}</Code>],
+                    ...log.resource.extra.map(
+                      (field) =>
+                        [labelize(field.name), field.value] as [
+                          React.ReactNode,
+                          React.ReactNode,
+                        ],
+                    ),
+                  ]}
+                />
+              </Section>
+            )}
+            {log.details && (
+              <Section
+                title="Details"
+                icon={<IconListDetails style={iconSize("1.15rem")} />}
+              >
+                <KeyValueTable
+                  data={log.details.map(
+                    (field) =>
+                      [labelize(field.name), field.value] as [
+                        React.ReactNode,
+                        React.ReactNode,
+                      ],
+                  )}
+                />
+              </Section>
+            )}
+            <Section
+              title="Node"
+              icon={<IconHierarchy style={iconSize("1.15rem")} />}
+            >
+              <p>{log.nodePath.map((node) => node.name).join(" > ")}</p>
+            </Section>
+          </div>
+        </Modal.Body>
+      </Modal.Content>
+    </Modal.Root>
   );
 }
