@@ -5,6 +5,7 @@ import random
 import sys
 import uuid
 from collections import defaultdict
+from dataclasses import dataclass
 
 import requests
 
@@ -344,17 +345,24 @@ job_titles = [
 # fmt: on
 
 
-def generate_actors(count: int):
+def random_name_generator():
     seen = set()
 
-    def get_random_name():
+    def generate_random_name():
         name = (random.choice(firstnames), random.choice(lastnames))
         if name in seen:
-            return get_random_name()
+            return generate_random_name()
         else:
             seen.add(name)
             return name
 
+    return generate_random_name
+
+
+get_random_name = random_name_generator()
+
+
+def generate_registered_actors(count: int):
     for _ in range(count):
         firstname, lastname = get_random_name()
         yield {
@@ -364,10 +372,22 @@ def generate_actors(count: int):
             "extra": [
                 {
                     "name": "email",
-                    "value": "%s.%s@example.net"
+                    "value": "%s.%s@example.com"
                     % (firstname.lower(), lastname.lower()),
                 }
             ],
+        }
+
+
+def generate_applicant_actors(count: int):
+    for _ in range(count):
+        firstname, lastname = get_random_name()
+        email = "%s.%s@example.net" % (firstname.lower(), lastname.lower())
+        yield {
+            "ref": email,
+            "type": "applicant",
+            "name": "%s %s" % (firstname, lastname),
+            "extra": [{"name": "email", "value": email}],
         }
 
 
@@ -396,25 +416,89 @@ def generate_node_paths(count: int):
         )
 
 
+@dataclass
 class LogProvider:
-    def __init__(self, actors, node_paths):
-        self.actors = actors
-        self.node_paths = node_paths
+    registered_actors: list[dict]
+    applicant_actors: list[dict]
+    node_paths: list[list[dict]]
 
     @classmethod
     def prepare(cls):
-        actors = list(generate_actors(5000))
-        node_paths = list(generate_node_paths(len(cities)))
-        return cls(actors, node_paths)
+        return cls(
+            registered_actors=list(generate_registered_actors(1000)),
+            applicant_actors=list(generate_applicant_actors(5000)),
+            node_paths=list(generate_node_paths(len(cities))),
+        )
 
-    def _user_creation_log(self):
-        user = random.choice(self.actors)
+    def _build_job_offer_creation_log(self):
+        job_title = random.choice(job_titles)
+        return {
+            "action": {
+                "category": "job_offer_management",
+                "type": "job_offer_create",
+            },
+            "actor": random.choice(self.registered_actors),
+            "source": [
+                {
+                    "name": "application",
+                    "value": "myATS",
+                },
+                {
+                    "name": "application_version",
+                    "value": "1.0.0",
+                },
+            ],
+            "resource": {
+                "ref": str(uuid.uuid4()),
+                "type": "job_offer",
+                "name": job_title,
+            },
+            "details": [
+                {
+                    "name": "job_title",
+                    "value": job_title,
+                }
+            ],
+            "node_path": random.choice(self.node_paths),
+        }
+
+    def _build_job_application_creation_log(self, job_offer_log):
+        return {
+            "action": {
+                "category": "job_application_management",
+                "type": "job_application_create",
+            },
+            "actor": random.choice(self.applicant_actors),
+            "source": [
+                {
+                    "name": "job_board",
+                    "value": "Get a job today !",
+                },
+            ],
+            "resource": job_offer_log["resource"],
+            "details": [
+                {
+                    "name": "comment",
+                    "value": "I'm very interested in this job",
+                }
+            ],
+            "node_path": job_offer_log["node_path"],
+        }
+
+    def _build_job_application_logs(self):
+        job_offer_log = self._build_job_offer_creation_log()
+        job_application_log = self._build_job_application_creation_log(job_offer_log)
+        yield job_offer_log
+        yield job_application_log
+
+    def _build_user_creation_log(self):
+        user = random.choice(self.registered_actors)
         return {
             "action": {
                 "category": "user_management",
                 "type": "user_create",
             },
-            "actor": random.choice(self.actors),
+            "actor": random.choice(self.registered_actors),
             "source": [
                 {
                     "name": "application",
@@ -437,10 +521,20 @@ class LogProvider:
                 }
             ],
             "node_path": random.choice(self.node_paths),
-        }, []
+        }
 
-    def create_log(self):
-        return self._user_creation_log()
+    def _build_logs(self):
+        yield self._build_user_creation_log()
+        for log in self._build_job_application_logs():
+            yield log
+
+    def build_logs(self):
+        while True:
+            for log in self._build_logs():
+                attachments = []
+                if isinstance(log, tuple):
+                    log, attachments = log
+                yield log, attachments
 
 
 def jsonify(data):
@@ -485,9 +579,8 @@ def main(argv):
 
     provider = LogProvider.prepare()
 
-    for i in range(count):
+    for (log, attachments), i in zip(provider.build_logs(), range(count)):
         print("Inject log %d of %d" % (i + 1, count), end="\r")
-        log, attachments = provider.create_log()
         inject_log(base_url, repo_id, api_key, log, attachments)
     print()
 
