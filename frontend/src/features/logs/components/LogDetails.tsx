@@ -23,7 +23,7 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Breadcrumb } from "rsuite";
 
 import { Section } from "@/components/Section";
@@ -49,6 +49,25 @@ function KeyValueTable({
         ))}
       </Table.Tbody>
     </Table>
+  );
+}
+
+function KeyValueSection({
+  title,
+  icon,
+  data,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  data?: [React.ReactNode, React.ReactNode][];
+}) {
+  return (
+    data &&
+    data.length > 0 && (
+      <Section title={title} icon={icon}>
+        <KeyValueTable data={data} />
+      </Section>
+    )
   );
 }
 
@@ -162,111 +181,92 @@ export function LogDetails({
             ))}
           </Group>
 
-          {log.source && (
-            <Section
-              title="Source"
-              icon={<IconRoute style={iconSize("1.15rem")} />}
-            >
-              <KeyValueTable
-                data={log.source.map(
+          <KeyValueSection
+            title="Source"
+            icon={<IconRoute style={iconSize("1.15rem")} />}
+            data={log.source.map(
+              (field) =>
+                [labelize(field.name), field.value] as [
+                  React.ReactNode,
+                  React.ReactNode,
+                ],
+            )}
+          />
+
+          <KeyValueSection
+            title="Actor"
+            icon={<IconUser style={iconSize("1.15rem")} />}
+            data={
+              log.actor && [
+                ["Name", <b>{log.actor.name}</b>],
+                ["Type", labelize(log.actor.type)],
+                ["Ref", <Code>{log.actor.ref}</Code>],
+                ...log.actor.extra.map(
                   (field) =>
                     [labelize(field.name), field.value] as [
                       React.ReactNode,
                       React.ReactNode,
                     ],
-                )}
-              />
-            </Section>
-          )}
+                ),
+              ]
+            }
+          />
 
-          <div>
-            {log.actor && (
-              <Section
-                title="Actor"
-                icon={<IconUser style={iconSize("1.15rem")} />}
-              >
-                <KeyValueTable
-                  data={[
-                    ["Name", <b>{log.actor.name}</b>],
-                    ["Type", labelize(log.actor.type)],
-                    ["Ref", <Code>{log.actor.ref}</Code>],
-                    ...log.actor.extra.map(
-                      (field) =>
-                        [labelize(field.name), field.value] as [
-                          React.ReactNode,
-                          React.ReactNode,
-                        ],
-                    ),
-                  ]}
-                />
-              </Section>
+          <KeyValueSection
+            title="Resource"
+            icon={<IconCylinder style={iconSize("1.15rem")} />}
+            data={
+              log.resource && [
+                ["Name", <b>{log.resource.name}</b>],
+                ["Type", labelize(log.resource.type)],
+                ["Ref", <Code>{log.resource.ref}</Code>],
+                ...log.resource.extra.map(
+                  (field) =>
+                    [labelize(field.name), field.value] as [
+                      React.ReactNode,
+                      React.ReactNode,
+                    ],
+                ),
+              ]
+            }
+          />
+
+          <KeyValueSection
+            title="Details"
+            icon={<IconListDetails style={iconSize("1.15rem")} />}
+            data={log.details.map(
+              (field) =>
+                [labelize(field.name), field.value] as [
+                  React.ReactNode,
+                  React.ReactNode,
+                ],
             )}
-            {log.resource && (
-              <Section
-                title="Resource"
-                icon={<IconCylinder style={iconSize("1.15rem")} />}
-              >
-                <KeyValueTable
-                  data={[
-                    ["Name", <b>{log.resource.name}</b>],
-                    ["Type", labelize(log.resource.type)],
-                    ["Ref", <Code>{log.resource.ref}</Code>],
-                    ...log.resource.extra.map(
-                      (field) =>
-                        [labelize(field.name), field.value] as [
-                          React.ReactNode,
-                          React.ReactNode,
-                        ],
-                    ),
-                  ]}
-                />
-              </Section>
+          />
+
+          <KeyValueSection
+            title="Attachments"
+            icon={<IconPaperclip style={iconSize("1.15rem")} />}
+            data={log.attachments.map(
+              (field, index) =>
+                [
+                  labelize(field.type),
+                  <Anchor
+                    href={`http://localhost:8000/repos/${repoId}/logs/${log.id}/attachments/${index}`}
+                  >
+                    {field.description || field.name}
+                  </Anchor>,
+                ] as [React.ReactNode, React.ReactNode],
             )}
-            {log.details && (
-              <Section
-                title="Details"
-                icon={<IconListDetails style={iconSize("1.15rem")} />}
-              >
-                <KeyValueTable
-                  data={log.details.map(
-                    (field) =>
-                      [labelize(field.name), field.value] as [
-                        React.ReactNode,
-                        React.ReactNode,
-                      ],
-                  )}
-                />
-              </Section>
-            )}
-            {log.attachments && (
-              <Section
-                title="Attachments"
-                icon={<IconPaperclip style={iconSize("1.15rem")} />}
-              >
-                <KeyValueTable
-                  data={log.attachments.map(
-                    (field, index) =>
-                      [
-                        labelize(field.type),
-                        <Anchor
-                          href={`http://localhost:8000/repos/${repoId}/logs/${log.id}/attachments/${index}`}
-                        >
-                          {field.description || field.name}
-                        </Anchor>,
-                      ] as [React.ReactNode, React.ReactNode],
-                  )}
-                />
-              </Section>
-            )}
-            <Section
-              title="Node"
-              icon={<IconHierarchy style={iconSize("1.15rem")} />}
-            >
-              <Box p="xs">
-                <NodePath value={log.nodePath} />
-              </Box>
-            </Section>
-          </div>
+          />
+
+          <Section
+            title="Node"
+            icon={<IconHierarchy style={iconSize("1.15rem")} />}
+          >
+            <Box p="xs">
+              <NodePath value={log.nodePath} />
+            </Box>
+          </Section>
         </Modal.Body>
       </Modal.Content>
     </Modal.Root>
