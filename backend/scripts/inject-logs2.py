@@ -432,10 +432,11 @@ class LogProvider:
 
     def _build_job_offer_creation_log(self):
         job_title = random.choice(job_titles)
+        node_path = random.choice(self.node_paths)
         return {
             "action": {
-                "category": "job_offer_management",
-                "type": "job_offer_create",
+                "category": "job_offers",
+                "type": "job_offer_creation",
             },
             "actor": random.choice(self.registered_actors),
             "source": [
@@ -451,7 +452,7 @@ class LogProvider:
             "resource": {
                 "ref": str(uuid.uuid4()),
                 "type": "job_offer",
-                "name": job_title,
+                "name": job_title + " in " + node_path[-1]["name"],
             },
             "details": [
                 {
@@ -459,14 +460,41 @@ class LogProvider:
                     "value": job_title,
                 }
             ],
-            "node_path": random.choice(self.node_paths),
+            "node_path": node_path,
+        }
+
+    def _build_job_offer_close_log(self, job_offer_log, reason):
+        return {
+            "action": {
+                "category": "job_offers",
+                "type": "job_offer_close",
+            },
+            "actor": job_offer_log["actor"],
+            "source": [
+                {
+                    "name": "application",
+                    "value": "myATS",
+                },
+                {
+                    "name": "application_version",
+                    "value": "1.0.0",
+                },
+            ],
+            "resource": job_offer_log["resource"],
+            "details": [
+                {
+                    "name": "reason",
+                    "value": reason,
+                }
+            ],
+            "node_path": job_offer_log["node_path"],
         }
 
     def _build_job_application_creation_log(self, job_offer_log):
         return {
             "action": {
-                "category": "job_application_management",
-                "type": "job_application_create",
+                "category": "job_applications",
+                "type": "job_application_creation",
             },
             "actor": random.choice(self.applicant_actors),
             "source": [
@@ -485,18 +513,58 @@ class LogProvider:
             "node_path": job_offer_log["node_path"],
         }
 
+    def _build_job_application_status_change_log(
+        self, job_application_log, job_offer_log, status
+    ):
+        return {
+            "action": {
+                "category": "job_applications",
+                "type": "job_application_status_change",
+            },
+            "actor": job_offer_log["actor"],
+            "source": [
+                {
+                    "name": "application",
+                    "value": "myATS",
+                },
+                {
+                    "name": "application_version",
+                    "value": "1.0.0",
+                },
+            ],
+            "resource": job_application_log["resource"],
+            "details": [
+                {
+                    "name": "status",
+                    "value": status,
+                }
+            ],
+            "node_path": job_application_log["node_path"],
+        }
+
     def _build_job_application_logs(self):
         job_offer_log = self._build_job_offer_creation_log()
-        job_application_log = self._build_job_application_creation_log(job_offer_log)
         yield job_offer_log
-        yield job_application_log
+        for _ in range(5):
+            job_application_log = self._build_job_application_creation_log(
+                job_offer_log
+            )
+            yield job_application_log
+            yield self._build_job_application_status_change_log(
+                job_application_log,
+                job_offer_log,
+                random.choice(("accepted", "rejected", "interview")),
+            )
+        yield self._build_job_offer_close_log(
+            job_offer_log, random.choice(("position filled", "position cancelled"))
+        )
 
     def _build_user_creation_log(self):
         user = random.choice(self.registered_actors)
         return {
             "action": {
-                "category": "user_management",
-                "type": "user_create",
+                "category": "users",
+                "type": "user_creation",
             },
             "actor": random.choice(self.registered_actors),
             "source": [
