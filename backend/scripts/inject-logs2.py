@@ -491,12 +491,13 @@ class LogProvider:
         }
 
     def _build_job_application_creation_log(self, job_offer_log):
+        applicant = random.choice(self.applicant_actors)
         return {
             "action": {
                 "category": "job_applications",
                 "type": "job_application_creation",
             },
-            "actor": random.choice(self.applicant_actors),
+            "actor": applicant,
             "source": [
                 {
                     "name": "job_board",
@@ -511,6 +512,13 @@ class LogProvider:
                 }
             ],
             "node_path": job_offer_log["node_path"],
+            "tags": [
+                {
+                    "type": "applicant",
+                    "ref": applicant["ref"],
+                    "name": applicant["name"],
+                }
+            ],
         }
 
     def _build_job_application_status_change_log(
@@ -540,6 +548,7 @@ class LogProvider:
                 }
             ],
             "node_path": job_application_log["node_path"],
+            "tags": job_application_log["tags"],
         }
 
     def _build_job_application_logs(self):
