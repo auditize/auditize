@@ -404,7 +404,7 @@ async def add_attachment(
         description=description,
         name=name or file.filename,
         type=type,
-        mime_type=mime_type or file.content_type,
+        mime_type=mime_type or file.content_type or "application/octet-stream",
         data=data,
     )
 

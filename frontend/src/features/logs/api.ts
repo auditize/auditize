@@ -11,6 +11,24 @@ export type Named = {
   name: string;
 };
 
+type CustomField = {
+  name: string;
+  value: string;
+};
+
+type Tag = {
+  ref: string | null;
+  type: string;
+  name: string | null;
+};
+
+type Attachment = {
+  name: string;
+  description: string;
+  type: string;
+  mimeType: string;
+};
+
 export type Log = {
   id: number;
   savedAt: string;
@@ -18,20 +36,26 @@ export type Log = {
     type: string;
     category: string;
   };
+  source: CustomField[];
   actor?: {
     ref: string;
     type: string;
     name: string;
+    extra: CustomField[];
   };
   resource?: {
     ref: string;
     type: string;
     name: string;
+    extra: CustomField[];
   };
+  details: CustomField[];
   nodePath: {
     ref: string;
     name: string;
   }[];
+  tags: Tag[];
+  attachments: Attachment[];
 };
 
 export type LogNode = {
