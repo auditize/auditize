@@ -1,5 +1,8 @@
 import {
+  Anchor,
   Badge,
+  Box,
+  Breadcrumbs,
   Code,
   Group,
   HoverCard,
@@ -10,6 +13,7 @@ import {
   Title,
 } from "@mantine/core";
 import {
+  IconAsterisk,
   IconCalendarClock,
   IconCylinder,
   IconHierarchy,
@@ -19,6 +23,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { Breadcrumb } from "rsuite";
 
 import { Section } from "@/components/Section";
 import { humanizeDate } from "@/utils/date";
@@ -46,6 +51,25 @@ function KeyValueTable({
   );
 }
 
+function HoverRef({
+  value,
+  children,
+}: {
+  value: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <HoverCard width={280} shadow="md" openDelay={150} closeDelay={150}>
+      <HoverCard.Target>{children}</HoverCard.Target>
+      <HoverCard.Dropdown>
+        <Text size="sm">
+          Ref: <Code>{value}</Code>
+        </Text>
+      </HoverCard.Dropdown>
+    </HoverCard>
+  );
+}
+
 function Tag({
   value,
 }: {
@@ -53,22 +77,32 @@ function Tag({
 }) {
   if (value.name && value.ref) {
     return (
-      <HoverCard width={280} shadow="md">
-        <HoverCard.Target>
-          <Badge color="blue">
-            {labelize(value.type)}: {value.name}
-          </Badge>
-        </HoverCard.Target>
-        <HoverCard.Dropdown>
-          <Text size="sm">
-            Ref: <Code>{value.ref}</Code>
-          </Text>
-        </HoverCard.Dropdown>
-      </HoverCard>
+      <HoverRef value={value.ref}>
+        <Badge
+          color="blue"
+          rightSection={<IconAsterisk style={iconSize(12)} />}
+        >
+          {labelize(value.type)}: {value.name}
+        </Badge>
+      </HoverRef>
     );
   } else {
     return <Badge color="blue">{labelize(value.type)}</Badge>;
   }
+}
+
+function NodePath({ value }: { value: { ref: string; name: string }[] }) {
+  return (
+    <Breadcrumbs separator=">">
+      {value.map((node) => (
+        <HoverRef value={node.ref} key={node.ref}>
+          <Breadcrumb.Item>
+            <Anchor underline="never">{node.name}</Anchor>
+          </Breadcrumb.Item>
+        </HoverRef>
+      ))}
+    </Breadcrumbs>
+  );
 }
 
 export function LogDetails({
@@ -111,7 +145,7 @@ export function LogDetails({
           <Stack>
             <Title order={2}>
               {labelize(log.action.type)}{" "}
-              <Text c="dimmed">({labelize(log.action.category)})</Text>
+              <Text c="dimmed">{labelize(log.action.category)}</Text>
             </Title>
           </Stack>
           <Modal.CloseButton />
@@ -207,7 +241,9 @@ export function LogDetails({
               title="Node"
               icon={<IconHierarchy style={iconSize("1.15rem")} />}
             >
-              <p>{log.nodePath.map((node) => node.name).join(" > ")}</p>
+              <Box p="xs">
+                <NodePath value={log.nodePath} />
+              </Box>
             </Section>
           </div>
         </Modal.Body>
