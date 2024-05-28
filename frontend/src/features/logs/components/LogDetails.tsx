@@ -4,6 +4,7 @@ import {
   Group,
   HoverCard,
   Modal,
+  Stack,
   Table,
   Text,
   Title,
@@ -107,9 +108,12 @@ export function LogDetails({
       <Modal.Overlay />
       <Modal.Content>
         <Modal.Header>
-          <Title order={2}>
-            {labelize(log.action.type)} ({labelize(log.action.category)})
-          </Title>
+          <Stack>
+            <Title order={2}>
+              {labelize(log.action.type)}{" "}
+              <Text c="dimmed">({labelize(log.action.category)})</Text>
+            </Title>
+          </Stack>
           <Modal.CloseButton />
         </Modal.Header>
         <Modal.Body>
