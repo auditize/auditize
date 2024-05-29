@@ -4,6 +4,7 @@ version="0.1.0-dev"
 description = "Audit logs management system"
 dependencies=[
     "fastapi",
+    "pydantic[email]",
     "python-multipart",
     "uvicorn[standard]",
     "motor",

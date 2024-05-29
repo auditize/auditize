@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import ApplicablePermissionsData, PermissionsData
@@ -11,7 +11,7 @@ from auditize.users.models import User, UserUpdate
 class UserCreationRequest(BaseModel):
     first_name: str = Field(description="The user first name")
     last_name: str = Field(description="The user last name")
-    email: str = Field(description="The user email")
+    email: EmailStr = Field(description="The user email")
     permissions: PermissionsData = Field(
         description="The user permissions", default_factory=PermissionsData
     )
