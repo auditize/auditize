@@ -327,7 +327,7 @@ function FilterFieldSelect({
 }) {
   const { isPending, error, data } = useQuery({
     queryKey: ["logConsolidatedData", searchParamName, searchParams.repoId],
-    queryFn: () => items(searchParams.repoId!),
+    queryFn: () => items(searchParams.repoId),
     enabled: !!searchParams.repoId,
   });
   const [opened, { toggle }] = useDisclosure(openedByDefault);
@@ -441,7 +441,7 @@ function FilterFieldNode({
 }) {
   const { isPending } = useQuery({
     queryKey: ["logConsolidatedData", "node", searchParams.repoId],
-    queryFn: () => getAllLogNodes(searchParams.repoId!),
+    queryFn: () => getAllLogNodes(searchParams.repoId),
     enabled: !!searchParams.repoId,
   });
   const [opened, { toggle }] = useDisclosure(openedByDefault);
@@ -526,7 +526,7 @@ function FilterField({
         searchParams={searchParams}
         searchParamName="actionType"
         items={(repoId) =>
-          getAllLogActionTypes(repoId, searchParams.actionCategory!)
+          getAllLogActionTypes(repoId, searchParams.actionCategory)
         }
         openedByDefault={openedByDefault}
         onChange={onChange}
@@ -581,12 +581,12 @@ function FilterField({
       <BaseFilterFieldTextInput
         label={`Actor ${labelize(fieldName)}`}
         name={name}
-        value={searchParams.actorExtra!.get(fieldName) ?? ""}
+        value={searchParams.actorExtra.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
         onChange={(value) =>
           onChange(
             "actorExtra",
-            new Map([...searchParams.actorExtra!, [fieldName, value]]),
+            new Map([...searchParams.actorExtra, [fieldName, value]]),
           )
         }
         onRemove={onRemove}
@@ -600,12 +600,12 @@ function FilterField({
       <BaseFilterFieldTextInput
         label={labelize(fieldName)}
         name={name}
-        value={searchParams.source!.get(fieldName) ?? ""}
+        value={searchParams.source.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
         onChange={(value) =>
           onChange(
             "source",
-            new Map([...searchParams.source!, [fieldName, value]]),
+            new Map([...searchParams.source, [fieldName, value]]),
           )
         }
         onRemove={onRemove}
@@ -659,12 +659,12 @@ function FilterField({
       <BaseFilterFieldTextInput
         label={`Resource ${labelize(fieldName)}`}
         name={name}
-        value={searchParams.resourceExtra!.get(fieldName) ?? ""}
+        value={searchParams.resourceExtra.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
         onChange={(value) =>
           onChange(
             "resourceExtra",
-            new Map([...searchParams.resourceExtra!, [fieldName, value]]),
+            new Map([...searchParams.resourceExtra, [fieldName, value]]),
           )
         }
         onRemove={onRemove}
@@ -936,12 +936,12 @@ function searchParamsToFilterNames(searchParams: LogSearchParams): Set<string> {
   if (searchParams.resourceName) {
     filterNames.add("resourceName");
   }
-  searchParams.resourceExtra!.forEach((_, name) => {
+  searchParams.resourceExtra.forEach((_, name) => {
     filterNames.add("resource." + name);
   });
 
   // Details
-  searchParams.details!.forEach((_, name) => {
+  searchParams.details.forEach((_, name) => {
     filterNames.add("details." + name);
   });
 
@@ -1019,7 +1019,7 @@ function removeSearchParam(
     const fieldName = filterName.replace("source.", "");
     setSearchParam(
       "source",
-      new Map([...searchParams.source!].filter(([name]) => name !== fieldName)),
+      new Map([...searchParams.source].filter(([name]) => name !== fieldName)),
     );
     return;
   }
@@ -1029,9 +1029,7 @@ function removeSearchParam(
     const fieldName = filterName.replace("details.", "");
     setSearchParam(
       "details",
-      new Map(
-        [...searchParams.details!].filter(([name]) => name !== fieldName),
-      ),
+      new Map([...searchParams.details].filter(([name]) => name !== fieldName)),
     );
     return;
   }
@@ -1042,7 +1040,7 @@ function removeSearchParam(
     setSearchParam(
       "actorExtra",
       new Map(
-        [...searchParams.actorExtra!].filter(([name]) => name !== fieldName),
+        [...searchParams.actorExtra].filter(([name]) => name !== fieldName),
       ),
     );
     return;
@@ -1054,7 +1052,7 @@ function removeSearchParam(
     setSearchParam(
       "resourceExtra",
       new Map(
-        [...searchParams.resourceExtra!].filter(([name]) => name !== fieldName),
+        [...searchParams.resourceExtra].filter(([name]) => name !== fieldName),
       ),
     );
     return;
@@ -1123,7 +1121,7 @@ export function LogFilter({
           onRemove={removeFilter}
         />
         <FilterSelector
-          repoId={editedParams.repoId!}
+          repoId={editedParams.repoId}
           selected={filterNames}
           onFilterAdded={(name) => {
             setFilterNames(new Set([...filterNames, name]));
@@ -1141,7 +1139,10 @@ export function LogFilter({
           onClick={() =>
             dispatch({
               type: "resetParams",
-              params: { repoId: editedParams.repoId },
+              params: {
+                ...buildLogSearchParams(),
+                repoId: editedParams.repoId,
+              },
             })
           }
           variant="default"

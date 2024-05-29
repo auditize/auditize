@@ -7,7 +7,7 @@ import { getLogs, LogSearchParams, prepareLogFilterForApi } from "../api";
 import { LogTable } from "./LogTable";
 
 export function LogLoader({
-  filter = {},
+  filter,
   onTableFilterChange,
 }: {
   filter: LogSearchParams;

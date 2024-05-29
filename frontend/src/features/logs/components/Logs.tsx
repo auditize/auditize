@@ -42,7 +42,7 @@ function searchParamsToFilter(params: URLSearchParams): LogSearchParams {
     resourceExtra: extractCustomFieldsFromSearchParams(params, "resource"),
     source: extractCustomFieldsFromSearchParams(params, "source"),
     details: extractCustomFieldsFromSearchParams(params, "details"),
-  };
+  } as LogSearchParams;
 }
 
 function stripEmptyStringsFromObject(obj: any): any {
@@ -82,6 +82,7 @@ export function Logs() {
           setSearchParams((currentSearchParams) => {
             const currentFilter = searchParamsToFilter(currentSearchParams);
             const newFilter = {
+              ...buildLogSearchParams(),
               repoId: currentFilter.repoId,
               since: currentFilter.since,
               until: currentFilter.until,

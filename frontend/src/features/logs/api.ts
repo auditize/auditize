@@ -66,29 +66,29 @@ export type LogNode = {
 };
 
 export type LogSearchParams = {
-  repoId?: string;
-  actionCategory?: string;
-  actionType?: string;
-  actorType?: string;
-  actorName?: string;
-  actorRef?: string;
-  actorExtra?: Map<string, string>;
-  source?: Map<string, string>;
-  resourceType?: string;
-  resourceName?: string;
-  resourceRef?: string;
-  resourceExtra?: Map<string, string>;
-  details?: Map<string, string>;
-  tagRef?: string;
-  tagType?: string;
-  tagName?: string;
-  attachmentName?: string;
-  attachmentDescription?: string;
-  attachmentType?: string;
-  attachmentMimeType?: string;
-  nodeRef?: string;
-  since?: Date | null;
-  until?: Date | null;
+  repoId: string;
+  actionCategory: string;
+  actionType: string;
+  actorType: string;
+  actorName: string;
+  actorRef: string;
+  actorExtra: Map<string, string>;
+  source: Map<string, string>;
+  resourceType: string;
+  resourceName: string;
+  resourceRef: string;
+  resourceExtra: Map<string, string>;
+  details: Map<string, string>;
+  tagRef: string;
+  tagType: string;
+  tagName: string;
+  attachmentName: string;
+  attachmentDescription: string;
+  attachmentType: string;
+  attachmentMimeType: string;
+  nodeRef: string;
+  since: Date | null;
+  until: Date | null;
 };
 
 export function buildLogSearchParams(): LogSearchParams {
@@ -147,21 +147,19 @@ export function prepareLogFilterForApi(filter: LogSearchParams): object {
     actorType: filter.actorType,
     actorName: filter.actorName,
     actorRef: filter.actorRef,
-    ...(filter.actorExtra &&
-      prepareCustomFieldsForApi(filter.actorExtra, "actor")),
+    ...prepareCustomFieldsForApi(filter.actorExtra, "actor"),
 
     // Source
-    ...(filter.source && prepareCustomFieldsForApi(filter.source, "source")),
+    ...prepareCustomFieldsForApi(filter.source, "source"),
 
     // Resource
     resourceType: filter.resourceType,
     resourceName: filter.resourceName,
     resourceRef: filter.resourceRef,
-    ...(filter.resourceExtra &&
-      prepareCustomFieldsForApi(filter.resourceExtra, "resource")),
+    ...prepareCustomFieldsForApi(filter.resourceExtra, "resource"),
 
     // Details
-    ...(filter.details && prepareCustomFieldsForApi(filter.details, "details")),
+    ...prepareCustomFieldsForApi(filter.details, "details"),
 
     // Tag
     tagRef: filter.tagRef,
