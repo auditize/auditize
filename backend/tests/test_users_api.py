@@ -338,7 +338,7 @@ async def test_get_user_me_unauthorized(anon_client: HttpTestHelper):
 
 
 async def test_get_user_me_as_apikey(apikey_client: HttpTestHelper):
-    await apikey_client.assert_get_unauthorized("/users/me")
+    await apikey_client.assert_get_forbidden("/users/me")
 
 
 class TestPermissions(BasePermissionTests):

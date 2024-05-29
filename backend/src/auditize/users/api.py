@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.database import DatabaseManager, get_dbm
-from auditize.exceptions import AuthenticationFailure, PermissionDenied
+from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_users, can_write_users
 from auditize.permissions.operations import authorize_grant
 from auditize.users import service
@@ -66,7 +66,7 @@ async def get_user_me(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
 ) -> UserMeResponse:
     if not authenticated.user:
-        raise AuthenticationFailure()
+        raise PermissionDenied("This endpoint is only available for users")
     return UserMeResponse.from_db_model(authenticated.user)
 
 

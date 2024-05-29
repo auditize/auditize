@@ -353,11 +353,17 @@ async def test_repo_list_user_repos_with_permissions(
         )
 
 
-async def test_repo_list_user_repo_unauthorized(no_permission_client: HttpTestHelper):
+async def test_repo_list_user_repos_unauthorized(anon_client: HttpTestHelper):
     # /users/me/repos does not require any permission (as its job is to
     # return authorized repos for log access)
     # but the user must be authenticated
-    await no_permission_client.assert_get_unauthorized("/users/me/repos")
+    await anon_client.assert_get_unauthorized("/users/me/repos")
+
+
+async def test_repo_list_user_repos_as_apikey(apikey_builder: ApikeyBuilder):
+    apikey = await apikey_builder({"is_superadmin": True})
+    async with apikey.client() as client:
+        await client.assert_get_forbidden("/users/me/repos")
 
 
 async def test_repo_delete(

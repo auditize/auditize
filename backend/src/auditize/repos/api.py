@@ -6,7 +6,7 @@ from auditize.apikeys.models import ApikeyUpdate
 from auditize.apikeys.service import update_apikey
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.database import DatabaseManager, get_dbm
-from auditize.exceptions import AuthenticationFailure
+from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import (
     can_read_logs,
     can_read_repos,
@@ -17,7 +17,6 @@ from auditize.permissions.assertions import (
 from auditize.permissions.models import (
     LogPermissions,
     Permissions,
-    ReadWritePermissions,
     RepoLogPermissions,
 )
 from auditize.repos import service
@@ -149,7 +148,7 @@ async def list_user_repos(
     page_size: int = 10,
 ) -> UserRepoListResponse:
     if not authenticated.user:
-        raise AuthenticationFailure()
+        raise PermissionDenied("This endpoint is only available for users")
 
     repos, page_info = await service.get_repos(
         dbm,
