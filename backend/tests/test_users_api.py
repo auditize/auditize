@@ -189,7 +189,7 @@ async def test_user_list(
         "/users",
         [
             user.expected_api_response()
-            for user in sorted(users, key=lambda r: r.data["last_name"])
+            for user in sorted(users, key=lambda u: u.data["last_name"])
         ],
     )
 

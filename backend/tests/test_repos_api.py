@@ -201,7 +201,7 @@ async def test_repo_list_with_stats(
         f"/repos?include=stats",
         expected_status_code=200,
         expected_json={
-            "data": [
+            "items": [
                 repo.expected_api_response(
                     {
                         "stats": {
@@ -235,7 +235,7 @@ async def test_repo_list_user_repos_simple(
         await client.assert_get_ok(
             "/users/me/repos",
             expected_json={
-                "data": [
+                "items": [
                     strip_dict_keys(
                         repo.expected_api_response(
                             {"permissions": {"read_logs": True, "write_logs": True}}
@@ -261,13 +261,13 @@ async def _test_repo_list_user_repos(
         "/users/me/repos",
         params=params,
     )
-    data = resp.json()["data"]
-    assert len(data) == len(expected)
+    items = resp.json()["items"]
+    assert len(items) == len(expected)
     for expected_repo, expected_repo_perms in expected.items():
         ic(expected_repo, expected_repo_perms)
         assert any(
             repo["id"] == expected_repo and repo["permissions"] == expected_repo_perms
-            for repo in data
+            for repo in items
         )
 
 
