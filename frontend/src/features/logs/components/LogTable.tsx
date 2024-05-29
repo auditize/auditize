@@ -96,7 +96,7 @@ function LogTableRow({
   );
 }
 
-export function LogsTable({
+export function LogTable({
   repoId,
   logs,
   footer,

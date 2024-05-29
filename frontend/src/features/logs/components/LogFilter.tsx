@@ -1069,7 +1069,7 @@ function removeSearchParam(
   throw new Error(`Unknown filter name: ${filterName}`);
 }
 
-export function LogFilters({
+export function LogFilter({
   params,
   onChange,
 }: {

@@ -9,8 +9,8 @@ import {
   LogSearchParams,
   prepareLogFilterForApi,
 } from "../api";
-import { LogFilters } from "./LogsFilter";
-import { LogsLoader } from "./LogsLoader";
+import { LogFilter } from "./LogFilter";
+import { LogLoader } from "./LogLoader";
 
 function extractCustomFieldsFromSearchParams(
   params: URLSearchParams,
@@ -65,7 +65,7 @@ export function Logs() {
 
   return (
     <Stack gap="lg" pt="xs">
-      <LogFilters
+      <LogFilter
         params={filter}
         onChange={(newFilter) => {
           // Do not keep the "repo auto-select redirect" in the history,
@@ -76,7 +76,7 @@ export function Logs() {
           });
         }}
       />
-      <LogsLoader
+      <LogLoader
         filter={filter}
         onTableFilterChange={(name, value) => {
           setSearchParams((currentSearchParams) => {

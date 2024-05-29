@@ -4,9 +4,9 @@ import deepEqual from "deep-equal";
 import { useEffect, useRef } from "react";
 
 import { getLogs, LogSearchParams, prepareLogFilterForApi } from "../api";
-import { LogsTable } from "./LogsTable";
+import { LogTable } from "./LogTable";
 
-export function LogsLoader({
+export function LogLoader({
   filter = {},
   onTableFilterChange,
 }: {
@@ -69,7 +69,7 @@ export function LogsLoader({
   );
 
   return (
-    <LogsTable
+    <LogTable
       repoId={filter.repoId!}
       logs={data.pages.flatMap((page) => page.logs)}
       footer={footer}
