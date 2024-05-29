@@ -26,6 +26,16 @@ function LogTableRow({
         </Anchor>
       </Table.Td>
       <Table.Td>
+        {log.actor ? (
+          <Anchor
+            onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
+            underline="hover"
+          >
+            {log.actor.name}
+          </Anchor>
+        ) : null}
+      </Table.Td>
+      <Table.Td>
         <Anchor
           onClick={() => onTableFilterChange("actionType", log.action.type)}
           underline="hover"
@@ -42,16 +52,6 @@ function LogTableRow({
         >
           {labelize(log.action.category)}
         </Anchor>
-      </Table.Td>
-      <Table.Td>
-        {log.actor ? (
-          <Anchor
-            onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
-            underline="hover"
-          >
-            {log.actor.name}
-          </Anchor>
-        ) : null}
       </Table.Td>
       <Table.Td>
         {log.resource ? (
@@ -116,9 +116,9 @@ export function LogsTable({
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Date</Table.Th>
+            <Table.Th>Actor</Table.Th>
             <Table.Th>Action type</Table.Th>
             <Table.Th>Action category</Table.Th>
-            <Table.Th>Actor</Table.Th>
             <Table.Th>Resource</Table.Th>
             <Table.Th>Resource type</Table.Th>
             <Table.Th>Node</Table.Th>
