@@ -132,7 +132,7 @@ function prepareCustomFieldsForApi(
 }
 
 export function prepareLogFilterForApi(filter: LogSearchParams): object {
-  return {
+  const prepared = {
     repoId: filter.repoId,
 
     // Dates
@@ -175,6 +175,10 @@ export function prepareLogFilterForApi(filter: LogSearchParams): object {
     // Node
     nodeRef: filter.nodeRef,
   };
+
+  return Object.fromEntries(
+    Object.entries(prepared).filter(([, value]) => value),
+  );
 }
 
 export async function getLogs(
