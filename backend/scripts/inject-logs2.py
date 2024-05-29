@@ -348,7 +348,7 @@ job_titles = [
 def random_name_generator():
     seen = set()
 
-    def generate_random_name():
+    def generate_random_name() -> tuple[str, str]:
         name = (random.choice(firstnames), random.choice(lastnames))
         if name in seen:
             return generate_random_name()
@@ -495,7 +495,7 @@ class LogProvider:
         return {
             "action": {
                 "category": "job_applications",
-                "type": "job_application_creation",
+                "type": "job_application",
             },
             "actor": applicant,
             "source": [
@@ -606,6 +606,7 @@ class LogProvider:
             yield log
 
     def build_logs(self):
+        # Infinite log builder
         while True:
             for log in self._build_logs():
                 attachments = []
@@ -664,5 +665,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
-    if len(sys.argv) != 4:
-        sys.exit("Usage: %s COUNT REPO_ID API_KEY" % sys.argv[0])
