@@ -147,22 +147,56 @@ async def test_create_log_invalid_rich_tag(
         )
 
 
-async def test_create_log_invalid_custom_field_name(
+async def test_create_log_invalid_identifiers(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    async def test_invalid_field(extra):
+    async def test_invalid_identifier(extra):
         await log_write_client.assert_post(
             f"/repos/{repo.id}/logs",
             json=PreparedLog.prepare_data(extra),
             expected_status_code=422,
         )
 
-    for invalid_field_name in "foo.bar", "foo[bar]", "foo:bar":
-        invalid_field = {"name": invalid_field_name, "value": "some_value"}
-        await test_invalid_field({"details": [invalid_field]})
-        await test_invalid_field({"source": [invalid_field]})
-        await test_invalid_field({"actor": {"extra": [invalid_field]}})
-        await test_invalid_field({"resource": {"extra": [invalid_field]}})
+    for invalid_identifier in "foo.bar", "foo[bar]", "foo:bar", "foo bar", "FOOBAR":
+        # Action
+        await test_invalid_identifier(
+            {"action": {"category": "valid_category", "type": invalid_identifier}}
+        )
+        await test_invalid_identifier(
+            {"action": {"category": invalid_identifier, "type": "valid_type"}}
+        )
+
+        # Actor
+        await test_invalid_identifier(
+            {
+                "actor": {
+                    "type": invalid_identifier,
+                    "ref": "user:123",
+                    "name": "User 123",
+                }
+            }
+        )
+
+        # Resource
+        await test_invalid_identifier(
+            {
+                "resource": {
+                    "ref": "core",
+                    "type": invalid_identifier,
+                    "name": "Core Module",
+                }
+            }
+        )
+
+        # Tag
+        await test_invalid_identifier({"tags": [{"type": invalid_identifier}]})
+
+        # Custom fields
+        invalid_custom_field = {"name": invalid_identifier, "value": "some_value"}
+        await test_invalid_identifier({"details": [invalid_custom_field]})
+        await test_invalid_identifier({"source": [invalid_custom_field]})
+        await test_invalid_identifier({"actor": {"extra": [invalid_custom_field]}})
+        await test_invalid_identifier({"resource": {"extra": [invalid_custom_field]}})
 
 
 async def test_add_attachment_binary_and_all_fields(
@@ -210,6 +244,19 @@ async def test_add_attachment_too_large(
         files={"file": ("test.txt", "A" * 2048)},
         data={"type": "text"},
         expected_status_code=413,
+    )
+
+
+async def test_add_attachment_invalid_type(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log = await repo.create_log(log_rw_client)
+    await log_rw_client.assert_post(
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
+        files={"file": ("test.txt", "test data")},
+        data={"type": "invalid type"},
+        expected_status_code=422,
     )
 
 
@@ -339,7 +386,7 @@ async def test_get_log_attachment_text_and_minimal_fields(
     await log_write_client.assert_post(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
-        data={"type": "text file"},
+        data={"type": "text_file"},
         expected_status_code=204,
     )
 
@@ -403,7 +450,7 @@ async def test_get_log_attachment_forbidden(
     await log_write_client.assert_post(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
-        data={"type": "text file"},
+        data={"type": "text_file"},
         expected_status_code=204,
     )
 
@@ -436,7 +483,7 @@ async def test_get_logs_with_attachment(
     await log_rw_client.assert_post(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
-        data={"type": "text file", "description": "A text file"},
+        data={"type": "text_file", "description": "A text file"},
         expected_status_code=204,
     )
 
@@ -450,7 +497,7 @@ async def test_get_logs_with_attachment(
                             {
                                 "name": "file.txt",
                                 "description": "A text file",
-                                "type": "text file",
+                                "type": "text_file",
                                 "mime_type": "text/plain",
                                 "saved_at": DATETIME_FORMAT,
                             }
@@ -980,25 +1027,25 @@ async def test_get_logs_filter_multiple_criteria(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     log1_data = PreparedLog.prepare_data()
-    log1_data["action"]["type"] = "find_me:action_type"
+    log1_data["action"]["type"] = "find_me_action_type"
     log1 = await repo.create_log(log_rw_client, log1_data)
 
     log2_data = PreparedLog.prepare_data()
-    log2_data["action"]["category"] = "find_me:action_category"
+    log2_data["action"]["category"] = "find_me_action_category"
     log2 = await repo.create_log(log_rw_client, log2_data)
 
     log3_data = PreparedLog.prepare_data()
     log3_data["action"] = {
-        "type": "find_me:action_type",
-        "category": "find_me:action_category",
+        "type": "find_me_action_type",
+        "category": "find_me_action_category",
     }
     log3 = await repo.create_log(log_rw_client, log3_data)
 
     await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs",
         params={
-            "action_type": "find_me:action_type",
-            "action_category": "find_me:action_category",
+            "action_type": "find_me_action_type",
+            "action_category": "find_me_action_category",
         },
         expected_json={
             "data": [log3.expected_api_response()],

@@ -10,6 +10,9 @@ from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.api.errors import COMMON_RESPONSES
+from auditize.helpers.api.validators import (
+    IDENTIFIER_PATTERN_STRING,
+)
 from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service
@@ -363,6 +366,7 @@ async def add_attachment(
             title="Attachment type",
             description="The 'functional' type of the attachment",
             json_schema_extra={"example": "Configuration file"},
+            pattern=IDENTIFIER_PATTERN_STRING,
         ),
     ],
     name: Annotated[

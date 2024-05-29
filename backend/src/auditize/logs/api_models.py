@@ -12,6 +12,7 @@ from pydantic import (
     model_validator,
 )
 
+from auditize.helpers.api.validators import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import serialize_datetime, validate_datetime
 from auditize.helpers.pagination.cursor.api_models import CursorPaginatedResponse
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
@@ -22,7 +23,7 @@ class CustomFieldData(BaseModel):
     # No brackets, dots or colons in field names:
     # - brackets are used in the query string to access nested fields (e.g. details[foo])
     # - dots and colons may be used for special usage in the future
-    name: str = Field(title="Field name", pattern=r"^[^\[\].:]+$")
+    name: str = Field(title="Field name", pattern=IDENTIFIER_PATTERN)
     value: str = Field(title="Field value")
 
 
@@ -31,9 +32,12 @@ class _LogBase(BaseModel):
         type: str = Field(
             title="Action type",
             json_schema_extra={"example": "create_configuration_profile"},
+            pattern=IDENTIFIER_PATTERN,
         )
         category: str = Field(
-            title="Action category", json_schema_extra={"example": "configuration"}
+            title="Action category",
+            json_schema_extra={"example": "configuration"},
+            pattern=IDENTIFIER_PATTERN,
         )
 
     class Actor(BaseModel):
@@ -42,7 +46,11 @@ class _LogBase(BaseModel):
             description="Actor ref must be unique for a given actor",
             json_schema_extra={"example": "user:123"},
         )
-        type: str = Field(title="Actor type", json_schema_extra={"example": "user"})
+        type: str = Field(
+            title="Actor type",
+            json_schema_extra={"example": "user"},
+            pattern=IDENTIFIER_PATTERN,
+        )
         name: str = Field(title="Actor name", json_schema_extra={"example": "John Doe"})
         extra: list[CustomFieldData] = Field(
             default_factory=list,
@@ -60,7 +68,9 @@ class _LogBase(BaseModel):
             json_schema_extra={"example": "config-profile:123"},
         )
         type: str = Field(
-            title="Resource type", json_schema_extra={"example": "config-profile"}
+            title="Resource type",
+            json_schema_extra={"example": "config-profile"},
+            pattern=IDENTIFIER_PATTERN,
         )
         name: str = Field(
             title="Resource name", json_schema_extra={"example": "Config Profile 123"}
@@ -89,6 +99,7 @@ class _LogBase(BaseModel):
         type: str = Field(
             title="Tag type",
             description="If only type is set then it represents a 'simple' tag",
+            pattern=IDENTIFIER_PATTERN,
         )
         name: Optional[str] = Field(
             title="Tag name",
