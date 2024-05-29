@@ -19,21 +19,21 @@ export async function getAllPagePaginatedItems<T>(
   filter = {},
 ): Promise<T[]> {
   let page = 1;
-  let items: T[] = [];
+  const allItems: T[] = [];
 
   while (true) {
     const response = await axiosInstance.get(path, {
       params: snakecaseKeys({ page, ...filter }),
     });
-    const { data, pagination } = response.data;
-    items.push(...camelcaseKeys(data, { deep: true }));
+    const { items, pagination } = response.data;
+    allItems.push(...camelcaseKeys(items, { deep: true }));
     if (pagination.page >= pagination.total_pages) {
       break;
     }
     page++;
   }
 
-  return items;
+  return allItems;
 }
 
 export async function reqPost(path: string, data: any): Promise<any> {
@@ -71,7 +71,7 @@ export async function reqGetPaginated(
     params: snakecaseKeys(params, { deep: true }),
   });
   return [
-    camelcaseKeys(response.data.data, { deep: true }),
+    camelcaseKeys(response.data.items, { deep: true }),
     response.data.pagination,
   ];
 }

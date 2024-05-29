@@ -191,7 +191,7 @@ async def test_apikey_list(
         "/apikeys",
         [
             apikey.expected_api_response()
-            for apikey in sorted(apikeys, key=lambda r: r.data["name"])
+            for apikey in sorted(apikeys, key=lambda ak: ak.data["name"])
         ],
     )
 

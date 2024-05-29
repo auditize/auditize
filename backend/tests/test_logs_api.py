@@ -470,7 +470,7 @@ async def test_get_logs(
     await log_read_client.assert_get(
         f"/repos/{repo.id}/logs",
         expected_json={
-            "data": [log2.expected_api_response(), log1.expected_api_response()],
+            "items": [log2.expected_api_response(), log1.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -490,7 +490,7 @@ async def test_get_logs_with_attachment(
     await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs",
         expected_json={
-            "data": [
+            "items": [
                 log.expected_api_response(
                     {
                         "attachments": [
@@ -529,7 +529,7 @@ async def test_get_logs_limit(log_rw_client: HttpTestHelper, repo: PreparedRepo)
     await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs?limit=1",
         expected_json={
-            "data": [log2.expected_api_response()],
+            "items": [log2.expected_api_response()],
             "pagination": {"next_cursor": callee.IsA(str)},
         },
     )
@@ -544,7 +544,7 @@ async def test_get_logs_limit_and_cursor(
     resp = await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs?limit=5",
         expected_json={
-            "data": [log.expected_api_response() for log in reversed(logs[-5:])],
+            "items": [log.expected_api_response() for log in reversed(logs[-5:])],
             "pagination": {"next_cursor": callee.IsA(str)},
         },
     )
@@ -554,7 +554,7 @@ async def test_get_logs_limit_and_cursor(
     await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs?limit=5&cursor={next_cursor}",
         expected_json={
-            "data": [log.expected_api_response() for log in reversed(logs[:5])],
+            "items": [log.expected_api_response() for log in reversed(logs[:5])],
             "pagination": {"next_cursor": None},
         },
     )
@@ -591,7 +591,7 @@ async def _test_get_logs_filter(
         f"/repos/{repo.id}/logs",
         params=search_params,
         expected_json={
-            "data": [log.expected_api_response()],
+            "items": [log.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -956,7 +956,7 @@ async def test_get_logs_filter_since(log_rw_client: HttpTestHelper, repo: Prepar
         f"/repos/{repo.id}/logs",
         params={"since": "2024-01-01T12:00:00Z"},
         expected_json={
-            "data": [log2.expected_api_response()],
+            "items": [log2.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -974,7 +974,7 @@ async def test_get_logs_filter_until(log_rw_client: HttpTestHelper, repo: Prepar
         f"/repos/{repo.id}/logs",
         params={"until": "2024-01-01T12:00:00Z"},
         expected_json={
-            "data": [log1.expected_api_response()],
+            "items": [log1.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -994,7 +994,7 @@ async def test_get_logs_filter_until_milliseconds(
         f"/repos/{repo.id}/logs",
         params={"until": "2023-12-31T23:59:59Z"},
         expected_json={
-            "data": [log1.expected_api_response()],
+            "items": [log1.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -1018,7 +1018,7 @@ async def test_get_logs_filter_between_since_and_until(
         params={"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"},
     )
     assert resp.json() == {
-        "data": [log2.expected_api_response()],
+        "items": [log2.expected_api_response()],
         "pagination": {"next_cursor": None},
     }
 
@@ -1048,7 +1048,7 @@ async def test_get_logs_filter_multiple_criteria(
             "action_category": "find_me_action_category",
         },
         expected_json={
-            "data": [log3.expected_api_response()],
+            "items": [log3.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -1077,7 +1077,7 @@ async def test_get_logs_empty_string_filter_params(
         },
     )
     assert resp.json() == {
-        "data": [log.expected_api_response()],
+        "items": [log.expected_api_response()],
         "pagination": {"next_cursor": None},
     }
 
@@ -1090,7 +1090,7 @@ async def test_get_logs_filter_no_result(
     await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs",
         params={"action_type": "not to be found"},
-        expected_json={"data": [], "pagination": {"next_cursor": None}},
+        expected_json={"items": [], "pagination": {"next_cursor": None}},
     )
 
 
@@ -1174,7 +1174,7 @@ class TestLogActionTypes(_ConsolidatedDataTest):
         await log_read_client.assert_get(
             f"/repos/{repo.id}/logs/actions/types?category=category_2",
             expected_json={
-                "data": [{"name": f"type_{2}"}],
+                "items": [{"name": f"type_{2}"}],
                 "pagination": {
                     "page": 1,
                     "page_size": 10,

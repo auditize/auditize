@@ -200,7 +200,7 @@ export async function getLogs(
     { disableParamsSnakecase: true },
   );
   return {
-    logs: data.data,
+    logs: data.items,
     nextCursor: data.pagination.nextCursor,
   };
 }

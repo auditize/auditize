@@ -125,7 +125,7 @@ async def list_repos(
     repos, page_info = await service.get_repos(dbm, page=page, page_size=page_size)
     response = RepoListResponse.build(repos, page_info)
     if include:
-        for repo in response.data:
+        for repo in response.items:
             await _handle_repo_include_options(repo, include, dbm)
     return response
 
@@ -161,7 +161,7 @@ async def list_user_repos(
     )
 
     response = UserRepoListResponse.build(repos, page_info)
-    for repo_response in response.data:
+    for repo_response in response.items:
         repo_response.permissions = RepoLogPermissionsData(
             read_logs=authenticated.comply(can_read_logs(repo_response.id)),
             write_logs=authenticated.comply(can_write_logs(repo_response.id)),

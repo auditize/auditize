@@ -34,12 +34,12 @@ class CursorPaginatedResponse(BaseModel, Generic[ModelItemT, ApiItemT]):
     pagination: CursorPaginationData = Field(
         description="Cursor-based pagination information"
     )
-    data: list[ApiItemT] = Field(description="List of items")
+    items: list[ApiItemT] = Field(description="List of items")
 
     @classmethod
     def build(cls, items: list[ModelItemT], next_cursor: str = None):
         return cls(
-            data=list(map(cls.build_item, items)),
+            items=list(map(cls.build_item, items)),
             pagination=CursorPaginationData(next_cursor=next_cursor),
         )
 
