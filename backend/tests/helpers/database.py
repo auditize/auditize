@@ -1,3 +1,4 @@
+import os
 import random
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
@@ -9,9 +10,12 @@ from auditize.main import app
 
 def setup_test_dbm():
     mongo_client = AsyncIOMotorClient()
-    test_dbm = DatabaseManager.spawn(
-        client=mongo_client, name_prefix="test_%04d" % int(random.random() * 10000)
-    )
+    name_prefix = "test_%04d" % int(random.random() * 10000)
+    try:
+        name_prefix += "_" + os.environ["PYTEST_XDIST_WORKER"]
+    except KeyError:
+        pass
+    test_dbm = DatabaseManager.spawn(client=mongo_client, name_prefix=name_prefix)
     app.dependency_overrides[get_dbm] = lambda: test_dbm
     return test_dbm
 
