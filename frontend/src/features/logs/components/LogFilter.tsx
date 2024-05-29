@@ -267,34 +267,42 @@ function useLogConsolidatedDataPrefetch(repoId: string) {
   const { isPending: actionCategoryPending } = useQuery({
     queryKey: ["logConsolidatedData", "actionCategory", repoId],
     queryFn: () => getAllLogActionCategories(repoId),
+    enabled: !!repoId,
   });
   const { isPending: actionTypePending } = useQuery({
     queryKey: ["logConsolidatedData", "actionType", repoId],
     queryFn: () => getAllLogActionTypes(repoId),
+    enabled: !!repoId,
   });
   const { isPending: actorTypePending } = useQuery({
     queryKey: ["logConsolidatedData", "actorType", repoId],
     queryFn: () => getAllLogActorTypes(repoId),
+    enabled: !!repoId,
   });
   const { isPending: resourceTypePending } = useQuery({
     queryKey: ["logConsolidatedData", "resourceType", repoId],
     queryFn: () => getAllLogResourceTypes(repoId),
+    enabled: !!repoId,
   });
   const { isPending: tagTypePending } = useQuery({
     queryKey: ["logConsolidatedData", "tagType", repoId],
     queryFn: () => getAllLogTagTypes(repoId),
+    enabled: !!repoId,
   });
   const { isPending: attachmentTypePending } = useQuery({
     queryKey: ["logConsolidatedData", "attachmentType", repoId],
     queryFn: () => getAllAttachmentTypes(repoId),
+    enabled: !!repoId,
   });
   const { isPending: attachmentMimeTypePending } = useQuery({
     queryKey: ["logConsolidatedData", "attachmentMimeType", repoId],
     queryFn: () => getAllAttachmentMimeTypes(repoId),
+    enabled: !!repoId,
   });
   const { isPending: nodePending } = useQuery({
     queryKey: ["logConsolidatedData", "node", repoId],
     queryFn: () => getAllLogNodes(repoId),
+    enabled: !!repoId,
   });
   return (
     actionCategoryPending ||
