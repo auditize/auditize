@@ -182,7 +182,7 @@ export function prepareLogFilterForApi(filter: LogSearchParams): object {
 export async function getLogs(
   cursor: string | null,
   filter?: LogSearchParams,
-  limit = 3,
+  limit = 30,
 ): Promise<{ logs: Log[]; nextCursor: string | null }> {
   const data = await reqGet(
     `/repos/${filter!.repoId}/logs`,
