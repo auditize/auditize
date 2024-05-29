@@ -73,7 +73,7 @@ function LogTableRow({
             }
             underline="hover"
           >
-            {log.resource.type}
+            {labelize(log.resource.type)}
           </Anchor>
         ) : null}
       </Table.Td>
