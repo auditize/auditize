@@ -32,10 +32,10 @@ function getDefaultPageForUser(
   return "/";
 }
 
-export function LogInForm({
-  onLogged,
+export function LoginForm({
+  onLogin,
 }: {
-  onLogged: (user: CurrentUserInfo) => void;
+  onLogin: (user: CurrentUserInfo) => void;
 }) {
   const { currentUser } = useCurrentUser();
   const [searchParams] = useSearchParams();
@@ -56,7 +56,7 @@ export function LogInForm({
     mutationFn: (values: { email: string; password: string }) =>
       logIn(values.email, values.password),
     onSuccess: (user) => {
-      onLogged(user);
+      onLogin(user);
       navigate(getDefaultPageForUser(user, searchParams), { replace: true });
     },
     onError: (error) => {

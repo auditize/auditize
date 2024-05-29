@@ -22,7 +22,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { AuthProvider, LogInForm, useCurrentUser } from "@/features/auth";
+import { AuthProvider, LoginForm, useCurrentUser } from "@/features/auth";
 import { Logs } from "@/features/logs";
 import { ReposManagement } from "@/features/repos";
 import { Signup } from "@/features/signup";
@@ -34,32 +34,32 @@ import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
 import { interceptStatusCode } from "./utils/axios";
 
-function logoutConfirmationModal(onLogOut: () => void) {
+function logoutConfirmationModal(onLogout: () => void) {
   return () =>
     modals.openConfirmModal({
-      title: "Please confirm log-out",
+      title: "Please confirm logout",
       children: <Text size="sm">Do you really want to log out?</Text>,
       labels: { confirm: "Confirm", cancel: "Cancel" },
       onConfirm: async () => {
         await logOut();
-        onLogOut();
+        onLogout();
       },
     });
 }
 
-function LoggedOutModal({
+function LogoutModal({
   context,
   id,
   innerProps,
-}: ContextModalProps<{ onLogOut: () => void }>) {
+}: ContextModalProps<{ onLogout: () => void }>) {
   return (
     <>
-      <Text size="sm">Your session has expired, you need to log-in again.</Text>
+      <Text size="sm">Your session has expired, you need to log in again.</Text>
       <Button
         fullWidth
         mt="md"
         onClick={() => {
-          innerProps.onLogOut();
+          innerProps.onLogout();
           context.closeModal(id);
         }}
       >
@@ -70,7 +70,7 @@ function LoggedOutModal({
 }
 
 function Main() {
-  const { currentUser, declareLoggedOut } = useCurrentUser();
+  const { currentUser, declareLogout } = useCurrentUser();
 
   useEffect(() => {
     let alreadyIntercepted = false;
@@ -80,8 +80,8 @@ function Main() {
         if (!alreadyIntercepted) {
           alreadyIntercepted = true; // avoid multiple modals in a row when we have multiple 401 responses
           modals.openContextModal({
-            modal: "loggedOut",
-            innerProps: { onLogOut: declareLoggedOut },
+            modal: "logout",
+            innerProps: { onLogout: declareLogout },
           });
         }
       });
@@ -94,7 +94,7 @@ function Main() {
       <AppShell.Header bg="#fbfbfb">
         <Flex h="100%" px="lg" justify="space-between" align="center">
           <Navbar>
-            <NavbarItem label="Log-in" url="/log-in" condition={!currentUser} />
+            <NavbarItem label="Login" url="/login" condition={!currentUser} />
             <NavbarItem
               label="Logs"
               url="/logs"
@@ -137,7 +137,7 @@ function Main() {
           <Tooltip label="Log-out">
             <Center style={{ cursor: "pointer" }}>
               <IconLogout
-                onClick={logoutConfirmationModal(declareLoggedOut)}
+                onClick={logoutConfirmationModal(declareLogout)}
                 size={"1.3rem"}
               />
             </Center>
@@ -161,7 +161,7 @@ function CatchAll() {
     return null;
   }
 
-  let path = "/log-in";
+  let path = "/login";
   if (location.pathname) {
     path +=
       "?redirect=" + encodeURIComponent(location.pathname + location.search);
@@ -171,7 +171,7 @@ function CatchAll() {
 }
 
 function AppRoutes() {
-  const { isAuthenticated, declareLoggedIn } = useCurrentUser();
+  const { isAuthenticated, declareLogin } = useCurrentUser();
 
   const router = createBrowserRouter([
     isAuthenticated
@@ -206,8 +206,8 @@ function AppRoutes() {
       element: <Signup />,
     },
     {
-      path: "/log-in",
-      element: <LogInForm onLogged={declareLoggedIn} />,
+      path: "/login",
+      element: <LoginForm onLogin={declareLogin} />,
     },
   ]);
 
@@ -227,7 +227,7 @@ export default function App() {
 
   return (
     <MantineProvider theme={theme}>
-      <ModalsProvider modals={{ loggedOut: LoggedOutModal }}>
+      <ModalsProvider modals={{ logout: LogoutModal }}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <AppRoutes />

@@ -5,8 +5,8 @@ import { CurrentUserInfo, getCurrentUserInfo } from "./api";
 
 type AuthContextProps = {
   currentUser: CurrentUserInfo | null;
-  declareLoggedIn: (user: CurrentUserInfo) => void;
-  declareLoggedOut: () => void;
+  declareLogin: (user: CurrentUserInfo) => void;
+  declareLogout: () => void;
   isAuthenticated: boolean;
   isRefreshingAuthData: boolean;
 };
@@ -29,11 +29,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         currentUser: currentUser,
-        declareLoggedIn: (user: CurrentUserInfo) => {
+        declareLogin: (user: CurrentUserInfo) => {
           setLoggedIn(user);
           setLoggedOut(false);
         },
-        declareLoggedOut: () => {
+        declareLogout: () => {
           setLoggedIn(null);
           setLoggedOut(true);
         },
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useCurrentUser() {
+export function useCurrentUser(): AuthContextProps {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useCurrentUser must be used within an AuthProvider");
@@ -54,7 +54,7 @@ export function useCurrentUser() {
   return context;
 }
 
-export function useAuthenticatedUser() {
+export function useAuthenticatedUser(): { currentUser: CurrentUserInfo } {
   const { currentUser } = useCurrentUser();
   if (!currentUser) {
     throw new Error("User is not authenticated");

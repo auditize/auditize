@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.post(
     "/auth/user/login",
-    summary="User log-in",
+    summary="User login",
     tags=["auth"],
     status_code=200,
     response_model=UserMeResponse,
