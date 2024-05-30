@@ -35,6 +35,7 @@ class PreparedRepo:
         return {
             "_id": ObjectId(self.id),
             "name": self.data["name"],
+            "status": self.data.get("status", "enabled"),
             "created_at": callee.IsA(datetime),
             **(extra or {}),
         }
@@ -43,6 +44,7 @@ class PreparedRepo:
         return {
             "id": self.id,
             "name": self.data["name"],
+            "status": self.data.get("status", "enabled"),
             "created_at": callee.IsA(str),
             "stats": None,
             **(extra or {}),

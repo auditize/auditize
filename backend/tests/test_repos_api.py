@@ -55,6 +55,21 @@ async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManag
         await _test_repo_create(client, dbm, dbm.core_db.users)
 
 
+@pytest.mark.parametrize("status", ["enabled", "readonly", "disabled"])
+async def test_repo_create_with_explicit_status(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager, status: str
+):
+    data = {"name": "myrepo", "status": status}
+
+    resp = await superadmin_client.assert_post_created(
+        "/repos",
+        json=data,
+        expected_json={"id": callee.IsA(str)},
+    )
+    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
+    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+
+
 async def test_repo_create_missing_name(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
@@ -85,16 +100,19 @@ async def test_repo_create_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_post_forbidden("/repos", json={"name": "myrepo"})
 
 
+@pytest.mark.parametrize("field,value", [("name", "myrepo"), ("status", "disabled")])
 async def test_repo_update(
-    repo_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
+    repo_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    dbm: DatabaseManager,
+    field: str,
+    value: str,
 ):
     await repo_write_client.assert_patch(
-        f"/repos/{repo.id}", json={"name": "Repo Updated"}, expected_status_code=204
+        f"/repos/{repo.id}", json={field: value}, expected_status_code=204
     )
 
-    await assert_collection(
-        dbm.core_db.repos, [repo.expected_document({"name": "Repo Updated"})]
-    )
+    await assert_collection(dbm.core_db.repos, [repo.expected_document({field: value})])
 
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
@@ -252,6 +270,7 @@ async def test_repo_list_user_repos_simple(
                         repo.expected_api_response(
                             {"permissions": {"read_logs": True, "write_logs": True}}
                         ),
+                        "status",
                         "created_at",
                         "stats",
                     )
