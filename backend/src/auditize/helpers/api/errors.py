@@ -35,18 +35,21 @@ class ApiValidationErrorResponse(BaseModel):
     validation_errors: list[ValidationErrorDetail]
 
     @classmethod
-    def from_exception(cls, exc: RequestValidationError, _):
-        return cls(
-            message="Bad request",
-            validation_errors=list(
-                map(cls.ValidationErrorDetail.from_dict, exc.errors())
-            ),
-        )
+    def from_exception(cls, exc: Exception, default_message: str):
+        if isinstance(exc, RequestValidationError):
+            return cls(
+                message="Invalid request",
+                validation_errors=list(
+                    map(cls.ValidationErrorDetail.from_dict, exc.errors())
+                ),
+            )
+        else:
+            return cls(message=str(exc) or default_message, validation_errors=[])
 
 
 _EXCEPTION_RESPONSES = {
-    ValidationError: (400, "Bad request", ApiErrorResponse),
-    RequestValidationError: (400, "Bad request", ApiValidationErrorResponse),
+    ValidationError: (400, "Invalid request", ApiValidationErrorResponse),
+    RequestValidationError: (400, "Invalid request", ApiValidationErrorResponse),
     AuthenticationFailure: (401, "Unauthorized", ApiErrorResponse),
     PermissionDenied: (403, "Forbidden", ApiErrorResponse),
     UnknownModelException: (404, "Not found", ApiErrorResponse),
