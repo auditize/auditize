@@ -53,22 +53,19 @@ async def test_user_create_missing_parameter(
         data = template.copy()
         del data[key]
 
-        await user_write_client.assert_post(
-            "/users", json=data, expected_status_code=422
-        )
+        await user_write_client.assert_post_bad_request("/users", json=data)
 
 
 async def test_user_create_invalid_email(
     user_write_client: HttpTestHelper, user: PreparedUser
 ):
-    await user_write_client.assert_post(
+    await user_write_client.assert_post_bad_request(
         "/users",
         json={
             "email": "this_is_not_an_email",
             "first_name": "Another John",
             "last_name": "Another Doe",
         },
-        expected_status_code=422,
     )
 
 

@@ -58,7 +58,7 @@ async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManag
 async def test_repo_create_missing_name(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    await repo_write_client.assert_post("/repos", json={}, expected_status_code=422)
+    await repo_write_client.assert_post_bad_request("/repos", json={})
 
 
 async def test_repo_create_already_used_name(

@@ -46,7 +46,7 @@ class ApiValidationErrorResponse(BaseModel):
 
 _EXCEPTION_RESPONSES = {
     ValidationError: (400, "Bad request", ApiErrorResponse),
-    RequestValidationError: (422, "Bad request", ApiValidationErrorResponse),
+    RequestValidationError: (400, "Bad request", ApiValidationErrorResponse),
     AuthenticationFailure: (401, "Unauthorized", ApiErrorResponse),
     PermissionDenied: (403, "Forbidden", ApiErrorResponse),
     UnknownModelException: (404, "Not found", ApiErrorResponse),

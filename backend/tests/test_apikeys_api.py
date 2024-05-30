@@ -50,9 +50,7 @@ async def test_apikey_create_missing_parameter(
         data = template.copy()
         del data[key]
 
-        await apikey_write_client.assert_post(
-            "/apikeys", json=data, expected_status_code=422
-        )
+        await apikey_write_client.assert_post_bad_request("/apikeys", json=data)
 
 
 async def test_apikey_create_already_used_name(

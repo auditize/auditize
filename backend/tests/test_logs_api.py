@@ -126,9 +126,7 @@ async def test_create_log_missing_action_type(
 ):
     data = PreparedLog.prepare_data()
     del data["action"]["type"]
-    await log_write_client.assert_post(
-        f"/repos/{repo.id}/logs", json=data, expected_status_code=422
-    )
+    await log_write_client.assert_post_bad_request(f"/repos/{repo.id}/logs", json=data)
 
 
 async def test_create_log_invalid_rich_tag(
@@ -140,10 +138,9 @@ async def test_create_log_invalid_rich_tag(
     )
 
     for invalid_tag in invalid_tags:
-        await log_write_client.assert_post(
+        await log_write_client.assert_post_bad_request(
             f"/repos/{repo.id}/logs",
             json=PreparedLog.prepare_data({"tags": [invalid_tag]}),
-            expected_status_code=422,
         )
 
 
@@ -151,10 +148,9 @@ async def test_create_log_invalid_identifiers(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
     async def test_invalid_identifier(extra):
-        await log_write_client.assert_post(
+        await log_write_client.assert_post_bad_request(
             f"/repos/{repo.id}/logs",
             json=PreparedLog.prepare_data(extra),
-            expected_status_code=422,
         )
 
     for invalid_identifier in "foo.bar", "foo[bar]", "foo:bar", "foo bar", "FOOBAR":
@@ -252,11 +248,10 @@ async def test_add_attachment_invalid_type(
     repo: PreparedRepo,
 ):
     log = await repo.create_log(log_rw_client)
-    await log_rw_client.assert_post(
+    await log_rw_client.assert_post_bad_request(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("test.txt", "test data")},
         data={"type": "invalid type"},
-        expected_status_code=422,
     )
 
 
