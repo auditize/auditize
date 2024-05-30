@@ -7,6 +7,7 @@ from auditize.apikeys.service import update_apikey
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
+from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import (
     can_read_logs,
     can_read_repos,
@@ -34,10 +35,16 @@ from auditize.repos.api_models import (
 from auditize.users.models import UserUpdate
 from auditize.users.service import update_user
 
-router = APIRouter()
+router = APIRouter(responses=error_responses(401, 403))
 
 
-@router.post("/repos", summary="Create log repository", tags=["repos"], status_code=201)
+@router.post(
+    "/repos",
+    summary="Create log repository",
+    tags=["repos"],
+    status_code=201,
+    responses=error_responses(400, 409),
+)
 async def create_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_repos()),
@@ -68,7 +75,11 @@ async def create_repo(
 
 
 @router.patch(
-    "/repos/{repo_id}", summary="Update log repository", tags=["repos"], status_code=204
+    "/repos/{repo_id}",
+    summary="Update log repository",
+    tags=["repos"],
+    status_code=204,
+    responses=error_responses(400, 404, 409),
 )
 async def update_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -94,7 +105,7 @@ async def _handle_repo_include_options(
     "/repos/{repo_id}",
     summary="Get log repository",
     tags=["repos"],
-    response_model=RepoReadingResponse,
+    responses=error_responses(404),
 )
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -112,7 +123,6 @@ async def get_repo(
     "/repos",
     summary="List log repositories",
     tags=["repos"],
-    response_model=RepoListResponse,
 )
 async def list_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -133,7 +143,6 @@ async def list_repos(
     "/users/me/repos",
     summary="List user accessible repositories",
     tags=["users"],
-    response_model=UserRepoListResponse,
 )
 async def list_user_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -170,7 +179,11 @@ async def list_user_repos(
 
 
 @router.delete(
-    "/repos/{repo_id}", summary="Delete log repository", tags=["repos"], status_code=204
+    "/repos/{repo_id}",
+    summary="Delete log repository",
+    tags=["repos"],
+    status_code=204,
+    responses=error_responses(404),
 )
 async def delete_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],

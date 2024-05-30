@@ -9,7 +9,7 @@ from auditize.auth.authorizer import (
 from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PayloadTooLarge, ValidationError
-from auditize.helpers.api.errors import COMMON_RESPONSES
+from auditize.helpers.api.errors import error_responses
 from auditize.helpers.api.validators import (
     IDENTIFIER_PATTERN_STRING,
 )
@@ -27,7 +27,9 @@ from auditize.logs.api_models import (
     NameListResponse,
 )
 
-router = APIRouter()
+router = APIRouter(
+    responses=error_responses(401, 403, 404),
+)
 
 
 async def _get_consolidated_data(
@@ -51,6 +53,7 @@ async def _get_consolidated_data(
     "/repos/{repo_id}/logs/actions/types",
     summary="Get log action types",
     operation_id="get_log_action_types",
+    responses=error_responses(401, 403, 404),
     tags=["logs"],
 )
 async def get_log_action_types(
@@ -332,6 +335,7 @@ async def get_log_node(
     status_code=201,
     summary="Create a log",
     operation_id="create_log",
+    responses=error_responses(400),
     tags=["logs"],
 )
 async def create_log(
@@ -350,6 +354,7 @@ async def create_log(
     response_class=Response,
     summary="Add a file attachment to a log",
     operation_id="add_log_attachment",
+    responses=error_responses(400, 413),
     tags=["logs"],
 )
 async def add_attachment(
@@ -418,7 +423,7 @@ async def add_attachment(
     summary="Get a log",
     operation_id="get_log",
     tags=["logs"],
-    responses=COMMON_RESPONSES,
+    status_code=200,
 )
 async def get_log(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
