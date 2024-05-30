@@ -32,7 +32,7 @@ from auditize.repos.api_models import (
     RepoUpdateRequest,
     UserRepoListResponse,
 )
-from auditize.repos.models import RepoUpdate
+from auditize.repos.models import RepoStatus, RepoUpdate
 from auditize.users.models import UserUpdate
 from auditize.users.service import update_user
 
@@ -172,10 +172,16 @@ async def list_user_repos(
     )
 
     response = UserRepoListResponse.build(repos, page_info)
-    for repo_response in response.items:
+    for repo_response, repo in zip(response.items, repos):
         repo_response.permissions = RepoLogPermissionsData(
-            read_logs=authenticated.comply(can_read_logs(repo_response.id)),
-            write_logs=authenticated.comply(can_write_logs(repo_response.id)),
+            read_logs=(
+                repo.status in (RepoStatus.enabled, RepoStatus.readonly)
+                and authenticated.comply(can_read_logs(repo_response.id))
+            ),
+            write_logs=(
+                repo.status == RepoStatus.enabled
+                and authenticated.comply(can_write_logs(repo_response.id))
+            ),
         )
 
     return response

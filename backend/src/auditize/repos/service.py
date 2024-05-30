@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Any, Sequence
 
 from bson import ObjectId
 
@@ -20,7 +20,7 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import is_authorized
-from auditize.repos.models import Repo, RepoStats, RepoUpdate
+from auditize.repos.models import Repo, RepoStats, RepoStatus, RepoUpdate
 from auditize.users.models import User
 
 
@@ -105,14 +105,18 @@ async def get_repos(
     user_can_read: bool = False,
     user_can_write: bool = False,
 ) -> tuple[list[Repo], PagePaginationInfo]:
-    filter = None
+    filter: dict[str, Any] = {
+        "status": {"$in": [RepoStatus.enabled, RepoStatus.readonly]}
+    }
 
     if user:
         repo_ids = _get_authorized_repo_ids_for_user(
             user, user_can_read, user_can_write
         )
         if repo_ids is not None:
-            filter = {"_id": {"$in": list(map(ObjectId, repo_ids))}}
+            filter["_id"] = {"$in": list(map(ObjectId, repo_ids))}
+        if user_can_write:
+            filter["status"] = RepoStatus.enabled
 
     results, page_info = await find_paginated_by_page(
         dbm.core_db.repos,

@@ -308,8 +308,14 @@ async def test_repo_list_user_repos_with_permissions(
     repo_1 = await PreparedRepo.create(dbm, {"name": "repo_1"})
     repo_2 = await PreparedRepo.create(dbm, {"name": "repo_2"})
     repo_3 = await PreparedRepo.create(dbm, {"name": "repo_3"})
+    repo_readonly = await PreparedRepo.create(
+        dbm, {"name": "repo_readonly", "status": "readonly"}
+    )
+    repo_disabled = await PreparedRepo.create(
+        dbm, {"name": "repo_disabled", "status": "disabled"}
+    )
 
-    # Test with user having read&write permissions on all repos
+    # Test #1 with user having read&write permissions on all repos
     user = await user_builder({"logs": {"read": True, "write": True}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -320,10 +326,11 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_1.id: {"read_logs": True, "write_logs": True},
                 repo_2.id: {"read_logs": True, "write_logs": True},
                 repo_3.id: {"read_logs": True, "write_logs": True},
+                repo_readonly.id: {"read_logs": True, "write_logs": False},
             },
         )
 
-    # Test with user having specific permissions on various repos
+    # Test #2 with user having specific permissions on various repos
     user = await user_builder(
         {
             "logs": {
@@ -331,6 +338,8 @@ async def test_repo_list_user_repos_with_permissions(
                     {"repo_id": repo_1.id, "read": True, "write": False},
                     {"repo_id": repo_2.id, "read": False, "write": True},
                     {"repo_id": repo_3.id, "read": True, "write": True},
+                    {"repo_id": repo_readonly.id, "read": True, "write": True},
+                    {"repo_id": repo_disabled.id, "read": True, "write": True},
                 ]
             }
         }
@@ -344,6 +353,7 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_1.id: {"read_logs": True, "write_logs": False},
                 repo_2.id: {"read_logs": False, "write_logs": True},
                 repo_3.id: {"read_logs": True, "write_logs": True},
+                repo_readonly.id: {"read_logs": True, "write_logs": False},
             },
         )
         await _test_repo_list_user_repos(
@@ -352,6 +362,7 @@ async def test_repo_list_user_repos_with_permissions(
             {
                 repo_1.id: {"read_logs": True, "write_logs": False},
                 repo_3.id: {"read_logs": True, "write_logs": True},
+                repo_readonly.id: {"read_logs": True, "write_logs": False},
             },
         )
         await _test_repo_list_user_repos(
@@ -368,7 +379,7 @@ async def test_repo_list_user_repos_with_permissions(
             {repo_3.id: {"read_logs": True, "write_logs": True}},
         )
 
-    # Test with user having no log permissions (but can manage repos)
+    # Test #3 with user having no log permissions (but can manage repos)
     user = await user_builder({"management": {"repos": {"read": True, "write": True}}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
