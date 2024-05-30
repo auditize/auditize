@@ -70,7 +70,7 @@ async def create_user(dbm: DatabaseManager, user: User) -> str:
 
 
 async def update_user(dbm: DatabaseManager, user_id: str, update: UserUpdate):
-    doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
+    doc_update = update.model_dump(exclude_none=True, exclude={"permissions"})
     if update.permissions:
         user = await get_user(dbm, user_id)
         user_permissions = update_permissions(user.permissions, update.permissions)

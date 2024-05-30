@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
-from auditize.repos.models import Repo, RepoUpdate
+from auditize.repos.models import Repo
 
 
 class RepoCreationRequest(BaseModel):
@@ -18,9 +18,6 @@ class RepoCreationRequest(BaseModel):
 
 class RepoUpdateRequest(BaseModel):
     name: str = Field(description="The repository name")
-
-    def to_repo_update(self):
-        return RepoUpdate.model_validate(self.model_dump())
 
 
 class RepoCreationResponse(BaseModel):

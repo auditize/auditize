@@ -19,6 +19,7 @@ from auditize.users.api_models import (
     UserSignupSetPasswordRequest,
     UserUpdateRequest,
 )
+from auditize.users.models import UserUpdate
 
 router = APIRouter(responses=error_responses(401, 403))
 
@@ -60,7 +61,8 @@ async def update_user(
     user: UserUpdateRequest,
 ):
     _ensure_cannot_alter_own_user(authenticated, user_id)
-    user_model = user.to_db_model()
+
+    user_model = UserUpdate.model_validate(user.model_dump())
     if user_model.permissions:
         authorize_grant(authenticated.permissions, user_model.permissions)
     await service.update_user(dbm, user_id, user_model)

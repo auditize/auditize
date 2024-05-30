@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from auditize.apikeys.models import Apikey, ApikeyUpdate
+from auditize.apikeys.models import Apikey
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import PermissionsData
 
@@ -22,9 +22,6 @@ class ApikeyUpdateRequest(BaseModel):
     permissions: Optional[PermissionsData] = Field(
         description="The apikey permissions", default=None
     )
-
-    def to_db_model(self):
-        return ApikeyUpdate.model_validate(self.model_dump(exclude_none=True))
 
 
 class ApikeyCreationResponse(BaseModel):

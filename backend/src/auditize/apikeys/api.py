@@ -11,6 +11,7 @@ from auditize.apikeys.api_models import (
     ApikeyRegenerationResponse,
     ApikeyUpdateRequest,
 )
+from auditize.apikeys.models import ApikeyUpdate
 from auditize.auth.authorizer import Authenticated, Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
@@ -61,7 +62,7 @@ async def update_apikey(
     apikey: ApikeyUpdateRequest,
 ):
     _ensure_cannot_alter_own_apikey(authenticated, apikey_id)
-    apikey_model = apikey.to_db_model()
+    apikey_model = ApikeyUpdate.model_validate(apikey.model_dump())
     if apikey_model.permissions:
         authorize_grant(authenticated.permissions, apikey_model.permissions)
     await service.update_apikey(dbm, apikey_id, apikey_model)

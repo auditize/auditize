@@ -32,6 +32,7 @@ from auditize.repos.api_models import (
     RepoUpdateRequest,
     UserRepoListResponse,
 )
+from auditize.repos.models import RepoUpdate
 from auditize.users.models import UserUpdate
 from auditize.users.service import update_user
 
@@ -87,7 +88,9 @@ async def update_repo(
     repo_id: str,
     repo: RepoUpdateRequest,
 ):
-    await service.update_repo(dbm, repo_id, repo.to_repo_update())
+    await service.update_repo(
+        dbm, repo_id, RepoUpdate.model_validate(repo.model_dump())
+    )
     return None
 
 

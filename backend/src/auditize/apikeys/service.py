@@ -40,7 +40,7 @@ async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[str, str]
 
 
 async def update_apikey(dbm: DatabaseManager, apikey_id: str, update: ApikeyUpdate):
-    doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
+    doc_update = update.model_dump(exclude_none=True, exclude={"permissions"})
     if update.permissions:
         apikey = await get_apikey(dbm, apikey_id)
         apikey_permissions = update_permissions(apikey.permissions, update.permissions)
