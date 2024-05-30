@@ -41,12 +41,12 @@ class PreparedLog:
         self,
         client: HttpTestHelper,
         *,
-        data: bytes,
-        name=None,
+        data: bytes = "some text content",
+        name="attachment.txt",
         description=None,
-        type=None,
+        type="text_file",
         mime_type=None,
-    ) -> "PreparedLog":
+    ):
         await client.assert_post(
             f"/repos/{self.repo.id}/logs/{self.id}/attachments",
             files={"file": (name, data)},

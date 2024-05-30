@@ -12,7 +12,7 @@ from auditize.helpers.resources.service import (
     get_resource_document,
     update_resource_document,
 )
-from auditize.logs.db import get_log_db
+from auditize.logs.db import get_log_db_for_config
 from auditize.permissions.assertions import (
     can_read_logs,
     can_write_logs,
@@ -38,7 +38,7 @@ async def get_repo(dbm: DatabaseManager, repo_id: str) -> Repo:
 
 
 async def get_repo_stats(dbm: DatabaseManager, repo_id: str) -> RepoStats:
-    logs_db = await get_log_db(dbm, repo_id)
+    logs_db = await get_log_db_for_config(dbm, repo_id)
     results = await logs_db.logs.aggregate(
         [
             {
@@ -130,7 +130,7 @@ async def get_repos(
 
 
 async def delete_repo(dbm: DatabaseManager, repo_id: str):
-    logs_db = await get_log_db(dbm, repo_id)
+    logs_db = await get_log_db_for_config(dbm, repo_id)
     await delete_resource_document(dbm.core_db.repos, repo_id)
     await logs_db.client.drop_database(logs_db.name)
 
