@@ -53,7 +53,19 @@ async def test_user_create_missing_parameter(
         data = template.copy()
         del data[key]
 
-        await user_write_client.assert_post_bad_request("/users", json=data)
+        await user_write_client.assert_post_bad_request(
+            "/users",
+            json=data,
+            expected_json={
+                "message": "Invalid request",
+                "validation_errors": [
+                    {
+                        "field": key,
+                        "message": "Field required",
+                    }
+                ],
+            },
+        )
 
 
 async def test_user_create_invalid_email(
@@ -65,6 +77,15 @@ async def test_user_create_invalid_email(
             "email": "this_is_not_an_email",
             "first_name": "Another John",
             "last_name": "Another Doe",
+        },
+        expected_json={
+            "message": "Invalid request",
+            "validation_errors": [
+                {
+                    "field": "email",
+                    "message": callee.Contains("not a valid email address"),
+                }
+            ],
         },
     )
 

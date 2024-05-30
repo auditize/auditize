@@ -1,3 +1,4 @@
+import callee
 from httpx import Response
 
 from auditize.database import DatabaseManager
@@ -110,6 +111,10 @@ class BasePermissionTests:
                     }
                 }
             ),
+            expected_json={
+                "message": callee.Contains("cannot be assigned in log permissions"),
+                "validation_errors": [],
+            },
         )
 
     async def test_create_forbidden_permissions(self, dbm: DatabaseManager):
@@ -211,6 +216,10 @@ class BasePermissionTests:
                         ],
                     },
                 }
+            },
+            expected_json={
+                "message": callee.Contains("cannot be assigned in log permissions"),
+                "validation_errors": [],
             },
         )
 

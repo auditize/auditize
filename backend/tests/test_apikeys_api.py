@@ -50,7 +50,19 @@ async def test_apikey_create_missing_parameter(
         data = template.copy()
         del data[key]
 
-        await apikey_write_client.assert_post_bad_request("/apikeys", json=data)
+        await apikey_write_client.assert_post_bad_request(
+            "/apikeys",
+            json=data,
+            expected_json={
+                "message": "Invalid request",
+                "validation_errors": [
+                    {
+                        "field": key,
+                        "message": "Field required",
+                    }
+                ],
+            },
+        )
 
 
 async def test_apikey_create_already_used_name(

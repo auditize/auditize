@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from auditize.exceptions import (
     AuthenticationFailure,
@@ -24,27 +24,40 @@ class ApiErrorResponse(BaseModel):
 
 class ApiValidationErrorResponse(BaseModel):
     class ValidationErrorDetail(BaseModel):
-        field: str
+        field: str | None = Field(default=None)
         message: str
 
         @classmethod
         def from_dict(cls, error: dict[str, any]):
-            return cls(field=".".join(map(str, error["loc"][1:])), message=error["msg"])
+            if len(error["loc"]) > 1:
+                return cls(
+                    field=".".join(map(str, error["loc"][1:])), message=error["msg"]
+                )
+            else:
+                return cls(message=error["msg"])
 
     message: str
-    validation_errors: list[ValidationErrorDetail]
+    validation_errors: list[ValidationErrorDetail] = Field(default_factory=list)
 
     @classmethod
     def from_exception(cls, exc: Exception, default_message: str):
         if isinstance(exc, RequestValidationError):
+            errors = exc.errors()
+            if len(errors) == 0:
+                # This should never happen
+                return cls(message=default_message)
+            elif len(errors) == 1 and len(errors[0]["loc"]) == 1:
+                # Make a special case for single top-level errors affecting the whole request
+                return cls(message=errors[0]["msg"])
             return cls(
+                # Common case
                 message="Invalid request",
                 validation_errors=list(
                     map(cls.ValidationErrorDetail.from_dict, exc.errors())
                 ),
             )
         else:
-            return cls(message=str(exc) or default_message, validation_errors=[])
+            return cls(message=str(exc) or default_message)
 
 
 _EXCEPTION_RESPONSES = {
@@ -57,7 +70,6 @@ _EXCEPTION_RESPONSES = {
     PayloadTooLarge: (413, "Payload too large", ApiErrorResponse),
 }
 _DEFAULT_EXCEPTION_RESPONSE = (500, "Internal server error", ApiErrorResponse)
-
 
 E = TypeVar("E", bound=Exception)
 
