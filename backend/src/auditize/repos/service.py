@@ -105,17 +105,14 @@ async def get_repos(
     user_can_read: bool = False,
     user_can_write: bool = False,
 ) -> tuple[list[Repo], PagePaginationInfo]:
-    repo_ids = None
+    filter = None
 
     if user:
         repo_ids = _get_authorized_repo_ids_for_user(
             user, user_can_read, user_can_write
         )
-
-    if repo_ids is not None:
-        filter = {"_id": {"$in": list(map(ObjectId, repo_ids))}}
-    else:
-        filter = None
+        if repo_ids is not None:
+            filter = {"_id": {"$in": list(map(ObjectId, repo_ids))}}
 
     results, page_info = await find_paginated_by_page(
         dbm.core_db.repos,
