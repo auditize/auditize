@@ -14,13 +14,14 @@ from auditize.apikeys.api_models import (
 from auditize.auth.authorizer import Authenticated, Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
+from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import (
     can_read_apikeys,
     can_write_apikeys,
 )
 from auditize.permissions.operations import authorize_grant
 
-router = APIRouter()
+router = APIRouter(responses=error_responses(401, 403))
 
 
 def _ensure_cannot_alter_own_apikey(authenticated: Authenticated, apikey_id: str):
@@ -33,6 +34,7 @@ def _ensure_cannot_alter_own_apikey(authenticated: Authenticated, apikey_id: str
     summary="Create apikey",
     tags=["apikeys"],
     status_code=201,
+    responses=error_responses(400, 409),
 )
 async def create_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -50,6 +52,7 @@ async def create_apikey(
     summary="Update apikey",
     tags=["apikeys"],
     status_code=204,
+    responses=error_responses(400, 404, 409),
 )
 async def update_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -68,7 +71,7 @@ async def update_apikey(
     "/apikeys/{apikey_id}",
     summary="Get apikey",
     tags=["apikeys"],
-    response_model=ApikeyReadingResponse,
+    responses=error_responses(404),
 )
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -83,7 +86,6 @@ async def get_repo(
     "/apikeys",
     summary="List apikeys",
     tags=["apikeys"],
-    response_model=ApikeyListResponse,
 )
 async def list_apikeys(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -100,6 +102,7 @@ async def list_apikeys(
     summary="Delete apikey",
     tags=["apikeys"],
     status_code=204,
+    responses=error_responses(404),
 )
 async def delete_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -115,12 +118,13 @@ async def delete_apikey(
     summary="Re-regenerate apikey",
     tags=["apikeys"],
     status_code=200,
+    responses=error_responses(404),
 )
 async def regenerate_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_apikeys()),
     apikey_id: str,
-):
+) -> ApikeyRegenerationResponse:
     _ensure_cannot_alter_own_apikey(authenticated, apikey_id)
     key = await service.regenerate_apikey(dbm, apikey_id)
     return ApikeyRegenerationResponse(key=key)

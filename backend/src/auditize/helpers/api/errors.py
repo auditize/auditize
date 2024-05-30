@@ -59,13 +59,26 @@ _EXCEPTION_RESPONSES = {
 _DEFAULT_EXCEPTION_RESPONSE = (500, "Internal server error", ApiErrorResponse)
 
 
-class NotFoundResponse(BaseModel):
-    detail: str = "Not found"
-
-
-COMMON_RESPONSES = {404: {"description": "Not found", "model": NotFoundResponse}}
-
 E = TypeVar("E", bound=Exception)
+
+_STATUS_CODE_TO_RESPONSE = {
+    400: (ApiValidationErrorResponse, "Bad request"),
+    401: (ApiErrorResponse, "Unauthorized"),
+    403: (ApiErrorResponse, "Forbidden"),
+    404: (ApiErrorResponse, "Not found"),
+    409: (ApiErrorResponse, "Constraint violation"),
+    413: (ApiErrorResponse, "Payload too large"),
+}
+
+
+def error_responses(*status_codes: int):
+    return {
+        status_code: {
+            "description": _STATUS_CODE_TO_RESPONSE[status_code][1],
+            "model": _STATUS_CODE_TO_RESPONSE[status_code][0],
+        }
+        for status_code in status_codes
+    }
 
 
 def make_response_from_exception(exc: E):

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
+from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import can_read_users, can_write_users
 from auditize.permissions.operations import authorize_grant
 from auditize.users import service
@@ -19,7 +20,7 @@ from auditize.users.api_models import (
     UserUpdateRequest,
 )
 
-router = APIRouter()
+router = APIRouter(responses=error_responses(401, 403))
 
 
 def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: str):
@@ -27,7 +28,13 @@ def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: str):
         raise PermissionDenied("Cannot alter own user")
 
 
-@router.post("/users", summary="Create user", tags=["users"], status_code=201)
+@router.post(
+    "/users",
+    summary="Create user",
+    tags=["users"],
+    status_code=201,
+    responses=error_responses(400, 409),
+)
 async def create_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_users()),
@@ -40,7 +47,11 @@ async def create_user(
 
 
 @router.patch(
-    "/users/{user_id}", summary="Update user", tags=["users"], status_code=204
+    "/users/{user_id}",
+    summary="Update user",
+    tags=["users"],
+    status_code=204,
+    responses=error_responses(400, 404, 409),
 )
 async def update_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -60,7 +71,6 @@ async def update_user(
     "/users/me",
     summary="Get authenticated user",
     tags=["users"],
-    response_model=UserMeResponse,
 )
 async def get_user_me(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
@@ -74,7 +84,7 @@ async def get_user_me(
     "/users/{user_id}",
     summary="Get user",
     tags=["users"],
-    response_model=UserReadingResponse,
+    responses=error_responses(404),
 )
 async def get_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -85,9 +95,7 @@ async def get_user(
     return UserReadingResponse.from_db_model(user)
 
 
-@router.get(
-    "/users", summary="List users", tags=["users"], response_model=UserListResponse
-)
+@router.get("/users", summary="List users", tags=["users"])
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_users()),
@@ -99,7 +107,11 @@ async def list_users(
 
 
 @router.delete(
-    "/users/{user_id}", summary="Delete user", tags=["users"], status_code=204
+    "/users/{user_id}",
+    summary="Delete user",
+    tags=["users"],
+    status_code=204,
+    responses=error_responses(404, 409),
 )
 async def delete_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -114,7 +126,7 @@ async def delete_user(
     "/users/signup/{token}",
     summary="Get user signup info",
     tags=["users"],
-    response_model=UserSignupInfoResponse,
+    responses=error_responses(404),
 )
 async def get_user_signup_info(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)], token: str
@@ -128,6 +140,7 @@ async def get_user_signup_info(
     summary="Set user password",
     tags=["users"],
     status_code=204,
+    responses=error_responses(400, 404),
 )
 async def set_user_password(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
