@@ -1,5 +1,6 @@
 from typing import TypeVar
 
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -21,8 +22,31 @@ class ApiErrorResponse(BaseModel):
         return cls(message=str(exc) or default_message)
 
 
+class ApiValidationErrorResponse(BaseModel):
+    class ValidationErrorDetail(BaseModel):
+        field: str
+        message: str
+
+        @classmethod
+        def from_dict(cls, error: dict[str, any]):
+            return cls(field=".".join(map(str, error["loc"][1:])), message=error["msg"])
+
+    message: str
+    validation_errors: list[ValidationErrorDetail]
+
+    @classmethod
+    def from_exception(cls, exc: RequestValidationError, _):
+        return cls(
+            message="Bad request",
+            validation_errors=list(
+                map(cls.ValidationErrorDetail.from_dict, exc.errors())
+            ),
+        )
+
+
 _EXCEPTION_RESPONSES = {
     ValidationError: (400, "Bad request", ApiErrorResponse),
+    RequestValidationError: (422, "Bad request", ApiValidationErrorResponse),
     AuthenticationFailure: (401, "Unauthorized", ApiErrorResponse),
     PermissionDenied: (403, "Forbidden", ApiErrorResponse),
     UnknownModelException: (404, "Not found", ApiErrorResponse),

@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
 
@@ -59,7 +60,12 @@ setup_cors()
 
 
 @app.exception_handler(AuditizeException)
-def resource_not_found_handler(_, exc):
+def exception_handler(_, exc):
+    return make_response_from_exception(exc)
+
+
+@app.exception_handler(RequestValidationError)
+def request_validation_error_handler(_, exc):
     return make_response_from_exception(exc)
 
 
