@@ -162,7 +162,7 @@ async def list_user_repos(
     if not authenticated.user:
         raise PermissionDenied("This endpoint is only available for users")
 
-    repos, page_info = await service.get_repos(
+    repos, page_info = await service.get_user_repos(
         dbm,
         user=authenticated.user,
         user_can_read=has_read_permission,

@@ -248,6 +248,25 @@ async def test_repo_list_with_stats(
     )
 
 
+async def test_repo_list_all_statuses(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    repos = []
+    for i, status in enumerate(("enabled", "readonly", "disabled")):
+        repo: PreparedRepo = await PreparedRepo.create(
+            dbm, {"name": f"repo_{i}", "status": status}
+        )
+        repos.append(repo)
+
+    await superadmin_client.assert_get_ok(
+        "/repos",
+        expected_json={
+            "items": [repo.expected_api_response() for repo in repos],
+            "pagination": {"page": 1, "page_size": 10, "total": 3, "total_pages": 1},
+        },
+    )
+
+
 async def test_repo_list_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_get_forbidden("/repos")
 

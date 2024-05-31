@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Any, Sequence
 
 from bson import ObjectId
@@ -65,6 +66,28 @@ async def get_repo_stats(dbm: DatabaseManager, repo_id: str) -> RepoStats:
     return stats
 
 
+async def _get_repos(
+    dbm: DatabaseManager,
+    filter: dict[str, Any],
+    page: int,
+    page_size: int,
+) -> tuple[list[Repo], PagePaginationInfo]:
+    results, page_info = await find_paginated_by_page(
+        dbm.core_db.repos,
+        filter=filter,
+        sort=[("name", 1)],
+        page=page,
+        page_size=page_size,
+    )
+
+    return [Repo.model_validate(result) async for result in results], page_info
+
+
+# We use partial here (instead of directly naming _get_repos => get_repos)
+# in order to hide the filter parameter from the caller
+get_repos = partial(_get_repos, filter={})
+
+
 def _get_authorized_repo_ids_for_user(
     user: User, has_read_perm: bool, has_write_perm: bool
 ) -> Sequence[str] | None:
@@ -96,37 +119,28 @@ def _get_authorized_repo_ids_for_user(
     )
 
 
-async def get_repos(
+async def get_user_repos(
     dbm: DatabaseManager,
     *,
+    user: User,
+    user_can_read: bool,
+    user_can_write: bool,
     page: int,
     page_size: int,
-    user: User = None,
-    user_can_read: bool = False,
-    user_can_write: bool = False,
 ) -> tuple[list[Repo], PagePaginationInfo]:
-    filter: dict[str, Any] = {
-        "status": {"$in": [RepoStatus.enabled, RepoStatus.readonly]}
-    }
+    filter = dict[str, Any]()
 
-    if user:
-        repo_ids = _get_authorized_repo_ids_for_user(
-            user, user_can_read, user_can_write
-        )
-        if repo_ids is not None:
-            filter["_id"] = {"$in": list(map(ObjectId, repo_ids))}
-        if user_can_write:
-            filter["status"] = RepoStatus.enabled
-
-    results, page_info = await find_paginated_by_page(
-        dbm.core_db.repos,
-        filter=filter,
-        sort=[("name", 1)],
-        page=page,
-        page_size=page_size,
+    filter["status"] = (
+        RepoStatus.enabled
+        if user_can_write
+        else {"$in": [RepoStatus.enabled, RepoStatus.readonly]}
     )
 
-    return [Repo.model_validate(result) async for result in results], page_info
+    repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
+    if repo_ids is not None:
+        filter["_id"] = {"$in": list(map(ObjectId, repo_ids))}
+
+    return await _get_repos(dbm, filter, page, page_size)
 
 
 async def delete_repo(dbm: DatabaseManager, repo_id: str):
