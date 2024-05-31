@@ -8,9 +8,15 @@ import {
   reqPost,
 } from "@/utils/api";
 
-export type Repo = {
-  id: string;
+export type RepoStatus = "enabled" | "readonly" | "disabled";
+
+export interface RepoCreation {
   name: string;
+  status?: RepoStatus;
+}
+
+export interface Repo extends RepoCreation {
+  id: string;
   createdAt: string;
   stats?: {
     firstLogDate: string;
@@ -22,14 +28,15 @@ export type Repo = {
     readLogs: boolean;
     writeLogs: boolean;
   };
-};
+}
 
 export type RepoUpdate = {
   name?: string;
+  status?: RepoStatus;
 };
 
-export async function createRepo({ name }: { name: string }): Promise<string> {
-  const resp = await reqPost("/repos", { name });
+export async function createRepo(repo: RepoCreation): Promise<string> {
+  const resp = await reqPost("/repos", repo);
   return resp.id;
 }
 
