@@ -55,6 +55,21 @@ async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManag
         await _test_repo_create(client, dbm, dbm.core_db.users)
 
 
+@pytest.mark.parametrize("status", ["enabled", "readonly", "disabled"])
+async def test_repo_create_with_explicit_status(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager, status: str
+):
+    data = {"name": "myrepo", "status": status}
+
+    resp = await superadmin_client.assert_post_created(
+        "/repos",
+        json=data,
+        expected_json={"id": callee.IsA(str)},
+    )
+    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
+    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+
+
 async def test_repo_create_missing_name(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
@@ -85,16 +100,19 @@ async def test_repo_create_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_post_forbidden("/repos", json={"name": "myrepo"})
 
 
+@pytest.mark.parametrize("field,value", [("name", "myrepo"), ("status", "disabled")])
 async def test_repo_update(
-    repo_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
+    repo_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    dbm: DatabaseManager,
+    field: str,
+    value: str,
 ):
     await repo_write_client.assert_patch(
-        f"/repos/{repo.id}", json={"name": "Repo Updated"}, expected_status_code=204
+        f"/repos/{repo.id}", json={field: value}, expected_status_code=204
     )
 
-    await assert_collection(
-        dbm.core_db.repos, [repo.expected_document({"name": "Repo Updated"})]
-    )
+    await assert_collection(dbm.core_db.repos, [repo.expected_document({field: value})])
 
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
@@ -230,6 +248,25 @@ async def test_repo_list_with_stats(
     )
 
 
+async def test_repo_list_all_statuses(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    repos = []
+    for i, status in enumerate(("enabled", "readonly", "disabled")):
+        repo: PreparedRepo = await PreparedRepo.create(
+            dbm, {"name": f"repo_{i}", "status": status}
+        )
+        repos.append(repo)
+
+    await superadmin_client.assert_get_ok(
+        "/repos",
+        expected_json={
+            "items": [repo.expected_api_response() for repo in repos],
+            "pagination": {"page": 1, "page_size": 10, "total": 3, "total_pages": 1},
+        },
+    )
+
+
 async def test_repo_list_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_get_forbidden("/repos")
 
@@ -252,6 +289,7 @@ async def test_repo_list_user_repos_simple(
                         repo.expected_api_response(
                             {"permissions": {"read_logs": True, "write_logs": True}}
                         ),
+                        "status",
                         "created_at",
                         "stats",
                     )
@@ -289,8 +327,14 @@ async def test_repo_list_user_repos_with_permissions(
     repo_1 = await PreparedRepo.create(dbm, {"name": "repo_1"})
     repo_2 = await PreparedRepo.create(dbm, {"name": "repo_2"})
     repo_3 = await PreparedRepo.create(dbm, {"name": "repo_3"})
+    repo_readonly = await PreparedRepo.create(
+        dbm, {"name": "repo_readonly", "status": "readonly"}
+    )
+    repo_disabled = await PreparedRepo.create(
+        dbm, {"name": "repo_disabled", "status": "disabled"}
+    )
 
-    # Test with user having read&write permissions on all repos
+    # Test #1 with user having read&write permissions on all repos
     user = await user_builder({"logs": {"read": True, "write": True}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -301,10 +345,11 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_1.id: {"read_logs": True, "write_logs": True},
                 repo_2.id: {"read_logs": True, "write_logs": True},
                 repo_3.id: {"read_logs": True, "write_logs": True},
+                repo_readonly.id: {"read_logs": True, "write_logs": False},
             },
         )
 
-    # Test with user having specific permissions on various repos
+    # Test #2 with user having specific permissions on various repos
     user = await user_builder(
         {
             "logs": {
@@ -312,6 +357,8 @@ async def test_repo_list_user_repos_with_permissions(
                     {"repo_id": repo_1.id, "read": True, "write": False},
                     {"repo_id": repo_2.id, "read": False, "write": True},
                     {"repo_id": repo_3.id, "read": True, "write": True},
+                    {"repo_id": repo_readonly.id, "read": True, "write": True},
+                    {"repo_id": repo_disabled.id, "read": True, "write": True},
                 ]
             }
         }
@@ -325,6 +372,7 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_1.id: {"read_logs": True, "write_logs": False},
                 repo_2.id: {"read_logs": False, "write_logs": True},
                 repo_3.id: {"read_logs": True, "write_logs": True},
+                repo_readonly.id: {"read_logs": True, "write_logs": False},
             },
         )
         await _test_repo_list_user_repos(
@@ -333,6 +381,7 @@ async def test_repo_list_user_repos_with_permissions(
             {
                 repo_1.id: {"read_logs": True, "write_logs": False},
                 repo_3.id: {"read_logs": True, "write_logs": True},
+                repo_readonly.id: {"read_logs": True, "write_logs": False},
             },
         )
         await _test_repo_list_user_repos(
@@ -349,7 +398,7 @@ async def test_repo_list_user_repos_with_permissions(
             {repo_3.id: {"read_logs": True, "write_logs": True}},
         )
 
-    # Test with user having no log permissions (but can manage repos)
+    # Test #3 with user having no log permissions (but can manage repos)
     user = await user_builder({"management": {"repos": {"read": True, "write": True}}})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy

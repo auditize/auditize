@@ -1,4 +1,4 @@
-import { TextInput } from "@mantine/core";
+import { Group, Radio, Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect } from "react";
 
@@ -7,12 +7,13 @@ import {
   ResourceEdition,
 } from "@/components/ResourceManagement";
 
-import { createRepo, getRepo, updateRepo } from "../api";
+import { createRepo, getRepo, RepoStatus, updateRepo } from "../api";
 
-function useRepoForm(values: { name?: string }) {
+function useRepoForm(values: { name?: string; status?: RepoStatus }) {
   return useForm({
     initialValues: {
       name: "",
+      status: "enabled" as RepoStatus,
       ...values,
     },
     validate: {
@@ -29,7 +30,7 @@ function RepoForm({
   readOnly?: boolean;
 }) {
   return (
-    <>
+    <Stack gap={"sm"}>
       <TextInput
         label="Name"
         placeholder="Enter name"
@@ -37,7 +38,14 @@ function RepoForm({
         disabled={readOnly}
         {...form.getInputProps("name")}
       />
-    </>
+      <Radio.Group label="Status" {...form.getInputProps("status")}>
+        <Group mt="xs">
+          <Radio value="enabled" label="Enabled" disabled={readOnly} />
+          <Radio value="readonly" label="Read-only" disabled={readOnly} />
+          <Radio value="disabled" label="Disabled" disabled={readOnly} />
+        </Group>
+      </Radio.Group>
+    </Stack>
   );
 }
 
@@ -78,7 +86,7 @@ export function RepoEdition({
       onDataLoaded={(data) => form.setValues(data)}
       title={`Edit log repository`}
       onSubmit={form.onSubmit}
-      onSave={() => updateRepo(repoId!, { name: form.values.name })}
+      onSave={() => updateRepo(repoId!, form.values)}
       queryKeyForInvalidation={["repos"]}
       disabledSaving={readOnly}
     >

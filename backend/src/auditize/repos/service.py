@@ -1,4 +1,5 @@
-from typing import Sequence
+from functools import partial
+from typing import Any, Sequence
 
 from bson import ObjectId
 
@@ -12,7 +13,7 @@ from auditize.helpers.resources.service import (
     get_resource_document,
     update_resource_document,
 )
-from auditize.logs.db import get_log_db
+from auditize.logs.db import get_log_db_for_config
 from auditize.permissions.assertions import (
     can_read_logs,
     can_write_logs,
@@ -20,7 +21,7 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import is_authorized
-from auditize.repos.models import Repo, RepoStats, RepoUpdate
+from auditize.repos.models import Repo, RepoStats, RepoStatus, RepoUpdate
 from auditize.users.models import User
 
 
@@ -38,7 +39,7 @@ async def get_repo(dbm: DatabaseManager, repo_id: str) -> Repo:
 
 
 async def get_repo_stats(dbm: DatabaseManager, repo_id: str) -> RepoStats:
-    logs_db = await get_log_db(dbm, repo_id)
+    logs_db = await get_log_db_for_config(dbm, repo_id)
     results = await logs_db.logs.aggregate(
         [
             {
@@ -63,6 +64,28 @@ async def get_repo_stats(dbm: DatabaseManager, repo_id: str) -> RepoStats:
     stats.storage_size = int(db_stats["storageSize"])
 
     return stats
+
+
+async def _get_repos(
+    dbm: DatabaseManager,
+    filter: dict[str, Any],
+    page: int,
+    page_size: int,
+) -> tuple[list[Repo], PagePaginationInfo]:
+    results, page_info = await find_paginated_by_page(
+        dbm.core_db.repos,
+        filter=filter,
+        sort=[("name", 1)],
+        page=page,
+        page_size=page_size,
+    )
+
+    return [Repo.model_validate(result) async for result in results], page_info
+
+
+# We use partial here (instead of directly naming _get_repos => get_repos)
+# in order to hide the filter parameter from the caller
+get_repos = partial(_get_repos, filter={})
 
 
 def _get_authorized_repo_ids_for_user(
@@ -96,40 +119,32 @@ def _get_authorized_repo_ids_for_user(
     )
 
 
-async def get_repos(
+async def get_user_repos(
     dbm: DatabaseManager,
     *,
+    user: User,
+    user_can_read: bool,
+    user_can_write: bool,
     page: int,
     page_size: int,
-    user: User = None,
-    user_can_read: bool = False,
-    user_can_write: bool = False,
 ) -> tuple[list[Repo], PagePaginationInfo]:
-    repo_ids = None
+    filter = dict[str, Any]()
 
-    if user:
-        repo_ids = _get_authorized_repo_ids_for_user(
-            user, user_can_read, user_can_write
-        )
-
-    if repo_ids is not None:
-        filter = {"_id": {"$in": list(map(ObjectId, repo_ids))}}
-    else:
-        filter = None
-
-    results, page_info = await find_paginated_by_page(
-        dbm.core_db.repos,
-        filter=filter,
-        sort=[("name", 1)],
-        page=page,
-        page_size=page_size,
+    filter["status"] = (
+        RepoStatus.enabled
+        if user_can_write
+        else {"$in": [RepoStatus.enabled, RepoStatus.readonly]}
     )
 
-    return [Repo.model_validate(result) async for result in results], page_info
+    repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
+    if repo_ids is not None:
+        filter["_id"] = {"$in": list(map(ObjectId, repo_ids))}
+
+    return await _get_repos(dbm, filter, page, page_size)
 
 
 async def delete_repo(dbm: DatabaseManager, repo_id: str):
-    logs_db = await get_log_db(dbm, repo_id)
+    logs_db = await get_log_db_for_config(dbm, repo_id)
     await delete_resource_document(dbm.core_db.repos, repo_id)
     await logs_db.client.drop_database(logs_db.name)
 

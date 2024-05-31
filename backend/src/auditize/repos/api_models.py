@@ -6,21 +6,24 @@ from pydantic import BaseModel, Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
-from auditize.repos.models import Repo, RepoUpdate
+from auditize.repos.models import Repo, RepoStatus
 
 
 class RepoCreationRequest(BaseModel):
     name: str = Field(description="The repository name")
+    status: RepoStatus = Field(
+        description="The repository status", default=RepoStatus.enabled
+    )
 
     def to_repo(self):
         return Repo.model_validate(self.model_dump())
 
 
 class RepoUpdateRequest(BaseModel):
-    name: str = Field(description="The repository name")
-
-    def to_repo_update(self):
-        return RepoUpdate.model_validate(self.model_dump())
+    name: Optional[str] = Field(description="The repository name", default=None)
+    status: Optional[RepoStatus] = Field(
+        description="The repository status", default=None
+    )
 
 
 class RepoCreationResponse(BaseModel):
@@ -58,6 +61,7 @@ class _BaseRepoReadingResponse(BaseModel):
 
 class RepoReadingResponse(_BaseRepoReadingResponse):
     created_at: datetime = Field(description="The creation date")
+    status: RepoStatus = Field(description="The repository status")
     stats: Optional[RepoStatsData] = Field(
         description="The repository stats", default=None
     )

@@ -46,6 +46,7 @@ export function ReposManagement() {
       columnBuilders={[
         ["Name", (repo: Repo) => repo.name],
         ["ID", (repo: Repo) => <RepoId value={repo.id} />],
+        ["Status", (repo: Repo) => repo.status],
         ["Logs", (repo: Repo) => repo.stats!.logCount.toLocaleString()],
         ["Storage", (repo: Repo) => filesize(repo.stats!.storageSize)],
         ["Created", (repo: Repo) => humanizeDate(repo.createdAt)],

@@ -34,7 +34,7 @@ async def update_resource_document(
     operator="$set",
 ):
     if isinstance(update, BaseModel):
-        update = update.model_dump(exclude_unset=True)
+        update = update.model_dump(exclude_none=True)
 
     try:
         result = await collection.update_one(

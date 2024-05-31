@@ -32,6 +32,7 @@ from auditize.repos.api_models import (
     RepoUpdateRequest,
     UserRepoListResponse,
 )
+from auditize.repos.models import RepoStatus, RepoUpdate
 from auditize.users.models import UserUpdate
 from auditize.users.service import update_user
 
@@ -87,7 +88,9 @@ async def update_repo(
     repo_id: str,
     repo: RepoUpdateRequest,
 ):
-    await service.update_repo(dbm, repo_id, repo.to_repo_update())
+    await service.update_repo(
+        dbm, repo_id, RepoUpdate.model_validate(repo.model_dump())
+    )
     return None
 
 
@@ -159,7 +162,7 @@ async def list_user_repos(
     if not authenticated.user:
         raise PermissionDenied("This endpoint is only available for users")
 
-    repos, page_info = await service.get_repos(
+    repos, page_info = await service.get_user_repos(
         dbm,
         user=authenticated.user,
         user_can_read=has_read_permission,
@@ -169,10 +172,16 @@ async def list_user_repos(
     )
 
     response = UserRepoListResponse.build(repos, page_info)
-    for repo_response in response.items:
+    for repo_response, repo in zip(response.items, repos):
         repo_response.permissions = RepoLogPermissionsData(
-            read_logs=authenticated.comply(can_read_logs(repo_response.id)),
-            write_logs=authenticated.comply(can_write_logs(repo_response.id)),
+            read_logs=(
+                repo.status in (RepoStatus.enabled, RepoStatus.readonly)
+                and authenticated.comply(can_read_logs(repo_response.id))
+            ),
+            write_logs=(
+                repo.status == RepoStatus.enabled
+                and authenticated.comply(can_write_logs(repo_response.id))
+            ),
         )
 
     return response

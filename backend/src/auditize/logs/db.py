@@ -1,8 +1,12 @@
+from functools import partial
+
 from aiocache import Cache
 from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 from auditize.database import BaseDatabase, Collection, DatabaseManager
+from auditize.exceptions import PermissionDenied
+from auditize.repos.models import RepoStatus
 
 
 class LogDatabase(BaseDatabase):
@@ -42,8 +46,26 @@ def get_log_db_name(dbm: DatabaseManager, repo_id: str) -> str:
     return f"{dbm.name_prefix}_repo_{repo_id}"
 
 
-async def get_log_db(dbm: DatabaseManager, repo_id: str) -> LogDatabase:
+async def _get_log_db(
+    dbm: DatabaseManager, repo_id: str, statuses: list[RepoStatus]
+) -> LogDatabase:
     from auditize.repos.service import get_repo  # avoid circular import
 
-    await get_repo(dbm, repo_id)  # ensure repo exists
+    repo = await get_repo(dbm, repo_id)
+    if statuses:
+        if repo.status not in statuses:
+            # NB: we could also raise a ConstraintViolation, to be discussed
+            raise PermissionDenied(
+                "The repository status does not allow the requested operation"
+            )
+
     return LogDatabase(get_log_db_name(dbm, repo_id), dbm.client)
+
+
+get_log_db_for_reading = partial(
+    _get_log_db, statuses=[RepoStatus.enabled, RepoStatus.readonly]
+)
+
+get_log_db_for_writing = partial(_get_log_db, statuses=[RepoStatus.enabled])
+
+get_log_db_for_config = partial(_get_log_db, statuses=None)

@@ -121,6 +121,18 @@ async def test_create_log_all_fields(
     )
 
 
+@pytest.mark.parametrize("status", ["readonly", "disabled"])
+async def test_create_log_not_allowed_by_repo_status(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager, status: str
+):
+    repo: PreparedRepo = await PreparedRepo.create(
+        dbm, PreparedRepo.prepare_data({"status": status})
+    )
+    await superadmin_client.assert_post_forbidden(
+        f"/repos/{repo.id}/logs", json=PreparedLog.prepare_data()
+    )
+
+
 async def test_create_log_missing_action_type(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -306,6 +318,19 @@ async def test_add_attachment_forbidden(
     )
 
 
+@pytest.mark.parametrize("status", ["readonly", "disabled"])
+async def test_add_attachment_not_allowed_by_repo_status(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, status: str
+):
+    log = await repo.create_log(superadmin_client)
+    await repo.update_status(superadmin_client, status)
+    await superadmin_client.assert_post_forbidden(
+        f"/repos/{repo.id}/logs/{log.id}/attachments",
+        files={"file": ("test.txt", "test data")},
+        data={"type": "text"},
+    )
+
+
 async def test_get_log_minimal_fields(
     log_read_client: HttpTestHelper,
     log_write_client: HttpTestHelper,
@@ -400,6 +425,22 @@ async def test_get_log_forbidden(
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/{log.id}")
 
 
+@pytest.mark.parametrize(
+    "repo_status,status_code", [("readonly", 200), ("disabled", 403)]
+)
+async def test_get_log_not_enabled_repo_status(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    repo_status: str,
+    status_code: int,
+):
+    log = await repo.create_log(superadmin_client)
+    await repo.update_status(superadmin_client, repo_status)
+    await superadmin_client.assert_get(
+        f"/repos/{repo.id}/logs/{log.id}", expected_status_code=status_code
+    )
+
+
 async def test_get_log_attachment_text_and_minimal_fields(
     log_read_client: HttpTestHelper, log_write_client, repo: PreparedRepo
 ):
@@ -478,6 +519,24 @@ async def test_get_log_attachment_forbidden(
 
     await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/{log.id}/attachments/0"
+    )
+
+
+@pytest.mark.parametrize(
+    "repo_status,status_code", [("readonly", 200), ("disabled", 403)]
+)
+async def test_get_log_attachment_not_enabled_repo_status(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    repo_status: str,
+    status_code: int,
+):
+    log = await repo.create_log(superadmin_client)
+    await log.upload_attachment(superadmin_client)
+    await repo.update_status(superadmin_client, repo_status)
+    await superadmin_client.assert_get(
+        f"/repos/{repo.id}/logs/{log.id}/attachments/0",
+        expected_status_code=status_code,
     )
 
 
@@ -1375,6 +1434,44 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
         return [f"text/plain{val}" for val in values]
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/logs",
+        "/logs/actions/categories",
+        "/logs/actions/types",
+        "/logs/actors/types",
+        "/logs/actors/extras",
+        "/logs/resources/types",
+        "/logs/resources/extras",
+        "/logs/tags/types",
+        "/logs/sources",
+        "/logs/details",
+        "/logs/attachments/types",
+        "/logs/attachments/mime-types",
+        "/logs/nodes",
+    ],
+)
+@pytest.mark.parametrize(
+    "repo_status,status_code",
+    [
+        ("readonly", 200),
+        ("disabled", 403),
+    ],
+)
+async def test_get_log_related_endpoints_not_enabled_repo_status(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    path: str,
+    repo_status: str,
+    status_code: int,
+):
+    await repo.update_status(superadmin_client, repo_status)
+    await superadmin_client.assert_get(
+        f"/repos/{repo.id}{path}", expected_status_code=status_code
+    )
+
+
 async def test_get_log_nodes_without_filters(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -1501,4 +1598,25 @@ async def test_get_log_node_forbidden(
 ):
     await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/nodes/ref:some_value"
+    )
+
+
+@pytest.mark.parametrize(
+    "repo_status,status_code", [("readonly", 200), ("disabled", 403)]
+)
+async def test_get_log_node_not_enabled_repo_status(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    repo_status: str,
+    status_code: int,
+):
+    await consolidate_log_node_path(
+        repo.db,
+        [
+            Log.Node(ref="customer", name="Customer"),
+        ],
+    )
+    await repo.update_status(superadmin_client, repo_status)
+    await superadmin_client.assert_get(
+        f"/repos/{repo.id}/logs/nodes/ref:customer", expected_status_code=status_code
     )

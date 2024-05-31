@@ -1,7 +1,14 @@
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Annotated, Optional
 
 from pydantic import BaseModel, BeforeValidator, Field
+
+
+class RepoStatus(str, Enum):
+    enabled = "enabled"
+    readonly = "readonly"
+    disabled = "disabled"
 
 
 class Repo(BaseModel):
@@ -10,11 +17,13 @@ class Repo(BaseModel):
         alias="_id",
     )
     name: str
+    status: RepoStatus = Field(default=RepoStatus.enabled)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class RepoUpdate(BaseModel):
     name: Optional[str] = None
+    status: Optional[RepoStatus] = None
 
 
 class RepoStats(BaseModel):
