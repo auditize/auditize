@@ -119,10 +119,19 @@ async def update_user_password_by_signup_token(
 
 
 async def get_users(
-    dbm: DatabaseManager, page: int, page_size: int
+    dbm: DatabaseManager, q: str, page: int, page_size: int
 ) -> tuple[list[User], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
-        dbm.core_db.users, sort=[("last_name", 1)], page=page, page_size=page_size
+        dbm.core_db.users,
+        # NB: '@' is considered as a separator by mongo default analyzer which means that searching on
+        # john.doe@example.net would search on "john" or "doe" or "example" and lead to unexpected
+        # results.
+        # As searching on email is a common use case, we quote the query when it contains an '@'
+        # to make sure that the whole email is searched.
+        filter={"$text": {"$search": q if "@" not in q else f'"{q}"'}} if q else None,
+        sort=[("last_name", 1)],
+        page=page,
+        page_size=page_size,
     )
     return [User.model_validate(result) async for result in results], page_info
 

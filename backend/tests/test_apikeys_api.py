@@ -206,6 +206,24 @@ async def test_apikey_list(
     )
 
 
+async def test_apikey_list_search(
+    apikey_rw_client: HttpTestHelper,
+    dbm: DatabaseManager,
+):
+    apikeys = [
+        await PreparedApikey.create(apikey_rw_client, dbm, {"name": f"apikey_{i}"})
+        for i in range(2)
+    ]
+
+    await apikey_rw_client.assert_get_ok(
+        "/apikeys?q=apikey_1",
+        expected_json={
+            "items": [apikeys[1].expected_api_response()],
+            "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1},
+        },
+    )
+
+
 async def test_apikey_list_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_get_forbidden("/apikeys")
 

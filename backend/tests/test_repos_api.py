@@ -220,6 +220,20 @@ async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager)
     )
 
 
+async def test_repo_list_with_search(
+    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    repos = [await PreparedRepo.create(dbm, {"name": f"repo_{i}"}) for i in range(2)]
+
+    await repo_read_client.assert_get_ok(
+        "/repos?q=repo_1",
+        expected_json={
+            "items": [repos[1].expected_api_response()],
+            "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1},
+        },
+    )
+
+
 async def test_repo_list_with_stats(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):

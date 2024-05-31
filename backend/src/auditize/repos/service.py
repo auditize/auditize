@@ -83,9 +83,12 @@ async def _get_repos(
     return [Repo.model_validate(result) async for result in results], page_info
 
 
-# We use partial here (instead of directly naming _get_repos => get_repos)
-# in order to hide the filter parameter from the caller
-get_repos = partial(_get_repos, filter={})
+async def get_repos(
+    dbm: DatabaseManager, q: str, page: int, page_size: int
+) -> tuple[list[Repo], PagePaginationInfo]:
+    return await _get_repos(
+        dbm, {"$text": {"$search": q}} if q else None, page, page_size
+    )
 
 
 def _get_authorized_repo_ids_for_user(

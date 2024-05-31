@@ -91,10 +91,13 @@ async def get_repo(
 async def list_apikeys(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_apikeys()),
+    q: str = None,
     page: int = 1,
     page_size: int = 10,
 ) -> ApikeyListResponse:
-    apikeys, page_info = await service.get_apikeys(dbm, page, page_size)
+    apikeys, page_info = await service.get_apikeys(
+        dbm, q=q, page=page, page_size=page_size
+    )
     return ApikeyListResponse.build(apikeys, page_info)
 
 
