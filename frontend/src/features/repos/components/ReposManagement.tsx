@@ -41,8 +41,16 @@ export function ReposManagement() {
       name="Repository"
       path="/repos"
       resourceName="repo"
-      queryKey={(page) => ["repos", "page", page, { includeStats: true }]}
-      queryFn={(page) => () => getRepos(page, { includeStats: true })}
+      queryKey={(search, page) => [
+        "repos",
+        "list",
+        search,
+        page,
+        { includeStats: true },
+      ]}
+      queryFn={(search, page) => () =>
+        getRepos(search, page, { includeStats: true })
+      }
       columnBuilders={[
         ["Name", (repo: Repo) => repo.name],
         ["ID", (repo: Repo) => <RepoId value={repo.id} />],

@@ -39,9 +39,10 @@ export async function updateUser(
 }
 
 export async function getUsers(
+  search: string | null = null,
   page = 1,
 ): Promise<[User[], PagePaginationInfo]> {
-  return await reqGetPaginated("/users", { page });
+  return await reqGetPaginated("/users", { q: search, page });
 }
 
 export async function getUser(userId: string): Promise<User> {

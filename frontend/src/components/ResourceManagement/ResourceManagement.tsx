@@ -1,16 +1,18 @@
 import {
   Anchor,
   Button,
+  CloseButton,
   Divider,
   Group,
   Pagination,
   Stack,
   Table,
+  TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import React from "react";
+import React, { useState } from "react";
 import {
   Link,
   useLocation,
@@ -94,8 +96,8 @@ export function ResourceManagement({
   name: string;
   path: string;
   resourceName: string;
-  queryKey: (page: number) => any[];
-  queryFn: (page: number) => () => Promise<any>;
+  queryKey: (search: string | null, page: number) => any[];
+  queryFn: (search: string | null, page: number) => () => Promise<any>;
   columnBuilders: [string, (resource: any) => React.ReactNode][];
   resourceCreationComponentBuilder?: ResourceCreationComponentBuilder;
   resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
@@ -106,18 +108,22 @@ export function ResourceManagement({
   const navigate = useNavigate();
   const newResource = params.has("new");
   const resourceId = params.get(resourceName);
-  const page = params.has("page") ? parseInt(params.get("page") || "") : 1;
+  const pageParam = params.has("page") ? parseInt(params.get("page") || "") : 1;
+  const searchParam = params.get("q");
   const { isPending, data, error } = useQuery({
-    queryKey: queryKey(page),
-    queryFn: queryFn(page),
+    queryKey: queryKey(searchParam, pageParam),
+    queryFn: queryFn(searchParam, pageParam),
   });
+  const [search, setSearch] = useState("");
+
+  const handleSearch = () =>
+    navigate(addQueryParamToLocation(location, "q", search));
 
   if (isPending || !data) {
     return <div>Loading...</div>;
   }
 
   const [resources, pagination] = data;
-
   const rows = resources.map((resource: any) => (
     <ResourceTableRow
       key={resource.id}
@@ -131,7 +137,26 @@ export function ResourceManagement({
   return (
     <div>
       <h1>{title}</h1>
-      <Stack align="flex-end" pb="md">
+      <Group justify="space-between" pb="md">
+        <Group gap="xs">
+          <TextInput
+            placeholder={`Search ${name}`}
+            value={search}
+            onChange={(event) => setSearch(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                handleSearch();
+              }
+            }}
+            rightSection={
+              <CloseButton
+                onClick={() => setSearch("")}
+                style={{ display: search ? undefined : "none" }}
+              />
+            }
+          />
+          <Button onClick={handleSearch}>Search</Button>
+        </Group>
         {resourceCreationComponentBuilder && (
           <Link to={addQueryParamToLocation(location, "new")}>
             <Button leftSection={<IconPlus size={"1.3rem"} />}>
@@ -139,7 +164,7 @@ export function ResourceManagement({
             </Button>
           </Link>
         )}
-      </Stack>
+      </Group>
       <Stack align="center">
         <Table highlightOnHover>
           <Table.Thead>
