@@ -120,7 +120,8 @@ export function UserEdition({
       queryKeyForLoad={["user", userId]}
       queryFnForLoad={() => getUser(userId!)}
       onDataLoaded={(data) => {
-        form.setValues(data);
+        const { firstName, lastName, email } = data;
+        form.setValues({ firstName, lastName, email });
         setPermissions(data.permissions);
       }}
       title={`Edit user`}

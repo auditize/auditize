@@ -83,7 +83,10 @@ export function RepoEdition({
       resourceId={repoId}
       queryKeyForLoad={["repo", repoId]}
       queryFnForLoad={() => getRepo(repoId!)}
-      onDataLoaded={(data) => form.setValues(data)}
+      onDataLoaded={(data) => {
+        const { name, status } = data;
+        form.setValues({ name, status });
+      }}
       title={`Edit log repository`}
       onSubmit={form.onSubmit}
       onSave={() => updateRepo(repoId!, form.values)}

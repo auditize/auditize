@@ -191,7 +191,8 @@ export function ApikeyEdition({
       queryKeyForLoad={["apikey", apikeyId]}
       queryFnForLoad={() => getApikey(apikeyId!)}
       onDataLoaded={(data) => {
-        form.setValues(data);
+        const { name } = data;
+        form.setValues({ name });
         setPermissions(data.permissions);
       }}
       title={`Edit API key`}
