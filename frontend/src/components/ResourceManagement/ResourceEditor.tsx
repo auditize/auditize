@@ -105,11 +105,14 @@ export function ResourceEdition({
     queryKey: queryKeyForLoad,
     queryFn: queryFnForLoad,
     enabled: !!resourceId,
+    staleTime: 0,
   });
 
   useEffect(() => {
     if (!!resourceId) {
-      if (data) onDataLoaded(data);
+      if (data) {
+        onDataLoaded(data);
+      }
     }
   }, [resourceId, data]);
 
