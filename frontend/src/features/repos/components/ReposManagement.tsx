@@ -52,7 +52,10 @@ export function ReposManagement() {
         ["Created", (repo: Repo) => humanizeDate(repo.createdAt)],
         [
           "Last log",
-          (repo: Repo) => humanizeDate(repo.stats!.lastLogDate) || "n/a",
+          (repo: Repo) =>
+            repo.stats!.lastLogDate
+              ? humanizeDate(repo.stats!.lastLogDate)
+              : "n/a",
         ],
       ]}
       resourceCreationComponentBuilder={
