@@ -10,7 +10,7 @@ import {
   TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
+import { IconPlus, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import {
@@ -101,10 +101,14 @@ function Search({ name }: { name: string }) {
           }
         }}
         rightSection={
-          <CloseButton
-            onClick={() => setSearch("")}
-            style={{ display: search ? undefined : "none" }}
-          />
+          search ? (
+            <CloseButton
+              onClick={() => setSearch("")}
+              style={{ display: search ? undefined : "none" }}
+            />
+          ) : (
+            <IconSearch />
+          )
         }
       />
       <Button onClick={handleSearch} disabled={!search && !params.get("q")}>
@@ -148,7 +152,6 @@ export function ResourceManagement({
     queryKey: queryKey(searchParam, pageParam),
     queryFn: queryFn(searchParam, pageParam),
   });
-  const [search] = useState("");
 
   if (isPending || !data) {
     return <div>Loading...</div>;
