@@ -212,6 +212,43 @@ async def test_user_list(
     )
 
 
+@pytest.mark.parametrize("field", ["first_name", "last_name", "email"])
+async def test_user_list_search(
+    user_rw_client: HttpTestHelper,
+    dbm: DatabaseManager,
+    field: str,
+):
+    user_1 = await PreparedUser.create(
+        user_rw_client,
+        dbm,
+        {
+            "first_name": "Walter",
+            "last_name": "White",
+            "email": "walter.white@gmail.com",
+        },
+    )
+
+    user_2 = await PreparedUser.create(
+        user_rw_client,
+        dbm,
+        {
+            "first_name": "Jesse",
+            "last_name": "Pinkman",
+            "email": "jesse.pinkman@hotmail.com",
+        },
+    )
+
+    field_value = user_2.data[field]
+
+    await user_rw_client.assert_get_ok(
+        f"/users?q={field_value}",
+        expected_json={
+            "items": [user_2.expected_api_response()],
+            "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1},
+        },
+    )
+
+
 async def test_user_list_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_get_forbidden("/users")
 

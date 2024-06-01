@@ -48,10 +48,12 @@ export async function updateRepo(
 }
 
 export async function getRepos(
+  search: string | null = null,
   page = 1,
   { includeStats } = { includeStats: false },
 ): Promise<[Repo[], PagePaginationInfo]> {
   return await reqGetPaginated("/repos", {
+    q: search,
     page,
     include: includeStats ? "stats" : undefined,
   });

@@ -24,8 +24,8 @@ export function UsersManagement() {
       name="User"
       path="/users"
       resourceName="user"
-      queryKey={(page) => ["users", "page", page]}
-      queryFn={(page) => () => getUsers(page)}
+      queryKey={(search, page) => ["users", "list", search, page]}
+      queryFn={(search, page) => () => getUsers(search, page)}
       columnBuilders={[
         [
           "Name",

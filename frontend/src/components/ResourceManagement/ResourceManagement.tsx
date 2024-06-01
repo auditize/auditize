@@ -1,16 +1,18 @@
 import {
   Anchor,
   Button,
+  CloseButton,
   Divider,
   Group,
   Pagination,
   Stack,
   Table,
+  TextInput,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
+import { IconPlus, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Link,
   useLocation,
@@ -78,6 +80,44 @@ function ResourceTableRow({
   );
 }
 
+function Search({ name }: { name: string }) {
+  const [params, setParams] = useSearchParams();
+  const [search, setSearch] = useState("");
+  const handleSearch = () => setParams({ q: search });
+
+  useEffect(() => {
+    setSearch(params.get("q") || "");
+  }, [params.get("q")]);
+
+  return (
+    <Group gap="xs">
+      <TextInput
+        placeholder={`Search ${name}`}
+        value={search}
+        onChange={(event) => setSearch(event.currentTarget.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            handleSearch();
+          }
+        }}
+        rightSection={
+          search ? (
+            <CloseButton
+              onClick={() => setSearch("")}
+              style={{ display: search ? undefined : "none" }}
+            />
+          ) : (
+            <IconSearch />
+          )
+        }
+      />
+      <Button onClick={handleSearch} disabled={!search && !params.get("q")}>
+        Search
+      </Button>
+    </Group>
+  );
+}
+
 export function ResourceManagement({
   title,
   name,
@@ -94,8 +134,8 @@ export function ResourceManagement({
   name: string;
   path: string;
   resourceName: string;
-  queryKey: (page: number) => any[];
-  queryFn: (page: number) => () => Promise<any>;
+  queryKey: (search: string | null, page: number) => any[];
+  queryFn: (search: string | null, page: number) => () => Promise<any>;
   columnBuilders: [string, (resource: any) => React.ReactNode][];
   resourceCreationComponentBuilder?: ResourceCreationComponentBuilder;
   resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
@@ -106,10 +146,11 @@ export function ResourceManagement({
   const navigate = useNavigate();
   const newResource = params.has("new");
   const resourceId = params.get(resourceName);
-  const page = params.has("page") ? parseInt(params.get("page") || "") : 1;
+  const pageParam = params.has("page") ? parseInt(params.get("page") || "") : 1;
+  const searchParam = params.get("q");
   const { isPending, data, error } = useQuery({
-    queryKey: queryKey(page),
-    queryFn: queryFn(page),
+    queryKey: queryKey(searchParam, pageParam),
+    queryFn: queryFn(searchParam, pageParam),
   });
 
   if (isPending || !data) {
@@ -117,7 +158,6 @@ export function ResourceManagement({
   }
 
   const [resources, pagination] = data;
-
   const rows = resources.map((resource: any) => (
     <ResourceTableRow
       key={resource.id}
@@ -131,7 +171,8 @@ export function ResourceManagement({
   return (
     <div>
       <h1>{title}</h1>
-      <Stack align="flex-end" pb="md">
+      <Group justify="space-between" pb="md">
+        <Search name={name} />
         {resourceCreationComponentBuilder && (
           <Link to={addQueryParamToLocation(location, "new")}>
             <Button leftSection={<IconPlus size={"1.3rem"} />}>
@@ -139,7 +180,7 @@ export function ResourceManagement({
             </Button>
           </Link>
         )}
-      </Stack>
+      </Group>
       <Stack align="center">
         <Table highlightOnHover>
           <Table.Thead>

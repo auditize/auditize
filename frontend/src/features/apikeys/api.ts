@@ -37,9 +37,10 @@ export async function updateApikey(
 }
 
 export async function getApikeys(
+  search: string | null = null,
   page = 1,
 ): Promise<[Apikey[], PagePaginationInfo]> {
-  return await reqGetPaginated("/apikeys", { page });
+  return await reqGetPaginated("/apikeys", { q: search, page });
 }
 
 export async function getApikey(apikeyId: string): Promise<Apikey> {

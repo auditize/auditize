@@ -101,10 +101,11 @@ async def get_user(
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_users()),
+    q: str = None,
     page: int = 1,
     page_size: int = 10,
 ) -> UserListResponse:
-    users, page_info = await service.get_users(dbm, page, page_size)
+    users, page_info = await service.get_users(dbm, q=q, page=page, page_size=page_size)
     return UserListResponse.build(users, page_info)
 
 

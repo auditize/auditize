@@ -10,7 +10,9 @@ export function addQueryParamToLocation(
 
   // Remove trailing "=" if any to get a nicer URL
   let queryString = params.toString();
-  if (queryString.endsWith("=")) queryString = queryString.slice(0, -1);
+  if (queryString.endsWith("=")) {
+    queryString = queryString.slice(0, -1);
+  }
 
   return `${location.pathname}?${queryString}`;
 }

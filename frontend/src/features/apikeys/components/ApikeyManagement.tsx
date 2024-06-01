@@ -25,8 +25,8 @@ export function ApikeysManagement() {
       name="API key"
       path="/apikeys"
       resourceName="apikey"
-      queryKey={(page) => ["apikeys", "page", page]}
-      queryFn={(page) => () => getApikeys(page)}
+      queryKey={(search, page) => ["apikeys", "list", search, page]}
+      queryFn={(search, page) => () => getApikeys(search, page)}
       columnBuilders={[
         ["Name", (apikey: Apikey) => apikey.name],
         [

@@ -131,10 +131,11 @@ async def list_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_repos()),
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
+    q: str = None,
     page: int = 1,
     page_size: int = 10,
 ) -> RepoListResponse:
-    repos, page_info = await service.get_repos(dbm, page=page, page_size=page_size)
+    repos, page_info = await service.get_repos(dbm, q=q, page=page, page_size=page_size)
     response = RepoListResponse.build(repos, page_info)
     if include:
         for repo in response.items:
