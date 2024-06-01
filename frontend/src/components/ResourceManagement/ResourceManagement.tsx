@@ -103,7 +103,7 @@ export function ResourceManagement({
   resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
   const newResource = params.has("new");
@@ -116,8 +116,7 @@ export function ResourceManagement({
   });
   const [search, setSearch] = useState("");
 
-  const handleSearch = () =>
-    navigate(addQueryParamToLocation(location, "q", search));
+  const handleSearch = () => setParams({ q: search });
 
   if (isPending || !data) {
     return <div>Loading...</div>;
