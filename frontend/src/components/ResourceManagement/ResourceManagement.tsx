@@ -12,7 +12,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Link,
   useLocation,
@@ -80,6 +80,40 @@ function ResourceTableRow({
   );
 }
 
+function Search({ name }: { name: string }) {
+  const [params, setParams] = useSearchParams();
+  const [search, setSearch] = useState("");
+  const handleSearch = () => setParams({ q: search });
+
+  useEffect(() => {
+    setSearch(params.get("q") || "");
+  }, [params.get("q")]);
+
+  return (
+    <Group gap="xs">
+      <TextInput
+        placeholder={`Search ${name}`}
+        value={search}
+        onChange={(event) => setSearch(event.currentTarget.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            handleSearch();
+          }
+        }}
+        rightSection={
+          <CloseButton
+            onClick={() => setSearch("")}
+            style={{ display: search ? undefined : "none" }}
+          />
+        }
+      />
+      <Button onClick={handleSearch} disabled={!search && !params.get("q")}>
+        Search
+      </Button>
+    </Group>
+  );
+}
+
 export function ResourceManagement({
   title,
   name,
@@ -103,7 +137,7 @@ export function ResourceManagement({
   resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
   const newResource = params.has("new");
@@ -114,9 +148,7 @@ export function ResourceManagement({
     queryKey: queryKey(searchParam, pageParam),
     queryFn: queryFn(searchParam, pageParam),
   });
-  const [search, setSearch] = useState("");
-
-  const handleSearch = () => setParams({ q: search });
+  const [search] = useState("");
 
   if (isPending || !data) {
     return <div>Loading...</div>;
@@ -137,25 +169,7 @@ export function ResourceManagement({
     <div>
       <h1>{title}</h1>
       <Group justify="space-between" pb="md">
-        <Group gap="xs">
-          <TextInput
-            placeholder={`Search ${name}`}
-            value={search}
-            onChange={(event) => setSearch(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleSearch();
-              }
-            }}
-            rightSection={
-              <CloseButton
-                onClick={() => setSearch("")}
-                style={{ display: search ? undefined : "none" }}
-              />
-            }
-          />
-          <Button onClick={handleSearch}>Search</Button>
-        </Group>
+        <Search name={name} />
         {resourceCreationComponentBuilder && (
           <Link to={addQueryParamToLocation(location, "new")}>
             <Button leftSection={<IconPlus size={"1.3rem"} />}>
