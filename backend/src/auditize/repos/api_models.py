@@ -31,10 +31,10 @@ class RepoCreationResponse(BaseModel):
 
 
 class RepoStatsData(BaseModel):
-    first_log_date: Optional[datetime] = Field(description="The first log date")
-    last_log_date: Optional[datetime] = Field(description="The last log date")
+    first_log_date: datetime | None = Field(description="The first log date")
+    last_log_date: datetime | None = Field(description="The last log date")
     log_count: int = Field(description="The log count")
-    storage_size: int = Field(description="The storage size")
+    storage_size: int = Field(description="The database storage size")
 
     @field_serializer("first_log_date", "last_log_date", when_used="json")
     def serialize_datetime(self, value):
@@ -60,11 +60,11 @@ class _BaseRepoReadingResponse(BaseModel):
 
 
 class RepoReadingResponse(_BaseRepoReadingResponse):
-    created_at: datetime = Field(description="The creation date")
     status: RepoStatus = Field(description="The repository status")
     stats: Optional[RepoStatsData] = Field(
         description="The repository stats", default=None
     )
+    created_at: datetime = Field(description="The repository creation date")
 
     @field_serializer("created_at", when_used="json")
     def serialize_datetime(self, value):
