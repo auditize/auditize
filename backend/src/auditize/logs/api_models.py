@@ -27,107 +27,33 @@ class CustomFieldData(BaseModel):
     value: str = Field(title="Field value")
 
 
-class _LogBase(BaseModel):
-    class Action(BaseModel):
-        type: str = Field(
-            title="Action type",
-            json_schema_extra={"example": "create_configuration_profile"},
-            pattern=IDENTIFIER_PATTERN,
-        )
-        category: str = Field(
-            title="Action category",
-            json_schema_extra={"example": "configuration"},
-            pattern=IDENTIFIER_PATTERN,
-        )
+def ActionTypeField():  # noqa
+    return Field(
+        title="Action type",
+        json_schema_extra={"example": "create_configuration_profile"},
+        pattern=IDENTIFIER_PATTERN,
+    )
 
-    class Actor(BaseModel):
-        ref: str = Field(
-            title="Actor ref",
-            description="Actor ref must be unique for a given actor",
-            json_schema_extra={"example": "user:123"},
-        )
-        type: str = Field(
-            title="Actor type",
-            json_schema_extra={"example": "user"},
-            pattern=IDENTIFIER_PATTERN,
-        )
-        name: str = Field(title="Actor name", json_schema_extra={"example": "John Doe"})
-        extra: list[CustomFieldData] = Field(
-            default_factory=list,
-            title="Extra actor information",
-            json_schema_extra={
-                "example": [{"name": "role", "value": "admin"}],
-                "nullable": True,
-            },
-        )
 
-    class Resource(BaseModel):
-        ref: str = Field(
-            title="Resource ref",
-            description="Resource ref must be unique for a given resource",
-            json_schema_extra={"example": "config-profile:123"},
-        )
-        type: str = Field(
-            title="Resource type",
-            json_schema_extra={"example": "config-profile"},
-            pattern=IDENTIFIER_PATTERN,
-        )
-        name: str = Field(
-            title="Resource name", json_schema_extra={"example": "Config Profile 123"}
-        )
-        extra: list[CustomFieldData] = Field(
-            default_factory=list,
-            description="Extra resource information",
-            json_schema_extra={
-                "example": [
-                    {
-                        "name": "description",
-                        "value": "Description of the configuration profile",
-                    }
-                ],
-                "nullable": True,
-            },
-        )
+def ActionCategoryField():  # noqa
+    return Field(
+        title="Action category",
+        json_schema_extra={"example": "configuration"},
+        pattern=IDENTIFIER_PATTERN,
+    )
 
-    class Tag(BaseModel):
-        ref: Optional[str] = Field(
-            title="Tag ref",
-            description="Tag ref is required for 'rich' tags",
-            default=None,
-            json_schema_extra={"nullable": True},
-        )
-        type: str = Field(
-            title="Tag type",
-            description="If only type is set then it represents a 'simple' tag",
-            pattern=IDENTIFIER_PATTERN,
-        )
-        name: Optional[str] = Field(
-            title="Tag name",
-            description="Tag name is required for 'rich' tags",
-            default=None,
-            json_schema_extra={"nullable": True},
-        )
 
-        model_config = {
-            "json_schema_extra": {
-                "examples": [
-                    {"type": "security"},
-                    {
-                        "ref": "config-profile:123",
-                        "type": "config-profile",
-                        "name": "Config Profile 123",
-                    },
-                ]
-            }
-        }
+class ActionData(BaseModel):
+    type: str = ActionTypeField()
+    category: str = ActionCategoryField()
 
-    class Node(BaseModel):
-        ref: str = Field(title="Node ref")
-        name: str = Field(title="Node name")
 
-    action: Action
-    source: list[CustomFieldData] = Field(
-        default_factory=list,
+def ActionField(**kwargs):  # noqa
+    return Field(description="Action information", **kwargs)
+
+
+def SourceField(**kwargs):  # noqa
+    return Field(
         description="Various information about the source of the event such as IP address, User-Agent, etc...",
         json_schema_extra={
             "example": [
@@ -135,26 +61,197 @@ class _LogBase(BaseModel):
                 {"name": "user_agent", "value": "Mozilla/5.0"},
             ]
         },
+        **kwargs,
     )
-    actor: Optional[Actor] = Field(default=None, json_schema_extra={"nullable": True})
-    resource: Optional[Resource] = Field(
-        default=None,
+
+
+def ActorRefField():  # noqa
+    return Field(
+        title="Actor ref",
+        description="Actor ref must be unique for a given actor",
+        json_schema_extra={"example": "user:123"},
+    )
+
+
+def ActorTypeField():  # noqa
+    return Field(
+        title="Actor type",
+        json_schema_extra={"example": "user"},
+        pattern=IDENTIFIER_PATTERN,
+    )
+
+
+def ActorNameField():  # noqa
+    return Field(title="Actor name", json_schema_extra={"example": "John Doe"})
+
+
+def ActorExtraField(**kwargs):  # noqa
+    return Field(
+        description="Extra actor information",
         json_schema_extra={
-            "nullable": True,
+            "example": [{"name": "role", "value": "admin"}],
         },
+        **kwargs,
     )
-    details: list[CustomFieldData] = Field(
+
+
+class ActorInputData(BaseModel):
+    ref: str = ActorRefField()
+    type: str = ActorTypeField()
+    name: str = ActorNameField()
+    extra: list[CustomFieldData] = ActorExtraField(default_factory=list)
+
+
+class ActorOutputData(BaseModel):
+    ref: str = ActorRefField()
+    type: str = ActorTypeField()
+    name: str = ActorNameField()
+    extra: list[CustomFieldData] = ActorExtraField()
+
+
+def ActorField(**kwargs):  # noqa
+    return Field(description="Actor information", **kwargs)
+
+
+def ResourceRefField():  # noqa
+    return Field(
+        title="Resource ref",
+        description="Resource ref must be unique for a given resource",
+        json_schema_extra={"example": "config-profile:123"},
+    )
+
+
+def ResourceTypeField():  # noqa
+    return Field(
+        title="Resource type",
+        json_schema_extra={"example": "config-profile"},
+        pattern=IDENTIFIER_PATTERN,
+    )
+
+
+def ResourceNameField():  # noqa
+    return Field(
+        title="Resource name", json_schema_extra={"example": "Config Profile 123"}
+    )
+
+
+def ResourceExtraField(**kwargs):  # noqa
+    return Field(
+        description="Extra resource information",
+        json_schema_extra={
+            "example": [
+                {
+                    "name": "description",
+                    "value": "Description of the configuration profile",
+                }
+            ],
+        },
+        **kwargs,
+    )
+
+
+class ResourceInputData(BaseModel):
+    ref: str = ResourceRefField()
+    type: str = ResourceTypeField()
+    name: str = ResourceNameField()
+    extra: list[CustomFieldData] = ResourceExtraField(default_factory=list)
+
+
+class ResourceOutputData(BaseModel):
+    ref: str = ResourceRefField()
+    type: str = ResourceTypeField()
+    name: str = ResourceNameField()
+    extra: list[CustomFieldData] = ResourceExtraField()
+
+
+def ResourceField(**kwargs):  # noqa
+    return Field(description="Resource information", **kwargs)
+
+
+def DetailsField(**kwargs):  # noqa
+    return Field(
         description="Details about the action",
-        default_factory=list,
         json_schema_extra={
             "example": [
                 {"name": "old_values", "description": "Former description"},
                 {"name": "new_values", "description": "New description"},
             ],
         },
+        **kwargs,
     )
-    tags: list[Tag] = Field(default_factory=list)
-    node_path: list[Node] = Field(
+
+
+def TagRefField(**kwargs):  # noqa
+    return Field(
+        title="Tag ref",
+        description="Tag ref is required for 'rich' tags",
+        json_schema_extra={"nullable": True},
+        **kwargs,
+    )
+
+
+def TagTypeField():  # noqa
+    return Field(
+        title="Tag type",
+        description="If only type is set then it represents a 'simple' tag",
+        pattern=IDENTIFIER_PATTERN,
+    )
+
+
+def TagNameField(**kwargs):  # noqa
+    return Field(
+        title="Tag name",
+        description="Tag name is required for 'rich' tags",
+        json_schema_extra={"nullable": True},
+        **kwargs,
+    )
+
+
+class TagInputData(BaseModel):
+    ref: Optional[str] = TagRefField(default=None)
+    type: str = TagTypeField()
+    name: Optional[str] = TagNameField(default=None)
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"type": "security"},
+                {
+                    "ref": "config-profile:123",
+                    "type": "config-profile",
+                    "name": "Config Profile 123",
+                },
+            ]
+        }
+    }
+
+
+class TagOutputData(BaseModel):
+    ref: str | None = TagRefField()
+    type: str = TagTypeField()
+    name: str | None = TagNameField()
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"ref": None, "type": "security", "name": None},
+                {
+                    "ref": "config-profile:123",
+                    "type": "config-profile",
+                    "name": "Config Profile 123",
+                },
+            ]
+        }
+    }
+
+
+class NodeData(BaseModel):
+    ref: str = Field(title="Node ref")
+    name: str = Field(title="Node name")
+
+
+def NodePathField():  # noqa
+    return Field(
         description="Represents the complete path of the entity that the log is associated with."
         "This array must at least contain one item.",
         json_schema_extra={
@@ -164,6 +261,23 @@ class _LogBase(BaseModel):
             ]
         },
     )
+
+
+class LogCreationRequest(BaseModel):
+    action: ActionData = ActionField()
+    source: list[CustomFieldData] = SourceField(default_factory=list)
+    actor: Optional[ActorInputData] = ActorField(
+        default=None, json_schema_extra={"nullable": True}
+    )
+    resource: Optional[ResourceInputData] = ResourceField(
+        default=None,
+        json_schema_extra={
+            "nullable": True,
+        },
+    )
+    details: list[CustomFieldData] = DetailsField(default_factory=list)
+    tags: list[TagInputData] = Field(default_factory=list)
+    node_path: list[NodeData] = NodePathField()
 
     @model_validator(mode="after")
     def validate_tags(self):
@@ -178,8 +292,6 @@ class _LogBase(BaseModel):
             raise ValueError("Node path must be at least one node deep")
         return self
 
-
-class LogCreationRequest(_LogBase):
     def to_log(self) -> Log:
         return Log.model_validate(self.model_dump())
 
@@ -188,24 +300,30 @@ class LogCreationResponse(BaseModel):
     id: str
 
 
-class _LogReadingResponse(BaseModel):
-    class Attachment(BaseModel):
-        name: str
-        description: Optional[str]
-        type: str
-        mime_type: str
-        saved_at: datetime
-
-        @field_serializer("saved_at", when_used="json")
-        def serialize_datetime(self, value):
-            return serialize_datetime(value)
-
-    id: str
+class AttachmentData(BaseModel):
+    name: str
+    description: Optional[str]
+    type: str
+    mime_type: str
     saved_at: datetime
-    attachments: list[Attachment] = Field(default_factory=list)
+
+    @field_serializer("saved_at", when_used="json")
+    def serialize_datetime(self, value):
+        return serialize_datetime(value)
 
 
-class LogReadingResponse(_LogBase, _LogReadingResponse):
+class LogReadingResponse(BaseModel):
+    id: str
+    action: ActionData = ActionField()
+    source: list[CustomFieldData] = SourceField()
+    actor: Optional[ActorOutputData] = ActorField()
+    resource: Optional[ResourceOutputData] = ResourceField()
+    details: list[CustomFieldData] = DetailsField()
+    tags: list[TagOutputData] = Field()
+    node_path: list[NodeData] = NodePathField()
+    attachments: list[AttachmentData] = Field()
+    saved_at: datetime
+
     @field_serializer("saved_at", when_used="json")
     def serialize_datetime(self, value):
         return serialize_datetime(value)
@@ -231,7 +349,7 @@ class NameListResponse(PagePaginatedResponse[str, NameData]):
         return NameData(name=name)
 
 
-class NodeItem(_LogBase.Node):
+class NodeItemData(NodeData):
     parent_node_ref: str | None = Field(
         description="The ID of the parent node. It is null for top-level nodes."
     )
@@ -240,23 +358,23 @@ class NodeItem(_LogBase.Node):
     )
 
 
-class LogNodeResponse(NodeItem):
+class LogNodeResponse(NodeItemData):
     @classmethod
     def from_node(cls, node: Log.Node):
         return cls.model_validate(node.model_dump())
 
 
-class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItem]):
+class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItemData]):
     @classmethod
-    def build_item(cls, node: Log.Node) -> NodeItem:
-        return NodeItem.model_validate(node.model_dump())
+    def build_item(cls, node: Log.Node) -> NodeItemData:
+        return NodeItemData.model_validate(node.model_dump())
 
 
 class LogSearchParams(BaseModel):
-    _DETAILS_REGEXP = re.compile(r"^details\[(.+)\]$")
-    _SOURCE_REGEXP = re.compile(r"^source\[(.+)\]$")
-    _ACTOR_EXTRA_REGEXP = re.compile(r"^actor\[(.+)\]$")
-    _RESOURCE_EXTRA_REGEXP = re.compile(r"^resource\[(.+)\]$")
+    _DETAILS_REGEXP = re.compile(r"^details\[(.+)]$")
+    _SOURCE_REGEXP = re.compile(r"^source\[(.+)]$")
+    _ACTOR_EXTRA_REGEXP = re.compile(r"^actor\[(.+)]$")
+    _RESOURCE_EXTRA_REGEXP = re.compile(r"^resource\[(.+)]$")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
