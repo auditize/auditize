@@ -8,9 +8,9 @@ from auditize.permissions.api_models import PermissionsData
 
 
 class ApikeyCreationRequest(BaseModel):
-    name: str = Field(description="The apikey name")
+    name: str = Field(description="The API key name")
     permissions: PermissionsData = Field(
-        description="The apikey permissions", default_factory=PermissionsData
+        description="The API key permissions", default_factory=PermissionsData
     )
 
     def to_db_model(self):
@@ -18,22 +18,22 @@ class ApikeyCreationRequest(BaseModel):
 
 
 class ApikeyUpdateRequest(BaseModel):
-    name: Optional[str] = Field(description="The apikey name", default=None)
+    name: Optional[str] = Field(description="The API key name", default=None)
     permissions: Optional[PermissionsData] = Field(
-        description="The apikey permissions", default=None
+        description="The API key permissions", default=None
     )
 
 
 class ApikeyCreationResponse(BaseModel):
-    id: str = Field(description="The apikey id")
-    key: str = Field(description="The actual key")
+    id: str = Field(description="The API key id")
+    key: str = Field(description="The API key secret")
 
 
 class ApikeyReadingResponse(BaseModel):
-    id: str = Field(description="The apikey id")
-    name: str = Field(description="The apikey name")
+    id: str = Field(description="The API key id")
+    name: str = Field(description="The API key name")
     permissions: PermissionsData = Field(
-        description="The apikey permissions", default_factory=PermissionsData
+        description="The API key permissions", default_factory=PermissionsData
     )
 
     @classmethod
@@ -48,4 +48,4 @@ class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyReadingResponse]):
 
 
 class ApikeyRegenerationResponse(BaseModel):
-    key: str = Field(description="The new key")
+    key: str = Field(description="The new API key secret")

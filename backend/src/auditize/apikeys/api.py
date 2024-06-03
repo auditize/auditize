@@ -16,6 +16,8 @@ from auditize.auth.authorizer import Authenticated, Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
+from auditize.helpers.pagination.page.api_models import PagePaginationParams
+from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.permissions.assertions import (
     can_read_apikeys,
     can_write_apikeys,
@@ -32,7 +34,7 @@ def _ensure_cannot_alter_own_apikey(authenticated: Authenticated, apikey_id: str
 
 @router.post(
     "/apikeys",
-    summary="Create apikey",
+    summary="Create API key",
     tags=["apikeys"],
     status_code=201,
     responses=error_responses(400, 409),
@@ -50,7 +52,7 @@ async def create_apikey(
 
 @router.patch(
     "/apikeys/{apikey_id}",
-    summary="Update apikey",
+    summary="Update API key",
     tags=["apikeys"],
     status_code=204,
     responses=error_responses(400, 404, 409),
@@ -70,7 +72,7 @@ async def update_apikey(
 
 @router.get(
     "/apikeys/{apikey_id}",
-    summary="Get apikey",
+    summary="Get API key",
     tags=["apikeys"],
     responses=error_responses(404),
 )
@@ -85,25 +87,27 @@ async def get_repo(
 
 @router.get(
     "/apikeys",
-    summary="List apikeys",
+    summary="List API keys",
     tags=["apikeys"],
 )
 async def list_apikeys(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_apikeys()),
-    q: str = None,
-    page: int = 1,
-    page_size: int = 10,
+    search_params: Annotated[ResourceSearchParams, Depends()],
+    page_params: Annotated[PagePaginationParams, Depends()],
 ) -> ApikeyListResponse:
     apikeys, page_info = await service.get_apikeys(
-        dbm, q=q, page=page, page_size=page_size
+        dbm,
+        query=search_params.query,
+        page=page_params.page,
+        page_size=page_params.page_size,
     )
     return ApikeyListResponse.build(apikeys, page_info)
 
 
 @router.delete(
     "/apikeys/{apikey_id}",
-    summary="Delete apikey",
+    summary="Delete API key",
     tags=["apikeys"],
     status_code=204,
     responses=error_responses(404),
@@ -119,7 +123,7 @@ async def delete_apikey(
 
 @router.post(
     "/apikeys/{apikey_id}/key",
-    summary="Re-regenerate apikey",
+    summary="Re-regenerate API key secret",
     tags=["apikeys"],
     status_code=200,
     responses=error_responses(404),
