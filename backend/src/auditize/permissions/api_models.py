@@ -2,45 +2,85 @@ from pydantic import BaseModel, Field
 
 __all__ = (
     "ApplicablePermissionsData",
-    "ReadWritePermissionsData",
-    "ManagementPermissionsData",
-    "LogPermissionsData",
-    "PermissionsData",
+    "ReadWritePermissionsInputData",
+    "ReadWritePermissionsOutputData",
+    "ManagementPermissionsInputData",
+    "ManagementPermissionsOutputData",
+    "LogPermissionsInputData",
+    "LogPermissionsOutputData",
+    "PermissionsInputData",
+    "PermissionsOutputData",
 )
 
 from auditize.permissions.models import ApplicableLogPermissionScope
 
 
-class ReadWritePermissionsData(BaseModel):
+class ReadWritePermissionsInputData(BaseModel):
     read: bool | None = Field(default=None)
     write: bool | None = Field(default=None)
 
 
-class ManagementPermissionsData(BaseModel):
-    repos: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
-    users: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
-    apikeys: ReadWritePermissionsData = Field(default_factory=ReadWritePermissionsData)
+class ReadWritePermissionsOutputData(BaseModel):
+    read: bool
+    write: bool
 
 
-class RepoLogPermissionsData(ReadWritePermissionsData):
+class ManagementPermissionsInputData(BaseModel):
+    repos: ReadWritePermissionsInputData = Field(
+        default_factory=ReadWritePermissionsInputData
+    )
+    users: ReadWritePermissionsInputData = Field(
+        default_factory=ReadWritePermissionsInputData
+    )
+    apikeys: ReadWritePermissionsInputData = Field(
+        default_factory=ReadWritePermissionsInputData
+    )
+
+
+class ManagementPermissionsOutputData(BaseModel):
+    repos: ReadWritePermissionsOutputData
+    users: ReadWritePermissionsOutputData
+    apikeys: ReadWritePermissionsOutputData
+
+
+class RepoLogPermissionsInputData(ReadWritePermissionsInputData):
     repo_id: str
 
 
-class LogPermissionsData(ReadWritePermissionsData):
-    repos: list[RepoLogPermissionsData] = Field(
+class RepoLogPermissionsOutputData(ReadWritePermissionsOutputData):
+    repo_id: str
+
+
+class LogPermissionsInputData(ReadWritePermissionsInputData):
+    repos: list[RepoLogPermissionsInputData] = Field(
         description="Per repository permissions", default_factory=list
     )
 
 
-class PermissionsData(BaseModel):
+class LogPermissionsOutputData(ReadWritePermissionsOutputData):
+    repos: list[RepoLogPermissionsOutputData] = Field(
+        description="Per repository permissions"
+    )
+
+
+class PermissionsInputData(BaseModel):
     is_superadmin: bool | None = Field(
         description="Superadmin has all permissions", default=None
     )
-    logs: LogPermissionsData = Field(
-        description="Log permissions", default_factory=LogPermissionsData
+    logs: LogPermissionsInputData = Field(
+        description="Log permissions", default_factory=LogPermissionsInputData
     )
-    management: ManagementPermissionsData = Field(
-        description="Management permissions", default_factory=ManagementPermissionsData
+    management: ManagementPermissionsInputData = Field(
+        description="Management permissions",
+        default_factory=ManagementPermissionsInputData,
+    )
+
+
+class PermissionsOutputData(BaseModel):
+    is_superadmin: bool = Field(description="Superadmin has all permissions")
+    logs: LogPermissionsOutputData = Field(description="Log permissions")
+    management: ManagementPermissionsOutputData = Field(
+        description="Management permissions"
     )
 
 
@@ -52,4 +92,4 @@ class ApplicableLogPermissions(BaseModel):
 class ApplicablePermissionsData(BaseModel):
     is_superadmin: bool
     logs: ApplicableLogPermissions = Field(...)
-    management: ManagementPermissionsData = Field(...)
+    management: ManagementPermissionsOutputData = Field(...)

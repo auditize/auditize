@@ -3,7 +3,11 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
-from auditize.permissions.api_models import ApplicablePermissionsData, PermissionsData
+from auditize.permissions.api_models import (
+    ApplicablePermissionsData,
+    PermissionsInputData,
+    PermissionsOutputData,
+)
 from auditize.permissions.operations import compute_applicable_permissions
 from auditize.users.models import User
 
@@ -12,8 +16,8 @@ class UserCreationRequest(BaseModel):
     first_name: str = Field(description="The user first name")
     last_name: str = Field(description="The user last name")
     email: EmailStr = Field(description="The user email")
-    permissions: PermissionsData = Field(
-        description="The user permissions", default_factory=PermissionsData
+    permissions: PermissionsInputData = Field(
+        description="The user permissions", default_factory=PermissionsInputData
     )
 
     def to_db_model(self):
@@ -24,7 +28,7 @@ class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = Field(description="The user first name", default=None)
     last_name: Optional[str] = Field(description="The user last name", default=None)
     email: Optional[str] = Field(description="The user email", default=None)
-    permissions: Optional[PermissionsData] = Field(
+    permissions: Optional[PermissionsInputData] = Field(
         description="The user permissions", default=None
     )
 
@@ -38,9 +42,7 @@ class UserReadingResponse(BaseModel):
     first_name: str = Field(description="The user first name")
     last_name: str = Field(description="The user last name")
     email: str = Field(description="The user email")
-    permissions: PermissionsData = Field(
-        description="The user permissions", default_factory=PermissionsData
-    )
+    permissions: PermissionsOutputData = Field(description="The user permissions")
 
     @classmethod
     def from_db_model(cls, user: User):

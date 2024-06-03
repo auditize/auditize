@@ -4,13 +4,13 @@ from pydantic import BaseModel, Field
 
 from auditize.apikeys.models import Apikey
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
-from auditize.permissions.api_models import PermissionsData
+from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
 
 
 class ApikeyCreationRequest(BaseModel):
     name: str = Field(description="The API key name")
-    permissions: PermissionsData = Field(
-        description="The API key permissions", default_factory=PermissionsData
+    permissions: PermissionsInputData = Field(
+        description="The API key permissions", default_factory=PermissionsInputData
     )
 
     def to_db_model(self):
@@ -19,7 +19,7 @@ class ApikeyCreationRequest(BaseModel):
 
 class ApikeyUpdateRequest(BaseModel):
     name: Optional[str] = Field(description="The API key name", default=None)
-    permissions: Optional[PermissionsData] = Field(
+    permissions: Optional[PermissionsInputData] = Field(
         description="The API key permissions", default=None
     )
 
@@ -32,8 +32,8 @@ class ApikeyCreationResponse(BaseModel):
 class ApikeyReadingResponse(BaseModel):
     id: str = Field(description="The API key id")
     name: str = Field(description="The API key name")
-    permissions: PermissionsData = Field(
-        description="The API key permissions", default_factory=PermissionsData
+    permissions: PermissionsOutputData = Field(
+        description="The API key permissions",
     )
 
     @classmethod
