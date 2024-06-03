@@ -119,7 +119,7 @@ async def update_user_password_by_signup_token(
 
 
 async def get_users(
-    dbm: DatabaseManager, q: str, page: int, page_size: int
+    dbm: DatabaseManager, query: str, page: int, page_size: int
 ) -> tuple[list[User], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
         dbm.core_db.users,
@@ -128,7 +128,11 @@ async def get_users(
         # results.
         # As searching on email is a common use case, we quote the query when it contains an '@'
         # to make sure that the whole email is searched.
-        filter={"$text": {"$search": q if "@" not in q else f'"{q}"'}} if q else None,
+        filter=(
+            {"$text": {"$search": query if "@" not in query else f'"{query}"'}}
+            if query
+            else None
+        ),
         sort=[("last_name", 1)],
         page=page,
         page_size=page_size,

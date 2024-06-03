@@ -27,14 +27,20 @@ class RepoLogPermissionsData(ReadWritePermissionsData):
 
 
 class LogPermissionsData(ReadWritePermissionsData):
-    repos: list[RepoLogPermissionsData] = Field(default_factory=list)
+    repos: list[RepoLogPermissionsData] = Field(
+        description="Per repository permissions", default_factory=list
+    )
 
 
 class PermissionsData(BaseModel):
-    is_superadmin: bool | None = Field(default=None)
-    logs: LogPermissionsData = Field(default_factory=LogPermissionsData)
+    is_superadmin: bool | None = Field(
+        description="Superadmin has all permissions", default=None
+    )
+    logs: LogPermissionsData = Field(
+        description="Log permissions", default_factory=LogPermissionsData
+    )
     management: ManagementPermissionsData = Field(
-        default_factory=ManagementPermissionsData
+        description="Management permissions", default_factory=ManagementPermissionsData
     )
 
 

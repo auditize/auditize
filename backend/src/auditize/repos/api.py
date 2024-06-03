@@ -158,13 +158,18 @@ async def list_user_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     has_read_permission: Annotated[
-        bool, Query(description="Filter repositories on which user can read logs")
+        bool,
+        Query(
+            description="Set to true to filter repositories on which user can read logs",
+        ),
     ] = False,
     has_write_permission: Annotated[
-        bool, Query(description="Filter repositories on which user can write logs")
+        bool,
+        Query(
+            description="Set to true to filter repositories on which user can write logs",
+        ),
     ] = False,
-    page: int = 1,
-    page_size: int = 10,
+    page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> UserRepoListResponse:
     if not authenticated.user:
         raise PermissionDenied("This endpoint is only available for users")
@@ -174,8 +179,8 @@ async def list_user_repos(
         user=authenticated.user,
         user_can_read=has_read_permission,
         user_can_write=has_write_permission,
-        page=page,
-        page_size=page_size,
+        page=page_params.page,
+        page_size=page_params.page_size,
     )
 
     response = UserRepoListResponse.build(repos, page_info)
