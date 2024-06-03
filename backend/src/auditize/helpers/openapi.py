@@ -14,7 +14,7 @@ def _iter_parameter_fields(schema):
                 yield parameter["schema"]
 
 
-def _customize_openapi_schema(schema):
+def _fix_nullable(schema):
     # workaround https://github.com/pydantic/pydantic/issues/7161
 
     for field in _iter_parameter_fields(schema):
@@ -35,6 +35,21 @@ def _customize_openapi_schema(schema):
             field.update(field["anyOf"][0])
             del field["anyOf"]
             field["nullable"] = True
+
+
+def _fix_422(schema):
+    # FastAPI enforce 422 responses even if we don't use them
+    # (see https://github.com/tiangolo/fastapi/discussions/6695)
+    for path in schema["paths"]:
+        for method in schema["paths"][path]:
+            responses = schema["paths"][path][method].get("responses")
+            if responses and "422" in responses:
+                del responses["422"]
+
+
+def _customize_openapi_schema(schema):
+    _fix_nullable(schema)
+    _fix_422(schema)
 
 
 def customize_openapi(app):
