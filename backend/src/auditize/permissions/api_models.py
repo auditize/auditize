@@ -39,13 +39,11 @@ class PermissionsData(BaseModel):
 
 
 class ApplicableLogPermissions(BaseModel):
-    read: ApplicableLogPermissionScope = Field(default="none")
-    write: ApplicableLogPermissionScope = Field(default="none")
+    read: ApplicableLogPermissionScope = Field()
+    write: ApplicableLogPermissionScope = Field()
 
 
 class ApplicablePermissionsData(BaseModel):
     is_superadmin: bool
-    logs: ApplicableLogPermissions = Field(default_factory=ApplicableLogPermissions)
-    management: ManagementPermissionsData = Field(
-        default_factory=ManagementPermissionsData
-    )
+    logs: ApplicableLogPermissions = Field(...)
+    management: ManagementPermissionsData = Field(...)

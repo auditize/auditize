@@ -42,7 +42,7 @@ async def login_user(
 
 @router.post(
     "/auth/user/logout",
-    summary="User log-out",
+    summary="User logout",
     tags=["auth"],
     status_code=204,
     responses=error_responses(401),

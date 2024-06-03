@@ -77,9 +77,7 @@ class UserMeResponse(BaseModel):
     first_name: str = Field(description="The authenticated user first name")
     last_name: str = Field(description="The authenticated user last name")
     email: str = Field(description="The authenticated user email")
-    permissions: ApplicablePermissionsData = Field(
-        description="The user permissions", default_factory=ApplicablePermissionsData
-    )
+    permissions: ApplicablePermissionsData = Field(description="The user permissions")
 
     @classmethod
     def from_db_model(cls, user: User):
