@@ -185,7 +185,6 @@ def TagRefField(**kwargs):  # noqa
     return Field(
         title="Tag ref",
         description="Tag ref is required for 'rich' tags",
-        json_schema_extra={"nullable": True},
         **kwargs,
     )
 
@@ -202,7 +201,6 @@ def TagNameField(**kwargs):  # noqa
     return Field(
         title="Tag name",
         description="Tag name is required for 'rich' tags",
-        json_schema_extra={"nullable": True},
         **kwargs,
     )
 
@@ -266,14 +264,9 @@ def NodePathField():  # noqa
 class LogCreationRequest(BaseModel):
     action: ActionData = ActionField()
     source: list[CustomFieldData] = SourceField(default_factory=list)
-    actor: Optional[ActorInputData] = ActorField(
-        default=None, json_schema_extra={"nullable": True}
-    )
+    actor: Optional[ActorInputData] = ActorField(default=None)
     resource: Optional[ResourceInputData] = ResourceField(
         default=None,
-        json_schema_extra={
-            "nullable": True,
-        },
     )
     details: list[CustomFieldData] = DetailsField(default_factory=list)
     tags: list[TagInputData] = Field(default_factory=list)
