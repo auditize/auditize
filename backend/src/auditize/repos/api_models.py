@@ -62,7 +62,8 @@ class _BaseRepoReadingResponse(BaseModel):
 class RepoReadingResponse(_BaseRepoReadingResponse):
     status: RepoStatus = Field(description="The repository status")
     stats: Optional[RepoStatsData] = Field(
-        description="The repository stats", default=None
+        description="The repository stats (available if `include=stats` has been set in query parameters)",
+        default=None,
     )
     created_at: datetime = Field(description="The repository creation date")
 
