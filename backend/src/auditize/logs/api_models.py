@@ -19,7 +19,7 @@ from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logs.models import Log
 
 
-class CustomFieldData(BaseModel):
+class _CustomFieldData(BaseModel):
     # No brackets, dots or colons in field names:
     # - brackets are used in the query string to access nested fields (e.g. details[foo])
     # - dots and colons may be used for special usage in the future
@@ -27,7 +27,7 @@ class CustomFieldData(BaseModel):
     value: str = Field(title="Field value")
 
 
-def ActionTypeField():  # noqa
+def _ActionTypeField():  # noqa
     return Field(
         title="Action type",
         json_schema_extra={"example": "create_configuration_profile"},
@@ -35,7 +35,7 @@ def ActionTypeField():  # noqa
     )
 
 
-def ActionCategoryField():  # noqa
+def _ActionCategoryField():  # noqa
     return Field(
         title="Action category",
         json_schema_extra={"example": "configuration"},
@@ -43,16 +43,16 @@ def ActionCategoryField():  # noqa
     )
 
 
-class ActionData(BaseModel):
-    type: str = ActionTypeField()
-    category: str = ActionCategoryField()
+class _ActionData(BaseModel):
+    type: str = _ActionTypeField()
+    category: str = _ActionCategoryField()
 
 
-def ActionField(**kwargs):  # noqa
+def _ActionField(**kwargs):  # noqa
     return Field(description="Action information", **kwargs)
 
 
-def SourceField(**kwargs):  # noqa
+def _SourceField(**kwargs):  # noqa
     return Field(
         description="Various information about the source of the event such as IP address, User-Agent, etc...",
         json_schema_extra={
@@ -65,7 +65,7 @@ def SourceField(**kwargs):  # noqa
     )
 
 
-def ActorRefField():  # noqa
+def _ActorRefField():  # noqa
     return Field(
         title="Actor ref",
         description="Actor ref must be unique for a given actor",
@@ -73,7 +73,7 @@ def ActorRefField():  # noqa
     )
 
 
-def ActorTypeField():  # noqa
+def _ActorTypeField():  # noqa
     return Field(
         title="Actor type",
         json_schema_extra={"example": "user"},
@@ -81,11 +81,11 @@ def ActorTypeField():  # noqa
     )
 
 
-def ActorNameField():  # noqa
+def _ActorNameField():  # noqa
     return Field(title="Actor name", json_schema_extra={"example": "John Doe"})
 
 
-def ActorExtraField(**kwargs):  # noqa
+def _ActorExtraField(**kwargs):  # noqa
     return Field(
         description="Extra actor information",
         json_schema_extra={
@@ -95,25 +95,25 @@ def ActorExtraField(**kwargs):  # noqa
     )
 
 
-class ActorInputData(BaseModel):
-    ref: str = ActorRefField()
-    type: str = ActorTypeField()
-    name: str = ActorNameField()
-    extra: list[CustomFieldData] = ActorExtraField(default_factory=list)
+class _ActorInputData(BaseModel):
+    ref: str = _ActorRefField()
+    type: str = _ActorTypeField()
+    name: str = _ActorNameField()
+    extra: list[_CustomFieldData] = _ActorExtraField(default_factory=list)
 
 
-class ActorOutputData(BaseModel):
-    ref: str = ActorRefField()
-    type: str = ActorTypeField()
-    name: str = ActorNameField()
-    extra: list[CustomFieldData] = ActorExtraField()
+class _ActorOutputData(BaseModel):
+    ref: str = _ActorRefField()
+    type: str = _ActorTypeField()
+    name: str = _ActorNameField()
+    extra: list[_CustomFieldData] = _ActorExtraField()
 
 
-def ActorField(**kwargs):  # noqa
+def _ActorField(**kwargs):  # noqa
     return Field(description="Actor information", **kwargs)
 
 
-def ResourceRefField():  # noqa
+def _ResourceRefField():  # noqa
     return Field(
         title="Resource ref",
         description="Resource ref must be unique for a given resource",
@@ -121,7 +121,7 @@ def ResourceRefField():  # noqa
     )
 
 
-def ResourceTypeField():  # noqa
+def _ResourceTypeField():  # noqa
     return Field(
         title="Resource type",
         json_schema_extra={"example": "config-profile"},
@@ -129,13 +129,13 @@ def ResourceTypeField():  # noqa
     )
 
 
-def ResourceNameField():  # noqa
+def _ResourceNameField():  # noqa
     return Field(
         title="Resource name", json_schema_extra={"example": "Config Profile 123"}
     )
 
 
-def ResourceExtraField(**kwargs):  # noqa
+def _ResourceExtraField(**kwargs):  # noqa
     return Field(
         description="Extra resource information",
         json_schema_extra={
@@ -150,38 +150,38 @@ def ResourceExtraField(**kwargs):  # noqa
     )
 
 
-class ResourceInputData(BaseModel):
-    ref: str = ResourceRefField()
-    type: str = ResourceTypeField()
-    name: str = ResourceNameField()
-    extra: list[CustomFieldData] = ResourceExtraField(default_factory=list)
+class _ResourceInputData(BaseModel):
+    ref: str = _ResourceRefField()
+    type: str = _ResourceTypeField()
+    name: str = _ResourceNameField()
+    extra: list[_CustomFieldData] = _ResourceExtraField(default_factory=list)
 
 
-class ResourceOutputData(BaseModel):
-    ref: str = ResourceRefField()
-    type: str = ResourceTypeField()
-    name: str = ResourceNameField()
-    extra: list[CustomFieldData] = ResourceExtraField()
+class _ResourceOutputData(BaseModel):
+    ref: str = _ResourceRefField()
+    type: str = _ResourceTypeField()
+    name: str = _ResourceNameField()
+    extra: list[_CustomFieldData] = _ResourceExtraField()
 
 
-def ResourceField(**kwargs):  # noqa
+def _ResourceField(**kwargs):  # noqa
     return Field(description="Resource information", **kwargs)
 
 
-def DetailsField(**kwargs):  # noqa
+def _DetailsField(**kwargs):  # noqa
     return Field(
         description="Details about the action",
         json_schema_extra={
             "example": [
-                {"name": "old_values", "description": "Former description"},
-                {"name": "new_values", "description": "New description"},
+                {"name": "field_name_1", "description": "value_1"},
+                {"name": "field_name_2", "description": "value_2"},
             ],
         },
         **kwargs,
     )
 
 
-def TagRefField(**kwargs):  # noqa
+def _TagRefField(**kwargs):  # noqa
     return Field(
         title="Tag ref",
         description="Tag ref is required for 'rich' tags",
@@ -189,7 +189,7 @@ def TagRefField(**kwargs):  # noqa
     )
 
 
-def TagTypeField():  # noqa
+def _TagTypeField():  # noqa
     return Field(
         title="Tag type",
         description="If only type is set then it represents a 'simple' tag",
@@ -197,7 +197,7 @@ def TagTypeField():  # noqa
     )
 
 
-def TagNameField(**kwargs):  # noqa
+def _TagNameField(**kwargs):  # noqa
     return Field(
         title="Tag name",
         description="Tag name is required for 'rich' tags",
@@ -205,14 +205,14 @@ def TagNameField(**kwargs):  # noqa
     )
 
 
-class TagInputData(BaseModel):
-    ref: Optional[str] = TagRefField(default=None)
-    type: str = TagTypeField()
-    name: Optional[str] = TagNameField(default=None)
+class _TagInputData(BaseModel):
+    ref: Optional[str] = _TagRefField(default=None)
+    type: str = _TagTypeField()
+    name: Optional[str] = _TagNameField(default=None)
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
+            "example": [
                 {"type": "security"},
                 {
                     "ref": "config-profile:123",
@@ -224,14 +224,14 @@ class TagInputData(BaseModel):
     }
 
 
-class TagOutputData(BaseModel):
-    ref: str | None = TagRefField()
-    type: str = TagTypeField()
-    name: str | None = TagNameField()
+class _TagOutputData(BaseModel):
+    ref: str | None = _TagRefField()
+    type: str = _TagTypeField()
+    name: str | None = _TagNameField()
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
+            "example": [
                 {"ref": None, "type": "security", "name": None},
                 {
                     "ref": "config-profile:123",
@@ -243,12 +243,12 @@ class TagOutputData(BaseModel):
     }
 
 
-class NodeData(BaseModel):
+class _NodeData(BaseModel):
     ref: str = Field(title="Node ref")
     name: str = Field(title="Node name")
 
 
-def NodePathField():  # noqa
+def _NodePathField():  # noqa
     return Field(
         description="Represents the complete path of the entity that the log is associated with."
         "This array must at least contain one item.",
@@ -262,15 +262,15 @@ def NodePathField():  # noqa
 
 
 class LogCreationRequest(BaseModel):
-    action: ActionData = ActionField()
-    source: list[CustomFieldData] = SourceField(default_factory=list)
-    actor: Optional[ActorInputData] = ActorField(default=None)
-    resource: Optional[ResourceInputData] = ResourceField(
+    action: _ActionData = _ActionField()
+    source: list[_CustomFieldData] = _SourceField(default_factory=list)
+    actor: Optional[_ActorInputData] = _ActorField(default=None)
+    resource: Optional[_ResourceInputData] = _ResourceField(
         default=None,
     )
-    details: list[CustomFieldData] = DetailsField(default_factory=list)
-    tags: list[TagInputData] = Field(default_factory=list)
-    node_path: list[NodeData] = NodePathField()
+    details: list[_CustomFieldData] = _DetailsField(default_factory=list)
+    tags: list[_TagInputData] = Field(default_factory=list)
+    node_path: list[_NodeData] = _NodePathField()
 
     @model_validator(mode="after")
     def validate_tags(self):
@@ -293,7 +293,7 @@ class LogCreationResponse(BaseModel):
     id: str
 
 
-class AttachmentData(BaseModel):
+class _AttachmentData(BaseModel):
     name: str
     description: Optional[str]
     type: str
@@ -307,14 +307,14 @@ class AttachmentData(BaseModel):
 
 class LogReadingResponse(BaseModel):
     id: str
-    action: ActionData = ActionField()
-    source: list[CustomFieldData] = SourceField()
-    actor: Optional[ActorOutputData] = ActorField()
-    resource: Optional[ResourceOutputData] = ResourceField()
-    details: list[CustomFieldData] = DetailsField()
-    tags: list[TagOutputData] = Field()
-    node_path: list[NodeData] = NodePathField()
-    attachments: list[AttachmentData] = Field()
+    action: _ActionData = _ActionField()
+    source: list[_CustomFieldData] = _SourceField()
+    actor: Optional[_ActorOutputData] = _ActorField()
+    resource: Optional[_ResourceOutputData] = _ResourceField()
+    details: list[_CustomFieldData] = _DetailsField()
+    tags: list[_TagOutputData] = Field()
+    node_path: list[_NodeData] = _NodePathField()
+    attachments: list[_AttachmentData] = Field()
     saved_at: datetime
 
     @field_serializer("saved_at", when_used="json")
@@ -341,13 +341,38 @@ class NameListResponse(PagePaginatedResponse[str, NameData]):
     def build_item(cls, name: str) -> NameData:
         return NameData(name=name)
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "items": [{"name": "identifier_1"}, {"name": "identifier_2"}],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 2,
+                    "total_pages": 1,
+                },
+            }
+        }
+    )
 
-class NodeItemData(NodeData):
+
+class NodeItemData(_NodeData):
     parent_node_ref: str | None = Field(
-        description="The ID of the parent node. It is null for top-level nodes."
+        description="The ID of the parent node. It is null for top-level nodes.",
     )
     has_children: bool = Field(
-        description="Indicates whether the node has children or not"
+        description="Indicates whether the node has children or not",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "ref": "entity:1",
+                "name": "Entity 1",
+                "parent_node_ref": "customer:1",
+                "has_children": True,
+            }
+        }
     )
 
 

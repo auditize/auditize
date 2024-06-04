@@ -7,10 +7,42 @@ from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
 
 
+def _ApikeyNameField(**kwargs):  # noqa
+    return Field(
+        description="The API key name",
+        json_schema_extra={"example": "Integration API key"},
+        **kwargs,
+    )
+
+
+def _ApikeyIdField():  # noqa
+    return Field(
+        description="The API key ID",
+        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+    )
+
+
+def _ApikeyKeyField(description="The API key secret", **kwargs):  # noqa
+    return Field(
+        description=description,
+        json_schema_extra={
+            "example": "aak-_euGzb85ZisAZtwx8d78NtC1ohK5suU7-u_--jIENlU"
+        },
+        **kwargs,
+    )
+
+
+def _ApikeyPermissionsField(**kwargs):  # noqa
+    return Field(
+        description="The API key permissions",
+        **kwargs,
+    )
+
+
 class ApikeyCreationRequest(BaseModel):
-    name: str = Field(description="The API key name")
-    permissions: PermissionsInputData = Field(
-        description="The API key permissions", default_factory=PermissionsInputData
+    name: str = _ApikeyNameField()
+    permissions: PermissionsInputData = _ApikeyPermissionsField(
+        default_factory=PermissionsInputData
     )
 
     def to_db_model(self):
@@ -18,23 +50,19 @@ class ApikeyCreationRequest(BaseModel):
 
 
 class ApikeyUpdateRequest(BaseModel):
-    name: Optional[str] = Field(description="The API key name", default=None)
-    permissions: Optional[PermissionsInputData] = Field(
-        description="The API key permissions", default=None
-    )
+    name: Optional[str] = _ApikeyNameField(default=None)
+    permissions: Optional[PermissionsInputData] = _ApikeyPermissionsField(default=None)
 
 
 class ApikeyCreationResponse(BaseModel):
-    id: str = Field(description="The API key id")
-    key: str = Field(description="The API key secret")
+    id: str = _ApikeyIdField()
+    key: str = _ApikeyKeyField()
 
 
 class ApikeyReadingResponse(BaseModel):
-    id: str = Field(description="The API key id")
-    name: str = Field(description="The API key name")
-    permissions: PermissionsOutputData = Field(
-        description="The API key permissions",
-    )
+    id: str = _ApikeyIdField()
+    name: str = _ApikeyNameField()
+    permissions: PermissionsOutputData = _ApikeyPermissionsField()
 
     @classmethod
     def from_db_model(cls, apikey: Apikey):
@@ -48,4 +76,4 @@ class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyReadingResponse]):
 
 
 class ApikeyRegenerationResponse(BaseModel):
-    key: str = Field(description="The new API key secret")
+    key: str = _ApikeyKeyField(description="The new API key secret")

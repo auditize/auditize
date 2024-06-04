@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 __all__ = (
     "ApplicablePermissionsData",
@@ -75,12 +75,68 @@ class PermissionsInputData(BaseModel):
         default_factory=ManagementPermissionsInputData,
     )
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "is_superadmin": False,
+                "logs": {
+                    "read": True,
+                    "write": False,
+                    "repos": [
+                        {
+                            "repo_id": "DCFB6049-3BB7-49C5-94A9-64FC9226AE30",
+                            "read": True,
+                        },
+                        {
+                            "repo_id": "E3D38457-670B-42EE-AF1B-10FA90597E68",
+                            "read": True,
+                            "write": True,
+                        },
+                    ],
+                },
+                "management": {
+                    "repos": {"read": True, "write": False},
+                    "users": {"read": True, "write": True},
+                },
+            }
+        }
+    )
+
 
 class PermissionsOutputData(BaseModel):
     is_superadmin: bool = Field(description="Superadmin has all permissions")
     logs: LogPermissionsOutputData = Field(description="Log permissions")
     management: ManagementPermissionsOutputData = Field(
         description="Management permissions"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "is_superadmin": False,
+                "logs": {
+                    "read": True,
+                    "write": False,
+                    "repos": [
+                        {
+                            "repo_id": "DCFB6049-3BB7-49C5-94A9-64FC9226AE30",
+                            "read": False,
+                            "write": False,
+                        },
+                        {
+                            "repo_id": "E3D38457-670B-42EE-AF1B-10FA90597E68",
+                            "read": False,
+                            "write": True,
+                        },
+                    ],
+                },
+                "management": {
+                    "repos": {"read": True, "write": False},
+                    "users": {"read": True, "write": True},
+                    "apikeys": {"read": False, "write": False},
+                },
+            }
+        }
     )
 
 
@@ -93,3 +149,20 @@ class ApplicablePermissionsData(BaseModel):
     is_superadmin: bool
     logs: ApplicableLogPermissions = Field(...)
     management: ManagementPermissionsOutputData = Field(...)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "is_superadmin": False,
+                "logs": {
+                    "read": "all",
+                    "write": "partial",
+                },
+                "management": {
+                    "repos": {"read": True, "write": False},
+                    "users": {"read": True, "write": True},
+                    "apikeys": {"read": False, "write": False},
+                },
+            }
+        }
+    )

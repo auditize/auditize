@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.exceptions import (
     AuthenticationFailure,
@@ -15,7 +15,7 @@ from auditize.exceptions import (
 
 
 class ApiErrorResponse(BaseModel):
-    message: str
+    message: str = Field(json_schema_extra={"example": "An error occurred"})
 
     @classmethod
     def from_exception(cls, exc: Exception, default_message: str):
@@ -24,7 +24,7 @@ class ApiErrorResponse(BaseModel):
 
 class ApiValidationErrorResponse(BaseModel):
     class ValidationErrorDetail(BaseModel):
-        field: str | None = Field(default=None)
+        field: str | None = Field()
         message: str
 
         @classmethod
@@ -34,10 +34,22 @@ class ApiValidationErrorResponse(BaseModel):
                     field=".".join(map(str, error["loc"][1:])), message=error["msg"]
                 )
             else:
-                return cls(message=error["msg"])
+                return cls(field=None, message=error["msg"])
 
     message: str
-    validation_errors: list[ValidationErrorDetail] = Field(default_factory=list)
+    validation_errors: list[ValidationErrorDetail] = Field()
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "Invalid request",
+                "validation_errors": [
+                    {"field": "field1", "message": "Error message 1"},
+                    {"field": "field2", "message": "Error message 2"},
+                ],
+            }
+        }
+    )
 
     @classmethod
     def from_exception(cls, exc: Exception, default_message: str):
@@ -45,10 +57,10 @@ class ApiValidationErrorResponse(BaseModel):
             errors = exc.errors()
             if len(errors) == 0:
                 # This should never happen
-                return cls(message=default_message)
+                return cls(message=default_message, validation_errors=[])
             elif len(errors) == 1 and len(errors[0]["loc"]) == 1:
                 # Make a special case for single top-level errors affecting the whole request
-                return cls(message=errors[0]["msg"])
+                return cls(message=errors[0]["msg"], validation_errors=[])
             return cls(
                 # Common case
                 message="Invalid request",
@@ -57,7 +69,7 @@ class ApiValidationErrorResponse(BaseModel):
                 ),
             )
         else:
-            return cls(message=str(exc) or default_message)
+            return cls(message=str(exc) or default_message, validation_errors=[])
 
 
 _EXCEPTION_RESPONSES = {

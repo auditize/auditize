@@ -325,7 +325,7 @@ async def get_log_node(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     node_ref: Annotated[str, Path(title="Node ref")],
-):
+) -> LogNodeResponse:
     node = await service.get_log_node(dbm, repo_id, node_ref)
     return LogNodeResponse.from_node(node)
 
