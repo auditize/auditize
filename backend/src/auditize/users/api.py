@@ -1,11 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path, Query
 
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
+from auditize.helpers.pagination.page.api_models import PagePaginationParams
+from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.permissions.assertions import can_read_users, can_write_users
 from auditize.permissions.operations import authorize_grant
 from auditize.users import service
@@ -101,11 +103,15 @@ async def get_user(
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_users()),
-    q: str = None,
-    page: int = 1,
-    page_size: int = 10,
+    search_params: Annotated[ResourceSearchParams, Depends()],
+    page_params: Annotated[PagePaginationParams, Depends()],
 ) -> UserListResponse:
-    users, page_info = await service.get_users(dbm, q=q, page=page, page_size=page_size)
+    users, page_info = await service.get_users(
+        dbm,
+        query=search_params.query,
+        page=page_params.page,
+        page_size=page_params.page_size,
+    )
     return UserListResponse.build(users, page_info)
 
 
@@ -132,7 +138,8 @@ async def delete_user(
     responses=error_responses(404),
 )
 async def get_user_signup_info(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], token: str
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    token: Annotated[str, Path(description="Signup token")],
 ) -> UserSignupInfoResponse:
     user = await service.get_user_by_signup_token(dbm, token)
     return UserSignupInfoResponse.from_db_model(user)
@@ -147,7 +154,7 @@ async def get_user_signup_info(
 )
 async def set_user_password(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    token: str,
+    token: Annotated[str, Path(description="Signup token")],
     request: UserSignupSetPasswordRequest,
 ):
     await service.update_user_password_by_signup_token(dbm, token, request.password)

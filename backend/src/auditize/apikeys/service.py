@@ -72,11 +72,11 @@ async def get_apikey_by_key(dbm: DatabaseManager, key: str) -> Apikey:
 
 
 async def get_apikeys(
-    dbm: DatabaseManager, q: str, page: int, page_size: int
+    dbm: DatabaseManager, query: str, page: int, page_size: int
 ) -> tuple[list[Apikey], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
         dbm.core_db.apikeys,
-        filter={"$text": {"$search": q}} if q else None,
+        filter={"$text": {"$search": query}} if query else None,
         sort=[("name", 1)],
         page=page,
         page_size=page_size,

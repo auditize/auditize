@@ -13,6 +13,7 @@ from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
     make_response_from_exception,
 )
+from auditize.helpers.openapi import customize_openapi
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
@@ -78,3 +79,9 @@ app.include_router(logs_router)
 app.include_router(repos_router)
 app.include_router(users_router)
 app.include_router(apikeys_router)
+
+###
+# OpenAPI customization
+###
+
+customize_openapi(app)

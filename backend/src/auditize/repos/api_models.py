@@ -2,43 +2,77 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.repos.models import Repo, RepoStatus
 
 
-class RepoCreationRequest(BaseModel):
-    name: str = Field(description="The repository name")
-    status: RepoStatus = Field(
-        description="The repository status", default=RepoStatus.enabled
+def _RepoNameField(**kwargs):  # noqa
+    return Field(
+        description="The repository name",
+        json_schema_extra={
+            "example": "My repository",
+        },
+        **kwargs,
     )
+
+
+def _RepoStatusField(**kwargs):  # noqa
+    return Field(
+        description="The repository status",
+        json_schema_extra={
+            "example": "enabled",
+        },
+        **kwargs,
+    )
+
+
+def _RepoIdField():  # noqa
+    return Field(
+        description="The repository ID",
+        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+    )
+
+
+class RepoCreationRequest(BaseModel):
+    name: str = _RepoNameField()
+    status: RepoStatus = _RepoStatusField(default=RepoStatus.enabled)
 
     def to_repo(self):
         return Repo.model_validate(self.model_dump())
 
 
 class RepoUpdateRequest(BaseModel):
-    name: Optional[str] = Field(description="The repository name", default=None)
-    status: Optional[RepoStatus] = Field(
-        description="The repository status", default=None
-    )
+    name: Optional[str] = _RepoNameField(default=None)
+    status: Optional[RepoStatus] = _RepoStatusField(default=None)
 
 
 class RepoCreationResponse(BaseModel):
-    id: str = Field(description="The repository ID")
+    id: str = _RepoIdField()
 
 
 class RepoStatsData(BaseModel):
-    first_log_date: Optional[datetime] = Field(description="The first log date")
-    last_log_date: Optional[datetime] = Field(description="The last log date")
+    first_log_date: datetime | None = Field(description="The first log date")
+    last_log_date: datetime | None = Field(description="The last log date")
     log_count: int = Field(description="The log count")
-    storage_size: int = Field(description="The storage size")
+    storage_size: int = Field(description="The database storage size")
 
     @field_serializer("first_log_date", "last_log_date", when_used="json")
     def serialize_datetime(self, value):
         return serialize_datetime(value) if value else None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "first_log_date": "2024-01-01T00:00:00Z",
+                "last_log_date": "2024-01-03T00:00:00Z",
+                "log_count": 1000,
+                "storage_size": 100889890,
+            }
+        }
+    )
 
 
 class RepoLogPermissionsData(BaseModel):
@@ -51,8 +85,8 @@ class RepoLogPermissionsData(BaseModel):
 
 
 class _BaseRepoReadingResponse(BaseModel):
-    id: str = Field(description="The repository ID")
-    name: str = Field(description="The repository name")
+    id: str = _RepoIdField()
+    name: str = _RepoNameField()
 
     @classmethod
     def from_repo(cls, repo: Repo):
@@ -60,11 +94,12 @@ class _BaseRepoReadingResponse(BaseModel):
 
 
 class RepoReadingResponse(_BaseRepoReadingResponse):
-    created_at: datetime = Field(description="The creation date")
-    status: RepoStatus = Field(description="The repository status")
+    status: RepoStatus = _RepoStatusField()
     stats: Optional[RepoStatsData] = Field(
-        description="The repository stats", default=None
+        description="The repository stats (available if `include=stats` has been set in query parameters)",
+        default=None,
     )
+    created_at: datetime = Field(description="The repository creation date")
 
     @field_serializer("created_at", when_used="json")
     def serialize_datetime(self, value):

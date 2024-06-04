@@ -84,10 +84,10 @@ async def _get_repos(
 
 
 async def get_repos(
-    dbm: DatabaseManager, q: str, page: int, page_size: int
+    dbm: DatabaseManager, query: str, page: int, page_size: int
 ) -> tuple[list[Repo], PagePaginationInfo]:
     return await _get_repos(
-        dbm, {"$text": {"$search": q}} if q else None, page, page_size
+        dbm, {"$text": {"$search": query}} if query else None, page, page_size
     )
 
 

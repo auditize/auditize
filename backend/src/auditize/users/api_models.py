@@ -3,17 +3,71 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
-from auditize.permissions.api_models import ApplicablePermissionsData, PermissionsData
+from auditize.permissions.api_models import (
+    ApplicablePermissionsData,
+    PermissionsInputData,
+    PermissionsOutputData,
+)
 from auditize.permissions.operations import compute_applicable_permissions
 from auditize.users.models import User
 
 
+def _UserFirstNameField(**kwargs):  # noqa
+    return Field(
+        description="The user first name",
+        json_schema_extra={
+            "example": "John",
+        },
+        **kwargs,
+    )
+
+
+def _UserLastNameField(**kwargs):  # noqa
+    return Field(
+        description="The user last name",
+        json_schema_extra={
+            "example": "Doe",
+        },
+        **kwargs,
+    )
+
+
+def _UserEmailField(**kwargs):  # noqa
+    return Field(
+        description="The user email",
+        json_schema_extra={"example": "john.doe@example.net"},
+        **kwargs,
+    )
+
+
+def _UserPasswordField(**kwargs):  # noqa
+    return Field(
+        description="The user password",
+        json_schema_extra={"example": "some very highly secret password"},
+        **kwargs,
+    )
+
+
+def _UserIdField():  # noqa
+    return Field(
+        description="The user ID",
+        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+    )
+
+
+def _UserPermissionsField(**kwargs):  # noqa
+    return Field(
+        description="The user permissions",
+        **kwargs,
+    )
+
+
 class UserCreationRequest(BaseModel):
-    first_name: str = Field(description="The user first name")
-    last_name: str = Field(description="The user last name")
-    email: EmailStr = Field(description="The user email")
-    permissions: PermissionsData = Field(
-        description="The user permissions", default_factory=PermissionsData
+    first_name: str = _UserFirstNameField()
+    last_name: str = _UserLastNameField()
+    email: EmailStr = _UserEmailField()
+    permissions: PermissionsInputData = _UserPermissionsField(
+        default_factory=PermissionsInputData
     )
 
     def to_db_model(self):
@@ -21,26 +75,22 @@ class UserCreationRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    first_name: Optional[str] = Field(description="The user first name", default=None)
-    last_name: Optional[str] = Field(description="The user last name", default=None)
-    email: Optional[str] = Field(description="The user email", default=None)
-    permissions: Optional[PermissionsData] = Field(
-        description="The user permissions", default=None
-    )
+    first_name: Optional[str] = _UserFirstNameField(default=None)
+    last_name: Optional[str] = _UserLastNameField(default=None)
+    email: Optional[str] = _UserEmailField(default=None)
+    permissions: Optional[PermissionsInputData] = _UserPermissionsField(default=None)
 
 
 class UserCreationResponse(BaseModel):
-    id: str = Field(description="The user id")
+    id: str = _UserIdField()
 
 
 class UserReadingResponse(BaseModel):
-    id: str = Field(description="The user id")
-    first_name: str = Field(description="The user first name")
-    last_name: str = Field(description="The user last name")
-    email: str = Field(description="The user email")
-    permissions: PermissionsData = Field(
-        description="The user permissions", default_factory=PermissionsData
-    )
+    id: str = _UserIdField()
+    first_name: str = _UserFirstNameField()
+    last_name: str = _UserLastNameField()
+    email: str = _UserEmailField()
+    permissions: PermissionsOutputData = _UserPermissionsField()
 
     @classmethod
     def from_db_model(cls, user: User):
@@ -54,9 +104,9 @@ class UserListResponse(PagePaginatedResponse[User, UserReadingResponse]):
 
 
 class UserSignupInfoResponse(BaseModel):
-    first_name: str = Field(description="The user first name")
-    last_name: str = Field(description="The user last name")
-    email: str = Field(description="The user email")
+    first_name: str = _UserFirstNameField()
+    last_name: str = _UserLastNameField()
+    email: str = _UserEmailField()
 
     @classmethod
     def from_db_model(cls, user: User):
@@ -64,22 +114,20 @@ class UserSignupInfoResponse(BaseModel):
 
 
 class UserSignupSetPasswordRequest(BaseModel):
-    password: str = Field(description="The user password")
+    password: str = _UserPasswordField()
 
 
 class UserAuthenticationRequest(BaseModel):
-    email: str = Field(description="The user email")
-    password: str = Field(description="The user password")
+    email: str = _UserEmailField()
+    password: str = _UserPasswordField()
 
 
 class UserMeResponse(BaseModel):
-    id: str = Field(description="The authenticated user id")
-    first_name: str = Field(description="The authenticated user first name")
-    last_name: str = Field(description="The authenticated user last name")
-    email: str = Field(description="The authenticated user email")
-    permissions: ApplicablePermissionsData = Field(
-        description="The user permissions", default_factory=ApplicablePermissionsData
-    )
+    id: str = _UserIdField()
+    first_name: str = _UserFirstNameField()
+    last_name: str = _UserLastNameField()
+    email: str = _UserEmailField()
+    permissions: ApplicablePermissionsData = _UserPermissionsField()
 
     @classmethod
     def from_db_model(cls, user: User):

@@ -8,6 +8,8 @@ from auditize.auth.authorizer import Authenticated, Authorized, get_authenticate
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
+from auditize.helpers.pagination.page.api_models import PagePaginationParams
+from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.permissions.assertions import (
     can_read_logs,
     can_read_repos,
@@ -130,12 +132,16 @@ async def get_repo(
 async def list_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_repos()),
-    include: Annotated[list[RepoIncludeOptions], Query()] = (),
-    q: str = None,
-    page: int = 1,
-    page_size: int = 10,
+    search_params: Annotated[ResourceSearchParams, Depends()],
+    include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
+    page_params: Annotated[PagePaginationParams, Depends()],
 ) -> RepoListResponse:
-    repos, page_info = await service.get_repos(dbm, q=q, page=page, page_size=page_size)
+    repos, page_info = await service.get_repos(
+        dbm,
+        query=search_params.query,
+        page=page_params.page,
+        page_size=page_params.page_size,
+    )
     response = RepoListResponse.build(repos, page_info)
     if include:
         for repo in response.items:
@@ -152,13 +158,18 @@ async def list_user_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     has_read_permission: Annotated[
-        bool, Query(description="Filter repositories on which user can read logs")
+        bool,
+        Query(
+            description="Set to true to filter repositories on which user can read logs",
+        ),
     ] = False,
     has_write_permission: Annotated[
-        bool, Query(description="Filter repositories on which user can write logs")
+        bool,
+        Query(
+            description="Set to true to filter repositories on which user can write logs",
+        ),
     ] = False,
-    page: int = 1,
-    page_size: int = 10,
+    page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> UserRepoListResponse:
     if not authenticated.user:
         raise PermissionDenied("This endpoint is only available for users")
@@ -168,8 +179,8 @@ async def list_user_repos(
         user=authenticated.user,
         user_can_read=has_read_permission,
         user_can_write=has_write_permission,
-        page=page,
-        page_size=page_size,
+        page=page_params.page,
+        page_size=page_params.page_size,
     )
 
     response = UserRepoListResponse.build(repos, page_info)

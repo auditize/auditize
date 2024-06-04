@@ -325,7 +325,7 @@ async def get_log_node(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     node_ref: Annotated[str, Path(title="Node ref")],
-):
+) -> LogNodeResponse:
     node = await service.get_log_node(dbm, repo_id, node_ref)
     return LogNodeResponse.from_node(node)
 
@@ -379,7 +379,7 @@ async def add_attachment(
         Form(
             title="Attachment name",
             description="The name of the attachment. If not provided, the name of the uploaded file will be used.",
-            json_schema_extra={"nullable": True, "example": "config.json"},
+            json_schema_extra={"example": "config.json"},
         ),
     ] = None,
     description: Annotated[
@@ -387,7 +387,7 @@ async def add_attachment(
         Form(
             title="Attachment description",
             description="An optional description of the attachment",
-            json_schema_extra={"nullable": True, "example": "Configuration file"},
+            json_schema_extra={"example": "Configuration file"},
         ),
     ] = None,
     mime_type: Annotated[
@@ -396,7 +396,7 @@ async def add_attachment(
             title="Attachment MIME type",
             description="The MIME type of the attachment. If not provided, the MIME type of the uploaded "
             "file will be used.",
-            json_schema_extra={"nullable": True, "example": "application/json"},
+            json_schema_extra={"example": "application/json"},
         ),
     ] = None,
 ) -> None:
