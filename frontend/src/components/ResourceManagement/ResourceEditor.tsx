@@ -105,6 +105,30 @@ type ResourceEditionProps = Omit<
   onDataLoaded: (data: any) => void;
 };
 
+function ErrorModal({ message }: { message: string }) {
+  const navigate = useNavigate();
+  const handleClose = () => navigate(-1);
+
+  return (
+    <Modal
+      title={<Text fw={600}>An error occured</Text>}
+      size="lg"
+      padding="lg"
+      opened={true}
+      onClose={handleClose}
+    >
+      <div>
+        <Box>
+          <Text pb="sm">{message}</Text>
+          <Group justify="center">
+            <Button onClick={handleClose}>Close</Button>
+          </Group>
+        </Box>
+      </div>
+    </Modal>
+  );
+}
+
 export function ResourceEdition({
   resourceId,
   queryKeyForLoad,
@@ -128,10 +152,10 @@ export function ResourceEdition({
   }, [data, isFetching]);
 
   if (error) {
-    return null;
+    return <ErrorModal message={error.message} />;
+  } else {
+    return (
+      <ResourceEditor opened={!!resourceId} isLoading={isFetching} {...props} />
+    );
   }
-
-  return (
-    <ResourceEditor opened={!!resourceId} isLoading={isFetching} {...props} />
-  );
 }
