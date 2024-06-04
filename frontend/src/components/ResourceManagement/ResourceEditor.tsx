@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { FormEventHandler, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { InlineErrorMessage } from "../InlineErrorMessage";
+
 interface ResourceEditorProps {
   title: string;
   opened: boolean;
@@ -40,7 +42,7 @@ function ResourceEditor({
       }
     },
     onError: (error) => {
-      setError(error.message);
+      setError("Error: " + error.message);
     },
   });
   const [error, setError] = useState<string>("");
@@ -80,11 +82,7 @@ function ResourceEditor({
               {disabledSaving && <Button onClick={onClose}>Close</Button>}
             </Group>
           </form>
-          {error && (
-            <Box mt="md" color="red">
-              {error}
-            </Box>
-          )}
+          <InlineErrorMessage>{error}</InlineErrorMessage>
         </Box>
       </div>
     </Modal>
