@@ -1,4 +1,4 @@
-import { Box, Button, Group, Modal, Text } from "@mantine/core";
+import { Box, Button, Group, LoadingOverlay, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { FormEventHandler, useEffect, useState } from "react";
@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 interface ResourceEditorProps {
   title: string;
   opened: boolean;
+  isLoading?: boolean;
   onSubmit: (handleSubmit: () => void) => FormEventHandler<HTMLFormElement>;
   disabledSaving?: boolean;
   onSave: () => Promise<any>;
@@ -18,6 +19,7 @@ interface ResourceEditorProps {
 function ResourceEditor({
   title,
   opened,
+  isLoading = false,
   onSubmit,
   disabledSaving = false,
   onSave,
@@ -31,8 +33,11 @@ function ResourceEditor({
     mutationFn: () => onSave(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeyForInvalidation });
-      if (onSaveSuccess) onSaveSuccess(data);
-      else navigate(-1);
+      if (onSaveSuccess) {
+        onSaveSuccess(data);
+      } else {
+        navigate(-1);
+      }
     },
     onError: (error) => {
       setError(error.message);
@@ -58,6 +63,9 @@ function ResourceEditor({
     >
       <div>
         <Box px={"lg"}>
+          <LoadingOverlay
+            visible={opened && (isLoading || mutation.isPending)}
+          />
           <form onSubmit={onSubmit(() => mutation.mutate())}>
             {children}
             <Group justify="center" pt="md">
@@ -87,7 +95,10 @@ export function ResourceCreation(props: ResourceEditorProps) {
   return <ResourceEditor {...props} />;
 }
 
-type ResourceEditionProps = Omit<ResourceEditorProps, "opened"> & {
+type ResourceEditionProps = Omit<
+  ResourceEditorProps,
+  "opened" | "isLoading"
+> & {
   resourceId: string | null;
   queryKeyForLoad: any[];
   queryFnForLoad: () => Promise<any>;
@@ -101,7 +112,9 @@ export function ResourceEdition({
   onDataLoaded,
   ...props
 }: ResourceEditionProps) {
-  const { data, isPending, error } = useQuery({
+  // here we use isFetching instead of isPending to avoid displaying obsolete data
+  // in case the user re-edits a resource he just saved
+  const { data, isFetching, error } = useQuery({
     queryKey: queryKeyForLoad,
     queryFn: queryFnForLoad,
     enabled: !!resourceId,
@@ -109,16 +122,16 @@ export function ResourceEdition({
   });
 
   useEffect(() => {
-    if (!!resourceId) {
-      if (data) {
-        onDataLoaded(data);
-      }
+    if (!isFetching && data) {
+      onDataLoaded(data);
     }
-  }, [resourceId, data]);
+  }, [data, isFetching]);
 
-  if (isPending || error) {
+  if (error) {
     return null;
   }
 
-  return <ResourceEditor opened={!!resourceId} {...props} />;
+  return (
+    <ResourceEditor opened={!!resourceId} isLoading={isFetching} {...props} />
+  );
 }

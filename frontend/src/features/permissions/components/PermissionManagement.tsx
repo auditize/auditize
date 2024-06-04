@@ -127,7 +127,8 @@ function LogsPermissionManagement({
   assignablePerms: ApplicablePermissions["logs"];
   readOnly?: boolean;
 }) {
-  const { data, error, isPending } = useQuery({
+  // NB: silent loading and error handling here
+  const { data } = useQuery({
     queryKey: ["assignable-log-repos"],
     queryFn: () => getAllMyRepos({}),
     placeholderData: [],
@@ -171,7 +172,7 @@ function LogsPermissionManagement({
                 />
               </Table.Td>
             </Table.Tr>
-            {data!.map((assignableRepo) => (
+            {data?.map((assignableRepo) => (
               <Table.Tr key={assignableRepo.id}>
                 <Table.Td>{assignableRepo.name}</Table.Td>
                 <Table.Td>
