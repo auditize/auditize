@@ -45,6 +45,21 @@ async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManag
     await assert_collection(dbm.core_db.users, [user.expected_document()])
 
 
+async def test_user_create_lang_fr(
+    user_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    data = PreparedUser.prepare_data({"lang": "fr"})
+
+    resp = await user_write_client.assert_post_created(
+        "/users",
+        json=data,
+        expected_json={"id": callee.IsA(str)},
+    )
+
+    user = PreparedUser(resp.json()["id"], data, dbm)
+    await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+
 async def test_user_create_missing_parameter(
     user_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
@@ -68,9 +83,7 @@ async def test_user_create_missing_parameter(
         )
 
 
-async def test_user_create_invalid_email(
-    user_write_client: HttpTestHelper, user: PreparedUser
-):
+async def test_user_create_invalid_email(user_write_client: HttpTestHelper):
     await user_write_client.assert_post_bad_request(
         "/users",
         json={
@@ -84,6 +97,22 @@ async def test_user_create_invalid_email(
                 {
                     "field": "email",
                     "message": callee.Contains("not a valid email address"),
+                }
+            ],
+        },
+    )
+
+
+async def test_user_create_unsupported_lang(user_write_client: HttpTestHelper):
+    await user_write_client.assert_post_bad_request(
+        "/users",
+        json=PreparedUser.prepare_data({"lang": "de"}),
+        expected_json={
+            "message": "Invalid request",
+            "validation_errors": [
+                {
+                    "field": "lang",
+                    "message": callee.Contains("Input should be"),
                 }
             ],
         },
@@ -116,6 +145,7 @@ async def test_user_update_multiple(
         "first_name": "John Updated",
         "last_name": "Doe Updated",
         "email": "john.doe_updated@example.net",
+        "lang": "fr",
     }
     await user_write_client.assert_patch(
         f"/users/{user.id}", json=data, expected_status_code=204

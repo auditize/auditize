@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Annotated, Optional
 
 from pydantic import BaseModel, BeforeValidator, Field
@@ -11,6 +12,11 @@ class SignupToken(BaseModel):
     expires_at: datetime
 
 
+class Lang(str, Enum):
+    EN = "en"
+    FR = "fr"
+
+
 class User(BaseModel):
     id: Annotated[Optional[str], BeforeValidator(str)] = Field(
         default=None,
@@ -19,6 +25,7 @@ class User(BaseModel):
     first_name: str
     last_name: str
     email: str
+    lang: Lang = Field(default=Lang.EN)
     password_hash: Optional[str] = Field(default=None)
     permissions: Permissions = Field(default_factory=Permissions)
     signup_token: Optional[SignupToken] = Field(default=None)
@@ -29,4 +36,5 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[str] = None
+    lang: Optional[Lang] = None
     permissions: Optional[Permissions] = None

@@ -128,6 +128,7 @@ class PreparedUser:
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],
+            "lang": self.data.get("lang", "en"),
             "permissions": DEFAULT_PERMISSIONS,
             "password_hash": callee.IsA(str) if self.password else None,
             "created_at": callee.IsA(datetime),
@@ -141,6 +142,7 @@ class PreparedUser:
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],
+            "lang": self.data.get("lang", "en"),
             "permissions": DEFAULT_PERMISSIONS,
             **(extra or {}),
         }

@@ -9,7 +9,7 @@ from auditize.permissions.api_models import (
     PermissionsOutputData,
 )
 from auditize.permissions.operations import compute_applicable_permissions
-from auditize.users.models import User
+from auditize.users.models import Lang, User
 
 
 def _UserFirstNameField(**kwargs):  # noqa
@@ -40,6 +40,15 @@ def _UserEmailField(**kwargs):  # noqa
     )
 
 
+def _UserLangField(default: Lang | None = Lang.EN, **kwargs):  # noqa
+    return Field(
+        description="The user language",
+        default=default,
+        json_schema_extra={"example": "en"},
+        **kwargs,
+    )
+
+
 def _UserPasswordField(**kwargs):  # noqa
     return Field(
         description="The user password",
@@ -66,6 +75,7 @@ class UserCreationRequest(BaseModel):
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: EmailStr = _UserEmailField()
+    lang: Lang = _UserLangField()
     permissions: PermissionsInputData = _UserPermissionsField(
         default_factory=PermissionsInputData
     )
@@ -78,6 +88,7 @@ class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = _UserFirstNameField(default=None)
     last_name: Optional[str] = _UserLastNameField(default=None)
     email: Optional[str] = _UserEmailField(default=None)
+    lang: Optional[Lang] = _UserLangField(default=None)
     permissions: Optional[PermissionsInputData] = _UserPermissionsField(default=None)
 
 
@@ -90,6 +101,7 @@ class UserReadingResponse(BaseModel):
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
+    lang: Lang = _UserLangField()
     permissions: PermissionsOutputData = _UserPermissionsField()
 
     @classmethod
