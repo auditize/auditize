@@ -5,6 +5,7 @@ import {
   Divider,
   Group,
   Pagination,
+  Skeleton,
   Stack,
   Table,
   TextInput,
@@ -153,20 +154,37 @@ export function ResourceManagement({
     queryFn: queryFn(searchParam, pageParam),
   });
 
-  if (isPending || !data) {
-    return <div>Loading...</div>;
+  if (error) {
+    return <div>Error: {error.message}</div>;
   }
 
-  const [resources, pagination] = data;
-  const rows = resources.map((resource: any) => (
-    <ResourceTableRow
-      key={resource.id}
-      resourceName={resourceName}
-      resource={resource}
-      rowValueBuilders={columnBuilders.map(([_, valueBuilder]) => valueBuilder)}
-      resourceDeletionComponentBuilder={resourceDeletionComponentBuilder}
-    />
-  ));
+  let rows;
+  let pagination;
+  if (isPending) {
+    rows = Array.from({ length: 10 }).map((_, rowIndex) => (
+      <Table.Tr key={rowIndex} style={{ height: "2rem" }}>
+        {Array.from({ length: columnBuilders.length + 1 }, (_, colIndex) => (
+          <Table.Td key={colIndex}>
+            <Skeleton height={8} />
+          </Table.Td>
+        ))}
+      </Table.Tr>
+    ));
+  } else {
+    let resources;
+    [resources, pagination] = data;
+    rows = resources.map((resource: any) => (
+      <ResourceTableRow
+        key={resource.id}
+        resourceName={resourceName}
+        resource={resource}
+        rowValueBuilders={columnBuilders.map(
+          ([_, valueBuilder]) => valueBuilder,
+        )}
+        resourceDeletionComponentBuilder={resourceDeletionComponentBuilder}
+      />
+    ));
+  }
 
   return (
     <div>
@@ -194,8 +212,8 @@ export function ResourceManagement({
           <Table.Tbody>{rows}</Table.Tbody>
         </Table>
         <Pagination
-          total={pagination.total_pages}
-          value={pagination.page}
+          total={pagination?.total_pages}
+          value={pagination?.page}
           onChange={(value) => {
             navigate(
               addQueryParamToLocation(location, "page", value.toString()),

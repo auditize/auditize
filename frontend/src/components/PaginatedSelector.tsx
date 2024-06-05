@@ -32,10 +32,10 @@ export function PaginatedSelector({
   });
 
   useEffect(() => {
-    if (data && onDataLoaded) onDataLoaded(data);
+    if (data && onDataLoaded) {
+      onDataLoaded(data);
+    }
   }, [data, selectedItem]);
-
-  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <Select
@@ -45,7 +45,7 @@ export function PaginatedSelector({
       }))}
       value={selectedItem || null}
       onChange={(value) => onChange(value || "")}
-      placeholder={isPending ? "Loading..." : label}
+      placeholder={error ? "Not available" : isPending ? "Loading..." : label}
       disabled={isPending}
       clearable={clearable}
       display="flex"

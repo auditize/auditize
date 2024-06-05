@@ -35,7 +35,7 @@ export function interceptStatusCode(
       if (error.response.status === statusCode) {
         func(error);
       }
-      return error;
+      return Promise.reject(new Error(error.response.data.message));
     },
   );
   return () => {

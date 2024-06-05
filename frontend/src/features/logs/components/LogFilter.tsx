@@ -363,7 +363,13 @@ function FilterFieldSelect({
         }
         value={value}
         onChange={(value) => onChange(searchParamName, value)}
-        placeholder={label}
+        placeholder={
+          error
+            ? "Not currently available"
+            : data && data.length > 0
+              ? label
+              : "No data available"
+        }
       />
     </FilterFieldPopover>
   );

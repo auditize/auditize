@@ -144,6 +144,8 @@ export function LogDetails({
   });
   const navigate = useNavigate();
 
+  // FIXME: improve loading and error handling
+
   if (isPending) {
     return null;
   }
