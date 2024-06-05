@@ -1,4 +1,4 @@
-import { Anchor, Stack, Table } from "@mantine/core";
+import { Anchor, Stack } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 
@@ -128,95 +128,86 @@ function NodePathField({
 export function LogTable({
   repoId,
   logs,
+  isLoading,
   footer,
   onTableFilterChange,
 }: {
   repoId: string;
-  logs: Log[];
+  logs?: Log[];
+  isLoading: boolean;
   footer: React.ReactNode;
   onTableFilterChange: (name: string, value: string) => void;
 }) {
   const [params] = useSearchParams();
   const logId = params.get("log");
 
-  const rows = logs.map((log, i) => ({
-    savedAt: <DateField key={i} log={log} />,
-  }));
+  let columns = [
+    {
+      accessor: "savedAt",
+      title: "Date",
+      render: (log: Log) => <DateField log={log} />,
+    },
+    {
+      accessor: "actorRef",
+      title: "Actor",
+      render: (log: Log) => (
+        <ActorField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    },
+    {
+      accessor: "actionType",
+      title: "Action type",
+      render: (log: Log) => (
+        <ActionTypeField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    },
+    {
+      accessor: "actionCategory",
+      title: "Action category",
+      render: (log: Log) => (
+        <ActionCategoryField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    },
+    {
+      accessor: "resource",
+      title: "Resource",
+      render: (log: Log) => (
+        <ResourceField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    },
+    {
+      accessor: "resourceType",
+      title: "Resource type",
+      render: (log: Log) => (
+        <ResourceTypeField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    },
+    {
+      accessor: "nodePath",
+      title: "Node",
+      render: (log: Log) => (
+        <NodePathField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    },
+  ];
 
   return (
     <>
       <Stack>
         <DataTable
-          columns={[
-            {
-              accessor: "savedAt",
-              title: "Date",
-              render: (log) => <DateField log={log} />,
-            },
-            {
-              accessor: "actorRef",
-              title: "Actor",
-              render: (log) => (
-                <ActorField
-                  log={log}
-                  onTableFilterChange={onTableFilterChange}
-                />
-              ),
-            },
-            {
-              accessor: "actionType",
-              title: "Action type",
-              render: (log) => (
-                <ActionTypeField
-                  log={log}
-                  onTableFilterChange={onTableFilterChange}
-                />
-              ),
-            },
-            {
-              accessor: "actionCategory",
-              title: "Action category",
-              render: (log) => (
-                <ActionCategoryField
-                  log={log}
-                  onTableFilterChange={onTableFilterChange}
-                />
-              ),
-            },
-            {
-              accessor: "resource",
-              title: "Resource",
-              render: (log) => (
-                <ResourceField
-                  log={log}
-                  onTableFilterChange={onTableFilterChange}
-                />
-              ),
-            },
-            {
-              accessor: "resourceType",
-              title: "Resource type",
-              render: (log) => (
-                <ResourceTypeField
-                  log={log}
-                  onTableFilterChange={onTableFilterChange}
-                />
-              ),
-            },
-            {
-              accessor: "nodePath",
-              title: "Node",
-              render: (log) => (
-                <NodePathField
-                  log={log}
-                  onTableFilterChange={onTableFilterChange}
-                />
-              ),
-            },
-          ]}
+          columns={columns}
           records={logs}
+          fetching={isLoading}
+          minHeight={150}
+          noRecordsText="No logs found"
         />
-        {footer}
+        {logs && logs.length > 0 && footer}
       </Stack>
       <LogDetails repoId={repoId} logId={logId || undefined} />
     </>

@@ -52,8 +52,6 @@ export function LogLoader({
       });
   }, []);
 
-  if (isPending) return <div>Loading...</div>;
-
   if (error) return <div>Error: {error.message}</div>;
 
   const footer = (
@@ -71,7 +69,8 @@ export function LogLoader({
   return (
     <LogTable
       repoId={filter.repoId!}
-      logs={data.pages.flatMap((page) => page.logs)}
+      logs={data?.pages.flatMap((page) => page.logs)}
+      isLoading={isPending || isFetchingNextPage}
       footer={footer}
       onTableFilterChange={onTableFilterChange}
     />
