@@ -139,6 +139,7 @@ class UserMeResponse(BaseModel):
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
+    lang: Lang = _UserLangField()
     permissions: ApplicablePermissionsData = _UserPermissionsField()
 
     @classmethod

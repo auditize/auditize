@@ -24,6 +24,7 @@ async def test_user_log_in(anon_client: HttpTestHelper, dbm: DatabaseManager):
             "first_name": user.data["first_name"],
             "last_name": user.data["last_name"],
             "email": user.data["email"],
+            "lang": "en",
             "permissions": DEFAULT_APPLICABLE_PERMISSIONS,
         },
     )

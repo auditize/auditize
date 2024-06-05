@@ -395,6 +395,7 @@ async def test_get_user_me(user_builder: UserBuilder):
                 "id": user.id,
                 "first_name": user.data["first_name"],
                 "last_name": user.data["last_name"],
+                "lang": "en",
                 "email": user.data["email"],
                 "permissions": DEFAULT_APPLICABLE_PERMISSIONS,
             },
@@ -413,6 +414,7 @@ async def test_get_user_me_superadmin(user_builder: UserBuilder):
                 "first_name": user.data["first_name"],
                 "last_name": user.data["last_name"],
                 "email": user.data["email"],
+                "lang": "en",
                 "permissions": SUPERADMIN_APPLICABLE_PERMISSIONS,
             },
         )
