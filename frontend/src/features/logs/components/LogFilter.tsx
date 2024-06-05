@@ -20,7 +20,7 @@ import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import { getAllMyRepos } from "@/features/repos";
 import { Repo } from "@/features/repos";
-import { labelize } from "@/utils/format";
+import { labelize, titlize } from "@/utils/format";
 
 import {
   buildLogSearchParams,
@@ -193,7 +193,7 @@ function useAvailableFilterFields(repoId: string) {
           ...(actorCustomFields ?? []).map((field) =>
             _({
               value: `actor.${field}`,
-              label: `Actor ${field}`,
+              label: `Actor ${labelize(field)}`,
             }),
           ),
         ],
@@ -203,7 +203,7 @@ function useAvailableFilterFields(repoId: string) {
         items: (sourceFields ?? []).map((field) =>
           _({
             value: `source.${field}`,
-            label: field,
+            label: titlize(field),
           }),
         ),
       },
@@ -216,7 +216,7 @@ function useAvailableFilterFields(repoId: string) {
           ...(resourceCustomFields ?? []).map((field) =>
             _({
               value: `resource.${field}`,
-              label: `Resource ${field}`,
+              label: `Resource ${labelize(field)}`,
             }),
           ),
         ],
@@ -226,7 +226,7 @@ function useAvailableFilterFields(repoId: string) {
         items: (detailFields ?? []).map((field) =>
           _({
             value: `details.${field}`,
-            label: field,
+            label: titlize(field),
           }),
         ),
       },
@@ -356,7 +356,7 @@ function FilterFieldSelect({
         data={
           data
             ? data.map((item) => ({
-                label: labelize(item),
+                label: titlize(item),
                 value: item,
               }))
             : []
@@ -593,7 +593,7 @@ function FilterField({
     const fieldName = name.replace("actor.", "");
     return (
       <BaseFilterFieldTextInput
-        label={`Actor ${labelize(fieldName)}`}
+        label={`Actor ${titlize(fieldName)}`}
         name={name}
         value={searchParams.actorExtra.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
@@ -612,7 +612,7 @@ function FilterField({
     const fieldName = name.replace("source.", "");
     return (
       <BaseFilterFieldTextInput
-        label={labelize(fieldName)}
+        label={titlize(fieldName)}
         name={name}
         value={searchParams.source.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
@@ -671,7 +671,7 @@ function FilterField({
     const fieldName = name.replace("resource.", "");
     return (
       <BaseFilterFieldTextInput
-        label={`Resource ${labelize(fieldName)}`}
+        label={`Resource ${titlize(fieldName)}`}
         name={name}
         value={searchParams.resourceExtra.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
@@ -690,7 +690,7 @@ function FilterField({
     const fieldName = name.replace("details.", "");
     return (
       <BaseFilterFieldTextInput
-        label={labelize(fieldName)}
+        label={titlize(fieldName)}
         name={name}
         value={searchParams.details!.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}

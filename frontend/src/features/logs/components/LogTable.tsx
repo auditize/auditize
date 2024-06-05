@@ -3,7 +3,7 @@ import { DataTable } from "mantine-datatable";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { humanizeDate } from "@/utils/date";
-import { labelize } from "@/utils/format";
+import { titlize } from "@/utils/format";
 import { addQueryParamToLocation } from "@/utils/router";
 
 import { Log } from "../api";
@@ -62,7 +62,7 @@ function ActionTypeField({
     <InlineFilterLink
       onClick={() => onTableFilterChange("actionType", log.action.type)}
     >
-      {labelize(log.action.type)}
+      {titlize(log.action.type)}
     </InlineFilterLink>
   );
 }
@@ -78,7 +78,7 @@ function ActionCategoryField({
     <InlineFilterLink
       onClick={() => onTableFilterChange("actionCategory", log.action.category)}
     >
-      {labelize(log.action.category)}
+      {titlize(log.action.category)}
     </InlineFilterLink>
   );
 }
@@ -110,7 +110,7 @@ function ResourceTypeField({
     <InlineFilterLink
       onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
     >
-      {labelize(log.resource.type)}
+      {titlize(log.resource.type)}
     </InlineFilterLink>
   ) : null;
 }

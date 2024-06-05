@@ -28,7 +28,7 @@ import { Breadcrumb } from "rsuite";
 
 import { Section } from "@/components/Section";
 import { humanizeDate } from "@/utils/date";
-import { labelize } from "@/utils/format";
+import { titlize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
 import { getLog } from "../api";
@@ -102,12 +102,12 @@ function Tag({
           color="blue"
           rightSection={<IconAsterisk style={iconSize(12)} />}
         >
-          {labelize(value.type)}: {value.name}
+          {titlize(value.type)}: {value.name}
         </Badge>
       </HoverRef>
     );
   } else {
-    return <Badge color="blue">{labelize(value.type)}</Badge>;
+    return <Badge color="blue">{titlize(value.type)}</Badge>;
   }
 }
 
@@ -166,8 +166,8 @@ export function LogDetails({
         <Modal.Header>
           <Stack>
             <Title order={2}>
-              {labelize(log.action.type)}{" "}
-              <Text c="dimmed">{labelize(log.action.category)}</Text>
+              {titlize(log.action.type)}{" "}
+              <Text c="dimmed">{titlize(log.action.category)}</Text>
             </Title>
           </Stack>
           <Modal.CloseButton />
@@ -188,7 +188,7 @@ export function LogDetails({
             icon={<IconRoute style={iconSize("1.15rem")} />}
             data={log.source.map(
               (field) =>
-                [labelize(field.name), field.value] as [
+                [titlize(field.name), field.value] as [
                   React.ReactNode,
                   React.ReactNode,
                 ],
@@ -201,11 +201,11 @@ export function LogDetails({
             data={
               log.actor && [
                 ["Name", <b>{log.actor.name}</b>],
-                ["Type", labelize(log.actor.type)],
+                ["Type", titlize(log.actor.type)],
                 ["Ref", <Code>{log.actor.ref}</Code>],
                 ...log.actor.extra.map(
                   (field) =>
-                    [labelize(field.name), field.value] as [
+                    [titlize(field.name), field.value] as [
                       React.ReactNode,
                       React.ReactNode,
                     ],
@@ -220,11 +220,11 @@ export function LogDetails({
             data={
               log.resource && [
                 ["Name", <b>{log.resource.name}</b>],
-                ["Type", labelize(log.resource.type)],
+                ["Type", titlize(log.resource.type)],
                 ["Ref", <Code>{log.resource.ref}</Code>],
                 ...log.resource.extra.map(
                   (field) =>
-                    [labelize(field.name), field.value] as [
+                    [titlize(field.name), field.value] as [
                       React.ReactNode,
                       React.ReactNode,
                     ],
@@ -238,7 +238,7 @@ export function LogDetails({
             icon={<IconListDetails style={iconSize("1.15rem")} />}
             data={log.details.map(
               (field) =>
-                [labelize(field.name), field.value] as [
+                [titlize(field.name), field.value] as [
                   React.ReactNode,
                   React.ReactNode,
                 ],
@@ -251,7 +251,7 @@ export function LogDetails({
             data={log.attachments.map(
               (field, index) =>
                 [
-                  labelize(field.type),
+                  titlize(field.type),
                   <Anchor
                     href={`http://localhost:8000/repos/${repoId}/logs/${log.id}/attachments/${index}`}
                   >
