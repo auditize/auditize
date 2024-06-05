@@ -1,4 +1,5 @@
-import { Anchor, Table } from "@mantine/core";
+import { Anchor, Stack, Table } from "@mantine/core";
+import { DataTable } from "mantine-datatable";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import { humanizeDate } from "@/utils/date";
@@ -8,92 +9,120 @@ import { addQueryParamToLocation } from "@/utils/router";
 import { Log } from "../api";
 import { LogDetails } from "./LogDetails";
 
-function LogTableRow({
+function DateField({ log }: { log: Log }) {
+  const location = useLocation();
+  const logLink = addQueryParamToLocation(location, "log", log.id.toString());
+
+  return (
+    <Anchor component={Link} to={logLink} underline="hover">
+      {humanizeDate(log.savedAt)}
+    </Anchor>
+  );
+}
+
+function ActorField({
   log,
   onTableFilterChange,
 }: {
   log: Log;
   onTableFilterChange: (name: string, value: string) => void;
 }) {
-  const location = useLocation();
-  const logLink = addQueryParamToLocation(location, "log", log.id.toString());
+  return log.actor ? (
+    <Anchor
+      onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
+      underline="hover"
+    >
+      {log.actor.name}
+    </Anchor>
+  ) : null;
+}
 
+function ActionTypeField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
   return (
-    <Table.Tr key={log.id}>
-      <Table.Td>
-        <Anchor component={Link} to={logLink} underline="hover">
-          {humanizeDate(log.savedAt)}
-        </Anchor>
-      </Table.Td>
-      <Table.Td>
-        {log.actor ? (
-          <Anchor
-            onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
-            underline="hover"
-          >
-            {log.actor.name}
-          </Anchor>
-        ) : null}
-      </Table.Td>
-      <Table.Td>
-        <Anchor
-          onClick={() => onTableFilterChange("actionType", log.action.type)}
-          underline="hover"
-        >
-          {labelize(log.action.type)}
-        </Anchor>
-      </Table.Td>
-      <Table.Td>
-        <Anchor
-          onClick={() =>
-            onTableFilterChange("actionCategory", log.action.category)
-          }
-          underline="hover"
-        >
-          {labelize(log.action.category)}
-        </Anchor>
-      </Table.Td>
-      <Table.Td>
-        {log.resource ? (
-          <Anchor
-            onClick={() =>
-              onTableFilterChange("resourceRef", log.resource!.ref)
-            }
-            underline="hover"
-          >
-            {log.resource.name}
-          </Anchor>
-        ) : null}
-      </Table.Td>
-      <Table.Td>
-        {log.resource ? (
-          <Anchor
-            onClick={() =>
-              onTableFilterChange("resourceType", log.resource!.type)
-            }
-            underline="hover"
-          >
-            {labelize(log.resource.type)}
-          </Anchor>
-        ) : null}
-      </Table.Td>
-      <Table.Td>
-        {log.nodePath
-          .map<React.ReactNode>((node) => (
-            // FIXME: the filter edition for the node path may not work properly if the selected node
-            // has not been already loaded in the TreePicker component
-            <Anchor
-              key={node.ref}
-              onClick={() => onTableFilterChange("nodeRef", node.ref)}
-              underline="hover"
-            >
-              {node.name}
-            </Anchor>
-          ))
-          .reduce((prev, curr) => [prev, " > ", curr])}
-      </Table.Td>
-    </Table.Tr>
+    <Anchor
+      onClick={() => onTableFilterChange("actionType", log.action.type)}
+      underline="hover"
+    >
+      {labelize(log.action.type)}
+    </Anchor>
   );
+}
+
+function ActionCategoryField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
+  return (
+    <Anchor
+      onClick={() => onTableFilterChange("actionCategory", log.action.category)}
+      underline="hover"
+    >
+      {labelize(log.action.category)}
+    </Anchor>
+  );
+}
+
+function ResourceField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
+  return log.resource ? (
+    <Anchor
+      onClick={() => onTableFilterChange("resourceRef", log.resource!.ref)}
+      underline="hover"
+    >
+      {log.resource.name}
+    </Anchor>
+  ) : null;
+}
+
+function ResourceTypeField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
+  return log.resource ? (
+    <Anchor
+      onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
+      underline="hover"
+    >
+      {labelize(log.resource.type)}
+    </Anchor>
+  ) : null;
+}
+
+function NodePathField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
+  return log.nodePath
+    .map<React.ReactNode>((node) => (
+      <Anchor
+        key={node.ref}
+        onClick={() => onTableFilterChange("nodeRef", node.ref)}
+        underline="hover"
+      >
+        {node.name}
+      </Anchor>
+    ))
+    .reduce((prev, curr) => [prev, " > ", curr]);
 }
 
 export function LogTable({
@@ -110,35 +139,85 @@ export function LogTable({
   const [params] = useSearchParams();
   const logId = params.get("log");
 
+  const rows = logs.map((log, i) => ({
+    savedAt: <DateField key={i} log={log} />,
+  }));
+
   return (
     <>
-      <Table>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Date</Table.Th>
-            <Table.Th>Actor</Table.Th>
-            <Table.Th>Action type</Table.Th>
-            <Table.Th>Action category</Table.Th>
-            <Table.Th>Resource</Table.Th>
-            <Table.Th>Resource type</Table.Th>
-            <Table.Th>Node</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {logs.map((log) => (
-            <LogTableRow
-              key={log.id}
-              log={log}
-              onTableFilterChange={onTableFilterChange}
-            />
-          ))}
-        </Table.Tbody>
-        <Table.Tfoot>
-          <Table.Tr>
-            <Table.Th colSpan={7}>{footer}</Table.Th>
-          </Table.Tr>
-        </Table.Tfoot>
-      </Table>
+      <Stack>
+        <DataTable
+          columns={[
+            {
+              accessor: "savedAt",
+              title: "Date",
+              render: (log) => <DateField log={log} />,
+            },
+            {
+              accessor: "actorRef",
+              title: "Actor",
+              render: (log) => (
+                <ActorField
+                  log={log}
+                  onTableFilterChange={onTableFilterChange}
+                />
+              ),
+            },
+            {
+              accessor: "actionType",
+              title: "Action type",
+              render: (log) => (
+                <ActionTypeField
+                  log={log}
+                  onTableFilterChange={onTableFilterChange}
+                />
+              ),
+            },
+            {
+              accessor: "actionCategory",
+              title: "Action category",
+              render: (log) => (
+                <ActionCategoryField
+                  log={log}
+                  onTableFilterChange={onTableFilterChange}
+                />
+              ),
+            },
+            {
+              accessor: "resource",
+              title: "Resource",
+              render: (log) => (
+                <ResourceField
+                  log={log}
+                  onTableFilterChange={onTableFilterChange}
+                />
+              ),
+            },
+            {
+              accessor: "resourceType",
+              title: "Resource type",
+              render: (log) => (
+                <ResourceTypeField
+                  log={log}
+                  onTableFilterChange={onTableFilterChange}
+                />
+              ),
+            },
+            {
+              accessor: "nodePath",
+              title: "Node",
+              render: (log) => (
+                <NodePathField
+                  log={log}
+                  onTableFilterChange={onTableFilterChange}
+                />
+              ),
+            },
+          ]}
+          records={logs}
+        />
+        {footer}
+      </Stack>
       <LogDetails repoId={repoId} logId={logId || undefined} />
     </>
   );

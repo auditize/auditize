@@ -8,11 +8,12 @@ import {
   Text,
   Tooltip,
 } from "@mantine/core";
-import "@mantine/core/styles.css";
-import "@mantine/dates/styles.css";
+import "@mantine/core/styles.layer.css";
+import "@mantine/dates/styles.layer.css";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { IconLogout } from "@tabler/icons-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "mantine-datatable/styles.layer.css";
 import { useEffect } from "react";
 import {
   createBrowserRouter,
