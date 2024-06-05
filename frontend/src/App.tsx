@@ -33,6 +33,7 @@ import { theme } from "@/theme";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
+import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
 
 function logoutConfirmationModal(onLogout: () => void) {
