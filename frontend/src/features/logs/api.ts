@@ -30,7 +30,7 @@ type Attachment = {
 };
 
 export type Log = {
-  id: number;
+  id: string;
   savedAt: string;
   action: {
     type: string;

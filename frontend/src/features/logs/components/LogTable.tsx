@@ -1,6 +1,6 @@
-import { Anchor, Stack } from "@mantine/core";
+import { Anchor, Stack, Text } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { humanizeDate } from "@/utils/date";
 import { labelize } from "@/utils/format";
@@ -9,15 +9,28 @@ import { addQueryParamToLocation } from "@/utils/router";
 import { Log } from "../api";
 import { LogDetails } from "./LogDetails";
 
-function DateField({ log }: { log: Log }) {
-  const location = useLocation();
-  const logLink = addQueryParamToLocation(location, "log", log.id.toString());
-
+function InlineFilterLink({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <Anchor component={Link} to={logLink} underline="hover">
-      {humanizeDate(log.savedAt)}
+    <Anchor
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      underline="hover"
+    >
+      {children}
     </Anchor>
   );
+}
+
+function DateField({ log }: { log: Log }) {
+  return <Text>{humanizeDate(log.savedAt)}</Text>;
 }
 
 function ActorField({
@@ -27,14 +40,15 @@ function ActorField({
   log: Log;
   onTableFilterChange: (name: string, value: string) => void;
 }) {
-  return log.actor ? (
-    <Anchor
-      onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
-      underline="hover"
-    >
-      {log.actor.name}
-    </Anchor>
-  ) : null;
+  return (
+    log.actor && (
+      <InlineFilterLink
+        onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
+      >
+        {log.actor.name}
+      </InlineFilterLink>
+    )
+  );
 }
 
 function ActionTypeField({
@@ -45,12 +59,11 @@ function ActionTypeField({
   onTableFilterChange: (name: string, value: string) => void;
 }) {
   return (
-    <Anchor
+    <InlineFilterLink
       onClick={() => onTableFilterChange("actionType", log.action.type)}
-      underline="hover"
     >
       {labelize(log.action.type)}
-    </Anchor>
+    </InlineFilterLink>
   );
 }
 
@@ -62,12 +75,11 @@ function ActionCategoryField({
   onTableFilterChange: (name: string, value: string) => void;
 }) {
   return (
-    <Anchor
+    <InlineFilterLink
       onClick={() => onTableFilterChange("actionCategory", log.action.category)}
-      underline="hover"
     >
       {labelize(log.action.category)}
-    </Anchor>
+    </InlineFilterLink>
   );
 }
 
@@ -79,12 +91,11 @@ function ResourceField({
   onTableFilterChange: (name: string, value: string) => void;
 }) {
   return log.resource ? (
-    <Anchor
+    <InlineFilterLink
       onClick={() => onTableFilterChange("resourceRef", log.resource!.ref)}
-      underline="hover"
     >
       {log.resource.name}
-    </Anchor>
+    </InlineFilterLink>
   ) : null;
 }
 
@@ -96,12 +107,11 @@ function ResourceTypeField({
   onTableFilterChange: (name: string, value: string) => void;
 }) {
   return log.resource ? (
-    <Anchor
+    <InlineFilterLink
       onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
-      underline="hover"
     >
       {labelize(log.resource.type)}
-    </Anchor>
+    </InlineFilterLink>
   ) : null;
 }
 
@@ -114,13 +124,12 @@ function NodePathField({
 }) {
   return log.nodePath
     .map<React.ReactNode>((node) => (
-      <Anchor
+      <InlineFilterLink
         key={node.ref}
         onClick={() => onTableFilterChange("nodeRef", node.ref)}
-        underline="hover"
       >
         {node.name}
-      </Anchor>
+      </InlineFilterLink>
     ))
     .reduce((prev, curr) => [prev, " > ", curr]);
 }
@@ -138,6 +147,8 @@ export function LogTable({
   footer: React.ReactNode;
   onTableFilterChange: (name: string, value: string) => void;
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const logId = params.get("log");
 
@@ -203,6 +214,9 @@ export function LogTable({
         <DataTable
           columns={columns}
           records={logs}
+          onRowClick={({ record }) =>
+            navigate(addQueryParamToLocation(location, "log", record.id))
+          }
           fetching={isLoading}
           minHeight={150}
           noRecordsText="No logs found"
