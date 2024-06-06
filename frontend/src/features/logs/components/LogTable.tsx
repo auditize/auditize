@@ -161,6 +161,22 @@ function ColumnSelector({
   );
 }
 
+function sortFields(a: string, b: string) {
+  const order: { [key: string]: number } = {
+    date: 0,
+    actor: 1,
+    actionType: 2,
+    actionCategory: 3,
+    resource: 4,
+    resourceType: 5,
+    nodePath: 6,
+  };
+
+  const splittedA = a.split(".");
+  const splittedB = b.split(".");
+  return order[splittedA[0]] - order[splittedB[0]];
+}
+
 function fieldToColumn(
   field: string,
   onTableFilterChange: (name: string, value: string) => void,
@@ -272,6 +288,7 @@ export function LogTable({
 
   let columns = [
     ...Array.from(selectedColumns)
+      .toSorted(sortFields)
       .map((column) => fieldToColumn(column, onTableFilterChange))
       .filter((data) => !!data),
     {
