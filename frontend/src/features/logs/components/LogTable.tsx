@@ -241,6 +241,22 @@ function ResourceTypeField({
   ) : null;
 }
 
+function ResourceNameField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return log.resource ? (
+    <InlineFilterLink
+      onClick={() => onTableFilterChange("resourceName", log.resource!.name)}
+    >
+      {log.resource.name}
+    </InlineFilterLink>
+  ) : null;
+}
+
 function NodePathField({
   log,
   onTableFilterChange,
@@ -297,7 +313,8 @@ function sortFields(a: string, b: string) {
     actionCategory: 8,
     resource: 9,
     resourceType: 10,
-    node: 11,
+    resourceName: 11,
+    node: 12,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -427,6 +444,18 @@ function fieldToColumn(
       title: "Resource type",
       render: (log: Log) => (
         <ResourceTypeField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+
+  if (field === "resourceName")
+    return {
+      accessor: "resourceName",
+      title: "Resource name",
+      render: (log: Log) => (
+        <ResourceNameField
           log={log}
           onTableFilterChange={onTableFilterChange}
         />
