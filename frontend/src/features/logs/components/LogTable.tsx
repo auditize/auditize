@@ -90,6 +90,24 @@ function ActorNameField({
   );
 }
 
+function ActorRefField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: (name: string, value: string) => void;
+}) {
+  return (
+    log.actor && (
+      <InlineFilterLink
+        onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
+      >
+        {log.actor.ref}
+      </InlineFilterLink>
+    )
+  );
+}
+
 function ActionTypeField({
   log,
   onTableFilterChange,
@@ -203,11 +221,12 @@ function sortFields(a: string, b: string) {
     actor: 1,
     actorType: 2,
     actorName: 3,
-    actionType: 4,
-    actionCategory: 5,
-    resource: 6,
-    resourceType: 7,
-    nodePath: 8,
+    actorRef: 4,
+    actionType: 5,
+    actionCategory: 6,
+    resource: 7,
+    resourceType: 8,
+    nodePath: 9,
   };
 
   const splittedA = a.split(".");
@@ -228,7 +247,7 @@ function fieldToColumn(
 
   if (field === "actor")
     return {
-      accessor: "actorRef",
+      accessor: "actor",
       title: "Actor",
       render: (log: Log) => (
         <ActorField log={log} onTableFilterChange={onTableFilterChange} />
@@ -250,6 +269,15 @@ function fieldToColumn(
       title: "Actor name",
       render: (log: Log) => (
         <ActorNameField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "actorRef")
+    return {
+      accessor: "actorRef",
+      title: "Actor ref",
+      render: (log: Log) => (
+        <ActorRefField log={log} onTableFilterChange={onTableFilterChange} />
       ),
     };
 
