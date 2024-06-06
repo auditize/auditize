@@ -301,6 +301,34 @@ function ResourceCustomField({
   );
 }
 
+function DetailField({
+  log,
+  fieldName,
+  onTableFilterChange,
+}: {
+  log: Log;
+  fieldName: string;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  if (!log.details) {
+    return null;
+  }
+  const fieldValue = getCustomFieldValue(log.details, fieldName);
+  if (!fieldValue) {
+    return null;
+  }
+
+  return (
+    <InlineFilterLink
+      onClick={() =>
+        onTableFilterChange("details", new Map([[fieldName, fieldValue]]))
+      }
+    >
+      {fieldValue}
+    </InlineFilterLink>
+  );
+}
+
 function NodePathField({
   log,
   onTableFilterChange,
@@ -360,7 +388,8 @@ function sortFields(a: string, b: string) {
     resourceName: 11,
     resourceRef: 12,
     "resource.": 13,
-    node: 14,
+    "details.": 14,
+    node: 15,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -524,6 +553,21 @@ function fieldToColumn(
       title: "Resource " + labelize(fieldName),
       render: (log: Log) => (
         <ResourceCustomField
+          log={log}
+          fieldName={fieldName}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+  }
+
+  if (field.startsWith("details.")) {
+    const fieldName = field.split(".")[1];
+    return {
+      accessor: `details.${fieldName}`,
+      title: titlize(fieldName),
+      render: (log: Log) => (
+        <DetailField
           log={log}
           fieldName={fieldName}
           onTableFilterChange={onTableFilterChange}
