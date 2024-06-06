@@ -110,6 +110,9 @@ function useLogFields(
       {
         group: "Tag",
         items: [
+          ...(enableCompositeFields
+            ? [_({ value: "tag", label: "Tag *" })]
+            : []),
           _({ value: "tagType", label: "Tag type" }),
           _({ value: "tagName", label: "Tag name" }),
           _({ value: "tagRef", label: "Tag ref" }),

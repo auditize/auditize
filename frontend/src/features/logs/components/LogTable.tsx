@@ -1,4 +1,4 @@
-import { Anchor, Stack, Text } from "@mantine/core";
+import { Anchor, Breadcrumbs, Stack, Text } from "@mantine/core";
 import { IconColumns3 } from "@tabler/icons-react";
 import { DataTable, DataTableColumn } from "mantine-datatable";
 import { useState } from "react";
@@ -329,6 +329,36 @@ function DetailField({
   );
 }
 
+function TagsField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.tags.map((tag, i) =>
+        tag.ref ? (
+          <InlineFilterLink
+            key={i}
+            onClick={() => onTableFilterChange("tagRef", tag.ref!)}
+          >
+            {tag.name}
+          </InlineFilterLink>
+        ) : (
+          <InlineFilterLink
+            key={i}
+            onClick={() => onTableFilterChange("tagType", tag.type)}
+          >
+            {titlize(tag.type)}
+          </InlineFilterLink>
+        ),
+      )}
+    </Breadcrumbs>
+  );
+}
+
 function NodePathField({
   log,
   onTableFilterChange,
@@ -389,7 +419,8 @@ function sortFields(a: string, b: string) {
     resourceRef: 12,
     "resource.": 13,
     "details.": 14,
-    node: 15,
+    tags: 15,
+    node: 16,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -575,6 +606,15 @@ function fieldToColumn(
       ),
     };
   }
+
+  if (field === "tag")
+    return {
+      accessor: "tags",
+      title: "Tags",
+      render: (log: Log) => (
+        <TagsField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
 
   if (field === "node")
     return {
