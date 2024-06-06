@@ -268,7 +268,7 @@ function sortFields(a: string, b: string) {
     actionCategory: 7,
     resource: 8,
     resourceType: 9,
-    nodePath: 10,
+    node: 10,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -389,9 +389,9 @@ function fieldToColumn(
       ),
     };
 
-  if (field === "nodePath")
+  if (field === "node")
     return {
-      accessor: "nodePath",
+      accessor: "node",
       title: "Node",
       render: (log: Log) => (
         <NodePathField log={log} onTableFilterChange={onTableFilterChange} />
@@ -426,7 +426,7 @@ export function LogTable({
       "actionCategory",
       "resource",
       "resourceType",
-      "nodePath",
+      "node",
     ]),
   );
   const addColumn = (name: string) => {
