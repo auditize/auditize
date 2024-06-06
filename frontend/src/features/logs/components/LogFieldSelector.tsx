@@ -11,7 +11,11 @@ import {
   getAllLogSourceFields,
 } from "../api";
 
-function useLogFields(repoId: string, fixed?: Set<string>) {
+function useLogFields(
+  repoId: string,
+  fixedFields: Set<string> | undefined,
+  enableCompositeFields: boolean,
+) {
   const { data: actorCustomFields, isPending: actorCustomFieldsPending } =
     useQuery({
       queryKey: ["logActorCustomFields", repoId],
@@ -38,7 +42,7 @@ function useLogFields(repoId: string, fixed?: Set<string>) {
   const _ = ({ value, label }: { value: string; label: string }) => ({
     value,
     label,
-    disabled: fixed && fixed.has(value),
+    disabled: fixedFields && fixedFields.has(value),
   });
 
   return {
@@ -54,6 +58,9 @@ function useLogFields(repoId: string, fixed?: Set<string>) {
       {
         group: "Actor",
         items: [
+          ...(enableCompositeFields
+            ? [_({ value: "actor", label: "Actor *" })]
+            : []),
           _({ value: "actorType", label: "Actor type" }),
           _({ value: "actorName", label: "Actor name" }),
           _({ value: "actorRef", label: "Actor ref" }),
@@ -77,6 +84,9 @@ function useLogFields(repoId: string, fixed?: Set<string>) {
       {
         group: "Resource",
         items: [
+          ...(enableCompositeFields
+            ? [_({ value: "resource", label: "Resource *" })]
+            : []),
           _({ value: "resourceType", label: "Resource type" }),
           _({ value: "resourceName", label: "Resource name" }),
           _({ value: "resourceRef", label: "Resource ref" }),
@@ -136,6 +146,7 @@ export function LogFieldSelector({
   onSelected,
   onUnselected,
   fixed,
+  enableCompositeFields = false,
   loading = false,
   children,
 }: {
@@ -144,10 +155,15 @@ export function LogFieldSelector({
   onSelected: (name: string) => void;
   onUnselected: (name: string) => void;
   fixed?: Set<string>;
+  enableCompositeFields?: boolean;
   loading?: boolean;
   children: React.ReactNode;
 }) {
-  const { fields, loading: fieldsLoading } = useLogFields(repoId, fixed);
+  const { fields, loading: fieldsLoading } = useLogFields(
+    repoId,
+    fixed,
+    enableCompositeFields,
+  );
   const comboboxStore = useCombobox();
 
   return (

@@ -1,5 +1,7 @@
 import { Anchor, Stack, Text } from "@mantine/core";
-import { DataTable } from "mantine-datatable";
+import { IconColumns3 } from "@tabler/icons-react";
+import { DataTable, DataTableColumn } from "mantine-datatable";
+import { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { humanizeDate } from "@/utils/date";
@@ -8,6 +10,7 @@ import { addQueryParamToLocation } from "@/utils/router";
 
 import { Log } from "../api";
 import { LogDetails } from "./LogDetails";
+import { LogFieldSelector } from "./LogFieldSelector";
 
 function InlineFilterLink({
   onClick,
@@ -134,6 +137,104 @@ function NodePathField({
     .reduce((prev, curr) => [prev, " > ", curr]);
 }
 
+function ColumnSelector({
+  repoId,
+  selected,
+  onColumnAdded,
+  onColumnRemoved,
+}: {
+  repoId: string;
+  selected: Set<string>;
+  onColumnAdded: (name: string) => void;
+  onColumnRemoved: (name: string) => void;
+}) {
+  return (
+    <LogFieldSelector
+      repoId={repoId}
+      selected={selected}
+      onSelected={onColumnAdded}
+      onUnselected={onColumnRemoved}
+      enableCompositeFields
+    >
+      <IconColumns3 />
+    </LogFieldSelector>
+  );
+}
+
+function fieldToColumn(
+  field: string,
+  onTableFilterChange: (name: string, value: string) => void,
+) {
+  if (field === "date")
+    return {
+      accessor: "savedAt",
+      title: "Date",
+      render: (log: Log) => <DateField log={log} />,
+    };
+
+  if (field === "actor")
+    return {
+      accessor: "actorRef",
+      title: "Actor",
+      render: (log: Log) => (
+        <ActorField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "actionType")
+    return {
+      accessor: "actionType",
+      title: "Action type",
+      render: (log: Log) => (
+        <ActionTypeField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "actionCategory")
+    return {
+      accessor: "actionCategory",
+      title: "Action category",
+      render: (log: Log) => (
+        <ActionCategoryField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+
+  if (field === "resource")
+    return {
+      accessor: "resource",
+      title: "Resource",
+      render: (log: Log) => (
+        <ResourceField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "resourceType")
+    return {
+      accessor: "resourceType",
+      title: "Resource type",
+      render: (log: Log) => (
+        <ResourceTypeField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+
+  if (field === "nodePath")
+    return {
+      accessor: "nodePath",
+      title: "Node",
+      render: (log: Log) => (
+        <NodePathField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  console.error(`Unknown field: ${field}`);
+}
+
 export function LogTable({
   repoId,
   logs,
@@ -151,59 +252,40 @@ export function LogTable({
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const logId = params.get("log");
+  const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
+    new Set([
+      "date",
+      "actor",
+      "actionType",
+      "actionCategory",
+      "resource",
+      "resourceType",
+      "nodePath",
+    ]),
+  );
+  const addColumn = (name: string) => {
+    setSelectedColumns(new Set([...selectedColumns, name]));
+  };
+  const removeColumn = (name: string) => {
+    setSelectedColumns(new Set([...selectedColumns].filter((n) => n !== name)));
+  };
 
   let columns = [
+    ...Array.from(selectedColumns)
+      .map((column) => fieldToColumn(column, onTableFilterChange))
+      .filter((data) => !!data),
     {
-      accessor: "savedAt",
-      title: "Date",
-      render: (log: Log) => <DateField log={log} />,
-    },
-    {
-      accessor: "actorRef",
-      title: "Actor",
-      render: (log: Log) => (
-        <ActorField log={log} onTableFilterChange={onTableFilterChange} />
-      ),
-    },
-    {
-      accessor: "actionType",
-      title: "Action type",
-      render: (log: Log) => (
-        <ActionTypeField log={log} onTableFilterChange={onTableFilterChange} />
-      ),
-    },
-    {
-      accessor: "actionCategory",
-      title: "Action category",
-      render: (log: Log) => (
-        <ActionCategoryField
-          log={log}
-          onTableFilterChange={onTableFilterChange}
-        />
-      ),
-    },
-    {
-      accessor: "resource",
-      title: "Resource",
-      render: (log: Log) => (
-        <ResourceField log={log} onTableFilterChange={onTableFilterChange} />
-      ),
-    },
-    {
-      accessor: "resourceType",
-      title: "Resource type",
-      render: (log: Log) => (
-        <ResourceTypeField
-          log={log}
-          onTableFilterChange={onTableFilterChange}
-        />
-      ),
-    },
-    {
-      accessor: "nodePath",
-      title: "Node",
-      render: (log: Log) => (
-        <NodePathField log={log} onTableFilterChange={onTableFilterChange} />
+      accessor: "columns",
+      title: (
+        // Disable the inherited bold font style
+        <span style={{ fontWeight: "normal" }}>
+          <ColumnSelector
+            repoId={repoId}
+            selected={selectedColumns}
+            onColumnAdded={addColumn}
+            onColumnRemoved={removeColumn}
+          />
+        </span>
       ),
     },
   ];
@@ -212,7 +294,7 @@ export function LogTable({
     <>
       <Stack>
         <DataTable
-          columns={columns}
+          columns={columns as DataTableColumn<Log>[]}
           records={logs}
           onRowClick={({ record }) =>
             navigate(addQueryParamToLocation(location, "log", record.id))
