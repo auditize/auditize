@@ -359,6 +359,75 @@ function TagsField({
   );
 }
 
+function TagTypesField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.tags.map((tag, i) => (
+        <InlineFilterLink
+          key={i}
+          onClick={() => onTableFilterChange("tagType", tag.type)}
+        >
+          {titlize(tag.type)}
+        </InlineFilterLink>
+      ))}
+    </Breadcrumbs>
+  );
+}
+
+function TagNamesField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.tags.map(
+        (tag, i) =>
+          tag.name && (
+            <InlineFilterLink
+              key={i}
+              onClick={() => onTableFilterChange("tagName", tag.name!)}
+            >
+              {tag.name}
+            </InlineFilterLink>
+          ),
+      )}
+    </Breadcrumbs>
+  );
+}
+
+function TagRefsField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.tags.map(
+        (tag, i) =>
+          tag.ref && (
+            <InlineFilterLink
+              key={i}
+              onClick={() => onTableFilterChange("tagRef", tag.ref!)}
+            >
+              {tag.ref}
+            </InlineFilterLink>
+          ),
+      )}
+    </Breadcrumbs>
+  );
+}
+
 function NodePathField({
   log,
   onTableFilterChange,
@@ -419,8 +488,11 @@ function sortFields(a: string, b: string) {
     resourceRef: 12,
     "resource.": 13,
     "details.": 14,
-    tags: 15,
-    node: 16,
+    tag: 15,
+    tagType: 16,
+    tagName: 17,
+    tagRef: 18,
+    node: 19,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -613,6 +685,33 @@ function fieldToColumn(
       title: "Tags",
       render: (log: Log) => (
         <TagsField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "tagType")
+    return {
+      accessor: "tagType",
+      title: "Tag types",
+      render: (log: Log) => (
+        <TagTypesField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "tagName")
+    return {
+      accessor: "tagName",
+      title: "Tag names",
+      render: (log: Log) => (
+        <TagNamesField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "tagRef")
+    return {
+      accessor: "tagRef",
+      title: "Tag refs",
+      render: (log: Log) => (
+        <TagRefsField log={log} onTableFilterChange={onTableFilterChange} />
       ),
     };
 
