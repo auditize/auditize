@@ -273,6 +273,34 @@ function ResourceRefField({
   ) : null;
 }
 
+function ResourceCustomField({
+  log,
+  fieldName,
+  onTableFilterChange,
+}: {
+  log: Log;
+  fieldName: string;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  if (!log.resource) {
+    return null;
+  }
+  const fieldValue = getCustomFieldValue(log.resource.extra, fieldName);
+  if (!fieldValue) {
+    return null;
+  }
+
+  return (
+    <InlineFilterLink
+      onClick={() =>
+        onTableFilterChange("resourceExtra", new Map([[fieldName, fieldValue]]))
+      }
+    >
+      {fieldValue}
+    </InlineFilterLink>
+  );
+}
+
 function NodePathField({
   log,
   onTableFilterChange,
@@ -331,7 +359,8 @@ function sortFields(a: string, b: string) {
     resourceType: 10,
     resourceName: 11,
     resourceRef: 12,
-    node: 13,
+    "resource.": 13,
+    node: 14,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -487,6 +516,21 @@ function fieldToColumn(
         <ResourceRefField log={log} onTableFilterChange={onTableFilterChange} />
       ),
     };
+
+  if (field.startsWith("resource.")) {
+    const fieldName = field.split(".")[1];
+    return {
+      accessor: `resource.${fieldName}`,
+      title: "Resource " + labelize(fieldName),
+      render: (log: Log) => (
+        <ResourceCustomField
+          log={log}
+          fieldName={fieldName}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+  }
 
   if (field === "node")
     return {
