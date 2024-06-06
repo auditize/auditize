@@ -5,12 +5,17 @@ import { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { humanizeDate } from "@/utils/date";
-import { titlize } from "@/utils/format";
+import { labelize, titlize } from "@/utils/format";
 import { addQueryParamToLocation } from "@/utils/router";
 
-import { Log } from "../api";
+import { CustomField, Log } from "../api";
 import { LogDetails } from "./LogDetails";
 import { LogFieldSelector } from "./LogFieldSelector";
+
+export type TableFilterChangeHandler = (
+  name: string,
+  value: string | Map<string, string>,
+) => void;
 
 function InlineFilterLink({
   onClick,
@@ -41,7 +46,7 @@ function ActorField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return (
     log.actor && (
@@ -59,7 +64,7 @@ function ActorTypeField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return (
     log.actor && (
@@ -77,7 +82,7 @@ function ActorNameField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return (
     log.actor && (
@@ -95,7 +100,7 @@ function ActorRefField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return (
     log.actor && (
@@ -108,12 +113,48 @@ function ActorRefField({
   );
 }
 
+function getCustomFieldValue(
+  fields: CustomField[],
+  fieldName: string,
+): string | null {
+  const field = fields.find((f) => f.name === fieldName);
+  return field ? field.value : null;
+}
+
+function ActorCustomField({
+  log,
+  fieldName,
+  onTableFilterChange,
+}: {
+  log: Log;
+  fieldName: string;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  if (!log.actor) {
+    return null;
+  }
+  const fieldValue = getCustomFieldValue(log.actor.extra, fieldName);
+  if (!fieldValue) {
+    return null;
+  }
+
+  return (
+    <InlineFilterLink
+      onClick={() =>
+        onTableFilterChange("actorExtra", new Map([[fieldName, fieldValue]]))
+      }
+    >
+      {fieldValue}
+    </InlineFilterLink>
+  );
+}
+
 function ActionTypeField({
   log,
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return (
     <InlineFilterLink
@@ -129,7 +170,7 @@ function ActionCategoryField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return (
     <InlineFilterLink
@@ -145,7 +186,7 @@ function ResourceField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return log.resource ? (
     <InlineFilterLink
@@ -161,7 +202,7 @@ function ResourceTypeField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return log.resource ? (
     <InlineFilterLink
@@ -177,7 +218,7 @@ function NodePathField({
   onTableFilterChange,
 }: {
   log: Log;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   return log.nodePath
     .map<React.ReactNode>((node) => (
@@ -222,21 +263,31 @@ function sortFields(a: string, b: string) {
     actorType: 2,
     actorName: 3,
     actorRef: 4,
-    actionType: 5,
-    actionCategory: 6,
-    resource: 7,
-    resourceType: 8,
-    nodePath: 9,
+    "actor.": 5,
+    actionType: 6,
+    actionCategory: 7,
+    resource: 8,
+    resourceType: 9,
+    nodePath: 10,
+  };
+  const splitFieldName = (name: string) => {
+    const parts = name.split(".");
+    return [parts[0] + (parts[1] ? "." : ""), parts[1]];
   };
 
-  const splittedA = a.split(".");
-  const splittedB = b.split(".");
-  return order[splittedA[0]] - order[splittedB[0]];
+  const [mainA, customA] = splitFieldName(a);
+  const [mainB, customB] = splitFieldName(b);
+  const ret = order[mainA] - order[mainB];
+  if (ret !== 0) {
+    return ret;
+  }
+
+  return customA.localeCompare(customB);
 }
 
 function fieldToColumn(
   field: string,
-  onTableFilterChange: (name: string, value: string) => void,
+  onTableFilterChange: TableFilterChangeHandler,
 ) {
   if (field === "date")
     return {
@@ -280,6 +331,21 @@ function fieldToColumn(
         <ActorRefField log={log} onTableFilterChange={onTableFilterChange} />
       ),
     };
+
+  if (field.startsWith("actor.")) {
+    const fieldName = field.split(".")[1];
+    return {
+      accessor: `actor.${fieldName}`,
+      title: "Actor " + labelize(fieldName),
+      render: (log: Log) => (
+        <ActorCustomField
+          log={log}
+          fieldName={fieldName}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+  }
 
   if (field === "actionType")
     return {
@@ -346,7 +412,7 @@ export function LogTable({
   logs?: Log[];
   isLoading: boolean;
   footer: React.ReactNode;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   const location = useLocation();
   const navigate = useNavigate();

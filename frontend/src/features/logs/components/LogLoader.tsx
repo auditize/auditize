@@ -4,14 +4,14 @@ import deepEqual from "deep-equal";
 import { useEffect, useRef } from "react";
 
 import { getLogs, LogSearchParams, prepareLogFilterForApi } from "../api";
-import { LogTable } from "./LogTable";
+import { LogTable, TableFilterChangeHandler } from "./LogTable";
 
 export function LogLoader({
   filter,
   onTableFilterChange,
 }: {
   filter: LogSearchParams;
-  onTableFilterChange: (name: string, value: string) => void;
+  onTableFilterChange: TableFilterChangeHandler;
 }) {
   const {
     isPending,
