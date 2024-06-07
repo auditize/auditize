@@ -1,17 +1,17 @@
 import {
   AppShell,
+  Avatar,
   Button,
-  Center,
   Flex,
   MantineProvider,
+  Menu,
   Space,
   Text,
-  Tooltip,
+  UnstyledButton,
 } from "@mantine/core";
 import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
-import { IconLogout } from "@tabler/icons-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "mantine-datatable/styles.layer.css";
 import { useEffect } from "react";
@@ -23,7 +23,12 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { AuthProvider, LoginForm, useCurrentUser } from "@/features/auth";
+import {
+  AuthProvider,
+  LoginForm,
+  useAuthenticatedUser,
+  useCurrentUser,
+} from "@/features/auth";
 import { Logs } from "@/features/logs";
 import { ReposManagement } from "@/features/repos";
 import { Signup } from "@/features/signup";
@@ -68,6 +73,28 @@ function LogoutModal({
         Ok
       </Button>
     </>
+  );
+}
+
+function UserMenu() {
+  const { currentUser, declareLogout } = useAuthenticatedUser();
+  const initials =
+    currentUser.firstName[0].toUpperCase() +
+    currentUser.lastName[0].toUpperCase();
+
+  return (
+    <Menu>
+      <Menu.Target>
+        <UnstyledButton>
+          <Avatar>{initials}</Avatar>
+        </UnstyledButton>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
+          Logout
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   );
 }
 
@@ -136,14 +163,7 @@ function Main() {
             </NavbarItemGroup>
           </Navbar>
           <Space w="6rem" />
-          <Tooltip label="Log-out">
-            <Center style={{ cursor: "pointer" }}>
-              <IconLogout
-                onClick={logoutConfirmationModal(declareLogout)}
-                size={"1.3rem"}
-              />
-            </Center>
-          </Tooltip>
+          {currentUser && <UserMenu />}
         </Flex>
       </AppShell.Header>
       <AppShell.Main>

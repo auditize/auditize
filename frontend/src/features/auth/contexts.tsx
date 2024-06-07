@@ -54,10 +54,13 @@ export function useCurrentUser(): AuthContextProps {
   return context;
 }
 
-export function useAuthenticatedUser(): { currentUser: CurrentUserInfo } {
-  const { currentUser } = useCurrentUser();
+export function useAuthenticatedUser(): {
+  currentUser: CurrentUserInfo;
+  declareLogout: () => void;
+} {
+  const { currentUser, declareLogout } = useCurrentUser();
   if (!currentUser) {
     throw new Error("User is not authenticated");
   }
-  return { currentUser };
+  return { currentUser, declareLogout };
 }
