@@ -12,6 +12,7 @@ export interface UserCreation {
   firstName: string;
   lastName: string;
   email: string;
+  lang: string;
   permissions: Permissions;
 }
 
@@ -23,6 +24,7 @@ export type UserUpdate = {
   firstName?: string;
   lastName?: string;
   email?: string;
+  lang?: string;
   permissions?: Permissions;
 };
 

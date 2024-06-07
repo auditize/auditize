@@ -1,4 +1,4 @@
-import { Stack, TextInput } from "@mantine/core";
+import { Select, Stack, TextInput } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect, useState } from "react";
 
@@ -20,6 +20,7 @@ function useUserForm(values: { name?: string }) {
       firstName: "",
       lastName: "",
       email: "",
+      lang: "en",
       ...values,
     },
     validate: {
@@ -67,6 +68,17 @@ function UserEditor({
           placeholder="Enter email"
           data-autofocus
           {...form.getInputProps("email")}
+          disabled={readOnly}
+        />
+        <Select
+          label="Language"
+          placeholder="Select language"
+          data={[
+            { value: "en", label: "English" },
+            { value: "fr", label: "Français" },
+          ]}
+          allowDeselect={false}
+          {...form.getInputProps("lang")}
           disabled={readOnly}
         />
       </Stack>
@@ -120,8 +132,8 @@ export function UserEdition({
       queryKeyForLoad={["user", userId]}
       queryFnForLoad={() => getUser(userId!)}
       onDataLoaded={(data) => {
-        const { firstName, lastName, email } = data;
-        form.setValues({ firstName, lastName, email });
+        const { firstName, lastName, email, lang } = data;
+        form.setValues({ firstName, lastName, email, lang });
         setPermissions(data.permissions);
       }}
       title={`Edit user`}
