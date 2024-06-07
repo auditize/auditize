@@ -121,6 +121,9 @@ function useLogFields(
       {
         group: "Attachment",
         items: [
+          ...(enableCompositeFields
+            ? [_({ value: "attachment", label: "Attachment *" })]
+            : []),
           _({ value: "attachmentName", label: "Attachment name" }),
           _({
             value: "attachmentDescription",

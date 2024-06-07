@@ -428,6 +428,27 @@ function TagRefsField({
   );
 }
 
+function AttachmentsFieldTypes({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.attachments.map((attachment, i) => (
+        <InlineFilterLink
+          key={i}
+          onClick={() => onTableFilterChange("attachmentType", attachment.type)}
+        >
+          {attachment.type}
+        </InlineFilterLink>
+      ))}
+    </Breadcrumbs>
+  );
+}
+
 function NodePathField({
   log,
   onTableFilterChange,
@@ -492,7 +513,8 @@ function sortFields(a: string, b: string) {
     tagType: 16,
     tagName: 17,
     tagRef: 18,
-    node: 19,
+    attachment: 19,
+    node: 20,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -712,6 +734,19 @@ function fieldToColumn(
       title: "Tag refs",
       render: (log: Log) => (
         <TagRefsField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
+
+  if (field === "attachment")
+    return {
+      accessor: "attachment",
+      title: "Attachments",
+      // NB: display attachments like attachment types for now
+      render: (log: Log) => (
+        <AttachmentsFieldTypes
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
       ),
     };
 
