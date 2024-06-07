@@ -428,6 +428,38 @@ async def test_get_user_me_as_apikey(apikey_client: HttpTestHelper):
     await apikey_client.assert_get_forbidden("/users/me")
 
 
+async def test_update_user_me(user_builder: UserBuilder, dbm: DatabaseManager):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_patch_no_content(
+            "/users/me",
+            json={
+                "lang": "fr",
+            },
+        )
+
+    await assert_collection(dbm.core_db.users, [user.expected_document({"lang": "fr"})])
+
+
+async def test_update_user_me_as_unauthorized(anon_client: HttpTestHelper):
+    await anon_client.assert_patch_unauthorized(
+        "/users/me",
+        json={
+            "lang": "fr",
+        },
+    )
+
+
+async def test_update_user_me_as_apikey(apikey_client: HttpTestHelper):
+    await apikey_client.assert_patch_forbidden(
+        "/users/me",
+        json={
+            "lang": "fr",
+        },
+    )
+
+
 class TestPermissions(BasePermissionTests):
     @property
     def base_path(self):

@@ -152,3 +152,7 @@ class UserMeResponse(BaseModel):
                 ).model_dump(),
             }
         )
+
+
+class UserMeUpdateRequest(BaseModel):
+    lang: Optional[Lang] = _UserLangField(default=None)

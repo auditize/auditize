@@ -98,6 +98,7 @@ class HttpTestHelper(AsyncClient):
             expected_json=expected_json,
         )
 
+    assert_patch_no_content = partialmethod(assert_patch, expected_status_code=204)
     assert_patch_bad_request = partialmethod(assert_patch, expected_status_code=400)
     assert_patch_unauthorized = partialmethod(assert_patch, expected_status_code=401)
     assert_patch_forbidden = partialmethod(assert_patch, expected_status_code=403)

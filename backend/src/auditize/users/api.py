@@ -16,6 +16,7 @@ from auditize.users.api_models import (
     UserCreationResponse,
     UserListResponse,
     UserMeResponse,
+    UserMeUpdateRequest,
     UserReadingResponse,
     UserSignupInfoResponse,
     UserSignupSetPasswordRequest,
@@ -29,6 +30,11 @@ router = APIRouter(responses=error_responses(401, 403))
 def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: str):
     if authenticated.user and str(authenticated.user.id) == user_id:
         raise PermissionDenied("Cannot alter own user")
+
+
+def _ensure_authenticated_as_user(authenticated: Authenticated):
+    if not authenticated.user:
+        raise PermissionDenied("This endpoint is only available for users")
 
 
 @router.post(
@@ -50,6 +56,23 @@ async def create_user(
 
 
 @router.patch(
+    "/users/me",
+    summary="Update authenticated user",
+    tags=["users"],
+    status_code=204,
+    responses=error_responses(400),
+)
+async def update_user_me(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    user: UserMeUpdateRequest,
+):
+    _ensure_authenticated_as_user(authenticated)
+    user_model = UserUpdate.model_validate(user.model_dump())
+    await service.update_user(dbm, authenticated.user.id, user_model)
+
+
+@router.patch(
     "/users/{user_id}",
     summary="Update user",
     tags=["users"],
@@ -68,7 +91,6 @@ async def update_user(
     if user_model.permissions:
         authorize_grant(authenticated.permissions, user_model.permissions)
     await service.update_user(dbm, user_id, user_model)
-    return None
 
 
 @router.get(
@@ -79,8 +101,7 @@ async def update_user(
 async def get_user_me(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
 ) -> UserMeResponse:
-    if not authenticated.user:
-        raise PermissionDenied("This endpoint is only available for users")
+    _ensure_authenticated_as_user(authenticated)
     return UserMeResponse.from_db_model(authenticated.user)
 
 
