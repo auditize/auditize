@@ -67,22 +67,21 @@ async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
         parent_node_ref = node.ref
 
 
-async def consolidate_log_attachments(
-    db: LogDatabase, attachments: list[Log.AttachmentMetadata]
+async def consolidate_log_attachment(
+    db: LogDatabase, attachment: Log.AttachmentMetadata
 ):
-    for attachment in attachments:
-        await db.consolidate_data(
-            db.log_attachment_types,
-            {
-                "type": attachment.type,
-            },
-        )
-        await db.consolidate_data(
-            db.log_attachment_mime_types,
-            {
-                "mime_type": attachment.mime_type,
-            },
-        )
+    await db.consolidate_data(
+        db.log_attachment_types,
+        {
+            "type": attachment.type,
+        },
+    )
+    await db.consolidate_data(
+        db.log_attachment_mime_types,
+        {
+            "mime_type": attachment.mime_type,
+        },
+    )
 
 
 async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
@@ -106,8 +105,6 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
 
     await consolidate_log_node_path(db, log.node_path)
 
-    await consolidate_log_attachments(db, log.attachments)
-
     return log_id
 
 
@@ -117,26 +114,22 @@ async def save_log_attachment(
     log_id: str,
     *,
     name: str,
-    description: str,
+    description: str | None,
     type: str,
     mime_type: str,
     data: bytes,
 ):
     db = await get_log_db_for_writing(dbm, repo_id)
+    attachment = Log.Attachment(
+        name=name, description=description, type=type, mime_type=mime_type, data=data
+    )
     await update_resource_document(
         db.logs,
         log_id,
-        {
-            "attachments": {
-                "name": name,
-                "description": description,
-                "type": type,
-                "mime_type": mime_type,
-                "data": data,
-            }
-        },
+        {"attachments": attachment.model_dump()},
         operator="$push",
     )
+    await consolidate_log_attachment(db, attachment)
 
 
 async def get_log(dbm: DatabaseManager, repo_id: str, log_id: str) -> Log:
