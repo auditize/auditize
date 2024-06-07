@@ -428,7 +428,51 @@ function TagRefsField({
   );
 }
 
-function AttachmentsFieldTypes({
+function AttachmentNamesField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.attachments.map((attachment, i) => (
+        <InlineFilterLink
+          key={i}
+          onClick={() => onTableFilterChange("attachmentName", attachment.name)}
+        >
+          {attachment.name}
+        </InlineFilterLink>
+      ))}
+    </Breadcrumbs>
+  );
+}
+
+function AttachmentDescriptionsField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.attachments.map((attachment, i) => (
+        <InlineFilterLink
+          key={i}
+          onClick={() =>
+            onTableFilterChange("attachmentDescription", attachment.description)
+          }
+        >
+          {attachment.description}
+        </InlineFilterLink>
+      ))}
+    </Breadcrumbs>
+  );
+}
+
+function AttachmentTypesField({
   log,
   onTableFilterChange,
 }: {
@@ -443,6 +487,29 @@ function AttachmentsFieldTypes({
           onClick={() => onTableFilterChange("attachmentType", attachment.type)}
         >
           {attachment.type}
+        </InlineFilterLink>
+      ))}
+    </Breadcrumbs>
+  );
+}
+
+function AttachmentMimeTypesField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <Breadcrumbs separator=", ">
+      {log.attachments.map((attachment, i) => (
+        <InlineFilterLink
+          key={i}
+          onClick={() =>
+            onTableFilterChange("attachmentMimeType", attachment.mimeType)
+          }
+        >
+          {attachment.mimeType}
         </InlineFilterLink>
       ))}
     </Breadcrumbs>
@@ -514,7 +581,11 @@ function sortFields(a: string, b: string) {
     tagName: 17,
     tagRef: 18,
     attachment: 19,
-    node: 20,
+    atachmentName: 20,
+    attachmentDescription: 21,
+    attachmentType: 22,
+    attachmentMimeType: 23,
+    node: 24,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -743,7 +814,55 @@ function fieldToColumn(
       title: "Attachments",
       // NB: display attachments like attachment types for now
       render: (log: Log) => (
-        <AttachmentsFieldTypes
+        <AttachmentTypesField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+
+  if (field === "attachmentName")
+    return {
+      accessor: "attachmentName",
+      title: "Attachment names",
+      render: (log: Log) => (
+        <AttachmentNamesField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+
+  if (field === "attachmentDescription")
+    return {
+      accessor: "attachmentDescription",
+      title: "Attachment descriptions",
+      render: (log: Log) => (
+        <AttachmentDescriptionsField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+
+  if (field === "attachmentType")
+    return {
+      accessor: "attachmentType",
+      title: "Attachment types",
+      render: (log: Log) => (
+        <AttachmentTypesField
+          log={log}
+          onTableFilterChange={onTableFilterChange}
+        />
+      ),
+    };
+
+  if (field === "attachmentMimeType")
+    return {
+      accessor: "attachmentMimeType",
+      title: "Attachment MIME types",
+      render: (log: Log) => (
+        <AttachmentMimeTypesField
           log={log}
           onTableFilterChange={onTableFilterChange}
         />
