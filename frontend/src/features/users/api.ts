@@ -28,6 +28,10 @@ export type UserUpdate = {
   permissions?: Permissions;
 };
 
+export type UserPreferencesUpdate = {
+  lang?: string;
+};
+
 export async function createUser(user: UserCreation): Promise<string> {
   const data = await reqPost("/users", user);
   return data.id;
@@ -53,4 +57,11 @@ export async function getUser(userId: string): Promise<User> {
 
 export async function deleteUser(userId: string): Promise<void> {
   await reqDelete("/users/" + userId);
+}
+
+export async function updateUserPreferences(
+  userId: string,
+  update: UserPreferencesUpdate,
+): Promise<void> {
+  await reqPatch(`/users/${userId}/preferences`, update);
 }
