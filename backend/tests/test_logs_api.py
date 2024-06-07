@@ -5,17 +5,7 @@ import callee
 import pytest
 
 from auditize.database import DatabaseManager
-from auditize.logs.models import CustomField, Log
-from auditize.logs.service import (
-    consolidate_log_action,
-    consolidate_log_actor,
-    consolidate_log_attachments,
-    consolidate_log_details,
-    consolidate_log_node_path,
-    consolidate_log_resource,
-    consolidate_log_source,
-    consolidate_log_tags,
-)
+from auditize.logs.models import Log
 from conftest import ApikeyBuilder
 from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog
@@ -263,6 +253,7 @@ async def test_add_attachment_binary_and_all_fields(
                     "type": "binary",
                     "mime_type": "application/octet-stream",
                     "data": data,
+                    "saved_at": callee.IsA(datetime),
                 }
             ]
         }
@@ -1184,13 +1175,18 @@ class _ConsolidatedDataTest:
         return f"/repos/{repo_id}/logs/{self.relative_path}"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         raise NotImplementedError()
 
-    async def test_nominal(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
         values = list(reversed(range(5)))  # insert in reverse order to test sorting
-        items = await self.create_consolidated_data(repo, values)
+        items = await self.create_consolidated_data(superadmin_client, repo, values)
         await do_test_page_pagination_common_scenarios(
             log_read_client,
             self.get_path(repo.id),
@@ -1217,15 +1213,27 @@ class TestLogActionCategories(_ConsolidatedDataTest):
         return "actions/categories"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{val}", type=f"type_{val}")
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
+                ),
             )
-            await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{val}", type=f"type_{val + 10}")
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "action": {
+                            "category": f"category_{val}",
+                            "type": f"type_{val + 10}",
+                        }
+                    }
+                ),
             )
+
         return [f"category_{val}" for val in values]
 
 
@@ -1235,21 +1243,38 @@ class TestLogActionTypes(_ConsolidatedDataTest):
         return "actions/types"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{val}", type=f"type_{val}")
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
+                ),
             )
-            await consolidate_log_action(
-                repo.db, Log.Action(category=f"category_{val + 10}", type=f"type_{val}")
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "action": {
+                            "category": f"category_{val + 10}",
+                            "type": f"type_{val}",
+                        }
+                    }
+                ),
             )
+
         return [f"type_{val}" for val in values]
 
     async def test_param_category(
-        self, log_read_client: HttpTestHelper, repo: PreparedRepo
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
     ):
-        await self.create_consolidated_data(repo, list(reversed(range(5))))
+        await self.create_consolidated_data(
+            superadmin_client, repo, list(reversed(range(5)))
+        )
 
         # test category parameter
         await log_read_client.assert_get(
@@ -1272,12 +1297,20 @@ class TestLogActorTypes(_ConsolidatedDataTest):
         return "actors/types"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_actor(
-                repo.db,
-                Log.Actor(type=f"type_{val}", ref=f"id_{val}", name=f"name_{val}"),
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "actor": {
+                            "type": f"type_{val}",
+                            "ref": f"id_{val}",
+                            "name": f"name_{val}",
+                        }
+                    }
+                ),
             )
         return [f"type_{val}" for val in values]
 
@@ -1288,16 +1321,25 @@ class TestLogActorExtras(_ConsolidatedDataTest):
         return "actors/extras"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_actor(
-                repo.db,
-                Log.Actor(
-                    type=f"type_{val}",
-                    ref=f"id_{val}",
-                    name=f"name_{val}",
-                    extra=[CustomField(name=f"field_{val}", value="value")],
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "actor": {
+                            "type": f"type_{val}",
+                            "ref": f"id_{val}",
+                            "name": f"name_{val}",
+                            "extra": [
+                                {
+                                    "name": f"field_{val}",
+                                    "value": f"value",
+                                }
+                            ],
+                        }
+                    }
                 ),
             )
         return [f"field_{val}" for val in values]
@@ -1309,12 +1351,20 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
         return "resources/types"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_resource(
-                repo.db,
-                Log.Resource(ref=f"ref_{val}", type=f"type_{val}", name=f"name_{val}"),
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "resource": {
+                            "ref": f"ref_{val}",
+                            "type": f"type_{val}",
+                            "name": f"name_{val}",
+                        }
+                    }
+                ),
             )
         return [f"type_{val}" for val in values]
 
@@ -1325,16 +1375,25 @@ class TestLogResourceExtras(_ConsolidatedDataTest):
         return "resources/extras"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_resource(
-                repo.db,
-                Log.Resource(
-                    ref=f"ref_{val}",
-                    type=f"type_{val}",
-                    name=f"name_{val}",
-                    extra=[CustomField(name=f"field_{val}", value="value")],
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "resource": {
+                            "ref": f"ref_{val}",
+                            "type": f"type_{val}",
+                            "name": f"name_{val}",
+                            "extra": [
+                                {
+                                    "name": f"field_{val}",
+                                    "value": f"value",
+                                }
+                            ],
+                        }
+                    }
                 ),
             )
         return [f"field_{val}" for val in values]
@@ -1346,14 +1405,28 @@ class TestLogTagTypes(_ConsolidatedDataTest):
         return "tags/types"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values[:-1]:
-            await consolidate_log_tags(
-                repo.db,
-                [Log.Tag(ref=f"tag_{val}", type=f"type_{val}", name=f"name_{val}")],
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "tags": [
+                            {
+                                "ref": f"tag_{val}",
+                                "type": f"type_{val}",
+                                "name": f"name_{val}",
+                            }
+                        ]
+                    }
+                ),
             )
-        await consolidate_log_tags(repo.db, [Log.Tag(type="simple_tag")])
+
+        await repo.create_log(
+            client,
+            PreparedLog.prepare_data({"tags": [{"type": "simple_tag"}]}),
+        )
 
         return [f"type_{val}" for val in values[:-1]] + ["simple_tag"]
 
@@ -1364,11 +1437,21 @@ class TestLogSourceFields(_ConsolidatedDataTest):
         return "sources"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[str]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[str]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_source(
-                repo.db, [CustomField(name=f"field_{val}", value=f"value_{val}")]
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "source": [
+                            {
+                                "name": f"field_{val}",
+                                "value": f"value_{val}",
+                            }
+                        ]
+                    }
+                ),
             )
 
         return [f"field_{val}" for val in values]
@@ -1380,11 +1463,21 @@ class TestLogDetailFields(_ConsolidatedDataTest):
         return "details"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_details(
-                repo.db, [CustomField(name=f"field_{val}", value=f"value_{val}")]
+            await repo.create_log(
+                client,
+                PreparedLog.prepare_data(
+                    {
+                        "details": [
+                            {
+                                "name": f"field_{val}",
+                                "value": f"value_{val}",
+                            }
+                        ]
+                    }
+                ),
             )
 
         return [f"field_{val}" for val in values]
@@ -1396,19 +1489,11 @@ class TestLogAttachmentTypes(_ConsolidatedDataTest):
         return "attachments/types"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_attachments(
-                repo.db,
-                [
-                    Log.AttachmentMetadata(
-                        name="attachment.txt",
-                        type=f"type_{val}",
-                        mime_type="text/plain",
-                    )
-                ],
-            )
+            log = await repo.create_log(client)
+            await log.upload_attachment(client, type=f"type_{val}")
         return [f"type_{val}" for val in values]
 
 
@@ -1418,19 +1503,11 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
         return "attachments/mime-types"
 
     async def create_consolidated_data(
-        self, repo: PreparedRepo, values: list[int]
+        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
     ) -> list[str]:
         for val in values:
-            await consolidate_log_attachments(
-                repo.db,
-                [
-                    Log.AttachmentMetadata(
-                        name="attachment.txt",
-                        type=f"type",
-                        mime_type=f"text/plain{val}",
-                    )
-                ],
-            )
+            log = await repo.create_log(client)
+            await log.upload_attachment(client, mime_type=f"text/plain{val}")
         return [f"text/plain{val}" for val in values]
 
 
@@ -1473,15 +1550,21 @@ async def test_get_log_related_endpoints_not_enabled_repo_status(
 
 
 async def test_get_log_nodes_without_filters(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
+    log_read_client: HttpTestHelper,
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
 ):
     for i in range(4):
-        await consolidate_log_node_path(
-            repo.db,
-            [
-                Log.Node(ref=f"customer", name=f"Customer"),
-                Log.Node(ref=f"entity:{i}", name=f"Entity {i}"),
-            ],
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data(
+                {
+                    "node_path": [
+                        {"ref": f"customer", "name": f"Customer"},
+                        {"ref": f"entity:{i}", "name": f"Entity {i}"},
+                    ]
+                }
+            ),
         )
 
     await do_test_page_pagination_common_scenarios(
@@ -1508,16 +1591,22 @@ async def test_get_log_nodes_without_filters(
 
 
 async def test_get_log_nodes_with_filters(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
+    log_read_client: HttpTestHelper,
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
 ):
     for i in range(5):
         for j in "a", "b", "c", "d", "e":
-            await consolidate_log_node_path(
-                repo.db,
-                [
-                    Log.Node(ref=f"customer:{i}", name=f"Customer {i}"),
-                    Log.Node(ref=f"entity:{i}-{j}", name=f"Entity {j}"),
-                ],
+            await repo.create_log(
+                superadmin_client,
+                PreparedLog.prepare_data(
+                    {
+                        "node_path": [
+                            {"ref": f"customer:{i}", "name": f"Customer {i}"},
+                            {"ref": f"entity:{i}-{j}", "name": f"Entity {j}"},
+                        ]
+                    }
+                ),
             )
 
     # test top-level nodes
@@ -1563,13 +1652,21 @@ async def test_get_log_nodes_forbidden(
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/nodes")
 
 
-async def test_get_log_node(log_read_client: HttpTestHelper, repo: PreparedRepo):
-    await consolidate_log_node_path(
-        repo.db,
-        [
-            Log.Node(ref="customer", name="Customer"),
-            Log.Node(ref="entity", name="Entity"),
-        ],
+async def test_get_log_node(
+    log_read_client: HttpTestHelper,
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    await repo.create_log(
+        superadmin_client,
+        PreparedLog.prepare_data(
+            {
+                "node_path": [
+                    {"ref": "customer", "name": "Customer"},
+                    {"ref": "entity", "name": "Entity"},
+                ]
+            }
+        ),
     )
 
     await log_read_client.assert_get(
@@ -1610,11 +1707,15 @@ async def test_get_log_node_not_enabled_repo_status(
     repo_status: str,
     status_code: int,
 ):
-    await consolidate_log_node_path(
-        repo.db,
-        [
-            Log.Node(ref="customer", name="Customer"),
-        ],
+    await repo.create_log(
+        superadmin_client,
+        PreparedLog.prepare_data(
+            {
+                "node_path": [
+                    {"ref": "customer", "name": "Customer"},
+                ],
+            }
+        ),
     )
     await repo.update_status(superadmin_client, repo_status)
     await superadmin_client.assert_get(

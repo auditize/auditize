@@ -11,7 +11,7 @@ export type Named = {
   name: string;
 };
 
-type CustomField = {
+export type CustomField = {
   name: string;
   value: string;
 };

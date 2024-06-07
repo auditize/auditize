@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
 from auditize.logs.models import CustomField, Log
-from auditize.logs.service import save_log
+from auditize.logs.service import save_log, save_log_attachment
 from helpers.database import assert_collection
 from helpers.repos import PreparedRepo
 
@@ -99,13 +99,18 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         Log.Tag(ref="tag_ref", type="rich_tag_bis", name="rich_tag_name"),
         Log.Tag(type="simple_tag"),
     ]
-    log.attachments = [
-        Log.Attachment(
-            name="file.txt", type="text", mime_type="text/plain", data=b"hello"
-        )
-    ]
     log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
-    await save_log(dbm, repo.id, log)
+    log_id = await save_log(dbm, repo.id, log)
+    await save_log_attachment(
+        dbm,
+        repo.id,
+        log_id,
+        name="file.txt",
+        type="text",
+        description=None,
+        mime_type="text/plain",
+        data=b"hello",
+    )
     await assert_consolidated_data(
         repo.db.log_actions,
         [

@@ -492,6 +492,13 @@ class LogProvider:
 
     def _build_job_application_creation_log(self, job_offer_log):
         applicant = random.choice(self.applicant_actors)
+        attachments = [
+            {
+                "name": "resume.txt",
+                "data": b"This is the resume of someone great",
+                "type": "resume",
+            }
+        ]
         return {
             "action": {
                 "category": "job_applications",
@@ -519,7 +526,7 @@ class LogProvider:
                     "name": applicant["name"],
                 }
             ],
-        }
+        }, attachments
 
     def _build_job_application_status_change_log(
         self, job_application_log, job_offer_log, status
@@ -555,10 +562,10 @@ class LogProvider:
         job_offer_log = self._build_job_offer_creation_log()
         yield job_offer_log
         for _ in range(5):
-            job_application_log = self._build_job_application_creation_log(
+            job_application_log, attachments = self._build_job_application_creation_log(
                 job_offer_log
             )
-            yield job_application_log
+            yield job_application_log, attachments
             yield self._build_job_application_status_change_log(
                 job_application_log,
                 job_offer_log,
