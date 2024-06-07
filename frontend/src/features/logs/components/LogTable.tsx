@@ -1,16 +1,24 @@
-import { Anchor, Breadcrumbs, Stack, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Anchor,
+  Breadcrumbs,
+  Stack,
+  Text,
+  useCombobox,
+} from "@mantine/core";
 import { IconColumns3 } from "@tabler/icons-react";
 import { DataTable, DataTableColumn } from "mantine-datatable";
 import { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
+import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { humanizeDate } from "@/utils/date";
 import { labelize, titlize } from "@/utils/format";
 import { addQueryParamToLocation } from "@/utils/router";
 
 import { CustomField, Log } from "../api";
 import { LogDetails } from "./LogDetails";
-import { LogFieldSelector } from "./LogFieldSelector";
+import { useLogFields } from "./LogFieldSelector";
 
 export type TableFilterChangeHandler = (
   name: string,
@@ -546,16 +554,30 @@ function ColumnSelector({
   onColumnAdded: (name: string) => void;
   onColumnRemoved: (name: string) => void;
 }) {
+  const { fields, loading: fieldsLoading } = useLogFields(
+    repoId,
+    undefined,
+    true,
+  );
+  const comboboxStore = useCombobox();
+
   return (
-    <LogFieldSelector
-      repoId={repoId}
-      selected={selected}
-      onSelected={onColumnAdded}
-      onUnselected={onColumnRemoved}
-      enableCompositeFields
+    <CustomMultiSelect
+      comboboxStore={comboboxStore}
+      data={fields}
+      value={Array.from(selected)}
+      onOptionSubmit={onColumnAdded}
+      onRemove={onColumnRemoved}
     >
-      <IconColumns3 />
-    </LogFieldSelector>
+      <ActionIcon
+        onClick={() => comboboxStore.toggleDropdown()}
+        loading={fieldsLoading}
+        loaderProps={{ type: "dots" }}
+        variant="transparent"
+      >
+        <IconColumns3 />
+      </ActionIcon>
+    </CustomMultiSelect>
   );
 }
 

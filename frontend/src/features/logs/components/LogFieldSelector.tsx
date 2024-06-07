@@ -1,7 +1,5 @@
-import { Button, useCombobox } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 
-import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { labelize, titlize } from "@/utils/format";
 
 import {
@@ -11,7 +9,7 @@ import {
   getAllLogSourceFields,
 } from "../api";
 
-function useLogFields(
+export function useLogFields(
   repoId: string,
   fixedFields: Set<string> | undefined,
   enableCompositeFields: boolean,
@@ -144,49 +142,4 @@ function useLogFields(
       detailFieldsPending ||
       sourceFieldsPending,
   };
-}
-
-export function LogFieldSelector({
-  repoId,
-  selected,
-  onSelected,
-  onUnselected,
-  fixed,
-  enableCompositeFields = false,
-  loading = false,
-  children,
-}: {
-  repoId: string;
-  selected: Set<string>;
-  onSelected: (name: string) => void;
-  onUnselected: (name: string) => void;
-  fixed?: Set<string>;
-  enableCompositeFields?: boolean;
-  loading?: boolean;
-  children: React.ReactNode;
-}) {
-  const { fields, loading: fieldsLoading } = useLogFields(
-    repoId,
-    fixed,
-    enableCompositeFields,
-  );
-  const comboboxStore = useCombobox();
-
-  return (
-    <CustomMultiSelect
-      comboboxStore={comboboxStore}
-      data={fields}
-      value={Array.from(selected)}
-      onOptionSubmit={onSelected}
-      onRemove={onUnselected}
-    >
-      <Button
-        onClick={() => comboboxStore.toggleDropdown()}
-        loading={fieldsLoading || loading}
-        loaderProps={{ type: "dots" }}
-      >
-        {children}
-      </Button>
-    </CustomMultiSelect>
-  );
 }

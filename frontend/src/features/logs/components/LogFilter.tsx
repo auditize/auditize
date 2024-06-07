@@ -20,7 +20,7 @@ import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import { getAllMyRepos } from "@/features/repos";
 import { Repo } from "@/features/repos";
-import { labelize, titlize } from "@/utils/format";
+import { titlize } from "@/utils/format";
 
 import {
   buildLogSearchParams,
@@ -28,17 +28,13 @@ import {
   getAllAttachmentTypes,
   getAllLogActionCategories,
   getAllLogActionTypes,
-  getAllLogActorCustomFields,
   getAllLogActorTypes,
-  getAllLogDetailFields,
   getAllLogNodes,
-  getAllLogResourceCustomFields,
   getAllLogResourceTypes,
-  getAllLogSourceFields,
   getAllLogTagTypes,
   LogSearchParams,
 } from "../api";
-import { LogFieldSelector } from "./LogFieldSelector";
+import { useLogFields } from "./LogFieldSelector";
 import { NodeSelector } from "./NodeSelector";
 
 const FIXED_FILTER_NAMES = new Set([
@@ -735,19 +731,30 @@ function FilterSelector({
   onFilterAdded: (name: string) => void;
   onFilterRemoved: (name: string) => void;
 }) {
+  const { fields, loading: logFieldsLoading } = useLogFields(
+    repoId,
+    FIXED_FILTER_NAMES,
+    false,
+  );
   const logConsolidatedDataLoading = useLogConsolidatedDataPrefetch(repoId);
+  const comboboxStore = useCombobox();
 
   return (
-    <LogFieldSelector
-      repoId={repoId}
-      selected={selected}
-      onSelected={onFilterAdded}
-      onUnselected={onFilterRemoved}
-      fixed={FIXED_FILTER_NAMES}
-      loading={logConsolidatedDataLoading}
+    <CustomMultiSelect
+      comboboxStore={comboboxStore}
+      data={fields}
+      value={Array.from(selected)}
+      onOptionSubmit={onFilterAdded}
+      onRemove={onFilterRemoved}
     >
-      <IconPlus />
-    </LogFieldSelector>
+      <Button
+        onClick={() => comboboxStore.toggleDropdown()}
+        loading={logFieldsLoading || logConsolidatedDataLoading}
+        loaderProps={{ type: "dots" }}
+      >
+        <IconPlus />
+      </Button>
+    </CustomMultiSelect>
   );
 }
 
