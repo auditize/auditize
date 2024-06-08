@@ -11,6 +11,7 @@ import {
 } from "@mantine/core";
 import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
+import { useDisclosure } from "@mantine/hooks";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "mantine-datatable/styles.layer.css";
@@ -80,10 +81,11 @@ function LogoutModal({
 
 function UserMenu() {
   const { currentUser, declareLogout } = useAuthenticatedUser();
-  let [searchParams, setSearchParams] = useSearchParams();
+  const [opened, { open, close }] = useDisclosure(false);
   const initials =
     currentUser.firstName[0].toUpperCase() +
     currentUser.lastName[0].toUpperCase();
+
   return (
     <>
       <Menu>
@@ -93,19 +95,13 @@ function UserMenu() {
           </UnstyledButton>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item
-            onClick={() => {
-              setSearchParams({ preferences: "" });
-            }}
-          >
-            Preferences
-          </Menu.Item>
+          <Menu.Item onClick={() => open()}>Preferences</Menu.Item>
           <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
             Logout
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-      <UserSettings opened={searchParams.has("preferences")} />
+      <UserSettings opened={opened} onClose={close} />
     </>
   );
 }

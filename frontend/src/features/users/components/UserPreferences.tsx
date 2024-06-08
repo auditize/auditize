@@ -55,18 +55,23 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function UserSettings({ opened: opened }: { opened: boolean }) {
+export function UserSettings({
+  opened: opened,
+  onClose,
+}: {
+  opened: boolean;
+  onClose: () => void;
+}) {
   const navigate = useNavigate();
-  const handleClose = () => navigate(-1);
 
   return (
-    <Modal opened={opened} onClose={handleClose}>
+    <Modal opened={opened} onClose={onClose}>
       <Tabs defaultValue="general" orientation="vertical">
         <Tabs.List>
           <Tabs.Tab value="general">General</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="general">
-          <GeneralSettings onClose={handleClose} />
+          <GeneralSettings onClose={onClose} />
         </Tabs.Panel>
       </Tabs>
     </Modal>
