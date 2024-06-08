@@ -432,10 +432,18 @@ async def test_update_user_me(user_builder: UserBuilder, dbm: DatabaseManager):
     user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await client.assert_patch_no_content(
+        await client.assert_patch_ok(
             "/users/me",
             json={
                 "lang": "fr",
+            },
+            expected_json={
+                "id": user.id,
+                "first_name": user.data["first_name"],
+                "last_name": user.data["last_name"],
+                "lang": "fr",
+                "email": user.data["email"],
+                "permissions": DEFAULT_APPLICABLE_PERMISSIONS,
             },
         )
 
