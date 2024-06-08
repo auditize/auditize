@@ -1,3 +1,4 @@
+import { CurrentUserInfo } from "@/features/auth/api";
 import { Permissions } from "@/features/permissions";
 import {
   PagePaginationInfo,
@@ -28,7 +29,7 @@ export type UserUpdate = {
   permissions?: Permissions;
 };
 
-export type UserPreferencesUpdate = {
+export type UserMeUpdate = {
   lang?: string;
 };
 
@@ -59,9 +60,8 @@ export async function deleteUser(userId: string): Promise<void> {
   await reqDelete("/users/" + userId);
 }
 
-export async function updateUserPreferences(
-  userId: string,
-  update: UserPreferencesUpdate,
-): Promise<void> {
-  await reqPatch(`/users/${userId}/preferences`, update);
+export async function updateUserMe(
+  update: UserMeUpdate,
+): Promise<CurrentUserInfo> {
+  return await reqPatch(`/users/me`, update);
 }

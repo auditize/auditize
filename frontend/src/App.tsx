@@ -21,6 +21,7 @@ import {
   Outlet,
   RouterProvider,
   useLocation,
+  useSearchParams,
 } from "react-router-dom";
 
 import {
@@ -38,6 +39,7 @@ import { theme } from "@/theme";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
+import { UserSettings } from "./features/users/components/UserPreferences";
 import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
 
@@ -78,23 +80,33 @@ function LogoutModal({
 
 function UserMenu() {
   const { currentUser, declareLogout } = useAuthenticatedUser();
+  let [searchParams, setSearchParams] = useSearchParams();
   const initials =
     currentUser.firstName[0].toUpperCase() +
     currentUser.lastName[0].toUpperCase();
-
   return (
-    <Menu>
-      <Menu.Target>
-        <UnstyledButton>
-          <Avatar>{initials}</Avatar>
-        </UnstyledButton>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
-          Logout
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
+    <>
+      <Menu>
+        <Menu.Target>
+          <UnstyledButton>
+            <Avatar>{initials}</Avatar>
+          </UnstyledButton>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item
+            onClick={() => {
+              setSearchParams({ preferences: "" });
+            }}
+          >
+            Preferences
+          </Menu.Item>
+          <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
+            Logout
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+      <UserSettings opened={searchParams.has("preferences")} />
+    </>
   );
 }
 
