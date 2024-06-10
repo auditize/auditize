@@ -59,17 +59,19 @@ async def create_user(
     "/users/me",
     summary="Update authenticated user",
     tags=["users"],
-    status_code=204,
+    status_code=200,
     responses=error_responses(400),
 )
 async def update_user_me(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
-    user: UserMeUpdateRequest,
+    update_request: UserMeUpdateRequest,
 ):
     _ensure_authenticated_as_user(authenticated)
-    user_model = UserUpdate.model_validate(user.model_dump())
-    await service.update_user(dbm, authenticated.user.id, user_model)
+    update = UserUpdate.model_validate(update_request.model_dump())
+    await service.update_user(dbm, authenticated.user.id, update)
+    user = await service.get_user(dbm, authenticated.user.id)
+    return UserMeResponse.from_db_model(user)
 
 
 @router.patch(

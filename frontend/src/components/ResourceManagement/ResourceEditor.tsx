@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FormEventHandler, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { CustomModalTitle } from "../CustomModalTitle";
 import { InlineErrorMessage } from "../InlineErrorMessage";
 
 interface ResourceEditorProps {
@@ -55,7 +56,7 @@ function ResourceEditor({
 
   return (
     <Modal
-      title={<Text fw={600}>{title}</Text>}
+      title={<CustomModalTitle>{title}</CustomModalTitle>}
       size="lg"
       padding="lg"
       opened={opened}

@@ -1,17 +1,18 @@
 import {
   AppShell,
+  Avatar,
   Button,
-  Center,
   Flex,
   MantineProvider,
+  Menu,
   Space,
   Text,
-  Tooltip,
+  UnstyledButton,
 } from "@mantine/core";
 import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
+import { useDisclosure } from "@mantine/hooks";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
-import { IconLogout } from "@tabler/icons-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "mantine-datatable/styles.layer.css";
 import { useEffect } from "react";
@@ -23,7 +24,12 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { AuthProvider, LoginForm, useCurrentUser } from "@/features/auth";
+import {
+  AuthProvider,
+  LoginForm,
+  useAuthenticatedUser,
+  useCurrentUser,
+} from "@/features/auth";
 import { Logs } from "@/features/logs";
 import { ReposManagement } from "@/features/repos";
 import { Signup } from "@/features/signup";
@@ -33,6 +39,7 @@ import { theme } from "@/theme";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
+import { UserSettings } from "./features/users";
 import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
 
@@ -67,6 +74,33 @@ function LogoutModal({
       >
         Ok
       </Button>
+    </>
+  );
+}
+
+function UserMenu() {
+  const { currentUser, declareLogout } = useAuthenticatedUser();
+  const [opened, { open, close }] = useDisclosure(false);
+  const initials =
+    currentUser.firstName[0].toUpperCase() +
+    currentUser.lastName[0].toUpperCase();
+
+  return (
+    <>
+      <Menu>
+        <Menu.Target>
+          <UnstyledButton>
+            <Avatar>{initials}</Avatar>
+          </UnstyledButton>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item onClick={() => open()}>Preferences</Menu.Item>
+          <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
+            Logout
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+      <UserSettings opened={opened} onClose={close} />
     </>
   );
 }
@@ -136,14 +170,7 @@ function Main() {
             </NavbarItemGroup>
           </Navbar>
           <Space w="6rem" />
-          <Tooltip label="Log-out">
-            <Center style={{ cursor: "pointer" }}>
-              <IconLogout
-                onClick={logoutConfirmationModal(declareLogout)}
-                size={"1.3rem"}
-              />
-            </Center>
-          </Tooltip>
+          {currentUser && <UserMenu />}
         </Flex>
       </AppShell.Header>
       <AppShell.Main>
