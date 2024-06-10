@@ -596,7 +596,7 @@ function ColumnSelector({
   onColumnRemoved,
 }: {
   repoId: string;
-  selected: Set<string>;
+  selected: Array<string>;
   onColumnAdded: (name: string) => void;
   onColumnRemoved: (name: string) => void;
 }) {
@@ -976,18 +976,23 @@ export function LogTable({
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const logId = params.get("log");
-  const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
-    new Set(["date", "actor", "action", "resource", "node", "tag"]),
-  );
+  const [selectedColumns, setSelectedColumns] = useState<Array<string>>([
+    "date",
+    "actor",
+    "action",
+    "resource",
+    "node",
+    "tag",
+  ]);
   const addColumn = (name: string) => {
-    setSelectedColumns(new Set([...selectedColumns, name]));
+    setSelectedColumns([...selectedColumns, name]);
   };
   const removeColumn = (name: string) => {
-    setSelectedColumns(new Set([...selectedColumns].filter((n) => n !== name)));
+    setSelectedColumns([...selectedColumns].filter((n) => n !== name));
   };
 
   let columns = [
-    ...Array.from(selectedColumns)
+    ...selectedColumns
       .toSorted(sortFields)
       .map((column) => fieldToColumn(column, onTableFilterChange))
       .filter((data) => !!data),
