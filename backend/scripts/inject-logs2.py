@@ -608,7 +608,8 @@ class LogProvider:
             "tags": [
                 {
                     "type": "security",
-                }
+                },
+                {"type": "important"},
             ],
         }
 
