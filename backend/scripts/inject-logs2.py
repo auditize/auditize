@@ -547,7 +547,7 @@ class LogProvider:
                     "value": "1.0.0",
                 },
             ],
-            "resource": job_application_log["resource"],
+            "resource": job_application_log["actor"],
             "details": [
                 {
                     "name": "status",
