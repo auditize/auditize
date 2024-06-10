@@ -27,9 +27,13 @@ export type TableFilterChangeHandler = (
 
 function InlineFilterLink({
   onClick,
+  fontSize = "sm",
+  color,
   children,
 }: {
   onClick: () => void;
+  fontSize?: string;
+  color?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -40,7 +44,9 @@ function InlineFilterLink({
       }}
       underline="hover"
     >
-      {children}
+      <Text size={fontSize} component="span" c={color}>
+        {children}
+      </Text>
     </Anchor>
   );
 }
@@ -54,7 +60,7 @@ function getCustomFieldValue(
 }
 
 function DateField({ log }: { log: Log }) {
-  return <Text>{humanizeDate(log.savedAt)}</Text>;
+  return <Text size="sm">{humanizeDate(log.savedAt)}</Text>;
 }
 
 function SourceField({
@@ -182,6 +188,34 @@ function ActorCustomField({
     >
       {fieldValue}
     </InlineFilterLink>
+  );
+}
+
+function ActionField({
+  log,
+  onTableFilterChange,
+}: {
+  log: Log;
+  onTableFilterChange: TableFilterChangeHandler;
+}) {
+  return (
+    <>
+      <InlineFilterLink
+        onClick={() => onTableFilterChange("actionType", log.action.type)}
+      >
+        {titlize(log.action.type)}
+      </InlineFilterLink>
+      <br />
+      <InlineFilterLink
+        onClick={() =>
+          onTableFilterChange("actionCategory", log.action.category)
+        }
+        color="gray"
+        fontSize="xs"
+      >
+        {"(" + titlize(log.action.category) + ")"}
+      </InlineFilterLink>
+    </>
   );
 }
 
@@ -590,24 +624,25 @@ function sortFields(a: string, b: string) {
     actorName: 4,
     actorRef: 5,
     "actor.": 6,
-    actionType: 7,
-    actionCategory: 8,
-    resource: 9,
-    resourceType: 10,
-    resourceName: 11,
-    resourceRef: 12,
-    "resource.": 13,
-    "details.": 14,
-    tag: 15,
-    tagType: 16,
-    tagName: 17,
-    tagRef: 18,
-    attachment: 19,
-    atachmentName: 20,
-    attachmentDescription: 21,
-    attachmentType: 22,
-    attachmentMimeType: 23,
-    node: 24,
+    action: 7,
+    actionType: 8,
+    actionCategory: 9,
+    resource: 10,
+    resourceType: 11,
+    resourceName: 12,
+    resourceRef: 13,
+    "resource.": 14,
+    "details.": 15,
+    tag: 16,
+    tagType: 17,
+    tagName: 18,
+    tagRef: 19,
+    attachment: 20,
+    atachmentName: 21,
+    attachmentDescription: 22,
+    attachmentType: 23,
+    attachmentMimeType: 24,
+    node: 25,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -700,6 +735,15 @@ function fieldToColumn(
       ),
     };
   }
+
+  if (field === "action")
+    return {
+      accessor: "action",
+      title: "Action",
+      render: (log: Log) => (
+        <ActionField log={log} onTableFilterChange={onTableFilterChange} />
+      ),
+    };
 
   if (field === "actionType")
     return {
@@ -921,15 +965,7 @@ export function LogTable({
   const [params] = useSearchParams();
   const logId = params.get("log");
   const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
-    new Set([
-      "date",
-      "actor",
-      "actionType",
-      "actionCategory",
-      "resource",
-      "resourceType",
-      "node",
-    ]),
+    new Set(["date", "actor", "action", "resource", "resourceType", "node"]),
   );
   const addColumn = (name: string) => {
     setSelectedColumns(new Set([...selectedColumns, name]));

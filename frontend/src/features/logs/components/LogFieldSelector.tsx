@@ -49,6 +49,9 @@ export function useLogFields(
       {
         group: "Action",
         items: [
+          ...(enableCompositeFields
+            ? [_({ value: "action", label: "Action *" })]
+            : []),
           _({ value: "actionCategory", label: "Action category" }),
           _({ value: "actionType", label: "Action type" }),
         ],
