@@ -22,7 +22,6 @@ import {
   Outlet,
   RouterProvider,
   useLocation,
-  useSearchParams,
 } from "react-router-dom";
 
 import {
@@ -40,7 +39,7 @@ import { theme } from "@/theme";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
-import { UserSettings } from "./features/users/components/UserPreferences";
+import { UserSettings } from "./features/users";
 import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
 
