@@ -16,6 +16,7 @@ import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "mantine-datatable/styles.layer.css";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   createBrowserRouter,
   Navigate,
@@ -40,6 +41,7 @@ import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
 import { UserSettings } from "./features/users";
+import { I18nProvider } from "./i18n";
 import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
 
@@ -107,6 +109,7 @@ function UserMenu() {
 
 function Main() {
   const { currentUser, declareLogout } = useCurrentUser();
+  const { t } = useTranslation();
 
   useEffect(() => {
     let alreadyIntercepted = false;
@@ -138,7 +141,7 @@ function Main() {
                 !!(currentUser && currentUser.permissions.logs.read != "none")
               }
             />
-            <NavbarItemGroup label="Management">
+            <NavbarItemGroup label={t("menu.management")}>
               <NavbarItem
                 label="Repositories"
                 url="/repos"
@@ -200,7 +203,7 @@ function CatchAll() {
 }
 
 function AppRoutes() {
-  const { isAuthenticated, declareLogin } = useCurrentUser();
+  const { isAuthenticated, declareLogin, currentUser } = useCurrentUser();
 
   const router = createBrowserRouter([
     isAuthenticated
@@ -240,7 +243,11 @@ function AppRoutes() {
     },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <I18nProvider lang={currentUser?.lang}>
+      <RouterProvider router={router} />
+    </I18nProvider>
+  );
 }
 
 export default function App() {
