@@ -28,11 +28,13 @@ export type TableFilterChangeHandler = (
 function InlineFilterLink({
   onClick,
   fontSize = "sm",
+  fontWeight,
   color,
   children,
 }: {
   onClick: () => void;
   fontSize?: string;
+  fontWeight?: string | number;
   color?: string;
   children: React.ReactNode;
 }) {
@@ -44,7 +46,7 @@ function InlineFilterLink({
       }}
       underline="hover"
     >
-      <Text size={fontSize} component="span" c={color}>
+      <Text component="span" size={fontSize} fw={fontWeight} c={color}>
         {children}
       </Text>
     </Anchor>
@@ -259,11 +261,20 @@ function ResourceField({
   onTableFilterChange: TableFilterChangeHandler;
 }) {
   return log.resource ? (
-    <InlineFilterLink
-      onClick={() => onTableFilterChange("resourceRef", log.resource!.ref)}
-    >
-      {log.resource.name}
-    </InlineFilterLink>
+    <>
+      <InlineFilterLink
+        onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
+      >
+        {titlize(log.resource.type)}
+      </InlineFilterLink>
+      {": "}
+      <InlineFilterLink
+        onClick={() => onTableFilterChange("resourceRef", log.resource!.ref)}
+        fontWeight="bold"
+      >
+        {log.resource.name}
+      </InlineFilterLink>
+    </>
   ) : null;
 }
 
@@ -965,7 +976,7 @@ export function LogTable({
   const [params] = useSearchParams();
   const logId = params.get("log");
   const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
-    new Set(["date", "actor", "action", "resource", "resourceType", "node"]),
+    new Set(["date", "actor", "action", "resource", "node"]),
   );
   const addColumn = (name: string) => {
     setSelectedColumns(new Set([...selectedColumns, name]));
