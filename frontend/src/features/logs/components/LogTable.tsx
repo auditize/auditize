@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Anchor,
+  Badge,
   Breadcrumbs,
   Stack,
   Text,
@@ -390,21 +391,21 @@ function TagsField({
   onTableFilterChange: TableFilterChangeHandler;
 }) {
   return (
-    <Breadcrumbs separator=", ">
+    <Breadcrumbs separator={null} separatorMargin="0.250rem">
       {log.tags.map((tag, i) =>
         tag.ref ? (
           <InlineFilterLink
             key={i}
             onClick={() => onTableFilterChange("tagRef", tag.ref!)}
           >
-            {tag.name}
+            <Badge size="sm">{tag.type + ": " + tag.name}</Badge>
           </InlineFilterLink>
         ) : (
           <InlineFilterLink
             key={i}
             onClick={() => onTableFilterChange("tagType", tag.type)}
           >
-            {titlize(tag.type)}
+            <Badge size="sm">{titlize(tag.type)}</Badge>
           </InlineFilterLink>
         ),
       )}
@@ -644,16 +645,16 @@ function sortFields(a: string, b: string) {
     resourceRef: 13,
     "resource.": 14,
     "details.": 15,
-    tag: 16,
-    tagType: 17,
-    tagName: 18,
-    tagRef: 19,
-    attachment: 20,
-    atachmentName: 21,
-    attachmentDescription: 22,
-    attachmentType: 23,
-    attachmentMimeType: 24,
-    node: 25,
+    attachment: 16,
+    atachmentName: 17,
+    attachmentDescription: 18,
+    attachmentType: 19,
+    attachmentMimeType: 20,
+    node: 21,
+    tag: 22,
+    tagType: 23,
+    tagName: 24,
+    tagRef: 25,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -976,7 +977,7 @@ export function LogTable({
   const [params] = useSearchParams();
   const logId = params.get("log");
   const [selectedColumns, setSelectedColumns] = useState<Set<string>>(
-    new Set(["date", "actor", "action", "resource", "node"]),
+    new Set(["date", "actor", "action", "resource", "node", "tag"]),
   );
   const addColumn = (name: string) => {
     setSelectedColumns(new Set([...selectedColumns, name]));
