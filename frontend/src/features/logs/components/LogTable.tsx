@@ -595,11 +595,13 @@ function ColumnSelector({
   selected,
   onColumnAdded,
   onColumnRemoved,
+  onColumnReset,
 }: {
   repoId: string;
   selected: Array<string>;
   onColumnAdded: (name: string) => void;
   onColumnRemoved: (name: string) => void;
+  onColumnReset: () => void;
 }) {
   const { fields, loading: fieldsLoading } = useLogFields(
     repoId,
@@ -615,6 +617,11 @@ function ColumnSelector({
       value={Array.from(selected)}
       onOptionSubmit={onColumnAdded}
       onRemove={onColumnRemoved}
+      footer={
+        <Anchor onClick={onColumnReset}>
+          <Text size="xs">Reset columns</Text>
+        </Anchor>
+      }
     >
       <ActionIcon
         onClick={() => comboboxStore.toggleDropdown()}
@@ -998,6 +1005,12 @@ export function LogTable({
       ),
     }));
   };
+  const resetColumns = () => {
+    setSelectedColumns((selectedColumns) => ({
+      ...selectedColumns,
+      [repoId]: defaultColumns,
+    }));
+  };
 
   let columns = [
     ...(selectedColumns[repoId] || defaultColumns)
@@ -1014,6 +1027,7 @@ export function LogTable({
             selected={selectedColumns[repoId] || defaultColumns}
             onColumnAdded={addColumn}
             onColumnRemoved={removeColumn}
+            onColumnReset={resetColumns}
           />
         </span>
       ),

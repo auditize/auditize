@@ -47,6 +47,7 @@ export function CustomMultiSelect({
   onOptionSubmit,
   onRemove,
   children,
+  footer,
 }: {
   data: ComboboxItemGroup<ComboboxItem>[];
   value: string[];
@@ -54,6 +55,7 @@ export function CustomMultiSelect({
   onOptionSubmit: (value: string) => void;
   onRemove: (value: string) => void;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   const handleOnOptionSubmit = (changed: string) => {
     if (value.includes(changed)) {
@@ -79,6 +81,7 @@ export function CustomMultiSelect({
             {buildComboboxOptions(data, value)}
           </ScrollArea.Autosize>
         </Combobox.Options>
+        {footer && <Combobox.Footer>{footer}</Combobox.Footer>}
       </Combobox.Dropdown>
     </Combobox>
   );
