@@ -7,6 +7,7 @@ import {
   Text,
   useCombobox,
 } from "@mantine/core";
+import { useLocalStorage } from "@mantine/hooks";
 import { IconColumns3 } from "@tabler/icons-react";
 import { DataTable, DataTableColumn } from "mantine-datatable";
 import { useState } from "react";
@@ -972,27 +973,34 @@ export function LogTable({
   footer: React.ReactNode;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const defaultColumns = ["date", "actor", "action", "resource", "node", "tag"];
   const location = useLocation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const logId = params.get("log");
-  const [selectedColumns, setSelectedColumns] = useState<Array<string>>([
-    "date",
-    "actor",
-    "action",
-    "resource",
-    "node",
-    "tag",
-  ]);
+  const [selectedColumns, setSelectedColumns] = useLocalStorage<
+    Record<string, string[]>
+  >({
+    key: `log-columns`,
+    defaultValue: {},
+  });
   const addColumn = (name: string) => {
-    setSelectedColumns([...selectedColumns, name]);
+    setSelectedColumns((selectedColumns) => ({
+      ...selectedColumns,
+      [repoId]: [...(selectedColumns[repoId] || defaultColumns), name],
+    }));
   };
   const removeColumn = (name: string) => {
-    setSelectedColumns([...selectedColumns].filter((n) => n !== name));
+    setSelectedColumns((selectedColumns) => ({
+      ...selectedColumns,
+      [repoId]: [...(selectedColumns[repoId] || defaultColumns)].filter(
+        (n) => n !== name,
+      ),
+    }));
   };
 
   let columns = [
-    ...selectedColumns
+    ...(selectedColumns[repoId] || defaultColumns)
       .toSorted(sortFields)
       .map((column) => fieldToColumn(column, onTableFilterChange))
       .filter((data) => !!data),
@@ -1003,7 +1011,7 @@ export function LogTable({
         <span style={{ fontWeight: "normal" }}>
           <ColumnSelector
             repoId={repoId}
-            selected={selectedColumns}
+            selected={selectedColumns[repoId] || defaultColumns}
             onColumnAdded={addColumn}
             onColumnRemoved={removeColumn}
           />
