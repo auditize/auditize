@@ -605,6 +605,11 @@ class LogProvider:
                 }
             ],
             "node_path": random.choice(self.node_paths),
+            "tags": [
+                {
+                    "type": "security",
+                }
+            ],
         }
 
     def _build_logs(self):
