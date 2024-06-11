@@ -1,5 +1,6 @@
+import { useLocalStorage } from "@mantine/hooks";
 import i18n from "i18next";
-import { createContext, useEffect } from "react";
+import { createContext, useEffect, useState } from "react";
 import { initReactI18next, useTranslation } from "react-i18next";
 
 function initI18n() {
@@ -44,10 +45,22 @@ export function I18nProvider({
   lang?: string;
   children: React.ReactNode;
 }) {
+  // Algorigthm to determine the language:
+  // 1. If lang is provided (coming from /users/me), use it.
+  // 2. If lang is not provided (the user is not authenticated),
+  //    use the saved language from local storage
+  // 3. If the saved language is not available, use the browser language.
   const { i18n } = useTranslation();
+  const [savedLang, setSavedLang] = useLocalStorage<string>({
+    key: "lang",
+    defaultValue: window.navigator.language,
+  });
   useEffect(() => {
     if (lang) {
       i18n.changeLanguage(lang);
+      setSavedLang(lang);
+    } else {
+      i18n.changeLanguage(savedLang);
     }
   }, [lang]);
   return <I18nContext.Provider value={{}}>{children}</I18nContext.Provider>;

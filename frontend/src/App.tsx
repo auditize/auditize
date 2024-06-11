@@ -209,7 +209,11 @@ function AppRoutes() {
     isAuthenticated
       ? {
           path: "/",
-          element: <Main />,
+          element: (
+            <I18nProvider lang={currentUser!.lang}>
+              <Main />
+            </I18nProvider>
+          ),
           children: [
             {
               path: "logs",
@@ -243,11 +247,7 @@ function AppRoutes() {
     },
   ]);
 
-  return (
-    <I18nProvider lang={currentUser?.lang}>
-      <RouterProvider router={router} />
-    </I18nProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default function App() {
