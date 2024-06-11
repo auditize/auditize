@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { labelize, titlize } from "@/utils/format";
 
@@ -14,6 +15,7 @@ export function useLogFields(
   fixedFields: Set<string> | undefined,
   enableCompositeFields: boolean,
 ) {
+  const { t } = useTranslation();
   const { data: actorCustomFields, isPending: actorCustomFieldsPending } =
     useQuery({
       queryKey: ["logActorCustomFields", repoId],
@@ -50,31 +52,31 @@ export function useLogFields(
         group: "Action",
         items: [
           ...(enableCompositeFields
-            ? [_({ value: "action", label: "Action *" })]
+            ? [_({ value: "action", label: t("log.action") + " *" })]
             : []),
-          _({ value: "actionCategory", label: "Action category" }),
-          _({ value: "actionType", label: "Action type" }),
+          _({ value: "actionCategory", label: t("log.actionCategory") }),
+          _({ value: "actionType", label: t("log.actionType") }),
         ],
       },
       {
         group: "Actor",
         items: [
           ...(enableCompositeFields
-            ? [_({ value: "actor", label: "Actor *" })]
+            ? [_({ value: "actor", label: t("log.actor") + " *" })]
             : []),
-          _({ value: "actorType", label: "Actor type" }),
-          _({ value: "actorName", label: "Actor name" }),
-          _({ value: "actorRef", label: "Actor ref" }),
+          _({ value: "actorType", label: t("log.actorType") }),
+          _({ value: "actorName", label: t("log.actorName") }),
+          _({ value: "actorRef", label: t("log.actorRef") }),
           ...(actorCustomFields ?? []).map((field) =>
             _({
               value: `actor.${field}`,
-              label: `Actor ${labelize(field)}`,
+              label: t("log.actor") + ": " + labelize(field),
             }),
           ),
         ],
       },
       {
-        group: "Source",
+        group: t("log.source"),
         items: (sourceFields ?? []).map((field) =>
           _({
             value: `source.${field}`,
@@ -83,24 +85,24 @@ export function useLogFields(
         ),
       },
       {
-        group: "Resource",
+        group: t("log.resource"),
         items: [
           ...(enableCompositeFields
-            ? [_({ value: "resource", label: "Resource *" })]
+            ? [_({ value: "resource", label: t("log.resource") + " *" })]
             : []),
-          _({ value: "resourceType", label: "Resource type" }),
-          _({ value: "resourceName", label: "Resource name" }),
-          _({ value: "resourceRef", label: "Resource ref" }),
+          _({ value: "resourceType", label: t("log.resourceType") }),
+          _({ value: "resourceName", label: t("log.resourceName") }),
+          _({ value: "resourceRef", label: t("log.resourceRef") }),
           ...(resourceCustomFields ?? []).map((field) =>
             _({
               value: `resource.${field}`,
-              label: `Resource ${labelize(field)}`,
+              label: t("log.resource") + ": " + labelize(field),
             }),
           ),
         ],
       },
       {
-        group: "Details",
+        group: t("log.details"),
         items: (detailFields ?? []).map((field) =>
           _({
             value: `details.${field}`,
@@ -109,34 +111,37 @@ export function useLogFields(
         ),
       },
       {
-        group: "Tag",
+        group: t("log.tag"),
         items: [
           ...(enableCompositeFields
-            ? [_({ value: "tag", label: "Tag *" })]
+            ? [_({ value: "tag", label: t("log.tag") + " *" })]
             : []),
-          _({ value: "tagType", label: "Tag type" }),
-          _({ value: "tagName", label: "Tag name" }),
-          _({ value: "tagRef", label: "Tag ref" }),
+          _({ value: "tagType", label: t("log.tagType") }),
+          _({ value: "tagName", label: t("log.tagName") }),
+          _({ value: "tagRef", label: t("log.tagRef") }),
         ],
       },
       {
         group: "Attachment",
         items: [
           ...(enableCompositeFields
-            ? [_({ value: "attachment", label: "Attachment *" })]
+            ? [_({ value: "attachment", label: t("log.attachment") + " *" })]
             : []),
-          _({ value: "attachmentName", label: "Attachment name" }),
+          _({ value: "attachmentName", label: t("log.attachmentName") }),
           _({
             value: "attachmentDescription",
-            label: "Attachment description",
+            label: t("log.attachmentDescription"),
           }),
-          _({ value: "attachmentType", label: "Attachment type" }),
-          _({ value: "attachmentMimeType", label: "Attachment MIME type" }),
+          _({ value: "attachmentType", label: t("log.attachmentType") }),
+          _({
+            value: "attachmentMimeType",
+            label: t("log.attachmentMimeType"),
+          }),
         ],
       },
       {
-        group: "Node",
-        items: [_({ value: "node", label: "Node" })],
+        group: t("log.node"),
+        items: [_({ value: "node", label: t("log.node") })],
       },
     ],
     loading:

@@ -23,6 +23,7 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Breadcrumb } from "rsuite";
 
@@ -78,12 +79,13 @@ function HoverRef({
   value: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <HoverCard width={280} shadow="md" openDelay={150} closeDelay={150}>
       <HoverCard.Target>{children}</HoverCard.Target>
       <HoverCard.Dropdown>
         <Text size="sm">
-          Ref: <Code>{value}</Code>
+          {t("log.view.ref")}: <Code>{value}</Code>
         </Text>
       </HoverCard.Dropdown>
     </HoverCard>
@@ -132,6 +134,7 @@ export function LogDetails({
   repoId?: string;
   logId?: string;
 }) {
+  const { t } = useTranslation();
   const opened = !!(repoId && logId);
   const {
     data: log,
@@ -184,7 +187,7 @@ export function LogDetails({
           </Group>
 
           <KeyValueSection
-            title="Source"
+            title={t("log.source")}
             icon={<IconRoute style={iconSize("1.15rem")} />}
             data={log.source.map(
               (field) =>
@@ -196,13 +199,13 @@ export function LogDetails({
           />
 
           <KeyValueSection
-            title="Actor"
+            title={t("log.actor")}
             icon={<IconUser style={iconSize("1.15rem")} />}
             data={
               log.actor && [
-                ["Name", <b>{log.actor.name}</b>],
-                ["Type", titlize(log.actor.type)],
-                ["Ref", <Code>{log.actor.ref}</Code>],
+                [t("log.view.name"), <b>{log.actor.name}</b>],
+                [t("log.view.type"), titlize(log.actor.type)],
+                [t("log.view.ref"), <Code>{log.actor.ref}</Code>],
                 ...log.actor.extra.map(
                   (field) =>
                     [titlize(field.name), field.value] as [
@@ -215,13 +218,13 @@ export function LogDetails({
           />
 
           <KeyValueSection
-            title="Resource"
+            title={t("log.resource")}
             icon={<IconCylinder style={iconSize("1.15rem")} />}
             data={
               log.resource && [
-                ["Name", <b>{log.resource.name}</b>],
-                ["Type", titlize(log.resource.type)],
-                ["Ref", <Code>{log.resource.ref}</Code>],
+                [t("log.view.name"), <b>{log.resource.name}</b>],
+                [t("log.view.type"), titlize(log.resource.type)],
+                [t("log.view.ref"), <Code>{log.resource.ref}</Code>],
                 ...log.resource.extra.map(
                   (field) =>
                     [titlize(field.name), field.value] as [
@@ -234,7 +237,7 @@ export function LogDetails({
           />
 
           <KeyValueSection
-            title="Details"
+            title={t("log.details")}
             icon={<IconListDetails style={iconSize("1.15rem")} />}
             data={log.details.map(
               (field) =>
@@ -246,7 +249,7 @@ export function LogDetails({
           />
 
           <KeyValueSection
-            title="Attachments"
+            title={t("log.attachment")}
             icon={<IconPaperclip style={iconSize("1.15rem")} />}
             data={log.attachments.map(
               (field, index) =>
@@ -262,7 +265,7 @@ export function LogDetails({
           />
 
           <Section
-            title="Node"
+            title={t("log.node")}
             icon={<IconHierarchy style={iconSize("1.15rem")} />}
           >
             <Box p="xs">

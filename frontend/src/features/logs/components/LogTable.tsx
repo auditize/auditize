@@ -9,9 +9,11 @@ import {
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import { IconColumns3 } from "@tabler/icons-react";
+import i18n from "i18next";
 import { DataTable, DataTableColumn } from "mantine-datatable";
-import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { i } from "vitest/dist/reporters-P7C2ytIv";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { humanizeDate } from "@/utils/date";
@@ -603,6 +605,7 @@ function ColumnSelector({
   onColumnRemoved: (name: string) => void;
   onColumnReset: () => void;
 }) {
+  const { t } = useTranslation();
   const { fields, loading: fieldsLoading } = useLogFields(
     repoId,
     undefined,
@@ -619,7 +622,7 @@ function ColumnSelector({
       onRemove={onColumnRemoved}
       footer={
         <Anchor onClick={onColumnReset}>
-          <Text size="xs">Reset columns</Text>
+          <Text size="xs">{t("log.list.columnSelector.reset")}</Text>
         </Anchor>
       }
     >
@@ -683,10 +686,12 @@ function fieldToColumn(
   field: string,
   onTableFilterChange: TableFilterChangeHandler,
 ) {
+  const { t } = i18n;
+
   if (field === "date")
     return {
       accessor: "savedAt",
-      title: "Date",
+      title: t("log.date"),
       render: (log: Log) => <DateField log={log} />,
     };
 
@@ -694,7 +699,7 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `source.${fieldName}`,
-      title: "Source: " + labelize(fieldName),
+      title: t("log.source") + ": " + labelize(fieldName),
       render: (log: Log) => (
         <SourceField
           log={log}
@@ -708,7 +713,7 @@ function fieldToColumn(
   if (field === "actor")
     return {
       accessor: "actor",
-      title: "Actor",
+      title: t("log.actor"),
       render: (log: Log) => (
         <ActorField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -717,7 +722,7 @@ function fieldToColumn(
   if (field === "actorType")
     return {
       accessor: "actorType",
-      title: "Actor type",
+      title: t("log.actorType"),
       render: (log: Log) => (
         <ActorTypeField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -726,7 +731,7 @@ function fieldToColumn(
   if (field === "actorName")
     return {
       accessor: "actorName",
-      title: "Actor name",
+      title: t("log.actorName"),
       render: (log: Log) => (
         <ActorNameField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -735,7 +740,7 @@ function fieldToColumn(
   if (field === "actorRef")
     return {
       accessor: "actorRef",
-      title: "Actor ref",
+      title: t("log.actorRef"),
       render: (log: Log) => (
         <ActorRefField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -745,7 +750,7 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `actor.${fieldName}`,
-      title: "Actor " + labelize(fieldName),
+      title: t("log.actor") + ": " + labelize(fieldName),
       render: (log: Log) => (
         <ActorCustomField
           log={log}
@@ -759,7 +764,7 @@ function fieldToColumn(
   if (field === "action")
     return {
       accessor: "action",
-      title: "Action",
+      title: t("log.action"),
       render: (log: Log) => (
         <ActionField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -768,7 +773,7 @@ function fieldToColumn(
   if (field === "actionType")
     return {
       accessor: "actionType",
-      title: "Action type",
+      title: t("log.actionType"),
       render: (log: Log) => (
         <ActionTypeField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -777,7 +782,7 @@ function fieldToColumn(
   if (field === "actionCategory")
     return {
       accessor: "actionCategory",
-      title: "Action category",
+      title: t("log.actionCategory"),
       render: (log: Log) => (
         <ActionCategoryField
           log={log}
@@ -789,7 +794,7 @@ function fieldToColumn(
   if (field === "resource")
     return {
       accessor: "resource",
-      title: "Resource",
+      title: t("log.resource"),
       render: (log: Log) => (
         <ResourceField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -798,7 +803,7 @@ function fieldToColumn(
   if (field === "resourceType")
     return {
       accessor: "resourceType",
-      title: "Resource type",
+      title: t("log.resourceType"),
       render: (log: Log) => (
         <ResourceTypeField
           log={log}
@@ -810,7 +815,7 @@ function fieldToColumn(
   if (field === "resourceName")
     return {
       accessor: "resourceName",
-      title: "Resource name",
+      title: t("log.resourceName"),
       render: (log: Log) => (
         <ResourceNameField
           log={log}
@@ -822,7 +827,7 @@ function fieldToColumn(
   if (field === "resourceRef")
     return {
       accessor: "resourceRef",
-      title: "Resource ref",
+      title: t("log.resourceRef"),
       render: (log: Log) => (
         <ResourceRefField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -832,7 +837,7 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `resource.${fieldName}`,
-      title: "Resource " + labelize(fieldName),
+      title: t("log.resource") + ": " + labelize(fieldName),
       render: (log: Log) => (
         <ResourceCustomField
           log={log}
@@ -861,7 +866,7 @@ function fieldToColumn(
   if (field === "tag")
     return {
       accessor: "tags",
-      title: "Tags",
+      title: t("log.tags"),
       render: (log: Log) => (
         <TagsField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -870,7 +875,7 @@ function fieldToColumn(
   if (field === "tagType")
     return {
       accessor: "tagType",
-      title: "Tag types",
+      title: t("log.tagTypes"),
       render: (log: Log) => (
         <TagTypesField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -879,7 +884,7 @@ function fieldToColumn(
   if (field === "tagName")
     return {
       accessor: "tagName",
-      title: "Tag names",
+      title: t("log.tagNames"),
       render: (log: Log) => (
         <TagNamesField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -888,7 +893,7 @@ function fieldToColumn(
   if (field === "tagRef")
     return {
       accessor: "tagRef",
-      title: "Tag refs",
+      title: t("log.tagRefs"),
       render: (log: Log) => (
         <TagRefsField log={log} onTableFilterChange={onTableFilterChange} />
       ),
@@ -897,7 +902,7 @@ function fieldToColumn(
   if (field === "attachment")
     return {
       accessor: "attachment",
-      title: "Attachments",
+      title: t("log.attachments"),
       // NB: display attachments like attachment types for now
       render: (log: Log) => (
         <AttachmentTypesField
@@ -910,7 +915,7 @@ function fieldToColumn(
   if (field === "attachmentName")
     return {
       accessor: "attachmentName",
-      title: "Attachment names",
+      title: t("log.attachmentNames"),
       render: (log: Log) => (
         <AttachmentNamesField
           log={log}
@@ -922,7 +927,7 @@ function fieldToColumn(
   if (field === "attachmentDescription")
     return {
       accessor: "attachmentDescription",
-      title: "Attachment descriptions",
+      title: t("log.attachmentDescriptions"),
       render: (log: Log) => (
         <AttachmentDescriptionsField
           log={log}
@@ -934,7 +939,7 @@ function fieldToColumn(
   if (field === "attachmentType")
     return {
       accessor: "attachmentType",
-      title: "Attachment types",
+      title: t("log.attachmentTypes"),
       render: (log: Log) => (
         <AttachmentTypesField
           log={log}
@@ -946,7 +951,7 @@ function fieldToColumn(
   if (field === "attachmentMimeType")
     return {
       accessor: "attachmentMimeType",
-      title: "Attachment MIME types",
+      title: t("log.attachmentMimeTypes"),
       render: (log: Log) => (
         <AttachmentMimeTypesField
           log={log}
@@ -958,7 +963,7 @@ function fieldToColumn(
   if (field === "node")
     return {
       accessor: "node",
-      title: "Node",
+      title: t("log.node"),
       render: (log: Log) => (
         <NodePathField log={log} onTableFilterChange={onTableFilterChange} />
       ),

@@ -2,7 +2,9 @@ import { ActionIcon, Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { IconRefresh } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
+import { t } from "i18next";
 import { ReactElement, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { CopyIcon } from "@/components/CopyIcon";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
@@ -24,12 +26,13 @@ import {
 } from "../api";
 
 function useApikeyForm() {
+  const { t } = useTranslation();
   return useForm({
     initialValues: {
       name: "",
     },
     validate: {
-      name: isNotEmpty("Name is required"),
+      name: isNotEmpty(t("apikey.form.name.required")),
     },
   });
 }
@@ -41,11 +44,12 @@ function BaseApikeyForm({
   form: ReturnType<typeof useApikeyForm>;
   readOnly: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <TextInput
-        label="Name"
-        placeholder="Enter name"
+        label={t("apikey.form.name.label")}
+        placeholder={t("apikey.form.name.placeholder")}
         data-autofocus
         disabled={readOnly}
         {...form.getInputProps("name")}
@@ -82,9 +86,10 @@ function ApikeyEditor({
 }
 
 function Secret({ value, button }: { value: string; button?: ReactElement }) {
+  const { t } = useTranslation();
   return (
     <TextInput
-      label="Key (secret)"
+      label={t("apikey.form.key.label")}
       disabled
       value={value}
       rightSection={button}
@@ -93,17 +98,17 @@ function Secret({ value, button }: { value: string; button?: ReactElement }) {
 }
 
 function SecretCreation({ value }: { value: string | null }) {
+  const { t } = useTranslation();
   return (
     <Secret
-      value={
-        value || "The secret key will appear once the API key has been saved"
-      }
+      value={value || t("apikey.form.key.placeholder.create")}
       button={value ? <CopyIcon value={value} /> : undefined}
     />
   );
 }
 
 function SecretUpdate({ apikeyId }: { apikeyId: string }) {
+  const { t } = useTranslation();
   const [secret, setSecret] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const mutation = useMutation({
@@ -118,7 +123,7 @@ function SecretUpdate({ apikeyId }: { apikeyId: string }) {
     return (
       <>
         <Secret
-          value={"You can generate a new key by clicking the refresh button"}
+          value={t("apikey.form.key.placeholder.update")}
           button={
             <ActionIcon
               onClick={() => mutation.mutate()}
@@ -136,6 +141,7 @@ function SecretUpdate({ apikeyId }: { apikeyId: string }) {
 }
 
 export function ApikeyCreation({ opened }: { opened?: boolean }) {
+  const { t } = useTranslation();
   const form = useApikeyForm();
   const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
@@ -150,7 +156,7 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
 
   return (
     <ResourceCreation
-      title={"Create new API key"}
+      title={t("apikey.create.title")}
       opened={!!opened}
       onSubmit={form.onSubmit}
       onSave={() => createApikey({ ...form.values, permissions })}
@@ -195,7 +201,7 @@ export function ApikeyEdition({
         form.setValues({ name });
         setPermissions(data.permissions);
       }}
-      title={`Edit API key`}
+      title={t("apikey.edit.title")}
       onSubmit={form.onSubmit}
       onSave={() => updateApikey(apikeyId!, { ...form.values, permissions })}
       queryKeyForInvalidation={["apikeys"]}

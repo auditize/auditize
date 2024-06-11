@@ -3,6 +3,7 @@ import { isEmail, useForm } from "@mantine/form";
 import { useDocumentTitle } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
@@ -37,6 +38,7 @@ export function LoginForm({
 }: {
   onLogin: (user: CurrentUserInfo) => void;
 }) {
+  const { t } = useTranslation();
   const { currentUser } = useCurrentUser();
   const [searchParams] = useSearchParams();
   const form = useForm({
@@ -47,7 +49,7 @@ export function LoginForm({
     },
 
     validate: {
-      email: isEmail("Invalid email"),
+      email: isEmail(t("login.form.email.invalid")),
     },
   });
   const [error, setError] = useState("");
@@ -63,7 +65,7 @@ export function LoginForm({
       setError(error.message);
     },
   });
-  useDocumentTitle("Login");
+  useDocumentTitle(t("login.title"));
 
   if (currentUser) {
     return (
@@ -75,22 +77,22 @@ export function LoginForm({
     <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
       <Center pt="4rem">
         <Stack align="center">
-          <Title order={1}>Welcome on Auditize</Title>
+          <Title order={1}>{t("login.welcome")}</Title>
           <Stack pt="1rem" gap="1.25rem">
             <TextInput
               {...form.getInputProps("email")}
               key={form.key("email")}
-              label="Email"
-              placeholder="Enter your email"
+              label={t("login.form.email.label")}
+              placeholder={t("login.form.email.placeholder")}
             />
             <TextInput
               {...form.getInputProps("password")}
               key={form.key("password")}
-              label="Password"
-              placeholder="Enter your password"
+              label={t("login.form.password.label")}
+              placeholder={t("login.form.password.placeholder")}
               type="password"
             />
-            <Button type="submit">Sign in</Button>
+            <Button type="submit">{t("login.signIn")}</Button>
             <InlineErrorMessage>{error}</InlineErrorMessage>
           </Stack>
         </Stack>

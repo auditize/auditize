@@ -1,6 +1,7 @@
 import { Select, Stack, TextInput } from "@mantine/core";
 import { isEmail, isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   ResourceCreation,
@@ -15,6 +16,7 @@ import {
 import { createUser, getUser, updateUser } from "../api";
 
 function useUserForm(values: { name?: string }) {
+  const { t } = useTranslation();
   return useForm({
     initialValues: {
       firstName: "",
@@ -24,9 +26,9 @@ function useUserForm(values: { name?: string }) {
       ...values,
     },
     validate: {
-      firstName: isNotEmpty("Firstname is required"),
-      lastName: isNotEmpty("Lastname is required"),
-      email: isEmail("Email is required"),
+      firstName: isNotEmpty(t("user.form.firstName.required")),
+      lastName: isNotEmpty(t("user.form.lastName.required")),
+      email: isEmail(t("user.form.email.required")),
     },
   });
 }
@@ -42,6 +44,7 @@ function UserEditor({
   onChange: (permissions: Permissions) => void;
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <WithPermissionManagement
       permissions={permissions}
@@ -50,29 +53,28 @@ function UserEditor({
     >
       <Stack gap={"sm"}>
         <TextInput
-          label="Firstname"
-          placeholder="Enter firstname"
+          label={t("user.form.firstName.label")}
+          placeholder={t("user.form.firstName.placeholder")}
           data-autofocus
           {...form.getInputProps("firstName")}
           disabled={readOnly}
         />
         <TextInput
-          label="Lastname"
-          placeholder="Enter lastname"
+          label={t("user.form.lastName.label")}
+          placeholder={t("user.form.lastName.placeholder")}
           data-autofocus
           {...form.getInputProps("lastName")}
           disabled={readOnly}
         />
         <TextInput
-          label="Email"
-          placeholder="Enter email"
+          label={t("user.form.email.label")}
+          placeholder={t("user.form.email.placeholder")}
           data-autofocus
           {...form.getInputProps("email")}
           disabled={readOnly}
         />
         <Select
-          label="Language"
-          placeholder="Select language"
+          label={t("user.form.language.label")}
           data={[
             { value: "en", label: "English" },
             { value: "fr", label: "Français" },
@@ -91,6 +93,7 @@ export function UserCreation({ opened }: { opened?: boolean }) {
   const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
   );
+  const { t } = useTranslation();
 
   useEffect(() => {
     form.reset();
@@ -99,7 +102,7 @@ export function UserCreation({ opened }: { opened?: boolean }) {
 
   return (
     <ResourceCreation
-      title={"Create new user"}
+      title={t("user.create.title")}
       opened={!!opened}
       onSubmit={form.onSubmit}
       onSave={() => createUser({ ...form.values, permissions })}
@@ -121,6 +124,7 @@ export function UserEdition({
   userId: string | null;
   readOnly: boolean;
 }) {
+  const { t } = useTranslation();
   const form = useUserForm({});
   const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
@@ -136,7 +140,7 @@ export function UserEdition({
         form.setValues({ firstName, lastName, email, lang });
         setPermissions(data.permissions);
       }}
-      title={`Edit user`}
+      title={t("user.edit.title")}
       onSubmit={form.onSubmit}
       onSave={() => updateUser(userId!, { ...form.values, permissions })}
       queryKeyForInvalidation={["users"]}

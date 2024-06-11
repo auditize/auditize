@@ -10,6 +10,7 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { CustomModalTitle } from "@/components/CustomModalTitle";
 import { useAuthenticatedUser } from "@/features/auth";
@@ -17,6 +18,7 @@ import { useAuthenticatedUser } from "@/features/auth";
 import { updateUserMe } from "../api";
 
 function GeneralSettings({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const { currentUser, updateUserInfo } = useAuthenticatedUser();
   const form = useForm({
     initialValues: {
@@ -37,8 +39,7 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
       <form onSubmit={form.onSubmit(() => mutation.mutate())}>
         <Stack>
           <Select
-            label="Language"
-            placeholder="Select language"
+            label={t("user.form.language.label")}
             data={[
               { value: "en", label: "English" },
               { value: "fr", label: "Français" },
@@ -47,9 +48,9 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
             {...form.getInputProps("lang")}
           />
           <Group>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>{t("common.cancel")}</Button>
             <Button type="submit" color="blue">
-              Save
+              {t("common.save")}
             </Button>
           </Group>
         </Stack>
@@ -65,15 +66,18 @@ export function UserSettings({
   opened: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Modal
-      title={<CustomModalTitle>User Settings</CustomModalTitle>}
+      title={<CustomModalTitle>{t("accountSettings.title")}</CustomModalTitle>}
       opened={opened}
       onClose={onClose}
     >
       <Tabs defaultValue="general" orientation="vertical">
         <Tabs.List>
-          <Tabs.Tab value="general">General</Tabs.Tab>
+          <Tabs.Tab value="general">
+            {t("accountSettings.tab.general")}
+          </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="general">
           <GeneralSettings onClose={onClose} />

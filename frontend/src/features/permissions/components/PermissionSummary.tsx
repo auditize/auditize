@@ -1,3 +1,6 @@
+import i18n from "i18next";
+import { useTranslation } from "react-i18next";
+
 import { Permissions } from "../types";
 
 function formatRwPermissions(
@@ -7,8 +10,14 @@ function formatRwPermissions(
   if (!read && !write) {
     return null;
   }
+  const { t } = i18n;
 
-  const value = read && write ? "rw" : read ? "read" : "write";
+  const value =
+    read && write
+      ? t("permission.summary.readwrite")
+      : read
+        ? t("permission.summary.read")
+        : t("permission.summary.write");
   return `${label} (${value})`;
 }
 
@@ -17,23 +26,30 @@ export function PermissionSummary({
 }: {
   permissions: Permissions;
 }) {
+  const { t } = useTranslation();
   const p = permissions;
 
   if (p.isSuperadmin) {
-    return <b>Superadmin 💪</b>;
+    return <b>{t("permission.summary.superadmin")} 💪</b>;
   }
 
   const lst = [];
 
   if (p.logs.read || p.logs.write) {
-    lst.push(formatRwPermissions("Logs", p.logs));
+    lst.push(formatRwPermissions(t("permission.logs"), p.logs));
   } else if (p.logs.repos.length > 0) {
-    lst.push("Logs (partial)");
+    lst.push(
+      t("permission.logs") + " (" + t("permission.summary.partial") + ")",
+    );
   }
 
-  lst.push(formatRwPermissions("Repositories", p.management.repos));
-  lst.push(formatRwPermissions("Users", p.management.users));
-  lst.push(formatRwPermissions("API Keys", p.management.apikeys));
+  lst.push(
+    formatRwPermissions(t("permission.repositories"), p.management.repos),
+  );
+  lst.push(formatRwPermissions(t("permission.users"), p.management.users));
+  lst.push(formatRwPermissions(t("permission.apikeys"), p.management.apikeys));
 
-  return lst.filter(Boolean).join(", ") || <i>None</i>;
+  return (
+    lst.filter(Boolean).join(", ") || <i>{t("permission.summary.none")}</i>
+  );
 }

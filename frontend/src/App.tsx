@@ -14,6 +14,7 @@ import "@mantine/dates/styles.layer.css";
 import { useDisclosure } from "@mantine/hooks";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import i18n from "i18next";
 import "mantine-datatable/styles.layer.css";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -46,11 +47,12 @@ import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
 
 function logoutConfirmationModal(onLogout: () => void) {
+  const { t } = i18n;
   return () =>
     modals.openConfirmModal({
-      title: "Please confirm logout",
-      children: <Text size="sm">Do you really want to log out?</Text>,
-      labels: { confirm: "Confirm", cancel: "Cancel" },
+      title: t("logout.title"),
+      children: <Text size="sm">{t("logout.confirm")}</Text>,
+      labels: { confirm: t("common.confirm"), cancel: t("common.cancel") },
       onConfirm: async () => {
         await logOut();
         onLogout();
@@ -63,9 +65,10 @@ function LogoutModal({
   id,
   innerProps,
 }: ContextModalProps<{ onLogout: () => void }>) {
+  const { t } = useTranslation();
   return (
     <>
-      <Text size="sm">Your session has expired, you need to log in again.</Text>
+      <Text size="sm">{t("logout.expiration")}</Text>
       <Button
         fullWidth
         mt="md"
@@ -81,6 +84,7 @@ function LogoutModal({
 }
 
 function UserMenu() {
+  const { t } = useTranslation();
   const { currentUser, declareLogout } = useAuthenticatedUser();
   const [opened, { open, close }] = useDisclosure(false);
   const initials =
@@ -96,9 +100,11 @@ function UserMenu() {
           </UnstyledButton>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item onClick={() => open()}>Preferences</Menu.Item>
+          <Menu.Item onClick={() => open()}>
+            {t("navigation.preferences")}
+          </Menu.Item>
           <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
-            Logout
+            {t("navigation.logout")}
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
@@ -135,15 +141,15 @@ function Main() {
           <Navbar>
             <NavbarItem label="Login" url="/login" condition={!currentUser} />
             <NavbarItem
-              label="Logs"
+              label={t("navigation.logs")}
               url="/logs"
               condition={
                 !!(currentUser && currentUser.permissions.logs.read != "none")
               }
             />
-            <NavbarItemGroup label={t("menu.management")}>
+            <NavbarItemGroup label={t("navigation.management")}>
               <NavbarItem
-                label="Repositories"
+                label={t("navigation.repositories")}
                 url="/repos"
                 condition={
                   !!(
@@ -152,7 +158,7 @@ function Main() {
                 }
               />
               <NavbarItem
-                label="Users"
+                label={t("navigation.users")}
                 url="/users"
                 condition={
                   !!(
@@ -161,7 +167,7 @@ function Main() {
                 }
               />
               <NavbarItem
-                label="API keys"
+                label={t("navigation.apikeys")}
                 url="/apikeys"
                 condition={
                   !!(
@@ -239,11 +245,19 @@ function AppRoutes() {
         },
     {
       path: "/signup/:token",
-      element: <Signup />,
+      element: (
+        <I18nProvider>
+          <Signup />
+        </I18nProvider>
+      ),
     },
     {
       path: "/login",
-      element: <LoginForm onLogin={declareLogin} />,
+      element: (
+        <I18nProvider>
+          <LoginForm onLogin={declareLogin} />
+        </I18nProvider>
+      ),
     },
   ]);
 

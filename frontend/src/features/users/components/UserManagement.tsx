@@ -1,5 +1,6 @@
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconUsers } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
@@ -11,33 +12,34 @@ import { UserCreation, UserEdition } from "./UserEditor";
 
 export function UsersManagement() {
   const { currentUser } = useAuthenticatedUser();
+  const { t } = useTranslation();
   const readOnly = currentUser.permissions.management.users.write === false;
-  useDocumentTitle("Users");
+  useDocumentTitle(t("user.list.title"));
 
   return (
     <ResourceManagement
       title={
         <>
-          <IconUsers /> Users
+          <IconUsers /> {t("user.list.title")}
         </>
       }
-      name="User"
+      name={t("user.user")}
       path="/users"
       resourceName="user"
       queryKey={(search, page) => ["users", "list", search, page]}
       queryFn={(search, page) => () => getUsers(search, page)}
       columnBuilders={[
         [
-          "Name",
+          t("user.list.column.name"),
           (user: User) => (
             <span>
               {user.firstName} {user.lastName}
             </span>
           ),
         ],
-        ["Email", (user: User) => user.email],
+        [t("user.list.column.email"), (user: User) => user.email],
         [
-          "Permissions",
+          t("user.list.column.permissions"),
           (user: User) => <PermissionSummary permissions={user.permissions} />,
         ],
       ]}

@@ -1,5 +1,6 @@
 import { Stack } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import { deserializeDate } from "@/utils/date";
@@ -59,9 +60,10 @@ function filterToSearchParams(filter: LogSearchParams): URLSearchParams {
 }
 
 export function Logs() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = searchParamsToFilter(searchParams);
-  useDocumentTitle("Logs");
+  useDocumentTitle(t("log.list.documentTitle"));
 
   return (
     <Stack gap="lg" pt="xs">

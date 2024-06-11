@@ -2,6 +2,7 @@ import { Box, Button, Group, LoadingOverlay, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { FormEventHandler, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { CustomModalTitle } from "../CustomModalTitle";
@@ -30,6 +31,7 @@ function ResourceEditor({
   queryKeyForInvalidation,
   children,
 }: ResourceEditorProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const mutation = useMutation({
@@ -43,7 +45,7 @@ function ResourceEditor({
       }
     },
     onError: (error) => {
-      setError("Error: " + error.message);
+      setError(t("common.error", { error: error.message }));
     },
   });
   const [error, setError] = useState<string>("");
@@ -74,13 +76,15 @@ function ResourceEditor({
             <Group justify="center" pt="md">
               {!disabledSaving && (
                 <>
-                  <Button onClick={onClose}>Cancel</Button>
+                  <Button onClick={onClose}>{t("common.cancel")}</Button>
                   <Button type="submit" color="blue">
-                    Save
+                    {t("common.save")}
                   </Button>
                 </>
               )}
-              {disabledSaving && <Button onClick={onClose}>Close</Button>}
+              {disabledSaving && (
+                <Button onClick={onClose}>{t("common.close")}</Button>
+              )}
             </Group>
           </form>
           <InlineErrorMessage>{error}</InlineErrorMessage>
