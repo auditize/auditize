@@ -401,14 +401,18 @@ function TagsField({
             key={i}
             onClick={() => onTableFilterChange("tagRef", tag.ref!)}
           >
-            <Badge size="sm">{tag.type + ": " + tag.name}</Badge>
+            <Badge size="sm" variant="outline">
+              {tag.type + ": " + tag.name}
+            </Badge>
           </InlineFilterLink>
         ) : (
           <InlineFilterLink
             key={i}
             onClick={() => onTableFilterChange("tagType", tag.type)}
           >
-            <Badge size="sm">{titlize(tag.type)}</Badge>
+            <Badge size="sm" variant="outline">
+              {titlize(tag.type)}
+            </Badge>
           </InlineFilterLink>
         ),
       )}
