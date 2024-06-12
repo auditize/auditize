@@ -94,3 +94,18 @@ async def list_repos(
         page_size=page_params.page_size,
     )
     return LogI18nProfileListResponse.build(profiles, page_info)
+
+
+@router.delete(
+    "/log-i18n-profiles/{profile_id}",
+    summary="Delete log i18n profile",
+    tags=["log-i18n-profiles"],
+    status_code=204,
+    responses=error_responses(404),
+)
+async def delete_profile(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Authorized(can_write_repos()),
+    profile_id: str,
+):
+    await service.delete_log_i18n_profile(dbm, profile_id)

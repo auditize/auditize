@@ -44,3 +44,7 @@ async def get_log_i18n_profiles(
     return [
         LogI18nProfile.model_validate(result) async for result in results
     ], page_info
+
+
+async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: str):
+    await delete_resource_document(dbm.core_db.logi18nprofiles, profile_id)

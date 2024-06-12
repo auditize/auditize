@@ -413,3 +413,32 @@ async def test_log_i18n_profile_list_forbidden(
     await repo_write_client.assert_get_forbidden(
         "/log-i18n-profiles",
     )
+
+
+async def test_log_i18n_profile_delete(
+    repo_write_client: HttpTestHelper,
+    log_i18n_profile: PreparedLogI18nProfile,
+    dbm: DatabaseManager,
+):
+    await repo_write_client.assert_delete_no_content(
+        f"/log-i18n-profiles/{log_i18n_profile.id}"
+    )
+
+    await assert_collection(dbm.core_db.logi18nprofiles, [])
+
+
+async def test_log_i18n_profile_delete_unknown_id(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    await repo_write_client.assert_delete_not_found(
+        f"/log-i18n-profiles/{UNKNOWN_OBJECT_ID}"
+    )
+
+
+async def test_log_i18n_profile_delete_forbidden(
+    no_permission_client: HttpTestHelper,
+    log_i18n_profile: PreparedLogI18nProfile,
+):
+    await no_permission_client.assert_delete_forbidden(
+        f"/log-i18n-profiles/{log_i18n_profile.id}"
+    )
