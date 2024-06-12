@@ -10,7 +10,19 @@ from auditize.logi18nprofiles.service import create_log_i18n_profile
 
 
 class PreparedLogI18nProfile:
-    ENGLISH_TRANSLATIONS = {
+    EMPTY_TRANSLATION = {
+        "action_type": {},
+        "action_category": {},
+        "actor_type": {},
+        "actor_custom_field": {},
+        "source_field": {},
+        "detail_field": {},
+        "resource_type": {},
+        "resource_custom_field": {},
+        "tag_type": {},
+        "attachment_type": {},
+    }
+    ENGLISH_TRANSLATION = {
         "action_type": {
             "action_type_1": "action_type_1 EN",
         },
@@ -42,7 +54,7 @@ class PreparedLogI18nProfile:
             "attachment_type_1": "attachment_type_1 EN",
         },
     }
-    FRENCH_TRANSLATIONS = {
+    FRENCH_TRANSLATION = {
         "action_type": {
             "action_type_1": "action_type_1 FR",
         },
@@ -95,7 +107,10 @@ class PreparedLogI18nProfile:
             "_id": ObjectId(self.id),
             "created_at": callee.IsA(datetime),
             "name": self.data["name"],
-            "translations": self.data.get("translations", {}),
+            "translations": {
+                lang: {**self.EMPTY_TRANSLATION, **translation}
+                for lang, translation in self.data.get("translations", {}).items()
+            },
             **(extra or {}),
         }
 

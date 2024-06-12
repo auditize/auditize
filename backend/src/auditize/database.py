@@ -35,6 +35,7 @@ class CoreDatabase(BaseDatabase):
         await self.repos.create_index("name", unique=True)
         await self.users.create_index("email", unique=True)
         await self.apikeys.create_index("name", unique=True)
+        await self.logi18nprofiles.create_index("name", unique=True)
 
         # Text indexes
         await self.repos.create_index({"name": "text"})
@@ -42,6 +43,7 @@ class CoreDatabase(BaseDatabase):
             {"first_name": "text", "last_name": "text", "email": "text"}
         )
         await self.apikeys.create_index({"name": "text"})
+        await self.logi18nprofiles.create_index({"name": "text"})
 
     # Collections
     repos = Collection("repos")

@@ -1,9 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.users.models import Lang
 
 
 class LogTranslations(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # FIXME: check that dict keys are identifiers
     action_type: dict[str, str] = Field(default_factory=dict)
     action_category: dict[str, str] = Field(default_factory=dict)
