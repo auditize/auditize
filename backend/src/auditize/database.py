@@ -45,6 +45,7 @@ class CoreDatabase(BaseDatabase):
 
     # Collections
     repos = Collection("repos")
+    logi18nprofiles = Collection("logi18nprofiles")
     users = Collection("users")
     apikeys = Collection("apikeys")
 
