@@ -5,6 +5,7 @@ export default {
     users: "Utilisateurs",
     apikeys: "Clés d'API",
     logs: "Journaux",
+    logi18nprofiles: "Traductions des journaux",
     preferences: "Préférences",
     logout: "Déconnexion",
   },
@@ -49,6 +50,34 @@ export default {
     delete: {
       confirm:
         "Confirmez-vous la suppression du dépôt de journaux <1>{{name}}</1> ?",
+    },
+  },
+  logi18nprofile: {
+    logi18nprofile: "Profil de traduction des journaux",
+    logi18nprofiles: "Profils de traduction des journaux",
+    form: {
+      name: {
+        label: "Nom",
+        placeholder: "Nom du profil",
+        required: "Le nom du profil est requis.",
+      },
+    },
+    create: {
+      title: "Créer un profil de traduction des journaux",
+    },
+    edit: {
+      title: "Modifier le profil de traduction des journaux",
+    },
+    list: {
+      title: "Traduction des journaux",
+      column: {
+        name: "Nom",
+        createdAt: "Date de création",
+      },
+    },
+    delete: {
+      confirm:
+        "Confirmez-vous la suppression du profil de traduction des journaux <1>{{name}}</1> ?",
     },
   },
   user: {

@@ -5,6 +5,7 @@ export default {
     users: "Users",
     apikeys: "API Keys",
     logs: "Logs",
+    logi18nprofiles: "Log translations",
     preferences: "Preferences",
     logout: "Logout",
   },
@@ -49,6 +50,34 @@ export default {
     delete: {
       confirm:
         "Do you confirm the deletion of the log repository <1>{{name}}</1>?",
+    },
+  },
+  logi18nprofile: {
+    logi18nprofile: "Log translation profile",
+    logi18nprofiles: "Log translation profiles",
+    form: {
+      name: {
+        label: "Name",
+        placeholder: "Profile name",
+        required: "The profile name is required.",
+      },
+    },
+    create: {
+      title: "Create a log translation profile",
+    },
+    edit: {
+      title: "Edit log translation profile",
+    },
+    list: {
+      title: "Log translations",
+      column: {
+        name: "Name",
+        createdAt: "Created at",
+      },
+    },
+    delete: {
+      confirm:
+        "Do you confirm the deletion of the log translation profile <1>{{name}}</1>?",
     },
   },
   user: {
