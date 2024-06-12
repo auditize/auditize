@@ -9,10 +9,12 @@ from auditize.logi18nprofiles import service
 from auditize.logi18nprofiles.api_models import (
     LogI18nProfileCreationRequest,
     LogI18nProfileCreationResponse,
+    LogI18nProfileReadingResponse,
     LogI18nProfileUpdateRequest,
 )
 from auditize.logi18nprofiles.models import LogI18nProfile, LogI18nProfileUpdate
 from auditize.permissions.assertions import (
+    can_read_repos,
     can_write_repos,
 )
 
@@ -54,3 +56,18 @@ async def update_profile(
     await service.update_log_i18n_profile(
         dbm, profile_id, LogI18nProfileUpdate.model_validate(update.model_dump())
     )
+
+
+@router.get(
+    "/log-i18n-profiles/{profile_id}",
+    summary="Get log i18n profile",
+    tags=["log-i18n-profiles"],
+    responses=error_responses(404),
+)
+async def get_repo(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Authorized(can_read_repos()),
+    profile_id: str,
+) -> LogI18nProfileReadingResponse:
+    profile = await service.get_log_i18n_profile(dbm, profile_id)
+    return LogI18nProfileReadingResponse.model_validate(profile.model_dump())

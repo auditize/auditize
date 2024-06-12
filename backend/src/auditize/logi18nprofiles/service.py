@@ -21,3 +21,8 @@ async def update_log_i18n_profile(
         for lang, translation in update.translations.items():
             doc_update[f"translations.{lang.value}"] = translation.model_dump()
     await update_resource_document(dbm.core_db.logi18nprofiles, profile_id, doc_update)
+
+
+async def get_log_i18n_profile(dbm: DatabaseManager, profile_id: str) -> LogI18nProfile:
+    result = await get_resource_document(dbm.core_db.logi18nprofiles, profile_id)
+    return LogI18nProfile.model_validate(result)

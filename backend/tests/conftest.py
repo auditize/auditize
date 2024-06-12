@@ -28,6 +28,7 @@ pytest.register_assert_rewrite("helpers")
 from helpers.apikeys import PreparedApikey
 from helpers.database import setup_test_dbm, teardown_test_dbm
 from helpers.http import HttpTestHelper, create_http_client
+from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
 
@@ -76,6 +77,11 @@ async def dbm():
 @pytest.fixture(scope="function")
 async def repo(dbm):
     return await PreparedRepo.create(dbm)
+
+
+@pytest.fixture(scope="function")
+async def log_i18n_profile(dbm):
+    return await PreparedLogI18nProfile.create(dbm)
 
 
 @pytest.fixture(scope="function")

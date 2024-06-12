@@ -318,3 +318,49 @@ async def test_log_i18n_profile_update_not_found(
             "name": "i18n",
         },
     )
+
+
+async def test_log_i18n_profile_get_empty(
+    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+    )
+    await repo_read_client.assert_get_ok(
+        f"/log-i18n-profiles/{profile.id}",
+        expected_json=profile.expected_api_response(),
+    )
+
+
+async def test_log_i18n_profile_get_with_translations(
+    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18n",
+            "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
+        },
+    )
+    await repo_read_client.assert_get_ok(
+        f"/log-i18n-profiles/{profile.id}",
+        expected_json=profile.expected_api_response(),
+    )
+
+
+async def test_log_i18n_profile_get_not_found(
+    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    await repo_read_client.assert_get_not_found(
+        f"/log-i18n-profiles/{UNKNOWN_OBJECT_ID}",
+    )
+
+
+async def test_log_i18n_profile_get_forbidden(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(dbm)
+
+    await repo_write_client.assert_get_forbidden(
+        f"/log-i18n-profiles/{profile.id}",
+    )

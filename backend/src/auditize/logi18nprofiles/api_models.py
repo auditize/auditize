@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from auditize.helpers.datetime import serialize_datetime
 from auditize.users.models import Lang
 
 
@@ -33,6 +35,10 @@ def _ProfileIdField():  # noqa
     return Field()
 
 
+def _ProfileCreatedAtField():  # noqa
+    return Field()
+
+
 class LogI18nProfileCreationRequest(BaseModel):
     name: str = _ProfileNameField()
     translations: dict[Lang, LogTranslations] = _ProfileTranslationsField(
@@ -49,3 +55,14 @@ class LogI18nProfileUpdateRequest(BaseModel):
     translations: Optional[dict[Lang, LogTranslations]] = _ProfileTranslationsField(
         default=None
     )
+
+
+class LogI18nProfileReadingResponse(BaseModel):
+    id: str = _ProfileIdField()
+    name: str = _ProfileNameField()
+    translations: dict[Lang, LogTranslations] = _ProfileTranslationsField()
+    created_at: datetime = _ProfileCreatedAtField()
+
+    @field_serializer("created_at", when_used="json")
+    def serialize_datetime(self, value):
+        return serialize_datetime(value)
