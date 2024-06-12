@@ -14,6 +14,7 @@ import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useReducer, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -331,6 +332,7 @@ function FilterFieldNode({
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
 }) {
+  const { t } = useTranslation();
   const { isPending } = useQuery({
     queryKey: ["logConsolidatedData", "node", searchParams.repoId],
     queryFn: () => getAllLogNodes(searchParams.repoId),
@@ -339,7 +341,7 @@ function FilterFieldNode({
   const [opened, { toggle }] = useDisclosure(openedByDefault);
   return (
     <FilterFieldPopover
-      title="Node"
+      title={t("log.node")}
       opened={opened}
       isSet={!!searchParams.nodeRef}
       onChange={toggle}
@@ -369,11 +371,12 @@ function FilterField({
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
 }) {
+  const { t } = useTranslation();
   if (name === "date") {
     const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
       <FilterFieldPopover
-        title="Date"
+        title={t("log.date")}
         removable={!FIXED_FILTER_NAMES.has("date")}
         onRemove={() => onRemove("date")}
         isSet={!!(searchParams.since || searchParams.until)}
@@ -382,12 +385,12 @@ function FilterField({
       >
         <Stack>
           <CustomDateTimePicker
-            placeholder="From"
+            placeholder={t("log.dateFrom")}
             value={searchParams.since}
             onChange={(value) => onChange("since", value)}
           />
           <CustomDateTimePicker
-            placeholder="To"
+            placeholder={t("log.dateTo")}
             value={searchParams.until}
             onChange={(value) => onChange("until", value)}
             initToEndOfDay
@@ -400,7 +403,7 @@ function FilterField({
   if (name === "actionCategory") {
     return (
       <FilterFieldSelect
-        label="Action category"
+        label={t("log.actionCategory")}
         searchParams={searchParams}
         searchParamName="actionCategory"
         items={getAllLogActionCategories}
@@ -414,7 +417,7 @@ function FilterField({
   if (name === "actionType") {
     return (
       <FilterFieldSelect
-        label="Action type"
+        label={t("log.actionType")}
         searchParams={searchParams}
         searchParamName="actionType"
         items={(repoId) =>
@@ -430,7 +433,7 @@ function FilterField({
   if (name === "actorType") {
     return (
       <FilterFieldSelect
-        label="Actor type"
+        label={t("log.actorType")}
         searchParams={searchParams}
         searchParamName="actorType"
         items={getAllLogActorTypes}
@@ -444,7 +447,7 @@ function FilterField({
   if (name === "actorName") {
     return (
       <FilterFieldTextInput
-        label="Actor name"
+        label={t("log.actorName")}
         searchParams={searchParams}
         searchParamName="actorName"
         openedByDefault={openedByDefault}
@@ -457,7 +460,7 @@ function FilterField({
   if (name === "actorRef") {
     return (
       <FilterFieldTextInput
-        label="Actor ref"
+        label={t("log.actorRef")}
         searchParams={searchParams}
         searchParamName="actorRef"
         openedByDefault={openedByDefault}
@@ -471,7 +474,7 @@ function FilterField({
     const fieldName = name.replace("actor.", "");
     return (
       <BaseFilterFieldTextInput
-        label={`Actor ${titlize(fieldName)}`}
+        label={t("log.actor") + ": " + titlize(fieldName)}
         name={name}
         value={searchParams.actorExtra.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
@@ -508,7 +511,7 @@ function FilterField({
   if (name === "resourceType") {
     return (
       <FilterFieldSelect
-        label="Resource type"
+        label={t("log.resourceType")}
         searchParams={searchParams}
         searchParamName="resourceType"
         items={getAllLogResourceTypes}
@@ -522,7 +525,7 @@ function FilterField({
   if (name === "resourceName") {
     return (
       <FilterFieldTextInput
-        label="Resource name"
+        label={t("log.resourceName")}
         searchParams={searchParams}
         searchParamName="resourceName"
         openedByDefault={openedByDefault}
@@ -535,7 +538,7 @@ function FilterField({
   if (name === "resourceRef") {
     return (
       <FilterFieldTextInput
-        label="Resource ref"
+        label={t("log.resourceRef")}
         searchParams={searchParams}
         searchParamName="resourceRef"
         openedByDefault={openedByDefault}
@@ -549,7 +552,7 @@ function FilterField({
     const fieldName = name.replace("resource.", "");
     return (
       <BaseFilterFieldTextInput
-        label={`Resource ${titlize(fieldName)}`}
+        label={t("log.resource") + ": " + titlize(fieldName)}
         name={name}
         value={searchParams.resourceExtra.get(fieldName) ?? ""}
         openedByDefault={openedByDefault}
@@ -586,7 +589,7 @@ function FilterField({
   if (name === "tagType") {
     return (
       <FilterFieldSelect
-        label="Tag type"
+        label={t("log.tagType")}
         searchParams={searchParams}
         searchParamName="tagType"
         items={getAllLogTagTypes}
@@ -600,7 +603,7 @@ function FilterField({
   if (name === "tagName") {
     return (
       <FilterFieldTextInput
-        label="Tag name"
+        label={t("log.tagName")}
         searchParams={searchParams}
         searchParamName="tagName"
         openedByDefault={openedByDefault}
@@ -613,7 +616,7 @@ function FilterField({
   if (name === "tagRef") {
     return (
       <FilterFieldTextInput
-        label="Tag ref"
+        label={t("log.tagRef")}
         searchParams={searchParams}
         searchParamName="tagRef"
         openedByDefault={openedByDefault}
@@ -626,7 +629,7 @@ function FilterField({
   if (name === "attachmentName") {
     return (
       <FilterFieldTextInput
-        label="Attachment name"
+        label={t("log.attachmentName")}
         searchParams={searchParams}
         searchParamName="attachmentName"
         openedByDefault={openedByDefault}
@@ -639,7 +642,7 @@ function FilterField({
   if (name === "attachmentDescription") {
     return (
       <FilterFieldTextInput
-        label="Attachment description"
+        label={t("log.attachmentDescription")}
         searchParams={searchParams}
         searchParamName="attachmentDescription"
         openedByDefault={openedByDefault}
@@ -652,7 +655,7 @@ function FilterField({
   if (name === "attachmentType") {
     return (
       <FilterFieldSelect
-        label="Attachment type"
+        label={t("log.attachmentType")}
         searchParams={searchParams}
         searchParamName="attachmentType"
         items={(repoId) => getAllAttachmentTypes(repoId)}
@@ -666,7 +669,7 @@ function FilterField({
   if (name === "attachmentMimeType") {
     return (
       <FilterFieldSelect
-        label="Attachment MIME type"
+        label={t("log.attachmentMimeType")}
         searchParams={searchParams}
         searchParamName="attachmentMimeType"
         items={(repoId) => getAllAttachmentMimeTypes(repoId)}
@@ -970,6 +973,7 @@ export function LogFilter({
   params: LogSearchParams;
   onChange: (filter: LogSearchParams) => void;
 }) {
+  const { t } = useTranslation();
   const [editedParams, dispatch] = useReducer(filterParamsReducer, params);
   const [filterNames, setFilterNames] = useState<Set<string>>(
     searchParamsToFilterNames(params),
@@ -1030,7 +1034,9 @@ export function LogFilter({
       {/* Apply & clear buttons */}
       <Space w="l" />
       <Group>
-        <Button onClick={() => onChange(editedParams)}>Apply</Button>
+        <Button onClick={() => onChange(editedParams)}>
+          {t("log.list.filter.apply")}
+        </Button>
         <Button
           onClick={() =>
             dispatch({
@@ -1043,7 +1049,7 @@ export function LogFilter({
           }
           variant="default"
         >
-          Clear
+          {t("log.list.filter.clear")}
         </Button>
       </Group>
     </Flex>

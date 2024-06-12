@@ -1,5 +1,6 @@
 import { Checkbox, Group, Stack, Table } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { Section } from "@/components/Section";
 import { useAuthenticatedUser } from "@/features/auth";
@@ -22,10 +23,11 @@ function ReadWritePermissionManagement({
   assignablePerms: ReadWritePermissions;
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Group>
       <Checkbox
-        label="Read"
+        label={t("permission.read")}
         checked={perms.read}
         onChange={(event) =>
           onChange({ ...perms, read: event.currentTarget.checked })
@@ -33,7 +35,7 @@ function ReadWritePermissionManagement({
         disabled={readOnly || !assignablePerms.read}
       />
       <Checkbox
-        label="Write"
+        label={t("permission.write")}
         checked={perms.write}
         onChange={(event) =>
           onChange({ ...perms, write: event.currentTarget.checked })
@@ -83,26 +85,27 @@ function ManagementPermissionManagement({
   assignablePerms: Permissions["management"];
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
-    <Section title="Management">
+    <Section title={t("permission.management")}>
       <Table withRowBorders={false}>
         <Table.Tbody>
           <EntityPermissionManagement
-            name="Repositories"
+            name={t("permission.repositories")}
             perms={perms.repos}
             onChange={(repoPerms) => onChange({ ...perms, repos: repoPerms })}
             assignablePerms={assignablePerms.repos}
             readOnly={readOnly}
           />
           <EntityPermissionManagement
-            name="Users"
+            name={t("permission.users")}
             perms={perms.users}
             onChange={(userPerms) => onChange({ ...perms, users: userPerms })}
             assignablePerms={assignablePerms.users}
             readOnly={readOnly}
           />
           <EntityPermissionManagement
-            name="API keys"
+            name={t("permission.apikeys")}
             perms={perms.apikeys}
             onChange={(apikeyPerms) =>
               onChange({ ...perms, apikeys: apikeyPerms })
@@ -127,6 +130,8 @@ function LogsPermissionManagement({
   assignablePerms: ApplicablePermissions["logs"];
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation();
+
   // NB: silent loading and error handling here
   const { data } = useQuery({
     queryKey: ["assignable-log-repos"],
@@ -153,12 +158,12 @@ function LogsPermissionManagement({
 
   return (
     <>
-      <Section title="Logs">
+      <Section title={t("permission.logs")}>
         <Table withRowBorders={false}>
           <Table.Tbody>
             <Table.Tr>
               <Table.Td width="35%">
-                <b>All repositories</b>
+                <b>{t("permission.allRepos")}</b>
               </Table.Td>
               <Table.Td>
                 <ReadWritePermissionManagement
@@ -223,13 +228,14 @@ export function PermissionManagement({
   onChange: (perms: Permissions) => void;
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation();
   const { currentUser } = useAuthenticatedUser();
   const assignablePerms = currentUser.permissions;
 
   return (
     <Stack pt="xs">
       <Checkbox
-        label="Superadmin (grant all permissions)"
+        label={t("permission.superadmin")}
         checked={perms.isSuperadmin}
         onChange={(event) =>
           onChange({

@@ -1,6 +1,7 @@
 import { Box, Button, Group, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 import { InlineErrorMessage } from "../InlineErrorMessage";
 
@@ -19,6 +20,7 @@ export function ResourceDeletion({
   queryKeyForInvalidation,
   onClose,
 }: ResourceDeletionProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => onDelete(),
@@ -30,7 +32,7 @@ export function ResourceDeletion({
 
   return (
     <Modal
-      title={<Text fw={600}>Confirm Deletion</Text>}
+      title={<Text fw={600}>{t("resource.delete.confirm.title")}</Text>}
       size="lg"
       padding="lg"
       opened={opened}
@@ -41,7 +43,7 @@ export function ResourceDeletion({
           <Text pb="sm">{message}</Text>
           <Group justify="center">
             <Button onClick={onClose} size="xs" variant="outline">
-              Cancel
+              {t("resource.delete.cancel")}
             </Button>
             <Button
               onClick={() => mutation.mutate()}
@@ -49,11 +51,12 @@ export function ResourceDeletion({
               size="xs"
               color="red"
             >
-              Delete
+              {t("resource.delete.delete")}
             </Button>
           </Group>
           <InlineErrorMessage>
-            {mutation.error && "Error: " + mutation.error.message}
+            {mutation.error &&
+              t("common.error", { error: mutation.error.message })}
           </InlineErrorMessage>
         </Box>
       </div>

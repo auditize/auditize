@@ -14,6 +14,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Link,
   useLocation,
@@ -44,6 +45,7 @@ function ResourceTableRow({
   rowValueBuilders: ((resource: any) => React.ReactNode)[];
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
+  const { t } = useTranslation();
   const location = useLocation();
   const [opened, { open, close }] = useDisclosure();
   const resourceLink = addQueryParamToLocation(
@@ -66,12 +68,14 @@ function ResourceTableRow({
       <Table.Td style={{ textAlign: "right" }}>
         <Group justify="flex-end" gap={"md"}>
           <Anchor component={Link} to={resourceLink}>
-            Edit
+            {t("resource.list.edit")}
           </Anchor>
           {deletionConfirmModal && (
             <>
               <Divider orientation="vertical" />
-              <Anchor onClick={() => open()}>Delete</Anchor>
+              <Anchor onClick={() => open()}>
+                {t("resource.list.delete")}
+              </Anchor>
               {deletionConfirmModal}
             </>
           )}
@@ -82,6 +86,7 @@ function ResourceTableRow({
 }
 
 function Search({ name }: { name: string }) {
+  const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const handleSearch = () => setParams({ q: search });
@@ -93,7 +98,7 @@ function Search({ name }: { name: string }) {
   return (
     <Group gap="xs">
       <TextInput
-        placeholder={`Search ${name}`}
+        placeholder={t("resource.list.search")}
         value={search}
         onChange={(event) => setSearch(event.currentTarget.value)}
         onKeyDown={(event) => {
@@ -113,7 +118,7 @@ function Search({ name }: { name: string }) {
         }
       />
       <Button onClick={handleSearch} disabled={!search && !params.get("q")}>
-        Search
+        {t("resource.list.search")}
       </Button>
     </Group>
   );
@@ -142,6 +147,7 @@ export function ResourceManagement({
   resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -193,9 +199,7 @@ export function ResourceManagement({
         <Search name={name} />
         {resourceCreationComponentBuilder && (
           <Link to={addQueryParamToLocation(location, "new")}>
-            <Button leftSection={<IconPlus size={"1.3rem"} />}>
-              Add {name}
-            </Button>
+            <Button leftSection={<IconPlus size={"1.3rem"} />}>{name}</Button>
           </Link>
         )}
       </Group>
@@ -206,7 +210,9 @@ export function ResourceManagement({
               {columnBuilders.map(([name, _], i) => (
                 <Table.Th key={i}>{name}</Table.Th>
               ))}
-              <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
+              <Table.Th style={{ textAlign: "right" }}>
+                {t("resource.list.actions")}
+              </Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>

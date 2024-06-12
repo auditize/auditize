@@ -1,6 +1,7 @@
 import { Group, Radio, Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   ResourceCreation,
@@ -10,6 +11,7 @@ import {
 import { createRepo, getRepo, RepoStatus, updateRepo } from "../api";
 
 function useRepoForm(values: { name?: string; status?: RepoStatus }) {
+  const { t } = useTranslation();
   return useForm({
     initialValues: {
       name: "",
@@ -17,7 +19,7 @@ function useRepoForm(values: { name?: string; status?: RepoStatus }) {
       ...values,
     },
     validate: {
-      name: isNotEmpty("Name is required"),
+      name: isNotEmpty(t("repo.form.name.required")),
     },
   });
 }
@@ -29,20 +31,37 @@ function RepoForm({
   form: UseFormReturnType<any>;
   readOnly?: boolean;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Stack gap={"sm"}>
       <TextInput
-        label="Name"
-        placeholder="Enter name"
+        label={t("repo.form.name.label")}
+        placeholder={t("repo.form.name.placeholder")}
         data-autofocus
         disabled={readOnly}
         {...form.getInputProps("name")}
       />
-      <Radio.Group label="Status" {...form.getInputProps("status")}>
+      <Radio.Group
+        label={t("repo.form.status.label")}
+        {...form.getInputProps("status")}
+      >
         <Group mt="xs">
-          <Radio value="enabled" label="Enabled" disabled={readOnly} />
-          <Radio value="readonly" label="Read-only" disabled={readOnly} />
-          <Radio value="disabled" label="Disabled" disabled={readOnly} />
+          <Radio
+            value="enabled"
+            label={t("repo.form.status.value.enabled")}
+            disabled={readOnly}
+          />
+          <Radio
+            value="readonly"
+            label={t("repo.form.status.value.readonly")}
+            disabled={readOnly}
+          />
+          <Radio
+            value="disabled"
+            label={t("repo.form.status.value.disabled")}
+            disabled={readOnly}
+          />
         </Group>
       </Radio.Group>
     </Stack>
@@ -50,6 +69,7 @@ function RepoForm({
 }
 
 export function RepoCreation({ opened }: { opened?: boolean }) {
+  const { t } = useTranslation();
   const form = useRepoForm({});
 
   useEffect(() => {
@@ -58,7 +78,7 @@ export function RepoCreation({ opened }: { opened?: boolean }) {
 
   return (
     <ResourceCreation
-      title={"Create new log repository"}
+      title={t("repo.create.title")}
       opened={!!opened}
       onSubmit={form.onSubmit}
       onSave={() => createRepo(form.values)}
@@ -76,6 +96,7 @@ export function RepoEdition({
   repoId: string | null;
   readOnly: boolean;
 }) {
+  const { t } = useTranslation();
   const form = useRepoForm({});
 
   return (
@@ -87,7 +108,7 @@ export function RepoEdition({
         const { name, status } = data;
         form.setValues({ name, status });
       }}
-      title={`Edit log repository`}
+      title={t("repo.edit.title")}
       onSubmit={form.onSubmit}
       onSave={() => updateRepo(repoId!, form.values)}
       queryKeyForInvalidation={["repos"]}

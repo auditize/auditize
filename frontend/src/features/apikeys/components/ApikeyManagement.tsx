@@ -1,5 +1,6 @@
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconKey } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
@@ -10,27 +11,28 @@ import { ApikeyDeletion } from "./ApikeyDeletion";
 import { ApikeyCreation, ApikeyEdition } from "./ApikeyEditor";
 
 export function ApikeysManagement() {
+  const { t } = useTranslation();
   const { currentUser } = useAuthenticatedUser();
   const readOnly = currentUser.permissions.management.apikeys.write === false;
-  useDocumentTitle("API keys");
+  useDocumentTitle(t("apikey.list.title"));
 
   return (
     <ResourceManagement
       title={
         <>
           <IconKey />
-          API keys
+          {t("apikey.list.title")}
         </>
       }
-      name="API key"
+      name={t("apikey.apikey")}
       path="/apikeys"
       resourceName="apikey"
       queryKey={(search, page) => ["apikeys", "list", search, page]}
       queryFn={(search, page) => () => getApikeys(search, page)}
       columnBuilders={[
-        ["Name", (apikey: Apikey) => apikey.name],
+        [t("apikey.list.column.name"), (apikey: Apikey) => apikey.name],
         [
-          "Permissions",
+          t("apikey.list.column.permissions"),
           (apikey: Apikey) => (
             <PermissionSummary permissions={apikey.permissions} />
           ),
