@@ -27,3 +27,8 @@ class LogI18nProfile(BaseModel):
     name: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     translations: dict[Lang, LogTranslations] = Field(default_factory=dict)
+
+
+class LogI18nProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    translations: Optional[dict[Lang, LogTranslations]] = None

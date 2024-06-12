@@ -8,6 +8,7 @@ from .http import HttpTestHelper
 from .utils import DATETIME_FORMAT
 
 # A valid ObjectId, but not existing in the database
+# FIXME: should be moved to a more general module
 UNKNOWN_OBJECT_ID = "65fab045f097fe0b9b664c99"
 
 

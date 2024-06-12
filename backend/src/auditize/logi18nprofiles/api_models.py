@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.users.models import Lang
@@ -19,12 +21,12 @@ class LogTranslations(BaseModel):
     attachment_type: dict[str, str] = Field(default_factory=dict)
 
 
-def _ProfileTranslationsField():  # noqa
-    return Field(default_factory=dict)
+def _ProfileTranslationsField(**kwargs):  # noqa
+    return Field(**kwargs)
 
 
-def _ProfileNameField():  # noqa
-    return Field()
+def _ProfileNameField(**kwargs):  # noqa
+    return Field(**kwargs)
 
 
 def _ProfileIdField():  # noqa
@@ -33,8 +35,17 @@ def _ProfileIdField():  # noqa
 
 class LogI18nProfileCreationRequest(BaseModel):
     name: str = _ProfileNameField()
-    translations: dict[Lang, LogTranslations] = _ProfileTranslationsField()
+    translations: dict[Lang, LogTranslations] = _ProfileTranslationsField(
+        default_factory=dict
+    )
 
 
 class LogI18nProfileCreationResponse(BaseModel):
     id: str = _ProfileIdField()
+
+
+class LogI18nProfileUpdateRequest(BaseModel):
+    name: Optional[str] = _ProfileNameField(default=None)
+    translations: Optional[dict[Lang, LogTranslations]] = _ProfileTranslationsField(
+        default=None
+    )

@@ -5,6 +5,7 @@ from auditize.database import DatabaseManager
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
+from helpers.logs import UNKNOWN_OBJECT_ID
 
 pytestmark = pytest.mark.anyio
 
@@ -134,6 +135,185 @@ async def test_log_i18n_profile_create_forbidden(
 ):
     await repo_read_client.assert_post_forbidden(
         "/log-i18n-profiles",
+        json={
+            "name": "i18n",
+        },
+    )
+
+
+async def test_log_i18n_profile_update_name(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18n",
+            "translations": {
+                "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
+            },
+        },
+    )
+    await repo_write_client.assert_patch_no_content(
+        f"/log-i18n-profiles/{profile.id}",
+        json={
+            "name": "i18n updated",
+        },
+    )
+    await assert_collection(
+        dbm.core_db.logi18nprofiles,
+        [profile.expected_document({"name": "i18n updated"})],
+    )
+
+
+async def test_log_i18n_profile_update_add_translation(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18n",
+            "translations": {
+                "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+            },
+        },
+    )
+    await repo_write_client.assert_patch_no_content(
+        f"/log-i18n-profiles/{profile.id}",
+        json={
+            "translations": {
+                "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
+            },
+        },
+    )
+    await assert_collection(
+        dbm.core_db.logi18nprofiles,
+        [
+            profile.expected_document(
+                {
+                    "translations": {
+                        "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                        "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
+                    }
+                }
+            )
+        ],
+    )
+
+
+async def test_log_i18n_profile_update_existing_translation(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18n",
+            "translations": {
+                "en": {
+                    "action_type": {
+                        "action_type_1": "action_type_1 EN",
+                    },
+                    "action_category": {
+                        "action_1": "action_1 EN",
+                    },
+                },
+                # NB: French translation won't be updated and must remain the same
+                "fr": {
+                    "action_type": {
+                        "action_type_1": "action_type_1 FR",
+                    },
+                    "action_category": {
+                        "action_1": "action_1 FR",
+                    },
+                },
+            },
+        },
+    )
+    await repo_write_client.assert_patch_no_content(
+        f"/log-i18n-profiles/{profile.id}",
+        json={
+            "translations": {
+                # A language translation completely overrides the existing one
+                "en": {
+                    "action_type": {
+                        "action_type_1": "action_type_1 EN updated",
+                    },
+                },
+            },
+        },
+    )
+    await assert_collection(
+        dbm.core_db.logi18nprofiles,
+        [
+            profile.expected_document(
+                {
+                    "translations": {
+                        "en": {
+                            **PreparedLogI18nProfile.EMPTY_TRANSLATION,
+                            "action_type": {
+                                "action_type_1": "action_type_1 EN updated"
+                            },
+                        },
+                        "fr": {
+                            **PreparedLogI18nProfile.EMPTY_TRANSLATION,
+                            "action_type": {
+                                "action_type_1": "action_type_1 FR",
+                            },
+                            "action_category": {
+                                "action_1": "action_1 FR",
+                            },
+                        },
+                    }
+                }
+            )
+        ],
+    )
+
+
+async def test_log_i18n_profile_update_add_invalid_lang(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(dbm)
+    await repo_write_client.assert_patch_bad_request(
+        f"/log-i18n-profiles/{profile.id}",
+        json={
+            "translations": {"es": {}},
+        },
+    )
+
+
+async def test_log_i18n_profile_update_name_already_used(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile_1 = await PreparedLogI18nProfile.create(dbm, {"name": "i18n"})
+    profile_2 = await PreparedLogI18nProfile.create(dbm)
+
+    await repo_write_client.assert_patch_constraint_violation(
+        f"/log-i18n-profiles/{profile_2.id}",
+        json={
+            "name": "i18n",
+        },
+    )
+
+
+async def test_log_i18n_profile_update_forbidden(
+    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(dbm)
+
+    await repo_read_client.assert_patch_forbidden(
+        f"/log-i18n-profiles/{profile.id}",
+        json={
+            "name": "i18n",
+        },
+    )
+
+
+async def test_log_i18n_profile_update_not_found(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    await repo_write_client.assert_patch_not_found(
+        f"/log-i18n-profiles/{UNKNOWN_OBJECT_ID}",
         json={
             "name": "i18n",
         },
