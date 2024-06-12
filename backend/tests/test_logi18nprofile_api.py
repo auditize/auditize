@@ -6,6 +6,7 @@ from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.logs import UNKNOWN_OBJECT_ID
+from helpers.pagination import do_test_page_pagination_common_scenarios
 
 pytestmark = pytest.mark.anyio
 
@@ -363,4 +364,52 @@ async def test_log_i18n_profile_get_forbidden(
 
     await repo_write_client.assert_get_forbidden(
         f"/log-i18n-profiles/{profile.id}",
+    )
+
+
+async def test_log_i18n_profile_list(
+    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profiles = [
+        await PreparedLogI18nProfile.create(
+            dbm,
+            PreparedLogI18nProfile.prepare_data(
+                {"translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION}}
+            ),
+        )
+        for _ in range(5)
+    ]
+
+    await do_test_page_pagination_common_scenarios(
+        repo_read_client,
+        "/log-i18n-profiles",
+        [
+            profile.expected_api_response()
+            for profile in sorted(profiles, key=lambda r: r.data["name"])
+        ],
+    )
+
+
+async def test_log_i18n_profile_list_with_search(
+    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profiles = [
+        await PreparedLogI18nProfile.create(dbm, {"name": f"profile_{i}"})
+        for i in range(2)
+    ]
+
+    await repo_read_client.assert_get_ok(
+        "/log-i18n-profiles?q=profile_1",
+        expected_json={
+            "items": [profiles[1].expected_api_response()],
+            "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1},
+        },
+    )
+
+
+async def test_log_i18n_profile_list_forbidden(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    await repo_write_client.assert_get_forbidden(
+        "/log-i18n-profiles",
     )

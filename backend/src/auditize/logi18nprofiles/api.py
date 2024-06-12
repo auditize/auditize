@@ -5,10 +5,13 @@ from fastapi import APIRouter, Depends
 from auditize.auth.authorizer import Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
+from auditize.helpers.pagination.page.api_models import PagePaginationParams
+from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.logi18nprofiles import service
 from auditize.logi18nprofiles.api_models import (
     LogI18nProfileCreationRequest,
     LogI18nProfileCreationResponse,
+    LogI18nProfileListResponse,
     LogI18nProfileReadingResponse,
     LogI18nProfileUpdateRequest,
 )
@@ -71,3 +74,23 @@ async def get_repo(
 ) -> LogI18nProfileReadingResponse:
     profile = await service.get_log_i18n_profile(dbm, profile_id)
     return LogI18nProfileReadingResponse.model_validate(profile.model_dump())
+
+
+@router.get(
+    "/log-i18n-profiles",
+    summary="List log i18n profiles",
+    tags=["log-i18n-profiles"],
+)
+async def list_repos(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Authorized(can_read_repos()),
+    search_params: Annotated[ResourceSearchParams, Depends()],
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> LogI18nProfileListResponse:
+    profiles, page_info = await service.get_log_i18n_profiles(
+        dbm,
+        query=search_params.query,
+        page=page_params.page,
+        page_size=page_params.page_size,
+    )
+    return LogI18nProfileListResponse.build(profiles, page_info)
