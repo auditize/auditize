@@ -88,10 +88,10 @@ async def update_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_repos()),
     repo_id: str,
-    repo: RepoUpdateRequest,
+    update: RepoUpdateRequest,
 ):
     await service.update_repo(
-        dbm, repo_id, RepoUpdate.model_validate(repo.model_dump())
+        dbm, repo_id, RepoUpdate.model_validate(update.model_dump(exclude_unset=True))
     )
     return None
 

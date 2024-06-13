@@ -34,7 +34,7 @@ async def update_resource_document(
     operator="$set",
 ):
     if isinstance(update, BaseModel):
-        update = update.model_dump(exclude_none=True, exclude={"id"})
+        update = update.model_dump(exclude_unset=True, exclude={"id"})
 
     try:
         result = await collection.update_one(
@@ -54,6 +54,16 @@ async def get_resource_document(
     if not result:
         raise UnknownModelException()
     return result
+
+
+async def does_resource_document_exist(
+    collection: AsyncIOMotorCollection, filter: str | dict
+) -> bool:
+    try:
+        await get_resource_document(collection, filter, projection={"_id": 1})
+        return True
+    except UnknownModelException:
+        return False
 
 
 async def delete_resource_document(

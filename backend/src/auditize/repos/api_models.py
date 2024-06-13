@@ -9,6 +9,16 @@ from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.repos.models import Repo, RepoStatus
 
 
+def _RepoLogI18nProfileIdField(**kwargs):  # noqa
+    return Field(
+        description="The log i18n profile ID",
+        json_schema_extra={
+            "example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D",
+        },
+        **kwargs,
+    )
+
+
 def _RepoNameField(**kwargs):  # noqa
     return Field(
         description="The repository name",
@@ -39,6 +49,7 @@ def _RepoIdField():  # noqa
 class RepoCreationRequest(BaseModel):
     name: str = _RepoNameField()
     status: RepoStatus = _RepoStatusField(default=RepoStatus.enabled)
+    log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
 
     def to_repo(self):
         return Repo.model_validate(self.model_dump())
@@ -47,6 +58,7 @@ class RepoCreationRequest(BaseModel):
 class RepoUpdateRequest(BaseModel):
     name: Optional[str] = _RepoNameField(default=None)
     status: Optional[RepoStatus] = _RepoStatusField(default=None)
+    log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
 
 
 class RepoCreationResponse(BaseModel):
@@ -95,6 +107,7 @@ class _BaseRepoReadingResponse(BaseModel):
 
 class RepoReadingResponse(_BaseRepoReadingResponse):
     status: RepoStatus = _RepoStatusField()
+    log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField()
     stats: Optional[RepoStatsData] = Field(
         description="The repository stats (available if `include=stats` has been set in query parameters)",
         default=None,

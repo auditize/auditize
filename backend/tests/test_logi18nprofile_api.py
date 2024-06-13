@@ -7,6 +7,7 @@ from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
+from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
 
@@ -458,6 +459,20 @@ async def test_log_i18n_profile_delete(
     )
 
     await assert_collection(dbm.core_db.logi18nprofiles, [])
+
+
+async def test_log_i18n_profile_delete_while_used_by_repo(
+    repo_write_client: HttpTestHelper,
+    log_i18n_profile: PreparedLogI18nProfile,
+    dbm: DatabaseManager,
+):
+    await PreparedRepo.create(
+        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}
+    )
+
+    await repo_write_client.assert_delete_constraint_violation(
+        f"/log-i18n-profiles/{log_i18n_profile.id}"
+    )
 
 
 async def test_log_i18n_profile_delete_unknown_id(

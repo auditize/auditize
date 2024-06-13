@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Any, Sequence
 
 from bson import ObjectId
@@ -10,9 +9,11 @@ from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.helpers.resources.service import (
     create_resource_document,
     delete_resource_document,
+    does_resource_document_exist,
     get_resource_document,
     update_resource_document,
 )
+from auditize.logi18nprofiles.service import does_log_i18n_profile_exist
 from auditize.logs.db import get_log_db_for_config
 from auditize.permissions.assertions import (
     can_read_logs,
@@ -25,11 +26,21 @@ from auditize.repos.models import Repo, RepoStats, RepoStatus, RepoUpdate
 from auditize.users.models import User
 
 
+async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
+    if repo.log_i18n_profile_id:
+        if not await does_log_i18n_profile_exist(dbm, repo.log_i18n_profile_id):
+            raise ValidationError(
+                f"Log i18n profile {repo.log_i18n_profile_id!r} does not exist"
+            )
+
+
 async def create_repo(dbm: DatabaseManager, repo: Repo) -> str:
+    await _validate_repo(dbm, repo)
     return await create_resource_document(dbm.core_db.repos, repo)
 
 
 async def update_repo(dbm: DatabaseManager, repo_id: str, update: RepoUpdate):
+    await _validate_repo(dbm, update)
     await update_resource_document(dbm.core_db.repos, repo_id, update)
 
 
@@ -150,6 +161,14 @@ async def delete_repo(dbm: DatabaseManager, repo_id: str):
     logs_db = await get_log_db_for_config(dbm, repo_id)
     await delete_resource_document(dbm.core_db.repos, repo_id)
     await logs_db.client.drop_database(logs_db.name)
+
+
+async def is_i18n_log_profile_used_by_repo(
+    dbm: DatabaseManager, profile_id: str
+) -> bool:
+    return await does_resource_document_exist(
+        dbm.core_db.repos, {"log_i18n_profile_id": profile_id}
+    )
 
 
 async def ensure_repos_in_permissions_exist(

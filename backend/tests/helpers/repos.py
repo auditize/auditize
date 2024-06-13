@@ -36,6 +36,7 @@ class PreparedRepo:
             "_id": ObjectId(self.id),
             "name": self.data["name"],
             "status": self.data.get("status", "enabled"),
+            "log_i18n_profile_id": self.data.get("log_i18n_profile_id", None),
             "created_at": callee.IsA(datetime),
             **(extra or {}),
         }
@@ -45,6 +46,7 @@ class PreparedRepo:
             "id": self.id,
             "name": self.data["name"],
             "status": self.data.get("status", "enabled"),
+            "log_i18n_profile_id": self.data.get("log_i18n_profile_id", None),
             "created_at": callee.IsA(str),
             "stats": None,
             **(extra or {}),
