@@ -10,15 +10,18 @@ import {
 
 export interface LogI18nProfileCreation {
   name: string;
+  translations: object;
 }
 
 export interface LogI18nProfile extends LogI18nProfileCreation {
   id: string;
   createdAt: string;
+  translations: object;
 }
 
 export type LogI18nProfileUpdate = {
   name?: string;
+  translations?: object;
 };
 
 export async function createLogi18nProfile(

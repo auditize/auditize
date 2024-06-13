@@ -1,6 +1,6 @@
-import { Stack, TextInput } from "@mantine/core";
+import { FileInput, Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -27,11 +27,44 @@ function useLogI18nProfileForm(values: { name?: string }) {
   });
 }
 
+function TranslationFile({
+  lang,
+  onChange,
+}: {
+  lang: string;
+  onChange: (content: object | null) => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const fileReader = new FileReader();
+  fileReader.onload = () => onChange(JSON.parse(fileReader.result as string));
+
+  useEffect(() => {
+    if (file) {
+      fileReader.readAsText(file);
+    } else {
+      onChange(null);
+    }
+  }, [file]);
+
+  return (
+    <FileInput
+      label="Translation file"
+      placeholder="Select translation file"
+      accept="application/json"
+      value={file}
+      onChange={setFile}
+      clearable
+    />
+  );
+}
+
 function LogI18nProfileForm({
   form,
+  onTranslationChange,
   readOnly = false,
 }: {
   form: UseFormReturnType<any>;
+  onTranslationChange: (lang: string, content: object | null) => void;
   readOnly?: boolean;
 }) {
   const { t } = useTranslation();
@@ -45,6 +78,10 @@ function LogI18nProfileForm({
         disabled={readOnly}
         {...form.getInputProps("name")}
       />
+      <TranslationFile
+        lang="fr"
+        onChange={(content) => onTranslationChange("fr", content)}
+      />
     </Stack>
   );
 }
@@ -52,6 +89,7 @@ function LogI18nProfileForm({
 export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
   const { t } = useTranslation();
   const form = useLogI18nProfileForm({});
+  const [translations, setTranslations] = useState<object>({});
 
   useEffect(() => {
     form.reset();
@@ -62,10 +100,18 @@ export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
       title={t("logi18nprofile.create.title")}
       opened={!!opened}
       onSubmit={form.onSubmit}
-      onSave={() => createLogi18nProfile(form.values)}
+      onSave={() => createLogi18nProfile({ ...form.values, translations })}
       queryKeyForInvalidation={["logi18nprofiles"]}
     >
-      <LogI18nProfileForm form={form} />
+      <LogI18nProfileForm
+        form={form}
+        onTranslationChange={(lang, translation) => {
+          setTranslations({
+            ...translations,
+            [lang]: translation ? translation : undefined,
+          });
+        }}
+      />
     </ResourceCreation>
   );
 }
@@ -79,6 +125,7 @@ export function LogI18nProfileEdition({
 }) {
   const { t } = useTranslation();
   const form = useLogI18nProfileForm({});
+  const [translations, setTranslations] = useState<object>({});
 
   return (
     <ResourceEdition
@@ -91,11 +138,22 @@ export function LogI18nProfileEdition({
       }}
       title={t("logi18nprofile.edit.title")}
       onSubmit={form.onSubmit}
-      onSave={() => updateLogi18nProfile(profileId!, form.values)}
+      onSave={() =>
+        updateLogi18nProfile(profileId!, { ...form.values, translations })
+      }
       queryKeyForInvalidation={["logi18nprofiles"]}
       disabledSaving={readOnly}
     >
-      <LogI18nProfileForm form={form} readOnly={readOnly} />
+      <LogI18nProfileForm
+        form={form}
+        readOnly={readOnly}
+        onTranslationChange={(lang, translation) => {
+          setTranslations({
+            ...translations,
+            [lang]: translation ? translation : undefined,
+          });
+        }}
+      />
     </ResourceEdition>
   );
 }
