@@ -27,7 +27,7 @@ export function LogI18nProfileDeletion({
       }
       opened={opened}
       onDelete={() => deleteLogI18nProfile(profile.id)}
-      queryKeyForInvalidation={["logi18nprofile"]}
+      queryKeyForInvalidation={["logi18nprofiles"]}
       onClose={onClose}
     />
   );
