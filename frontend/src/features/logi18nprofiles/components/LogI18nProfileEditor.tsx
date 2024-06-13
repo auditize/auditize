@@ -1,5 +1,4 @@
 import {
-  Button,
   CloseButton,
   FileInput,
   Group,
@@ -46,6 +45,7 @@ function TranslationFileInput({
   onChange: (content: object | null) => void;
   readonly?: boolean;
 }) {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const fileReader = new FileReader();
   fileReader.onload = () => onChange(JSON.parse(fileReader.result as string));
@@ -59,11 +59,17 @@ function TranslationFileInput({
   }, [file]);
 
   return (
-    <Input.Wrapper label="Translation file">
+    <Input.Wrapper
+      label={t("logi18nprofile.form.file.label", {
+        lang: t("language." + lang),
+      })}
+    >
       <Group justify="space-between">
         <FileInput
           placeholder={
-            isSet ? "Translation configured" : "Select translation file"
+            isSet
+              ? t("logi18nprofile.form.file.configured")
+              : t("logi18nprofile.form.file.choose")
           }
           accept="application/json"
           value={file}

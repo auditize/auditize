@@ -9,6 +9,10 @@ export default {
     preferences: "Préférences",
     logout: "Déconnexion",
   },
+  language: {
+    fr: "Français",
+    en: "Anglais",
+  },
   repo: {
     repo: "Dépôt",
     repos: "Dépôts",
@@ -60,6 +64,11 @@ export default {
         label: "Nom",
         placeholder: "Nom du profil",
         required: "Le nom du profil est requis.",
+      },
+      file: {
+        label: "Fichier de traduction pour: {{lang}}",
+        choose: "Sélectionner un fichier",
+        configured: "Traduction configurée",
       },
     },
     create: {
