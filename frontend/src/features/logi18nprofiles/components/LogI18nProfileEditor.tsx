@@ -1,4 +1,12 @@
-import { Button, FileInput, Input, Stack, TextInput } from "@mantine/core";
+import {
+  Button,
+  CloseButton,
+  FileInput,
+  Group,
+  Input,
+  Stack,
+  TextInput,
+} from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,12 +35,16 @@ function useLogI18nProfileForm(values: { name?: string }) {
   });
 }
 
-function TranslationFile({
+function TranslationFileInput({
   lang,
+  isSet,
   onChange,
+  readonly = false,
 }: {
   lang: string;
+  isSet?: boolean;
   onChange: (content: object | null) => void;
+  readonly?: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const fileReader = new FileReader();
@@ -47,33 +59,33 @@ function TranslationFile({
   }, [file]);
 
   return (
-    <FileInput
-      label="Translation file"
-      placeholder="Select translation file"
-      accept="application/json"
-      value={file}
-      onChange={setFile}
-      clearable
-    />
-  );
-}
-
-function EditableTranslationFile({
-  lang,
-  content,
-  onChange,
-}: {
-  lang: string;
-  content: object | null;
-  onChange: (content: object | null) => void;
-}) {
-  return content ? (
     <Input.Wrapper label="Translation file">
-      <br />
-      <Button onClick={() => onChange(null)}>Remove</Button>
+      <Group justify="space-between">
+        <FileInput
+          placeholder={
+            isSet ? "Translation configured" : "Select translation file"
+          }
+          accept="application/json"
+          value={file}
+          onChange={setFile}
+          disabled={readonly}
+          flex={1}
+        />
+        {(isSet || file) && (
+          <CloseButton
+            onClick={() => {
+              if (file) {
+                setFile(null);
+              } else {
+                onChange(null);
+              }
+            }}
+            disabled={readonly}
+            flex={0}
+          />
+        )}
+      </Group>
     </Input.Wrapper>
-  ) : (
-    <TranslationFile lang={lang} onChange={onChange} />
   );
 }
 
@@ -120,7 +132,7 @@ export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
       queryKeyForInvalidation={["logi18nprofiles"]}
     >
       <LogI18nProfileForm form={form}>
-        <TranslationFile
+        <TranslationFileInput
           lang="fr"
           onChange={(translation) => {
             setTranslations(
@@ -171,15 +183,16 @@ export function LogI18nProfileEdition({
       disabledSaving={readOnly}
     >
       <LogI18nProfileForm form={form} readOnly={readOnly}>
-        <EditableTranslationFile
+        <TranslationFileInput
           lang="fr"
-          content={translations.fr}
+          isSet={!!translations.fr}
           onChange={(translation) => {
             setTranslations({
               ...translations,
               fr: translation ? translation : null,
             });
           }}
+          readonly={readOnly}
         />
       </LogI18nProfileForm>
     </ResourceEdition>
