@@ -202,6 +202,39 @@ async def test_log_i18n_profile_update_add_translation(
     )
 
 
+async def test_log_i18n_profile_update_remove_translation(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18n",
+            "translations": {
+                "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
+            },
+        },
+    )
+    await repo_write_client.assert_patch_no_content(
+        f"/log-i18n-profiles/{profile.id}",
+        json={
+            "translations": {"fr": None},
+        },
+    )
+    await assert_collection(
+        dbm.core_db.logi18nprofiles,
+        [
+            profile.expected_document(
+                {
+                    "translations": {
+                        "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                    }
+                }
+            )
+        ],
+    )
+
+
 async def test_log_i18n_profile_update_existing_translation(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):

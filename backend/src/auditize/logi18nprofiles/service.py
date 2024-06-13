@@ -18,11 +18,18 @@ async def create_log_i18n_profile(dbm: DatabaseManager, profile: LogI18nProfile)
 async def update_log_i18n_profile(
     dbm: DatabaseManager, profile_id: str, update: LogI18nProfileUpdate
 ):
-    doc_update = update.model_dump(exclude={"translations"}, exclude_none=True)
+    profile = await get_log_i18n_profile(dbm, profile_id)
+    if update.name:
+        profile.name = update.name
     if update.translations:
         for lang, translation in update.translations.items():
-            doc_update[f"translations.{lang.value}"] = translation.model_dump()
-    await update_resource_document(dbm.core_db.logi18nprofiles, profile_id, doc_update)
+            if translation:
+                profile.translations[lang] = translation
+            else:
+                # NB: lang is not necessarily present in existing translations
+                profile.translations.pop(lang, None)
+
+    await update_resource_document(dbm.core_db.logi18nprofiles, profile_id, profile)
 
 
 async def get_log_i18n_profile(dbm: DatabaseManager, profile_id: str) -> LogI18nProfile:
