@@ -373,6 +373,7 @@ function FilterField({
 }) {
   const { t } = useTranslation();
   if (name === "date") {
+    // FIXME: don't use useDisclosure here
     const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
       <FilterFieldPopover

@@ -13,6 +13,7 @@ export type RepoStatus = "enabled" | "readonly" | "disabled";
 export interface RepoCreation {
   name: string;
   status?: RepoStatus;
+  logI18nProfileId?: string | null;
 }
 
 export interface Repo extends RepoCreation {
@@ -33,6 +34,7 @@ export interface Repo extends RepoCreation {
 export type RepoUpdate = {
   name?: string;
   status?: RepoStatus;
+  logI18nProfileId?: string | null;
 };
 
 export async function createRepo(repo: RepoCreation): Promise<string> {

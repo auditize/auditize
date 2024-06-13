@@ -24,6 +24,10 @@ export default {
         placeholder: "Nom du dépôt",
         required: "Le nom du dépôt est requis.",
       },
+      logI18nProfile: {
+        label: "Traductions",
+        placeholder: "Sélectionner un profil de traduction",
+      },
       status: {
         label: "Statut",
         value: {
@@ -261,6 +265,8 @@ export default {
     confirm: "Confirmer",
     close: "Fermer",
     ok: "Ok",
+    loading: "Chargement...",
+    notCurrentlyAvailable: "Actuellement indisponible",
   },
   resource: {
     list: {

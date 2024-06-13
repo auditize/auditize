@@ -24,6 +24,10 @@ export default {
         placeholder: "Repository name",
         required: "Repository name is required.",
       },
+      logI18nProfile: {
+        label: "Translations",
+        placeholder: "Select a log translation profile",
+      },
       status: {
         label: "Status",
         value: {
@@ -258,6 +262,8 @@ export default {
     confirm: "Confirm",
     close: "Close",
     ok: "Ok",
+    loading: "Loading...",
+    notCurrentlyAvailable: "Not currently available",
   },
   resource: {
     list: {
