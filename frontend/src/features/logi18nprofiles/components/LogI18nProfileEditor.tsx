@@ -1,4 +1,4 @@
-import { FileInput, Stack, TextInput } from "@mantine/core";
+import { Button, FileInput, Input, Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -58,14 +58,33 @@ function TranslationFile({
   );
 }
 
+function EditableTranslationFile({
+  lang,
+  content,
+  onChange,
+}: {
+  lang: string;
+  content: object | null;
+  onChange: (content: object | null) => void;
+}) {
+  return content ? (
+    <Input.Wrapper label="Translation file">
+      <br />
+      <Button onClick={() => onChange(null)}>Remove</Button>
+    </Input.Wrapper>
+  ) : (
+    <TranslationFile lang={lang} onChange={onChange} />
+  );
+}
+
 function LogI18nProfileForm({
   form,
-  onTranslationChange,
   readOnly = false,
+  children,
 }: {
   form: UseFormReturnType<any>;
-  onTranslationChange: (lang: string, content: object | null) => void;
   readOnly?: boolean;
+  children: React.ReactNode;
 }) {
   const { t } = useTranslation();
 
@@ -78,10 +97,7 @@ function LogI18nProfileForm({
         disabled={readOnly}
         {...form.getInputProps("name")}
       />
-      <TranslationFile
-        lang="fr"
-        onChange={(content) => onTranslationChange("fr", content)}
-      />
+      {children}
     </Stack>
   );
 }
@@ -89,7 +105,7 @@ function LogI18nProfileForm({
 export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
   const { t } = useTranslation();
   const form = useLogI18nProfileForm({});
-  const [translations, setTranslations] = useState<object>({});
+  const [translations, setTranslations] = useState<Record<string, object>>({});
 
   useEffect(() => {
     form.reset();
@@ -103,15 +119,22 @@ export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
       onSave={() => createLogi18nProfile({ ...form.values, translations })}
       queryKeyForInvalidation={["logi18nprofiles"]}
     >
-      <LogI18nProfileForm
-        form={form}
-        onTranslationChange={(lang, translation) => {
-          setTranslations({
-            ...translations,
-            [lang]: translation ? translation : undefined,
-          });
-        }}
-      />
+      <LogI18nProfileForm form={form}>
+        <TranslationFile
+          lang="fr"
+          onChange={(translation) => {
+            setTranslations(
+              translation
+                ? { ...translations, fr: translation }
+                : Object.fromEntries(
+                    Object.entries(translations).filter(
+                      ([key]) => key !== "fr",
+                    ),
+                  ),
+            );
+          }}
+        />
+      </LogI18nProfileForm>
     </ResourceCreation>
   );
 }
@@ -125,7 +148,9 @@ export function LogI18nProfileEdition({
 }) {
   const { t } = useTranslation();
   const form = useLogI18nProfileForm({});
-  const [translations, setTranslations] = useState<object>({});
+  const [translations, setTranslations] = useState<
+    Record<string, object | null>
+  >({});
 
   return (
     <ResourceEdition
@@ -133,8 +158,9 @@ export function LogI18nProfileEdition({
       queryKeyForLoad={["logi18nprofile", profileId]}
       queryFnForLoad={() => getLogI18nProfile(profileId!)}
       onDataLoaded={(data) => {
-        const { name } = data;
+        const { name, translations } = data;
         form.setValues({ name });
+        setTranslations(translations);
       }}
       title={t("logi18nprofile.edit.title")}
       onSubmit={form.onSubmit}
@@ -144,16 +170,18 @@ export function LogI18nProfileEdition({
       queryKeyForInvalidation={["logi18nprofiles"]}
       disabledSaving={readOnly}
     >
-      <LogI18nProfileForm
-        form={form}
-        readOnly={readOnly}
-        onTranslationChange={(lang, translation) => {
-          setTranslations({
-            ...translations,
-            [lang]: translation ? translation : undefined,
-          });
-        }}
-      />
+      <LogI18nProfileForm form={form} readOnly={readOnly}>
+        <EditableTranslationFile
+          lang="fr"
+          content={translations.fr}
+          onChange={(translation) => {
+            setTranslations({
+              ...translations,
+              fr: translation ? translation : null,
+            });
+          }}
+        />
+      </LogI18nProfileForm>
     </ResourceEdition>
   );
 }
