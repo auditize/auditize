@@ -191,6 +191,11 @@ export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
     >
       <LogI18nProfileForm form={form}>
         <TranslationFileCreationInput
+          lang="en"
+          translations={translations}
+          setTranslations={setTranslations}
+        />
+        <TranslationFileCreationInput
           lang="fr"
           translations={translations}
           setTranslations={setTranslations}
@@ -232,6 +237,12 @@ export function LogI18nProfileEdition({
       disabledSaving={readOnly}
     >
       <LogI18nProfileForm form={form} readOnly={readOnly}>
+        <TranslationFileUpdateInput
+          lang="en"
+          translations={translations}
+          setTranslations={setTranslations}
+          readOnly={readOnly}
+        />
         <TranslationFileUpdateInput
           lang="fr"
           translations={translations}
