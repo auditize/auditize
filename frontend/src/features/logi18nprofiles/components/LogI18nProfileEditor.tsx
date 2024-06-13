@@ -95,6 +95,58 @@ function TranslationFileInput({
   );
 }
 
+function TranslationFileCreationInput({
+  lang,
+  translations,
+  setTranslations,
+}: {
+  lang: string;
+  translations: Record<string, object>;
+  setTranslations: (translations: Record<string, object>) => void;
+}) {
+  return (
+    <TranslationFileInput
+      lang={lang}
+      onChange={(translation) => {
+        setTranslations(
+          translation
+            ? { ...translations, [lang]: translation }
+            : Object.fromEntries(
+                Object.entries(translations).filter(([key]) => key !== lang),
+              ),
+        );
+      }}
+    />
+  );
+}
+
+function TranslationFileUpdateInput({
+  lang,
+  translations,
+  setTranslations,
+  readOnly,
+}: {
+  lang: string;
+  translations: Record<string, object | null>;
+  setTranslations: (translations: Record<string, object | null>) => void;
+  readOnly: boolean;
+}) {
+  return (
+    <TranslationFileInput
+      lang={lang}
+      isSet={!!translations[lang]}
+      onChange={(translation) => {
+        setTranslations({
+          ...translations,
+          // NB: in order to remove an existing translation, it must be explicitly set to null
+          [lang]: translation ? translation : null,
+        });
+      }}
+      readonly={readOnly}
+    />
+  );
+}
+
 function LogI18nProfileForm({
   form,
   readOnly = false,
@@ -138,19 +190,10 @@ export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
       queryKeyForInvalidation={["logi18nprofiles"]}
     >
       <LogI18nProfileForm form={form}>
-        <TranslationFileInput
+        <TranslationFileCreationInput
           lang="fr"
-          onChange={(translation) => {
-            setTranslations(
-              translation
-                ? { ...translations, fr: translation }
-                : Object.fromEntries(
-                    Object.entries(translations).filter(
-                      ([key]) => key !== "fr",
-                    ),
-                  ),
-            );
-          }}
+          translations={translations}
+          setTranslations={setTranslations}
         />
       </LogI18nProfileForm>
     </ResourceCreation>
@@ -189,16 +232,11 @@ export function LogI18nProfileEdition({
       disabledSaving={readOnly}
     >
       <LogI18nProfileForm form={form} readOnly={readOnly}>
-        <TranslationFileInput
+        <TranslationFileUpdateInput
           lang="fr"
-          isSet={!!translations.fr}
-          onChange={(translation) => {
-            setTranslations({
-              ...translations,
-              fr: translation ? translation : null,
-            });
-          }}
-          readonly={readOnly}
+          translations={translations}
+          setTranslations={setTranslations}
+          readOnly={readOnly}
         />
       </LogI18nProfileForm>
     </ResourceEdition>
