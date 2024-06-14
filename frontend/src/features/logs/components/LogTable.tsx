@@ -13,16 +13,15 @@ import i18n from "i18next";
 import { DataTable, DataTableColumn } from "mantine-datatable";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { i } from "vitest/dist/reporters-P7C2ytIv";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { humanizeDate } from "@/utils/date";
-import { labelize, titlize } from "@/utils/format";
 import { addQueryParamToLocation } from "@/utils/router";
 
 import { CustomField, Log } from "../api";
 import { LogDetails } from "./LogDetails";
 import { useLogFields } from "./LogFieldSelector";
+import { useLogTranslator } from "./LogTranslation";
 
 export type TableFilterChangeHandler = (
   name: string,
@@ -72,12 +71,16 @@ function DateField({ log }: { log: Log }) {
 function SourceField({
   log,
   fieldName,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
   fieldName: string;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   if (!log.source) {
     return null;
   }
@@ -92,7 +95,7 @@ function SourceField({
         onTableFilterChange("source", new Map([[fieldName, fieldValue]]))
       }
     >
-      {fieldValue}
+      {logTranslator("source_field", fieldValue)}
     </InlineFilterLink>
   );
 }
@@ -117,17 +120,21 @@ function ActorField({
 
 function ActorTypeField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return (
     log.actor && (
       <InlineFilterLink
         onClick={() => onTableFilterChange("actorType", log.actor!.type)}
       >
-        {titlize(log.actor.type)}
+        {logTranslator("actor_type", log.actor.type)}
       </InlineFilterLink>
     )
   );
@@ -199,17 +206,21 @@ function ActorCustomField({
 
 function ActionField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return (
     <>
       <InlineFilterLink
         onClick={() => onTableFilterChange("actionType", log.action.type)}
       >
-        {titlize(log.action.type)}
+        {logTranslator("action_type", log.action.type)}
       </InlineFilterLink>
       <br />
       <InlineFilterLink
@@ -219,7 +230,7 @@ function ActionField({
         color="gray"
         fontSize="xs"
       >
-        {"(" + titlize(log.action.category) + ")"}
+        {"(" + logTranslator("action_category", log.action.category) + ")"}
       </InlineFilterLink>
     </>
   );
@@ -227,49 +238,61 @@ function ActionField({
 
 function ActionTypeField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return (
     <InlineFilterLink
       onClick={() => onTableFilterChange("actionType", log.action.type)}
     >
-      {titlize(log.action.type)}
+      {logTranslator("action_type", log.action.type)}
     </InlineFilterLink>
   );
 }
 
 function ActionCategoryField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return (
     <InlineFilterLink
       onClick={() => onTableFilterChange("actionCategory", log.action.category)}
     >
-      {titlize(log.action.category)}
+      {logTranslator("action_category", log.action.category)}
     </InlineFilterLink>
   );
 }
 
 function ResourceField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return log.resource ? (
     <>
       <InlineFilterLink
         onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
       >
-        {titlize(log.resource.type)}
+        {logTranslator("resource_type", log.resource.type)}
       </InlineFilterLink>
       {": "}
       <InlineFilterLink
@@ -284,16 +307,20 @@ function ResourceField({
 
 function ResourceTypeField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return log.resource ? (
     <InlineFilterLink
       onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
     >
-      {titlize(log.resource.type)}
+      {logTranslator("resource_type", log.resource.type)}
     </InlineFilterLink>
   ) : null;
 }
@@ -388,11 +415,15 @@ function DetailField({
 
 function TagsField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return (
     <Breadcrumbs separator={null} separatorMargin="0.250rem">
       {log.tags.map((tag, i) =>
@@ -402,7 +433,7 @@ function TagsField({
             onClick={() => onTableFilterChange("tagRef", tag.ref!)}
           >
             <Badge size="sm" variant="outline">
-              {tag.type + ": " + tag.name}
+              {logTranslator("tag_type", tag.type) + ": " + tag.name}
             </Badge>
           </InlineFilterLink>
         ) : (
@@ -411,7 +442,7 @@ function TagsField({
             onClick={() => onTableFilterChange("tagType", tag.type)}
           >
             <Badge size="sm" variant="outline">
-              {titlize(tag.type)}
+              {logTranslator("tag_type", tag.type)}
             </Badge>
           </InlineFilterLink>
         ),
@@ -422,11 +453,15 @@ function TagsField({
 
 function TagTypesField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return (
     <Breadcrumbs separator=", ">
       {log.tags.map((tag, i) => (
@@ -434,7 +469,7 @@ function TagTypesField({
           key={i}
           onClick={() => onTableFilterChange("tagType", tag.type)}
         >
-          {titlize(tag.type)}
+          {logTranslator("tag_type", tag.type)}
         </InlineFilterLink>
       ))}
     </Breadcrumbs>
@@ -535,11 +570,15 @@ function AttachmentDescriptionsField({
 
 function AttachmentTypesField({
   log,
+  repoId,
   onTableFilterChange,
 }: {
   log: Log;
+  repoId: string;
   onTableFilterChange: TableFilterChangeHandler;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
@@ -547,7 +586,7 @@ function AttachmentTypesField({
           key={i}
           onClick={() => onTableFilterChange("attachmentType", attachment.type)}
         >
-          {attachment.type}
+          {logTranslator("attachment_type", attachment.type)}
         </InlineFilterLink>
       ))}
     </Breadcrumbs>
@@ -688,7 +727,9 @@ function sortFields(a: string, b: string) {
 
 function fieldToColumn(
   field: string,
+  repoId: string,
   onTableFilterChange: TableFilterChangeHandler,
+  logTranslator: (type: string, key: string) => string,
 ) {
   const { t } = i18n;
 
@@ -703,11 +744,12 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `source.${fieldName}`,
-      title: t("log.source") + ": " + labelize(fieldName),
+      title: t("log.source") + ": " + logTranslator("source_field", fieldName),
       render: (log: Log) => (
         <SourceField
           log={log}
           fieldName={fieldName}
+          repoId={repoId}
           onTableFilterChange={onTableFilterChange}
         />
       ),
@@ -728,7 +770,11 @@ function fieldToColumn(
       accessor: "actorType",
       title: t("log.actorType"),
       render: (log: Log) => (
-        <ActorTypeField log={log} onTableFilterChange={onTableFilterChange} />
+        <ActorTypeField
+          log={log}
+          repoId={repoId}
+          onTableFilterChange={onTableFilterChange}
+        />
       ),
     };
 
@@ -754,7 +800,8 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `actor.${fieldName}`,
-      title: t("log.actor") + ": " + labelize(fieldName),
+      title:
+        t("log.actor") + ": " + logTranslator("actor_custom_field", fieldName),
       render: (log: Log) => (
         <ActorCustomField
           log={log}
@@ -770,7 +817,11 @@ function fieldToColumn(
       accessor: "action",
       title: t("log.action"),
       render: (log: Log) => (
-        <ActionField log={log} onTableFilterChange={onTableFilterChange} />
+        <ActionField
+          log={log}
+          repoId={repoId}
+          onTableFilterChange={onTableFilterChange}
+        />
       ),
     };
 
@@ -779,7 +830,11 @@ function fieldToColumn(
       accessor: "actionType",
       title: t("log.actionType"),
       render: (log: Log) => (
-        <ActionTypeField log={log} onTableFilterChange={onTableFilterChange} />
+        <ActionTypeField
+          log={log}
+          repoId={repoId}
+          onTableFilterChange={onTableFilterChange}
+        />
       ),
     };
 
@@ -790,6 +845,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <ActionCategoryField
           log={log}
+          repoId={repoId}
           onTableFilterChange={onTableFilterChange}
         />
       ),
@@ -800,7 +856,11 @@ function fieldToColumn(
       accessor: "resource",
       title: t("log.resource"),
       render: (log: Log) => (
-        <ResourceField log={log} onTableFilterChange={onTableFilterChange} />
+        <ResourceField
+          log={log}
+          repoId={repoId}
+          onTableFilterChange={onTableFilterChange}
+        />
       ),
     };
 
@@ -811,6 +871,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <ResourceTypeField
           log={log}
+          repoId={repoId}
           onTableFilterChange={onTableFilterChange}
         />
       ),
@@ -841,7 +902,10 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `resource.${fieldName}`,
-      title: t("log.resource") + ": " + labelize(fieldName),
+      title:
+        t("log.resource") +
+        ": " +
+        logTranslator("resource_custom_field", fieldName),
       render: (log: Log) => (
         <ResourceCustomField
           log={log}
@@ -856,7 +920,7 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `details.${fieldName}`,
-      title: titlize(fieldName),
+      title: logTranslator("detail_field", fieldName),
       render: (log: Log) => (
         <DetailField
           log={log}
@@ -872,7 +936,11 @@ function fieldToColumn(
       accessor: "tags",
       title: t("log.tags"),
       render: (log: Log) => (
-        <TagsField log={log} onTableFilterChange={onTableFilterChange} />
+        <TagsField
+          log={log}
+          repoId={repoId}
+          onTableFilterChange={onTableFilterChange}
+        />
       ),
     };
 
@@ -881,7 +949,11 @@ function fieldToColumn(
       accessor: "tagType",
       title: t("log.tagTypes"),
       render: (log: Log) => (
-        <TagTypesField log={log} onTableFilterChange={onTableFilterChange} />
+        <TagTypesField
+          log={log}
+          repoId={repoId}
+          onTableFilterChange={onTableFilterChange}
+        />
       ),
     };
 
@@ -911,6 +983,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <AttachmentTypesField
           log={log}
+          repoId={repoId}
           onTableFilterChange={onTableFilterChange}
         />
       ),
@@ -947,6 +1020,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <AttachmentTypesField
           log={log}
+          repoId={repoId}
           onTableFilterChange={onTableFilterChange}
         />
       ),
@@ -1000,6 +1074,7 @@ export function LogTable({
     key: `log-columns`,
     defaultValue: {},
   });
+  const logTranslator = useLogTranslator(repoId);
   const addColumn = (name: string) => {
     setSelectedColumns((selectedColumns) => ({
       ...selectedColumns,
@@ -1024,7 +1099,9 @@ export function LogTable({
   let columns = [
     ...(selectedColumns[repoId] || defaultColumns)
       .toSorted(sortFields)
-      .map((column) => fieldToColumn(column, onTableFilterChange))
+      .map((column) =>
+        fieldToColumn(column, repoId, onTableFilterChange, logTranslator),
+      )
       .filter((data) => !!data),
     {
       accessor: "columns",

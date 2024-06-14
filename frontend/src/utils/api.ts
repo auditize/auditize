@@ -55,12 +55,20 @@ export async function reqDelete(path: string): Promise<void> {
 export async function reqGet(
   path: string,
   params = {},
-  { disableParamsSnakecase }: { disableParamsSnakecase?: boolean } = {},
+  {
+    disableParamsSnakecase,
+    disableResponseCamelcase,
+  }: {
+    disableParamsSnakecase?: boolean;
+    disableResponseCamelcase?: boolean;
+  } = {},
 ): Promise<any> {
   const response = await axiosInstance.get(path, {
     params: disableParamsSnakecase ? params : snakecaseKeys(params),
   });
-  return camelcaseKeys(response.data, { deep: true });
+  return disableResponseCamelcase
+    ? response.data
+    : camelcaseKeys(response.data, { deep: true });
 }
 
 export async function reqGetPaginated(

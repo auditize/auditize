@@ -9,6 +9,7 @@ import {
   getAllLogResourceCustomFields,
   getAllLogSourceFields,
 } from "../api";
+import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
 export function useLogFields(
   repoId: string,
@@ -16,6 +17,7 @@ export function useLogFields(
   enableCompositeFields: boolean,
 ) {
   const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
   const { data: actorCustomFields, isPending: actorCustomFieldsPending } =
     useQuery({
       queryKey: ["logActorCustomFields", repoId],
@@ -38,6 +40,7 @@ export function useLogFields(
     queryFn: () => getAllLogSourceFields(repoId),
     enabled: !!repoId,
   });
+  const logTranslationQuery = useLogTranslationQuery(repoId);
 
   const _ = ({ value, label }: { value: string; label: string }) => ({
     value,
@@ -70,7 +73,10 @@ export function useLogFields(
           ...(actorCustomFields ?? []).map((field) =>
             _({
               value: `actor.${field}`,
-              label: t("log.actor") + ": " + labelize(field),
+              label:
+                t("log.actor") +
+                ": " +
+                logTranslator("actor_custom_field", field),
             }),
           ),
         ],
@@ -80,7 +86,7 @@ export function useLogFields(
         items: (sourceFields ?? []).map((field) =>
           _({
             value: `source.${field}`,
-            label: titlize(field),
+            label: logTranslator("source_field", field),
           }),
         ),
       },
@@ -96,7 +102,10 @@ export function useLogFields(
           ...(resourceCustomFields ?? []).map((field) =>
             _({
               value: `resource.${field}`,
-              label: t("log.resource") + ": " + labelize(field),
+              label:
+                t("log.resource") +
+                ": " +
+                logTranslator("resource_custom_field", field),
             }),
           ),
         ],
@@ -106,7 +115,7 @@ export function useLogFields(
         items: (detailFields ?? []).map((field) =>
           _({
             value: `details.${field}`,
-            label: titlize(field),
+            label: logTranslator("detail_field", field),
           }),
         ),
       },
@@ -148,6 +157,7 @@ export function useLogFields(
       actorCustomFieldsPending ||
       resourceCustomFieldsPending ||
       detailFieldsPending ||
-      sourceFieldsPending,
+      sourceFieldsPending ||
+      logTranslationQuery.isLoading,
   };
 }

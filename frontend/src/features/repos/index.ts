@@ -1,3 +1,3 @@
 export { ReposManagement } from "./components/ReposManagement";
-export { getAllMyRepos } from "./api";
+export { getAllMyRepos, getRepoTranslation } from "./api";
 export type { Repo } from "./api";
