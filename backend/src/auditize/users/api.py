@@ -32,11 +32,6 @@ def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: str):
         raise PermissionDenied("Cannot alter own user")
 
 
-def _ensure_authenticated_as_user(authenticated: Authenticated):
-    if not authenticated.user:
-        raise PermissionDenied("This endpoint is only available for users")
-
-
 @router.post(
     "/users",
     summary="Create user",
@@ -67,7 +62,7 @@ async def update_user_me(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
     update_request: UserMeUpdateRequest,
 ):
-    _ensure_authenticated_as_user(authenticated)
+    authenticated.ensure_user()
     update = UserUpdate.model_validate(update_request.model_dump())
     await service.update_user(dbm, authenticated.user.id, update)
     user = await service.get_user(dbm, authenticated.user.id)
@@ -103,7 +98,7 @@ async def update_user(
 async def get_user_me(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
 ) -> UserMeResponse:
-    _ensure_authenticated_as_user(authenticated)
+    authenticated.ensure_user()
     return UserMeResponse.from_db_model(authenticated.user)
 
 
