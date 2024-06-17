@@ -987,6 +987,7 @@ export function LogFilter({
 }) {
   const { t } = useTranslation();
   const [editedParams, dispatch] = useReducer(filterParamsReducer, params);
+  const [isDirty, setIsDirty] = useState(false);
   const [filterNames, setFilterNames] = useState<Set<string>>(
     searchParamsToFilterNames(params),
   );
@@ -995,6 +996,7 @@ export function LogFilter({
   // Typically, an inline filter has been applied from logs table
   useEffect(() => {
     dispatch({ type: "resetParams", params });
+    setIsDirty(false);
     setFilterNames(searchParamsToFilterNames(params));
   }, [params]);
 
@@ -1003,6 +1005,7 @@ export function LogFilter({
     removeSearchParam(editedParams, name, (name, value) =>
       dispatch({ type: "setParam", name, value }),
     );
+    setIsDirty(true);
   };
 
   return (
@@ -1018,6 +1021,7 @@ export function LogFilter({
               onChange({ ...editedParams, repoId });
             } else {
               dispatch({ type: "setParam", name: "repoId", value: repoId });
+              setIsDirty(true);
             }
           }}
         />
@@ -1027,9 +1031,10 @@ export function LogFilter({
           names={filterNames}
           added={addedFilterName}
           searchParams={editedParams}
-          onChange={(name, value) =>
-            dispatch({ type: "setParam", name, value })
-          }
+          onChange={(name, value) => {
+            dispatch({ type: "setParam", name, value });
+            setIsDirty(true);
+          }}
           onRemove={removeFilter}
         />
         <FilterSelector
@@ -1046,19 +1051,22 @@ export function LogFilter({
       {/* Apply & clear buttons */}
       <Space w="l" />
       <Group>
-        <Button onClick={() => onChange(editedParams)}>
+        <Button onClick={() => onChange(editedParams)} disabled={!isDirty}>
           {t("log.list.filter.apply")}
         </Button>
         <Button
-          onClick={() =>
-            dispatch({
-              type: "resetParams",
-              params: {
-                ...buildLogSearchParams(),
-                repoId: editedParams.repoId,
-              },
-            })
-          }
+          onClick={() => {
+            {
+              dispatch({
+                type: "resetParams",
+                params: {
+                  ...buildLogSearchParams(),
+                  repoId: editedParams.repoId,
+                },
+              });
+              setIsDirty(true);
+            }
+          }}
           variant="default"
         >
           {t("log.list.filter.clear")}
