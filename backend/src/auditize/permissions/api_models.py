@@ -45,10 +45,12 @@ class ManagementPermissionsOutputData(BaseModel):
 
 class RepoLogPermissionsInputData(ReadWritePermissionsInputData):
     repo_id: str
+    nodes: list[str] = Field(default_factory=list)
 
 
 class RepoLogPermissionsOutputData(ReadWritePermissionsOutputData):
     repo_id: str
+    nodes: list[str]
 
 
 class LogPermissionsInputData(ReadWritePermissionsInputData):

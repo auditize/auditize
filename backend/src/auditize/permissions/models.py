@@ -39,6 +39,7 @@ class ManagementPermissions(BaseModel):
 
 class RepoLogPermissions(ReadWritePermissions):
     repo_id: str
+    nodes: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -56,11 +57,11 @@ class LogPermissions(ReadWritePermissions):
 
         return [perms.repo_id for perms in self.repos if perms_ok(perms)]
 
-    def get_repo_permissions(self, repo_id: str) -> ReadWritePermissions:
+    def get_repo_permissions(self, repo_id: str) -> RepoLogPermissions | None:
         for perms in self.repos:
             if perms.repo_id == repo_id:
                 return perms
-        return ReadWritePermissions.no()
+        return None
 
 
 class Permissions(BaseModel):

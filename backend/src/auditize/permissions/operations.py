@@ -31,19 +31,19 @@ def _normalize_repo_permissions(
 
     # the function uses internally a dict to normalize the permissions to handle possible duplicates
     # between repo_id (the last permission line wins)
-    normalized: dict[str, ReadWritePermissions] = {}
+    normalized: dict[str, RepoLogPermissions] = {}
 
     for single_repo_perms in repo_perms:
-        normalized[single_repo_perms.repo_id] = ReadWritePermissions(
-            read=False if global_read else (single_repo_perms.read or False),
-            write=False if global_write else (single_repo_perms.write or False),
+        read = False if global_read else (single_repo_perms.read or False)
+        write = False if global_write else (single_repo_perms.write or False)
+        normalized[single_repo_perms.repo_id] = RepoLogPermissions(
+            repo_id=single_repo_perms.repo_id,
+            read=read,
+            write=write,
+            nodes=single_repo_perms.nodes if read else [],
         )
 
-    return [
-        RepoLogPermissions(repo_id=repo_id, read=perms.read, write=perms.write)
-        for repo_id, perms in normalized.items()
-        if perms.read or perms.write
-    ]
+    return [perms for perms in normalized.values() if perms.read or perms.write]
 
 
 def _normalize_read_write_permissions(
@@ -163,12 +163,19 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
             )
             _authorize_grant(
                 assignee_repo_perms.read,
-                grantor_repo_perms.read or grantor_perms.logs.read,
+                (
+                    grantor_repo_perms
+                    and grantor_repo_perms.read
+                    # grantor must have global access to the repo, not a node subset, to grant read access:
+                    and not grantor_repo_perms.nodes
+                )
+                or grantor_perms.logs.read,
                 f"logs read on repo {assignee_repo_perms.repo_id!r}",
             )
             _authorize_grant(
                 assignee_repo_perms.write,
-                grantor_repo_perms.write or grantor_perms.logs.write,
+                (grantor_repo_perms and grantor_repo_perms.write)
+                or grantor_perms.logs.write,
                 f"logs write on repo {assignee_repo_perms.repo_id!r}",
             )
 
@@ -219,9 +226,11 @@ def update_permissions(
         new.logs.repos.append(
             RepoLogPermissions(
                 repo_id=update_repo_perms.repo_id,
-                read=_update_permission(orig_repo_perms.read, update_repo_perms.read),
+                read=_update_permission(
+                    orig_repo_perms and orig_repo_perms.read, update_repo_perms.read
+                ),
                 write=_update_permission(
-                    orig_repo_perms.write, update_repo_perms.write
+                    orig_repo_perms and orig_repo_perms.write, update_repo_perms.write
                 ),
             )
         )

@@ -35,7 +35,7 @@ async def _test_repo_create(
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
     assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": repo.id, "read": True, "write": True}
+        {"repo_id": repo.id, "read": True, "write": True, "nodes": []}
     ]
 
 

@@ -43,16 +43,24 @@ class BasePermissionTests:
     ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
-    async def test_create_custom_permissions(
-        self, repo: PreparedRepo, dbm: DatabaseManager
-    ):
+    async def test_create_custom_permissions(self, dbm: DatabaseManager):
+        repo_1 = await PreparedRepo.create(dbm)
+        repo_2 = await PreparedRepo.create(dbm)
+
         grantor = await self.inject_grantor(dbm, {"is_superadmin": True})
         assignee_data = self.prepare_assignee_data(
             {
                 "permissions": {
                     "management": {"repos": {"read": True, "write": True}},
                     "logs": {
-                        "repos": [{"repo_id": repo.id, "read": True, "write": True}]
+                        "repos": [
+                            {"repo_id": repo_1.id, "read": True, "write": True},
+                            {
+                                "repo_id": repo_2.id,
+                                "read": True,
+                                "nodes": ["customer:1"],
+                            },
+                        ],
                     },
                 }
             }
@@ -76,7 +84,18 @@ class BasePermissionTests:
                                 "read": False,
                                 "write": False,
                                 "repos": [
-                                    {"repo_id": repo.id, "read": True, "write": True}
+                                    {
+                                        "repo_id": repo_1.id,
+                                        "read": True,
+                                        "write": True,
+                                        "nodes": [],
+                                    },
+                                    {
+                                        "repo_id": repo_2.id,
+                                        "read": True,
+                                        "write": False,
+                                        "nodes": ["customer:1"],
+                                    },
                                 ],
                             },
                             "management": {
@@ -188,7 +207,12 @@ class BasePermissionTests:
                                 "read": False,
                                 "write": False,
                                 "repos": [
-                                    {"repo_id": repo.id, "read": True, "write": True}
+                                    {
+                                        "repo_id": repo.id,
+                                        "read": True,
+                                        "write": True,
+                                        "nodes": [],
+                                    }
                                 ],
                             },
                             "management": {

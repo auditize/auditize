@@ -113,6 +113,12 @@ def test_normalization_read_logs_on_all_repos():
                     {"repo_id": "repo1", "read": True, "write": True},
                     {"repo_id": "repo2", "read": False, "write": True},
                     {"repo_id": "repo3", "read": True, "write": False},
+                    {
+                        "repo_id": "repo4",
+                        "read": True,
+                        "write": True,
+                        "nodes": ["node1", "node2"],
+                    },
                 ],
             },
         },
@@ -122,8 +128,43 @@ def test_normalization_read_logs_on_all_repos():
                 "read": True,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": False, "write": True},
-                    {"repo_id": "repo2", "read": False, "write": True},
+                    {"repo_id": "repo1", "read": False, "write": True, "nodes": []},
+                    {"repo_id": "repo2", "read": False, "write": True, "nodes": []},
+                    {"repo_id": "repo4", "read": False, "write": True, "nodes": []},
+                ],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_normalization_repo_nodes_without_read_permission():
+    _test_access_perms_normalization(
+        {
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {
+                        "repo_id": "repo1",
+                        "read": False,
+                        "write": True,
+                        "nodes": ["node1", "node2"],
+                    },
+                ],
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {"repo_id": "repo1", "read": False, "write": True, "nodes": []},
                 ],
             },
             "management": {
@@ -154,8 +195,8 @@ def test_normalization_write_logs_on_all_repos():
                 "read": False,
                 "write": True,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": False},
-                    {"repo_id": "repo3", "read": True, "write": False},
+                    {"repo_id": "repo1", "read": True, "write": False, "nodes": []},
+                    {"repo_id": "repo3", "read": True, "write": False, "nodes": []},
                 ],
             },
             "management": {
@@ -259,6 +300,26 @@ def test_authorize_grant_on_logs_as_permissions_on_all_repos():
     write_perms = {"logs": {"write": True}}
     assert_authorized(write_perms, {"logs": {"write": True}})
     assert_unauthorized(write_perms, {"logs": {"read": True}})
+
+
+def test_authorize_grant_on_logs_with_node():
+    granted_perms = {
+        "logs": {
+            "repos": [
+                {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+            ]
+        }
+    }
+
+    assert_authorized(
+        {"logs": {"repos": [{"repo_id": "repo1", "read": True, "write": False}]}},
+        granted_perms,
+    )
+
+    # the grantor must have full direct/indirect read permission on the repo
+    # to grant access; grantors with read access limited to certain nodes are
+    # not allowed to grant permissions (even on the same nodes):
+    assert_unauthorized(granted_perms, granted_perms)
 
 
 def test_permission_assertions_on_logs_as_permissions_specific_repos():
@@ -404,7 +465,7 @@ def test_update_permission_drop_individual_permissions():
                 "read": True,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": False, "write": True},
+                    {"repo_id": "repo1", "read": False, "write": True, "nodes": []},
                 ],
             },
             "management": {
@@ -445,6 +506,12 @@ def test_get_applicable_permissions_partial_rights():
                 "repos": [
                     {"repo_id": "repo1", "read": True, "write": False},
                     {"repo_id": "repo2", "read": False, "write": True},
+                    {
+                        "repo_id": "repo3",
+                        "read": True,
+                        "write": False,
+                        "nodes": ["node1"],
+                    },
                 ],
             },
             "management": {
