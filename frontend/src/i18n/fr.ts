@@ -5,8 +5,13 @@ export default {
     users: "Utilisateurs",
     apikeys: "Clés d'API",
     logs: "Journaux",
+    logi18nprofiles: "Traductions des journaux",
     preferences: "Préférences",
     logout: "Déconnexion",
+  },
+  language: {
+    fr: "Français",
+    en: "Anglais",
   },
   repo: {
     repo: "Dépôt",
@@ -18,6 +23,10 @@ export default {
         label: "Nom",
         placeholder: "Nom du dépôt",
         required: "Le nom du dépôt est requis.",
+      },
+      logI18nProfile: {
+        label: "Traductions",
+        placeholder: "Sélectionner un profil de traduction",
       },
       status: {
         label: "Statut",
@@ -49,6 +58,39 @@ export default {
     delete: {
       confirm:
         "Confirmez-vous la suppression du dépôt de journaux <1>{{name}}</1> ?",
+    },
+  },
+  logi18nprofile: {
+    logi18nprofile: "Profil de traduction des journaux",
+    logi18nprofiles: "Profils de traduction des journaux",
+    form: {
+      name: {
+        label: "Nom",
+        placeholder: "Nom du profil",
+        required: "Le nom du profil est requis.",
+      },
+      file: {
+        label: "Fichier de traduction pour: {{lang}}",
+        choose: "Sélectionner un fichier",
+        configured: "Traduction configurée",
+      },
+    },
+    create: {
+      title: "Créer un profil de traduction des journaux",
+    },
+    edit: {
+      title: "Modifier le profil de traduction des journaux",
+    },
+    list: {
+      title: "Traduction des journaux",
+      column: {
+        name: "Nom",
+        createdAt: "Date de création",
+      },
+    },
+    delete: {
+      confirm:
+        "Confirmez-vous la suppression du profil de traduction des journaux <1>{{name}}</1> ?",
     },
   },
   user: {
@@ -223,6 +265,8 @@ export default {
     confirm: "Confirmer",
     close: "Fermer",
     ok: "Ok",
+    loading: "Chargement...",
+    notCurrentlyAvailable: "Actuellement indisponible",
   },
   resource: {
     list: {

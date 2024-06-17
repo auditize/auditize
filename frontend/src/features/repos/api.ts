@@ -13,6 +13,7 @@ export type RepoStatus = "enabled" | "readonly" | "disabled";
 export interface RepoCreation {
   name: string;
   status?: RepoStatus;
+  logI18nProfileId?: string | null;
 }
 
 export interface Repo extends RepoCreation {
@@ -33,6 +34,7 @@ export interface Repo extends RepoCreation {
 export type RepoUpdate = {
   name?: string;
   status?: RepoStatus;
+  logI18nProfileId?: string | null;
 };
 
 export async function createRepo(repo: RepoCreation): Promise<string> {
@@ -74,6 +76,16 @@ export async function getAllMyRepos({
 
 export async function getRepo(repoId: string): Promise<Repo> {
   return await reqGet("/repos/" + repoId);
+}
+
+export async function getRepoTranslation(
+  repoId: string,
+): Promise<Record<string, Record<string, string>>> {
+  return await reqGet(
+    `/repos/${repoId}/translation`,
+    {},
+    { disableResponseCamelcase: true },
+  );
 }
 
 export async function deleteRepo(repoId: string): Promise<void> {

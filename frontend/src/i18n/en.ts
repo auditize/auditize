@@ -5,8 +5,13 @@ export default {
     users: "Users",
     apikeys: "API Keys",
     logs: "Logs",
+    logi18nprofiles: "Log translations",
     preferences: "Preferences",
     logout: "Logout",
+  },
+  language: {
+    fr: "French",
+    en: "English",
   },
   repo: {
     repo: "Repository",
@@ -18,6 +23,10 @@ export default {
         label: "Name",
         placeholder: "Repository name",
         required: "Repository name is required.",
+      },
+      logI18nProfile: {
+        label: "Translations",
+        placeholder: "Select a log translation profile",
       },
       status: {
         label: "Status",
@@ -49,6 +58,39 @@ export default {
     delete: {
       confirm:
         "Do you confirm the deletion of the log repository <1>{{name}}</1>?",
+    },
+  },
+  logi18nprofile: {
+    logi18nprofile: "Log translation profile",
+    logi18nprofiles: "Log translation profiles",
+    form: {
+      name: {
+        label: "Name",
+        placeholder: "Profile name",
+        required: "The profile name is required.",
+      },
+      file: {
+        label: "Translation file for: {{lang}}",
+        choose: "Select file",
+        configured: "Translation configured",
+      },
+    },
+    create: {
+      title: "Create a log translation profile",
+    },
+    edit: {
+      title: "Edit log translation profile",
+    },
+    list: {
+      title: "Log translations",
+      column: {
+        name: "Name",
+        createdAt: "Created at",
+      },
+    },
+    delete: {
+      confirm:
+        "Do you confirm the deletion of the log translation profile <1>{{name}}</1>?",
     },
   },
   user: {
@@ -220,6 +262,8 @@ export default {
     confirm: "Confirm",
     close: "Close",
     ok: "Ok",
+    loading: "Loading...",
+    notCurrentlyAvailable: "Not currently available",
   },
   resource: {
     list: {

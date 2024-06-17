@@ -1,5 +1,5 @@
 import os
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Optional, Protocol
 
 import pytest
 
@@ -28,6 +28,7 @@ pytest.register_assert_rewrite("helpers")
 from helpers.apikeys import PreparedApikey
 from helpers.database import setup_test_dbm, teardown_test_dbm
 from helpers.http import HttpTestHelper, create_http_client
+from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
 
@@ -79,6 +80,11 @@ async def repo(dbm):
 
 
 @pytest.fixture(scope="function")
+async def log_i18n_profile(dbm):
+    return await PreparedLogI18nProfile.create(dbm)
+
+
+@pytest.fixture(scope="function")
 async def user(superadmin_client, dbm):
     return await PreparedUser.create(superadmin_client, dbm)
 
@@ -99,15 +105,20 @@ def apikey_builder(dbm) -> ApikeyBuilder:
     return func
 
 
-UserBuilder = Callable[[dict], Awaitable[PreparedUser]]
+class UserBuilder(Protocol):
+    async def __call__(
+        self, permissions: dict, lang: Optional[str] = None
+    ) -> PreparedUser: ...
 
 
 @pytest.fixture(scope="function")
 def user_builder(dbm) -> UserBuilder:
-    async def func(permissions):
+    async def func(permissions, lang=None):
         return await PreparedUser.inject_into_db(
             dbm,
-            user=PreparedUser.prepare_model(password="dummy", permissions=permissions),
+            user=PreparedUser.prepare_model(
+                password="dummy", permissions=permissions, lang=lang
+            ),
             password="dummy",
         )
 
@@ -198,6 +209,14 @@ async def user_rw_client(apikey_builder):
 async def log_read_client(apikey_builder):
     apikey = await apikey_builder({"logs": {"read": True}})
     async with apikey.client() as client:
+        yield client
+
+
+@pytest.fixture(scope="function")
+async def log_read_user_client(user_builder):
+    user = await user_builder({"logs": {"read": True}})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
         yield client
 
 

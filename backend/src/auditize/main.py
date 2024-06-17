@@ -14,6 +14,7 @@ from auditize.helpers.api.errors import (
     make_response_from_exception,
 )
 from auditize.helpers.openapi import customize_openapi
+from auditize.logi18nprofiles.api import router as logi18nprofiles_router
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
@@ -79,6 +80,7 @@ app.include_router(logs_router)
 app.include_router(repos_router)
 app.include_router(users_router)
 app.include_router(apikeys_router)
+app.include_router(logi18nprofiles_router)
 
 ###
 # OpenAPI customization

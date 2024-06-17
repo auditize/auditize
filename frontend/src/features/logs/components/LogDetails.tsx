@@ -33,6 +33,7 @@ import { titlize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
 import { getLog } from "../api";
+import { useLogTranslator } from "./LogTranslation";
 
 function KeyValueTable({
   data,
@@ -94,9 +95,13 @@ function HoverRef({
 
 function Tag({
   value,
+  repoId,
 }: {
   value: { type: string; name: string | null; ref: string | null };
+  repoId: string;
 }) {
+  const logTranslator = useLogTranslator(repoId);
+
   if (value.name && value.ref) {
     return (
       <HoverRef value={value.ref}>
@@ -104,12 +109,12 @@ function Tag({
           color="blue"
           rightSection={<IconAsterisk style={iconSize(12)} />}
         >
-          {titlize(value.type)}: {value.name}
+          {logTranslator("tag_type", value.type)}: {value.name}
         </Badge>
       </HoverRef>
     );
   } else {
-    return <Badge color="blue">{titlize(value.type)}</Badge>;
+    return <Badge color="blue">{logTranslator("tag_type", value.type)}</Badge>;
   }
 }
 
@@ -135,6 +140,7 @@ export function LogDetails({
   logId?: string;
 }) {
   const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
   const opened = !!(repoId && logId);
   const {
     data: log,
@@ -169,8 +175,10 @@ export function LogDetails({
         <Modal.Header>
           <Stack>
             <Title order={2}>
-              {titlize(log.action.type)}{" "}
-              <Text c="dimmed">{titlize(log.action.category)}</Text>
+              {logTranslator("action_type", log.action.type)}{" "}
+              <Text c="dimmed">
+                {logTranslator("action_category", log.action.category)}
+              </Text>
             </Title>
           </Stack>
           <Modal.CloseButton />
@@ -182,7 +190,7 @@ export function LogDetails({
           </Group>
           <Group mb="lg">
             {log.tags.map((tag, index) => (
-              <Tag key={index} value={tag} />
+              <Tag key={index} value={tag} repoId={repoId!} />
             ))}
           </Group>
 
@@ -191,7 +199,7 @@ export function LogDetails({
             icon={<IconRoute style={iconSize("1.15rem")} />}
             data={log.source.map(
               (field) =>
-                [titlize(field.name), field.value] as [
+                [logTranslator("source_field", field.name), field.value] as [
                   React.ReactNode,
                   React.ReactNode,
                 ],
@@ -204,14 +212,17 @@ export function LogDetails({
             data={
               log.actor && [
                 [t("log.view.name"), <b>{log.actor.name}</b>],
-                [t("log.view.type"), titlize(log.actor.type)],
+                [
+                  t("log.view.type"),
+                  logTranslator("actor_type", log.actor.type),
+                ],
                 [t("log.view.ref"), <Code>{log.actor.ref}</Code>],
                 ...log.actor.extra.map(
                   (field) =>
-                    [titlize(field.name), field.value] as [
-                      React.ReactNode,
-                      React.ReactNode,
-                    ],
+                    [
+                      logTranslator("actor_custom_field", field.name),
+                      field.value,
+                    ] as [React.ReactNode, React.ReactNode],
                 ),
               ]
             }
@@ -223,14 +234,17 @@ export function LogDetails({
             data={
               log.resource && [
                 [t("log.view.name"), <b>{log.resource.name}</b>],
-                [t("log.view.type"), titlize(log.resource.type)],
+                [
+                  t("log.view.type"),
+                  logTranslator("resource_type", log.resource.type),
+                ],
                 [t("log.view.ref"), <Code>{log.resource.ref}</Code>],
                 ...log.resource.extra.map(
                   (field) =>
-                    [titlize(field.name), field.value] as [
-                      React.ReactNode,
-                      React.ReactNode,
-                    ],
+                    [
+                      logTranslator("resource_custom_field", field.name),
+                      field.value,
+                    ] as [React.ReactNode, React.ReactNode],
                 ),
               ]
             }
@@ -241,7 +255,7 @@ export function LogDetails({
             icon={<IconListDetails style={iconSize("1.15rem")} />}
             data={log.details.map(
               (field) =>
-                [titlize(field.name), field.value] as [
+                [logTranslator("detail_field", field.name), field.value] as [
                   React.ReactNode,
                   React.ReactNode,
                 ],
@@ -254,7 +268,7 @@ export function LogDetails({
             data={log.attachments.map(
               (field, index) =>
                 [
-                  titlize(field.type),
+                  logTranslator("attachment_type", field.type),
                   <Anchor
                     href={`http://localhost:8000/repos/${repoId}/logs/${log.id}/attachments/${index}`}
                   >

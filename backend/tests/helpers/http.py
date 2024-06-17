@@ -118,6 +118,7 @@ class HttpTestHelper(AsyncClient):
             expected_json=expected_json,
         )
 
+    assert_delete_no_content = partialmethod(assert_delete, expected_status_code=204)
     assert_delete_unauthorized = partialmethod(assert_delete, expected_status_code=401)
     assert_delete_forbidden = partialmethod(assert_delete, expected_status_code=403)
     assert_delete_not_found = partialmethod(assert_delete, expected_status_code=404)

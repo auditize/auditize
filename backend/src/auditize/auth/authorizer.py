@@ -50,6 +50,10 @@ class Authenticated:
     def comply(self, assertion: PermissionAssertion) -> bool:
         return assertion(self.permissions)
 
+    def ensure_user(self):
+        if not self.user:
+            raise PermissionDenied("This operation is only available for users")
+
 
 def _get_authorization_bearer(request: Request) -> str:
     authorization = request.headers.get("Authorization")

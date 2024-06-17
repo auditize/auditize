@@ -41,6 +41,7 @@ import { theme } from "@/theme";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
+import { LogI18nProfileManagement } from "./features/logi18nprofiles";
 import { UserSettings } from "./features/users";
 import { I18nProvider } from "./i18n";
 import "./layers.css";
@@ -158,6 +159,15 @@ function Main() {
                 }
               />
               <NavbarItem
+                label={t("navigation.logi18nprofiles")}
+                url="/log-i18n-profiles"
+                condition={
+                  !!(
+                    currentUser && currentUser.permissions.management.repos.read
+                  )
+                }
+              />
+              <NavbarItem
                 label={t("navigation.users")}
                 url="/users"
                 condition={
@@ -228,6 +238,10 @@ function AppRoutes() {
             {
               path: "repos",
               element: <ReposManagement />,
+            },
+            {
+              path: "log-i18n-profiles",
+              element: <LogI18nProfileManagement />,
             },
             {
               path: "users",

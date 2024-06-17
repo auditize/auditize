@@ -36,6 +36,7 @@ import {
   LogSearchParams,
 } from "../api";
 import { useLogFields } from "./LogFieldSelector";
+import { useLogTranslator } from "./LogTranslation";
 import { NodeSelector } from "./NodeSelector";
 
 const FIXED_FILTER_NAMES = new Set([
@@ -200,6 +201,7 @@ function FilterFieldSelect({
   searchParams,
   searchParamName,
   items,
+  itemLabel,
   openedByDefault,
   onChange,
   onRemove,
@@ -208,6 +210,7 @@ function FilterFieldSelect({
   searchParams: LogSearchParams;
   searchParamName: string;
   items: (repoId: string) => Promise<string[]>;
+  itemLabel: (value: string) => string;
   openedByDefault: boolean;
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
@@ -235,7 +238,7 @@ function FilterFieldSelect({
         data={
           data
             ? data.map((item) => ({
-                label: titlize(item),
+                label: itemLabel(item),
                 value: item,
               }))
             : []
@@ -372,7 +375,9 @@ function FilterField({
   onRemove: (name: string) => void;
 }) {
   const { t } = useTranslation();
+  const logTranslator = useLogTranslator(searchParams.repoId);
   if (name === "date") {
+    // FIXME: don't use useDisclosure here
     const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
       <FilterFieldPopover
@@ -407,6 +412,7 @@ function FilterField({
         searchParams={searchParams}
         searchParamName="actionCategory"
         items={getAllLogActionCategories}
+        itemLabel={(value) => logTranslator("action_category", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -423,6 +429,7 @@ function FilterField({
         items={(repoId) =>
           getAllLogActionTypes(repoId, searchParams.actionCategory)
         }
+        itemLabel={(value) => logTranslator("action_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -437,6 +444,7 @@ function FilterField({
         searchParams={searchParams}
         searchParamName="actorType"
         items={getAllLogActorTypes}
+        itemLabel={(value) => logTranslator("actor_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -515,6 +523,7 @@ function FilterField({
         searchParams={searchParams}
         searchParamName="resourceType"
         items={getAllLogResourceTypes}
+        itemLabel={(value) => logTranslator("resource_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -593,6 +602,7 @@ function FilterField({
         searchParams={searchParams}
         searchParamName="tagType"
         items={getAllLogTagTypes}
+        itemLabel={(value) => logTranslator("tag_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -659,6 +669,7 @@ function FilterField({
         searchParams={searchParams}
         searchParamName="attachmentType"
         items={(repoId) => getAllAttachmentTypes(repoId)}
+        itemLabel={(value) => logTranslator("attachment_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -673,6 +684,7 @@ function FilterField({
         searchParams={searchParams}
         searchParamName="attachmentMimeType"
         items={(repoId) => getAllAttachmentMimeTypes(repoId)}
+        itemLabel={(value) => value}
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}

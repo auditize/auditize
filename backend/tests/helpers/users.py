@@ -9,7 +9,7 @@ from httpx import Response
 
 from auditize.database import DatabaseManager
 from auditize.permissions.models import Permissions
-from auditize.users.models import User
+from auditize.users.models import Lang, User
 from auditize.users.service import (
     build_document_from_user,
     get_user,
@@ -51,13 +51,14 @@ class PreparedUser:
         return cls(resp.json()["id"], data, dbm)
 
     @staticmethod
-    def prepare_model(*, password="dummypassword", permissions=None) -> User:
+    def prepare_model(*, password="dummypassword", permissions=None, lang=None) -> User:
         rand = str(uuid.uuid4())
         model = User(
             first_name=f"John {rand}",
             last_name=f"Doe {rand}",
             email=f"john.doe_{rand}@example.net",
             password_hash=hash_user_password(password),
+            lang=lang or Lang.EN,
         )
         if permissions is not None:
             model.permissions = Permissions.model_validate(permissions)

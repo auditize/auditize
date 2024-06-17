@@ -9,6 +9,7 @@ from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
+from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repos import PreparedRepo
@@ -70,6 +71,22 @@ async def test_repo_create_with_explicit_status(
     await assert_collection(dbm.core_db.repos, [repo.expected_document()])
 
 
+async def test_repo_create_with_log_i18n_profile(
+    superadmin_client: HttpTestHelper,
+    dbm: DatabaseManager,
+    log_i18n_profile: PreparedLogI18nProfile,
+):
+    data = {"name": "myrepo", "log_i18n_profile_id": log_i18n_profile.id}
+
+    resp = await superadmin_client.assert_post_created(
+        "/repos",
+        json=data,
+        expected_json={"id": callee.IsA(str)},
+    )
+    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
+    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+
+
 async def test_repo_create_missing_name(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
@@ -96,6 +113,15 @@ async def test_repo_create_already_used_name(
     )
 
 
+async def test_repo_create_unknown_log_i18n_profile_id(
+    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+):
+    await repo_write_client.assert_post_bad_request(
+        "/repos",
+        json={"name": "myrepo", "log_i18n_profile_id": UNKNOWN_OBJECT_ID},
+    )
+
+
 async def test_repo_create_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_post_forbidden("/repos", json={"name": "myrepo"})
 
@@ -113,6 +139,57 @@ async def test_repo_update(
     )
 
     await assert_collection(dbm.core_db.repos, [repo.expected_document({field: value})])
+
+
+async def test_repo_update_set_log_i18n_profile_id(
+    repo_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    log_i18n_profile: PreparedLogI18nProfile,
+    dbm: DatabaseManager,
+):
+    await repo_write_client.assert_patch_no_content(
+        f"/repos/{repo.id}",
+        json={"log_i18n_profile_id": log_i18n_profile.id},
+    )
+    await assert_collection(
+        dbm.core_db.repos,
+        [repo.expected_document({"log_i18n_profile_id": log_i18n_profile.id})],
+    )
+
+
+async def test_repo_update_unset_log_i18n_profile_id(
+    repo_write_client: HttpTestHelper,
+    log_i18n_profile: PreparedLogI18nProfile,
+    dbm: DatabaseManager,
+):
+    repo = await PreparedRepo.create(
+        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}
+    )
+    repo: PreparedRepo  # make pycharm happy
+    await repo_write_client.assert_patch_no_content(
+        f"/repos/{repo.id}",
+        json={"log_i18n_profile_id": None},
+    )
+    await assert_collection(
+        dbm.core_db.repos,
+        [repo.expected_document({"log_i18n_profile_id": None})],
+    )
+
+
+async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
+    repo_write_client: HttpTestHelper,
+    log_i18n_profile: PreparedLogI18nProfile,
+    dbm: DatabaseManager,
+):
+    repo = await PreparedRepo.create(
+        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}
+    )
+    repo: PreparedRepo  # make pycharm happy
+    await repo_write_client.assert_patch_no_content(
+        f"/repos/{repo.id}",
+        json={},
+    )
+    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
 
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
@@ -205,6 +282,87 @@ async def test_repo_get_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}")
+
+
+async def test_repo_get_translation_not_configured(
+    log_read_user_client: HttpTestHelper, repo: PreparedRepo
+):
+    resp = await log_read_user_client.assert_get_ok(
+        f"/repos/{repo.id}/translation",
+        expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
+    )
+
+
+async def test_repo_get_translation_not_available_for_user_lang(
+    user_builder: UserBuilder, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18",
+            "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
+        },
+    )
+    repo: PreparedRepo = await PreparedRepo.create(
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+    )
+    user = await user_builder({"logs": {"read": True}}, lang="fr")
+
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_get_ok(
+            f"/repos/{repo.id}/translation",
+            expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
+        )
+
+
+async def test_repo_get_translation_available_for_user_lang(
+    user_builder: UserBuilder, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18",
+            "translations": {"fr": PreparedLogI18nProfile.FRENCH_TRANSLATION},
+        },
+    )
+    repo: PreparedRepo = await PreparedRepo.create(
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+    )
+    user = await user_builder({"logs": {"read": True}}, lang="fr")
+
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_get_ok(
+            f"/repos/{repo.id}/translation",
+            expected_json=PreparedLogI18nProfile.FRENCH_TRANSLATION,
+        )
+
+
+async def test_repo_get_translation_unknown_id(
+    log_read_user_client: HttpTestHelper, dbm: DatabaseManager
+):
+    await log_read_user_client.assert_get_not_found(
+        f"/repos/{UNKNOWN_OBJECT_ID}/translation"
+    )
+
+
+async def test_repo_get_translation_forbidden(
+    user_builder: UserBuilder, repo: PreparedRepo
+):
+    user = await user_builder({})  # a user without permissions
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_get_forbidden(f"/repos/{repo.id}/translation")
+
+
+async def test_repo_get_translation_as_apikey(
+    apikey_builder: ApikeyBuilder, repo: PreparedRepo
+):
+    apikey = await apikey_builder({"is_superadmin": True})
+    async with apikey.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_get_forbidden(f"/repos/{repo.id}/translation")
 
 
 async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager):
@@ -306,6 +464,7 @@ async def test_repo_list_user_repos_simple(
                         "status",
                         "created_at",
                         "stats",
+                        "log_i18n_profile_id",
                     )
                 ],
                 "pagination": {
