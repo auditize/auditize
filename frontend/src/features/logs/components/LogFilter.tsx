@@ -224,6 +224,14 @@ function FilterFieldSelect({
   const value = searchParams[
     searchParamName as keyof LogSearchParams
   ] as string;
+
+  useEffect(() => {
+    // on repository change, reset the selected value if it's not in the new data
+    if (data && !data.includes(value)) {
+      onChange(searchParamName, "");
+    }
+  }, [data]);
+
   return (
     <FilterFieldPopover
       title={label}
