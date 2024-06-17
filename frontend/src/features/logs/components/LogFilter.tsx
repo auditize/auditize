@@ -1067,6 +1067,30 @@ export function LogFilter({
               setIsDirty(true);
             }
           }}
+          disabled={[
+            editedParams.actionCategory,
+            editedParams.actionType,
+            editedParams.actorType,
+            editedParams.actorName,
+            editedParams.actorRef,
+            editedParams.actorExtra.size > 0,
+            editedParams.source.size > 0,
+            editedParams.resourceType,
+            editedParams.resourceName,
+            editedParams.resourceRef,
+            editedParams.resourceExtra.size > 0,
+            editedParams.details.size > 0,
+            editedParams.tagRef,
+            editedParams.tagType,
+            editedParams.tagName,
+            editedParams.attachmentName,
+            editedParams.attachmentDescription,
+            editedParams.attachmentType,
+            editedParams.attachmentMimeType,
+            editedParams.nodeRef,
+            editedParams.since,
+            editedParams.until,
+          ].every((value) => !value)}
           variant="default"
         >
           {t("log.list.filter.clear")}
