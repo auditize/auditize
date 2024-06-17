@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { labelize, titlize } from "@/utils/format";
@@ -160,4 +161,24 @@ export function useLogFields(
       sourceFieldsPending ||
       logTranslationQuery.isLoading,
   };
+}
+
+export function useLogFieldNames(
+  repoId: string,
+  fixedFields: Set<string> | undefined,
+  enableCompositeFields: boolean,
+) {
+  const { fields, loading } = useLogFields(
+    repoId,
+    fixedFields,
+    enableCompositeFields,
+  );
+  const fieldNames = useMemo(
+    () =>
+      loading
+        ? null
+        : fields.map((group) => group.items.map((item) => item.value)).flat(),
+    [repoId, loading],
+  );
+  return fieldNames;
 }

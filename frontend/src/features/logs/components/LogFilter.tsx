@@ -35,7 +35,7 @@ import {
   getAllLogTagTypes,
   LogSearchParams,
 } from "../api";
-import { useLogFields } from "./LogFieldSelector";
+import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogTranslator } from "./LogTranslation";
 import { NodeSelector } from "./NodeSelector";
 
@@ -999,7 +999,19 @@ export function LogFilter({
   const [filterNames, setFilterNames] = useState<Set<string>>(
     searchParamsToFilterNames(params),
   );
+  const availableFilterFieldNames = useLogFieldNames(
+    editedParams.repoId,
+    FIXED_FILTER_NAMES,
+    false,
+  );
   const [addedFilterName, setAddedFilterName] = useState<string | null>(null);
+  const removeFilter = (name: string) => {
+    setFilterNames(new Set([...filterNames].filter((n) => n !== name)));
+    removeSearchParam(editedParams, name, (name, value) =>
+      dispatch({ type: "setParam", name, value }),
+    );
+    setIsDirty(true);
+  };
 
   // Typically, an inline filter has been applied from logs table
   useEffect(() => {
@@ -1008,13 +1020,16 @@ export function LogFilter({
     setFilterNames(searchParamsToFilterNames(params));
   }, [params]);
 
-  const removeFilter = (name: string) => {
-    setFilterNames(new Set([...filterNames].filter((n) => n !== name)));
-    removeSearchParam(editedParams, name, (name, value) =>
-      dispatch({ type: "setParam", name, value }),
-    );
-    setIsDirty(true);
-  };
+  // Remove filters that are not available in the selected repository
+  useEffect(() => {
+    if (availableFilterFieldNames !== null) {
+      for (const filterName of filterNames) {
+        if (!availableFilterFieldNames.includes(filterName)) {
+          removeFilter(filterName);
+        }
+      }
+    }
+  }, [availableFilterFieldNames]);
 
   return (
     <Flex justify="space-between" align="center">
