@@ -4,15 +4,16 @@ import { useState } from "react";
 
 import { iconSize } from "@/utils/ui";
 
-// NB: this component is no longer used as time of writing
 export function PopoverForm({
   title,
   children,
   isFilled,
+  disabled,
 }: {
   title: string;
   children: React.ReactNode;
   isFilled: boolean;
+  disabled?: boolean;
 }) {
   const [opened, setOpened] = useState(false);
 
@@ -24,6 +25,7 @@ export function PopoverForm({
       withArrow
       keepMounted={true}
       width="20rem"
+      disabled={disabled}
     >
       <Popover.Target>
         <Button
@@ -36,6 +38,7 @@ export function PopoverForm({
           }
           onClick={() => setOpened((opened_) => !opened_)}
           variant={isFilled ? "light" : "outline"}
+          disabled={disabled}
         >
           {title}
         </Button>

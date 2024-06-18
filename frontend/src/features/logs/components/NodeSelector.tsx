@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Tree } from "rsuite";
+import { CheckTree, Tree } from "rsuite";
 import "rsuite/dist/rsuite-no-reset.min.css";
 import { ItemDataType } from "rsuite/esm/@types/common";
+
+import { PopoverForm } from "@/components";
 
 import { getAllLogNodes, getLogNode, LogNode } from "../api";
 
@@ -100,11 +102,15 @@ export function NodeSelector({
   useEffect(() => {
     let enabled = true;
 
-    if (!nodeRef || lookupItem(nodeRef, items)) return;
+    if (!nodeRef || lookupItem(nodeRef, items)) {
+      return;
+    }
 
     buildTreeBranch(repoId!, nodeRef, null, items).then(
       ([parentItem, childrenItems]) => {
-        if (!enabled) return;
+        if (!enabled) {
+          return;
+        }
 
         if (!parentItem) {
           setItems(childrenItems);
@@ -112,12 +118,12 @@ export function NodeSelector({
           parentItem.children = childrenItems;
           setItems([...items]);
         }
-
-        return () => {
-          enabled = false;
-        };
       },
     );
+
+    return () => {
+      enabled = false;
+    };
   }, [nodeRef]);
 
   return (
@@ -149,5 +155,108 @@ export function NodeSelector({
       searchable={false}
       style={{ width: 200, height: 250 }}
     />
+  );
+}
+
+interface MultiNodeSelectorProps {
+  repoId: string;
+  nodeRefs: string[];
+  onChange: (value: string[]) => void;
+}
+
+// FIXME: this component shares a lot of code with NodeSelector, we should refactor it
+export function MultiNodeSelector({
+  repoId,
+  nodeRefs,
+  onChange,
+}: MultiNodeSelectorProps) {
+  const [items, setItems] = useState<ItemDataType<string>[]>([]);
+  const queryClient = useQueryClient();
+
+  // load top-level nodes
+  useEffect(() => {
+    queryClient
+      .ensureQueryData({
+        queryKey: ["logConsolidatedData", "node", repoId],
+        queryFn: () => getAllLogNodes(repoId),
+      })
+      .then((nodes) => setItems(nodes.map(logNodeToItem)));
+  }, []);
+
+  // load the tree branch of the selected node
+  useEffect(() => {
+    let enabled = true;
+
+    for (const nodeRef of nodeRefs) {
+      if (lookupItem(nodeRef, items)) {
+        continue;
+      }
+
+      buildTreeBranch(repoId, nodeRef, null, items).then(
+        ([parentItem, childrenItems]) => {
+          if (!enabled) {
+            return;
+          }
+
+          if (!parentItem) {
+            setItems(childrenItems);
+          } else {
+            parentItem.children = childrenItems;
+            setItems([...items]);
+          }
+        },
+      );
+    }
+
+    return () => {
+      enabled = false;
+    };
+  }, [nodeRefs]);
+
+  return (
+    <CheckTree
+      data={items}
+      value={nodeRefs}
+      onChange={(value) => onChange(value as string[])}
+      getChildren={async (item) => {
+        // NB: beware that items are changed under the hood without using setItems by the Tree component
+        // after getChildren has been called
+        return queryClient
+          .ensureQueryData({
+            queryKey: ["logConsolidatedData", "node", repoId, item.value],
+            queryFn: () => getAllLogNodes(repoId!, item.value as string),
+          })
+          .then((nodes) => {
+            return nodes.map(logNodeToItem);
+          });
+      }}
+      cascade={false}
+      searchable={false}
+    />
+  );
+}
+
+interface MultiNodeSelectorPickerProps extends MultiNodeSelectorProps {
+  disabled?: boolean;
+}
+
+export function MultiNodeSelectorPicker({
+  repoId,
+  nodeRefs,
+  onChange,
+  disabled,
+}: MultiNodeSelectorPickerProps) {
+  return (
+    <PopoverForm
+      title="Nodes"
+      isFilled={nodeRefs.length > 0}
+      disabled={disabled}
+    >
+      <MultiNodeSelector
+        repoId={repoId}
+        nodeRefs={nodeRefs}
+        onChange={onChange}
+      />
+    </PopoverForm>
   );
 }

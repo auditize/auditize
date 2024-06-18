@@ -25,9 +25,15 @@ export interface Repo extends RepoCreation {
     logCount: number;
     storageSize: number;
   };
+}
+
+export interface UserRepo {
+  id: string;
+  name: string;
   permissions: {
     readLogs: boolean;
     writeLogs: boolean;
+    nodes: string[];
   };
 }
 
@@ -67,8 +73,8 @@ export async function getAllMyRepos({
 }: {
   hasReadPermission?: boolean;
   hasWritePermission?: boolean;
-}): Promise<Repo[]> {
-  return await getAllPagePaginatedItems<Repo>("/users/me/repos", {
+}): Promise<UserRepo[]> {
+  return await getAllPagePaginatedItems<UserRepo>("/users/me/repos", {
     has_read_permission: hasReadPermission,
     has_write_permission: hasWritePermission,
   });

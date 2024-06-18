@@ -4,28 +4,32 @@ import { useTranslation } from "react-i18next";
 
 import { Section } from "@/components/Section";
 import { useAuthenticatedUser } from "@/features/auth";
+import { MultiNodeSelectorPicker } from "@/features/logs";
 import { getAllMyRepos } from "@/features/repos";
 
 import {
   ApplicablePermissions,
   Permissions,
   ReadWritePermissions,
+  RepoLogPermissions,
 } from "../types";
 
-function ReadWritePermissionManagement({
-  perms,
-  onChange,
-  assignablePerms,
-  readOnly = false,
-}: {
+type ReadWritePermissionManagementProps = {
   perms: ReadWritePermissions;
   onChange: (perms: ReadWritePermissions) => void;
   assignablePerms: ReadWritePermissions;
   readOnly?: boolean;
-}) {
+};
+
+function BaseReadWritePermissionManagement({
+  perms,
+  onChange,
+  assignablePerms,
+  readOnly = false,
+}: ReadWritePermissionManagementProps) {
   const { t } = useTranslation();
   return (
-    <Group>
+    <>
       <Checkbox
         label={t("permission.read")}
         checked={perms.read}
@@ -41,6 +45,46 @@ function ReadWritePermissionManagement({
           onChange({ ...perms, write: event.currentTarget.checked })
         }
         disabled={readOnly || !assignablePerms.write}
+      />
+    </>
+  );
+}
+
+function ReadWritePermissionManagement(
+  props: ReadWritePermissionManagementProps,
+) {
+  const { t } = useTranslation();
+  return (
+    <Group>
+      <BaseReadWritePermissionManagement {...props} />
+    </Group>
+  );
+}
+
+function LogRepoPermissionManagement({
+  perms,
+  onChange,
+  assignablePerms,
+  readOnly = false,
+}: {
+  perms: RepoLogPermissions;
+  onChange: (perms: RepoLogPermissions) => void;
+  assignablePerms: ReadWritePermissions;
+  readOnly?: boolean;
+}) {
+  return (
+    <Group>
+      <BaseReadWritePermissionManagement
+        perms={perms}
+        onChange={(values) => onChange({ ...perms, ...values })}
+        assignablePerms={assignablePerms}
+        readOnly={readOnly}
+      />
+      <MultiNodeSelectorPicker
+        repoId={perms.repoId}
+        nodeRefs={perms.nodes}
+        onChange={(nodes) => onChange({ ...perms, nodes })}
+        disabled={readOnly || !assignablePerms.read || !perms.read}
       />
     </Group>
   );
@@ -141,20 +185,8 @@ function LogsPermissionManagement({
 
   // Convert the array of repo permissions to an object for easier handling
   const repoPerms = Object.fromEntries(
-    perms.repos.map((repoPerms) => [
-      repoPerms.repoId,
-      { read: repoPerms.read, write: repoPerms.write },
-    ]),
-  ) as Record<string, ReadWritePermissions>;
-
-  // Convert back the "repoPerm" object to an array to fit the expected type
-  const normalizeRepoPerms = (
-    permsObject: Record<string, ReadWritePermissions>,
-  ) =>
-    Object.entries(permsObject).map(([repoId, perms]) => ({
-      repoId,
-      ...perms,
-    }));
+    perms.repos.map((repoPerms) => [repoPerms.repoId, repoPerms]),
+  ) as Record<string, RepoLogPermissions>;
 
   return (
     <>
@@ -181,18 +213,21 @@ function LogsPermissionManagement({
               <Table.Tr key={assignableRepo.id}>
                 <Table.Td>{assignableRepo.name}</Table.Td>
                 <Table.Td>
-                  <ReadWritePermissionManagement
+                  <LogRepoPermissionManagement
                     perms={
                       repoPerms[assignableRepo.id] || {
+                        repoId: assignableRepo.id,
                         read: false,
                         write: false,
+                        nodes: [],
                       }
                     }
                     assignablePerms={{
                       read: perms.read
                         ? false
                         : assignablePerms.read === "all" ||
-                          assignableRepo.permissions.readLogs,
+                          (assignableRepo.permissions.readLogs &&
+                            assignableRepo.permissions.nodes.length === 0),
                       write: perms.write
                         ? false
                         : assignablePerms.write === "all" ||
@@ -201,10 +236,10 @@ function LogsPermissionManagement({
                     onChange={(repoLogsPerms) =>
                       onChange({
                         ...perms,
-                        repos: normalizeRepoPerms({
+                        repos: Object.entries({
                           ...repoPerms,
                           [assignableRepo.id]: repoLogsPerms,
-                        }),
+                        }).map(([_, perms]) => perms),
                       })
                     }
                     readOnly={readOnly}

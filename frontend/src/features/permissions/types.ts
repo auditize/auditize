@@ -5,6 +5,7 @@ export interface ReadWritePermissions {
 
 export interface RepoLogPermissions extends ReadWritePermissions {
   repoId: string;
+  nodes: Array<string>;
 }
 
 export interface Permissions {
