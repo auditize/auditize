@@ -201,6 +201,7 @@ function FilterFieldSelect({
   searchParams,
   searchParamName,
   items,
+  itemsQueryKeyExtra,
   itemLabel,
   openedByDefault,
   onChange,
@@ -210,13 +211,19 @@ function FilterFieldSelect({
   searchParams: LogSearchParams;
   searchParamName: string;
   items: (repoId: string) => Promise<string[]>;
+  itemsQueryKeyExtra?: string;
   itemLabel: (value: string) => string;
   openedByDefault: boolean;
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
 }) {
   const { isPending, error, data } = useQuery({
-    queryKey: ["logConsolidatedData", searchParamName, searchParams.repoId],
+    queryKey: [
+      "logConsolidatedData",
+      searchParamName,
+      searchParams.repoId,
+      itemsQueryKeyExtra,
+    ],
     queryFn: () => items(searchParams.repoId),
     enabled: !!searchParams.repoId,
   });
@@ -437,6 +444,7 @@ function FilterField({
         items={(repoId) =>
           getAllLogActionTypes(repoId, searchParams.actionCategory)
         }
+        itemsQueryKeyExtra={searchParams.actionCategory}
         itemLabel={(value) => logTranslator("action_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
