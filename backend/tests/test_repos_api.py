@@ -459,7 +459,13 @@ async def test_repo_list_user_repos_simple(
                 "items": [
                     strip_dict_keys(
                         repo.expected_api_response(
-                            {"permissions": {"read_logs": True, "write_logs": True}}
+                            {
+                                "permissions": {
+                                    "read_logs": True,
+                                    "write_logs": True,
+                                    "nodes": [],
+                                }
+                            }
                         ),
                         "status",
                         "created_at",
@@ -515,10 +521,10 @@ async def test_repo_list_user_repos_with_permissions(
             client,
             {},
             {
-                repo_1.id: {"read_logs": True, "write_logs": True},
-                repo_2.id: {"read_logs": True, "write_logs": True},
-                repo_3.id: {"read_logs": True, "write_logs": True},
-                repo_readonly.id: {"read_logs": True, "write_logs": False},
+                repo_1.id: {"read_logs": True, "write_logs": True, "nodes": []},
+                repo_2.id: {"read_logs": True, "write_logs": True, "nodes": []},
+                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": []},
+                repo_readonly.id: {"read_logs": True, "write_logs": False, "nodes": []},
             },
         )
 
@@ -529,7 +535,12 @@ async def test_repo_list_user_repos_with_permissions(
                 "repos": [
                     {"repo_id": repo_1.id, "read": True, "write": False},
                     {"repo_id": repo_2.id, "read": False, "write": True},
-                    {"repo_id": repo_3.id, "read": True, "write": True},
+                    {
+                        "repo_id": repo_3.id,
+                        "read": True,
+                        "write": True,
+                        "nodes": ["node1"],
+                    },
                     {"repo_id": repo_readonly.id, "read": True, "write": True},
                     {"repo_id": repo_disabled.id, "read": True, "write": True},
                 ]
@@ -542,33 +553,33 @@ async def test_repo_list_user_repos_with_permissions(
             client,
             {},
             {
-                repo_1.id: {"read_logs": True, "write_logs": False},
-                repo_2.id: {"read_logs": False, "write_logs": True},
-                repo_3.id: {"read_logs": True, "write_logs": True},
-                repo_readonly.id: {"read_logs": True, "write_logs": False},
+                repo_1.id: {"read_logs": True, "write_logs": False, "nodes": []},
+                repo_2.id: {"read_logs": False, "write_logs": True, "nodes": []},
+                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]},
+                repo_readonly.id: {"read_logs": True, "write_logs": False, "nodes": []},
             },
         )
         await _test_repo_list_user_repos(
             client,
             {"has_read_permission": True},
             {
-                repo_1.id: {"read_logs": True, "write_logs": False},
-                repo_3.id: {"read_logs": True, "write_logs": True},
-                repo_readonly.id: {"read_logs": True, "write_logs": False},
+                repo_1.id: {"read_logs": True, "write_logs": False, "nodes": []},
+                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]},
+                repo_readonly.id: {"read_logs": True, "write_logs": False, "nodes": []},
             },
         )
         await _test_repo_list_user_repos(
             client,
             {"has_write_permission": True},
             {
-                repo_2.id: {"read_logs": False, "write_logs": True},
-                repo_3.id: {"read_logs": True, "write_logs": True},
+                repo_2.id: {"read_logs": False, "write_logs": True, "nodes": []},
+                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]},
             },
         )
         await _test_repo_list_user_repos(
             client,
             {"has_read_permission": True, "has_write_permission": True},
-            {repo_3.id: {"read_logs": True, "write_logs": True}},
+            {repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]}},
         )
 
     # Test #3 with user having no log permissions (but can manage repos)

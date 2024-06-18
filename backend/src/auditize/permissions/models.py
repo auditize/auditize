@@ -63,6 +63,10 @@ class LogPermissions(ReadWritePermissions):
                 return perms
         return None
 
+    def get_repo_nodes(self, repo_id: str) -> list[str]:
+        perms = self.get_repo_permissions(repo_id)
+        return perms.nodes if perms else []
+
 
 class Permissions(BaseModel):
     is_superadmin: bool | None = Field(default=None)
