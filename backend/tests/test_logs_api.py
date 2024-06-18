@@ -6,7 +6,7 @@ import pytest
 
 from auditize.database import DatabaseManager
 from auditize.logs.models import Log
-from conftest import ApikeyBuilder
+from conftest import ApikeyBuilder, UserBuilder
 from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog
 from helpers.pagination import (
@@ -1164,6 +1164,88 @@ async def test_get_logs_filter_no_result(
         params={"action_type": "not to be found"},
         expected_json={"items": [], "pagination": {"next_cursor": None}},
     )
+
+
+async def _prepare_log_with_node_path(
+    client: HttpTestHelper, repo: PreparedRepo, node_path: list[str]
+):
+    return await repo.create_log(
+        client,
+        PreparedLog.prepare_data(
+            {"node_path": [{"name": node, "ref": node} for node in node_path]}
+        ),
+    )
+
+
+async def _test_logs_visibility(
+    builder: ApikeyBuilder | UserBuilder,
+    repo: PreparedRepo,
+    nodes: list[str],
+    expected_logs: list[PreparedLog],
+):
+    apikey = await builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "read": True, "nodes": nodes}]}}
+    )
+
+    async with apikey.client() as client:
+        await client.assert_get(
+            f"/repos/{repo.id}/logs",
+            expected_json={
+                "items": [log.expected_api_response() for log in expected_logs],
+                "pagination": {"next_cursor": None},
+            },
+        )
+
+
+async def test_get_logs_with_limited_node_visibility_1(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+):
+    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A"])
+    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["B"])
+
+    await _test_logs_visibility(apikey_builder, repo, ["A"], [log1])
+    await _test_logs_visibility(apikey_builder, repo, ["B"], [log2])
+    await _test_logs_visibility(apikey_builder, repo, [], [log2, log1])
+
+
+async def test_get_logs_with_limited_node_visibility_2(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+):
+    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
+    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B"])
+    log3 = await _prepare_log_with_node_path(superadmin_client, repo, ["A"])
+
+    await _test_logs_visibility(apikey_builder, repo, ["A"], [log3, log2, log1])
+    await _test_logs_visibility(apikey_builder, repo, ["B"], [log2, log1])
+    await _test_logs_visibility(apikey_builder, repo, ["C"], [log1])
+
+
+async def test_get_logs_with_limited_node_visibility_3(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+):
+    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
+    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "D", "E"])
+
+    await _test_logs_visibility(apikey_builder, repo, ["B"], [log1])
+    await _test_logs_visibility(apikey_builder, repo, ["D"], [log2])
+
+
+async def test_get_logs_with_limited_node_visibility_4(
+    superadmin_client: HttpTestHelper,
+    repo: PreparedRepo,
+    user_builder: UserBuilder,
+):
+    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
+    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "D"])
+
+    await _test_logs_visibility(user_builder, repo, ["B"], [log2, log1])
+    await _test_logs_visibility(user_builder, repo, ["D"], [log2])
 
 
 class _ConsolidatedDataTest:

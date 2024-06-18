@@ -169,6 +169,7 @@ async def get_logs(
     dbm: DatabaseManager,
     repo_id: str,
     *,
+    nodes: list[str] = None,
     action_type: str = None,
     action_category: str = None,
     actor_type: str = None,
@@ -197,6 +198,8 @@ async def get_logs(
     db = await get_log_db_for_reading(dbm, repo_id)
 
     criteria: dict[str, Any] = {}
+    if nodes:
+        criteria["node_path.ref"] = {"$in": nodes}
     if action_type:
         criteria["action.type"] = action_type
     if action_category:

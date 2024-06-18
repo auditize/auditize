@@ -487,6 +487,7 @@ async def get_logs(
     logs, next_cursor = await service.get_logs(
         dbm,
         repo_id,
+        nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
         action_type=search_params.action_type,
         action_category=search_params.action_category,
         source=search_params.source,
