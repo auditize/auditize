@@ -184,7 +184,12 @@ class BasePermissionTests:
                             "read": False,
                             "write": False,
                             "repos": [
-                                {"repo_id": repo.id, "read": True, "write": True}
+                                {
+                                    "repo_id": repo.id,
+                                    "read": True,
+                                    "write": True,
+                                    "nodes": ["node1"],
+                                }
                             ],
                         },
                         "management": {
@@ -211,7 +216,7 @@ class BasePermissionTests:
                                         "repo_id": repo.id,
                                         "read": True,
                                         "write": True,
-                                        "nodes": [],
+                                        "nodes": ["node1"],
                                     }
                                 ],
                             },

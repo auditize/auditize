@@ -39,7 +39,7 @@ class ManagementPermissions(BaseModel):
 
 class RepoLogPermissions(ReadWritePermissions):
     repo_id: str
-    nodes: list[str] = Field(default_factory=list)
+    nodes: list[str] | None = Field(default=None)
 
     model_config = ConfigDict(extra="forbid")
 

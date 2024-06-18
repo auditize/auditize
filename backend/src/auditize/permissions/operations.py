@@ -40,7 +40,7 @@ def _normalize_repo_permissions(
             repo_id=single_repo_perms.repo_id,
             read=read,
             write=write,
-            nodes=single_repo_perms.nodes if read else [],
+            nodes=(single_repo_perms.nodes or []) if read else [],
         )
 
     return [perms for perms in normalized.values() if perms.read or perms.write]
@@ -231,6 +231,11 @@ def update_permissions(
                 ),
                 write=_update_permission(
                     orig_repo_perms and orig_repo_perms.write, update_repo_perms.write
+                ),
+                nodes=(
+                    update_repo_perms.nodes
+                    if update_repo_perms.nodes is not None
+                    else (orig_repo_perms.nodes if orig_repo_perms else [])
                 ),
             )
         )

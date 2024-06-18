@@ -477,6 +477,117 @@ def test_update_permission_drop_individual_permissions():
     )
 
 
+def test_update_permission_grant_read_logs_on_nodes_1():
+    _test_update_permission(
+        {},
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+                ],
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {
+                        "repo_id": "repo1",
+                        "read": True,
+                        "write": False,
+                        "nodes": ["node1"],
+                    },
+                ],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_update_permission_grant_read_logs_on_nodes_2():
+    _test_update_permission(
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+                ],
+            },
+        },
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "read": True, "nodes": []},
+                ],
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {
+                        "repo_id": "repo1",
+                        "read": True,
+                        "write": False,
+                        "nodes": [],
+                    },
+                ],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_update_permission_grant_read_logs_on_nodes_3():
+    _test_update_permission(
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+                ],
+            },
+        },
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "write": True},
+                ],
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {
+                        "repo_id": "repo1",
+                        "read": True,
+                        "write": True,
+                        "nodes": ["node1"],
+                    },
+                ],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
 def _test_get_applicable_permissions(input: dict, expected: dict):
     input = Permissions.model_validate(input)
     assert compute_applicable_permissions(input).model_dump() == expected
