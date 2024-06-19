@@ -169,7 +169,7 @@ async def get_logs(
     dbm: DatabaseManager,
     repo_id: str,
     *,
-    nodes: list[str] = None,
+    authorized_nodes: list[str] = None,
     action_type: str = None,
     action_category: str = None,
     actor_type: str = None,
@@ -197,68 +197,64 @@ async def get_logs(
 ) -> tuple[list[Log], str | None]:
     db = await get_log_db_for_reading(dbm, repo_id)
 
-    criteria: dict[str, Any] = {}
-    if nodes:
-        criteria["node_path.ref"] = {"$in": nodes}
+    criteria: list[dict[str, Any]] = []
+    if authorized_nodes:
+        criteria.append({"node_path.ref": {"$in": authorized_nodes}})
     if action_type:
-        criteria["action.type"] = action_type
+        criteria.append({"action.type": action_type})
     if action_category:
-        criteria["action.category"] = action_category
+        criteria.append({"action.category": action_category})
     if source:
-        criteria["source"] = _custom_field_search_filter(source)
+        criteria.append({"source": _custom_field_search_filter(source)})
     if actor_type:
-        criteria["actor.type"] = actor_type
+        criteria.append({"actor.type": actor_type})
     if actor_name:
-        criteria["actor.name"] = _text_search_filter(actor_name)
+        criteria.append({"actor.name": _text_search_filter(actor_name)})
     if actor_ref:
-        criteria["actor.ref"] = actor_ref
+        criteria.append({"actor.ref": actor_ref})
     if actor_extra:
-        criteria["actor.extra"] = _custom_field_search_filter(actor_extra)
+        criteria.append({"actor.extra": _custom_field_search_filter(actor_extra)})
     if resource_type:
-        criteria["resource.type"] = resource_type
+        criteria.append({"resource.type": resource_type})
     if resource_name:
-        criteria["resource.name"] = _text_search_filter(resource_name)
+        criteria.append({"resource.name": _text_search_filter(resource_name)})
     if resource_ref:
-        criteria["resource.ref"] = resource_ref
+        criteria.append({"resource.ref": resource_ref})
     if resource_extra:
-        criteria["resource.extra"] = _custom_field_search_filter(resource_extra)
+        criteria.append({"resource.extra": _custom_field_search_filter(resource_extra)})
     if details:
-        criteria["details"] = _custom_field_search_filter(details)
+        criteria.append({"details": _custom_field_search_filter(details)})
     if tag_ref:
-        criteria["tags.ref"] = tag_ref
+        criteria.append({"tags.ref": tag_ref})
     if tag_type:
-        criteria["tags.type"] = tag_type
+        criteria.append({"tags.type": tag_type})
     if tag_name:
-        criteria["tags.name"] = _text_search_filter(tag_name)
+        criteria.append({"tags.name": _text_search_filter(tag_name)})
     if attachment_name:
-        criteria["attachments.name"] = _text_search_filter(attachment_name)
+        criteria.append({"attachments.name": _text_search_filter(attachment_name)})
     if attachment_description:
-        criteria["attachments.description"] = _text_search_filter(
-            attachment_description
+        criteria.append(
+            {"attachments.description": _text_search_filter(attachment_description)}
         )
     if attachment_type:
-        criteria["attachments.type"] = attachment_type
+        criteria.append({"attachments.type": attachment_type})
     if attachment_mime_type:
-        criteria["attachments.mime_type"] = attachment_mime_type
+        criteria.append({"attachments.mime_type": attachment_mime_type})
     if node_ref:
-        criteria["node_path.ref"] = node_ref
+        criteria.append({"node_path.ref": node_ref})
     if since:
-        criteria["saved_at"] = {"$gte": since}
+        criteria.append({"saved_at": {"$gte": since}})
     if until:
-        criteria["saved_at"] = {
-            # do not overwrite "since" criterion if any:
-            **criteria.get("saved_at", {}),
-            # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
-            # will also include logs saved at 23:59:59.500 for instance
-            "$lte": until.replace(microsecond=999999),
-        }
+        # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
+        # will also include logs saved at 23:59:59.500 for instance
+        criteria.append({"saved_at": {"$lte": until.replace(microsecond=999999)}})
 
     results, next_cursor = await find_paginated_by_cursor(
         db.logs,
         id_field="_id",
         date_field="saved_at",
         projection=_EXCLUDE_ATTACHMENT_DATA,
-        filter=criteria,
+        filter={"$and": criteria} if criteria else None,
         limit=limit,
         pagination_cursor=pagination_cursor,
     )
