@@ -436,9 +436,34 @@ async def _get_log_nodes(db: LogDatabase, *, match, pipeline_extra=None):
     )
 
 
+async def _get_node_hierarchy(db: LogDatabase, node_ref: str) -> set[str]:
+    node = await _get_log_node(db, node_ref)
+    hierarchy = {node.ref}
+    while node.parent_node_ref:
+        node = await _get_log_node(db, node.parent_node_ref)
+        hierarchy.add(node.ref)
+    return hierarchy
+
+
+async def _get_visible_nodes(db: LogDatabase, node_refs: set[str]) -> set[str]:
+    parent_nodes: dict[str, str] = {}
+    for node_ref in node_refs:
+        node = await _get_log_node(db, node_ref)
+        while True:
+            if node.ref in parent_nodes:
+                break
+            parent_nodes[node.ref] = node.parent_node_ref
+            if not node.parent_node_ref:
+                break
+            node = await _get_log_node(db, node.parent_node_ref)
+
+    return node_refs | parent_nodes.keys()
+
+
 async def get_log_nodes(
     dbm: DatabaseManager,
     repo_id: str,
+    authorized_nodes: list[str],
     *,
     parent_node_ref=NotImplemented,
     page=1,
@@ -452,6 +477,19 @@ async def get_log_nodes(
         filter = {}
     else:
         filter = {"parent_node_ref": parent_node_ref}
+
+    if authorized_nodes:
+        # get the complete hierarchy of the node from the node itself to the top node
+        parent_node_ref_hierarchy = (
+            await _get_node_hierarchy(db, parent_node_ref) if parent_node_ref else set()
+        )
+        # we check if we have permission on parent_node_ref or any of its parent nodes
+        # if not, we have to manually filter the nodes we'll have a direct or indirect visibility
+        if not parent_node_ref_hierarchy or not (
+            set(authorized_nodes) & parent_node_ref_hierarchy
+        ):
+            visible_nodes = await _get_visible_nodes(db, set(authorized_nodes))
+            filter["ref"] = {"$in": list(visible_nodes)}
 
     results = await _get_log_nodes(
         db,
@@ -471,9 +509,7 @@ async def get_log_nodes(
     )
 
 
-async def get_log_node(dbm: DatabaseManager, repo_id: str, node_ref: str) -> Log.Node:
-    db = await get_log_db_for_reading(dbm, repo_id)
-
+async def _get_log_node(db: LogDatabase, node_ref: str) -> Log.Node:
     results = await (await _get_log_nodes(db, match={"ref": node_ref})).to_list(None)
     try:
         result = results[0]
@@ -481,3 +517,8 @@ async def get_log_node(dbm: DatabaseManager, repo_id: str, node_ref: str) -> Log
         raise UnknownModelException(node_ref)
 
     return Node(**result)
+
+
+async def get_log_node(dbm: DatabaseManager, repo_id: str, node_ref: str) -> Log.Node:
+    db = await get_log_db_for_reading(dbm, repo_id)
+    return await _get_log_node(db, node_ref)

@@ -307,6 +307,7 @@ async def get_log_nodes(
     nodes, pagination = await service.get_log_nodes(
         dbm,
         repo_id,
+        authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
         page=page_params.page,
         page_size=page_params.page_size,
         **filter_args,

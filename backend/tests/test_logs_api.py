@@ -1306,6 +1306,145 @@ async def test_get_log_visibility(
     await _test_get_log_visibility(apikey_builder, repo, ["C"], log2, 404)
 
 
+async def _test_get_log_nodes_visibility(
+    builder: ApikeyBuilder | UserBuilder,
+    repo: PreparedRepo,
+    authorized_nodes: list[str],
+    search_params: dict[str, str],
+    expected: list[str],
+):
+    authenticated = await builder(
+        {
+            "logs": {
+                "repos": [{"repo_id": repo.id, "read": True, "nodes": authorized_nodes}]
+            }
+        }
+    )
+
+    async with authenticated.client() as client:
+        await client.assert_get_ok(
+            f"/repos/{repo.id}/logs/nodes",
+            params=search_params,
+            expected_json={
+                "items": [
+                    {
+                        "ref": node_ref,
+                        "name": node_ref,
+                        "parent_node_ref": callee.OneOf(
+                            callee.Eq(None), callee.IsA(str)
+                        ),
+                        "has_children": callee.IsA(bool),
+                    }
+                    for node_ref in expected
+                ],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": len(expected),
+                    "total_pages": 1 if len(expected) > 0 else 0,
+                },
+            },
+        )
+
+
+async def test_get_log_nodes_visibility(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, apikey_builder: ApikeyBuilder
+):
+    # Create a tree of nodes:
+    # A
+    # ├── AA
+    # │   ├── AAA
+    # │   └── AAB
+    # └── AB
+    #     ├── ABA
+    #     └── ABB
+    # B
+    # ├── BA
+    #     ├── BAA
+    #     └── BAB
+    #
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAA"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAB"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABA"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABB"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["B", "BA", "BAA"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["B", "BA", "BAB"])
+
+    # Test with a user without node restriction
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, [], {"root": "1"}, ["A", "B"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, [], {"parent_node_ref": "A"}, ["AA", "AB"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, [], {"parent_node_ref": "AA"}, ["AAA", "AAB"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, [], {"parent_node_ref": "AB"}, ["ABA", "ABB"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, [], {"parent_node_ref": "B"}, ["BA"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, [], {"parent_node_ref": "BA"}, ["BAA", "BAB"]
+    )
+
+    # Test with a user with node permission on node "A"
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["A"], {"root": "1"}, ["A"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["A"], {"parent_node_ref": "A"}, ["AA", "AB"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["A"], {"parent_node_ref": "AA"}, ["AAA", "AAB"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["A"], {"parent_node_ref": "AB"}, ["ABA", "ABB"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["A"], {"parent_node_ref": "B"}, []
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["A"], {"parent_node_ref": "BA"}, []
+    )
+
+    # Test with a user with node permission on node "AA"
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AA"], {"root": "1"}, ["A"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AA"], {"parent_node_ref": "A"}, ["AA"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AA"], {"parent_node_ref": "AA"}, ["AAA", "AAB"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AA"], {"parent_node_ref": "AB"}, []
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AA"], {"parent_node_ref": "B"}, []
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AA"], {"parent_node_ref": "B"}, []
+    )
+
+    # Test with a user with node permission on node "AAA"
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AAA"], {"root": "1"}, ["A"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AAA"], {"parent_node_ref": "A"}, ["AA"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AAA"], {"parent_node_ref": "AA"}, ["AAA"]
+    )
+    await _test_get_log_nodes_visibility(
+        apikey_builder, repo, ["AAA"], {"parent_node_ref": "B"}, []
+    )
+
+
 class _ConsolidatedDataTest:
     @property
     def relative_path(self) -> str:
