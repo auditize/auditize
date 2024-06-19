@@ -1177,7 +1177,7 @@ async def _prepare_log_with_node_path(
     )
 
 
-async def _test_log_visibility(
+async def _test_get_logs_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
     authorized_nodes: list[str],
@@ -1211,9 +1211,9 @@ async def test_get_logs_with_limited_node_visibility_1(
     log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A"])
     log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["B"])
 
-    await _test_log_visibility(apikey_builder, repo, ["A"], {}, [log1])
-    await _test_log_visibility(apikey_builder, repo, ["B"], {}, [log2])
-    await _test_log_visibility(apikey_builder, repo, [], {}, [log2, log1])
+    await _test_get_logs_visibility(apikey_builder, repo, ["A"], {}, [log1])
+    await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log2])
+    await _test_get_logs_visibility(apikey_builder, repo, [], {}, [log2, log1])
 
 
 async def test_get_logs_with_limited_node_visibility_2(
@@ -1225,9 +1225,9 @@ async def test_get_logs_with_limited_node_visibility_2(
     log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B"])
     log3 = await _prepare_log_with_node_path(superadmin_client, repo, ["A"])
 
-    await _test_log_visibility(apikey_builder, repo, ["A"], {}, [log3, log2, log1])
-    await _test_log_visibility(apikey_builder, repo, ["B"], {}, [log2, log1])
-    await _test_log_visibility(apikey_builder, repo, ["C"], {}, [log1])
+    await _test_get_logs_visibility(apikey_builder, repo, ["A"], {}, [log3, log2, log1])
+    await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log2, log1])
+    await _test_get_logs_visibility(apikey_builder, repo, ["C"], {}, [log1])
 
 
 async def test_get_logs_with_limited_node_visibility_3(
@@ -1238,8 +1238,8 @@ async def test_get_logs_with_limited_node_visibility_3(
     log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
     log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "D", "E"])
 
-    await _test_log_visibility(apikey_builder, repo, ["B"], {}, [log1])
-    await _test_log_visibility(apikey_builder, repo, ["D"], {}, [log2])
+    await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log1])
+    await _test_get_logs_visibility(apikey_builder, repo, ["D"], {}, [log2])
 
 
 async def test_get_logs_with_limited_node_visibility_4(
@@ -1250,14 +1250,60 @@ async def test_get_logs_with_limited_node_visibility_4(
     log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
     log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "D"])
 
-    await _test_log_visibility(user_builder, repo, ["B"], {}, [log2, log1])
-    await _test_log_visibility(user_builder, repo, ["D"], {}, [log2])
-    await _test_log_visibility(
+    await _test_get_logs_visibility(user_builder, repo, ["B"], {}, [log2, log1])
+    await _test_get_logs_visibility(user_builder, repo, ["D"], {}, [log2])
+    await _test_get_logs_visibility(
         user_builder, repo, ["B"], {"node_ref": "B"}, [log2, log1]
     )
-    await _test_log_visibility(user_builder, repo, ["B"], {"node_ref": "C"}, [log1])
-    await _test_log_visibility(user_builder, repo, ["C"], {"node_ref": "B"}, [log1])
-    await _test_log_visibility(user_builder, repo, ["C"], {"node_ref": "D"}, [])
+    await _test_get_logs_visibility(
+        user_builder, repo, ["B"], {"node_ref": "C"}, [log1]
+    )
+    await _test_get_logs_visibility(
+        user_builder, repo, ["C"], {"node_ref": "B"}, [log1]
+    )
+    await _test_get_logs_visibility(user_builder, repo, ["C"], {"node_ref": "D"}, [])
+
+
+async def _test_get_log_visibility(
+    builder: ApikeyBuilder | UserBuilder,
+    repo: PreparedRepo,
+    authorized_nodes: list[str],
+    log: PreparedLog,
+    expected_status_code: int,
+):
+    apikey = await builder(
+        {
+            "logs": {
+                "repos": [{"repo_id": repo.id, "read": True, "nodes": authorized_nodes}]
+            }
+        }
+    )
+
+    async with apikey.client() as client:
+        if expected_status_code == 200:
+            await client.assert_get_ok(
+                f"/repos/{repo.id}/logs/{log.id}",
+                expected_json=log.expected_api_response(),
+            )
+        else:
+            await client.assert_get(
+                f"/repos/{repo.id}/logs/{log.id}",
+                expected_status_code=expected_status_code,
+            )
+
+
+async def test_get_log_visibility(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, apikey_builder: ApikeyBuilder
+):
+    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
+    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "D"])
+
+    await _test_get_log_visibility(apikey_builder, repo, ["B"], log1, 200)
+    await _test_get_log_visibility(apikey_builder, repo, ["B"], log2, 200)
+    await _test_get_log_visibility(apikey_builder, repo, ["C", "D"], log1, 200)
+    await _test_get_log_visibility(apikey_builder, repo, ["C", "D"], log2, 200)
+    await _test_get_log_visibility(apikey_builder, repo, ["C"], log1, 200)
+    await _test_get_log_visibility(apikey_builder, repo, ["C"], log2, 404)
 
 
 class _ConsolidatedDataTest:

@@ -431,7 +431,12 @@ async def get_log(
     repo_id: str,
     log_id: Annotated[str, Path(title="Log ID")],
 ) -> LogReadingResponse:
-    log = await service.get_log(dbm, repo_id, log_id)
+    log = await service.get_log(
+        dbm,
+        repo_id,
+        log_id,
+        authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
+    )
     return LogReadingResponse.from_log(log)
 
 
@@ -487,7 +492,7 @@ async def get_logs(
     logs, next_cursor = await service.get_logs(
         dbm,
         repo_id,
-        nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
+        authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
         action_type=search_params.action_type,
         action_category=search_params.action_category,
         source=search_params.source,

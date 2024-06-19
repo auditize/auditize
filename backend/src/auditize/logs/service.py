@@ -3,6 +3,8 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
+from bson import ObjectId
+
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
@@ -132,10 +134,17 @@ async def save_log_attachment(
     await consolidate_log_attachment(db, attachment)
 
 
-async def get_log(dbm: DatabaseManager, repo_id: str, log_id: str) -> Log:
+async def get_log(
+    dbm: DatabaseManager, repo_id: str, log_id: str, authorized_nodes: list[str]
+) -> Log:
     db = await get_log_db_for_reading(dbm, repo_id)
+    filter = {"_id": ObjectId(log_id)}
+    if authorized_nodes:
+        filter["node_path.ref"] = {"$in": authorized_nodes}
     document = await get_resource_document(
-        db.logs, log_id, projection=_EXCLUDE_ATTACHMENT_DATA
+        db.logs,
+        filter=filter,
+        projection=_EXCLUDE_ATTACHMENT_DATA,
     )
     return Log.model_validate(document)
 
