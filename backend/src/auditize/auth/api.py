@@ -5,6 +5,7 @@ from starlette.responses import Response
 
 from auditize.apikeys.api_models import AccessTokenRequest, AccessTokenResponse
 from auditize.auth.authorizer import Authenticated, get_authenticated
+from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
@@ -75,4 +76,6 @@ async def auth_access_token(
         authenticated.apikey.id, permissions
     )
 
-    return AccessTokenResponse(access_token=access_token, expires_at=expires_at)
+    return AccessTokenResponse(
+        access_token=ACCESS_TOKEN_PREFIX + access_token, expires_at=expires_at
+    )

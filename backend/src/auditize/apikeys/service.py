@@ -2,6 +2,7 @@ import hashlib
 import secrets
 
 from auditize.apikeys.models import Apikey, ApikeyUpdate
+from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import DatabaseManager
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
@@ -21,7 +22,7 @@ def _hash_key(key: str) -> str:
 
 
 def _generate_key() -> tuple[str, str]:
-    value = "aak-" + secrets.token_urlsafe(32)
+    value = APIKEY_SECRET_PREFIX + secrets.token_urlsafe(32)
     return value, _hash_key(value)
 
 
