@@ -7,26 +7,22 @@ from auditize.config import get_config
 from auditize.exceptions import AuthenticationFailure
 from auditize.helpers.datetime import now
 
-_JWT_SUB_PREFIX = "user_email:"
+_SUB_PREFIX_SESSION_TOKEN = "user_email:"
 
 jwt = JsonWebToken(["HS256"])
 
 
-# NB: make this function public so can can test valid JWT tokens but signed with another key
-def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
-    expires_at = now() + timedelta(seconds=get_config().user_session_token_lifetime)
-    payload = {"sub": f"{_JWT_SUB_PREFIX}{user_email}", "exp": expires_at}
-    return payload, expires_at
+def _generate_jwt_payload(data, lifetime) -> tuple[dict, datetime]:
+    expires_at = now() + timedelta(seconds=lifetime)
+    return {**data, "exp": expires_at}, expires_at
 
 
-def generate_session_token(user_email) -> tuple[str, datetime]:
-    config = get_config()
-    payload, expires_at = generate_session_token_payload(user_email)
-    token = jwt.encode({"alg": "HS256"}, payload, key=config.jwt_signing_key)
-    return token.decode(), expires_at
+def _sign_jwt_token(payload: dict) -> str:
+    value = jwt.encode({"alg": "HS256"}, payload, key=get_config().jwt_signing_key)
+    return value.decode()
 
 
-def get_user_email_from_session_token(token: str) -> str:
+def _get_jwt_token_payload(token: str) -> dict:
     # Load JWT token
     try:
         claims = jwt.decode(token, get_config().jwt_signing_key)
@@ -36,13 +32,32 @@ def get_user_email_from_session_token(token: str) -> str:
     except JoseError:
         raise AuthenticationFailure("Cannot decode JWT token")
 
-    # Get user email from token
-    try:
-        sub = claims["sub"]
-    except KeyError:
+    # Ensure the token has a 'sub' field
+    if "sub" not in claims:
         raise AuthenticationFailure("Missing 'sub' field in JWT token")
-    if not sub.startswith(_JWT_SUB_PREFIX):
+
+    return claims
+
+
+# NB: make this function public so we can test valid JWT tokens but signed with another key
+def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
+    return _generate_jwt_payload(
+        {"sub": f"{_SUB_PREFIX_SESSION_TOKEN}{user_email}"},
+        get_config().user_session_token_lifetime,
+    )
+
+
+def generate_session_token(user_email) -> tuple[str, datetime]:
+    payload, expires_at = generate_session_token_payload(user_email)
+    return _sign_jwt_token(payload), expires_at
+
+
+def get_user_email_from_session_token(token: str) -> str:
+    payload = _get_jwt_token_payload(token)
+    sub = payload["sub"]
+
+    if not sub.startswith(_SUB_PREFIX_SESSION_TOKEN):
         raise AuthenticationFailure("Invalid 'sub' field in JWT token")
-    email = sub[len(_JWT_SUB_PREFIX) :]
+    email = sub[len(_SUB_PREFIX_SESSION_TOKEN) :]
 
     return email

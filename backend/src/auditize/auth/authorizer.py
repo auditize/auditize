@@ -94,7 +94,7 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     try:
         user = await get_user_by_email(dbm, user_email)
     except UnknownModelException:
-        raise AuthenticationFailure("User does not longer exist")
+        raise AuthenticationFailure("User does no longer exist")
 
     return Authenticated.from_user(user)
 
