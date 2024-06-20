@@ -135,12 +135,12 @@ async def save_log_attachment(
 
 
 async def get_log(
-    dbm: DatabaseManager, repo_id: str, log_id: str, authorized_nodes: list[str]
+    dbm: DatabaseManager, repo_id: str, log_id: str, authorized_nodes: set[str]
 ) -> Log:
     db = await get_log_db_for_reading(dbm, repo_id)
     filter = {"_id": ObjectId(log_id)}
     if authorized_nodes:
-        filter["node_path.ref"] = {"$in": authorized_nodes}
+        filter["node_path.ref"] = {"$in": list(authorized_nodes)}
     document = await get_resource_document(
         db.logs,
         filter=filter,
@@ -178,7 +178,7 @@ async def get_logs(
     dbm: DatabaseManager,
     repo_id: str,
     *,
-    authorized_nodes: list[str] = None,
+    authorized_nodes: set[str] = None,
     action_type: str = None,
     action_category: str = None,
     actor_type: str = None,
@@ -208,7 +208,7 @@ async def get_logs(
 
     criteria: list[dict[str, Any]] = []
     if authorized_nodes:
-        criteria.append({"node_path.ref": {"$in": authorized_nodes}})
+        criteria.append({"node_path.ref": {"$in": list(authorized_nodes)}})
     if action_type:
         criteria.append({"action.type": action_type})
     if action_category:
@@ -463,7 +463,7 @@ async def _get_visible_nodes(db: LogDatabase, node_refs: set[str]) -> set[str]:
 async def get_log_nodes(
     dbm: DatabaseManager,
     repo_id: str,
-    authorized_nodes: list[str],
+    authorized_nodes: set[str],
     *,
     parent_node_ref=NotImplemented,
     page=1,
@@ -486,9 +486,9 @@ async def get_log_nodes(
         # we check if we have permission on parent_node_ref or any of its parent nodes
         # if not, we have to manually filter the nodes we'll have a direct or indirect visibility
         if not parent_node_ref_hierarchy or not (
-            set(authorized_nodes) & parent_node_ref_hierarchy
+            authorized_nodes & parent_node_ref_hierarchy
         ):
-            visible_nodes = await _get_visible_nodes(db, set(authorized_nodes))
+            visible_nodes = await _get_visible_nodes(db, authorized_nodes)
             filter["ref"] = {"$in": list(visible_nodes)}
 
     results = await _get_log_nodes(
