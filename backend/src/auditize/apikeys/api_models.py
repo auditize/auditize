@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from auditize.apikeys.models import Apikey
+from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
 
@@ -77,3 +79,20 @@ class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyReadingResponse]):
 
 class ApikeyRegenerationResponse(BaseModel):
     key: str = _ApikeyKeyField(description="The new API key secret")
+
+
+class AccessTokenRequest(BaseModel):
+    permissions: PermissionsInputData = _ApikeyPermissionsField()
+
+
+class AccessTokenResponse(BaseModel):
+    access_token: str = Field(
+        description="The access token",
+    )
+    expires_at: datetime = Field(
+        description="The access token expiration time",
+    )
+
+    @field_serializer("expires_at", when_used="json")
+    def serialize_datetime(self, value):
+        return serialize_datetime(value)

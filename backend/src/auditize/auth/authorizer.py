@@ -52,7 +52,11 @@ class Authenticated:
 
     def ensure_user(self):
         if not self.user:
-            raise PermissionDenied("This operation is only available for users")
+            raise PermissionDenied("This operation is only available to users")
+
+    def ensure_apikey(self):
+        if not self.apikey:
+            raise PermissionDenied("This operation is only available to API keys")
 
 
 def _get_authorization_bearer(request: Request) -> str:

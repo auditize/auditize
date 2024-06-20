@@ -6,8 +6,10 @@ from authlib.jose.errors import ExpiredTokenError, JoseError
 from auditize.config import get_config
 from auditize.exceptions import AuthenticationFailure
 from auditize.helpers.datetime import now
+from auditize.permissions.models import Permissions
 
 _SUB_PREFIX_SESSION_TOKEN = "user_email:"
+_SUB_PREFIX_ACCESS_TOKEN = "apikey_id:"
 
 jwt = JsonWebToken(["HS256"])
 
@@ -61,3 +63,35 @@ def get_user_email_from_session_token(token: str) -> str:
     email = sub[len(_SUB_PREFIX_SESSION_TOKEN) :]
 
     return email
+
+
+def generate_access_token_payload(
+    apikey_id: str, permissions: Permissions
+) -> tuple[dict, datetime]:
+    return _generate_jwt_payload(
+        {
+            "sub": _SUB_PREFIX_ACCESS_TOKEN + apikey_id,
+            "permissions": permissions.model_dump(),
+        },
+        get_config().access_token_lifetime,
+    )
+
+
+def generate_access_token(
+    apikey_id: str, permissions: Permissions
+) -> tuple[str, datetime]:
+    payload, expires_at = generate_access_token_payload(apikey_id, permissions)
+    return _sign_jwt_token(payload), expires_at
+
+
+def get_access_token_data(token: str) -> tuple[str, Permissions]:
+    payload = _get_jwt_token_payload(token)
+    sub = payload["sub"]
+
+    if not sub.startswith(_SUB_PREFIX_ACCESS_TOKEN):
+        raise AuthenticationFailure("Invalid 'sub' field in JWT token")
+    apikey_id = sub[len(_SUB_PREFIX_ACCESS_TOKEN) :]
+
+    permissions = Permissions.model_validate(payload["permissions"])
+
+    return apikey_id, permissions
