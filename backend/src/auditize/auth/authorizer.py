@@ -59,31 +59,22 @@ class Authenticated:
             raise PermissionDenied("This operation is only available to API keys")
 
 
-def _get_authorization_bearer(request: Request) -> str:
+def _get_authorization_bearer(request: Request) -> str | None:
     authorization = request.headers.get("Authorization")
     if not authorization:
-        raise LookupError("Authorization header not found")
+        return None
     if not authorization.startswith(_BEARER_PREFIX):
-        raise LookupError("Authorization header is not a Bearer")
+        raise AuthenticationFailure("Authorization header is not a Bearer")
     return authorization[len(_BEARER_PREFIX) :]
 
 
-async def authenticate_apikey(dbm: DatabaseManager, request: Request) -> Authenticated:
-    try:
-        key = _get_authorization_bearer(request)
-    except LookupError as e:
-        raise AuthenticationFailure(str(e))
-
+async def authenticate_apikey(dbm: DatabaseManager, key: str) -> Authenticated:
     try:
         apikey = await get_apikey_by_key(dbm, key)
     except UnknownModelException:
         raise AuthenticationFailure("Invalid API key")
 
     return Authenticated.from_apikey(apikey)
-
-
-def looks_like_apikey_auth(request: Request) -> bool:
-    return bool(request.headers.get("Authorization"))
 
 
 async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authenticated:
@@ -103,20 +94,14 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     return Authenticated.from_user(user)
 
 
-def looks_like_user_auth(request: Request) -> bool:
-    return bool(request.cookies.get("session"))
-
-
 async def get_authenticated(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)], request: Request
 ) -> Authenticated:
-    if looks_like_apikey_auth(request):
-        return await authenticate_apikey(dbm, request)
+    bearer = _get_authorization_bearer(request)
+    if bearer:
+        return await authenticate_apikey(dbm, bearer)
 
-    if looks_like_user_auth(request):
-        return await authenticate_user(dbm, request)
-
-    raise AuthenticationFailure()
+    return await authenticate_user(dbm, request)
 
 
 def _authorized(assertion: PermissionAssertion):
