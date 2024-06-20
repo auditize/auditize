@@ -445,7 +445,7 @@ async def _get_node_hierarchy(db: LogDatabase, node_ref: str) -> set[str]:
     return hierarchy
 
 
-async def _get_visible_nodes(db: LogDatabase, node_refs: set[str]) -> set[str]:
+async def _get_nodes_hierarchy(db: LogDatabase, node_refs: set[str]) -> set[str]:
     parent_nodes: dict[str, str] = {}
     for node_ref in node_refs:
         node = await _get_log_node(db, node_ref)
@@ -488,7 +488,7 @@ async def get_log_nodes(
         if not parent_node_ref_hierarchy or not (
             authorized_nodes & parent_node_ref_hierarchy
         ):
-            visible_nodes = await _get_visible_nodes(db, authorized_nodes)
+            visible_nodes = await _get_nodes_hierarchy(db, authorized_nodes)
             filter["ref"] = {"$in": list(visible_nodes)}
 
     results = await _get_log_nodes(
@@ -519,6 +519,16 @@ async def _get_log_node(db: LogDatabase, node_ref: str) -> Log.Node:
     return Node(**result)
 
 
-async def get_log_node(dbm: DatabaseManager, repo_id: str, node_ref: str) -> Log.Node:
+async def get_log_node(
+    dbm: DatabaseManager, repo_id: str, node_ref: str, authorized_nodes: set[str]
+) -> Log.Node:
     db = await get_log_db_for_reading(dbm, repo_id)
+    if authorized_nodes:
+        node_ref_hierarchy = await _get_node_hierarchy(db, node_ref)
+        authorized_nodes_hierarchy = await _get_nodes_hierarchy(db, authorized_nodes)
+        if not (
+            node_ref_hierarchy & authorized_nodes
+            or node_ref in authorized_nodes_hierarchy
+        ):
+            raise UnknownModelException()
     return await _get_log_node(db, node_ref)

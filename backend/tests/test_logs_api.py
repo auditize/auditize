@@ -1445,6 +1445,78 @@ async def test_get_log_nodes_visibility(
     )
 
 
+async def _test_get_log_node_visibility(
+    builder: ApikeyBuilder | UserBuilder,
+    repo: PreparedRepo,
+    authorized_nodes: list[str],
+    node_ref: str,
+    expected_status_code: int,
+):
+    apikey = await builder(
+        {
+            "logs": {
+                "repos": [{"repo_id": repo.id, "read": True, "nodes": authorized_nodes}]
+            }
+        }
+    )
+
+    async with apikey.client() as client:
+        if expected_status_code == 200:
+            await client.assert_get_ok(
+                f"/repos/{repo.id}/logs/nodes/ref:{node_ref}",
+                expected_json={
+                    "ref": node_ref,
+                    "name": node_ref,
+                    "parent_node_ref": callee.OneOf(callee.Eq(None), callee.IsA(str)),
+                    "has_children": callee.IsA(bool),
+                },
+            )
+        else:
+            await client.assert_get(
+                f"/repos/{repo.id}/logs/nodes/ref:{node_ref}",
+                expected_status_code=expected_status_code,
+            )
+
+
+async def test_get_log_node_visibility(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, apikey_builder: ApikeyBuilder
+):
+    # Create a tree of nodes:
+    # A
+    # ├── AA
+    # │   ├── AAA
+    # │   └── AAB
+    # └── AB
+    #     ├── ABA
+    #     └── ABB
+
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAA"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAB"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABA"])
+    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABB"])
+
+    await _test_get_log_node_visibility(apikey_builder, repo, [], "A", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, [], "AA", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, [], "AAA", 200)
+
+    await _test_get_log_node_visibility(apikey_builder, repo, ["A"], "A", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["A"], "AA", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["A"], "AAA", 200)
+
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AA"], "A", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AA"], "AA", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AA"], "AAA", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AA"], "AB", 404)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AA"], "ABA", 404)
+
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AAA"], "A", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AAA"], "AA", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AAA"], "AAA", 200)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AAA"], "AAB", 404)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AAA"], "AB", 404)
+    await _test_get_log_node_visibility(apikey_builder, repo, ["AAA"], "ABA", 404)
+
+
 class _ConsolidatedDataTest:
     @property
     def relative_path(self) -> str:
