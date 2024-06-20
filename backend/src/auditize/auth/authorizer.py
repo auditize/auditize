@@ -5,8 +5,9 @@ from fastapi import Depends
 from starlette.requests import Request
 
 from auditize.apikeys.models import Apikey
-from auditize.apikeys.service import get_apikey_by_key
-from auditize.auth.jwt import get_user_email_from_session_token
+from auditize.apikeys.service import get_apikey, get_apikey_by_key
+from auditize.auth.constants import ACCESS_TOKEN_PREFIX, APIKEY_SECRET_PREFIX
+from auditize.auth.jwt import get_access_token_data, get_user_email_from_session_token
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import (
     AuthenticationFailure,
@@ -19,6 +20,7 @@ from auditize.permissions.assertions import (
     can_write_logs,
 )
 from auditize.permissions.models import Permissions
+from auditize.permissions.operations import authorize_grant
 from auditize.users.models import User
 from auditize.users.service import get_user_by_email
 
@@ -26,10 +28,17 @@ _BEARER_PREFIX = "Bearer "
 
 
 @dataclasses.dataclass
+class AccessToken:
+    apikey: Apikey
+    permissions: Permissions
+
+
+@dataclasses.dataclass
 class Authenticated:
     name: str
     user: User = None
     apikey: Apikey = None
+    access_token: AccessToken = None
 
     @classmethod
     def from_user(cls, user: User):
@@ -39,13 +48,24 @@ class Authenticated:
     def from_apikey(cls, apikey: Apikey):
         return cls(name=apikey.name, apikey=apikey)
 
+    @classmethod
+    def from_access_token(cls, access_token: AccessToken):
+        return cls(
+            name=f"Access token for API key {access_token.apikey.name!r}",
+            access_token=access_token,
+        )
+
     @property
     def permissions(self) -> Permissions:
         if self.user:
             return self.user.permissions
         if self.apikey:
             return self.apikey.permissions
-        raise Exception("Authenticated is neither user nor apikey")  # pragma: no cover
+        if self.access_token:
+            return self.access_token.permissions
+        raise Exception(
+            "Authenticated is neither a user, an API key nor an access token"
+        )  # pragma: no cover
 
     def comply(self, assertion: PermissionAssertion) -> bool:
         return assertion(self.permissions)
@@ -77,6 +97,24 @@ async def authenticate_apikey(dbm: DatabaseManager, key: str) -> Authenticated:
     return Authenticated.from_apikey(apikey)
 
 
+async def authenticate_access_token(
+    dbm: DatabaseManager, access_token: str
+) -> Authenticated:
+    jwt_token = access_token[len(ACCESS_TOKEN_PREFIX) :]
+    apikey_id, permissions = get_access_token_data(jwt_token)
+    try:
+        apikey = await get_apikey(dbm, apikey_id)
+    except UnknownModelException:
+        raise AuthenticationFailure(
+            "Invalid API key corresponding to access token is no longer valid"
+        )
+    # make sure the permissions once granted do not exceed the ones of the API key
+    authorize_grant(apikey.permissions, permissions)
+    return Authenticated.from_access_token(
+        AccessToken(apikey=apikey, permissions=permissions)
+    )
+
+
 async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authenticated:
     if not request.cookies:
         raise AuthenticationFailure()
@@ -99,7 +137,11 @@ async def get_authenticated(
 ) -> Authenticated:
     bearer = _get_authorization_bearer(request)
     if bearer:
-        return await authenticate_apikey(dbm, bearer)
+        if bearer.startswith(APIKEY_SECRET_PREFIX):
+            return await authenticate_apikey(dbm, bearer)
+        if bearer.startswith(ACCESS_TOKEN_PREFIX):
+            return await authenticate_access_token(dbm, bearer)
+        raise AuthenticationFailure("Invalid bearer token")
 
     return await authenticate_user(dbm, request)
 

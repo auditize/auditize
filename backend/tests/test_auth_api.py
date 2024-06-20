@@ -82,10 +82,12 @@ async def test_access_token_empty_permissions(apikey_builder: ApikeyBuilder):
         )
 
 
-async def test_access_token_authorized_permissions(apikey_builder: ApikeyBuilder):
+async def test_access_token_authorized_permissions(
+    apikey_builder: ApikeyBuilder, anon_client: HttpTestHelper
+):
     apikey = await apikey_builder({"is_superadmin": True})
     async with apikey.client() as client:
-        await client.assert_post_ok(
+        resp = await client.assert_post_ok(
             "/auth/access-token",
             json={"permissions": {"is_superadmin": True}},
             expected_json={
@@ -93,6 +95,14 @@ async def test_access_token_authorized_permissions(apikey_builder: ApikeyBuilder
                 "expires_at": DATETIME_FORMAT,
             },
         )
+
+    access_token = resp.json()["access_token"]
+
+    # test that the access token actually works
+    await anon_client.assert_get_ok(
+        "/repos",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
 
 
 async def test_access_token_unauthorized_permissions(apikey_builder: ApikeyBuilder):
