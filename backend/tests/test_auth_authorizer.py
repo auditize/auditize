@@ -4,6 +4,8 @@ from unittest.mock import patch
 import pytest
 from authlib.jose import jwt
 
+from auditize.apikeys.models import ApikeyUpdate
+from auditize.apikeys.service import update_apikey
 from auditize.auth.authorizer import get_authenticated
 from auditize.auth.jwt import (
     generate_access_token,
@@ -11,7 +13,7 @@ from auditize.auth.jwt import (
     generate_session_token_payload,
 )
 from auditize.database import DatabaseManager
-from auditize.exceptions import AuthenticationFailure
+from auditize.exceptions import AuthenticationFailure, PermissionDenied
 from auditize.permissions.models import Permissions
 from conftest import ApikeyBuilder
 from helpers.apikeys import PreparedApikey
@@ -67,7 +69,7 @@ async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
         await get_authenticated(dbm, request)
 
 
-async def test_auth_access_token_expired(dbm: DatabaseManager, client: HttpTestHelper):
+async def test_auth_access_token_expired(dbm: DatabaseManager):
     apikey = await PreparedApikey.inject_into_db(dbm)
 
     # Mock the current time to be 2024-01-01 to generate an already expired token
@@ -80,6 +82,35 @@ async def test_auth_access_token_expired(dbm: DatabaseManager, client: HttpTestH
     request = make_http_request(headers={"Authorization": f"Bearer aat-{jwt_token}"})
 
     with pytest.raises(AuthenticationFailure, match="JWT token expired"):
+        await get_authenticated(dbm, request)
+
+
+async def test_auth_access_control_downgraded_apikey_permissions(
+    dbm: DatabaseManager, apikey_builder: ApikeyBuilder
+):
+    # first step, create a requesting using an access token with repos read permission from a superadmin apikey
+    apikey = await apikey_builder({"is_superadmin": True})
+    permissions = Permissions()
+    permissions.management.repos.read = True
+    access_token, _ = generate_access_token(apikey.id, permissions)
+    request = make_http_request(headers={"Authorization": f"Bearer aat-{access_token}"})
+
+    # second step, make sure the access token actually works
+    await get_authenticated(dbm, request)
+
+    # third step, downgrade the apikey permissions so the API key no longer have
+    # any permissions at all
+    apikey_update = ApikeyUpdate()
+    apikey_update.permissions = Permissions()
+    apikey_update.permissions.is_superadmin = False
+    await update_apikey(dbm, apikey.id, apikey_update)
+
+    # fourth step, try to authenticate with the access token
+    # it must fail because the access token has now more permissions than the original API key
+    with pytest.raises(
+        AuthenticationFailure,
+        match="The access token has more permissions than the original API key",
+    ):
         await get_authenticated(dbm, request)
 
 

@@ -108,8 +108,15 @@ async def authenticate_access_token(
         raise AuthenticationFailure(
             "Invalid API key corresponding to access token is no longer valid"
         )
-    # make sure the permissions once granted do not exceed the ones of the API key
-    authorize_grant(apikey.permissions, permissions)
+
+    # Make sure the permissions once granted do not exceed the ones of the original API key
+    try:
+        authorize_grant(apikey.permissions, permissions)
+    except PermissionDenied:
+        raise AuthenticationFailure(
+            "The access token has more permissions than the original API key"
+        )
+
     return Authenticated.from_access_token(
         AccessToken(apikey=apikey, permissions=permissions)
     )
