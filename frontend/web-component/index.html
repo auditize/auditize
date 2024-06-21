@@ -11,6 +11,12 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <h1 style="text-align: center">Auditize Web Component Demo</h1>
+    <auditize-logs
+      repo-id="%VITE_WEBCO_REPO_ID%"
+      access-token="%VITE_WEBCO_ACCESS_TOKEN%"
+      lang="%VITE_WEBCO_LANG%"
+    />
+    <script type="module" src="../src/web-component.tsx"></script>
   </body>
 </html>

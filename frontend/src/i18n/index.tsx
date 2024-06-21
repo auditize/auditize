@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@mantine/hooks";
 import i18n from "i18next";
-import { createContext, useEffect } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { initReactI18next, useTranslation } from "react-i18next";
 
 import translationsEN from "./en";
@@ -28,7 +28,7 @@ function initI18n() {
 
 initI18n();
 
-const I18nContext = createContext<{}>({});
+const I18nContext = createContext<{ lang: string } | null>(null);
 
 export function I18nProvider({
   lang,
@@ -55,5 +55,17 @@ export function I18nProvider({
       i18n.changeLanguage(savedLang);
     }
   }, [lang]);
-  return <I18nContext.Provider value={{}}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={{ lang: lang ?? savedLang }}>
+      {children}
+    </I18nContext.Provider>
+  );
+}
+
+export function useI18nContext() {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error("useI18nContext must be used within an I18NProvider");
+  }
+  return context;
 }

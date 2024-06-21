@@ -32,7 +32,7 @@ import {
   useAuthenticatedUser,
   useCurrentUser,
 } from "@/features/auth";
-import { Logs } from "@/features/logs";
+import { Logs, UrlLogContextProvider } from "@/features/logs";
 import { ReposManagement } from "@/features/repos";
 import { Signup } from "@/features/signup";
 import { UsersManagement } from "@/features/users";
@@ -46,6 +46,7 @@ import { UserSettings } from "./features/users";
 import { I18nProvider } from "./i18n";
 import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
+import { auditizeQueryClient } from "./utils/query";
 
 function logoutConfirmationModal(onLogout: () => void) {
   const { t } = i18n;
@@ -233,7 +234,11 @@ function AppRoutes() {
           children: [
             {
               path: "logs",
-              element: <Logs />,
+              element: (
+                <UrlLogContextProvider>
+                  <Logs />
+                </UrlLogContextProvider>
+              ),
             },
             {
               path: "repos",
@@ -279,20 +284,10 @@ function AppRoutes() {
 }
 
 export default function App() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnWindowFocus: false,
-        retry: false,
-        staleTime: Infinity,
-      },
-    },
-  });
-
   return (
     <MantineProvider theme={theme}>
       <ModalsProvider modals={{ logout: LogoutModal }}>
-        <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={auditizeQueryClient()}>
           <AuthProvider>
             <AppRoutes />
           </AuthProvider>

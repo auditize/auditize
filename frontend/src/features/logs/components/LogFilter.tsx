@@ -66,7 +66,7 @@ function FilterFieldPopover({
   children: React.ReactNode;
 }) {
   return (
-    <Popover opened={opened} onChange={onChange}>
+    <Popover opened={opened} onChange={onChange} withinPortal={false}>
       <Popover.Target>
         <Button
           onClick={() => onChange(!opened)}
@@ -997,9 +997,11 @@ function removeSearchParam(
 export function LogFilter({
   params,
   onChange,
+  withRepoFilter = true,
 }: {
   params: LogSearchParams;
   onChange: (filter: LogSearchParams) => void;
+  withRepoFilter?: boolean;
 }) {
   const { t } = useTranslation();
   const [editedParams, dispatch] = useReducer(filterParamsReducer, params);
@@ -1043,19 +1045,21 @@ export function LogFilter({
     <Flex justify="space-between" align="center">
       <Group gap="xs">
         {/* Repository selector */}
-        <RepoSelector
-          repoId={editedParams.repoId}
-          onChange={(repoId) => {
-            // Trigger a log search when the log repository is selected for the first time
-            // so that the logs table can be populated when the page is loaded without any explicit filter
-            if (!editedParams.repoId) {
-              onChange({ ...editedParams, repoId });
-            } else {
-              dispatch({ type: "setParam", name: "repoId", value: repoId });
-              setIsDirty(true);
-            }
-          }}
-        />
+        {withRepoFilter && (
+          <RepoSelector
+            repoId={editedParams.repoId}
+            onChange={(repoId) => {
+              // Trigger a log search when the log repository is selected for the first time
+              // so that the logs table can be populated when the page is loaded without any explicit filter
+              if (!editedParams.repoId) {
+                onChange({ ...editedParams, repoId });
+              } else {
+                dispatch({ type: "setParam", name: "repoId", value: repoId });
+                setIsDirty(true);
+              }
+            }}
+          />
+        )}
 
         {/* Filters */}
         <FilterFields

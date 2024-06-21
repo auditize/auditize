@@ -23,6 +23,11 @@ axiosInstance.interceptors.request.use(
   },
 );
 
+export function enableAccessTokenAuthentication(accessToken: string) {
+  axiosInstance.defaults.headers.common["Authorization"] =
+    `Bearer ${accessToken}`;
+}
+
 export function interceptStatusCode(
   statusCode: number,
   func: (error: any) => void,
