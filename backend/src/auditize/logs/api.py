@@ -26,6 +26,7 @@ from auditize.logs.api_models import (
     LogsReadingResponse,
     NameListResponse,
 )
+from auditize.logs.models import Log
 
 router = APIRouter(
     responses=error_responses(401, 403, 404),
@@ -330,7 +331,7 @@ async def get_log_node(
     node = await service.get_log_node(
         dbm, repo_id, node_ref, authenticated.permissions.logs.get_repo_nodes(repo_id)
     )
-    return LogNodeResponse.from_node(node)
+    return LogNodeResponse.model_validate(node.model_dump())
 
 
 @router.post(
@@ -347,7 +348,9 @@ async def create_log(
     repo_id: str,
     log_req: LogCreationRequest,
 ) -> LogCreationResponse:
-    log_id = await service.save_log(dbm, repo_id, log_req.to_log())
+    log_id = await service.save_log(
+        dbm, repo_id, Log.model_validate(log_req.model_dump())
+    )
     return LogCreationResponse(id=log_id)
 
 
@@ -440,7 +443,7 @@ async def get_log(
         log_id,
         authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
     )
-    return LogReadingResponse.from_log(log)
+    return LogReadingResponse.model_validate(log.model_dump())
 
 
 @router.get(

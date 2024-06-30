@@ -80,9 +80,6 @@ class UserCreationRequest(BaseModel):
         default_factory=PermissionsInputData
     )
 
-    def to_db_model(self):
-        return User.model_validate(self.model_dump())
-
 
 class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = _UserFirstNameField(default=None)
@@ -104,25 +101,17 @@ class UserReadingResponse(BaseModel):
     lang: Lang = _UserLangField()
     permissions: PermissionsOutputData = _UserPermissionsField()
 
-    @classmethod
-    def from_db_model(cls, user: User):
-        return cls.model_validate(user.model_dump())
-
 
 class UserListResponse(PagePaginatedResponse[User, UserReadingResponse]):
     @classmethod
     def build_item(cls, user: User) -> UserReadingResponse:
-        return UserReadingResponse.from_db_model(user)
+        return UserReadingResponse.model_validate(user.model_dump())
 
 
 class UserSignupInfoResponse(BaseModel):
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
-
-    @classmethod
-    def from_db_model(cls, user: User):
-        return cls.model_validate(user.model_dump())
 
 
 class UserSignupSetPasswordRequest(BaseModel):
@@ -143,7 +132,7 @@ class UserMeResponse(BaseModel):
     permissions: ApplicablePermissionsData = _UserPermissionsField()
 
     @classmethod
-    def from_db_model(cls, user: User):
+    def from_user(cls, user: User):
         return cls.model_validate(
             {
                 **user.model_dump(exclude={"permissions"}),

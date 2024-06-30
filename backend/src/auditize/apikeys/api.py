@@ -11,7 +11,7 @@ from auditize.apikeys.api_models import (
     ApikeyRegenerationResponse,
     ApikeyUpdateRequest,
 )
-from auditize.apikeys.models import ApikeyUpdate
+from auditize.apikeys.models import Apikey, ApikeyUpdate
 from auditize.auth.authorizer import Authenticated, Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
@@ -44,7 +44,7 @@ async def create_apikey(
     authenticated: Authorized(can_write_apikeys()),
     apikey: ApikeyCreationRequest,
 ) -> ApikeyCreationResponse:
-    apikey_model = apikey.to_db_model()
+    apikey_model = Apikey.model_validate(apikey.model_dump())
     authorize_grant(authenticated.permissions, apikey_model.permissions)
     apikey_id, key = await service.create_apikey(dbm, apikey_model)
     return ApikeyCreationResponse(id=apikey_id, key=key)
@@ -82,7 +82,7 @@ async def get_repo(
     apikey_id: str,
 ) -> ApikeyReadingResponse:
     apikey = await service.get_apikey(dbm, apikey_id)
-    return ApikeyReadingResponse.from_db_model(apikey)
+    return ApikeyReadingResponse.model_validate(apikey.model_dump())
 
 
 @router.get(

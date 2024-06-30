@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path
 
 from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
 from auditize.database import DatabaseManager, get_dbm
@@ -22,7 +22,7 @@ from auditize.users.api_models import (
     UserSignupSetPasswordRequest,
     UserUpdateRequest,
 )
-from auditize.users.models import UserUpdate
+from auditize.users.models import User, UserUpdate
 
 router = APIRouter(responses=error_responses(401, 403))
 
@@ -44,7 +44,7 @@ async def create_user(
     authenticated: Authorized(can_write_users()),
     user: UserCreationRequest,
 ) -> UserCreationResponse:
-    user_model = user.to_db_model()
+    user_model = User.model_validate(user.model_dump())
     authorize_grant(authenticated.permissions, user_model.permissions)
     user_id = await service.create_user(dbm, user_model)
     return UserCreationResponse(id=user_id)
@@ -66,7 +66,7 @@ async def update_user_me(
     update = UserUpdate.model_validate(update_request.model_dump())
     await service.update_user(dbm, authenticated.user.id, update)
     user = await service.get_user(dbm, authenticated.user.id)
-    return UserMeResponse.from_db_model(user)
+    return UserMeResponse.from_user(user)
 
 
 @router.patch(
@@ -99,7 +99,7 @@ async def get_user_me(
     authenticated: Annotated[Authenticated, Depends(get_authenticated)],
 ) -> UserMeResponse:
     authenticated.ensure_user()
-    return UserMeResponse.from_db_model(authenticated.user)
+    return UserMeResponse.from_user(authenticated.user)
 
 
 @router.get(
@@ -114,7 +114,7 @@ async def get_user(
     user_id: str,
 ) -> UserReadingResponse:
     user = await service.get_user(dbm, user_id)
-    return UserReadingResponse.from_db_model(user)
+    return UserReadingResponse.model_validate(user.model_dump())
 
 
 @router.get("/users", summary="List users", tags=["users"])
@@ -160,7 +160,7 @@ async def get_user_signup_info(
     token: Annotated[str, Path(description="Signup token")],
 ) -> UserSignupInfoResponse:
     user = await service.get_user_by_signup_token(dbm, token)
-    return UserSignupInfoResponse.from_db_model(user)
+    return UserSignupInfoResponse.model_validate(user.model_dump())
 
 
 @router.post(

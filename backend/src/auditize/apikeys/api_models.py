@@ -47,9 +47,6 @@ class ApikeyCreationRequest(BaseModel):
         default_factory=PermissionsInputData
     )
 
-    def to_db_model(self):
-        return Apikey.model_validate(self.model_dump())
-
 
 class ApikeyUpdateRequest(BaseModel):
     name: Optional[str] = _ApikeyNameField(default=None)
@@ -66,15 +63,11 @@ class ApikeyReadingResponse(BaseModel):
     name: str = _ApikeyNameField()
     permissions: PermissionsOutputData = _ApikeyPermissionsField()
 
-    @classmethod
-    def from_db_model(cls, apikey: Apikey):
-        return cls.model_validate(apikey.model_dump())
-
 
 class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyReadingResponse]):
     @classmethod
     def build_item(cls, apikey: Apikey) -> ApikeyReadingResponse:
-        return ApikeyReadingResponse.from_db_model(apikey)
+        return ApikeyReadingResponse.model_validate(apikey.model_dump())
 
 
 class ApikeyRegenerationResponse(BaseModel):

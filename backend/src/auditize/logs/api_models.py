@@ -285,9 +285,6 @@ class LogCreationRequest(BaseModel):
             raise ValueError("Node path must be at least one node deep")
         return self
 
-    def to_log(self) -> Log:
-        return Log.model_validate(self.model_dump())
-
 
 class LogCreationResponse(BaseModel):
     id: str
@@ -321,15 +318,11 @@ class LogReadingResponse(BaseModel):
     def serialize_datetime(self, value):
         return serialize_datetime(value)
 
-    @classmethod
-    def from_log(cls, log: Log):
-        return cls.model_validate(log.model_dump())
-
 
 class LogsReadingResponse(CursorPaginatedResponse[Log, LogReadingResponse]):
     @classmethod
     def build_item(cls, log: Log) -> LogReadingResponse:
-        return LogReadingResponse.from_log(log)
+        return LogReadingResponse.model_validate(log.model_dump())
 
 
 class NameData(BaseModel):
@@ -377,9 +370,7 @@ class NodeItemData(_NodeData):
 
 
 class LogNodeResponse(NodeItemData):
-    @classmethod
-    def from_node(cls, node: Log.Node):
-        return cls.model_validate(node.model_dump())
+    pass
 
 
 class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItemData]):

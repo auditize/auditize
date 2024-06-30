@@ -41,7 +41,7 @@ async def login_user(
         secure=True,
     )
 
-    return UserMeResponse.from_db_model(user)
+    return UserMeResponse.from_user(user)
 
 
 @router.post(

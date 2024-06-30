@@ -51,9 +51,6 @@ class RepoCreationRequest(BaseModel):
     status: RepoStatus = _RepoStatusField(default=RepoStatus.enabled)
     log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
 
-    def to_repo(self):
-        return Repo.model_validate(self.model_dump())
-
 
 class RepoUpdateRequest(BaseModel):
     name: Optional[str] = _RepoNameField(default=None)
@@ -103,10 +100,6 @@ class _BaseRepoReadingResponse(BaseModel):
     id: str = _RepoIdField()
     name: str = _RepoNameField()
 
-    @classmethod
-    def from_repo(cls, repo: Repo):
-        return cls.model_validate(repo.model_dump())
-
 
 class RepoReadingResponse(_BaseRepoReadingResponse):
     status: RepoStatus = _RepoStatusField()
@@ -136,13 +129,13 @@ class UserRepoReadingResponse(_BaseRepoReadingResponse):
 class RepoListResponse(PagePaginatedResponse[Repo, RepoReadingResponse]):
     @classmethod
     def build_item(cls, repo: Repo) -> RepoReadingResponse:
-        return RepoReadingResponse.from_repo(repo)
+        return RepoReadingResponse.model_validate(repo.model_dump())
 
 
 class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoReadingResponse]):
     @classmethod
     def build_item(cls, repo: Repo) -> UserRepoReadingResponse:
-        return UserRepoReadingResponse.from_repo(repo)
+        return UserRepoReadingResponse.model_validate(repo.model_dump())
 
 
 class RepoIncludeOptions(Enum):

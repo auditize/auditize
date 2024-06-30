@@ -40,7 +40,7 @@ from auditize.repos.api_models import (
     RepoUpdateRequest,
     UserRepoListResponse,
 )
-from auditize.repos.models import RepoStatus, RepoUpdate
+from auditize.repos.models import Repo, RepoStatus, RepoUpdate
 from auditize.users.models import UserUpdate
 from auditize.users.service import update_user
 
@@ -59,7 +59,7 @@ async def create_repo(
     authenticated: Authorized(can_write_repos()),
     repo: RepoCreationRequest,
 ) -> RepoCreationResponse:
-    repo_id = await service.create_repo(dbm, repo.to_repo())
+    repo_id = await service.create_repo(dbm, Repo.model_validate(repo.model_dump()))
 
     # Ensure that authenticated will have read & write logs permissions on the repo he created
     if not authenticated.comply(permissions_and(can_read_logs(), can_write_logs())):
@@ -125,7 +125,7 @@ async def get_repo(
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
 ) -> RepoReadingResponse:
     repo = await service.get_repo(dbm, repo_id)
-    response = RepoReadingResponse.from_repo(repo)
+    response = RepoReadingResponse.model_validate(repo.model_dump())
     await _handle_repo_include_options(response, include, dbm)
     return response
 
