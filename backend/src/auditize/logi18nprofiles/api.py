@@ -67,7 +67,7 @@ async def update_profile(
     tags=["log-i18n-profiles"],
     responses=error_responses(404),
 )
-async def get_repo(
+async def get_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_repos()),
     profile_id: str,
@@ -81,7 +81,7 @@ async def get_repo(
     summary="List log i18n profiles",
     tags=["log-i18n-profiles"],
 )
-async def list_repos(
+async def list_profiles(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_repos()),
     search_params: Annotated[ResourceSearchParams, Depends()],
