@@ -287,7 +287,7 @@ async def test_repo_get_forbidden(
 async def test_repo_get_translation_not_configured(
     log_read_user_client: HttpTestHelper, repo: PreparedRepo
 ):
-    resp = await log_read_user_client.assert_get_ok(
+    await log_read_user_client.assert_get_ok(
         f"/repos/{repo.id}/translation",
         expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
     )
