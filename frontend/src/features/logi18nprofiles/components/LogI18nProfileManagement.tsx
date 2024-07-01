@@ -1,3 +1,4 @@
+import { Breadcrumbs } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconLanguage } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,13 @@ export function LogI18nProfileManagement() {
         [
           t("logi18nprofile.list.column.name"),
           (profile: LogI18nProfile) => profile.name,
+        ],
+        [
+          t("logi18nprofile.list.column.langs"),
+          (profile: LogI18nProfile) =>
+            Object.entries(profile.translations)
+              .map(([lang, _]) => t("language." + lang))
+              .join(", "),
         ],
         [
           t("logi18nprofile.list.column.createdAt"),

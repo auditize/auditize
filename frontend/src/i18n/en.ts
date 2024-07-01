@@ -86,6 +86,7 @@ export default {
       column: {
         name: "Name",
         createdAt: "Created at",
+        langs: "Languages",
       },
     },
     delete: {
