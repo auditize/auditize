@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   CloseButton,
   FileInput,
   Group,
@@ -7,6 +8,7 @@ import {
   TextInput,
 } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
+import { IconDownload } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -35,11 +37,13 @@ function useLogI18nProfileForm(values: { name?: string }) {
 }
 
 function TranslationFileInput({
+  profileId,
   lang,
   isSet,
   onChange,
   readonly = false,
 }: {
+  profileId?: string;
   lang: string;
   isSet?: boolean;
   onChange: (content: object | null) => void;
@@ -77,19 +81,29 @@ function TranslationFileInput({
           disabled={readonly}
           flex={1}
         />
-        {(isSet || file) && (
-          <CloseButton
-            onClick={() => {
-              if (file) {
-                setFile(null);
-              } else {
-                onChange(null);
-              }
-            }}
-            disabled={readonly}
+        {profileId && (
+          <ActionIcon
+            component="a"
+            href={`http://localhost:8000/log-i18n-profiles/${profileId}/translations/${lang}`}
+            download={`auditize-log-translation-${profileId}-${lang}.json`}
+            target="_blank"
+            variant="transparent"
             flex={0}
-          />
+          >
+            <IconDownload />
+          </ActionIcon>
         )}
+        <CloseButton
+          onClick={() => {
+            if (file) {
+              setFile(null);
+            } else {
+              onChange(null);
+            }
+          }}
+          disabled={readonly || (!isSet && !file)}
+          flex={0}
+        />
       </Group>
     </Input.Wrapper>
   );
@@ -121,11 +135,13 @@ function TranslationFileCreationInput({
 }
 
 function TranslationFileUpdateInput({
+  profileId,
   lang,
   translations,
   setTranslations,
   readOnly,
 }: {
+  profileId: string;
   lang: string;
   translations: Record<string, object | null>;
   setTranslations: (translations: Record<string, object | null>) => void;
@@ -133,6 +149,7 @@ function TranslationFileUpdateInput({
 }) {
   return (
     <TranslationFileInput
+      profileId={profileId}
       lang={lang}
       isSet={!!translations[lang]}
       onChange={(translation) => {
@@ -238,12 +255,14 @@ export function LogI18nProfileEdition({
     >
       <LogI18nProfileForm form={form} readOnly={readOnly}>
         <TranslationFileUpdateInput
+          profileId={profileId!}
           lang="en"
           translations={translations}
           setTranslations={setTranslations}
           readOnly={readOnly}
         />
         <TranslationFileUpdateInput
+          profileId={profileId!}
           lang="fr"
           translations={translations}
           setTranslations={setTranslations}
