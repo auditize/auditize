@@ -15,7 +15,7 @@ from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.helpers.resources.api_models import ResourceSearchParams
-from auditize.logi18nprofiles.api_models import LogTranslations
+from auditize.logi18nprofiles.api_models import LogTranslation
 from auditize.permissions.assertions import (
     can_read_logs,
     can_read_repos,
@@ -140,12 +140,12 @@ async def get_repo_translation(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
-) -> LogTranslations:
+) -> LogTranslation:
     authenticated.ensure_user()
     translation = await service.get_repo_translation(
         dbm, repo_id, authenticated.user.lang
     )
-    return LogTranslations.model_validate(translation.model_dump())
+    return LogTranslation.model_validate(translation.model_dump())
 
 
 @router.get(

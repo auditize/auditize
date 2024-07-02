@@ -14,7 +14,7 @@ from auditize.logi18nprofiles.api_models import (
     LogI18nProfileListResponse,
     LogI18nProfileReadingResponse,
     LogI18nProfileUpdateRequest,
-    LogTranslations,
+    LogTranslation,
 )
 from auditize.logi18nprofiles.models import LogI18nProfile, LogI18nProfileUpdate
 from auditize.permissions.assertions import (
@@ -89,9 +89,9 @@ async def get_profile_translation(
     authenticated: Authorized(can_read_repos()),
     profile_id: str,
     lang: Lang,
-) -> LogTranslations:
+) -> LogTranslation:
     translation = await service.get_log_i18n_profile_translation(dbm, profile_id, lang)
-    return LogTranslations.model_validate(translation.model_dump())
+    return LogTranslation.model_validate(translation.model_dump())
 
 
 @router.get(

@@ -13,7 +13,7 @@ from auditize.helpers.resources.service import (
     get_resource_document,
     update_resource_document,
 )
-from auditize.logi18nprofiles.models import LogTranslations
+from auditize.logi18nprofiles.models import LogTranslation
 from auditize.logi18nprofiles.service import (
     does_log_i18n_profile_exist,
     get_log_i18n_profile,
@@ -178,16 +178,16 @@ async def is_i18n_log_profile_used_by_repo(
 
 async def get_repo_translation(
     dbm: DatabaseManager, repo_id: str, lang: Lang
-) -> LogTranslations:
+) -> LogTranslation:
     repo = await get_repo(dbm, repo_id)
     if not repo.log_i18n_profile_id:
-        return LogTranslations()
+        return LogTranslation()
     try:
         return await get_log_i18n_profile_translation(
             dbm, repo.log_i18n_profile_id, lang
         )
     except UnknownModelException:  # NB: this should not happen
-        return LogTranslations()
+        return LogTranslation()
 
 
 async def ensure_repos_in_permissions_exist(

@@ -9,7 +9,7 @@ from auditize.logi18nprofiles.models import LogI18nProfile
 from auditize.users.models import Lang
 
 
-class LogTranslations(BaseModel):
+class LogTranslation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # FIXME: check that dict keys are identifiers
@@ -43,7 +43,7 @@ def _ProfileCreatedAtField():  # noqa
 
 class LogI18nProfileCreationRequest(BaseModel):
     name: str = _ProfileNameField()
-    translations: dict[Lang, LogTranslations] = _ProfileTranslationsField(
+    translations: dict[Lang, LogTranslation] = _ProfileTranslationsField(
         default_factory=dict
     )
 
@@ -54,7 +54,7 @@ class LogI18nProfileCreationResponse(BaseModel):
 
 class LogI18nProfileUpdateRequest(BaseModel):
     name: Optional[str] = _ProfileNameField(default=None)
-    translations: Optional[dict[Lang, LogTranslations | None]] = (
+    translations: Optional[dict[Lang, LogTranslation | None]] = (
         _ProfileTranslationsField(default=None)
     )
 
@@ -62,7 +62,7 @@ class LogI18nProfileUpdateRequest(BaseModel):
 class LogI18nProfileReadingResponse(BaseModel):
     id: str = _ProfileIdField()
     name: str = _ProfileNameField()
-    translations: dict[Lang, LogTranslations] = _ProfileTranslationsField()
+    translations: dict[Lang, LogTranslation] = _ProfileTranslationsField()
     created_at: datetime = _ProfileCreatedAtField()
 
     @field_serializer("created_at", when_used="json")

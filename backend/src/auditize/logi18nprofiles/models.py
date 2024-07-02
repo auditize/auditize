@@ -6,7 +6,7 @@ from pydantic import BaseModel, BeforeValidator, Field
 from auditize.users.models import Lang
 
 
-class LogTranslations(BaseModel):
+class LogTranslation(BaseModel):
     action_type: dict[str, str] = Field(default_factory=dict)
     action_category: dict[str, str] = Field(default_factory=dict)
     actor_type: dict[str, str] = Field(default_factory=dict)
@@ -26,9 +26,9 @@ class LogI18nProfile(BaseModel):
     )
     name: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    translations: dict[Lang, LogTranslations] = Field(default_factory=dict)
+    translations: dict[Lang, LogTranslation] = Field(default_factory=dict)
 
 
 class LogI18nProfileUpdate(BaseModel):
     name: Optional[str] = None
-    translations: Optional[dict[Lang, LogTranslations | None]] = None
+    translations: Optional[dict[Lang, LogTranslation | None]] = None

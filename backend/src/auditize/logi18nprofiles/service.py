@@ -12,7 +12,7 @@ from auditize.helpers.resources.service import (
 from auditize.logi18nprofiles.models import (
     LogI18nProfile,
     LogI18nProfileUpdate,
-    LogTranslations,
+    LogTranslation,
 )
 
 
@@ -45,14 +45,14 @@ async def get_log_i18n_profile(dbm: DatabaseManager, profile_id: str) -> LogI18n
 
 async def get_log_i18n_profile_translation(
     dbm: DatabaseManager, profile_id: str, lang: str
-) -> LogTranslations:
+) -> LogTranslation:
     result = await get_resource_document(
         dbm.core_db.logi18nprofiles, profile_id, projection={"translations." + lang: 1}
     )
     if lang in result["translations"]:
-        return LogTranslations.model_validate(result["translations"][lang])
+        return LogTranslation.model_validate(result["translations"][lang])
     else:
-        return LogTranslations()
+        return LogTranslation()
 
 
 async def get_log_i18n_profiles(
