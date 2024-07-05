@@ -7,9 +7,8 @@ import { titlize } from "@/utils/format";
 export function useLogTranslationQuery(repoId?: string) {
   const { lang } = useI18nContext();
   return useQuery({
-    // pass lang to queryKey to invalidate the query when the user changes the language
     queryKey: ["logTranslation", repoId, lang],
-    queryFn: () => getRepoTranslation(repoId!),
+    queryFn: () => getRepoTranslation(repoId!, lang),
     enabled: !!repoId,
   });
 }

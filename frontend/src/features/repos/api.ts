@@ -86,9 +86,10 @@ export async function getRepo(repoId: string): Promise<Repo> {
 
 export async function getRepoTranslation(
   repoId: string,
+  lang: string,
 ): Promise<Record<string, Record<string, string>>> {
   return await reqGet(
-    `/repos/${repoId}/translation`,
+    `/repos/${repoId}/translations/${lang}`,
     {},
     { disableResponseCamelcase: true },
   );
