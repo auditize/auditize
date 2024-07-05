@@ -41,7 +41,7 @@ from auditize.repos.api_models import (
     UserRepoListResponse,
 )
 from auditize.repos.models import Repo, RepoStatus, RepoUpdate
-from auditize.users.models import UserUpdate
+from auditize.users.models import Lang, UserUpdate
 from auditize.users.service import update_user
 
 router = APIRouter(responses=error_responses(401, 403))
@@ -132,11 +132,11 @@ async def get_repo(
 
 @router.get(
     "/repos/{repo_id}/translation",
-    summary="Get log repository translations",
+    summary="Get log repository translation for the authenticated user",
     tags=["repos"],
     responses=error_responses(404),
 )
-async def get_repo_translation(
+async def get_repo_translation_for_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
@@ -145,6 +145,22 @@ async def get_repo_translation(
     translation = await service.get_repo_translation(
         dbm, repo_id, authenticated.user.lang
     )
+    return LogTranslation.model_validate(translation.model_dump())
+
+
+@router.get(
+    "/repos/{repo_id}/translations/{lang}",
+    summary="Get log repository translation",
+    tags=["repos"],
+    responses=error_responses(404),
+)
+async def get_repo_translation(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    lang: Lang,
+) -> LogTranslation:
+    translation = await service.get_repo_translation(dbm, repo_id, lang)
     return LogTranslation.model_validate(translation.model_dump())
 
 
