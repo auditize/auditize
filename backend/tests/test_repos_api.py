@@ -284,7 +284,7 @@ async def test_repo_get_forbidden(
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}")
 
 
-async def test_repo_get_translation_not_configured(
+async def test_repo_get_translation_for_user_not_configured(
     log_read_user_client: HttpTestHelper, repo: PreparedRepo
 ):
     await log_read_user_client.assert_get_ok(
@@ -293,7 +293,7 @@ async def test_repo_get_translation_not_configured(
     )
 
 
-async def test_repo_get_translation_not_available_for_user_lang(
+async def test_repo_get_translation_for_user_not_available_for_user_lang(
     user_builder: UserBuilder, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
@@ -316,7 +316,7 @@ async def test_repo_get_translation_not_available_for_user_lang(
         )
 
 
-async def test_repo_get_translation_available_for_user_lang(
+async def test_repo_get_translation_for_user_available_for_user_lang(
     user_builder: UserBuilder, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
@@ -339,7 +339,7 @@ async def test_repo_get_translation_available_for_user_lang(
         )
 
 
-async def test_repo_get_translation_unknown_id(
+async def test_repo_get_translation_for_user_unknown_id(
     log_read_user_client: HttpTestHelper, dbm: DatabaseManager
 ):
     await log_read_user_client.assert_get_not_found(
@@ -347,7 +347,7 @@ async def test_repo_get_translation_unknown_id(
     )
 
 
-async def test_repo_get_translation_forbidden(
+async def test_repo_get_translation_for_user_forbidden(
     user_builder: UserBuilder, repo: PreparedRepo
 ):
     user = await user_builder({})  # a user without permissions
@@ -356,13 +356,83 @@ async def test_repo_get_translation_forbidden(
         await client.assert_get_forbidden(f"/repos/{repo.id}/translation")
 
 
-async def test_repo_get_translation_as_apikey(
+async def test_repo_get_translation_for_user_as_apikey(
     apikey_builder: ApikeyBuilder, repo: PreparedRepo
 ):
     apikey = await apikey_builder({"is_superadmin": True})
     async with apikey.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await client.assert_get_forbidden(f"/repos/{repo.id}/translation")
+
+
+async def test_repo_get_translation_not_configured(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await log_read_client.assert_get_ok(
+        f"/repos/{repo.id}/translations/fr",
+        expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
+    )
+
+
+async def test_repo_get_translation_not_available_for_lang(
+    log_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18",
+            "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
+        },
+    )
+    repo: PreparedRepo = await PreparedRepo.create(
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+    )
+    await log_read_client.assert_get_ok(
+        f"/repos/{repo.id}/translations/fr",
+        expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
+    )
+
+
+async def test_repo_get_translation_for_user_available_for_lang(
+    log_read_client: HttpTestHelper, dbm: DatabaseManager
+):
+    profile = await PreparedLogI18nProfile.create(
+        dbm,
+        {
+            "name": "i18",
+            "translations": {"fr": PreparedLogI18nProfile.FRENCH_TRANSLATION},
+        },
+    )
+    repo: PreparedRepo = await PreparedRepo.create(
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+    )
+
+    await log_read_client.assert_get_ok(
+        f"/repos/{repo.id}/translations/fr",
+        expected_json=PreparedLogI18nProfile.FRENCH_TRANSLATION,
+    )
+
+
+async def test_repo_get_translation_unknown_id(
+    log_read_user_client: HttpTestHelper, dbm: DatabaseManager
+):
+    await log_read_user_client.assert_get_not_found(
+        f"/repos/{UNKNOWN_OBJECT_ID}/translations/en"
+    )
+
+
+async def test_repo_get_translation_unknown_lang(
+    log_read_user_client: HttpTestHelper, repo: PreparedRepo
+):
+    await log_read_user_client.assert_get_bad_request(
+        f"/repos/{repo.id}/translations/it"
+    )
+
+
+async def test_repo_get_translation_forbidden(
+    no_permission_client: HttpTestHelper, repo: PreparedRepo
+):
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/translations/fr")
 
 
 async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager):

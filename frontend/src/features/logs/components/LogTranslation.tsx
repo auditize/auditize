@@ -1,15 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { useAuthenticatedUser } from "@/features/auth";
 import { getRepoTranslation } from "@/features/repos";
+import { useI18nContext } from "@/i18n";
 import { titlize } from "@/utils/format";
 
 export function useLogTranslationQuery(repoId?: string) {
-  const { currentUser } = useAuthenticatedUser();
+  const { lang } = useI18nContext();
   return useQuery({
-    // pass lang to queryKey to invalidate the query when the user changes the language
-    queryKey: ["logTranslation", repoId, currentUser.lang],
-    queryFn: () => getRepoTranslation(repoId!),
+    queryKey: ["logTranslation", repoId, lang],
+    queryFn: () => getRepoTranslation(repoId!, lang),
     enabled: !!repoId,
   });
 }

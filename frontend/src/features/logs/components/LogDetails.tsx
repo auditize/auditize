@@ -33,6 +33,7 @@ import { titlize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
 import { getLog } from "../api";
+import { useLogContext } from "../context";
 import { useLogTranslator } from "./LogTranslation";
 
 function KeyValueTable({
@@ -132,26 +133,19 @@ function NodePath({ value }: { value: { ref: string; name: string }[] }) {
   );
 }
 
-export function LogDetails({
-  repoId,
-  logId,
-}: {
-  repoId?: string;
-  logId?: string;
-}) {
+export function LogDetails({ repoId }: { repoId?: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const opened = !!(repoId && logId);
+  const { displayedLogId, setDisplayedLogId } = useLogContext();
   const {
     data: log,
     error,
     isPending,
   } = useQuery({
-    queryKey: ["log", logId],
-    queryFn: () => getLog(repoId!, logId!),
-    enabled: opened,
+    queryKey: ["log", repoId, displayedLogId],
+    queryFn: () => getLog(repoId!, displayedLogId!),
+    enabled: displayedLogId !== null,
   });
-  const navigate = useNavigate();
 
   // FIXME: improve loading and error handling
 
@@ -167,8 +161,9 @@ export function LogDetails({
     <Modal.Root
       size="lg"
       padding="lg"
-      opened={opened}
-      onClose={() => navigate(-1)}
+      opened={displayedLogId !== null}
+      onClose={() => setDisplayedLogId(null)}
+      withinPortal={false}
     >
       <Modal.Overlay />
       <Modal.Content>

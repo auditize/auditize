@@ -1,0 +1,17 @@
+/*
+  See:
+  - https://github.com/PlasmoHQ/plasmo/issues/776#issuecomment-1811072653
+  - https://mantine.dev/styles/global-styles/#body-and-root-elements-styles
+  */
+
+#webco {
+  margin: 0;
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-md);
+  line-height: var(--mantine-line-height);
+  background-color: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+
+  -webkit-font-smoothing: var(--mantine-webkit-font-smoothing);
+  -moz-osx-font-smoothing: var(--mantine-moz-font-smoothing);
+}

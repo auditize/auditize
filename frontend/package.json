@@ -4,8 +4,10 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "build:app": "vite build -c app.vite.config.mjs",
+    "build:lib": "vite build -c lib.vite.config.mjs",
+    "build": "tsc && npm run build:app && npm run build:lib",
+    "preview": "vite preview -c app.vite.config.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "npm run lint:eslint && npm run lint:stylelint",
     "lint:eslint": "eslint . --ext .ts,.tsx --cache",

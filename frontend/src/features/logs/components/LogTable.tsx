@@ -19,6 +19,7 @@ import { humanizeDate } from "@/utils/date";
 import { addQueryParamToLocation } from "@/utils/router";
 
 import { CustomField, Log } from "../api";
+import { useLogContext } from "../context";
 import { LogDetails } from "./LogDetails";
 import { useLogFields } from "./LogFieldSelector";
 import { useLogTranslator } from "./LogTranslation";
@@ -1064,10 +1065,7 @@ export function LogTable({
   onTableFilterChange: TableFilterChangeHandler;
 }) {
   const defaultColumns = ["date", "actor", "action", "resource", "node", "tag"];
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const logId = params.get("log");
+  const { setDisplayedLogId } = useLogContext();
   const [selectedColumns, setSelectedColumns] = useLocalStorage<
     Record<string, string[]>
   >({
@@ -1126,16 +1124,14 @@ export function LogTable({
         <DataTable
           columns={columns as DataTableColumn<Log>[]}
           records={logs}
-          onRowClick={({ record }) =>
-            navigate(addQueryParamToLocation(location, "log", record.id))
-          }
+          onRowClick={({ record }) => setDisplayedLogId(record.id)}
           fetching={isLoading}
           minHeight={150}
           noRecordsText="No logs found"
         />
         {logs && logs.length > 0 && footer}
       </Stack>
-      <LogDetails repoId={repoId} logId={logId || undefined} />
+      <LogDetails repoId={repoId} />
     </>
   );
 }
