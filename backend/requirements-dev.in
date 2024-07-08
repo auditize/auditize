@@ -1,0 +1,9 @@
+pytest
+pytest-xdist
+callee
+httpx
+icecream
+ruff
+build
+pip-tools
+
