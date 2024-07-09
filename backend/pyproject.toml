@@ -2,27 +2,18 @@
 name = "Auditize"
 version="0.1.0-dev"
 description = "Audit logs management system"
-dependencies=[
-    "fastapi",
-    "pydantic[email]",
-    "python-multipart",
-    "uvicorn[standard]",
-    "motor",
-    "aiocache",
-    "certifi",
-    "bcrypt",
-    "Authlib",
-]
+dynamic = ["dependencies", "optional-dependencies"]
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-xdist",
-    "callee",
-    "httpx",
-    "icecream",
-    "ruff",
-]
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+optional-dependencies.dev = { file = ["requirements-dev.txt"] }
+
+[tool.setuptools.package-data]
+"auditize" = ["data/**"]
 
 [tool.ruff]
 src = ["src", "tests", "scripts"]
