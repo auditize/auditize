@@ -265,7 +265,7 @@ export function LogDetails({ repoId }: { repoId?: string }) {
                 [
                   logTranslator("attachment_type", field.type),
                   <Anchor
-                    href={`http://localhost:8000/repos/${repoId}/logs/${log.id}/attachments/${index}`}
+                    href={`/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
                   >
                     {field.description || field.name}
                   </Anchor>,
