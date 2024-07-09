@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from icecream import ic
@@ -47,7 +47,12 @@ def setup_cors():
     )
 
 
-app = FastAPI(lifespan=setup_db)
+app = FastAPI(
+    lifespan=setup_db,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
 ###
 # Setup CORS according to the configuration
@@ -72,15 +77,18 @@ def request_validation_error_handler(_, exc):
 
 
 ###
-# Routers
+# API Router
 ###
 
-app.include_router(auth_router)
-app.include_router(logs_router)
-app.include_router(repos_router)
-app.include_router(users_router)
-app.include_router(apikeys_router)
-app.include_router(logi18nprofiles_router)
+api_router = APIRouter(prefix="/api")
+api_router.include_router(auth_router)
+api_router.include_router(logs_router)
+api_router.include_router(repos_router)
+api_router.include_router(users_router)
+api_router.include_router(apikeys_router)
+api_router.include_router(logi18nprofiles_router)
+
+app.include_router(api_router)
 
 ###
 # OpenAPI customization

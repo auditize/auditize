@@ -22,6 +22,7 @@ class HttpTestHelper(AsyncClient):
         expected_status_code=200,
         expected_json=None,
     ) -> Response:
+        path = f"/api{path}"
         ic(
             "REQUEST",
             id(self),
