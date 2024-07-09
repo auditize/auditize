@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite -c app.vite.config.mjs",
     "build:app": "vite build -c app.vite.config.mjs",
     "build:lib": "vite build -c lib.vite.config.mjs",
     "build": "tsc && npm run build:app && npm run build:lib",
