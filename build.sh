@@ -12,3 +12,4 @@ cp frontend/dist/lib/auditize-web-component.mjs  backend/src/auditize/data/html
 
 # Build the backend
 (cd backend && rm -rf build && python -m build --wheel)
+ls -lh $PWD/backend/dist/*.whl
