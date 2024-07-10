@@ -22,6 +22,8 @@ from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
 
+HTML_DIR = osp.join(osp.dirname(__file__), "data", "html")
+
 ic.configureOutput(includeContext=True)
 
 
@@ -93,30 +95,21 @@ api_router.include_router(logi18nprofiles_router)
 
 app.include_router(api_router)
 
+
 ###
 # Frontend sub-app
 ###
 
-frontend_app = FastAPI()
 
-
-@frontend_app.middleware("http")
-async def default_page(request, call_next):
+@app.middleware("http")
+async def index_html_redirection(request, call_next):
     response = await call_next(request)
-    if not request.url.path.startswith("/api/") and response.status_code == 404:
-        return FileResponse(
-            osp.join(osp.dirname(__file__), "data", "html", "index.html")
-        )
+    if response.status_code == 404 and not request.url.path.startswith("/api/"):
+        return FileResponse(osp.join(HTML_DIR, "index.html"))
     return response
 
 
-frontend_app.mount(
-    "",
-    StaticFiles(directory=osp.join(osp.dirname(__file__), "data", "html")),
-    name="html",
-)
-app.mount("", frontend_app, name="frontend")
-
+app.mount("", StaticFiles(directory=HTML_DIR), name="html")
 
 ###
 # OpenAPI customization
