@@ -1,9 +1,12 @@
+import os.path as osp
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from icecream import ic
+from starlette.responses import FileResponse
 
 from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
@@ -89,6 +92,31 @@ api_router.include_router(apikeys_router)
 api_router.include_router(logi18nprofiles_router)
 
 app.include_router(api_router)
+
+###
+# Frontend sub-app
+###
+
+frontend_app = FastAPI()
+
+
+@frontend_app.middleware("http")
+async def default_page(request, call_next):
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/") and response.status_code == 404:
+        return FileResponse(
+            osp.join(osp.dirname(__file__), "data", "html", "index.html")
+        )
+    return response
+
+
+frontend_app.mount(
+    "",
+    StaticFiles(directory=osp.join(osp.dirname(__file__), "data", "html")),
+    name="html",
+)
+app.mount("", frontend_app, name="frontend")
+
 
 ###
 # OpenAPI customization
