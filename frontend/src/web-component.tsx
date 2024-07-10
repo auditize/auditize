@@ -10,7 +10,7 @@ import { theme } from "@/theme";
 import { Logs, StateLogProvider } from "./features/logs";
 import { I18nProvider } from "./i18n";
 import layersCss from "./layers.css?inline";
-import { enableAccessTokenAuthentication } from "./utils/axios";
+import { enableAccessTokenAuthentication, setBaseURL } from "./utils/axios";
 import { auditizeQueryClient } from "./utils/query";
 import webComponentCss from "./web-component.css?inline";
 
@@ -29,10 +29,15 @@ class LogWebComponent extends HTMLElement {
     if (!accessToken) {
       throw new Error("access-token attribute is required");
     }
-
     const lang = this.getAttribute("lang") || "en";
+    const baseURL = this.getAttribute("base-url");
 
     enableAccessTokenAuthentication(accessToken);
+
+    if (baseURL) {
+      setBaseURL(baseURL);
+      window.auditizeBaseURL = baseURL;
+    }
 
     const root = ReactDOM.createRoot(this.shadowRoot as ShadowRoot);
     root.render(

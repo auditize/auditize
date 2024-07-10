@@ -157,6 +157,8 @@ export function LogDetails({ repoId }: { repoId?: string }) {
     return <div>{error.message}</div>;
   }
 
+  const baseURL = window.auditizeBaseURL ?? "";
+
   return (
     <Modal.Root
       size="lg"
@@ -265,7 +267,7 @@ export function LogDetails({ repoId }: { repoId?: string }) {
                 [
                   logTranslator("attachment_type", field.type),
                   <Anchor
-                    href={`/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
+                    href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
                   >
                     {field.description || field.name}
                   </Anchor>,

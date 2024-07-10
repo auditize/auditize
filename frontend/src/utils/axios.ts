@@ -28,6 +28,10 @@ export function enableAccessTokenAuthentication(accessToken: string) {
     `Bearer ${accessToken}`;
 }
 
+export function setBaseURL(baseURL: string) {
+  axiosInstance.defaults.baseURL = baseURL + "/api";
+}
+
 export function interceptStatusCode(
   statusCode: number,
   func: (error: any) => void,
