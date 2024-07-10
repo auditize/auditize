@@ -65,7 +65,7 @@ class LogPermissions(ReadWritePermissions):
 
     def get_repo_nodes(self, repo_id: str) -> set[str]:
         perms = self.get_repo_permissions(repo_id)
-        return set(perms.nodes) if perms else set()
+        return set(perms.nodes) if perms and perms.nodes else set()
 
 
 class Permissions(BaseModel):

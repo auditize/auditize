@@ -7,7 +7,7 @@ import pytest
 from auditize.database import DatabaseManager
 from auditize.logs.models import Log
 from conftest import ApikeyBuilder, UserBuilder
-from helpers.http import HttpTestHelper
+from helpers.http import HttpTestHelper, create_http_client
 from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog
 from helpers.pagination import (
     do_test_page_pagination_common_scenarios,
@@ -592,6 +592,22 @@ async def test_get_logs_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs")
+
+
+# Bug coverage
+async def test_get_logs_access_control_without_explicit_nodes(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
+):
+    resp = await superadmin_client.assert_post_ok(
+        "/auth/access-token",
+        json={"permissions": {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}},
+    )
+    access_token = resp.json()["access_token"]
+
+    client = create_http_client()
+    await client.assert_get_ok(
+        f"/repos/{repo.id}/logs", headers={"Authorization": f"Bearer {access_token}"}
+    )
 
 
 async def test_get_logs_limit(log_rw_client: HttpTestHelper, repo: PreparedRepo):
