@@ -1,9 +1,12 @@
+import os.path as osp
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from icecream import ic
+from starlette.responses import FileResponse
 
 from auditize.apikeys.api import router as apikeys_router
 from auditize.auth.api import router as auth_router
@@ -18,6 +21,8 @@ from auditize.logi18nprofiles.api import router as logi18nprofiles_router
 from auditize.logs.api import router as logs_router
 from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
+
+HTML_DIR = osp.join(osp.dirname(__file__), "data", "html")
 
 ic.configureOutput(includeContext=True)
 
@@ -47,7 +52,12 @@ def setup_cors():
     )
 
 
-app = FastAPI(lifespan=setup_db)
+app = FastAPI(
+    lifespan=setup_db,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
 ###
 # Setup CORS according to the configuration
@@ -72,15 +82,34 @@ def request_validation_error_handler(_, exc):
 
 
 ###
-# Routers
+# API Router
 ###
 
-app.include_router(auth_router)
-app.include_router(logs_router)
-app.include_router(repos_router)
-app.include_router(users_router)
-app.include_router(apikeys_router)
-app.include_router(logi18nprofiles_router)
+api_router = APIRouter(prefix="/api")
+api_router.include_router(auth_router)
+api_router.include_router(logs_router)
+api_router.include_router(repos_router)
+api_router.include_router(users_router)
+api_router.include_router(apikeys_router)
+api_router.include_router(logi18nprofiles_router)
+
+app.include_router(api_router)
+
+
+###
+# Frontend sub-app
+###
+
+
+@app.middleware("http")
+async def index_html_redirection(request, call_next):
+    response = await call_next(request)
+    if response.status_code == 404 and not request.url.path.startswith("/api/"):
+        return FileResponse(osp.join(HTML_DIR, "index.html"))
+    return response
+
+
+app.mount("", StaticFiles(directory=HTML_DIR), name="html")
 
 ###
 # OpenAPI customization

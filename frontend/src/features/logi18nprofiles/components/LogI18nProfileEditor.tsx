@@ -84,7 +84,7 @@ function TranslationFileInput({
         {profileId && (
           <ActionIcon
             component="a"
-            href={`http://localhost:8000/log-i18n-profiles/${profileId}/translations/${lang}`}
+            href={`/api/log-i18n-profiles/${profileId}/translations/${lang}`}
             download={`auditize-log-translation-${profileId}-${lang}.json`}
             target="_blank"
             variant="transparent"
