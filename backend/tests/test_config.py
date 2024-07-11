@@ -14,6 +14,7 @@ def test_get_config():
     assert config.jwt_signing_key is not None
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.attachment_max_size == 1024
+    assert config.mongodb_uri is None
     assert config.smtp_server is None
     assert config.smtp_port is None
     assert config.smtp_username is None
@@ -41,6 +42,7 @@ def test_config_minimum_viable_config():
     assert config.jwt_signing_key == MINIMUM_VIABLE_CONFIG["AUDITIZE_JWT_SIGNING_KEY"]
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.attachment_max_size == 5242880  # 5MB
+    assert config.mongodb_uri is None
     assert config.smtp_server is None
     assert config.smtp_port is None
     assert config.smtp_username is None
@@ -51,6 +53,13 @@ def test_config_minimum_viable_config():
     assert config.cors_allow_methods == []
     assert config.cors_allow_headers == []
     assert config.is_cors_enabled() is False
+
+
+def test_config_var_mongodb_uri():
+    config = Config.load_from_env(
+        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_MONGODB_URI": "mongodb://localhost:27017"}
+    )
+    assert config.mongodb_uri == "mongodb://localhost:27017"
 
 
 def test_config_var_user_session_token_lifetime():

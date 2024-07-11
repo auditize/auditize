@@ -15,6 +15,7 @@ class Config:
     user_session_token_lifetime: int
     access_token_lifetime: int
     attachment_max_size: int
+    mongodb_uri: str
     smtp_server: str
     smtp_port: int
     smtp_username: str
@@ -83,6 +84,7 @@ class Config:
                     default=_DEFAULT_ATTACHMENT_MAX_SIZE,
                     cast=int,
                 ),
+                mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
                 smtp_port=optional("AUDITIZE_SMTP_PORT", cast=int),
                 smtp_username=optional("AUDITIZE_SMTP_USERNAME"),
