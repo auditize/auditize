@@ -119,7 +119,7 @@ async def update_user_password_by_signup_token(
 
 
 async def get_users(
-    dbm: DatabaseManager, query: str, page: int, page_size: int
+    dbm: DatabaseManager, query: str | None, page: int, page_size: int
 ) -> tuple[list[User], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
         dbm.core_db.users,
@@ -161,6 +161,9 @@ async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> 
     try:
         user = await get_user_by_email(dbm, email)
     except UnknownModelException:
+        raise AuthenticationFailure()
+
+    if not user.password_hash:
         raise AuthenticationFailure()
 
     if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
