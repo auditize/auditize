@@ -1,5 +1,6 @@
 pytest
 pytest-xdist
+tox
 callee
 httpx
 icecream
