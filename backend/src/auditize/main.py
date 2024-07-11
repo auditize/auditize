@@ -5,7 +5,6 @@ from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from icecream import ic
 from starlette.responses import FileResponse
 
 from auditize.apikeys.api import router as apikeys_router
@@ -23,8 +22,6 @@ from auditize.repos.api import router as repos_router
 from auditize.users.api import router as users_router
 
 HTML_DIR = osp.join(osp.dirname(__file__), "data", "html")
-
-ic.configureOutput(includeContext=True)
 
 
 @asynccontextmanager

@@ -2,6 +2,9 @@ import os
 from typing import Awaitable, Callable, Optional, Protocol
 
 import pytest
+from icecream import ic
+
+ic.configureOutput(includeContext=True)
 
 # We must initialize the environment before the auditize modules (and more specifically
 # auditize.config) get loaded.

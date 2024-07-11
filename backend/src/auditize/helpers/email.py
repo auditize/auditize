@@ -2,7 +2,6 @@ import smtplib
 import ssl
 
 import certifi
-from icecream import ic
 
 from auditize.config import get_config
 
@@ -10,8 +9,8 @@ from auditize.config import get_config
 def send_email(to, subject, body):
     config = get_config()
     if not config.is_smtp_enabled():
-        ic("SMTP is disabled, print email information instead")
-        ic(to, subject, body)
+        print("SMTP is disabled, print email information instead")
+        print(to, subject, body)
         return
 
     message = f"Subject: {subject}\n\n{body}"

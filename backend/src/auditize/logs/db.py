@@ -1,7 +1,6 @@
 from functools import partial
 
 from aiocache import Cache
-from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 from auditize.database import BaseDatabase, Collection, DatabaseManager
@@ -23,7 +22,6 @@ class LogDatabase(BaseDatabase):
         )
         if await self._cache.exists(cache_key):
             return
-        ic(f"storing {collection.name!r} {data!r}")
         result = await collection.update_one(data, {"$set": {}}, upsert=True)
         await self._cache.set(cache_key, result)
 
