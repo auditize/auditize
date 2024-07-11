@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS build
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -16,3 +16,13 @@ RUN . "/root/.nvm/nvm.sh" && nvm install 20
 # Build the project
 COPY . /src
 RUN cd /src && . "/root/.nvm/nvm.sh" && ./build.sh
+
+FROM python:3.12 AS run
+
+EXPOSE 80
+
+COPY --from=build /src/backend/dist /dist
+
+RUN pip install /dist/*.whl
+
+CMD ["sh", "-c", "python -m auditize bootstrap_superadmin && uvicorn auditize.main:app --host 0.0.0.0 --port 80"]
