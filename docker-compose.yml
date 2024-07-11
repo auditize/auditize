@@ -1,0 +1,15 @@
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+  web:
+    image: auditize
+    ports:
+      - "8001:80"
+    environment:
+        AUDITIZE_MONGODB_URI: mongodb://root:root@mongo:27017/
+        # FIXME: make this a variable
+        AUDITIZE_JWT_SIGNING_KEY: d34444a672da3173579c13397c92e355106bb298ab999e4eee41d6d72112aa1b
