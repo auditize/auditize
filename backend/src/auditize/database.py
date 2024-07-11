@@ -4,6 +4,8 @@ from functools import lru_cache
 from bson.codec_options import CodecOptions
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
+from auditize.config import get_config
+
 
 class Collection:
     def __init__(self, name):
@@ -52,7 +54,7 @@ class CoreDatabase(BaseDatabase):
     apikeys = Collection("apikeys")
 
 
-_mongo_client = AsyncIOMotorClient()
+_mongo_client = AsyncIOMotorClient(get_config().mongodb_uri)
 
 
 class DatabaseManager:
