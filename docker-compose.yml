@@ -5,11 +5,18 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+    volumes:
+      - mongo-volume:/data/db
   web:
     image: auditize
     ports:
       - "8001:80"
     environment:
-        AUDITIZE_MONGODB_URI: mongodb://root:root@mongo:27017/
-        # FIXME: make this a variable
-        AUDITIZE_JWT_SIGNING_KEY: d34444a672da3173579c13397c92e355106bb298ab999e4eee41d6d72112aa1b
+        - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
+        - AUDITIZE_JWT_SIGNING_KEY=${AUDITIZE_JWT_SIGNING_KEY}
+        - AUDITIZE_CORS_ALLOW_ORIGINS=${AUDITIZE_CORS_ALLOW_ORIGINS}
+        - AUDITIZE_CORS_ALLOW_CREDENTIALS=${AUDITIZE_CORS_ALLOW_CREDENTIALS}
+        - AUDITIZE_CORS_ALLOW_METHODS=${AUDITIZE_CORS_ALLOW_METHODS}
+        - AUDITIZE_CORS_ALLOW_HEADERS=${AUDITIZE_CORS_ALLOW_HEADERS}
+volumes:
+    mongo-volume:
