@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import os
 import random
 import sys
 import uuid
@@ -634,7 +635,7 @@ def jsonify(data):
 
 def inject_log(base_url, repo_id, api_key, log, attachments):
     resp = requests.post(
-        f"{base_url}/repos/{repo_id}/logs",
+        f"{base_url}/api/repos/{repo_id}/logs",
         headers={"Authorization": f"Bearer " + api_key},
         json=log,
     )
@@ -645,7 +646,7 @@ def inject_log(base_url, repo_id, api_key, log, attachments):
     log_id = resp.json()["id"]
     for attachment in attachments:
         resp = requests.post(
-            f"{base_url}/repos/{repo_id}/logs/{log_id}/attachments",
+            f"{base_url}/api/repos/{repo_id}/logs/{log_id}/attachments",
             headers={"Authorization": f"Bearer " + api_key},
             files={"file": (attachment["name"], attachment["data"])},
             data={
@@ -660,13 +661,17 @@ def inject_log(base_url, repo_id, api_key, log, attachments):
 
 
 def main(argv):
-    if len(argv) != 4:
-        sys.exit("Usage: %s COUNT REPO_ID API_KEY" % argv[0])
+    if len(argv) != 2:
+        sys.exit("Usage: %s COUNT" % argv[0])
 
-    base_url = "http://localhost:8000"
+    try:
+        base_url = os.environ["AUDITIZE_URL"]
+        repo_id = os.environ["AUDITIZE_REPO"]
+        api_key = os.environ["AUDITIZE_APIKEY"]
+    except KeyError as e:
+        sys.exit("Missing environment variable: %s" % e)
+
     count = int(argv[1])
-    repo_id = argv[2]
-    api_key = argv[3]
 
     provider = LogProvider.prepare()
 
