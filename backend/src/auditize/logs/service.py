@@ -3,7 +3,8 @@ import re
 from datetime import datetime
 from functools import partial
 from io import StringIO
-from typing import Any, AsyncGenerator, AsyncIterator, Iterator
+from itertools import count
+from typing import Any, AsyncGenerator
 
 from bson import ObjectId
 
@@ -179,7 +180,7 @@ def _custom_field_search_filter(params: dict[str, str]) -> dict:
 
 async def get_logs(
     dbm: DatabaseManager,
-    repo_id: str,
+    repo: str | LogDatabase,
     *,
     authorized_nodes: set[str] = None,
     action_type: str = None,
@@ -207,7 +208,10 @@ async def get_logs(
     limit: int = 10,
     pagination_cursor: str = None,
 ) -> tuple[list[Log], str | None]:
-    db = await get_log_db_for_reading(dbm, repo_id)
+    if isinstance(repo, LogDatabase):
+        db = repo
+    else:
+        db = await get_log_db_for_reading(dbm, repo)
 
     criteria: list[dict[str, Any]] = []
     if authorized_nodes:
@@ -321,22 +325,21 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
 async def get_logs_as_csv(
     dbm: DatabaseManager, repo_id: str, *, fields: list[str], **kwargs
 ) -> AsyncGenerator[str, None]:
-    csv_buffer = StringIO()
-    csv_writer = csv.DictWriter(csv_buffer, fieldnames=fields)
-    csv_writer.writeheader()
-    yield csv_buffer.getvalue()
-    next_cursor = None
-    while True:
-        logs, next_cursor = await get_logs(
-            dbm, repo_id, pagination_cursor=next_cursor, **kwargs
-        )
+    logs_db = await get_log_db_for_reading(dbm, repo_id)
+    cursor = None
+    for i in count(0):
         csv_buffer = StringIO()
         csv_writer = csv.DictWriter(
             csv_buffer, fieldnames=fields, extrasaction="ignore"
         )
+        if i == 0:
+            csv_writer.writeheader()
+        logs, cursor = await get_logs(
+            dbm, logs_db, pagination_cursor=cursor, limit=100, **kwargs
+        )
         csv_writer.writerows(map(_log_to_dict, logs))
         yield csv_buffer.getvalue()
-        if not next_cursor:
+        if not cursor:
             break
 
 
