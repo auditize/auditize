@@ -2088,3 +2088,78 @@ async def test_get_log_node_not_enabled_repo_status(
     await superadmin_client.assert_get(
         f"/repos/{repo.id}/logs/nodes/ref:customer", expected_status_code=status_code
     )
+
+
+async def test_get_logs_as_csv_minimal_fields(
+    log_read_client: HttpTestHelper,
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log = await repo.create_log(
+        log_write_client,
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+
+    resp = await log_read_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+    )
+    assert (
+        resp.text
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,,,,,,,,,,,,,,customer:1\r\n"
+    )
+
+
+async def test_get_logs_as_csv_all_fields(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {
+                "source": [
+                    {"name": "ip", "value": "1.1.1.1"},
+                    {"name": "user_agent", "value": "Mozilla/5.0"},
+                ],
+                "actor": {
+                    "type": "user",
+                    "ref": "user:123",
+                    "name": "User 123",
+                    "extra": [{"name": "role", "value": "admin"}],
+                },
+                "resource": {
+                    "ref": "core",
+                    "type": "module",
+                    "name": "Core Module",
+                    "extra": [{"name": "creator", "value": "xyz"}],
+                },
+                "details": [
+                    {"name": "some_key", "value": "some_value"},
+                    {"name": "other_key", "value": "other_value"},
+                ],
+                "tags": [
+                    {
+                        "type": "simple_tag",
+                    },
+                    {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
+                ],
+            }
+        ),
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+    await log.upload_attachment(
+        log_rw_client,
+        name="attachment.txt",
+        mime_type="text/plain",
+        type="attachment_type",
+        description="attachment_description",
+    )
+
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+    )
+    assert (
+        resp.text
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,user:123,user,User 123,core,module,Core Module, | rich_tag:1,simple_tag | rich_tag, | Rich tag,attachment.txt,attachment_type,text/plain,attachment_description,customer:1\r\n"
+    )

@@ -1,12 +1,15 @@
+import csv
 import re
 from datetime import datetime
 from functools import partial
-from typing import Any
+from io import StringIO
+from typing import Any, AsyncGenerator, AsyncIterator, Iterator
 
 from bson import ObjectId
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException
+from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
@@ -271,6 +274,70 @@ async def get_logs(
     logs = [Log(**result) for result in results]
 
     return logs, next_cursor
+
+
+def _custom_fields_to_dict(custom_fields: list[CustomField], prefix: str) -> dict:
+    return {f"{prefix}.{field.name}": field.value for field in custom_fields}
+
+
+def _log_to_dict(log: Log) -> dict[str, Any]:
+    data = dict()
+    data["log_id"] = str(log.id)
+    data["action_category"] = log.action.category
+    data["action_type"] = log.action.type
+    data.update(_custom_fields_to_dict(log.source, "source"))
+    if log.actor:
+        data["actor_type"] = log.actor.type
+        data["actor_name"] = log.actor.name
+        data["actor_ref"] = log.actor.ref
+        data.update(_custom_fields_to_dict(log.actor.extra, "actor"))
+    if log.resource:
+        data["resource_type"] = log.resource.type
+        data["resource_name"] = log.resource.name
+        data["resource_ref"] = log.resource.ref
+        data.update(_custom_fields_to_dict(log.resource.extra, "resource"))
+    data.update(_custom_fields_to_dict(log.details, "details"))
+    data["tag_refs"] = " | ".join(tag.ref or "" for tag in log.tags)
+    data["tag_types"] = " | ".join(tag.type for tag in log.tags)
+    data["tag_names"] = " | ".join(tag.name or "" for tag in log.tags)
+    data["attachment_names"] = " | ".join(
+        attachment.name for attachment in log.attachments
+    )
+    data["attachment_descriptions"] = " | ".join(
+        attachment.description or "" for attachment in log.attachments
+    )
+    data["attachment_types"] = " | ".join(
+        attachment.type for attachment in log.attachments
+    )
+    data["attachment_mime_types"] = " | ".join(
+        attachment.mime_type for attachment in log.attachments
+    )
+    data["node_path"] = " > ".join(node.ref for node in log.node_path)
+    data["saved_at"] = serialize_datetime(log.saved_at)
+
+    return data
+
+
+async def get_logs_as_csv(
+    dbm: DatabaseManager, repo_id: str, *, fields: list[str], **kwargs
+) -> AsyncGenerator[str, None]:
+    csv_buffer = StringIO()
+    csv_writer = csv.DictWriter(csv_buffer, fieldnames=fields)
+    csv_writer.writeheader()
+    yield csv_buffer.getvalue()
+    next_cursor = None
+    while True:
+        logs, next_cursor = await get_logs(
+            dbm, repo_id, pagination_cursor=next_cursor, **kwargs
+        )
+        csv_buffer = StringIO()
+        csv_writer = csv.DictWriter(
+            csv_buffer, fieldnames=fields, extrasaction="ignore"
+        )
+        csv_writer.writerows(map(_log_to_dict, logs))
+        yield csv_buffer.getvalue()
+        if not next_cursor:
+            break
 
 
 async def _get_consolidated_data_aggregated_field(

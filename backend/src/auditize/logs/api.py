@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Path, Response, UploadFile
+from fastapi.responses import StreamingResponse
 
 from auditize.auth.authorizer import (
     AuthorizedOnLogsRead,
@@ -30,6 +31,29 @@ from auditize.logs.models import Log
 
 router = APIRouter(
     responses=error_responses(401, 403, 404),
+)
+
+_DEFAULT_LOG_CSV_FIELDS = ",".join(
+    (
+        "log_id",
+        "saved_at",
+        "action_type",
+        "action_category",
+        "actor_ref",
+        "actor_type",
+        "actor_name",
+        "resource_ref",
+        "resource_type",
+        "resource_name",
+        "tag_refs",
+        "tag_types",
+        "tag_names",
+        "attachment_names",
+        "attachment_types",
+        "attachment_mime_types",
+        "attachment_descriptions",
+        "node_path",
+    )
 )
 
 
@@ -421,6 +445,51 @@ async def add_attachment(
         type=type,
         mime_type=mime_type or file.content_type or "application/octet-stream",
         data=data,
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/csv",
+    summary="Get logs as CSV",
+    operation_id="get_logs_csv",
+    tags=["logs"],
+)
+async def get_logs_as_csv(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: AuthorizedOnLogsRead(),
+    repo_id: str,
+    search_params: Annotated[LogSearchParams, Depends()],
+    fields: str = _DEFAULT_LOG_CSV_FIELDS,
+) -> StreamingResponse:
+    return StreamingResponse(
+        service.get_logs_as_csv(
+            dbm,
+            repo_id,
+            fields=fields.split(","),
+            authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
+            action_type=search_params.action_type,
+            action_category=search_params.action_category,
+            source=search_params.source,
+            actor_type=search_params.actor_type,
+            actor_name=search_params.actor_name,
+            actor_ref=search_params.actor_ref,
+            actor_extra=search_params.actor_extra,
+            resource_type=search_params.resource_type,
+            resource_name=search_params.resource_name,
+            resource_ref=search_params.resource_ref,
+            resource_extra=search_params.resource_extra,
+            details=search_params.details,
+            tag_type=search_params.tag_type,
+            tag_name=search_params.tag_name,
+            tag_ref=search_params.tag_ref,
+            attachment_name=search_params.attachment_name,
+            attachment_description=search_params.attachment_description,
+            attachment_type=search_params.attachment_type,
+            attachment_mime_type=search_params.attachment_mime_type,
+            node_ref=search_params.node_ref,
+            since=search_params.since,
+            until=search_params.until,
+        )
     )
 
 
