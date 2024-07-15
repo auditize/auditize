@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Path, Response, UploadFile
+from fastapi import APIRouter, Depends, Form, Path, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 
 from auditize.auth.authorizer import (
@@ -454,6 +454,37 @@ class _CsvResponse(Response):
     media_type = "text/csv"
 
 
+_FIELDS_DESCRIPTION = """
+Comma-separated list of fields to include in the CSV output. The available fields are:
+- `log_id`
+- `saved_at`
+- `action_type`
+- `action_category`
+- `source.*`
+- `actor_ref`
+- `actor_type`
+- `actor_name`
+- `actor.*`
+- `resource_ref`
+- `resource_type`
+- `resource_name`
+- `resource.*`
+- `details.*`
+- `tag_ref`
+- `tag_type`
+- `tag_name`
+- `attachment_name`
+- `attachment_type`
+- `attachment_mime_type`
+- `attachment_description`
+- `node_path:ref`
+- `node_path:name`
+
+The `*` stands for the name of a custom field. For example, `actor.role` will include a `role` custom field of the actor.
+
+"""
+
+
 @router.get(
     "/repos/{repo_id}/logs/csv",
     summary="Get logs as CSV",
@@ -466,7 +497,9 @@ async def get_logs_as_csv(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     search_params: Annotated[LogSearchParams, Depends()],
-    fields: str = _DEFAULT_LOG_CSV_FIELDS,
+    fields: Annotated[
+        str, Query(description=_FIELDS_DESCRIPTION)
+    ] = _DEFAULT_LOG_CSV_FIELDS,
 ):
     # NB: since we cannot properly handle an error in a StreamingResponse,
     # we must check for the repository existence before actually calling get_logs_as_csv
