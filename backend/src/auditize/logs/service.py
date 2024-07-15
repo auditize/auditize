@@ -301,19 +301,19 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
         data["resource_ref"] = log.resource.ref
         data.update(_custom_fields_to_dict(log.resource.extra, "resource"))
     data.update(_custom_fields_to_dict(log.details, "details"))
-    data["tag_refs"] = "|".join(tag.ref or "" for tag in log.tags)
-    data["tag_types"] = "|".join(tag.type for tag in log.tags)
-    data["tag_names"] = "|".join(tag.name or "" for tag in log.tags)
-    data["attachment_names"] = "|".join(
+    data["tag_ref"] = "|".join(tag.ref or "" for tag in log.tags)
+    data["tag_type"] = "|".join(tag.type for tag in log.tags)
+    data["tag_name"] = "|".join(tag.name or "" for tag in log.tags)
+    data["attachment_name"] = "|".join(
         attachment.name for attachment in log.attachments
     )
-    data["attachment_descriptions"] = "|".join(
+    data["attachment_description"] = "|".join(
         attachment.description or "" for attachment in log.attachments
     )
-    data["attachment_types"] = "|".join(
+    data["attachment_type"] = "|".join(
         attachment.type for attachment in log.attachments
     )
-    data["attachment_mime_types"] = "|".join(
+    data["attachment_mime_type"] = "|".join(
         attachment.mime_type for attachment in log.attachments
     )
     data["node_path:ref"] = " > ".join(node.ref for node in log.node_path)
