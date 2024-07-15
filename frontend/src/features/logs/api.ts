@@ -125,7 +125,7 @@ function prepareCustomFieldsForApi(
 ): object {
   return Object.fromEntries(
     Array.from(fields.entries()).map(([name, value]) => [
-      `${prefix}[${name}]`,
+      `${prefix}.${name}`,
       value,
     ]),
   );
@@ -195,7 +195,7 @@ export async function getLogs(
         repoId: undefined, // the repoId is in the URL
         ...(cursor && { cursor }),
       },
-      { exclude: [/.*\[.*/] },
+      { exclude: [/.*\..*/] }, // exclude custom fields (i.e "actor.role")
     ),
     { disableParamsSnakecase: true },
   );

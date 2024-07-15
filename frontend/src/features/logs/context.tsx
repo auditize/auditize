@@ -46,16 +46,15 @@ export function StateLogContextProvider({
   );
 }
 
-function extractCustomFieldsFromSearchParams(
+function extractCustomFieldsFromURLSearchParams(
   params: URLSearchParams,
   prefix: string,
 ): Map<string, string> {
-  const regexp = new RegExp(`^${prefix}\\[(.+)\\]$`);
   const customFields = new Map<string, string>();
   for (const [name, value] of params.entries()) {
-    const match = name.match(regexp);
-    if (match) {
-      customFields.set(match[1], value);
+    const parts = name.split(".");
+    if (parts.length === 2 && parts[0] === prefix) {
+      customFields.set(parts[1], value);
     }
   }
   return customFields;
@@ -72,10 +71,10 @@ function searchParamsToFilter(params: URLSearchParams): LogSearchParams {
     ...obj,
     since: obj.since ? deserializeDate(obj.since) : null,
     until: obj.until ? deserializeDate(obj.until) : null,
-    actorExtra: extractCustomFieldsFromSearchParams(params, "actor"),
-    resourceExtra: extractCustomFieldsFromSearchParams(params, "resource"),
-    source: extractCustomFieldsFromSearchParams(params, "source"),
-    details: extractCustomFieldsFromSearchParams(params, "details"),
+    actorExtra: extractCustomFieldsFromURLSearchParams(params, "actor"),
+    resourceExtra: extractCustomFieldsFromURLSearchParams(params, "resource"),
+    source: extractCustomFieldsFromURLSearchParams(params, "source"),
+    details: extractCustomFieldsFromURLSearchParams(params, "details"),
   } as LogSearchParams;
 }
 
