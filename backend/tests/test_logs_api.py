@@ -2105,8 +2105,8 @@ async def test_get_logs_as_csv_minimal_fields(
     )
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,,,,,,,,,,,,,,customer:1\r\n"
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path:ref,node_path:name\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,,,,,,,,,,,,,,customer:1,Customer 1\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
@@ -2154,8 +2154,8 @@ async def test_get_logs_as_csv_all_fields(
     )
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,user:123,user,User 123,core,module,Core Module, | rich_tag:1,simple_tag | rich_tag, | Rich tag,attachment.txt,attachment_type,text/plain,attachment_description,customer:1\r\n"
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path:ref,node_path:name\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,user:123,user,User 123,core,module,Core Module,|rich_tag:1,simple_tag|rich_tag,|Rich tag,attachment.txt,attachment_type,text/plain,attachment_description,customer:1,Customer 1\r\n"
     )
 
 
@@ -2204,8 +2204,8 @@ async def test_get_logs_as_csv_with_filter(
     )
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
-        f"{log1.id},2024-01-01T00:00:00Z,action_type_1,action_category_1,,,,,,,,,,,,,,customer:1\r\n"
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path:ref,node_path:name\r\n"
+        f"{log1.id},2024-01-01T00:00:00Z,action_type_1,action_category_1,,,,,,,,,,,,,,customer:1,Customer 1\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 

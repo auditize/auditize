@@ -301,22 +301,23 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
         data["resource_ref"] = log.resource.ref
         data.update(_custom_fields_to_dict(log.resource.extra, "resource"))
     data.update(_custom_fields_to_dict(log.details, "details"))
-    data["tag_refs"] = " | ".join(tag.ref or "" for tag in log.tags)
-    data["tag_types"] = " | ".join(tag.type for tag in log.tags)
-    data["tag_names"] = " | ".join(tag.name or "" for tag in log.tags)
-    data["attachment_names"] = " | ".join(
+    data["tag_refs"] = "|".join(tag.ref or "" for tag in log.tags)
+    data["tag_types"] = "|".join(tag.type for tag in log.tags)
+    data["tag_names"] = "|".join(tag.name or "" for tag in log.tags)
+    data["attachment_names"] = "|".join(
         attachment.name for attachment in log.attachments
     )
-    data["attachment_descriptions"] = " | ".join(
+    data["attachment_descriptions"] = "|".join(
         attachment.description or "" for attachment in log.attachments
     )
-    data["attachment_types"] = " | ".join(
+    data["attachment_types"] = "|".join(
         attachment.type for attachment in log.attachments
     )
-    data["attachment_mime_types"] = " | ".join(
+    data["attachment_mime_types"] = "|".join(
         attachment.mime_type for attachment in log.attachments
     )
-    data["node_path"] = " > ".join(node.ref for node in log.node_path)
+    data["node_path:ref"] = " > ".join(node.ref for node in log.node_path)
+    data["node_path:name"] = " > ".join(node.name for node in log.node_path)
     data["saved_at"] = serialize_datetime(log.saved_at)
 
     return data

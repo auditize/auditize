@@ -53,7 +53,8 @@ _DEFAULT_LOG_CSV_FIELDS = ",".join(
         "attachment_types",
         "attachment_mime_types",
         "attachment_descriptions",
-        "node_path",
+        "node_path:ref",
+        "node_path:name",
     )
 )
 
