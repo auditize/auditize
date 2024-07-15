@@ -769,8 +769,8 @@ async def test_get_logs_filter_actor_extra(
             ),
         ],
         search_params={
-            "actor[field_1]": "foo",
-            "actor[field_2]": "bar",
+            "actor.field_1": "foo",
+            "actor.field_2": "bar",
         },
     )
 
@@ -839,8 +839,8 @@ async def test_get_logs_filter_resource_extra(
             ),
         ],
         search_params={
-            "resource[field_1]": "foo",
-            "resource[field_2]": "bar",
+            "resource.field_1": "foo",
+            "resource.field_2": "bar",
         },
     )
 
@@ -870,8 +870,8 @@ async def test_get_logs_filter_details(
             ),
         ],
         search_params={
-            "details[field_1]": "foo",
-            "details[field_2]": "bar",
+            "details.field_1": "foo",
+            "details.field_2": "bar",
         },
     )
 
@@ -901,8 +901,8 @@ async def test_get_logs_filter_source(
             ),
         ],
         search_params={
-            "source[field_1]": "foo",
-            "source[field_2]": "bar",
+            "source.field_1": "foo",
+            "source.field_2": "bar",
         },
     )
 

@@ -380,11 +380,6 @@ class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItemData]):
 
 
 class LogSearchParams(BaseModel):
-    _DETAILS_REGEXP = re.compile(r"^details\[(.+)]$")
-    _SOURCE_REGEXP = re.compile(r"^source\[(.+)]$")
-    _ACTOR_EXTRA_REGEXP = re.compile(r"^actor\[(.+)]$")
-    _RESOURCE_EXTRA_REGEXP = re.compile(r"^resource\[(.+)]$")
-
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     request: Request
@@ -411,25 +406,26 @@ class LogSearchParams(BaseModel):
         default=None
     )
 
-    def _get_custom_field_search_params(self, regexp: Pattern) -> dict[str, str]:
+    def _get_custom_field_search_params(self, prefix: str) -> dict[str, str]:
         params = {}
         for param_name, param_value in self.request.query_params.items():
-            if match := regexp.match(param_name):
-                params[match.group(1)] = param_value
+            parts = param_name.split(".")
+            if len(parts) == 2 and parts[0] == prefix:
+                params[parts[1]] = param_value
         return params
 
     @property
     def details(self) -> dict[str, str]:
-        return self._get_custom_field_search_params(self._DETAILS_REGEXP)
+        return self._get_custom_field_search_params("details")
 
     @property
     def source(self) -> dict[str, str]:
-        return self._get_custom_field_search_params(self._SOURCE_REGEXP)
+        return self._get_custom_field_search_params("source")
 
     @property
     def actor_extra(self) -> dict[str, str]:
-        return self._get_custom_field_search_params(self._ACTOR_EXTRA_REGEXP)
+        return self._get_custom_field_search_params("actor")
 
     @property
     def resource_extra(self) -> dict[str, str]:
-        return self._get_custom_field_search_params(self._RESOURCE_EXTRA_REGEXP)
+        return self._get_custom_field_search_params("resource")
