@@ -448,11 +448,16 @@ async def add_attachment(
     )
 
 
+class _CsvResponse(Response):
+    media_type = "text/csv"
+
+
 @router.get(
     "/repos/{repo_id}/logs/csv",
     summary="Get logs as CSV",
     operation_id="get_logs_csv",
     tags=["logs"],
+    response_class=_CsvResponse,
 )
 async def get_logs_as_csv(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -460,7 +465,7 @@ async def get_logs_as_csv(
     repo_id: str,
     search_params: Annotated[LogSearchParams, Depends()],
     fields: str = _DEFAULT_LOG_CSV_FIELDS,
-) -> StreamingResponse:
+):
     return StreamingResponse(
         service.get_logs_as_csv(
             dbm,
@@ -489,7 +494,8 @@ async def get_logs_as_csv(
             node_ref=search_params.node_ref,
             since=search_params.since,
             until=search_params.until,
-        )
+        ),
+        media_type="text/csv",
     )
 
 

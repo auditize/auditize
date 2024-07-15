@@ -2108,6 +2108,7 @@ async def test_get_logs_as_csv_minimal_fields(
         == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
         f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,,,,,,,,,,,,,,customer:1\r\n"
     )
+    assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
 
 async def test_get_logs_as_csv_all_fields(
