@@ -461,14 +461,16 @@ async def get_logs_as_csv(
     ),
 ):
     # NB: since we cannot properly handle an error in a StreamingResponse,
-    # we must check for the repository existence before actually calling get_logs_as_csv
+    # we perform as much validation as possible before calling get_logs_as_csv
     await get_log_db_for_reading(dbm, repo_id)
+    fields = fields.split(",")  # convert fields string to a list
+    service.validate_csv_fields(fields)
 
     return StreamingResponse(
         service.get_logs_as_csv(
             dbm,
             repo_id,
-            fields=fields.split(","),
+            fields=fields,
             authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
             action_type=search_params.action_type,
             action_category=search_params.action_category,

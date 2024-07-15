@@ -9,7 +9,7 @@ from typing import Any, AsyncGenerator
 from bson import ObjectId
 
 from auditize.database import DatabaseManager
-from auditize.exceptions import UnknownModelException
+from auditize.exceptions import UnknownModelException, ValidationError
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
@@ -343,6 +343,18 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
     data["saved_at"] = serialize_datetime(log.saved_at)
 
     return data
+
+
+def validate_csv_fields(fields: list[str]):
+    for field in fields:
+        if field in CSV_BUILTIN_FIELDS:
+            continue
+
+        parts = field.split(".")
+        if len(parts) == 2 and parts[0] in ("source", "actor", "resource", "details"):
+            continue
+
+        raise ValidationError(f"Invalid field name: {field!r}")
 
 
 async def get_logs_as_csv(

@@ -2250,6 +2250,32 @@ async def test_get_logs_as_csv_custom_fields(
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
 
+async def test_get_logs_as_csv_unknown_field(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    # Requesting an unknown custom field should not raise an error since they are lazy created
+    await log_rw_client.assert_get_bad_request(
+        f"/repos/{repo.id}/logs/csv",
+        params={
+            "fields": "unknown_field",
+        },
+    )
+
+
+async def test_get_logs_as_csv_unknown_custom_field(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    # Requesting an unknown custom field should not raise an error since they are lazy created
+    await log_rw_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/csv",
+        params={
+            "fields": "source.unknown_field",
+        },
+    )
+
+
 async def test_get_logs_as_csv_unknown_repo(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
