@@ -2118,25 +2118,18 @@ async def test_get_logs_as_csv_all_fields(
         log_rw_client,
         PreparedLog.prepare_data(
             {
-                "source": [
-                    {"name": "ip", "value": "1.1.1.1"},
-                    {"name": "user_agent", "value": "Mozilla/5.0"},
-                ],
                 "actor": {
                     "type": "user",
                     "ref": "user:123",
                     "name": "User 123",
-                    "extra": [{"name": "role", "value": "admin"}],
                 },
                 "resource": {
                     "ref": "core",
                     "type": "module",
                     "name": "Core Module",
-                    "extra": [{"name": "creator", "value": "xyz"}],
                 },
                 "details": [
                     {"name": "some_key", "value": "some_value"},
-                    {"name": "other_key", "value": "other_value"},
                 ],
                 "tags": [
                     {
@@ -2156,7 +2149,7 @@ async def test_get_logs_as_csv_all_fields(
         description="attachment_description",
     )
 
-    resp = await log_rw_client.assert_get(
+    resp = await log_rw_client.assert_get_ok(
         f"/repos/{repo.id}/logs/csv",
     )
     assert (
@@ -2164,3 +2157,106 @@ async def test_get_logs_as_csv_all_fields(
         == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
         f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,user:123,user,User 123,core,module,Core Module, | rich_tag:1,simple_tag | rich_tag, | Rich tag,attachment.txt,attachment_type,text/plain,attachment_description,customer:1\r\n"
     )
+
+
+async def test_get_logs_as_csv_with_fields_param(
+    log_read_client: HttpTestHelper,
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    await repo.create_log(
+        log_write_client,
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+
+    resp = await log_read_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/csv",
+        params={"fields": "saved_at,action_type,action_category"},
+    )
+    assert (
+        resp.text == "saved_at,action_type,action_category\r\n"
+        f"2024-01-01T00:00:00Z,user_login,authentication\r\n"
+    )
+
+
+async def test_get_logs_as_csv_with_filter(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log1 = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {"action": {"category": "action_category_1", "type": "action_type_1"}}
+        ),
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+    log2 = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {"action": {"category": "action_category_2", "type": "action_type_2"}}
+        ),
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+        params={"action_type": "action_type_1"},
+    )
+    assert (
+        resp.text
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_refs,tag_types,tag_names,attachment_names,attachment_types,attachment_mime_types,attachment_descriptions,node_path\r\n"
+        f"{log1.id},2024-01-01T00:00:00Z,action_type_1,action_category_1,,,,,,,,,,,,,,customer:1\r\n"
+    )
+    assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
+
+
+async def test_get_logs_as_csv_custom_fields(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {
+                "source": [{"name": "source_field", "value": "source_value"}],
+                "actor": {
+                    "ref": "actor_ref",
+                    "type": "actor",
+                    "name": "Actor",
+                    "extra": [{"name": "actor_field", "value": "actor_value"}],
+                },
+                "resource": {
+                    "ref": "resource_ref",
+                    "type": "resource",
+                    "name": "Resource",
+                    "extra": [{"name": "resource_field", "value": "resource_value"}],
+                },
+                "details": [{"name": "detail_field", "value": "detail_value"}],
+            }
+        ),
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+        params={
+            "fields": "log_id,source.source_field,actor.actor_field,resource.resource_field,details.detail_field"
+        },
+    )
+    assert (
+        resp.text
+        == "log_id,source.source_field,actor.actor_field,resource.resource_field,details.detail_field\r\n"
+        f"{log.id},source_value,actor_value,resource_value,detail_value\r\n"
+    )
+    assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
+
+
+async def test_get_logs_as_csv_unknown_repo(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await log_read_client.assert_get_not_found(f"/repos/{UNKNOWN_OBJECT_ID}/logs/csv")
+
+
+async def test_get_logs_as_csv_forbidden(
+    no_permission_client: HttpTestHelper, repo: PreparedRepo
+):
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/csv")

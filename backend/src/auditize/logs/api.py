@@ -27,6 +27,7 @@ from auditize.logs.api_models import (
     LogsReadingResponse,
     NameListResponse,
 )
+from auditize.logs.db import get_log_db_for_reading
 from auditize.logs.models import Log
 
 router = APIRouter(
@@ -466,6 +467,10 @@ async def get_logs_as_csv(
     search_params: Annotated[LogSearchParams, Depends()],
     fields: str = _DEFAULT_LOG_CSV_FIELDS,
 ):
+    # NB: since we cannot properly handle an error in a StreamingResponse,
+    # we must check for the repository existence before actually calling get_logs_as_csv
+    await get_log_db_for_reading(dbm, repo_id)
+
     return StreamingResponse(
         service.get_logs_as_csv(
             dbm,
