@@ -29,6 +29,28 @@ from auditize.logs.models import CustomField, Log, Node
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 
+CSV_BUILTIN_FIELDS = (
+    "log_id",
+    "saved_at",
+    "action_type",
+    "action_category",
+    "actor_ref",
+    "actor_type",
+    "actor_name",
+    "resource_ref",
+    "resource_type",
+    "resource_name",
+    "tag_ref",
+    "tag_type",
+    "tag_name",
+    "attachment_name",
+    "attachment_type",
+    "attachment_mime_type",
+    "attachment_description",
+    "node_path:ref",
+    "node_path:name",
+)
+
 
 async def consolidate_log_action(db: LogDatabase, action: Log.Action):
     await db.consolidate_data(
