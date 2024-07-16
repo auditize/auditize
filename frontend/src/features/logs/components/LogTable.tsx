@@ -679,7 +679,7 @@ function ColumnSelector({
   );
 }
 
-function sortFields(a: string, b: string) {
+export function sortFields(a: string, b: string) {
   const order: { [key: string]: number } = {
     date: 0,
     "source.": 1,

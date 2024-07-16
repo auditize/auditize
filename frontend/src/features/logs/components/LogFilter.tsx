@@ -40,6 +40,7 @@ import {
   logSearchParamsToURLSearchParams,
 } from "../api";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
+import { sortFields } from "./LogTable";
 import { useLogTranslator } from "./LogTranslation";
 import { NodeSelector } from "./NodeSelector";
 
@@ -1001,6 +1002,7 @@ function removeSearchParam(
 
 function columnsToCsvFields(columns: string[]): string[] {
   return columns
+    .toSorted(sortFields)
     .map((column) => {
       if (column.includes(".")) {
         // make a special case for custom fields (that contains ".") because
