@@ -783,13 +783,14 @@ function FilterSelector({
       onOptionSubmit={onFilterAdded}
       onRemove={onFilterRemoved}
     >
-      <Button
+      <ActionIcon
         onClick={() => comboboxStore.toggleDropdown()}
         loading={logFieldsLoading || logConsolidatedDataLoading}
         loaderProps={{ type: "dots" }}
+        size="input-sm"
       >
         <IconPlus />
-      </Button>
+      </ActionIcon>
     </CustomMultiSelect>
   );
 }
