@@ -1,5 +1,5 @@
 import { Stack } from "@mantine/core";
-import { useDocumentTitle } from "@mantine/hooks";
+import { useDocumentTitle, useLocalStorage } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import { buildLogSearchParams } from "../api";
@@ -10,6 +10,12 @@ import { LogLoader } from "./LogLoader";
 export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
   const { t } = useTranslation();
   const { filter, setFilter } = useLogContext();
+  const [selectedColumns, setSelectedColumns] = useLocalStorage<
+    Record<string, string[]>
+  >({
+    key: `log-columns`,
+    defaultValue: {},
+  });
   useDocumentTitle(t("log.list.documentTitle"));
 
   return (
@@ -32,6 +38,13 @@ export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
             [name]: value,
           });
         }}
+        selectedColumns={selectedColumns[filter.repoId]}
+        onSelectedColumnsChange={(repoSelectedColumns) =>
+          setSelectedColumns((selectedColumns) => ({
+            ...selectedColumns,
+            [filter.repoId]: repoSelectedColumns,
+          }))
+        }
       />
     </Stack>
   );

@@ -9,9 +9,13 @@ import { LogTable, TableFilterChangeHandler } from "./LogTable";
 export function LogLoader({
   filter,
   onTableFilterChange,
+  selectedColumns,
+  onSelectedColumnsChange,
 }: {
   filter: LogSearchParams;
   onTableFilterChange: TableFilterChangeHandler;
+  selectedColumns: string[];
+  onSelectedColumnsChange: (selectedColumns: string[]) => void;
 }) {
   const {
     isPending,
@@ -73,6 +77,8 @@ export function LogLoader({
       isLoading={isPending || isFetchingNextPage}
       footer={footer}
       onTableFilterChange={onTableFilterChange}
+      selectedColumns={selectedColumns}
+      onSelectedColumnsChange={onSelectedColumnsChange}
     />
   );
 }
