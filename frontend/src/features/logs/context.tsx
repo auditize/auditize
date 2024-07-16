@@ -7,7 +7,8 @@ import { addQueryParamToLocation } from "@/utils/router";
 import {
   buildLogSearchParams,
   LogSearchParams,
-  prepareLogFilterForApi,
+  logSearchParamsToURLSearchParams,
+  prepareLogSearchParamsForApi,
 } from "./api";
 
 type LogContextProps = {
@@ -78,19 +79,6 @@ function searchParamsToFilter(params: URLSearchParams): LogSearchParams {
   } as LogSearchParams;
 }
 
-function stripEmptyStringsFromObject(obj: any): any {
-  // Make the query string prettier by avoid query keys without values
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => (value !== "" && value !== undefined)), // prettier-ignore
-  );
-}
-
-function filterToSearchParams(filter: LogSearchParams): URLSearchParams {
-  return new URLSearchParams(
-    stripEmptyStringsFromObject(prepareLogFilterForApi(filter)),
-  );
-}
-
 const UrlLogContext = createContext<LogContextProps | null>(null);
 
 export function UrlLogContextProvider({
@@ -118,7 +106,7 @@ export function UrlLogContextProvider({
     // Do not keep the "repo auto-select redirect" in the history,
     // so the user can still go back to the previous page
     const isAutoSelectRepo = !!(!filter.repoId && newFilter.repoId);
-    setSearchParams(filterToSearchParams(newFilter), {
+    setSearchParams(logSearchParamsToURLSearchParams(newFilter), {
       replace: isAutoSelectRepo,
     });
   };

@@ -1,9 +1,11 @@
 import {
+  ActionIcon,
   Button,
   CloseButton,
   Flex,
   FocusTrap,
   Group,
+  Menu,
   Popover,
   Space,
   Stack,
@@ -11,10 +13,11 @@ import {
   useCombobox,
 } from "@mantine/core";
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
-import { IconPlus } from "@tabler/icons-react";
+import { IconDots, IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
+import snakecaseKeys from "snakecase-keys";
 
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -34,6 +37,8 @@ import {
   getAllLogResourceTypes,
   getAllLogTagTypes,
   LogSearchParams,
+  logSearchParamsToURLSearchParams,
+  prepareLogSearchParamsForApi,
 } from "../api";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogTranslator } from "./LogTranslation";
@@ -994,6 +999,37 @@ function removeSearchParam(
   throw new Error(`Unknown filter name: ${filterName}`);
 }
 
+export function ExtraLogActions({
+  searchParams,
+}: {
+  searchParams: LogSearchParams;
+}) {
+  const { t } = useTranslation();
+  const searchParamsQueryString = logSearchParamsToURLSearchParams(
+    searchParams,
+    { includeRepoId: false, snakecase: true },
+  ).toString();
+
+  return (
+    <Menu>
+      <Menu.Target>
+        <ActionIcon size="input-sm">
+          <IconDots />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Label>{t("log.csv.csv")}</Menu.Label>
+        <Menu.Item
+          component="a"
+          href={`/api/repos/${searchParams.repoId}/logs/csv?${searchParamsQueryString}`}
+        >
+          {t("log.csv.csvExportDefault")}
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  );
+}
+
 export function LogFilter({
   params,
   onChange,
@@ -1130,6 +1166,7 @@ export function LogFilter({
         >
           {t("log.list.filter.clear")}
         </Button>
+        <ExtraLogActions searchParams={params} />
       </Group>
     </Flex>
   );
