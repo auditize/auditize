@@ -1,5 +1,5 @@
 import { Stack } from "@mantine/core";
-import { useDocumentTitle } from "@mantine/hooks";
+import { useDocumentTitle, useLocalStorage } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import { buildLogSearchParams } from "../api";
@@ -7,9 +7,18 @@ import { useLogContext } from "../context";
 import { LogFilter } from "./LogFilter";
 import { LogLoader } from "./LogLoader";
 
+const DEFAULT_COLUMNS = ["date", "actor", "action", "resource", "node", "tag"];
+
 export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
   const { t } = useTranslation();
   const { filter, setFilter } = useLogContext();
+  const [selectedColumns, setSelectedColumns] = useLocalStorage<
+    Record<string, string[]>
+  >({
+    key: `log-columns`,
+    defaultValue: {},
+  });
+  const repoSelectedColumns = selectedColumns[filter.repoId] ?? DEFAULT_COLUMNS;
   useDocumentTitle(t("log.list.documentTitle"));
 
   return (
@@ -19,6 +28,7 @@ export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
         onChange={(newFilter) => {
           setFilter(newFilter);
         }}
+        selectedColumns={repoSelectedColumns}
         withRepoFilter={withRepoFilter}
       />
       <LogLoader
@@ -32,6 +42,15 @@ export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
             [name]: value,
           });
         }}
+        selectedColumns={repoSelectedColumns}
+        onSelectedColumnsChange={(repoSelectedColumns) =>
+          setSelectedColumns((selectedColumns) => ({
+            ...selectedColumns,
+            [filter.repoId]: repoSelectedColumns
+              ? repoSelectedColumns
+              : DEFAULT_COLUMNS,
+          }))
+        }
       />
     </Stack>
   );

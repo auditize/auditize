@@ -7,16 +7,13 @@ import {
   Text,
   useCombobox,
 } from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
 import { IconColumns3 } from "@tabler/icons-react";
 import i18n from "i18next";
 import { DataTable, DataTableColumn } from "mantine-datatable";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { humanizeDate } from "@/utils/date";
-import { addQueryParamToLocation } from "@/utils/router";
 
 import { CustomField, Log } from "../api";
 import { useLogContext } from "../context";
@@ -682,7 +679,7 @@ function ColumnSelector({
   );
 }
 
-function sortFields(a: string, b: string) {
+export function sortFields(a: string, b: string) {
   const order: { [key: string]: number } = {
     date: 0,
     "source.": 1,
@@ -1057,45 +1054,23 @@ export function LogTable({
   isLoading,
   footer,
   onTableFilterChange,
+  selectedColumns,
+  onSelectedColumnsChange,
 }: {
   repoId: string;
   logs?: Log[];
   isLoading: boolean;
   footer: React.ReactNode;
   onTableFilterChange: TableFilterChangeHandler;
+  selectedColumns: string[];
+  // NB: null means default columns
+  onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
-  const defaultColumns = ["date", "actor", "action", "resource", "node", "tag"];
   const { setDisplayedLogId } = useLogContext();
-  const [selectedColumns, setSelectedColumns] = useLocalStorage<
-    Record<string, string[]>
-  >({
-    key: `log-columns`,
-    defaultValue: {},
-  });
   const logTranslator = useLogTranslator(repoId);
-  const addColumn = (name: string) => {
-    setSelectedColumns((selectedColumns) => ({
-      ...selectedColumns,
-      [repoId]: [...(selectedColumns[repoId] || defaultColumns), name],
-    }));
-  };
-  const removeColumn = (name: string) => {
-    setSelectedColumns((selectedColumns) => ({
-      ...selectedColumns,
-      [repoId]: [...(selectedColumns[repoId] || defaultColumns)].filter(
-        (n) => n !== name,
-      ),
-    }));
-  };
-  const resetColumns = () => {
-    setSelectedColumns((selectedColumns) => ({
-      ...selectedColumns,
-      [repoId]: defaultColumns,
-    }));
-  };
 
   let columns = [
-    ...(selectedColumns[repoId] || defaultColumns)
+    ...selectedColumns
       .toSorted(sortFields)
       .map((column) =>
         fieldToColumn(column, repoId, onTableFilterChange, logTranslator),
@@ -1108,10 +1083,14 @@ export function LogTable({
         <span style={{ fontWeight: "normal" }}>
           <ColumnSelector
             repoId={repoId}
-            selected={selectedColumns[repoId] || defaultColumns}
-            onColumnAdded={addColumn}
-            onColumnRemoved={removeColumn}
-            onColumnReset={resetColumns}
+            selected={selectedColumns}
+            onColumnAdded={(name: string) =>
+              onSelectedColumnsChange([...selectedColumns, name])
+            }
+            onColumnRemoved={(name: string) =>
+              onSelectedColumnsChange(selectedColumns.filter((n) => n !== name))
+            }
+            onColumnReset={() => onSelectedColumnsChange(null)}
           />
         </span>
       ),

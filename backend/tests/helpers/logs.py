@@ -34,7 +34,7 @@ class PreparedLog:
                 "type": "user_login",
                 "category": "authentication",
             },
-            "node_path": [{"ref": "1", "name": "Customer 1"}],
+            "node_path": [{"ref": "customer:1", "name": "Customer 1"}],
             **extra,
         }
 

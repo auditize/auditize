@@ -125,15 +125,18 @@ function prepareCustomFieldsForApi(
 ): object {
   return Object.fromEntries(
     Array.from(fields.entries()).map(([name, value]) => [
-      `${prefix}[${name}]`,
+      `${prefix}.${name}`,
       value,
     ]),
   );
 }
 
-export function prepareLogFilterForApi(filter: LogSearchParams): object {
+export function prepareLogSearchParamsForApi(
+  filter: LogSearchParams,
+  { includeRepoId } = { includeRepoId: true },
+): object {
   const prepared = {
-    repoId: filter.repoId,
+    ...(includeRepoId ? { repoId: filter.repoId } : {}),
 
     // Dates
     since: filter.since ? serializeDate(filter.since) : undefined,
@@ -181,6 +184,32 @@ export function prepareLogFilterForApi(filter: LogSearchParams): object {
   );
 }
 
+function stripEmptyStringsFromObject(obj: any): any {
+  // Make the query string prettier by avoid query keys without values
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, value]) => (value !== "" && value !== undefined)), // prettier-ignore
+  );
+}
+
+export function logSearchParamsToURLSearchParams(
+  params: LogSearchParams,
+  {
+    includeRepoId = true,
+    snakecase = false,
+  }: {
+    includeRepoId?: boolean;
+    snakecase?: boolean;
+  } = {},
+): URLSearchParams {
+  let prepared = stripEmptyStringsFromObject(
+    prepareLogSearchParamsForApi(params, { includeRepoId }),
+  );
+  if (snakecase) {
+    prepared = snakecaseKeys(prepared, { exclude: [/.*\..*/] }); // exclude custom fields (i.e "actor.role"));
+  }
+  return new URLSearchParams(prepared);
+}
+
 export async function getLogs(
   cursor: string | null,
   filter?: LogSearchParams,
@@ -191,11 +220,12 @@ export async function getLogs(
     snakecaseKeys(
       {
         limit,
-        ...(filter ? prepareLogFilterForApi(filter) : {}),
-        repoId: undefined, // the repoId is in the URL
+        ...(filter
+          ? prepareLogSearchParamsForApi(filter, { includeRepoId: false })
+          : {}),
         ...(cursor && { cursor }),
       },
-      { exclude: [/.*\[.*/] },
+      { exclude: [/.*\..*/] }, // exclude custom fields (i.e "actor.role")
     ),
     { disableParamsSnakecase: true },
   );

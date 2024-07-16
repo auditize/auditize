@@ -223,6 +223,11 @@ export default {
       type: "Type",
       ref: "Reference",
     },
+    csv: {
+      csv: "CSV",
+      csvExportDefault: "Export as CSV (all builtin columns)",
+      csvExportCurrent: "Export as CSV (selected columns)",
+    },
   },
   permission: {
     tab: {

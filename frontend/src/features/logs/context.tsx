@@ -7,7 +7,8 @@ import { addQueryParamToLocation } from "@/utils/router";
 import {
   buildLogSearchParams,
   LogSearchParams,
-  prepareLogFilterForApi,
+  logSearchParamsToURLSearchParams,
+  prepareLogSearchParamsForApi,
 } from "./api";
 
 type LogContextProps = {
@@ -46,16 +47,15 @@ export function StateLogContextProvider({
   );
 }
 
-function extractCustomFieldsFromSearchParams(
+function extractCustomFieldsFromURLSearchParams(
   params: URLSearchParams,
   prefix: string,
 ): Map<string, string> {
-  const regexp = new RegExp(`^${prefix}\\[(.+)\\]$`);
   const customFields = new Map<string, string>();
   for (const [name, value] of params.entries()) {
-    const match = name.match(regexp);
-    if (match) {
-      customFields.set(match[1], value);
+    const parts = name.split(".");
+    if (parts.length === 2 && parts[0] === prefix) {
+      customFields.set(parts[1], value);
     }
   }
   return customFields;
@@ -72,24 +72,11 @@ function searchParamsToFilter(params: URLSearchParams): LogSearchParams {
     ...obj,
     since: obj.since ? deserializeDate(obj.since) : null,
     until: obj.until ? deserializeDate(obj.until) : null,
-    actorExtra: extractCustomFieldsFromSearchParams(params, "actor"),
-    resourceExtra: extractCustomFieldsFromSearchParams(params, "resource"),
-    source: extractCustomFieldsFromSearchParams(params, "source"),
-    details: extractCustomFieldsFromSearchParams(params, "details"),
+    actorExtra: extractCustomFieldsFromURLSearchParams(params, "actor"),
+    resourceExtra: extractCustomFieldsFromURLSearchParams(params, "resource"),
+    source: extractCustomFieldsFromURLSearchParams(params, "source"),
+    details: extractCustomFieldsFromURLSearchParams(params, "details"),
   } as LogSearchParams;
-}
-
-function stripEmptyStringsFromObject(obj: any): any {
-  // Make the query string prettier by avoid query keys without values
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => (value !== "" && value !== undefined)), // prettier-ignore
-  );
-}
-
-function filterToSearchParams(filter: LogSearchParams): URLSearchParams {
-  return new URLSearchParams(
-    stripEmptyStringsFromObject(prepareLogFilterForApi(filter)),
-  );
 }
 
 const UrlLogContext = createContext<LogContextProps | null>(null);
@@ -119,7 +106,7 @@ export function UrlLogContextProvider({
     // Do not keep the "repo auto-select redirect" in the history,
     // so the user can still go back to the previous page
     const isAutoSelectRepo = !!(!filter.repoId && newFilter.repoId);
-    setSearchParams(filterToSearchParams(newFilter), {
+    setSearchParams(logSearchParamsToURLSearchParams(newFilter), {
       replace: isAutoSelectRepo,
     });
   };

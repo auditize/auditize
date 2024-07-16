@@ -6,6 +6,7 @@ from threading import Lock
 from auditize.exceptions import ConfigError
 
 _DEFAULT_ATTACHMENT_MAX_SIZE = 1024 * 1024 * 5  # 5MB
+_DEFAULT_CSV_MAX_ROWS = 10_000
 
 
 @dataclasses.dataclass
@@ -15,6 +16,7 @@ class Config:
     user_session_token_lifetime: int
     access_token_lifetime: int
     attachment_max_size: int
+    csv_max_rows: int
     mongodb_uri: str
     smtp_server: str
     smtp_port: int
@@ -83,6 +85,9 @@ class Config:
                     "AUDITIZE_ATTACHMENT_MAX_SIZE",
                     default=_DEFAULT_ATTACHMENT_MAX_SIZE,
                     cast=int,
+                ),
+                csv_max_rows=optional(
+                    "AUDITIZE_CSV_MAX_ROWS", default=_DEFAULT_CSV_MAX_ROWS, cast=int
                 ),
                 mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),

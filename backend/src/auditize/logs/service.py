@@ -1,12 +1,17 @@
+import csv
 import re
 from datetime import datetime
 from functools import partial
-from typing import Any
+from io import StringIO
+from itertools import count
+from typing import Any, AsyncGenerator
 
 from bson import ObjectId
 
+from auditize.config import get_config
 from auditize.database import DatabaseManager
-from auditize.exceptions import UnknownModelException
+from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
@@ -24,6 +29,28 @@ from auditize.logs.models import CustomField, Log, Node
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
+
+CSV_BUILTIN_FIELDS = (
+    "log_id",
+    "saved_at",
+    "action_type",
+    "action_category",
+    "actor_ref",
+    "actor_type",
+    "actor_name",
+    "resource_ref",
+    "resource_type",
+    "resource_name",
+    "tag_ref",
+    "tag_type",
+    "tag_name",
+    "attachment_name",
+    "attachment_type",
+    "attachment_mime_type",
+    "attachment_description",
+    "node_path:ref",
+    "node_path:name",
+)
 
 
 async def consolidate_log_action(db: LogDatabase, action: Log.Action):
@@ -176,7 +203,7 @@ def _custom_field_search_filter(params: dict[str, str]) -> dict:
 
 async def get_logs(
     dbm: DatabaseManager,
-    repo_id: str,
+    repo: str | LogDatabase,
     *,
     authorized_nodes: set[str] = None,
     action_type: str = None,
@@ -204,7 +231,10 @@ async def get_logs(
     limit: int = 10,
     pagination_cursor: str = None,
 ) -> tuple[list[Log], str | None]:
-    db = await get_log_db_for_reading(dbm, repo_id)
+    if isinstance(repo, LogDatabase):
+        db = repo
+    else:
+        db = await get_log_db_for_reading(dbm, repo)
 
     criteria: list[dict[str, Any]] = []
     if authorized_nodes:
@@ -271,6 +301,89 @@ async def get_logs(
     logs = [Log(**result) for result in results]
 
     return logs, next_cursor
+
+
+def _custom_fields_to_dict(custom_fields: list[CustomField], prefix: str) -> dict:
+    return {f"{prefix}.{field.name}": field.value for field in custom_fields}
+
+
+def _log_to_dict(log: Log) -> dict[str, Any]:
+    data = dict()
+    data["log_id"] = str(log.id)
+    data["action_category"] = log.action.category
+    data["action_type"] = log.action.type
+    data.update(_custom_fields_to_dict(log.source, "source"))
+    if log.actor:
+        data["actor_type"] = log.actor.type
+        data["actor_name"] = log.actor.name
+        data["actor_ref"] = log.actor.ref
+        data.update(_custom_fields_to_dict(log.actor.extra, "actor"))
+    if log.resource:
+        data["resource_type"] = log.resource.type
+        data["resource_name"] = log.resource.name
+        data["resource_ref"] = log.resource.ref
+        data.update(_custom_fields_to_dict(log.resource.extra, "resource"))
+    data.update(_custom_fields_to_dict(log.details, "details"))
+    data["tag_ref"] = "|".join(tag.ref or "" for tag in log.tags)
+    data["tag_type"] = "|".join(tag.type for tag in log.tags)
+    data["tag_name"] = "|".join(tag.name or "" for tag in log.tags)
+    data["attachment_name"] = "|".join(
+        attachment.name for attachment in log.attachments
+    )
+    data["attachment_description"] = "|".join(
+        attachment.description or "" for attachment in log.attachments
+    )
+    data["attachment_type"] = "|".join(
+        attachment.type for attachment in log.attachments
+    )
+    data["attachment_mime_type"] = "|".join(
+        attachment.mime_type for attachment in log.attachments
+    )
+    data["node_path:ref"] = " > ".join(node.ref for node in log.node_path)
+    data["node_path:name"] = " > ".join(node.name for node in log.node_path)
+    data["saved_at"] = serialize_datetime(log.saved_at)
+
+    return data
+
+
+def validate_csv_fields(fields: list[str]):
+    for field in fields:
+        if field in CSV_BUILTIN_FIELDS:
+            continue
+
+        parts = field.split(".")
+        if len(parts) == 2 and parts[0] in ("source", "actor", "resource", "details"):
+            continue
+
+        raise ValidationError(f"Invalid field name: {field!r}")
+
+
+async def get_logs_as_csv(
+    dbm: DatabaseManager, repo_id: str, *, fields: list[str], **kwargs
+) -> AsyncGenerator[str, None]:
+    max_rows = get_config().csv_max_rows
+    returned_rows = 0
+    logs_db = await get_log_db_for_reading(dbm, repo_id)
+    cursor = None
+    for i in count(0):
+        csv_buffer = StringIO()
+        csv_writer = csv.DictWriter(
+            csv_buffer, fieldnames=fields, extrasaction="ignore"
+        )
+        if i == 0:
+            csv_writer.writeheader()
+        logs, cursor = await get_logs(
+            dbm,
+            logs_db,
+            pagination_cursor=cursor,
+            limit=min(100, max_rows - returned_rows) if max_rows > 0 else 100,
+            **kwargs,
+        )
+        returned_rows += len(logs)
+        csv_writer.writerows(map(_log_to_dict, logs))
+        yield csv_buffer.getvalue()
+        if not cursor or (max_rows > 0 and returned_rows >= max_rows):
+            break
 
 
 async def _get_consolidated_data_aggregated_field(

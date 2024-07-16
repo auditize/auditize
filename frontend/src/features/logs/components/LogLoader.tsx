@@ -3,15 +3,19 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import deepEqual from "deep-equal";
 import { useEffect, useRef } from "react";
 
-import { getLogs, LogSearchParams, prepareLogFilterForApi } from "../api";
+import { getLogs, LogSearchParams, prepareLogSearchParamsForApi } from "../api";
 import { LogTable, TableFilterChangeHandler } from "./LogTable";
 
 export function LogLoader({
   filter,
   onTableFilterChange,
+  selectedColumns,
+  onSelectedColumnsChange,
 }: {
   filter: LogSearchParams;
   onTableFilterChange: TableFilterChangeHandler;
+  selectedColumns: string[];
+  onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
   const {
     isPending,
@@ -21,7 +25,7 @@ export function LogLoader({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["logs", "list", prepareLogFilterForApi(filter)],
+    queryKey: ["logs", "list", prepareLogSearchParamsForApi(filter)],
     queryFn: async ({ pageParam }: { pageParam: string | null }) =>
       await getLogs(pageParam, filter),
     enabled: !!filter.repoId,
@@ -73,6 +77,8 @@ export function LogLoader({
       isLoading={isPending || isFetchingNextPage}
       footer={footer}
       onTableFilterChange={onTableFilterChange}
+      selectedColumns={selectedColumns}
+      onSelectedColumnsChange={onSelectedColumnsChange}
     />
   );
 }
