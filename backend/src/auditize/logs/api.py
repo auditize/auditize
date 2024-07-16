@@ -14,6 +14,7 @@ from auditize.helpers.api.errors import error_responses
 from auditize.helpers.api.validators import (
     IDENTIFIER_PATTERN_STRING,
 )
+from auditize.helpers.datetime import now
 from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service
@@ -466,6 +467,8 @@ async def get_logs_as_csv(
     fields = fields.split(",")  # convert fields string to a list
     service.validate_csv_fields(fields)
 
+    filename = f"auditize-logs_{repo_id}_{now().strftime("%Y%m%d%H%M%S")}.csv"
+
     return StreamingResponse(
         service.get_logs_as_csv(
             dbm,
@@ -496,6 +499,7 @@ async def get_logs_as_csv(
             until=search_params.until,
         ),
         media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 
