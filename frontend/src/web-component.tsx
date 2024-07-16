@@ -57,7 +57,7 @@ class LogWebComponent extends HTMLElement {
           >
             <I18nProvider lang={lang}>
               <StateLogProvider repoId={repoId}>
-                <Logs withRepoFilter={false} />
+                <Logs withRepoSearchParam={false} />
               </StateLogProvider>
             </I18nProvider>
           </MantineProvider>

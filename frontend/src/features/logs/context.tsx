@@ -8,14 +8,13 @@ import {
   buildLogSearchParams,
   LogSearchParams,
   logSearchParamsToURLSearchParams,
-  prepareLogSearchParamsForApi,
 } from "./api";
 
 type LogContextProps = {
   displayedLogId: string | null;
   setDisplayedLogId: (id: string | null) => void;
-  filter: LogSearchParams;
-  setFilter: (filter: LogSearchParams) => void;
+  searchParams: LogSearchParams;
+  setSearchParams: (params: LogSearchParams) => void;
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
@@ -28,7 +27,7 @@ export function StateLogContextProvider({
   children: React.ReactNode;
 }) {
   const [displayedLogId, setDisplayedLogId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<LogSearchParams>({
+  const [searchParams, setSearchParams] = useState<LogSearchParams>({
     ...buildLogSearchParams(),
     repoId,
   });
@@ -38,8 +37,8 @@ export function StateLogContextProvider({
       value={{
         displayedLogId,
         setDisplayedLogId,
-        filter,
-        setFilter,
+        searchParams,
+        setSearchParams,
       }}
     >
       {children}
@@ -61,9 +60,11 @@ function extractCustomFieldsFromURLSearchParams(
   return customFields;
 }
 
-function searchParamsToFilter(params: URLSearchParams): LogSearchParams {
-  // filter the params from the LogsFilterParams available keys (white list)
-  // in order to avoid possible undesired keys in LogsFilterParams resulting object
+function urlSearchParamsToLogSearchParams(
+  params: URLSearchParams,
+): LogSearchParams {
+  // filter the params from the LogSearchParams available keys (white list)
+  // in order to avoid possible undesired keys in LogSearchParams resulting object
   const template = buildLogSearchParams();
   const obj = Object.fromEntries(
     Object.keys(template).map((key) => [key, params.get(key) || ""]),
@@ -86,7 +87,7 @@ export function UrlLogContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -98,15 +99,17 @@ export function UrlLogContextProvider({
     }
   };
 
-  const displayedLogId = searchParams.get("log") || null;
+  const displayedLogId = urlSearchParams.get("log") || null;
 
-  const filter = searchParamsToFilter(searchParams);
+  const logSearchParams = urlSearchParamsToLogSearchParams(urlSearchParams);
 
-  const setFilter = (newFilter: LogSearchParams) => {
+  const setLogSearchParams = (newLogSearchParams: LogSearchParams) => {
     // Do not keep the "repo auto-select redirect" in the history,
     // so the user can still go back to the previous page
-    const isAutoSelectRepo = !!(!filter.repoId && newFilter.repoId);
-    setSearchParams(logSearchParamsToURLSearchParams(newFilter), {
+    const isAutoSelectRepo = !!(
+      !logSearchParams.repoId && newLogSearchParams.repoId
+    );
+    setUrlSearchParams(logSearchParamsToURLSearchParams(newLogSearchParams), {
       replace: isAutoSelectRepo,
     });
   };
@@ -116,8 +119,8 @@ export function UrlLogContextProvider({
       value={{
         displayedLogId,
         setDisplayedLogId,
-        filter,
-        setFilter,
+        searchParams: logSearchParams,
+        setSearchParams: setLogSearchParams,
       }}
     >
       {children}

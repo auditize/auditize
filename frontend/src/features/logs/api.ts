@@ -132,51 +132,51 @@ function prepareCustomFieldsForApi(
 }
 
 export function prepareLogSearchParamsForApi(
-  filter: LogSearchParams,
+  params: LogSearchParams,
   { includeRepoId } = { includeRepoId: true },
 ): object {
   const prepared = {
-    ...(includeRepoId ? { repoId: filter.repoId } : {}),
+    ...(includeRepoId ? { repoId: params.repoId } : {}),
 
     // Dates
-    since: filter.since ? serializeDate(filter.since) : undefined,
-    until: filter.until ? serializeDate(filter.until) : undefined,
+    since: params.since ? serializeDate(params.since) : undefined,
+    until: params.until ? serializeDate(params.until) : undefined,
 
     // Action
-    actionCategory: filter.actionCategory,
-    actionType: filter.actionType,
+    actionCategory: params.actionCategory,
+    actionType: params.actionType,
 
     // Actor
-    actorType: filter.actorType,
-    actorName: filter.actorName,
-    actorRef: filter.actorRef,
-    ...prepareCustomFieldsForApi(filter.actorExtra, "actor"),
+    actorType: params.actorType,
+    actorName: params.actorName,
+    actorRef: params.actorRef,
+    ...prepareCustomFieldsForApi(params.actorExtra, "actor"),
 
     // Source
-    ...prepareCustomFieldsForApi(filter.source, "source"),
+    ...prepareCustomFieldsForApi(params.source, "source"),
 
     // Resource
-    resourceType: filter.resourceType,
-    resourceName: filter.resourceName,
-    resourceRef: filter.resourceRef,
-    ...prepareCustomFieldsForApi(filter.resourceExtra, "resource"),
+    resourceType: params.resourceType,
+    resourceName: params.resourceName,
+    resourceRef: params.resourceRef,
+    ...prepareCustomFieldsForApi(params.resourceExtra, "resource"),
 
     // Details
-    ...prepareCustomFieldsForApi(filter.details, "details"),
+    ...prepareCustomFieldsForApi(params.details, "details"),
 
     // Tag
-    tagRef: filter.tagRef,
-    tagType: filter.tagType,
-    tagName: filter.tagName,
+    tagRef: params.tagRef,
+    tagType: params.tagType,
+    tagName: params.tagName,
 
     // Attachment
-    attachmentName: filter.attachmentName,
-    attachmentDescription: filter.attachmentDescription,
-    attachmentType: filter.attachmentType,
-    attachmentMimeType: filter.attachmentMimeType,
+    attachmentName: params.attachmentName,
+    attachmentDescription: params.attachmentDescription,
+    attachmentType: params.attachmentType,
+    attachmentMimeType: params.attachmentMimeType,
 
     // Node
-    nodeRef: filter.nodeRef,
+    nodeRef: params.nodeRef,
   };
 
   return Object.fromEntries(
@@ -212,16 +212,16 @@ export function logSearchParamsToURLSearchParams(
 
 export async function getLogs(
   cursor: string | null,
-  filter?: LogSearchParams,
+  params?: LogSearchParams,
   limit = 30,
 ): Promise<{ logs: Log[]; nextCursor: string | null }> {
   const data = await reqGet(
-    `/repos/${filter!.repoId}/logs`,
+    `/repos/${params!.repoId}/logs`,
     snakecaseKeys(
       {
         limit,
-        ...(filter
-          ? prepareLogSearchParamsForApi(filter, { includeRepoId: false })
+        ...(params
+          ? prepareLogSearchParamsForApi(params, { includeRepoId: false })
           : {}),
         ...(cursor && { cursor }),
       },

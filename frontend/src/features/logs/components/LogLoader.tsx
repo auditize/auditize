@@ -4,16 +4,16 @@ import deepEqual from "deep-equal";
 import { useEffect, useRef } from "react";
 
 import { getLogs, LogSearchParams, prepareLogSearchParamsForApi } from "../api";
-import { LogTable, TableFilterChangeHandler } from "./LogTable";
+import { LogTable, TableSearchParamChangeHandler } from "./LogTable";
 
 export function LogLoader({
-  filter,
-  onTableFilterChange,
+  searchParams,
+  onTableSearchParamsChange,
   selectedColumns,
   onSelectedColumnsChange,
 }: {
-  filter: LogSearchParams;
-  onTableFilterChange: TableFilterChangeHandler;
+  searchParams: LogSearchParams;
+  onTableSearchParamsChange: TableSearchParamChangeHandler;
   selectedColumns: string[];
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
@@ -25,34 +25,34 @@ export function LogLoader({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["logs", "list", prepareLogSearchParamsForApi(filter)],
+    queryKey: ["logs", "list", prepareLogSearchParamsForApi(searchParams)],
     queryFn: async ({ pageParam }: { pageParam: string | null }) =>
-      await getLogs(pageParam, filter),
-    enabled: !!filter.repoId,
+      await getLogs(pageParam, searchParams),
+    enabled: !!searchParams.repoId,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
-  const currentFilterRef = useRef<LogSearchParams | null>(null);
+  const currentSearchParamsRef = useRef<LogSearchParams | null>(null);
   const queryClient = useQueryClient();
 
-  // If the user apply filter A, then filter B, then filter A again, he will see the logs of filter A
-  // with result pages already loaded, which can be confusing.
-  // To avoid this, we remove the query for the previous filter when the user applies a different filter.
+  // If the user apply search params A, then search params B, then search params A again,
+  // he will see the logs of search params A with result pages already loaded, which can be confusing.
+  // To avoid this, we remove the query for the previous search params when the user applies different search params.
   useEffect(() => {
-    if (!deepEqual(filter, currentFilterRef.current)) {
+    if (!deepEqual(searchParams, currentSearchParamsRef.current)) {
       queryClient.removeQueries({
-        queryKey: ["logs", "list", currentFilterRef.current],
+        queryKey: ["logs", "list", currentSearchParamsRef.current],
       });
-      currentFilterRef.current = filter;
+      currentSearchParamsRef.current = searchParams;
     }
   });
 
-  // See comment above: we need to remove the result for the current filter when the component is unmounted,
-  // because the useEffect above won't have a currentFilterRef if the component is unmounted and remounted.
+  // See comment above: we need to remove the result for the current search params when the component is unmounted,
+  // because the useEffect above won't have a currentSearchParamsRef if the component is unmounted and remounted.
   useEffect(() => {
     return () =>
       queryClient.removeQueries({
-        queryKey: ["logs", "list", currentFilterRef.current],
+        queryKey: ["logs", "list", currentSearchParamsRef.current],
       });
   }, []);
 
@@ -72,11 +72,11 @@ export function LogLoader({
 
   return (
     <LogTable
-      repoId={filter.repoId!}
+      repoId={searchParams.repoId!}
       logs={data?.pages.flatMap((page) => page.logs)}
       isLoading={isPending || isFetchingNextPage}
       footer={footer}
-      onTableFilterChange={onTableFilterChange}
+      onTableSearchParamChange={onTableSearchParamsChange}
       selectedColumns={selectedColumns}
       onSelectedColumnsChange={onSelectedColumnsChange}
     />

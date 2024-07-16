@@ -212,7 +212,7 @@ export default {
       columnSelector: {
         reset: "Reset columns",
       },
-      filter: {
+      searchParams: {
         apply: "Apply",
         clear: "Clear",
       },

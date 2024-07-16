@@ -215,7 +215,7 @@ export default {
       columnSelector: {
         reset: "Réinitialiser les colonnes",
       },
-      filter: {
+      searchParams: {
         apply: "Appliquer",
         clear: "Effacer",
       },
