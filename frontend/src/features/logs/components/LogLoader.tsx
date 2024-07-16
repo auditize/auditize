@@ -15,7 +15,7 @@ export function LogLoader({
   filter: LogSearchParams;
   onTableFilterChange: TableFilterChangeHandler;
   selectedColumns: string[];
-  onSelectedColumnsChange: (selectedColumns: string[]) => void;
+  onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
   const {
     isPending,

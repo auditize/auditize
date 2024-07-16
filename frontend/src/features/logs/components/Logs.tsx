@@ -7,6 +7,8 @@ import { useLogContext } from "../context";
 import { LogFilter } from "./LogFilter";
 import { LogLoader } from "./LogLoader";
 
+const DEFAULT_COLUMNS = ["date", "actor", "action", "resource", "node", "tag"];
+
 export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
   const { t } = useTranslation();
   const { filter, setFilter } = useLogContext();
@@ -38,11 +40,13 @@ export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
             [name]: value,
           });
         }}
-        selectedColumns={selectedColumns[filter.repoId]}
+        selectedColumns={selectedColumns[filter.repoId] ?? DEFAULT_COLUMNS}
         onSelectedColumnsChange={(repoSelectedColumns) =>
           setSelectedColumns((selectedColumns) => ({
             ...selectedColumns,
-            [filter.repoId]: repoSelectedColumns,
+            [filter.repoId]: repoSelectedColumns
+              ? repoSelectedColumns
+              : DEFAULT_COLUMNS,
           }))
         }
       />

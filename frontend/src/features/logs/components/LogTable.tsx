@@ -1062,26 +1062,15 @@ export function LogTable({
   isLoading: boolean;
   footer: React.ReactNode;
   onTableFilterChange: TableFilterChangeHandler;
-  selectedColumns?: string[];
-  onSelectedColumnsChange: (selectedColumns: string[]) => void;
+  selectedColumns: string[];
+  // NB: null means default columns
+  onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
-  const defaultColumns = ["date", "actor", "action", "resource", "node", "tag"];
   const { setDisplayedLogId } = useLogContext();
   const logTranslator = useLogTranslator(repoId);
-  const addColumn = (name: string) => {
-    onSelectedColumnsChange([...(selectedColumns || defaultColumns), name]);
-  };
-  const removeColumn = (name: string) => {
-    onSelectedColumnsChange(
-      (selectedColumns || defaultColumns).filter((n) => n !== name),
-    );
-  };
-  const resetColumns = () => {
-    onSelectedColumnsChange(defaultColumns);
-  };
 
   let columns = [
-    ...(selectedColumns || defaultColumns)
+    ...selectedColumns
       .toSorted(sortFields)
       .map((column) =>
         fieldToColumn(column, repoId, onTableFilterChange, logTranslator),
@@ -1094,10 +1083,14 @@ export function LogTable({
         <span style={{ fontWeight: "normal" }}>
           <ColumnSelector
             repoId={repoId}
-            selected={selectedColumns || defaultColumns}
-            onColumnAdded={addColumn}
-            onColumnRemoved={removeColumn}
-            onColumnReset={resetColumns}
+            selected={selectedColumns}
+            onColumnAdded={(name: string) =>
+              onSelectedColumnsChange([...selectedColumns, name])
+            }
+            onColumnRemoved={(name: string) =>
+              onSelectedColumnsChange(selectedColumns.filter((n) => n !== name))
+            }
+            onColumnReset={() => onSelectedColumnsChange(null)}
           />
         </span>
       ),
