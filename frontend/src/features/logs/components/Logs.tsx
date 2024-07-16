@@ -18,6 +18,7 @@ export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
     key: `log-columns`,
     defaultValue: {},
   });
+  const repoSelectedColumns = selectedColumns[filter.repoId] ?? DEFAULT_COLUMNS;
   useDocumentTitle(t("log.list.documentTitle"));
 
   return (
@@ -27,6 +28,7 @@ export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
         onChange={(newFilter) => {
           setFilter(newFilter);
         }}
+        selectedColumns={repoSelectedColumns}
         withRepoFilter={withRepoFilter}
       />
       <LogLoader
@@ -40,7 +42,7 @@ export function Logs({ withRepoFilter = true }: { withRepoFilter?: boolean }) {
             [name]: value,
           });
         }}
-        selectedColumns={selectedColumns[filter.repoId] ?? DEFAULT_COLUMNS}
+        selectedColumns={repoSelectedColumns}
         onSelectedColumnsChange={(repoSelectedColumns) =>
           setSelectedColumns((selectedColumns) => ({
             ...selectedColumns,

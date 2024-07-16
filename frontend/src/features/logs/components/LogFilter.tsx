@@ -15,9 +15,9 @@ import {
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import { IconDots, IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
+import * as changeCase from "change-case";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
-import snakecaseKeys from "snakecase-keys";
 
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -38,7 +38,6 @@ import {
   getAllLogTagTypes,
   LogSearchParams,
   logSearchParamsToURLSearchParams,
-  prepareLogSearchParamsForApi,
 } from "../api";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogTranslator } from "./LogTranslation";
@@ -1000,16 +999,55 @@ function removeSearchParam(
   throw new Error(`Unknown filter name: ${filterName}`);
 }
 
+function columnsToCsvFields(columns: string[]): string[] {
+  return columns
+    .map((column) => {
+      if (column.includes(".")) {
+        // make a special case for custom fields (that contains ".") because
+        // changeCase.snakeCase transforms "." to "_"
+        // it assumes that the custom field group is all lowercase (which is currently true:
+        // actor, source, resource, details)
+        return [column];
+      }
+      if (column === "date") {
+        return ["saved_at"];
+      }
+      if (column === "actor") {
+        return ["actor_name"];
+      }
+      if (column === "action") {
+        return ["action_type", "action_category"];
+      }
+      if (column === "resource") {
+        return ["resource_type", "resource_name"];
+      }
+      if (column === "node") {
+        return ["node_path:name"];
+      }
+      if (column === "tag") {
+        return ["tag_type"];
+      }
+      if (column === "attachment") {
+        return ["attachment_name"];
+      }
+      return [changeCase.snakeCase(column)];
+    })
+    .flat();
+}
+
 export function ExtraLogActions({
   searchParams,
+  selectedColumns,
 }: {
   searchParams: LogSearchParams;
+  selectedColumns: string[];
 }) {
   const { t } = useTranslation();
   const searchParamsQueryString = logSearchParamsToURLSearchParams(
     searchParams,
     { includeRepoId: false, snakecase: true },
   ).toString();
+  const csvExportUrl = `/api/repos/${searchParams.repoId}/logs/csv?${searchParamsQueryString}`;
 
   return (
     <Menu>
@@ -1020,11 +1058,14 @@ export function ExtraLogActions({
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Label>{t("log.csv.csv")}</Menu.Label>
+        <Menu.Item component="a" href={csvExportUrl}>
+          {t("log.csv.csvExportDefault")}
+        </Menu.Item>
         <Menu.Item
           component="a"
-          href={`/api/repos/${searchParams.repoId}/logs/csv?${searchParamsQueryString}`}
+          href={`${csvExportUrl}&fields=${columnsToCsvFields(selectedColumns).join(",")}`}
         >
-          {t("log.csv.csvExportDefault")}
+          {t("log.csv.csvExportCurrent")}
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>
@@ -1034,10 +1075,12 @@ export function ExtraLogActions({
 export function LogFilter({
   params,
   onChange,
+  selectedColumns,
   withRepoFilter = true,
 }: {
   params: LogSearchParams;
   onChange: (filter: LogSearchParams) => void;
+  selectedColumns: string[];
   withRepoFilter?: boolean;
 }) {
   const { t } = useTranslation();
@@ -1167,7 +1210,10 @@ export function LogFilter({
         >
           {t("log.list.filter.clear")}
         </Button>
-        <ExtraLogActions searchParams={params} />
+        <ExtraLogActions
+          searchParams={params}
+          selectedColumns={selectedColumns}
+        />
       </Group>
     </Flex>
   );
