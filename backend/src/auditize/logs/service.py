@@ -8,6 +8,7 @@ from typing import Any, AsyncGenerator
 
 from bson import ObjectId
 
+from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
 from auditize.helpers.datetime import serialize_datetime
@@ -360,6 +361,8 @@ def validate_csv_fields(fields: list[str]):
 async def get_logs_as_csv(
     dbm: DatabaseManager, repo_id: str, *, fields: list[str], **kwargs
 ) -> AsyncGenerator[str, None]:
+    max_rows = get_config().csv_max_rows
+    returned_rows = 0
     logs_db = await get_log_db_for_reading(dbm, repo_id)
     cursor = None
     for i in count(0):
@@ -370,11 +373,16 @@ async def get_logs_as_csv(
         if i == 0:
             csv_writer.writeheader()
         logs, cursor = await get_logs(
-            dbm, logs_db, pagination_cursor=cursor, limit=100, **kwargs
+            dbm,
+            logs_db,
+            pagination_cursor=cursor,
+            limit=min(100, max_rows - returned_rows) if max_rows > 0 else 100,
+            **kwargs,
         )
+        returned_rows += len(logs)
         csv_writer.writerows(map(_log_to_dict, logs))
         yield csv_buffer.getvalue()
-        if not cursor:
+        if not cursor or (max_rows > 0 and returned_rows >= max_rows):
             break
 
 
