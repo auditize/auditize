@@ -300,3 +300,143 @@ async def test_log_filter_create_forbidden(
                 "columns": [],
             },
         )
+
+
+async def _test_log_filter_update(
+    log_read_user: PreparedUser, data: dict, update: dict, dbm: DatabaseManager
+):
+    log_filter = await log_read_user.create_log_filter(data)
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_no_content(
+            f"/users/me/logs/filters/{log_filter.id}",
+            json=update,
+        )
+    await assert_collection(
+        dbm.core_db.log_filters,
+        [
+            log_filter.expected_document({**update, "user_id": log_read_user.id}),
+        ],
+    )
+
+
+async def test_log_filter_update_simple(
+    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+):
+    await _test_log_filter_update(
+        log_read_user,
+        {
+            "name": "my filter",
+            "repo_id": repo.id,
+            "search_params": {
+                "action_type": "some action",
+            },
+            "columns": [
+                "saved_at",
+                "action_type",
+            ],
+        },
+        {
+            "name": "new name",
+        },
+        dbm,
+    )
+
+
+async def test_log_filter_update_all_params(
+    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+):
+    repo_bis = await PreparedRepo.create(dbm)
+
+    await _test_log_filter_update(
+        log_read_user,
+        {
+            "name": "my filter",
+            "repo_id": repo.id,
+            "search_params": {
+                "action_type": "some action",
+            },
+            "columns": [
+                "saved_at",
+                "action_type",
+            ],
+        },
+        {
+            "name": "new name",
+            "repo_id": repo_bis.id,
+            "search_params": {"action_category": "some category"},
+            "columns": [
+                "action_type",
+                "action_category",
+            ],
+        },
+        dbm,
+    )
+
+
+async def test_log_filter_update_invalid_repo(
+    log_read_user: PreparedUser, repo: PreparedRepo
+):
+    log_filter = await log_read_user.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_bad_request(
+            f"/users/me/logs/filters/{log_filter.id}",
+            json={
+                "repo_id": UNKNOWN_OBJECT_ID,
+            },
+        )
+
+
+async def test_log_filter_update_name_already_used(
+    log_read_user: PreparedUser, repo: PreparedRepo
+):
+    log_filter_1 = await log_read_user.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+    log_filter_2 = await log_read_user.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_constraint_violation(
+            f"/users/me/logs/filters/{log_filter_1.id}",
+            json={"name": log_filter_2.data["name"]},
+        )
+
+
+async def test_log_filter_update_forbidden(
+    log_read_user: PreparedUser, user_builder: UserBuilder, repo: PreparedRepo
+):
+    log_filter = await log_read_user.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_forbidden(
+            f"/users/me/logs/filters/{log_filter.id}",
+            json={},
+        )
+
+
+async def test_log_filter_update_another_user(
+    user_builder: UserBuilder, repo: PreparedRepo
+):
+    user_1 = await user_builder({"is_superadmin": True})
+    user_2 = await user_builder({"is_superadmin": True})
+
+    log_filter = await user_1.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+
+    async with user_2.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_not_found(
+            f"/users/me/logs/filters/{log_filter.id}",
+            json={},
+        )

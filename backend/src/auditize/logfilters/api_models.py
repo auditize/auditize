@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -52,7 +54,37 @@ class LogFilterSearchParamsData(BaseLogSearchParams):
         return self
 
 
-def _ColumnsField():  # noqa
+def _NameField(**kwargs):  # noqa
+    return Field(
+        description="Name of the filter",
+        json_schema_extra={"example": "My Filter"},
+        **kwargs,
+    )
+
+
+def _RepoIdField(**kwargs):  # noqa
+    return Field(
+        description="ID of the repository",
+        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+        **kwargs,
+    )
+
+
+def _SearchParamsField(**kwargs):  # noqa
+    return Field(
+        description="Search parameters",
+        json_schema_extra={
+            "example": {
+                "action_type": "some action",
+                "actor_name": "some actor",
+                "resource_name": "some resource",
+            },
+        },
+        **kwargs,
+    )
+
+
+def _ColumnsField(**kwargs):  # noqa
     return Field(
         description=(
             "List of configured columns. Available columns are:\n"
@@ -72,15 +104,11 @@ def _ColumnsField():  # noqa
                 "action_category",
             ],
         },
+        **kwargs,
     )
 
 
-class LogFilterCreationRequest(BaseModel):
-    name: str = Field(...)
-    repo_id: str = Field(...)
-    search_params: LogFilterSearchParamsData = Field(...)
-    columns: list[str] = _ColumnsField()
-
+class _ValidateColumnsMixin:
     @field_validator("columns")
     def validate_columns(cls, columns: list[str]) -> list[str]:
         for column in columns:
@@ -92,5 +120,21 @@ class LogFilterCreationRequest(BaseModel):
         return columns
 
 
+class LogFilterCreationRequest(BaseModel, _ValidateColumnsMixin):
+    name: str = _NameField()
+    repo_id: str = _RepoIdField()
+    search_params: LogFilterSearchParamsData = _SearchParamsField()
+    columns: list[str] = _ColumnsField()
+
+
 class LogFilterCreationResponse(BaseModel):
     id: str
+
+
+class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
+    name: Optional[str] = _NameField(default=None)
+    repo_id: Optional[str] = _RepoIdField(default=None)
+    search_params: Optional[LogFilterSearchParamsData] = _SearchParamsField(
+        default=None
+    )
+    columns: Optional[list[str]] = _ColumnsField(default=None)

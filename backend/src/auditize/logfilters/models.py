@@ -41,3 +41,10 @@ class LogFilter(BaseModel):
     user_id: str
     search_params: LogFilterSearchParams
     columns: list[str]
+
+
+class LogFilterUpdate(BaseModel):
+    name: Optional[str] = Field(default=None)
+    repo_id: Optional[str] = Field(default=None)
+    search_params: Optional[LogFilterSearchParams] = Field(default=None)
+    columns: Optional[list[str]] = Field(default=None)
