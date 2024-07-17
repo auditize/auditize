@@ -1,14 +1,17 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_serializer,
     field_validator,
     model_validator,
 )
 
 from auditize.helpers.api.validators import FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN
+from auditize.helpers.datetime import serialize_datetime
 from auditize.logs.api_models import BaseLogSearchParams
 
 _BUILTIN_FILTER_COLUMNS = (
@@ -52,6 +55,22 @@ class LogFilterSearchParamsData(BaseLogSearchParams):
             if not FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN.match(name):
                 raise ValueError(f"Invalid custom field name: {name}")
         return self
+
+
+def _IdField(**kwargs):  # noqa
+    return Field(
+        description="ID of the filter",
+        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+        **kwargs,
+    )
+
+
+def _CreatedAtField(**kwargs):  # noqa
+    return Field(
+        description="Creation date of the filter",
+        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
+        **kwargs,
+    )
 
 
 def _NameField(**kwargs):  # noqa
@@ -138,3 +157,16 @@ class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
         default=None
     )
     columns: Optional[list[str]] = _ColumnsField(default=None)
+
+
+class LogFilterReadingResponse(BaseModel):
+    id: str = _IdField()
+    created_at: datetime = _CreatedAtField()
+    name: str = _NameField()
+    repo_id: str = _RepoIdField()
+    search_params: LogFilterSearchParamsData = _SearchParamsField()
+    columns: list[str] = _ColumnsField()
+
+    @field_serializer("created_at", when_used="json")
+    def serialize_datetime(self, value):
+        return serialize_datetime(value)

@@ -4,6 +4,7 @@ from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
 from auditize.helpers.resources.service import (
     create_resource_document,
+    get_resource_document,
     update_resource_document,
 )
 from auditize.logfilters.models import LogFilter, LogFilterUpdate
@@ -40,3 +41,12 @@ async def update_log_filter(
         _log_filter_discriminator(user_id, log_filter_id),
         update,
     )
+
+
+async def get_log_filter(
+    dbm: DatabaseManager, user_id: str, log_filter_id: str
+) -> LogFilter:
+    result = await get_resource_document(
+        dbm.core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
+    )
+    return LogFilter.model_validate(result)

@@ -408,23 +408,17 @@ async def test_log_filter_update_name_already_used(
         )
 
 
-async def test_log_filter_update_forbidden(
-    log_read_user: PreparedUser, user_builder: UserBuilder, repo: PreparedRepo
+async def test_log_filter_update_unknown(
+    log_read_user: PreparedUser, repo: PreparedRepo
 ):
-    log_filter = await log_read_user.create_log_filter(
-        PreparedLogFilter.prepare_data({"repo_id": repo.id})
-    )
-
-    user = await user_builder({})
-    async with user.client() as client:
+    async with log_read_user.client() as client:
         client: HttpTestHelper
-        await client.assert_patch_forbidden(
-            f"/users/me/logs/filters/{log_filter.id}",
-            json={},
+        await client.assert_patch_not_found(
+            f"/users/me/logs/filters/{UNKNOWN_OBJECT_ID}", json={}
         )
 
 
-async def test_log_filter_update_another_user(
+async def test_log_filter_update_forbidden(
     user_builder: UserBuilder, repo: PreparedRepo
 ):
     user_1 = await user_builder({"is_superadmin": True})
@@ -440,3 +434,74 @@ async def test_log_filter_update_another_user(
             f"/users/me/logs/filters/{log_filter.id}",
             json={},
         )
+
+
+async def test_log_filter_get_simple(log_read_user: PreparedUser, repo: PreparedRepo):
+    log_filter = await log_read_user.create_log_filter(
+        {
+            "name": "my filter",
+            "repo_id": repo.id,
+            "search_params": {},
+            "columns": [],
+        }
+    )
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/users/me/logs/filters/{log_filter.id}",
+            expected_json=log_filter.expected_api_response(),
+        )
+
+
+async def test_log_filter_get_all_fields_set(
+    log_read_user: PreparedUser, repo: PreparedRepo
+):
+    log_filter = await log_read_user.create_log_filter(
+        {
+            "name": "my filter",
+            "repo_id": repo.id,
+            "search_params": {
+                "action_type": "some action",
+                "since": "2021-01-01T00:00:00Z",
+                "until": "2021-01-02T00:00:00Z",
+                "actor.custom_actor_field": "actor field",
+                "resource.custom_resource_field": "resource field",
+                "source.custom_source_field": "source field",
+                "details.custom_details_field": "details field",
+            },
+            "columns": [
+                "saved_at",
+                "action",
+                "action_type",
+                "actor.custom_actor_field",
+                "resource.custom_resource_field",
+                "source.custom_source_field",
+                "details.custom_details_field",
+            ],
+        }
+    )
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/users/me/logs/filters/{log_filter.id}",
+            expected_json=log_filter.expected_api_response(),
+        )
+
+
+async def test_log_filter_get_unknown(log_read_user: PreparedUser, repo: PreparedRepo):
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_not_found(f"/users/me/logs/filters/{UNKNOWN_OBJECT_ID}")
+
+
+async def test_log_filter_get_forbidden(user_builder: UserBuilder, repo: PreparedRepo):
+    user_1 = await user_builder({"is_superadmin": True})
+    user_2 = await user_builder({"is_superadmin": True})
+
+    log_filter = await user_1.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+
+    async with user_2.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_not_found(f"/users/me/logs/filters/{log_filter.id}")

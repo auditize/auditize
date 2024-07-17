@@ -11,6 +11,7 @@ from auditize.logfilters import service
 from auditize.logfilters.api_models import (
     LogFilterCreationRequest,
     LogFilterCreationResponse,
+    LogFilterReadingResponse,
     LogFilterUpdateRequest,
 )
 from auditize.logfilters.models import LogFilter, LogFilterUpdate
@@ -64,3 +65,20 @@ async def update_filter(
         filter_id,
         LogFilterUpdate.model_validate(update.model_dump(exclude_unset=True)),
     )
+
+
+@router.get(
+    "/users/me/logs/filters/{filter_id}",
+    summary="Get log filter",
+    tags=["log-filters"],
+    status_code=200,
+    responses=error_responses(400),
+)
+async def get_filter(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Authorized(can_read_logs()),
+    filter_id: str,
+) -> LogFilterReadingResponse:
+    authenticated.ensure_user()
+    log_filter = await service.get_log_filter(dbm, authenticated.user.id, filter_id)
+    return LogFilterReadingResponse.model_validate(log_filter.model_dump())
