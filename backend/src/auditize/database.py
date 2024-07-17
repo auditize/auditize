@@ -47,6 +47,7 @@ class CoreDatabase(BaseDatabase):
         )
         await self.apikeys.create_index({"name": "text"})
         await self.logi18nprofiles.create_index({"name": "text"})
+        await self.log_filters.create_index({"name": "text"})
 
     # Collections
     # FIXME: naming convention (spaces vs underscores)

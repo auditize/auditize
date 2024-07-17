@@ -2,6 +2,8 @@ from bson import ObjectId
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.helpers.pagination.page.models import PagePaginationInfo
+from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.helpers.resources.service import (
     create_resource_document,
     get_resource_document,
@@ -50,3 +52,19 @@ async def get_log_filter(
         dbm.core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
     )
     return LogFilter.model_validate(result)
+
+
+async def get_log_filters(
+    dbm: DatabaseManager, user_id: str, query: str, page: int, page_size: int
+) -> tuple[list[LogFilter], PagePaginationInfo]:
+    doc_filter = {"user_id": user_id}
+    if query:
+        doc_filter["$text"] = {"$search": query}
+    results, page_info = await find_paginated_by_page(
+        dbm.core_db.log_filters,
+        filter=doc_filter,
+        sort=[("name", 1)],
+        page=page,
+        page_size=page_size,
+    )
+    return [LogFilter.model_validate(result) async for result in results], page_info

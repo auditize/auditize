@@ -12,6 +12,8 @@ from pydantic import (
 
 from auditize.helpers.api.validators import FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN
 from auditize.helpers.datetime import serialize_datetime
+from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
+from auditize.logfilters.models import LogFilter
 from auditize.logs.api_models import BaseLogSearchParams
 
 _BUILTIN_FILTER_COLUMNS = (
@@ -170,3 +172,9 @@ class LogFilterReadingResponse(BaseModel):
     @field_serializer("created_at", when_used="json")
     def serialize_datetime(self, value):
         return serialize_datetime(value)
+
+
+class LogFilterListResponse(PagePaginatedResponse[LogFilter, LogFilterReadingResponse]):
+    @classmethod
+    def build_item(cls, log_filter: LogFilter) -> LogFilterReadingResponse:
+        return LogFilterReadingResponse.model_validate(log_filter.model_dump())

@@ -7,6 +7,7 @@ from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logfilters import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
 from helpers.logs import UNKNOWN_OBJECT_ID
+from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
 
@@ -505,3 +506,132 @@ async def test_log_filter_get_forbidden(user_builder: UserBuilder, repo: Prepare
     async with user_2.client() as client:
         client: HttpTestHelper
         await client.assert_get_not_found(f"/users/me/logs/filters/{log_filter.id}")
+
+
+async def test_log_filter_list(log_read_user: PreparedUser, repo: PreparedRepo):
+    log_filters = [
+        await log_read_user.create_log_filter(
+            {
+                "name": f"filter_{i}",
+                "repo_id": repo.id,
+                "search_params": {
+                    "action_type": f"some action {i}",
+                },
+                "columns": [
+                    "saved_at",
+                    "action_type",
+                ],
+            }
+        )
+        for i in range(5)
+    ]
+
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await do_test_page_pagination_common_scenarios(
+            client,
+            "/users/me/logs/filters",
+            [log_filter.expected_api_response() for log_filter in log_filters],
+        )
+
+
+async def test_log_filter_list_search(log_read_user: PreparedUser, repo: PreparedRepo):
+    log_filters = [
+        await log_read_user.create_log_filter(
+            {
+                "name": f"filter_{i}",
+                "repo_id": repo.id,
+                "search_params": {
+                    "action_type": f"some action {i}",
+                },
+                "columns": [
+                    "saved_at",
+                    "action_type",
+                ],
+            }
+        )
+        for i in range(2)
+    ]
+
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            "/users/me/logs/filters?q=filter_1",
+            expected_json={
+                "items": [log_filters[1].expected_api_response()],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
+        )
+
+
+async def test_log_filter_list_empty(log_read_user: PreparedUser):
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            "/users/me/logs/filters",
+            expected_json={
+                "items": [],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 0,
+                    "total_pages": 0,
+                },
+            },
+        )
+
+
+async def test_log_filter_list_segregation(
+    user_builder: UserBuilder, repo: PreparedRepo
+):
+    user_1 = await user_builder({"is_superadmin": True})
+    log_filter_1 = await user_1.create_log_filter(
+        PreparedLogFilter.prepare_data({"name": "user 1 filter", "repo_id": repo.id})
+    )
+
+    user_2 = await user_builder({"is_superadmin": True})
+    log_filter_2 = await user_2.create_log_filter(
+        PreparedLogFilter.prepare_data({"name": "user 2 filter", "repo_id": repo.id})
+    )
+
+    async with user_1.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            "/users/me/logs/filters",
+            expected_json={
+                "items": [log_filter_1.expected_api_response()],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
+        )
+
+    async with user_2.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            "/users/me/logs/filters",
+            expected_json={
+                "items": [log_filter_2.expected_api_response()],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
+        )
+
+
+async def test_log_filter_list_forbidden(user_builder: UserBuilder):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_forbidden("/users/me/logs/filters")

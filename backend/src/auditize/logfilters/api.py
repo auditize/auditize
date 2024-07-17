@@ -7,10 +7,13 @@ from auditize.auth.authorizer import (
 )
 from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
+from auditize.helpers.pagination.page.api_models import PagePaginationParams
+from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.logfilters import service
 from auditize.logfilters.api_models import (
     LogFilterCreationRequest,
     LogFilterCreationResponse,
+    LogFilterListResponse,
     LogFilterReadingResponse,
     LogFilterUpdateRequest,
 )
@@ -82,3 +85,25 @@ async def get_filter(
     authenticated.ensure_user()
     log_filter = await service.get_log_filter(dbm, authenticated.user.id, filter_id)
     return LogFilterReadingResponse.model_validate(log_filter.model_dump())
+
+
+@router.get(
+    "/users/me/logs/filters",
+    summary="List log filters",
+    tags=["log-filters"],
+)
+async def list_log_filters(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Authorized(can_read_logs()),
+    search_params: Annotated[ResourceSearchParams, Depends()],
+    page_params: Annotated[PagePaginationParams, Depends()],
+) -> LogFilterListResponse:
+    authenticated.ensure_user()
+    log_filters, page_info = await service.get_log_filters(
+        dbm,
+        user_id=authenticated.user.id,
+        query=search_params.query,
+        page=page_params.page,
+        page_size=page_params.page_size,
+    )
+    return LogFilterListResponse.build(log_filters, page_info)
