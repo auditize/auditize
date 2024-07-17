@@ -379,10 +379,7 @@ class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItemData]):
         return NodeItemData.model_validate(node.model_dump())
 
 
-class LogSearchParams(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    request: Request
+class BaseLogSearchParams(BaseModel):
     action_type: Optional[str] = Field(default=None)
     action_category: Optional[str] = Field(default=None)
     actor_type: Optional[str] = Field(default=None)
@@ -405,6 +402,12 @@ class LogSearchParams(BaseModel):
     until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
         default=None
     )
+
+
+class LogSearchQueryParams(BaseLogSearchParams):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    request: Request
 
     def _get_custom_field_search_params(self, prefix: str) -> dict[str, str]:
         params = {}

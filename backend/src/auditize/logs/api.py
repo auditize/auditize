@@ -24,7 +24,7 @@ from auditize.logs.api_models import (
     LogNodeListResponse,
     LogNodeResponse,
     LogReadingResponse,
-    LogSearchParams,
+    LogSearchQueryParams,
     LogsReadingResponse,
     NameListResponse,
 )
@@ -456,7 +456,7 @@ async def get_logs_as_csv(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
-    search_params: Annotated[LogSearchParams, Depends()],
+    search_params: Annotated[LogSearchQueryParams, Depends()],
     fields: Annotated[str, Query(description=_FIELDS_DESCRIPTION)] = ",".join(
         service.CSV_BUILTIN_FIELDS
     ),
@@ -570,7 +570,7 @@ async def get_logs(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
-    search_params: Annotated[LogSearchParams, Depends()],
+    search_params: Annotated[LogSearchQueryParams, Depends()],
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> LogsReadingResponse:
     # FIXME: we must check that "until" is greater than "since"
