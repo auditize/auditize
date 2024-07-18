@@ -635,3 +635,36 @@ async def test_log_filter_list_forbidden(user_builder: UserBuilder):
     async with user.client() as client:
         client: HttpTestHelper
         await client.assert_get_forbidden("/users/me/logs/filters")
+
+
+async def test_log_filter_delete(
+    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+):
+    log_filter = await log_read_user.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+        await client.assert_delete_no_content(f"/users/me/logs/filters/{log_filter.id}")
+    await assert_collection(dbm.core_db.log_filters, [])
+
+
+async def test_log_filter_delete_unknown(log_read_user_client: HttpTestHelper):
+    await log_read_user_client.assert_delete_not_found(
+        f"/users/me/logs/filters/{UNKNOWN_OBJECT_ID}"
+    )
+
+
+async def test_log_filter_delete_forbidden(
+    user_builder: UserBuilder, repo: PreparedRepo
+):
+    user_1 = await user_builder({"is_superadmin": True})
+    user_2 = await user_builder({"is_superadmin": True})
+
+    log_filter = await user_1.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+
+    async with user_2.client() as client:
+        client: HttpTestHelper
+        await client.assert_delete_not_found(f"/users/me/logs/filters/{log_filter.id}")

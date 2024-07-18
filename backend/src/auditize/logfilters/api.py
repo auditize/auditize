@@ -53,7 +53,7 @@ async def create_filter(
     summary="Update log filter",
     tags=["log-filters"],
     status_code=204,
-    responses=error_responses(400, 409),
+    responses=error_responses(400, 404, 409),
 )
 async def update_filter(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -75,7 +75,7 @@ async def update_filter(
     summary="Get log filter",
     tags=["log-filters"],
     status_code=200,
-    responses=error_responses(400),
+    responses=error_responses(404),
 )
 async def get_filter(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -107,3 +107,19 @@ async def list_log_filters(
         page_size=page_params.page_size,
     )
     return LogFilterListResponse.build(log_filters, page_info)
+
+
+@router.delete(
+    "/users/me/logs/filters/{filter_id}",
+    summary="Delete log filter",
+    tags=["log-filters"],
+    status_code=204,
+    responses=error_responses(404),
+)
+async def delete_filter(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    authenticated: Authorized(can_read_logs()),
+    filter_id: str,
+):
+    authenticated.ensure_user()
+    await service.delete_log_filter(dbm, authenticated.user.id, filter_id)

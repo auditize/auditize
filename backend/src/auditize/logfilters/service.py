@@ -6,6 +6,7 @@ from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.helpers.resources.service import (
     create_resource_document,
+    delete_resource_document,
     get_resource_document,
     update_resource_document,
 )
@@ -68,3 +69,9 @@ async def get_log_filters(
         page_size=page_size,
     )
     return [LogFilter.model_validate(result) async for result in results], page_info
+
+
+async def delete_log_filter(dbm: DatabaseManager, user_id: str, log_filter_id: str):
+    await delete_resource_document(
+        dbm.core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
+    )
