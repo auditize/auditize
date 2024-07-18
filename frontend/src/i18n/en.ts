@@ -228,6 +228,20 @@ export default {
       csvExportDefault: "Export as CSV (all builtin columns)",
       csvExportCurrent: "Export as CSV (selected columns)",
     },
+    filter: {
+      filter: "Filter",
+      save: "Save filter",
+      form: {
+        name: {
+          label: "Name",
+          placeholder: "Filter name",
+          required: "Filter name is required.",
+        },
+      },
+      create: {
+        title: "Save log filter",
+      },
+    },
   },
   permission: {
     tab: {

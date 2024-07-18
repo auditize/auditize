@@ -11,6 +11,7 @@ import { InlineErrorMessage } from "../InlineErrorMessage";
 interface ResourceEditorProps {
   title: string;
   opened: boolean;
+  onClose?: () => void;
   isLoading?: boolean;
   onSubmit: (handleSubmit: () => void) => FormEventHandler<HTMLFormElement>;
   disabledSaving?: boolean;
@@ -23,6 +24,7 @@ interface ResourceEditorProps {
 function ResourceEditor({
   title,
   opened,
+  onClose,
   isLoading = false,
   onSubmit,
   disabledSaving = false,
@@ -33,6 +35,9 @@ function ResourceEditor({
 }: ResourceEditorProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  if (!onClose) {
+    onClose = () => navigate(-1);
+  }
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => onSave(),
@@ -41,7 +46,7 @@ function ResourceEditor({
       if (onSaveSuccess) {
         onSaveSuccess(data);
       } else {
-        navigate(-1);
+        onClose();
       }
     },
     onError: (error) => {
@@ -53,8 +58,6 @@ function ResourceEditor({
   useEffect(() => {
     setError("");
   }, [opened, disabledSaving]);
-
-  const onClose = () => navigate(-1);
 
   return (
     <Modal

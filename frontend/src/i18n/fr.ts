@@ -231,6 +231,20 @@ export default {
       csvExportDefault: "Exporter en CSV (toutes les colonnes natives)",
       csvExportCurrent: "Exporter en CSV (colonnes sélectionnées)",
     },
+    filter: {
+      filter: "Filtre",
+      save: "Sauvegarder le filtre",
+      form: {
+        name: {
+          label: "Nom",
+          placeholder: "Nom du filtre",
+          required: "Le nom du filtre est requis.",
+        },
+      },
+      create: {
+        title: "Sauvegarder le filtre",
+      },
+    },
   },
   permission: {
     tab: {

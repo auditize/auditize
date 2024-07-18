@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
+import { LogFilterCreation } from "@/features/logfilters";
 import { getAllMyRepos } from "@/features/repos";
 import { Repo } from "@/features/repos";
 import { titlize } from "@/utils/format";
@@ -1039,6 +1040,22 @@ function columnsToCsvFields(columns: string[]): string[] {
     .flat();
 }
 
+function columnsToFilterColumns(columns: string[]): string[] {
+  return columns.toSorted(sortFields).map((column) => {
+    if (column.includes(".")) {
+      // make a special case for custom fields (that contains ".") because
+      // changeCase.snakeCase transforms "." to "_"
+      // it assumes that the custom field group is all lowercase (which is currently true:
+      // actor, source, resource, details)
+      return column;
+    }
+    if (column === "date") {
+      return "saved_at";
+    }
+    return changeCase.snakeCase(column);
+  });
+}
+
 export function ExtraLogActions({
   searchParams,
   selectedColumns,
@@ -1047,32 +1064,49 @@ export function ExtraLogActions({
   selectedColumns: string[];
 }) {
   const { t } = useTranslation();
-  const searchParamsQueryString = logSearchParamsToURLSearchParams(
+  const [
+    filterPopoverOpened,
+    { open: openFilterPopover, close: closeFilterPopover },
+  ] = useDisclosure(false);
+  const normalizedSearchParams = logSearchParamsToURLSearchParams(
     searchParams,
     { includeRepoId: false, snakecase: true },
-  ).toString();
-  const csvExportUrl = `/api/repos/${searchParams.repoId}/logs/csv?${searchParamsQueryString}`;
+  );
+  const csvExportUrl = `/api/repos/${searchParams.repoId}/logs/csv?${normalizedSearchParams.toString()}`;
 
   return (
-    <Menu>
-      <Menu.Target>
-        <ActionIcon size="input-sm">
-          <IconDots />
-        </ActionIcon>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Label>{t("log.csv.csv")}</Menu.Label>
-        <Menu.Item component="a" href={csvExportUrl}>
-          {t("log.csv.csvExportDefault")}
-        </Menu.Item>
-        <Menu.Item
-          component="a"
-          href={`${csvExportUrl}&fields=${columnsToCsvFields(selectedColumns).join(",")}`}
-        >
-          {t("log.csv.csvExportCurrent")}
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
+    <>
+      <LogFilterCreation
+        repoId={searchParams.repoId}
+        searchParams={Object.fromEntries(normalizedSearchParams)}
+        columns={columnsToFilterColumns(selectedColumns)}
+        opened={filterPopoverOpened}
+        onClose={closeFilterPopover}
+      />
+      <Menu>
+        <Menu.Target>
+          <ActionIcon size="input-sm">
+            <IconDots />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Label>{t("log.csv.csv")}</Menu.Label>
+          <Menu.Item component="a" href={csvExportUrl}>
+            {t("log.csv.csvExportDefault")}
+          </Menu.Item>
+          <Menu.Item
+            component="a"
+            href={`${csvExportUrl}&fields=${columnsToCsvFields(selectedColumns).join(",")}`}
+          >
+            {t("log.csv.csvExportCurrent")}
+          </Menu.Item>
+          <Menu.Label>{t("log.filter.filter")}</Menu.Label>
+          <Menu.Item component="a" onClick={openFilterPopover}>
+            {t("log.filter.save")}
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    </>
   );
 }
 
