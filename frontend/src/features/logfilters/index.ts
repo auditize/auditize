@@ -1,2 +1,2 @@
-export { createLogFilter } from "./api";
+export { createLogFilter, getLogFilters } from "./api";
 export { LogFilterCreation } from "./components/LogFilterEditor";

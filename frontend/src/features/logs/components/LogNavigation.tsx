@@ -18,11 +18,12 @@ import { useQuery } from "@tanstack/react-query";
 import * as changeCase from "change-case";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { NavLink } from "react-router-dom";
 
 import { CustomDateTimePicker, PaginatedSelector } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
-import { LogFilterCreation } from "@/features/logfilters";
+import { getLogFilters, LogFilterCreation } from "@/features/logfilters";
 import { getAllMyRepos } from "@/features/repos";
 import { Repo } from "@/features/repos";
 import { titlize } from "@/utils/format";
@@ -1068,6 +1069,10 @@ export function ExtraLogActions({
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
   ] = useDisclosure(false);
+  const filterQuery = useQuery({
+    queryKey: ["logFilters"],
+    queryFn: () => getLogFilters().then(([filters]) => filters),
+  });
   const normalizedSearchParams = logSearchParamsToURLSearchParams(
     searchParams,
     { includeRepoId: false, snakecase: true },
@@ -1101,6 +1106,15 @@ export function ExtraLogActions({
             {t("log.csv.csvExportCurrent")}
           </Menu.Item>
           <Menu.Label>{t("log.filter.filter")}</Menu.Label>
+          {filterQuery.data?.map((filter) => (
+            <Menu.Item
+              key={filter.id}
+              component={NavLink}
+              to={`/logs?filterId=${filter.id}`}
+            >
+              {filter.name}
+            </Menu.Item>
+          ))}
           <Menu.Item component="a" onClick={openFilterPopover}>
             {t("log.filter.save")}
           </Menu.Item>
