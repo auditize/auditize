@@ -13,7 +13,7 @@ import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
 import { useDisclosure } from "@mantine/hooks";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import i18n from "i18next";
 import "mantine-datatable/styles.layer.css";
 import { useEffect } from "react";
@@ -116,81 +116,59 @@ function UserMenu() {
 }
 
 function Main() {
-  const { currentUser, declareLogout } = useCurrentUser();
+  const { currentUser, declareLogout } = useAuthenticatedUser();
   const { t } = useTranslation();
 
   useEffect(() => {
     let alreadyIntercepted = false;
 
-    if (currentUser !== null) {
-      const interceptorUnmount = interceptStatusCode(401, () => {
-        if (!alreadyIntercepted) {
-          alreadyIntercepted = true; // avoid multiple modals in a row when we have multiple 401 responses
-          modals.openContextModal({
-            modal: "logout",
-            innerProps: { onLogout: declareLogout },
-          });
-        }
-      });
-      return interceptorUnmount;
-    }
-  }, [currentUser]);
+    const interceptorUnmount = interceptStatusCode(401, () => {
+      if (!alreadyIntercepted) {
+        alreadyIntercepted = true; // avoid multiple modals in a row when we have multiple 401 responses
+        modals.openContextModal({
+          modal: "logout",
+          innerProps: { onLogout: declareLogout },
+        });
+      }
+    });
+    return interceptorUnmount;
+  }, []);
 
   return (
     <AppShell header={{ height: 55 }} padding="lg">
       <AppShell.Header bg="#fbfbfb">
         <Flex h="100%" px="lg" justify="space-between" align="center">
           <Navbar>
-            <NavbarItem label="Login" url="/login" condition={!currentUser} />
             <NavbarItem
               label={t("navigation.logs")}
               url="/logs"
-              condition={
-                !!(currentUser && currentUser.permissions.logs.read != "none")
-              }
+              condition={currentUser.permissions.logs.read != "none"}
             />
             <NavbarItemGroup label={t("navigation.management")}>
               <NavbarItem
                 label={t("navigation.repositories")}
                 url="/repos"
-                condition={
-                  !!(
-                    currentUser && currentUser.permissions.management.repos.read
-                  )
-                }
+                condition={currentUser.permissions.management.repos.read}
               />
               <NavbarItem
                 label={t("navigation.logi18nprofiles")}
                 url="/log-i18n-profiles"
-                condition={
-                  !!(
-                    currentUser && currentUser.permissions.management.repos.read
-                  )
-                }
+                condition={currentUser.permissions.management.repos.read}
               />
               <NavbarItem
                 label={t("navigation.users")}
                 url="/users"
-                condition={
-                  !!(
-                    currentUser && currentUser.permissions.management.users.read
-                  )
-                }
+                condition={currentUser.permissions.management.users.read}
               />
               <NavbarItem
                 label={t("navigation.apikeys")}
                 url="/apikeys"
-                condition={
-                  !!(
-                    currentUser &&
-                    currentUser.permissions.management.apikeys.read
-                  )
-                }
+                condition={currentUser.permissions.management.apikeys.read}
               />
             </NavbarItemGroup>
           </Navbar>
           <Space w="6rem" />
-          {currentUser && <UserMenu />}
+          <UserMenu />
         </Flex>
       </AppShell.Header>
       <AppShell.Main>
