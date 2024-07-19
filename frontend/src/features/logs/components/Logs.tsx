@@ -1,10 +1,9 @@
 import { Stack } from "@mantine/core";
-import { useDocumentTitle, useLocalStorage } from "@mantine/hooks";
+import { useDocumentTitle } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import { buildLogSearchParams } from "../api";
 import { useLogContext } from "../context";
-import { useLogSelectedColumns } from "../hooks";
 import { LogLoader } from "./LogLoader";
 import { LogNavigation } from "./LogNavigation";
 
@@ -14,10 +13,8 @@ export function Logs({
   withRepoSearchParam?: boolean;
 }) {
   const { t } = useTranslation();
-  const { searchParams, setSearchParams } = useLogContext();
-  const [selectedColumns, setSelectedColumns] = useLogSelectedColumns(
-    searchParams.repoId,
-  );
+  const { searchParams, setSearchParams, selectedColumns, setSelectedColumns } =
+    useLogContext();
   useDocumentTitle(t("log.list.documentTitle"));
 
   return (

@@ -12,13 +12,15 @@ import {
   LogSearchParams,
   logSearchParamsToURLSearchParams,
 } from "./api";
-import { useLogRepoQuery } from "./hooks";
+import { useLogRepoQuery, useLogSelectedColumns } from "./hooks";
 
 type LogContextProps = {
   displayedLogId: string | null;
   setDisplayedLogId: (id: string | null) => void;
   searchParams: LogSearchParams;
   setSearchParams: (params: LogSearchParams) => void;
+  selectedColumns: string[];
+  setSelectedColumns: (columns: string[] | null) => void;
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
@@ -35,6 +37,7 @@ export function StateLogContextProvider({
     ...buildLogSearchParams(),
     repoId,
   });
+  const [selectedColumns, setSelectedColumns] = useLogSelectedColumns(repoId);
 
   return (
     <StateLogContext.Provider
@@ -43,6 +46,8 @@ export function StateLogContextProvider({
         setDisplayedLogId,
         searchParams,
         setSearchParams,
+        selectedColumns,
+        setSelectedColumns,
       }}
     >
       {children}
@@ -99,6 +104,9 @@ export function UrlLogContextProvider({
     key: "auditize-default-repo",
     getInitialValueInEffect: false,
   });
+  const [repoSelectedColumns, setRepoSelectedColumns] = useLogSelectedColumns(
+    urlSearchParams.get("repoId") || "",
+  );
   const filterQuery = useQuery({
     queryKey: ["logFilter", urlSearchParams.get("filterId")],
     queryFn: () => getLogFilter(urlSearchParams.get("filterId")!),
@@ -188,6 +196,8 @@ export function UrlLogContextProvider({
         setDisplayedLogId,
         searchParams: logSearchParams,
         setSearchParams: setLogSearchParams,
+        selectedColumns: repoSelectedColumns,
+        setSelectedColumns: setRepoSelectedColumns,
       }}
     >
       {children}
