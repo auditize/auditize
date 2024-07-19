@@ -13,7 +13,7 @@ import {
   TextInput,
   useCombobox,
 } from "@mantine/core";
-import { useDisclosure, useLocalStorage } from "@mantine/hooks";
+import { useDisclosure } from "@mantine/hooks";
 import { IconDots, IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import * as changeCase from "change-case";
@@ -105,40 +105,7 @@ function RepoSelector({
   repoId?: string;
   onChange: (value: string) => void;
 }) {
-  const [defaultSelectedRepo, setDefaultSelectedRepo] = useLocalStorage({
-    key: "default-selected-repo",
-    getInitialValueInEffect: false,
-  });
   const repoQuery = useLogRepoQuery();
-
-  // Update default-selected-repo local storage key on repoId change
-  // so that the repo selector will be automatically set to the last selected repo
-  // on page reload
-  useEffect(() => {
-    if (repoId) {
-      setDefaultSelectedRepo(repoId);
-    }
-  }, [repoId]);
-
-  useEffect(() => {
-    const repos = repoQuery.data;
-
-    // repo has not been auto-selected yet
-    if (repos && !repoId) {
-      // if no default repo or default repo is not in the list, select the first one (if any)
-      if (
-        !defaultSelectedRepo ||
-        !repos.find((repo) => repo.id === defaultSelectedRepo)
-      ) {
-        if (repos.length > 0) {
-          onChange(repos[0].id);
-        }
-      } else {
-        // otherwise, select the default/previously selected repo (local storage)
-        onChange(defaultSelectedRepo);
-      }
-    }
-  }, [repoQuery.data]);
 
   return (
     <Select
@@ -1198,15 +1165,8 @@ export function LogNavigation({
           <RepoSelector
             repoId={editedParams.repoId}
             onChange={(repoId) => {
-              // Trigger a log search when the log repository is selected for the first time
-              // so that the logs table can be populated when the page is loaded without any
-              // explicit search parameter
-              if (!editedParams.repoId) {
-                onChange({ ...editedParams, repoId });
-              } else {
-                dispatch({ type: "setParam", name: "repoId", value: repoId });
-                setIsDirty(true);
-              }
+              dispatch({ type: "setParam", name: "repoId", value: repoId });
+              setIsDirty(true);
             }}
           />
         )}
