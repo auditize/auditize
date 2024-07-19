@@ -1,4 +1,7 @@
 import { useLocalStorage } from "@mantine/hooks";
+import { useQuery } from "@tanstack/react-query";
+
+import { getAllMyRepos, UserRepo } from "../repos/api";
 
 const DEFAULT_COLUMNS = ["date", "actor", "action", "resource", "node", "tag"];
 
@@ -19,4 +22,11 @@ export function useLogSelectedColumns(
         [repoId]: columns ? columns : DEFAULT_COLUMNS,
       })),
   ];
+}
+
+export function useLogRepoQuery() {
+  return useQuery({
+    queryKey: ["myLogRepos"],
+    queryFn: () => getAllMyRepos({ hasReadPermission: true }),
+  });
 }

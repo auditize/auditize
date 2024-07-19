@@ -7,6 +7,7 @@ import {
   Group,
   Menu,
   Popover,
+  Select,
   Space,
   Stack,
   TextInput,
@@ -20,12 +21,10 @@ import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import { CustomDateTimePicker, PaginatedSelector } from "@/components";
+import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import { getLogFilters, LogFilterCreation } from "@/features/logfilters";
-import { getAllMyRepos } from "@/features/repos";
-import { Repo } from "@/features/repos";
 import { titlize } from "@/utils/format";
 
 import {
@@ -41,6 +40,7 @@ import {
   LogSearchParams,
   logSearchParamsToURLSearchParams,
 } from "../api";
+import { useLogRepoQuery } from "../hooks";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { sortFields } from "./LogTable";
 import { useLogTranslator } from "./LogTranslation";
@@ -109,6 +109,7 @@ function RepoSelector({
     key: "default-selected-repo",
     getInitialValueInEffect: false,
   });
+  const repoQuery = useLogRepoQuery();
 
   // Update default-selected-repo local storage key on repoId change
   // so that the repo selector will be automatically set to the last selected repo
@@ -119,33 +120,45 @@ function RepoSelector({
     }
   }, [repoId]);
 
-  return (
-    <PaginatedSelector
-      label="Repository"
-      queryKey={["repos"]}
-      queryFn={() => getAllMyRepos({ hasReadPermission: true })}
-      selectedItem={repoId}
-      clearable={false}
-      onChange={onChange}
-      onDataLoaded={(repos: Repo[]) => {
-        // repo has not been auto-selected yet
-        if (!repoId) {
-          // if no default repo or default repo is not in the list, select the first one (if any)
-          if (
-            !defaultSelectedRepo ||
-            !repos.find((repo) => repo.id === defaultSelectedRepo)
-          ) {
-            if (repos.length > 0) {
-              onChange(repos[0].id);
-            }
-            // otherwise, select the default/previously selected repo (local storage)
-          } else {
-            onChange(defaultSelectedRepo);
-          }
+  useEffect(() => {
+    const repos = repoQuery.data;
+
+    // repo has not been auto-selected yet
+    if (repos && !repoId) {
+      // if no default repo or default repo is not in the list, select the first one (if any)
+      if (
+        !defaultSelectedRepo ||
+        !repos.find((repo) => repo.id === defaultSelectedRepo)
+      ) {
+        if (repos.length > 0) {
+          onChange(repos[0].id);
         }
-      }}
-      itemLabel={(repo) => repo.name}
-      itemValue={(repo) => repo.id}
+      } else {
+        // otherwise, select the default/previously selected repo (local storage)
+        onChange(defaultSelectedRepo);
+      }
+    }
+  }, [repoQuery.data]);
+
+  return (
+    <Select
+      data={repoQuery.data?.map((repo) => ({
+        label: repo.name,
+        value: repo.id,
+      }))}
+      value={repoId || null}
+      onChange={(value) => onChange(value || "")}
+      placeholder={
+        repoQuery.error
+          ? "Not available"
+          : repoQuery.isPending
+            ? "Loading..."
+            : "Repository"
+      }
+      disabled={repoQuery.isPending}
+      clearable={false}
+      display="flex"
+      comboboxProps={{ withinPortal: false }}
     />
   );
 }
