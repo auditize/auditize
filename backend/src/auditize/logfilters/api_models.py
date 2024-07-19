@@ -137,7 +137,9 @@ class _ValidateColumnsMixin:
                 not column in _BUILTIN_FILTER_COLUMNS
                 and not FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN.match(column)
             ):
-                raise ValueError(f"Invalid column name: {column}")
+                raise ValueError(f"Invalid column: {column}")
+        if len(columns) != len(set(columns)):
+            raise ValueError("Duplicated column")
         return columns
 
 

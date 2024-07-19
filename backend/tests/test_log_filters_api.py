@@ -235,6 +235,23 @@ async def test_log_filter_create_invalid_column_custom_field(
         )
 
 
+async def test_log_filter_create_invalid_column_duplicated(
+    log_read_user_client: HttpTestHelper, repo: PreparedRepo
+):
+    await log_read_user_client.assert_post_bad_request(
+        "/users/me/logs/filters",
+        json={
+            "name": "my filter",
+            "repo_id": repo.id,
+            "search_params": {},
+            "columns": [
+                "saved_at",
+                "saved_at",
+            ],
+        },
+    )
+
+
 async def test_log_filter_create_invalid_repo(
     log_read_user: PreparedUser, dbm: DatabaseManager
 ):
