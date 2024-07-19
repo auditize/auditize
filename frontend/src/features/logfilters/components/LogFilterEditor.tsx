@@ -79,7 +79,7 @@ export function LogFilterCreation({
           columns,
         })
       }
-      queryKeyForInvalidation={["repos"]}
+      queryKeyForInvalidation={["logFilters"]}
     >
       <LogFilterForm form={form} />
     </ResourceCreation>
