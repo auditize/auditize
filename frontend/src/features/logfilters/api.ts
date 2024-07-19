@@ -1,3 +1,5 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import {
   PagePaginationInfo,
   reqGet,
@@ -48,4 +50,17 @@ export async function updateLogFilter(
   update: LogFilterUpdate,
 ): Promise<void> {
   await reqPatch(`/users/me/logs/filters/${id}`, update);
+}
+
+export function useLogFilterMutation(id: string) {
+  const queryClient = useQueryClient();
+  const filterMutation = useMutation({
+    mutationFn: (params: LogFilterUpdate) => updateLogFilter(id, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["logFilter", id],
+      });
+    },
+  });
+  return filterMutation;
 }

@@ -233,7 +233,9 @@ export default {
     },
     filter: {
       filter: "Filtre",
+      filters: "Filtres",
       save: "Sauvegarder le filtre",
+      update: "Mettre à jour le filtre actif",
       form: {
         name: {
           label: "Nom",

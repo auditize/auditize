@@ -230,7 +230,9 @@ export default {
     },
     filter: {
       filter: "Filter",
+      filters: "Filters",
       save: "Save filter",
+      update: "Update current filter",
       form: {
         name: {
           label: "Name",

@@ -19,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as changeCase from "change-case";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useSearchParams } from "react-router-dom";
 
 import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -29,6 +29,7 @@ import {
   LogFilterCreation,
   normalizeFilterColumnsForApi,
 } from "@/features/logfilters";
+import { useLogFilterMutation } from "@/features/logfilters/api";
 import { titlize } from "@/utils/format";
 
 import {
@@ -1025,38 +1026,40 @@ function columnsToCsvFields(columns: string[]): string[] {
     .flat();
 }
 
-export function ExtraLogActions({
-  searchParams,
+export function ExtraActions({
+  searchParams: logSearchParams,
   selectedColumns,
 }: {
   searchParams: LogSearchParams;
   selectedColumns: string[];
 }) {
   const { t } = useTranslation();
+  const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const [
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
   ] = useDisclosure(false);
-  const filterQuery = useQuery({
+  const filterListQuery = useQuery({
     queryKey: ["logFilters"],
     queryFn: () => getLogFilters().then(([filters]) => filters),
   });
+  const filterMutation = useLogFilterMutation(urlSearchParams.get("filterId")!);
   const normalizedSearchParams = logSearchParamsToURLSearchParams(
-    searchParams,
+    logSearchParams,
     { includeRepoId: false, snakecase: true },
   );
-  const csvExportUrl = `/api/repos/${searchParams.repoId}/logs/csv?${normalizedSearchParams.toString()}`;
+  const csvExportUrl = `/api/repos/${logSearchParams.repoId}/logs/csv?${normalizedSearchParams.toString()}`;
 
   return (
     <>
       <LogFilterCreation
-        repoId={searchParams.repoId}
+        repoId={logSearchParams.repoId}
         searchParams={Object.fromEntries(normalizedSearchParams)}
         columns={normalizeFilterColumnsForApi(selectedColumns)}
         opened={filterPopoverOpened}
         onClose={closeFilterPopover}
       />
-      <Menu>
+      <Menu shadow="md">
         <Menu.Target>
           <ActionIcon size="input-sm">
             <IconDots />
@@ -1073,8 +1076,9 @@ export function ExtraLogActions({
           >
             {t("log.csv.csvExportCurrent")}
           </Menu.Item>
-          <Menu.Label>{t("log.filter.filter")}</Menu.Label>
-          {filterQuery.data?.map((filter) => (
+          <Menu.Divider />
+          <Menu.Label>{t("log.filter.filters")}</Menu.Label>
+          {filterListQuery.data?.map((filter) => (
             <Menu.Item
               key={filter.id}
               component={NavLink}
@@ -1083,9 +1087,22 @@ export function ExtraLogActions({
               {filter.name}
             </Menu.Item>
           ))}
+          <Menu.Divider />
           <Menu.Item component="a" onClick={openFilterPopover}>
             {t("log.filter.save")}
           </Menu.Item>
+          {urlSearchParams.has("filterId") && (
+            <Menu.Item
+              component="a"
+              onClick={() =>
+                filterMutation.mutate({
+                  searchParams: Object.fromEntries(normalizedSearchParams),
+                })
+              }
+            >
+              {t("log.filter.update")}
+            </Menu.Item>
+          )}
         </Menu.Dropdown>
       </Menu>
     </>
@@ -1228,10 +1245,7 @@ export function LogNavigation({
         >
           {t("log.list.searchParams.clear")}
         </Button>
-        <ExtraLogActions
-          searchParams={params}
-          selectedColumns={selectedColumns}
-        />
+        <ExtraActions searchParams={params} selectedColumns={selectedColumns} />
       </Group>
     </Flex>
   );

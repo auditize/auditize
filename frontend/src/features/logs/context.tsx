@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@mantine/hooks";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -11,7 +11,11 @@ import {
   normalizeFilterColumnsForApi,
   unnormalizeFilterColumnsFromApi,
 } from "../logfilters";
-import { LogFilterUpdate, updateLogFilter } from "../logfilters/api";
+import {
+  LogFilterUpdate,
+  updateLogFilter,
+  useLogFilterMutation,
+} from "../logfilters/api";
 import {
   buildLogSearchParams,
   LogSearchParams,
@@ -116,21 +120,12 @@ export function UrlLogContextProvider({
   const [repoSelectedColumns, setRepoSelectedColumns] = useLogSelectedColumns(
     urlSearchParams.get("repoId") || "",
   );
-  const queryClient = useQueryClient();
   const filterQuery = useQuery({
     queryKey: ["logFilter", urlSearchParams.get("filterId")],
     queryFn: () => getLogFilter(urlSearchParams.get("filterId")!),
     enabled: urlSearchParams.has("filterId"),
   });
-  const filterMutation = useMutation({
-    mutationFn: (params: LogFilterUpdate) =>
-      updateLogFilter(urlSearchParams.get("filterId")!, params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["logFilter", urlSearchParams.get("filterId")],
-      });
-    },
-  });
+  const filterMutation = useLogFilterMutation(urlSearchParams.get("filterId")!);
 
   const setDisplayedLogId = (logId: string | null) => {
     if (logId === null) {
