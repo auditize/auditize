@@ -1,10 +1,12 @@
 import { useLocalStorage } from "@mantine/hooks";
+import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { deserializeDate } from "@/utils/date";
 import { addQueryParamToLocation } from "@/utils/router";
 
+import { getLogFilter } from "../logfilters";
 import {
   buildLogSearchParams,
   LogSearchParams,
@@ -48,12 +50,12 @@ export function StateLogContextProvider({
   );
 }
 
-function extractCustomFieldsFromURLSearchParams(
-  params: URLSearchParams,
+function unflattensCustomFields(
+  params: Record<string, string>,
   prefix: string,
 ): Map<string, string> {
   const customFields = new Map<string, string>();
-  for (const [name, value] of params.entries()) {
+  for (const [name, value] of Object.entries(params)) {
     const parts = name.split(".");
     if (parts.length === 2 && parts[0] === prefix) {
       customFields.set(parts[1], value);
@@ -62,23 +64,23 @@ function extractCustomFieldsFromURLSearchParams(
   return customFields;
 }
 
-function urlSearchParamsToLogSearchParams(
-  params: URLSearchParams,
+function unflattensLogSearchParameters(
+  params: Record<string, string>,
 ): LogSearchParams {
   // filter the params from the LogSearchParams available keys (white list)
   // in order to avoid possible undesired keys in LogSearchParams resulting object
   const template = buildLogSearchParams();
   const obj = Object.fromEntries(
-    Object.keys(template).map((key) => [key, params.get(key) || ""]),
+    Object.keys(template).map((key) => [key, params[key] ?? ""]),
   );
   return {
     ...obj,
     since: obj.since ? deserializeDate(obj.since) : null,
     until: obj.until ? deserializeDate(obj.until) : null,
-    actorExtra: extractCustomFieldsFromURLSearchParams(params, "actor"),
-    resourceExtra: extractCustomFieldsFromURLSearchParams(params, "resource"),
-    source: extractCustomFieldsFromURLSearchParams(params, "source"),
-    details: extractCustomFieldsFromURLSearchParams(params, "details"),
+    actorExtra: unflattensCustomFields(params, "actor"),
+    resourceExtra: unflattensCustomFields(params, "resource"),
+    source: unflattensCustomFields(params, "source"),
+    details: unflattensCustomFields(params, "details"),
   } as LogSearchParams;
 }
 
@@ -97,6 +99,11 @@ export function UrlLogContextProvider({
     key: "auditize-default-repo",
     getInitialValueInEffect: false,
   });
+  const filterQuery = useQuery({
+    queryKey: ["logFilter", urlSearchParams.get("filterId")],
+    queryFn: () => getLogFilter(urlSearchParams.get("filterId")!),
+    enabled: urlSearchParams.has("filterId"),
+  });
 
   const setDisplayedLogId = (logId: string | null) => {
     if (logId === null) {
@@ -108,7 +115,23 @@ export function UrlLogContextProvider({
 
   const displayedLogId = urlSearchParams.get("log") || null;
 
-  const logSearchParams = urlSearchParamsToLogSearchParams(urlSearchParams);
+  // Build log search parameters from URL search parameters or filterId (if provided)
+  // In case both are provided, the URL search parameters have precedence
+  let logSearchParams: LogSearchParams;
+  if (
+    !urlSearchParams.has("repoId") &&
+    urlSearchParams.has("filterId") &&
+    filterQuery.data
+  ) {
+    logSearchParams = {
+      ...unflattensLogSearchParameters(filterQuery.data.searchParams),
+      repoId: filterQuery.data.repoId,
+    };
+  } else {
+    logSearchParams = unflattensLogSearchParameters(
+      Object.fromEntries(urlSearchParams.entries()),
+    );
+  }
 
   const setLogSearchParams = (newLogSearchParams: LogSearchParams) => {
     // Do not keep the "repo auto-select redirect" in the history,
@@ -116,13 +139,24 @@ export function UrlLogContextProvider({
     const isAutoSelectRepo = !!(
       !logSearchParams.repoId && newLogSearchParams.repoId
     );
-    setUrlSearchParams(logSearchParamsToURLSearchParams(newLogSearchParams), {
+
+    const newUrlSearchParams =
+      logSearchParamsToURLSearchParams(newLogSearchParams);
+    if (urlSearchParams.has("filterId")) {
+      newUrlSearchParams.set("filterId", urlSearchParams.get("filterId")!);
+    }
+    setUrlSearchParams(newUrlSearchParams, {
       replace: isAutoSelectRepo,
     });
   };
 
+  // Auto-select repository if the repoId is not in the URL
   useEffect(() => {
-    if (!logSearchParams.repoId && repoQuery.data) {
+    if (
+      !urlSearchParams.has("filterId") &&
+      !logSearchParams.repoId &&
+      repoQuery.data
+    ) {
       // repo has not been auto-selected yet
       const repos = repoQuery.data;
 
@@ -136,7 +170,7 @@ export function UrlLogContextProvider({
         setLogSearchParams({ ...logSearchParams, repoId: defaultRepo });
       }
     }
-  }, [repoQuery.data]);
+  });
 
   // Update auditize-default-repo local storage key on repoId change
   // so that the repo selector will be automatically set to the last selected repo
