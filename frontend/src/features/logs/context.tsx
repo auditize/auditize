@@ -158,6 +158,16 @@ export function UrlLogContextProvider({
     });
   };
 
+  let selectedColumns: string[];
+  let setSelectedColumns: (columns: string[] | null) => void;
+  if (urlSearchParams.has("filterId") && filterQuery.data) {
+    selectedColumns = filterQuery.data.columns;
+    setSelectedColumns = () => {};
+  } else {
+    selectedColumns = repoSelectedColumns;
+    setSelectedColumns = setRepoSelectedColumns;
+  }
+
   // Auto-select repository if the repoId is not in the URL
   useEffect(() => {
     if (
@@ -196,8 +206,8 @@ export function UrlLogContextProvider({
         setDisplayedLogId,
         searchParams: logSearchParams,
         setSearchParams: setLogSearchParams,
-        selectedColumns: repoSelectedColumns,
-        setSelectedColumns: setRepoSelectedColumns,
+        selectedColumns,
+        setSelectedColumns,
       }}
     >
       {children}
