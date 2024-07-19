@@ -24,7 +24,11 @@ import { NavLink } from "react-router-dom";
 import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
-import { getLogFilters, LogFilterCreation } from "@/features/logfilters";
+import {
+  getLogFilters,
+  LogFilterCreation,
+  normalizeFilterColumnsForApi,
+} from "@/features/logfilters";
 import { titlize } from "@/utils/format";
 
 import {
@@ -1021,22 +1025,6 @@ function columnsToCsvFields(columns: string[]): string[] {
     .flat();
 }
 
-function columnsToFilterColumns(columns: string[]): string[] {
-  return columns.toSorted(sortFields).map((column) => {
-    if (column.includes(".")) {
-      // make a special case for custom fields (that contains ".") because
-      // changeCase.snakeCase transforms "." to "_"
-      // it assumes that the custom field group is all lowercase (which is currently true:
-      // actor, source, resource, details)
-      return column;
-    }
-    if (column === "date") {
-      return "saved_at";
-    }
-    return changeCase.snakeCase(column);
-  });
-}
-
 export function ExtraLogActions({
   searchParams,
   selectedColumns,
@@ -1064,7 +1052,7 @@ export function ExtraLogActions({
       <LogFilterCreation
         repoId={searchParams.repoId}
         searchParams={Object.fromEntries(normalizedSearchParams)}
-        columns={columnsToFilterColumns(selectedColumns)}
+        columns={normalizeFilterColumnsForApi(selectedColumns)}
         opened={filterPopoverOpened}
         onClose={closeFilterPopover}
       />

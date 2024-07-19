@@ -1,18 +1,27 @@
 import { useLocalStorage } from "@mantine/hooks";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { deserializeDate } from "@/utils/date";
 import { addQueryParamToLocation } from "@/utils/router";
 
-import { getLogFilter } from "../logfilters";
+import {
+  getLogFilter,
+  normalizeFilterColumnsForApi,
+  unnormalizeFilterColumnsFromApi,
+} from "../logfilters";
+import { LogFilterUpdate, updateLogFilter } from "../logfilters/api";
 import {
   buildLogSearchParams,
   LogSearchParams,
   logSearchParamsToURLSearchParams,
 } from "./api";
-import { useLogRepoQuery, useLogSelectedColumns } from "./hooks";
+import {
+  DEFAULT_COLUMNS,
+  useLogRepoQuery,
+  useLogSelectedColumns,
+} from "./hooks";
 
 type LogContextProps = {
   displayedLogId: string | null;
@@ -107,10 +116,20 @@ export function UrlLogContextProvider({
   const [repoSelectedColumns, setRepoSelectedColumns] = useLogSelectedColumns(
     urlSearchParams.get("repoId") || "",
   );
+  const queryClient = useQueryClient();
   const filterQuery = useQuery({
     queryKey: ["logFilter", urlSearchParams.get("filterId")],
     queryFn: () => getLogFilter(urlSearchParams.get("filterId")!),
     enabled: urlSearchParams.has("filterId"),
+  });
+  const filterMutation = useMutation({
+    mutationFn: (params: LogFilterUpdate) =>
+      updateLogFilter(urlSearchParams.get("filterId")!, params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["logFilter", urlSearchParams.get("filterId")],
+      });
+    },
   });
 
   const setDisplayedLogId = (logId: string | null) => {
@@ -161,8 +180,11 @@ export function UrlLogContextProvider({
   let selectedColumns: string[];
   let setSelectedColumns: (columns: string[] | null) => void;
   if (urlSearchParams.has("filterId") && filterQuery.data) {
-    selectedColumns = filterQuery.data.columns;
-    setSelectedColumns = () => {};
+    selectedColumns = unnormalizeFilterColumnsFromApi(filterQuery.data.columns);
+    setSelectedColumns = (columns: string[] | null) =>
+      filterMutation.mutate({
+        columns: normalizeFilterColumnsForApi(columns ?? DEFAULT_COLUMNS),
+      });
   } else {
     selectedColumns = repoSelectedColumns;
     setSelectedColumns = setRepoSelectedColumns;

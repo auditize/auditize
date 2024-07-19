@@ -3,7 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getAllMyRepos, UserRepo } from "../repos/api";
 
-const DEFAULT_COLUMNS = ["date", "actor", "action", "resource", "node", "tag"];
+export const DEFAULT_COLUMNS = [
+  "date",
+  "actor",
+  "action",
+  "resource",
+  "node",
+  "tag",
+];
 
 export function useLogSelectedColumns(
   repoId: string,
