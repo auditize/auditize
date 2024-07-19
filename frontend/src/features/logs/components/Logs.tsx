@@ -4,10 +4,9 @@ import { useTranslation } from "react-i18next";
 
 import { buildLogSearchParams } from "../api";
 import { useLogContext } from "../context";
+import { useLogSelectedColumns } from "../hooks";
 import { LogLoader } from "./LogLoader";
 import { LogNavigation } from "./LogNavigation";
-
-const DEFAULT_COLUMNS = ["date", "actor", "action", "resource", "node", "tag"];
 
 export function Logs({
   withRepoSearchParam = true,
@@ -16,14 +15,9 @@ export function Logs({
 }) {
   const { t } = useTranslation();
   const { searchParams, setSearchParams } = useLogContext();
-  const [selectedColumns, setSelectedColumns] = useLocalStorage<
-    Record<string, string[]>
-  >({
-    key: `log-columns`,
-    defaultValue: {},
-  });
-  const repoSelectedColumns =
-    selectedColumns[searchParams.repoId] ?? DEFAULT_COLUMNS;
+  const [selectedColumns, setSelectedColumns] = useLogSelectedColumns(
+    searchParams.repoId,
+  );
   useDocumentTitle(t("log.list.documentTitle"));
 
   return (
@@ -33,7 +27,7 @@ export function Logs({
         onChange={(newSearchParams) => {
           setSearchParams(newSearchParams);
         }}
-        selectedColumns={repoSelectedColumns}
+        selectedColumns={selectedColumns}
         withRepoSearchParam={withRepoSearchParam}
       />
       <LogLoader
@@ -47,15 +41,8 @@ export function Logs({
             [name]: value,
           });
         }}
-        selectedColumns={repoSelectedColumns}
-        onSelectedColumnsChange={(repoSelectedColumns) =>
-          setSelectedColumns((selectedColumns) => ({
-            ...selectedColumns,
-            [searchParams.repoId]: repoSelectedColumns
-              ? repoSelectedColumns
-              : DEFAULT_COLUMNS,
-          }))
-        }
+        selectedColumns={selectedColumns}
+        onSelectedColumnsChange={setSelectedColumns}
       />
     </Stack>
   );
