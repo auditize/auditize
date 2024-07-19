@@ -1,6 +1,8 @@
 import { useLocalStorage } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { deserializeDate } from "@/utils/date";
@@ -109,6 +111,7 @@ export function UrlLogContextProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -125,7 +128,18 @@ export function UrlLogContextProvider({
     queryFn: () => getLogFilter(urlSearchParams.get("filterId")!),
     enabled: urlSearchParams.has("filterId"),
   });
-  const filterMutation = useLogFilterMutation(urlSearchParams.get("filterId")!);
+  const filterMutation = useLogFilterMutation(
+    urlSearchParams.get("filterId")!,
+    {
+      onError: () =>
+        notifications.show({
+          title: t("common.errorModalTitle"),
+          message: t("log.filter.updateError"),
+          color: "red",
+          autoClose: false,
+        }),
+    },
+  );
 
   const setDisplayedLogId = (logId: string | null) => {
     if (logId === null) {

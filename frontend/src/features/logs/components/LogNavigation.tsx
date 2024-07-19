@@ -14,6 +14,7 @@ import {
   useCombobox,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { IconDots, IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import * as changeCase from "change-case";
@@ -1034,7 +1035,7 @@ export function ExtraActions({
   selectedColumns: string[];
 }) {
   const { t } = useTranslation();
-  const [urlSearchParams, setUrlSearchParams] = useSearchParams();
+  const [urlSearchParams] = useSearchParams();
   const [
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
@@ -1043,7 +1044,19 @@ export function ExtraActions({
     queryKey: ["logFilters"],
     queryFn: () => getLogFilters().then(([filters]) => filters),
   });
-  const filterMutation = useLogFilterMutation(urlSearchParams.get("filterId")!);
+  const filterMutation = useLogFilterMutation(
+    urlSearchParams.get("filterId")!,
+    {
+      onError: () => {
+        notifications.show({
+          title: t("common.errorModalTitle"),
+          message: t("log.filter.updateError"),
+          color: "red",
+          autoClose: false,
+        });
+      },
+    },
+  );
   const normalizedSearchParams = logSearchParamsToURLSearchParams(
     logSearchParams,
     { includeRepoId: false, snakecase: true },

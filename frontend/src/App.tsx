@@ -13,6 +13,8 @@ import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
 import { useDisclosure } from "@mantine/hooks";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
+import { Notifications } from "@mantine/notifications";
+import "@mantine/notifications/styles.css";
 import { QueryClientProvider } from "@tanstack/react-query";
 import i18n from "i18next";
 import "mantine-datatable/styles.layer.css";
@@ -265,6 +267,7 @@ export default function App() {
   return (
     <MantineProvider theme={theme}>
       <ModalsProvider modals={{ logout: LogoutModal }}>
+        <Notifications />
         <QueryClientProvider client={auditizeQueryClient()}>
           <AuthProvider>
             <AppRoutes />

@@ -243,6 +243,7 @@ export default {
       create: {
         title: "Save log filter",
       },
+      updateError: "Unable to update filter",
     },
   },
   permission: {
@@ -286,6 +287,7 @@ export default {
     ok: "Ok",
     loading: "Loading...",
     notCurrentlyAvailable: "Not currently available",
+    errorModalTitle: "An error occurred",
   },
   resource: {
     list: {

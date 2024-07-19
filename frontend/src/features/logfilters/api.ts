@@ -52,7 +52,10 @@ export async function updateLogFilter(
   await reqPatch(`/users/me/logs/filters/${id}`, update);
 }
 
-export function useLogFilterMutation(id: string) {
+export function useLogFilterMutation(
+  id: string,
+  { onError }: { onError?: (error: Error) => void } = {},
+) {
   const queryClient = useQueryClient();
   const filterMutation = useMutation({
     mutationFn: (params: LogFilterUpdate) => updateLogFilter(id, params),
@@ -61,6 +64,7 @@ export function useLogFilterMutation(id: string) {
         queryKey: ["logFilter", id],
       });
     },
+    onError,
   });
   return filterMutation;
 }

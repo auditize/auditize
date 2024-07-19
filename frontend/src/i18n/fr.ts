@@ -246,6 +246,7 @@ export default {
       create: {
         title: "Sauvegarder le filtre",
       },
+      updateError: "Impossible de mettre à jour le filtre",
     },
   },
   permission: {
@@ -289,6 +290,7 @@ export default {
     ok: "Ok",
     loading: "Chargement...",
     notCurrentlyAvailable: "Actuellement indisponible",
+    errorModalTitle: "Une erreur est survenue",
   },
   resource: {
     list: {
