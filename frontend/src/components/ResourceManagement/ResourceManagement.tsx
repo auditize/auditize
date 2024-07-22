@@ -15,18 +15,17 @@ import { IconPlus, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link } from "react-router-dom";
 
-import { addQueryParamToLocation } from "@/utils/router";
+import { useResourceManagementState } from "./ResourceManagementState";
 
-type ResourceCreationComponentBuilder = (opened: boolean) => React.ReactNode;
+type ResourceCreationComponentBuilder = (
+  opened: boolean,
+  onClose: () => void,
+) => React.ReactNode;
 type ResourceEditionComponentBuilder = (
   resourceId: string | null,
+  onClose: () => void,
 ) => React.ReactNode;
 type ResourceDeletionComponentBuilder = (
   resource: any,
@@ -35,24 +34,20 @@ type ResourceDeletionComponentBuilder = (
 ) => React.ReactNode;
 
 function ResourceTableRow({
-  resourceName,
   resource,
+  onClick,
+  link,
   rowValueBuilders,
   resourceDeletionComponentBuilder,
 }: {
-  resourceName: string;
   resource: any;
+  onClick: () => void;
+  link?: string;
   rowValueBuilders: ((resource: any) => React.ReactNode)[];
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
   const { t } = useTranslation();
-  const location = useLocation();
   const [opened, { open, close }] = useDisclosure();
-  const resourceLink = addQueryParamToLocation(
-    location,
-    resourceName,
-    resource.id,
-  );
 
   const deletionConfirmModal = resourceDeletionComponentBuilder(
     resource,
@@ -67,9 +62,15 @@ function ResourceTableRow({
       ))}
       <Table.Td style={{ textAlign: "right" }}>
         <Group justify="flex-end" gap={"md"}>
-          <Anchor component={Link} to={resourceLink}>
-            {t("resource.list.edit")}
-          </Anchor>
+          {link ? (
+            <Anchor component={Link} to={link}>
+              {t("resource.list.edit")}
+            </Anchor>
+          ) : (
+            <Anchor component="a" onClick={onClick}>
+              {t("resource.list.edit")}
+            </Anchor>
+          )}
           {deletionConfirmModal && (
             <>
               <Divider orientation="vertical" />
@@ -85,15 +86,20 @@ function ResourceTableRow({
   );
 }
 
-function Search({ name }: { name: string }) {
+function Search({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
   const { t } = useTranslation();
-  const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const handleSearch = () => setParams({ q: search });
+  const handleSearch = () => onChange(search);
 
   useEffect(() => {
-    setSearch(params.get("q") || "");
-  }, [params.get("q")]);
+    setSearch(value);
+  }, [value]);
 
   return (
     <Group gap="xs">
@@ -117,7 +123,7 @@ function Search({ name }: { name: string }) {
           )
         }
       />
-      <Button onClick={handleSearch} disabled={!search && !params.get("q")}>
+      <Button onClick={handleSearch} disabled={!search && !value}>
         {t("resource.list.search")}
       </Button>
     </Group>
@@ -148,16 +154,20 @@ export function ResourceManagement({
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
   const { t } = useTranslation();
-  const [params] = useSearchParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const newResource = params.has("new");
-  const resourceId = params.get(resourceName);
-  const pageParam = params.has("page") ? parseInt(params.get("page") || "") : 1;
-  const searchParam = params.get("q");
+  const {
+    page,
+    setPage,
+    isNew,
+    setIsNew,
+    resourceId,
+    setResourceId,
+    resourceLink,
+    search,
+    setSearch,
+  } = useResourceManagementState();
   const { isPending, data, error } = useQuery({
-    queryKey: queryKey(searchParam, pageParam),
-    queryFn: queryFn(searchParam, pageParam),
+    queryKey: queryKey(search, page),
+    queryFn: queryFn(search, page),
   });
 
   if (error) {
@@ -182,7 +192,8 @@ export function ResourceManagement({
     rows = resources.map((resource: any) => (
       <ResourceTableRow
         key={resource.id}
-        resourceName={resourceName}
+        onClick={() => setResourceId(resource.id)}
+        link={resourceLink ? resourceLink(resource.id) : undefined}
         resource={resource}
         rowValueBuilders={columnBuilders.map(
           ([_, valueBuilder]) => valueBuilder,
@@ -196,11 +207,14 @@ export function ResourceManagement({
     <div>
       <h1>{title}</h1>
       <Group justify="space-between" pb="md">
-        <Search name={name} />
+        <Search value={search} onChange={setSearch} />
         {resourceCreationComponentBuilder && (
-          <Link to={addQueryParamToLocation(location, "new")}>
-            <Button leftSection={<IconPlus size={"1.3rem"} />}>{name}</Button>
-          </Link>
+          <Button
+            onClick={() => setIsNew(true)}
+            leftSection={<IconPlus size={"1.3rem"} />}
+          >
+            {name}
+          </Button>
         )}
       </Group>
       <Stack align="center">
@@ -220,17 +234,13 @@ export function ResourceManagement({
         <Pagination
           total={pagination?.total_pages}
           value={pagination?.page}
-          onChange={(value) => {
-            navigate(
-              addQueryParamToLocation(location, "page", value.toString()),
-            );
-          }}
+          onChange={setPage}
           py="md"
         />
       </Stack>
       {resourceCreationComponentBuilder &&
-        resourceCreationComponentBuilder(newResource)}
-      {resourceEditionComponentBuilder(resourceId)}
+        resourceCreationComponentBuilder(isNew, () => setIsNew(false))}
+      {resourceEditionComponentBuilder(resourceId, () => setResourceId(null))}
     </div>
   );
 }

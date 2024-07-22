@@ -48,7 +48,7 @@ export function LogFilterCreation({
   searchParams: Record<string, string>;
   columns: string[];
   opened?: boolean;
-  onClose?: () => void;
+  onClose: () => void;
 }) {
   const { t } = useTranslation();
   const form = useLogFilterForm({});
@@ -78,13 +78,20 @@ export function LogFilterCreation({
   );
 }
 
-export function LogFilterEdition({ filterId }: { filterId: string | null }) {
+export function LogFilterEdition({
+  filterId,
+  onClose,
+}: {
+  filterId: string | null;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
   const form = useLogFilterForm({});
 
   return (
     <ResourceEdition
       resourceId={filterId}
+      onClose={onClose}
       queryKeyForLoad={["logFilter", filterId]}
       queryFnForLoad={() => getLogFilter(filterId!)}
       onDataLoaded={(data) => {

@@ -106,7 +106,13 @@ function RepoForm({
   );
 }
 
-export function RepoCreation({ opened }: { opened?: boolean }) {
+export function RepoCreation({
+  opened,
+  onClose,
+}: {
+  opened?: boolean;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
   const form = useRepoForm({});
 
@@ -118,6 +124,7 @@ export function RepoCreation({ opened }: { opened?: boolean }) {
     <ResourceCreation
       title={t("repo.create.title")}
       opened={!!opened}
+      onClose={onClose}
       onSubmit={form.onSubmit}
       onSave={() => createRepo(form.values)}
       queryKeyForInvalidation={["repos"]}
@@ -129,9 +136,11 @@ export function RepoCreation({ opened }: { opened?: boolean }) {
 
 export function RepoEdition({
   repoId,
+  onClose,
   readOnly,
 }: {
   repoId: string | null;
+  onClose: () => void;
   readOnly: boolean;
 }) {
   const { t } = useTranslation();
@@ -140,6 +149,7 @@ export function RepoEdition({
   return (
     <ResourceEdition
       resourceId={repoId}
+      onClose={onClose}
       queryKeyForLoad={["repo", repoId]}
       queryFnForLoad={() => getRepo(repoId!)}
       onDataLoaded={(data) => {

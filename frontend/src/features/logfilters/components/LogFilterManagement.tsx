@@ -27,8 +27,8 @@ export function LogFilterManagement() {
       columnBuilders={[
         [t("log.filter.list.column.name"), (filter: LogFilter) => filter.name],
       ]}
-      resourceEditionComponentBuilder={(resourceId) => (
-        <LogFilterEdition filterId={resourceId} />
+      resourceEditionComponentBuilder={(resourceId, onClose) => (
+        <LogFilterEdition filterId={resourceId} onClose={onClose} />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) => (
         <LogFilterDeletion

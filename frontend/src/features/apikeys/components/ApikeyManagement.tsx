@@ -39,10 +39,18 @@ export function ApikeysManagement() {
         ],
       ]}
       resourceCreationComponentBuilder={
-        readOnly ? undefined : (opened) => <ApikeyCreation opened={opened} />
+        readOnly
+          ? undefined
+          : (opened, onClose) => (
+              <ApikeyCreation opened={opened} onClose={onClose} />
+            )
       }
-      resourceEditionComponentBuilder={(resourceId) => (
-        <ApikeyEdition apikeyId={resourceId} readOnly={readOnly} />
+      resourceEditionComponentBuilder={(resourceId, onClose) => (
+        <ApikeyEdition
+          apikeyId={resourceId}
+          onClose={onClose}
+          readOnly={readOnly}
+        />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) =>
         readOnly ? undefined : (

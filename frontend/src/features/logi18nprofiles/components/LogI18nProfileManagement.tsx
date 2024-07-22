@@ -1,4 +1,3 @@
-import { Breadcrumbs } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconLanguage } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
@@ -53,10 +52,16 @@ export function LogI18nProfileManagement() {
       resourceCreationComponentBuilder={
         readOnly
           ? undefined
-          : (opened) => <LogI18nProfileCreation opened={opened} />
+          : (opened, onClose) => (
+              <LogI18nProfileCreation opened={opened} onClose={onClose} />
+            )
       }
-      resourceEditionComponentBuilder={(resourceId) => (
-        <LogI18nProfileEdition profileId={resourceId} readOnly={readOnly} />
+      resourceEditionComponentBuilder={(resourceId, onClose) => (
+        <LogI18nProfileEdition
+          profileId={resourceId}
+          onClose={onClose}
+          readOnly={readOnly}
+        />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) =>
         readOnly ? undefined : (

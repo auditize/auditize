@@ -88,7 +88,13 @@ function UserEditor({
   );
 }
 
-export function UserCreation({ opened }: { opened?: boolean }) {
+export function UserCreation({
+  opened,
+  onClose,
+}: {
+  opened?: boolean;
+  onClose: () => void;
+}) {
   const form = useUserForm({});
   const [permissions, setPermissions] = useState<Permissions>(() =>
     emptyPermissions(),
@@ -104,6 +110,7 @@ export function UserCreation({ opened }: { opened?: boolean }) {
     <ResourceCreation
       title={t("user.create.title")}
       opened={!!opened}
+      onClose={onClose}
       onSubmit={form.onSubmit}
       onSave={() => createUser({ ...form.values, permissions })}
       queryKeyForInvalidation={["users"]}
@@ -119,9 +126,11 @@ export function UserCreation({ opened }: { opened?: boolean }) {
 
 export function UserEdition({
   userId,
+  onClose,
   readOnly,
 }: {
   userId: string | null;
+  onClose: () => void;
   readOnly: boolean;
 }) {
   const { t } = useTranslation();
@@ -133,6 +142,7 @@ export function UserEdition({
   return (
     <ResourceEdition
       resourceId={userId}
+      onClose={onClose}
       queryKeyForLoad={["user", userId]}
       queryFnForLoad={() => getUser(userId!)}
       onDataLoaded={(data) => {

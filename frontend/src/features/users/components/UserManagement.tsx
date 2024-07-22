@@ -44,11 +44,16 @@ export function UsersManagement() {
         ],
       ]}
       resourceCreationComponentBuilder={
-        readOnly ? undefined : (opened) => <UserCreation opened={opened} />
+        readOnly
+          ? undefined
+          : (opened, onClose) => (
+              <UserCreation opened={opened} onClose={onClose} />
+            )
       }
-      resourceEditionComponentBuilder={(resourceId) => (
+      resourceEditionComponentBuilder={(resourceId, onClose) => (
         <UserEdition
           userId={resourceId}
+          onClose={onClose}
           readOnly={readOnly || resourceId === currentUser.id}
         />
       )}

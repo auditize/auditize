@@ -189,7 +189,13 @@ function LogI18nProfileForm({
   );
 }
 
-export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
+export function LogI18nProfileCreation({
+  opened,
+  onClose,
+}: {
+  opened?: boolean;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
   const form = useLogI18nProfileForm({});
   const [translations, setTranslations] = useState<Record<string, object>>({});
@@ -202,6 +208,7 @@ export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
     <ResourceCreation
       title={t("logi18nprofile.create.title")}
       opened={!!opened}
+      onClose={onClose}
       onSubmit={form.onSubmit}
       onSave={() => createLogi18nProfile({ ...form.values, translations })}
       queryKeyForInvalidation={["logi18nprofiles"]}
@@ -224,9 +231,11 @@ export function LogI18nProfileCreation({ opened }: { opened?: boolean }) {
 
 export function LogI18nProfileEdition({
   profileId,
+  onClose,
   readOnly,
 }: {
   profileId: string | null;
+  onClose: () => void;
   readOnly: boolean;
 }) {
   const { t } = useTranslation();
@@ -238,6 +247,7 @@ export function LogI18nProfileEdition({
   return (
     <ResourceEdition
       resourceId={profileId}
+      onClose={onClose}
       queryKeyForLoad={["logi18nprofile", profileId]}
       queryFnForLoad={() => getLogI18nProfile(profileId!)}
       onDataLoaded={(data) => {
