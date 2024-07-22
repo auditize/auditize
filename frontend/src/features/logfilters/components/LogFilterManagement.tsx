@@ -22,6 +22,7 @@ export function LogFilterManagement() {
       }
       name={t("log.filter.filter")}
       resourceName="logFilter"
+      stateMode="useState"
       queryKey={(search, page) => ["logFilters", search, page]}
       queryFn={(search, page) => () => getLogFilters(search, page)}
       columnBuilders={[

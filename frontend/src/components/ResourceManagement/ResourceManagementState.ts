@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { addQueryParamToLocation } from "@/utils/router";
@@ -21,7 +22,7 @@ interface ResourceManagementState {
   setSearch: (search: string) => void;
 }
 
-export function useResourceManagementState(): ResourceManagementState {
+function useResourceManagementStateWithURL(): ResourceManagementState {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,4 +69,41 @@ export function useResourceManagementState(): ResourceManagementState {
     search,
     setSearch,
   };
+}
+
+function useResourceManagementStateWithUseState(): ResourceManagementState {
+  // Page
+  const [page, setPage] = useState(1);
+
+  // New resource edition
+  const [isNew, setIsNew] = useState(false);
+
+  // Existing resource edition
+  const [resourceId, setResourceId] = useState<string | null>(null);
+  const resourceLink = undefined;
+
+  // Search
+  const [search, setSearch] = useState("");
+
+  return {
+    page,
+    setPage,
+    isNew,
+    setIsNew,
+    resourceId,
+    setResourceId,
+    resourceLink,
+    search,
+    setSearch,
+  };
+}
+
+export function useResourceManagementState(
+  mode: "url" | "useState",
+): ResourceManagementState {
+  if (mode === "useState") {
+    return useResourceManagementStateWithUseState();
+  } else {
+    return useResourceManagementStateWithURL();
+  }
 }

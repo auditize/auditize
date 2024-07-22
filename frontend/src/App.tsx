@@ -43,7 +43,6 @@ import { theme } from "@/theme";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
-import { LogFilterManagement } from "./features/logfilters";
 import { LogI18nProfileManagement } from "./features/logi18nprofiles";
 import { UserSettings } from "./features/users";
 import { I18nProvider } from "./i18n";
@@ -236,10 +235,6 @@ function AppRoutes() {
             {
               path: "apikeys",
               element: <ApikeysManagement />,
-            },
-            {
-              path: "filters",
-              element: <LogFilterManagement />,
             },
           ],
         }

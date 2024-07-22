@@ -135,6 +135,7 @@ export function ResourceManagement({
   name,
   path,
   resourceName,
+  stateMode = "url",
   queryKey,
   queryFn,
   columnBuilders,
@@ -146,6 +147,7 @@ export function ResourceManagement({
   name: string;
   path?: string;
   resourceName: string;
+  stateMode?: "url" | "useState";
   queryKey: (search: string | null, page: number) => any[];
   queryFn: (search: string | null, page: number) => () => Promise<any>;
   columnBuilders: [string, (resource: any) => React.ReactNode][];
@@ -164,7 +166,7 @@ export function ResourceManagement({
     resourceLink,
     search,
     setSearch,
-  } = useResourceManagementState();
+  } = useResourceManagementState(stateMode);
   const { isPending, data, error } = useQuery({
     queryKey: queryKey(search, page),
     queryFn: queryFn(search, page),

@@ -28,6 +28,7 @@ import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import {
   getLogFilters,
   LogFilterCreation,
+  LogFilterDrawer,
   normalizeFilterColumnsForApi,
 } from "@/features/logfilters";
 import { useLogFilterMutation } from "@/features/logfilters/api";
@@ -1040,6 +1041,10 @@ export function ExtraActions({
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
   ] = useDisclosure(false);
+  const [
+    filterDrawerOpened,
+    { open: openFilterDrawer, close: closeFilterDrawer },
+  ] = useDisclosure(false);
   const filterListQuery = useQuery({
     queryKey: ["logFilters"],
     queryFn: () => getLogFilters().then(([filters]) => filters),
@@ -1071,6 +1076,10 @@ export function ExtraActions({
         columns={normalizeFilterColumnsForApi(selectedColumns)}
         opened={filterPopoverOpened}
         onClose={closeFilterPopover}
+      />
+      <LogFilterDrawer
+        opened={filterDrawerOpened}
+        onClose={closeFilterDrawer}
       />
       <Menu shadow="md">
         <Menu.Target>
@@ -1116,7 +1125,7 @@ export function ExtraActions({
               {t("log.filter.update")}
             </Menu.Item>
           )}
-          <Menu.Item component={NavLink} to="/filters">
+          <Menu.Item component="a" onClick={openFilterDrawer}>
             {t("log.filter.manage")}
           </Menu.Item>
         </Menu.Dropdown>
