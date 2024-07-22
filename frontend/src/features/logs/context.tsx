@@ -13,11 +13,7 @@ import {
   normalizeFilterColumnsForApi,
   unnormalizeFilterColumnsFromApi,
 } from "../logfilters";
-import {
-  LogFilterUpdate,
-  updateLogFilter,
-  useLogFilterMutation,
-} from "../logfilters/api";
+import { useLogFilterMutation } from "../logfilters/api";
 import {
   buildLogSearchParams,
   LogSearchParams,
@@ -36,6 +32,7 @@ type LogContextProps = {
   setSearchParams: (params: LogSearchParams) => void;
   selectedColumns: string[];
   setSelectedColumns: (columns: string[] | null) => void;
+  filterId?: string;
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
@@ -113,6 +110,7 @@ export function UrlLogContextProvider({
 }) {
   const { t } = useTranslation();
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
+  const filterId = urlSearchParams.get("filterId");
   const location = useLocation();
   const navigate = useNavigate();
   const repoQuery = useLogRepoQuery();
@@ -124,22 +122,19 @@ export function UrlLogContextProvider({
     urlSearchParams.get("repoId") || "",
   );
   const filterQuery = useQuery({
-    queryKey: ["logFilter", urlSearchParams.get("filterId")],
-    queryFn: () => getLogFilter(urlSearchParams.get("filterId")!),
-    enabled: urlSearchParams.has("filterId"),
+    queryKey: ["logFilter", filterId],
+    queryFn: () => getLogFilter(filterId!),
+    enabled: !!filterId,
   });
-  const filterMutation = useLogFilterMutation(
-    urlSearchParams.get("filterId")!,
-    {
-      onError: () =>
-        notifications.show({
-          title: t("common.errorModalTitle"),
-          message: t("log.filter.updateError"),
-          color: "red",
-          autoClose: false,
-        }),
-    },
-  );
+  const filterMutation = useLogFilterMutation(filterId!, {
+    onError: () =>
+      notifications.show({
+        title: t("common.errorModalTitle"),
+        message: t("log.filter.updateError"),
+        color: "red",
+        autoClose: false,
+      }),
+  });
 
   const setDisplayedLogId = (logId: string | null) => {
     if (logId === null) {
@@ -154,11 +149,7 @@ export function UrlLogContextProvider({
   // Build log search parameters from URL search parameters or filterId (if provided)
   // In case both are provided, the URL search parameters have precedence
   let logSearchParams: LogSearchParams;
-  if (
-    !urlSearchParams.has("repoId") &&
-    urlSearchParams.has("filterId") &&
-    filterQuery.data
-  ) {
+  if (!urlSearchParams.has("repoId") && filterId && filterQuery.data) {
     logSearchParams = {
       ...unflattensLogSearchParameters(filterQuery.data.searchParams),
       repoId: filterQuery.data.repoId,
@@ -178,8 +169,8 @@ export function UrlLogContextProvider({
 
     const newUrlSearchParams =
       logSearchParamsToURLSearchParams(newLogSearchParams);
-    if (urlSearchParams.has("filterId")) {
-      newUrlSearchParams.set("filterId", urlSearchParams.get("filterId")!);
+    if (filterId) {
+      newUrlSearchParams.set("filterId", filterId);
     }
     setUrlSearchParams(newUrlSearchParams, {
       replace: isAutoSelectRepo,
@@ -188,7 +179,7 @@ export function UrlLogContextProvider({
 
   let selectedColumns: string[];
   let setSelectedColumns: (columns: string[] | null) => void;
-  if (urlSearchParams.has("filterId") && filterQuery.data) {
+  if (filterId && filterQuery.data) {
     selectedColumns = unnormalizeFilterColumnsFromApi(filterQuery.data.columns);
     setSelectedColumns = (columns: string[] | null) =>
       filterMutation.mutate({
@@ -201,11 +192,7 @@ export function UrlLogContextProvider({
 
   // Auto-select repository if the repoId is not in the URL
   useEffect(() => {
-    if (
-      !urlSearchParams.has("filterId") &&
-      !logSearchParams.repoId &&
-      repoQuery.data
-    ) {
+    if (!filterId && !logSearchParams.repoId && repoQuery.data) {
       // repo has not been auto-selected yet
       const repos = repoQuery.data;
 
@@ -239,6 +226,7 @@ export function UrlLogContextProvider({
         setSearchParams: setLogSearchParams,
         selectedColumns,
         setSelectedColumns,
+        filterId: filterId ?? undefined,
       }}
     >
       {children}

@@ -55,6 +55,7 @@ import {
   LogSearchParams,
   logSearchParamsToURLSearchParams,
 } from "../api";
+import { useLogContext } from "../context";
 import { useLogRepoQuery } from "../hooks";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { sortFields } from "./LogTable";
@@ -1039,12 +1040,14 @@ function columnsToCsvFields(columns: string[]): string[] {
 export function ExtraActions({
   searchParams: logSearchParams,
   selectedColumns,
+  withLogFilters,
 }: {
   searchParams: LogSearchParams;
   selectedColumns: string[];
+  withLogFilters: boolean;
 }) {
   const { t } = useTranslation();
-  const [urlSearchParams] = useSearchParams();
+  const { filterId } = useLogContext();
   const [
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
@@ -1057,24 +1060,21 @@ export function ExtraActions({
     queryKey: ["logFilters"],
     queryFn: () => getLogFilters().then(([filters]) => filters),
   });
-  const filterMutation = useLogFilterMutation(
-    urlSearchParams.get("filterId")!,
-    {
-      onError: () => {
-        notifications.show({
-          title: t("common.errorModalTitle"),
-          message: t("log.filter.updateError"),
-          color: "red",
-          autoClose: false,
-        });
-      },
+  const filterMutation = useLogFilterMutation(filterId!, {
+    onError: () => {
+      notifications.show({
+        title: t("common.errorModalTitle"),
+        message: t("log.filter.updateError"),
+        color: "red",
+        autoClose: false,
+      });
     },
-  );
+  });
   const normalizedSearchParams = logSearchParamsToURLSearchParams(
     logSearchParams,
     { includeRepoId: false, snakecase: true },
   );
-  const csvExportUrl = `/api/repos/${logSearchParams.repoId}/logs/csv?${normalizedSearchParams.toString()}`;
+  const csvExportUrl = `${window.auditizeBaseURL ?? ""}/api/repos/${logSearchParams.repoId}/logs/csv?${normalizedSearchParams.toString()}`;
 
   return (
     <>
@@ -1089,7 +1089,7 @@ export function ExtraActions({
         opened={filterDrawerOpened}
         onClose={closeFilterDrawer}
       />
-      <Menu shadow="md">
+      <Menu shadow="md" withinPortal={false}>
         <Menu.Target>
           <ActionIcon size="input-sm">
             <IconDots />
@@ -1111,46 +1111,50 @@ export function ExtraActions({
           >
             {t("log.csv.csvExportCurrent")}
           </Menu.Item>
-          <Menu.Divider />
-          <Menu.Label>{t("log.filter.filters")}</Menu.Label>
-          {filterListQuery.data?.map((filter) => (
-            <Menu.Item
-              key={filter.id}
-              component={NavLink}
-              to={`/logs?filterId=${filter.id}`}
-              leftSection={<IconFilter style={iconSize(14)} />}
-            >
-              {filter.name}
-            </Menu.Item>
-          ))}
-          <Menu.Divider />
-          <Menu.Item
-            component="a"
-            onClick={openFilterPopover}
-            leftSection={<IconDeviceFloppy style={iconSize(14)} />}
-          >
-            {t("log.filter.save")}
-          </Menu.Item>
-          {urlSearchParams.has("filterId") && (
-            <Menu.Item
-              component="a"
-              onClick={() =>
-                filterMutation.mutate({
-                  searchParams: Object.fromEntries(normalizedSearchParams),
-                })
-              }
-              leftSection={<IconDeviceFloppy style={iconSize(14)} />}
-            >
-              {t("log.filter.update")}
-            </Menu.Item>
+          {withLogFilters && (
+            <>
+              <Menu.Divider />
+              <Menu.Label>{t("log.filter.filters")}</Menu.Label>
+              {filterListQuery.data?.map((filter) => (
+                <Menu.Item
+                  key={filter.id}
+                  component={NavLink}
+                  to={`/logs?filterId=${filter.id}`}
+                  leftSection={<IconFilter style={iconSize(14)} />}
+                >
+                  {filter.name}
+                </Menu.Item>
+              ))}
+              <Menu.Divider />
+              <Menu.Item
+                component="a"
+                onClick={openFilterPopover}
+                leftSection={<IconDeviceFloppy style={iconSize(14)} />}
+              >
+                {t("log.filter.save")}
+              </Menu.Item>
+              {filterId && (
+                <Menu.Item
+                  component="a"
+                  onClick={() =>
+                    filterMutation.mutate({
+                      searchParams: Object.fromEntries(normalizedSearchParams),
+                    })
+                  }
+                  leftSection={<IconDeviceFloppy style={iconSize(14)} />}
+                >
+                  {t("log.filter.update")}
+                </Menu.Item>
+              )}
+              <Menu.Item
+                component="a"
+                onClick={openFilterDrawer}
+                leftSection={<IconAdjustmentsHorizontal style={iconSize(14)} />}
+              >
+                {t("log.filter.manage")}
+              </Menu.Item>
+            </>
           )}
-          <Menu.Item
-            component="a"
-            onClick={openFilterDrawer}
-            leftSection={<IconAdjustmentsHorizontal style={iconSize(14)} />}
-          >
-            {t("log.filter.manage")}
-          </Menu.Item>
         </Menu.Dropdown>
       </Menu>
     </>
@@ -1161,12 +1165,14 @@ export function LogNavigation({
   params,
   onChange,
   selectedColumns,
-  withRepoSearchParam = true,
+  withRepoSearchParam,
+  withLogFilters,
 }: {
   params: LogSearchParams;
   onChange: (params: LogSearchParams) => void;
   selectedColumns: string[];
-  withRepoSearchParam?: boolean;
+  withRepoSearchParam: boolean;
+  withLogFilters: boolean;
 }) {
   const { t } = useTranslation();
   const [editedParams, dispatch] = useReducer(searchParamsReducer, params);
@@ -1293,7 +1299,11 @@ export function LogNavigation({
         >
           {t("log.list.searchParams.clear")}
         </Button>
-        <ExtraActions searchParams={params} selectedColumns={selectedColumns} />
+        <ExtraActions
+          searchParams={params}
+          selectedColumns={selectedColumns}
+          withLogFilters={withLogFilters}
+        />
       </Group>
     </Flex>
   );

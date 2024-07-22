@@ -9,8 +9,10 @@ import { LogNavigation } from "./LogNavigation";
 
 export function Logs({
   withRepoSearchParam = true,
+  withLogFilters = true,
 }: {
   withRepoSearchParam?: boolean;
+  withLogFilters?: boolean;
 }) {
   const { t } = useTranslation();
   const { searchParams, setSearchParams, selectedColumns, setSelectedColumns } =
@@ -26,6 +28,7 @@ export function Logs({
         }}
         selectedColumns={selectedColumns}
         withRepoSearchParam={withRepoSearchParam}
+        withLogFilters={withLogFilters}
       />
       <LogLoader
         searchParams={searchParams}
