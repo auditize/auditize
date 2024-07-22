@@ -1,6 +1,5 @@
 import { Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,7 +8,7 @@ import {
   ResourceEdition,
 } from "@/components/ResourceManagement";
 
-import { createLogFilter } from "../api";
+import { createLogFilter, getLogFilter, updateLogFilter } from "../api";
 
 function useLogFilterForm(values: { name?: string }) {
   const { t } = useTranslation();
@@ -23,13 +22,7 @@ function useLogFilterForm(values: { name?: string }) {
   });
 }
 
-function LogFilterForm({
-  form,
-  readOnly = false,
-}: {
-  form: UseFormReturnType<any>;
-  readOnly?: boolean;
-}) {
+function LogFilterForm({ form }: { form: UseFormReturnType<any> }) {
   const { t } = useTranslation();
 
   return (
@@ -38,7 +31,6 @@ function LogFilterForm({
         label={t("log.filter.form.name.label")}
         placeholder={t("log.filter.form.name.placeholder")}
         data-autofocus
-        disabled={readOnly}
         {...form.getInputProps("name")}
       />
     </Stack>
@@ -83,5 +75,28 @@ export function LogFilterCreation({
     >
       <LogFilterForm form={form} />
     </ResourceCreation>
+  );
+}
+
+export function LogFilterEdition({ filterId }: { filterId: string | null }) {
+  const { t } = useTranslation();
+  const form = useLogFilterForm({});
+
+  return (
+    <ResourceEdition
+      resourceId={filterId}
+      queryKeyForLoad={["logFilter", filterId]}
+      queryFnForLoad={() => getLogFilter(filterId!)}
+      onDataLoaded={(data) => {
+        const { name } = data;
+        form.setValues({ name });
+      }}
+      title={t("log.filter.edit.title")}
+      onSubmit={form.onSubmit}
+      onSave={() => updateLogFilter(filterId!, form.values)}
+      queryKeyForInvalidation={["logFilters"]}
+    >
+      <LogFilterForm form={form} />
+    </ResourceEdition>
   );
 }

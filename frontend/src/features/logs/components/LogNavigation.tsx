@@ -1116,6 +1116,9 @@ export function ExtraActions({
               {t("log.filter.update")}
             </Menu.Item>
           )}
+          <Menu.Item component={NavLink} to="/filters">
+            {t("log.filter.manage")}
+          </Menu.Item>
         </Menu.Dropdown>
       </Menu>
     </>

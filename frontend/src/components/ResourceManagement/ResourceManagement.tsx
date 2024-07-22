@@ -138,7 +138,7 @@ export function ResourceManagement({
 }: {
   title: React.ReactNode;
   name: string;
-  path: string;
+  path?: string;
   resourceName: string;
   queryKey: (search: string | null, page: number) => any[];
   queryFn: (search: string | null, page: number) => () => Promise<any>;

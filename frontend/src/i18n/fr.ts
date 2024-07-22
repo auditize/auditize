@@ -236,6 +236,7 @@ export default {
       filters: "Filtres",
       save: "Sauvegarder le filtre",
       update: "Mettre à jour le filtre actif",
+      updateError: "Impossible de mettre à jour le filtre",
       form: {
         name: {
           label: "Nom",
@@ -246,7 +247,18 @@ export default {
       create: {
         title: "Sauvegarder le filtre",
       },
-      updateError: "Impossible de mettre à jour le filtre",
+      edit: {
+        title: "Modifier le filtre",
+      },
+      delete: {
+        confirm: "Confirmez-vous la suppression du filtre <1>{{name}}</1> ?",
+      },
+      list: {
+        title: "Filtres",
+        column: {
+          name: "Nom",
+        },
+      },
     },
   },
   permission: {

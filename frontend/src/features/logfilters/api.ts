@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   PagePaginationInfo,
+  reqDelete,
   reqGet,
   reqGetPaginated,
   reqPatch,
@@ -67,4 +68,8 @@ export function useLogFilterMutation(
     onError,
   });
   return filterMutation;
+}
+
+export async function deleteLogFilter(filterId: string): Promise<void> {
+  await reqDelete("/users/me/logs/filters/" + filterId);
 }
