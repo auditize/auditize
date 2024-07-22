@@ -16,7 +16,6 @@ from auditize.helpers.resources.service import (
 from auditize.logi18nprofiles.models import LogTranslation
 from auditize.logi18nprofiles.service import (
     does_log_i18n_profile_exist,
-    get_log_i18n_profile,
     get_log_i18n_profile_translation,
 )
 from auditize.logs.db import get_log_db_for_config

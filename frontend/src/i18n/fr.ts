@@ -215,7 +215,7 @@ export default {
       columnSelector: {
         reset: "Réinitialiser les colonnes",
       },
-      filter: {
+      searchParams: {
         apply: "Appliquer",
         clear: "Effacer",
       },
@@ -230,6 +230,35 @@ export default {
       csv: "CSV",
       csvExportDefault: "Exporter en CSV (toutes les colonnes natives)",
       csvExportCurrent: "Exporter en CSV (colonnes sélectionnées)",
+    },
+    filter: {
+      filter: "Filtre",
+      filters: "Filtres",
+      save: "Sauvegarder le filtre",
+      update: "Mettre à jour le filtre actif",
+      updateError: "Impossible de mettre à jour le filtre",
+      form: {
+        name: {
+          label: "Nom",
+          placeholder: "Nom du filtre",
+          required: "Le nom du filtre est requis.",
+        },
+      },
+      create: {
+        title: "Sauvegarder le filtre",
+      },
+      edit: {
+        title: "Modifier le filtre",
+      },
+      delete: {
+        confirm: "Confirmez-vous la suppression du filtre <1>{{name}}</1> ?",
+      },
+      list: {
+        title: "Filtres",
+        column: {
+          name: "Nom",
+        },
+      },
     },
   },
   permission: {
@@ -273,6 +302,7 @@ export default {
     ok: "Ok",
     loading: "Chargement...",
     notCurrentlyAvailable: "Actuellement indisponible",
+    errorModalTitle: "Une erreur est survenue",
   },
   resource: {
     list: {

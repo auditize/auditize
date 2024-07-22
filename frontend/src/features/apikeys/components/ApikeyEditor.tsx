@@ -140,7 +140,13 @@ function SecretUpdate({ apikeyId }: { apikeyId: string }) {
   }
 }
 
-export function ApikeyCreation({ opened }: { opened?: boolean }) {
+export function ApikeyCreation({
+  opened,
+  onClose,
+}: {
+  opened?: boolean;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
   const form = useApikeyForm();
   const [permissions, setPermissions] = useState<Permissions>(() =>
@@ -158,6 +164,7 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
     <ResourceCreation
       title={t("apikey.create.title")}
       opened={!!opened}
+      onClose={onClose}
       onSubmit={form.onSubmit}
       onSave={() => createApikey({ ...form.values, permissions })}
       onSaveSuccess={(data) => {
@@ -181,9 +188,11 @@ export function ApikeyCreation({ opened }: { opened?: boolean }) {
 
 export function ApikeyEdition({
   apikeyId,
+  onClose,
   readOnly,
 }: {
   apikeyId: string | null;
+  onClose: () => void;
   readOnly: boolean;
 }) {
   const form = useApikeyForm();
@@ -194,6 +203,7 @@ export function ApikeyEdition({
   return (
     <ResourceEdition
       resourceId={apikeyId}
+      onClose={onClose}
       queryKeyForLoad={["apikey", apikeyId]}
       queryFnForLoad={() => getApikey(apikeyId!)}
       onDataLoaded={(data) => {

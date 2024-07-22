@@ -21,12 +21,12 @@ import { LogDetails } from "./LogDetails";
 import { useLogFields } from "./LogFieldSelector";
 import { useLogTranslator } from "./LogTranslation";
 
-export type TableFilterChangeHandler = (
+export type TableSearchParamChangeHandler = (
   name: string,
   value: string | Map<string, string>,
 ) => void;
 
-function InlineFilterLink({
+function InlineSearchParamLink({
   onClick,
   fontSize = "sm",
   fontWeight,
@@ -70,12 +70,12 @@ function SourceField({
   log,
   fieldName,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   fieldName: string;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
@@ -88,30 +88,30 @@ function SourceField({
   }
 
   return (
-    <InlineFilterLink
+    <InlineSearchParamLink
       onClick={() =>
-        onTableFilterChange("source", new Map([[fieldName, fieldValue]]))
+        onTableSearchParamChange("source", new Map([[fieldName, fieldValue]]))
       }
     >
       {logTranslator("source_field", fieldValue)}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   );
 }
 
 function ActorField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     log.actor && (
-      <InlineFilterLink
-        onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
+      <InlineSearchParamLink
+        onClick={() => onTableSearchParamChange("actorRef", log.actor!.ref)}
       >
         {log.actor.name}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
     )
   );
 }
@@ -119,57 +119,57 @@ function ActorField({
 function ActorTypeField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return (
     log.actor && (
-      <InlineFilterLink
-        onClick={() => onTableFilterChange("actorType", log.actor!.type)}
+      <InlineSearchParamLink
+        onClick={() => onTableSearchParamChange("actorType", log.actor!.type)}
       >
         {logTranslator("actor_type", log.actor.type)}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
     )
   );
 }
 
 function ActorNameField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     log.actor && (
-      <InlineFilterLink
-        onClick={() => onTableFilterChange("actorName", log.actor!.name)}
+      <InlineSearchParamLink
+        onClick={() => onTableSearchParamChange("actorName", log.actor!.name)}
       >
         {log.actor.name}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
     )
   );
 }
 
 function ActorRefField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     log.actor && (
-      <InlineFilterLink
-        onClick={() => onTableFilterChange("actorRef", log.actor!.ref)}
+      <InlineSearchParamLink
+        onClick={() => onTableSearchParamChange("actorRef", log.actor!.ref)}
       >
         {log.actor.ref}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
     )
   );
 }
@@ -177,11 +177,11 @@ function ActorRefField({
 function ActorCustomField({
   log,
   fieldName,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   fieldName: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   if (!log.actor) {
     return null;
@@ -192,44 +192,47 @@ function ActorCustomField({
   }
 
   return (
-    <InlineFilterLink
+    <InlineSearchParamLink
       onClick={() =>
-        onTableFilterChange("actorExtra", new Map([[fieldName, fieldValue]]))
+        onTableSearchParamChange(
+          "actorExtra",
+          new Map([[fieldName, fieldValue]]),
+        )
       }
     >
       {fieldValue}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   );
 }
 
 function ActionField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <>
-      <InlineFilterLink
-        onClick={() => onTableFilterChange("actionType", log.action.type)}
+      <InlineSearchParamLink
+        onClick={() => onTableSearchParamChange("actionType", log.action.type)}
       >
         {logTranslator("action_type", log.action.type)}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
       <br />
-      <InlineFilterLink
+      <InlineSearchParamLink
         onClick={() =>
-          onTableFilterChange("actionCategory", log.action.category)
+          onTableSearchParamChange("actionCategory", log.action.category)
         }
         color="gray"
         fontSize="xs"
       >
         {"(" + logTranslator("action_category", log.action.category) + ")"}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
     </>
   );
 }
@@ -237,68 +240,74 @@ function ActionField({
 function ActionTypeField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return (
-    <InlineFilterLink
-      onClick={() => onTableFilterChange("actionType", log.action.type)}
+    <InlineSearchParamLink
+      onClick={() => onTableSearchParamChange("actionType", log.action.type)}
     >
       {logTranslator("action_type", log.action.type)}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   );
 }
 
 function ActionCategoryField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return (
-    <InlineFilterLink
-      onClick={() => onTableFilterChange("actionCategory", log.action.category)}
+    <InlineSearchParamLink
+      onClick={() =>
+        onTableSearchParamChange("actionCategory", log.action.category)
+      }
     >
       {logTranslator("action_category", log.action.category)}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   );
 }
 
 function ResourceField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return log.resource ? (
     <>
-      <InlineFilterLink
-        onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
+      <InlineSearchParamLink
+        onClick={() =>
+          onTableSearchParamChange("resourceType", log.resource!.type)
+        }
       >
         {logTranslator("resource_type", log.resource.type)}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
       {": "}
-      <InlineFilterLink
-        onClick={() => onTableFilterChange("resourceRef", log.resource!.ref)}
+      <InlineSearchParamLink
+        onClick={() =>
+          onTableSearchParamChange("resourceRef", log.resource!.ref)
+        }
         fontWeight="bold"
       >
         {log.resource.name}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
     </>
   ) : null;
 }
@@ -306,63 +315,67 @@ function ResourceField({
 function ResourceTypeField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return log.resource ? (
-    <InlineFilterLink
-      onClick={() => onTableFilterChange("resourceType", log.resource!.type)}
+    <InlineSearchParamLink
+      onClick={() =>
+        onTableSearchParamChange("resourceType", log.resource!.type)
+      }
     >
       {logTranslator("resource_type", log.resource.type)}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   ) : null;
 }
 
 function ResourceNameField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return log.resource ? (
-    <InlineFilterLink
-      onClick={() => onTableFilterChange("resourceName", log.resource!.name)}
+    <InlineSearchParamLink
+      onClick={() =>
+        onTableSearchParamChange("resourceName", log.resource!.name)
+      }
     >
       {log.resource.name}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   ) : null;
 }
 
 function ResourceRefField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return log.resource ? (
-    <InlineFilterLink
-      onClick={() => onTableFilterChange("resourceRef", log.resource!.ref)}
+    <InlineSearchParamLink
+      onClick={() => onTableSearchParamChange("resourceRef", log.resource!.ref)}
     >
       {log.resource.ref}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   ) : null;
 }
 
 function ResourceCustomField({
   log,
   fieldName,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   fieldName: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   if (!log.resource) {
     return null;
@@ -373,24 +386,27 @@ function ResourceCustomField({
   }
 
   return (
-    <InlineFilterLink
+    <InlineSearchParamLink
       onClick={() =>
-        onTableFilterChange("resourceExtra", new Map([[fieldName, fieldValue]]))
+        onTableSearchParamChange(
+          "resourceExtra",
+          new Map([[fieldName, fieldValue]]),
+        )
       }
     >
       {fieldValue}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   );
 }
 
 function DetailField({
   log,
   fieldName,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   fieldName: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   if (!log.details) {
     return null;
@@ -401,24 +417,24 @@ function DetailField({
   }
 
   return (
-    <InlineFilterLink
+    <InlineSearchParamLink
       onClick={() =>
-        onTableFilterChange("details", new Map([[fieldName, fieldValue]]))
+        onTableSearchParamChange("details", new Map([[fieldName, fieldValue]]))
       }
     >
       {fieldValue}
-    </InlineFilterLink>
+    </InlineSearchParamLink>
   );
 }
 
 function TagsField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
@@ -426,23 +442,23 @@ function TagsField({
     <Breadcrumbs separator={null} separatorMargin="0.250rem">
       {log.tags.map((tag, i) =>
         tag.ref ? (
-          <InlineFilterLink
+          <InlineSearchParamLink
             key={i}
-            onClick={() => onTableFilterChange("tagRef", tag.ref!)}
+            onClick={() => onTableSearchParamChange("tagRef", tag.ref!)}
           >
             <Badge size="sm" variant="outline">
               {logTranslator("tag_type", tag.type) + ": " + tag.name}
             </Badge>
-          </InlineFilterLink>
+          </InlineSearchParamLink>
         ) : (
-          <InlineFilterLink
+          <InlineSearchParamLink
             key={i}
-            onClick={() => onTableFilterChange("tagType", tag.type)}
+            onClick={() => onTableSearchParamChange("tagType", tag.type)}
           >
             <Badge size="sm" variant="outline">
               {logTranslator("tag_type", tag.type)}
             </Badge>
-          </InlineFilterLink>
+          </InlineSearchParamLink>
         ),
       )}
     </Breadcrumbs>
@@ -452,23 +468,23 @@ function TagsField({
 function TagTypesField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <Breadcrumbs separator=", ">
       {log.tags.map((tag, i) => (
-        <InlineFilterLink
+        <InlineSearchParamLink
           key={i}
-          onClick={() => onTableFilterChange("tagType", tag.type)}
+          onClick={() => onTableSearchParamChange("tagType", tag.type)}
         >
           {logTranslator("tag_type", tag.type)}
-        </InlineFilterLink>
+        </InlineSearchParamLink>
       ))}
     </Breadcrumbs>
   );
@@ -476,22 +492,22 @@ function TagTypesField({
 
 function TagNamesField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     <Breadcrumbs separator=", ">
       {log.tags.map(
         (tag, i) =>
           tag.name && (
-            <InlineFilterLink
+            <InlineSearchParamLink
               key={i}
-              onClick={() => onTableFilterChange("tagName", tag.name!)}
+              onClick={() => onTableSearchParamChange("tagName", tag.name!)}
             >
               {tag.name}
-            </InlineFilterLink>
+            </InlineSearchParamLink>
           ),
       )}
     </Breadcrumbs>
@@ -500,22 +516,22 @@ function TagNamesField({
 
 function TagRefsField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     <Breadcrumbs separator=", ">
       {log.tags.map(
         (tag, i) =>
           tag.ref && (
-            <InlineFilterLink
+            <InlineSearchParamLink
               key={i}
-              onClick={() => onTableFilterChange("tagRef", tag.ref!)}
+              onClick={() => onTableSearchParamChange("tagRef", tag.ref!)}
             >
               {tag.ref}
-            </InlineFilterLink>
+            </InlineSearchParamLink>
           ),
       )}
     </Breadcrumbs>
@@ -524,20 +540,22 @@ function TagRefsField({
 
 function AttachmentNamesField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
-        <InlineFilterLink
+        <InlineSearchParamLink
           key={i}
-          onClick={() => onTableFilterChange("attachmentName", attachment.name)}
+          onClick={() =>
+            onTableSearchParamChange("attachmentName", attachment.name)
+          }
         >
           {attachment.name}
-        </InlineFilterLink>
+        </InlineSearchParamLink>
       ))}
     </Breadcrumbs>
   );
@@ -545,22 +563,25 @@ function AttachmentNamesField({
 
 function AttachmentDescriptionsField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
-        <InlineFilterLink
+        <InlineSearchParamLink
           key={i}
           onClick={() =>
-            onTableFilterChange("attachmentDescription", attachment.description)
+            onTableSearchParamChange(
+              "attachmentDescription",
+              attachment.description,
+            )
           }
         >
           {attachment.description}
-        </InlineFilterLink>
+        </InlineSearchParamLink>
       ))}
     </Breadcrumbs>
   );
@@ -569,23 +590,25 @@ function AttachmentDescriptionsField({
 function AttachmentTypesField({
   log,
   repoId,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
   repoId: string;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
-        <InlineFilterLink
+        <InlineSearchParamLink
           key={i}
-          onClick={() => onTableFilterChange("attachmentType", attachment.type)}
+          onClick={() =>
+            onTableSearchParamChange("attachmentType", attachment.type)
+          }
         >
           {logTranslator("attachment_type", attachment.type)}
-        </InlineFilterLink>
+        </InlineSearchParamLink>
       ))}
     </Breadcrumbs>
   );
@@ -593,22 +616,22 @@ function AttachmentTypesField({
 
 function AttachmentMimeTypesField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
-        <InlineFilterLink
+        <InlineSearchParamLink
           key={i}
           onClick={() =>
-            onTableFilterChange("attachmentMimeType", attachment.mimeType)
+            onTableSearchParamChange("attachmentMimeType", attachment.mimeType)
           }
         >
           {attachment.mimeType}
-        </InlineFilterLink>
+        </InlineSearchParamLink>
       ))}
     </Breadcrumbs>
   );
@@ -616,19 +639,19 @@ function AttachmentMimeTypesField({
 
 function NodePathField({
   log,
-  onTableFilterChange,
+  onTableSearchParamChange,
 }: {
   log: Log;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
   return log.nodePath
     .map<React.ReactNode>((node) => (
-      <InlineFilterLink
+      <InlineSearchParamLink
         key={node.ref}
-        onClick={() => onTableFilterChange("nodeRef", node.ref)}
+        onClick={() => onTableSearchParamChange("nodeRef", node.ref)}
       >
         {node.name}
-      </InlineFilterLink>
+      </InlineSearchParamLink>
     ))
     .reduce((prev, curr) => [prev, " > ", curr]);
 }
@@ -726,7 +749,7 @@ export function sortFields(a: string, b: string) {
 function fieldToColumn(
   field: string,
   repoId: string,
-  onTableFilterChange: TableFilterChangeHandler,
+  onTableSearchParamChange: TableSearchParamChangeHandler,
   logTranslator: (type: string, key: string) => string,
 ) {
   const { t } = i18n;
@@ -748,7 +771,7 @@ function fieldToColumn(
           log={log}
           fieldName={fieldName}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -759,7 +782,10 @@ function fieldToColumn(
       accessor: "actor",
       title: t("log.actor"),
       render: (log: Log) => (
-        <ActorField log={log} onTableFilterChange={onTableFilterChange} />
+        <ActorField
+          log={log}
+          onTableSearchParamChange={onTableSearchParamChange}
+        />
       ),
     };
 
@@ -771,7 +797,7 @@ function fieldToColumn(
         <ActorTypeField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -781,7 +807,10 @@ function fieldToColumn(
       accessor: "actorName",
       title: t("log.actorName"),
       render: (log: Log) => (
-        <ActorNameField log={log} onTableFilterChange={onTableFilterChange} />
+        <ActorNameField
+          log={log}
+          onTableSearchParamChange={onTableSearchParamChange}
+        />
       ),
     };
 
@@ -790,7 +819,10 @@ function fieldToColumn(
       accessor: "actorRef",
       title: t("log.actorRef"),
       render: (log: Log) => (
-        <ActorRefField log={log} onTableFilterChange={onTableFilterChange} />
+        <ActorRefField
+          log={log}
+          onTableSearchParamChange={onTableSearchParamChange}
+        />
       ),
     };
 
@@ -804,7 +836,7 @@ function fieldToColumn(
         <ActorCustomField
           log={log}
           fieldName={fieldName}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -818,7 +850,7 @@ function fieldToColumn(
         <ActionField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -831,7 +863,7 @@ function fieldToColumn(
         <ActionTypeField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -844,7 +876,7 @@ function fieldToColumn(
         <ActionCategoryField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -857,7 +889,7 @@ function fieldToColumn(
         <ResourceField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -870,7 +902,7 @@ function fieldToColumn(
         <ResourceTypeField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -882,7 +914,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <ResourceNameField
           log={log}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -892,7 +924,10 @@ function fieldToColumn(
       accessor: "resourceRef",
       title: t("log.resourceRef"),
       render: (log: Log) => (
-        <ResourceRefField log={log} onTableFilterChange={onTableFilterChange} />
+        <ResourceRefField
+          log={log}
+          onTableSearchParamChange={onTableSearchParamChange}
+        />
       ),
     };
 
@@ -908,7 +943,7 @@ function fieldToColumn(
         <ResourceCustomField
           log={log}
           fieldName={fieldName}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -923,7 +958,7 @@ function fieldToColumn(
         <DetailField
           log={log}
           fieldName={fieldName}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -937,7 +972,7 @@ function fieldToColumn(
         <TagsField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -950,7 +985,7 @@ function fieldToColumn(
         <TagTypesField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -960,7 +995,10 @@ function fieldToColumn(
       accessor: "tagName",
       title: t("log.tagNames"),
       render: (log: Log) => (
-        <TagNamesField log={log} onTableFilterChange={onTableFilterChange} />
+        <TagNamesField
+          log={log}
+          onTableSearchParamChange={onTableSearchParamChange}
+        />
       ),
     };
 
@@ -969,7 +1007,10 @@ function fieldToColumn(
       accessor: "tagRef",
       title: t("log.tagRefs"),
       render: (log: Log) => (
-        <TagRefsField log={log} onTableFilterChange={onTableFilterChange} />
+        <TagRefsField
+          log={log}
+          onTableSearchParamChange={onTableSearchParamChange}
+        />
       ),
     };
 
@@ -982,7 +1023,7 @@ function fieldToColumn(
         <AttachmentTypesField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -994,7 +1035,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <AttachmentNamesField
           log={log}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -1006,7 +1047,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <AttachmentDescriptionsField
           log={log}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -1019,7 +1060,7 @@ function fieldToColumn(
         <AttachmentTypesField
           log={log}
           repoId={repoId}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -1031,7 +1072,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <AttachmentMimeTypesField
           log={log}
-          onTableFilterChange={onTableFilterChange}
+          onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
     };
@@ -1041,7 +1082,10 @@ function fieldToColumn(
       accessor: "node",
       title: t("log.node"),
       render: (log: Log) => (
-        <NodePathField log={log} onTableFilterChange={onTableFilterChange} />
+        <NodePathField
+          log={log}
+          onTableSearchParamChange={onTableSearchParamChange}
+        />
       ),
     };
 
@@ -1053,7 +1097,7 @@ export function LogTable({
   logs,
   isLoading,
   footer,
-  onTableFilterChange,
+  onTableSearchParamChange,
   selectedColumns,
   onSelectedColumnsChange,
 }: {
@@ -1061,7 +1105,7 @@ export function LogTable({
   logs?: Log[];
   isLoading: boolean;
   footer: React.ReactNode;
-  onTableFilterChange: TableFilterChangeHandler;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
   selectedColumns: string[];
   // NB: null means default columns
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
@@ -1073,7 +1117,7 @@ export function LogTable({
     ...selectedColumns
       .toSorted(sortFields)
       .map((column) =>
-        fieldToColumn(column, repoId, onTableFilterChange, logTranslator),
+        fieldToColumn(column, repoId, onTableSearchParamChange, logTranslator),
       )
       .filter((data) => !!data),
     {

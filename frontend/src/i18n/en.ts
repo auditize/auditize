@@ -212,7 +212,7 @@ export default {
       columnSelector: {
         reset: "Reset columns",
       },
-      filter: {
+      searchParams: {
         apply: "Apply",
         clear: "Clear",
       },
@@ -227,6 +227,36 @@ export default {
       csv: "CSV",
       csvExportDefault: "Export as CSV (all builtin columns)",
       csvExportCurrent: "Export as CSV (selected columns)",
+    },
+    filter: {
+      filter: "Filter",
+      filters: "Filters",
+      save: "Save filter",
+      update: "Update current filter",
+      updateError: "Unable to update filter",
+      manage: "Manage filters",
+      form: {
+        name: {
+          label: "Name",
+          placeholder: "Filter name",
+          required: "Filter name is required.",
+        },
+      },
+      create: {
+        title: "Save log filter",
+      },
+      edit: {
+        title: "Edit log filter",
+      },
+      delete: {
+        confirm: "Do you confirm the deletion of filter <1>{{name}}</1>?",
+      },
+      list: {
+        title: "My Filters",
+        column: {
+          name: "Name",
+        },
+      },
     },
   },
   permission: {
@@ -270,6 +300,7 @@ export default {
     ok: "Ok",
     loading: "Loading...",
     notCurrentlyAvailable: "Not currently available",
+    errorModalTitle: "An error occurred",
   },
   resource: {
     list: {

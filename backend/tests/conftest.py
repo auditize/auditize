@@ -217,9 +217,13 @@ async def log_read_client(apikey_builder):
 
 
 @pytest.fixture(scope="function")
-async def log_read_user_client(user_builder):
-    user = await user_builder({"logs": {"read": True}})
-    async with user.client() as client:
+async def log_read_user(user_builder):
+    return await user_builder({"logs": {"read": True}})
+
+
+@pytest.fixture(scope="function")
+async def log_read_user_client(log_read_user):
+    async with log_read_user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
 

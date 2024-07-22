@@ -38,6 +38,7 @@ class CoreDatabase(BaseDatabase):
         await self.users.create_index("email", unique=True)
         await self.apikeys.create_index("name", unique=True)
         await self.logi18nprofiles.create_index("name", unique=True)
+        await self.log_filters.create_index("name", unique=True)
 
         # Text indexes
         await self.repos.create_index({"name": "text"})
@@ -46,12 +47,15 @@ class CoreDatabase(BaseDatabase):
         )
         await self.apikeys.create_index({"name": "text"})
         await self.logi18nprofiles.create_index({"name": "text"})
+        await self.log_filters.create_index({"name": "text"})
 
     # Collections
+    # FIXME: naming convention (spaces vs underscores)
     repos = Collection("repos")
     logi18nprofiles = Collection("logi18nprofiles")
     users = Collection("users")
     apikeys = Collection("apikeys")
+    log_filters = Collection("log_filters")
 
 
 _mongo_client = AsyncIOMotorClient(get_config().mongodb_uri)

@@ -84,10 +84,18 @@ export function ReposManagement() {
         ],
       ]}
       resourceCreationComponentBuilder={
-        readOnly ? undefined : (opened) => <RepoCreation opened={opened} />
+        readOnly
+          ? undefined
+          : (opened, onClose) => (
+              <RepoCreation opened={opened} onClose={onClose} />
+            )
       }
-      resourceEditionComponentBuilder={(resourceId) => (
-        <RepoEdition repoId={resourceId} readOnly={readOnly} />
+      resourceEditionComponentBuilder={(resourceId, onClose) => (
+        <RepoEdition
+          repoId={resourceId}
+          onClose={onClose}
+          readOnly={readOnly}
+        />
       )}
       resourceDeletionComponentBuilder={(resource, opened, onClose) =>
         readOnly ? undefined : (

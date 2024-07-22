@@ -17,6 +17,7 @@ from auditize.users.service import (
 )
 
 from .http import HttpTestHelper, create_http_client, get_cookie_by_name
+from .logfilters import PreparedLogFilter
 from .permissions.constants import DEFAULT_PERMISSIONS
 
 
@@ -147,3 +148,8 @@ class PreparedUser:
             "permissions": DEFAULT_PERMISSIONS,
             **(extra or {}),
         }
+
+    async def create_log_filter(self, data):
+        async with self.client() as client:
+            resp = await client.assert_post_created("/users/me/logs/filters", json=data)
+        return PreparedLogFilter(resp.json()["id"], data)
