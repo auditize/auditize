@@ -44,7 +44,7 @@ export function I18nProvider({
   // 3. If the saved language is not available, use the browser language.
   const { i18n } = useTranslation();
   const [savedLang, setSavedLang] = useLocalStorage<string>({
-    key: "lang",
+    key: "auditize-default-lang",
     defaultValue: window.navigator.language,
   });
   useEffect(() => {
