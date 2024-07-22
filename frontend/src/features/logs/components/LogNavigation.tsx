@@ -15,7 +15,14 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconDots, IconPlus } from "@tabler/icons-react";
+import {
+  IconAdjustmentsHorizontal,
+  IconDeviceFloppy,
+  IconDots,
+  IconDownload,
+  IconFilter,
+  IconPlus,
+} from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import * as changeCase from "change-case";
 import { useEffect, useReducer, useState } from "react";
@@ -33,6 +40,7 @@ import {
 } from "@/features/logfilters";
 import { useLogFilterMutation } from "@/features/logfilters/api";
 import { titlize } from "@/utils/format";
+import { iconSize } from "@/utils/ui";
 
 import {
   buildLogSearchParams,
@@ -1089,12 +1097,17 @@ export function ExtraActions({
         </Menu.Target>
         <Menu.Dropdown>
           <Menu.Label>{t("log.csv.csv")}</Menu.Label>
-          <Menu.Item component="a" href={csvExportUrl}>
+          <Menu.Item
+            component="a"
+            href={csvExportUrl}
+            leftSection={<IconDownload style={iconSize(14)} />}
+          >
             {t("log.csv.csvExportDefault")}
           </Menu.Item>
           <Menu.Item
             component="a"
             href={`${csvExportUrl}&fields=${columnsToCsvFields(selectedColumns).join(",")}`}
+            leftSection={<IconDownload style={iconSize(14)} />}
           >
             {t("log.csv.csvExportCurrent")}
           </Menu.Item>
@@ -1105,12 +1118,17 @@ export function ExtraActions({
               key={filter.id}
               component={NavLink}
               to={`/logs?filterId=${filter.id}`}
+              leftSection={<IconFilter style={iconSize(14)} />}
             >
               {filter.name}
             </Menu.Item>
           ))}
           <Menu.Divider />
-          <Menu.Item component="a" onClick={openFilterPopover}>
+          <Menu.Item
+            component="a"
+            onClick={openFilterPopover}
+            leftSection={<IconDeviceFloppy style={iconSize(14)} />}
+          >
             {t("log.filter.save")}
           </Menu.Item>
           {urlSearchParams.has("filterId") && (
@@ -1121,11 +1139,16 @@ export function ExtraActions({
                   searchParams: Object.fromEntries(normalizedSearchParams),
                 })
               }
+              leftSection={<IconDeviceFloppy style={iconSize(14)} />}
             >
               {t("log.filter.update")}
             </Menu.Item>
           )}
-          <Menu.Item component="a" onClick={openFilterDrawer}>
+          <Menu.Item
+            component="a"
+            onClick={openFilterDrawer}
+            leftSection={<IconAdjustmentsHorizontal style={iconSize(14)} />}
+          >
             {t("log.filter.manage")}
           </Menu.Item>
         </Menu.Dropdown>
