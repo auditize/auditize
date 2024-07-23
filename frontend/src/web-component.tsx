@@ -1,5 +1,6 @@
 import { MantineProvider } from "@mantine/core";
 import mantineCss from "@mantine/core/styles.layer.css?inline";
+import mantineDateCss from "@mantine/dates/styles.layer.css?inline";
 import { QueryClientProvider } from "@tanstack/react-query";
 import datatableCss from "mantine-datatable/styles.layer.css?inline";
 import ReactDOM from "react-dom/client";
@@ -43,6 +44,7 @@ class LogWebComponent extends HTMLElement {
     root.render(
       <div id="webco" data-mantine-color-scheme="light">
         <style>{mantineCss}</style>
+        <style>{mantineDateCss}</style>
         <style>{datatableCss}</style>
         <style>{layersCss}</style>
         <style>{webComponentCss}</style>
