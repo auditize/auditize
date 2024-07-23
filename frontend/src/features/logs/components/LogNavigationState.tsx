@@ -12,14 +12,9 @@ import {
   useLogFilterMutation,
 } from "@/features/logfilters";
 import { useLogRepoListQuery } from "@/features/repos";
-import { deserializeDate } from "@/utils/date";
 import { addQueryParamToLocation } from "@/utils/router";
 
-import {
-  buildLogSearchParams,
-  LogSearchParams,
-  logSearchParamsToURLSearchParams,
-} from "../api";
+import { LogSearchParams } from "../LogSearchParams";
 
 type LogContextProps = {
   displayedLogId: string | null;
@@ -59,40 +54,6 @@ function useLogSelectedColumns(
         [repoId]: columns ? columns : DEFAULT_SELECTED_COLUMNS,
       })),
   ];
-}
-
-function unflattensCustomFields(
-  params: Record<string, string>,
-  prefix: string,
-): Map<string, string> {
-  const customFields = new Map<string, string>();
-  for (const [name, value] of Object.entries(params)) {
-    const parts = name.split(".");
-    if (parts.length === 2 && parts[0] === prefix) {
-      customFields.set(parts[1], value);
-    }
-  }
-  return customFields;
-}
-
-function unflattensLogSearchParameters(
-  params: Record<string, string>,
-): LogSearchParams {
-  // filter the params from the LogSearchParams available keys (white list)
-  // in order to avoid possible undesired keys in LogSearchParams resulting object
-  const template = buildLogSearchParams();
-  const obj = Object.fromEntries(
-    Object.keys(template).map((key) => [key, params[key] ?? ""]),
-  );
-  return {
-    ...obj,
-    since: obj.since ? deserializeDate(obj.since) : null,
-    until: obj.until ? deserializeDate(obj.until) : null,
-    actorExtra: unflattensCustomFields(params, "actor"),
-    resourceExtra: unflattensCustomFields(params, "resource"),
-    source: unflattensCustomFields(params, "source"),
-    details: unflattensCustomFields(params, "details"),
-  } as LogSearchParams;
 }
 
 const UrlLogContext = createContext<LogContextProps | null>(null);
@@ -144,12 +105,12 @@ export function LogNavigationStateProvider({
   // In case both are provided, the URL search parameters have precedence
   let logSearchParams: LogSearchParams;
   if (!urlSearchParams.has("repoId") && filterId && filterQuery.data) {
-    logSearchParams = {
-      ...unflattensLogSearchParameters(filterQuery.data.searchParams),
+    logSearchParams = LogSearchParams.deserialize({
+      ...filterQuery.data.searchParams,
       repoId: filterQuery.data.repoId,
-    };
+    });
   } else {
-    logSearchParams = unflattensLogSearchParameters(
+    logSearchParams = LogSearchParams.deserialize(
       Object.fromEntries(urlSearchParams.entries()),
     );
   }
@@ -161,8 +122,9 @@ export function LogNavigationStateProvider({
       !logSearchParams.repoId && newLogSearchParams.repoId
     );
 
-    const newUrlSearchParams =
-      logSearchParamsToURLSearchParams(newLogSearchParams);
+    const newUrlSearchParams = new URLSearchParams(
+      newLogSearchParams.serialize(),
+    );
     if (filterId) {
       newUrlSearchParams.set("filterId", filterId);
     }
@@ -195,11 +157,21 @@ export function LogNavigationStateProvider({
       // if no default repo or default repo is not in the list, select the first one (if any)
       if (!defaultRepo || !repos.find((repo) => repo.id === defaultRepo)) {
         if (repos.length > 0) {
-          setLogSearchParams({ ...logSearchParams, repoId: repos[0].id });
+          setLogSearchParams(
+            LogSearchParams.fromProperties({
+              ...logSearchParams,
+              repoId: repos[0].id,
+            }),
+          );
         }
       } else {
         // otherwise, select the default/previously selected repo (local storage)
-        setLogSearchParams({ ...logSearchParams, repoId: defaultRepo });
+        setLogSearchParams(
+          LogSearchParams.fromProperties({
+            ...logSearchParams,
+            repoId: defaultRepo,
+          }),
+        );
       }
     }
   });
@@ -238,10 +210,9 @@ function LogNavigationForWebComponentStateProvider({
   children: React.ReactNode;
 }) {
   const [displayedLogId, setDisplayedLogId] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useState<LogSearchParams>({
-    ...buildLogSearchParams(),
-    repoId,
-  });
+  const [searchParams, setSearchParams] = useState<LogSearchParams>(
+    LogSearchParams.fromProperties({ repoId }),
+  );
   const [selectedColumns, setSelectedColumns] = useLogSelectedColumns(repoId);
 
   return (

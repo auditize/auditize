@@ -2,7 +2,7 @@ import { Stack } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
-import { buildLogSearchParams } from "../api";
+import { LogSearchParams } from "../LogSearchParams";
 import { LogLoader } from "./LogLoader";
 import { LogNavigation } from "./LogNavigation";
 import { useLogNavigationState } from "./LogNavigationState";
@@ -33,13 +33,14 @@ export function Logs({
       <LogLoader
         searchParams={searchParams}
         onTableSearchParamsChange={(name, value) => {
-          setSearchParams({
-            ...buildLogSearchParams(),
-            repoId: searchParams.repoId,
-            since: searchParams.since,
-            until: searchParams.until,
-            [name]: value,
-          });
+          setSearchParams(
+            LogSearchParams.fromProperties({
+              repoId: searchParams.repoId,
+              since: searchParams.since,
+              until: searchParams.until,
+              [name]: value,
+            }),
+          );
         }}
         selectedColumns={selectedColumns}
         onSelectedColumnsChange={setSelectedColumns}

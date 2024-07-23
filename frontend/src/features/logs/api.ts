@@ -3,7 +3,8 @@ import utc from "dayjs/plugin/utc";
 import snakecaseKeys from "snakecase-keys";
 
 import { getAllPagePaginatedItems, reqGet } from "@/utils/api";
-import { serializeDate } from "@/utils/date";
+
+import { LogSearchParams } from "./LogSearchParams";
 
 dayjs.extend(utc);
 
@@ -65,151 +66,6 @@ export type LogNode = {
   hasChildren: boolean;
 };
 
-export type LogSearchParams = {
-  repoId: string;
-  actionCategory: string;
-  actionType: string;
-  actorType: string;
-  actorName: string;
-  actorRef: string;
-  actorExtra: Map<string, string>;
-  source: Map<string, string>;
-  resourceType: string;
-  resourceName: string;
-  resourceRef: string;
-  resourceExtra: Map<string, string>;
-  details: Map<string, string>;
-  tagRef: string;
-  tagType: string;
-  tagName: string;
-  attachmentName: string;
-  attachmentDescription: string;
-  attachmentType: string;
-  attachmentMimeType: string;
-  nodeRef: string;
-  since: Date | null;
-  until: Date | null;
-};
-
-export function buildLogSearchParams(): LogSearchParams {
-  return {
-    repoId: "",
-    actionCategory: "",
-    actionType: "",
-    actorType: "",
-    actorName: "",
-    actorRef: "",
-    actorExtra: new Map(),
-    source: new Map(),
-    resourceType: "",
-    resourceName: "",
-    resourceRef: "",
-    resourceExtra: new Map(),
-    details: new Map(),
-    tagType: "",
-    tagName: "",
-    tagRef: "",
-    attachmentName: "",
-    attachmentDescription: "",
-    attachmentType: "",
-    attachmentMimeType: "",
-    nodeRef: "",
-    since: null,
-    until: null,
-  };
-}
-
-function prepareCustomFieldsForApi(
-  fields: Map<string, string>,
-  prefix: string,
-): object {
-  return Object.fromEntries(
-    Array.from(fields.entries()).map(([name, value]) => [
-      `${prefix}.${name}`,
-      value,
-    ]),
-  );
-}
-
-export function prepareLogSearchParamsForApi(
-  params: LogSearchParams,
-  { includeRepoId } = { includeRepoId: true },
-): object {
-  const prepared = {
-    ...(includeRepoId ? { repoId: params.repoId } : {}),
-
-    // Dates
-    since: params.since ? serializeDate(params.since) : undefined,
-    until: params.until ? serializeDate(params.until) : undefined,
-
-    // Action
-    actionCategory: params.actionCategory,
-    actionType: params.actionType,
-
-    // Actor
-    actorType: params.actorType,
-    actorName: params.actorName,
-    actorRef: params.actorRef,
-    ...prepareCustomFieldsForApi(params.actorExtra, "actor"),
-
-    // Source
-    ...prepareCustomFieldsForApi(params.source, "source"),
-
-    // Resource
-    resourceType: params.resourceType,
-    resourceName: params.resourceName,
-    resourceRef: params.resourceRef,
-    ...prepareCustomFieldsForApi(params.resourceExtra, "resource"),
-
-    // Details
-    ...prepareCustomFieldsForApi(params.details, "details"),
-
-    // Tag
-    tagRef: params.tagRef,
-    tagType: params.tagType,
-    tagName: params.tagName,
-
-    // Attachment
-    attachmentName: params.attachmentName,
-    attachmentDescription: params.attachmentDescription,
-    attachmentType: params.attachmentType,
-    attachmentMimeType: params.attachmentMimeType,
-
-    // Node
-    nodeRef: params.nodeRef,
-  };
-
-  return Object.fromEntries(
-    Object.entries(prepared).filter(([, value]) => value),
-  );
-}
-
-function stripEmptyStringsFromObject(obj: any): any {
-  // Make the query string prettier by avoid query keys without values
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => (value !== "" && value !== undefined)), // prettier-ignore
-  );
-}
-
-export function logSearchParamsToURLSearchParams(
-  params: LogSearchParams,
-  {
-    includeRepoId = true,
-    snakecase = false,
-  }: {
-    includeRepoId?: boolean;
-    snakecase?: boolean;
-  } = {},
-): URLSearchParams {
-  let prepared = stripEmptyStringsFromObject(
-    prepareLogSearchParamsForApi(params, { includeRepoId }),
-  );
-  if (snakecase) {
-    prepared = snakecaseKeys(prepared, { exclude: [/.*\..*/] }); // exclude custom fields (i.e "actor.role"));
-  }
-  return new URLSearchParams(prepared);
-}
-
 export async function getLogs(
   cursor: string | null,
   params?: LogSearchParams,
@@ -220,9 +76,7 @@ export async function getLogs(
     snakecaseKeys(
       {
         limit,
-        ...(params
-          ? prepareLogSearchParamsForApi(params, { includeRepoId: false })
-          : {}),
+        ...(params ? params.serialize({ includeRepoId: false }) : {}),
         ...(cursor && { cursor }),
       },
       { exclude: [/.*\..*/] }, // exclude custom fields (i.e "actor.role")

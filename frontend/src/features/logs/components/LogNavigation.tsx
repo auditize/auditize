@@ -44,7 +44,6 @@ import { titlize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
 import {
-  buildLogSearchParams,
   getAllAttachmentMimeTypes,
   getAllAttachmentTypes,
   getAllLogActionCategories,
@@ -53,9 +52,8 @@ import {
   getAllLogNodes,
   getAllLogResourceTypes,
   getAllLogTagTypes,
-  LogSearchParams,
-  logSearchParamsToURLSearchParams,
 } from "../api";
+import { LogSearchParams } from "../LogSearchParams";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
@@ -815,10 +813,9 @@ function searchParamsReducer(
       if (action.name === "actionCategory") {
         update["actionType"] = "";
       }
-      return { ...state, ...update };
+      return LogSearchParams.fromProperties({ ...state, ...update });
     case "resetParams":
-      const newParams = buildLogSearchParams();
-      return action.params ? { ...newParams, ...action.params } : newParams;
+      return LogSearchParams.fromProperties(action.params ?? {});
   }
 }
 
@@ -1071,17 +1068,22 @@ export function ExtraActions({
       });
     },
   });
-  const normalizedSearchParams = logSearchParamsToURLSearchParams(
-    logSearchParams,
-    { includeRepoId: false, snakecase: true },
-  );
-  const csvExportUrl = `${window.auditizeBaseURL ?? ""}/api/repos/${logSearchParams.repoId}/logs/csv?${normalizedSearchParams.toString()}`;
+  const serializedLogSearchParams = logSearchParams.serialize({
+    includeRepoId: false,
+    snakeCase: true,
+  });
+  const csvExportUrl =
+    (window.auditizeBaseURL ?? "") +
+    "/api/repos/" +
+    logSearchParams.repoId +
+    "/logs/csv?" +
+    new URLSearchParams(serializedLogSearchParams).toString();
 
   return (
     <>
       <LogFilterCreation
         repoId={logSearchParams.repoId}
-        searchParams={Object.fromEntries(normalizedSearchParams)}
+        searchParams={serializedLogSearchParams}
         columns={normalizeFilterColumnsForApi(selectedColumns)}
         opened={filterPopoverOpened}
         onClose={closeFilterPopover}
@@ -1139,7 +1141,7 @@ export function ExtraActions({
                   component="a"
                   onClick={() =>
                     filterMutation.mutate({
-                      searchParams: Object.fromEntries(normalizedSearchParams),
+                      searchParams: serializedLogSearchParams,
                     })
                   }
                   leftSection={<IconDeviceFloppy style={iconSize(14)} />}
@@ -1264,38 +1266,14 @@ export function LogNavigation({
             {
               dispatch({
                 type: "resetParams",
-                params: {
-                  ...buildLogSearchParams(),
+                params: LogSearchParams.fromProperties({
                   repoId: editedParams.repoId,
-                },
+                }),
               });
               setIsDirty(true);
             }
           }}
-          disabled={[
-            editedParams.actionCategory,
-            editedParams.actionType,
-            editedParams.actorType,
-            editedParams.actorName,
-            editedParams.actorRef,
-            editedParams.actorExtra.size > 0,
-            editedParams.source.size > 0,
-            editedParams.resourceType,
-            editedParams.resourceName,
-            editedParams.resourceRef,
-            editedParams.resourceExtra.size > 0,
-            editedParams.details.size > 0,
-            editedParams.tagRef,
-            editedParams.tagType,
-            editedParams.tagName,
-            editedParams.attachmentName,
-            editedParams.attachmentDescription,
-            editedParams.attachmentType,
-            editedParams.attachmentMimeType,
-            editedParams.nodeRef,
-            editedParams.since,
-            editedParams.until,
-          ].every((value) => !value)}
+          disabled={editedParams.isEmpty()}
           variant="default"
         >
           {t("log.list.searchParams.clear")}

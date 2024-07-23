@@ -3,7 +3,8 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import deepEqual from "deep-equal";
 import { useEffect, useRef } from "react";
 
-import { getLogs, LogSearchParams, prepareLogSearchParamsForApi } from "../api";
+import { getLogs } from "../api";
+import { LogSearchParams } from "../LogSearchParams";
 import { LogTable, TableSearchParamChangeHandler } from "./LogTable";
 
 export function LogLoader({
@@ -25,7 +26,7 @@ export function LogLoader({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["logs", "list", prepareLogSearchParamsForApi(searchParams)],
+    queryKey: ["logs", "list", searchParams.serialize()],
     queryFn: async ({ pageParam }: { pageParam: string | null }) =>
       await getLogs(pageParam, searchParams),
     enabled: !!searchParams.repoId,
