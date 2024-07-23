@@ -37,8 +37,8 @@ import {
   LogFilterCreation,
   LogFilterDrawer,
   normalizeFilterColumnsForApi,
+  useLogFilterMutation,
 } from "@/features/logfilters";
-import { useLogFilterMutation } from "@/features/logfilters/api";
 import { useLogRepoListQuery } from "@/features/repos";
 import { titlize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
