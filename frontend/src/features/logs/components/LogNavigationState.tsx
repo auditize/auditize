@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
+import { notifyError } from "@/components/notifications";
 import {
   getLogFilter,
   normalizeFilterColumnsForApi,
@@ -82,13 +83,7 @@ export function LogNavigationStateProvider({
     enabled: !!filterId,
   });
   const filterMutation = useLogFilterMutation(filterId!, {
-    onError: () =>
-      notifications.show({
-        title: t("common.errorModalTitle"),
-        message: t("log.filter.updateError"),
-        color: "red",
-        autoClose: false,
-      }),
+    onError: () => notifyError(t("log.filter.updateError")),
   });
 
   const setDisplayedLogId = (logId: string | null) => {

@@ -14,7 +14,6 @@ import {
   useCombobox,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import {
   IconAdjustmentsHorizontal,
   IconDeviceFloppy,
@@ -31,6 +30,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
+import { notifyError, notifySuccess } from "@/components/notifications";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import {
   getLogFilters,
@@ -1058,19 +1058,11 @@ export function ExtraActions({
   });
   const filterMutation = useLogFilterMutation(filterId!, {
     onSuccess: () => {
-      notifications.show({
-        message: t("log.filter.updateSuccess"),
-        color: "green",
-      });
+      notifySuccess(t("log.filter.updateSuccess"));
       navigate(`/logs?filterId=${filterId}`);
     },
     onError: () => {
-      notifications.show({
-        title: t("common.errorModalTitle"),
-        message: t("log.filter.updateError"),
-        color: "red",
-        autoClose: false,
-      });
+      notifyError(t("log.filter.updateError"));
     },
   });
   const serializedLogSearchParams = logSearchParams.serialize({
