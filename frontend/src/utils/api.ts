@@ -82,12 +82,19 @@ export async function reqGet(
 export async function reqGetPaginated(
   path: string,
   params = {},
+  {
+    disableResponseCamelcase,
+  }: {
+    disableResponseCamelcase?: boolean;
+  } = {},
 ): Promise<[any[], PagePaginationInfo]> {
   const response = await axiosInstance.get(path, {
     params: snakecaseKeys(params, { deep: true }),
   });
   return [
-    camelcaseKeys(response.data.items, { deep: true }),
+    disableResponseCamelcase
+      ? response.data.items
+      : camelcaseKeys(response.data.items, { deep: true }),
     response.data.pagination,
   ];
 }

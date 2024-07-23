@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import camelcaseKeys from "camelcase-keys";
 
 import {
   PagePaginationInfo,
@@ -48,11 +49,24 @@ export async function getLogFilters(
   search: string | null = null,
   page = 1,
 ): Promise<[LogFilter[], PagePaginationInfo]> {
-  return await reqGetPaginated("/users/me/logs/filters", { q: search, page });
+  const [filters, pagination] = await reqGetPaginated(
+    "/users/me/logs/filters",
+    { q: search, page },
+    { disableResponseCamelcase: true },
+  );
+  return [
+    camelcaseKeys(filters, { deep: true, exclude: [/.*\..*/] }),
+    pagination,
+  ];
 }
 
 export async function getLogFilter(logFilterId: string): Promise<LogFilter> {
-  return await reqGet(`/users/me/logs/filters/${logFilterId}`);
+  const filter = await reqGet(
+    `/users/me/logs/filters/${logFilterId}`,
+    undefined,
+    { disableResponseCamelcase: true },
+  );
+  return camelcaseKeys(filter, { deep: true, exclude: [/.*\..*/] });
 }
 
 export async function updateLogFilter(
