@@ -27,7 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as changeCase from "change-case";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, useSearchParams } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -39,6 +39,7 @@ import {
   normalizeFilterColumnsForApi,
 } from "@/features/logfilters";
 import { useLogFilterMutation } from "@/features/logfilters/api";
+import { useLogRepoListQuery } from "@/features/repos";
 import { titlize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
@@ -55,7 +56,6 @@ import {
   LogSearchParams,
   logSearchParamsToURLSearchParams,
 } from "../api";
-import { useLogRepoQuery } from "../hooks";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
@@ -121,7 +121,7 @@ function RepoSelector({
   repoId?: string;
   onChange: (value: string) => void;
 }) {
-  const repoQuery = useLogRepoQuery();
+  const repoQuery = useLogRepoListQuery();
 
   return (
     <Select

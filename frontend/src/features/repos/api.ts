@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+
 import {
   getAllPagePaginatedItems,
   PagePaginationInfo,
@@ -97,4 +99,11 @@ export async function getRepoTranslation(
 
 export async function deleteRepo(repoId: string): Promise<void> {
   await reqDelete("/repos/" + repoId);
+}
+
+export function useLogRepoListQuery() {
+  return useQuery({
+    queryKey: ["logRepos"],
+    queryFn: () => getAllMyRepos({ hasReadPermission: true }),
+  });
 }

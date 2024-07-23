@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
+import { useLogRepoListQuery } from "@/features/repos";
 import { deserializeDate } from "@/utils/date";
 import { addQueryParamToLocation } from "@/utils/router";
 
@@ -19,11 +20,6 @@ import {
   LogSearchParams,
   logSearchParamsToURLSearchParams,
 } from "../api";
-import {
-  DEFAULT_COLUMNS,
-  useLogRepoQuery,
-  useLogSelectedColumns,
-} from "../hooks";
 
 type LogContextProps = {
   displayedLogId: string | null;
@@ -36,6 +32,34 @@ type LogContextProps = {
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
+
+const DEFAULT_SELECTED_COLUMNS = [
+  "date",
+  "actor",
+  "action",
+  "resource",
+  "node",
+  "tag",
+];
+
+function useLogSelectedColumns(
+  repoId: string,
+): [string[], (columns: string[] | null) => void] {
+  const [perRepoColumns, setPerRepoColumns] = useLocalStorage<
+    Record<string, string[]>
+  >({
+    key: `auditize-log-columns`,
+    defaultValue: {},
+  });
+  return [
+    perRepoColumns[repoId] ?? DEFAULT_SELECTED_COLUMNS,
+    (columns) =>
+      setPerRepoColumns((perRepoColumns) => ({
+        ...perRepoColumns,
+        [repoId]: columns ? columns : DEFAULT_SELECTED_COLUMNS,
+      })),
+  ];
+}
 
 function unflattensCustomFields(
   params: Record<string, string>,
@@ -83,7 +107,7 @@ export function LogNavigationStateProvider({
   const filterId = urlSearchParams.get("filterId");
   const location = useLocation();
   const navigate = useNavigate();
-  const repoQuery = useLogRepoQuery();
+  const repoQuery = useLogRepoListQuery();
   const [defaultRepo, setDefaultRepo] = useLocalStorage({
     key: "auditize-default-repo",
     getInitialValueInEffect: false,
@@ -153,7 +177,9 @@ export function LogNavigationStateProvider({
     selectedColumns = unnormalizeFilterColumnsFromApi(filterQuery.data.columns);
     setSelectedColumns = (columns: string[] | null) =>
       filterMutation.mutate({
-        columns: normalizeFilterColumnsForApi(columns ?? DEFAULT_COLUMNS),
+        columns: normalizeFilterColumnsForApi(
+          columns ?? DEFAULT_SELECTED_COLUMNS,
+        ),
       });
   } else {
     selectedColumns = repoSelectedColumns;
