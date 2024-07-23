@@ -36,14 +36,22 @@ export async function getAllPagePaginatedItems<T>(
   return allItems;
 }
 
-export async function reqPost(path: string, data: any): Promise<any> {
-  data = snakecaseKeys(data, { deep: true });
+export async function reqPost(
+  path: string,
+  data: any,
+  { disableBodySnakecase }: { disableBodySnakecase?: boolean } = {},
+): Promise<any> {
+  data = disableBodySnakecase ? data : snakecaseKeys(data, { deep: true });
   const response = await axiosInstance.post(path, data);
   return camelcaseKeys(response.data, { deep: true });
 }
 
-export async function reqPatch(path: string, data: any): Promise<any> {
-  data = snakecaseKeys(data, { deep: true });
+export async function reqPatch(
+  path: string,
+  data: any,
+  { disableBodySnakecase }: { disableBodySnakecase?: boolean } = {},
+): Promise<any> {
+  data = disableBodySnakecase ? data : snakecaseKeys(data, { deep: true });
   const response = await axiosInstance.patch(path, data);
   return camelcaseKeys(response.data, { deep: true });
 }

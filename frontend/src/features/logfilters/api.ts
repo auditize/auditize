@@ -31,7 +31,16 @@ export interface LogFilterUpdate {
 export async function createLogFilter(
   logFilter: LogFilterCreation,
 ): Promise<string> {
-  const data = await reqPost("/users/me/logs/filters", logFilter);
+  const data = await reqPost(
+    "/users/me/logs/filters",
+    {
+      name: logFilter.name,
+      repo_id: logFilter.repoId,
+      search_params: logFilter.searchParams,
+      columns: logFilter.columns,
+    },
+    { disableBodySnakecase: true },
+  );
   return data.id;
 }
 
@@ -50,7 +59,16 @@ export async function updateLogFilter(
   id: string,
   update: LogFilterUpdate,
 ): Promise<void> {
-  await reqPatch(`/users/me/logs/filters/${id}`, update);
+  await reqPatch(
+    `/users/me/logs/filters/${id}`,
+    {
+      name: update.name,
+      repo_id: update.repoId,
+      search_params: update.searchParams,
+      columns: update.columns,
+    },
+    { disableBodySnakecase: true },
+  );
 }
 
 export function useLogFilterMutation(
