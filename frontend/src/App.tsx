@@ -34,7 +34,7 @@ import {
   useAuthenticatedUser,
   useCurrentUser,
 } from "@/features/auth";
-import { Logs, UrlLogContextProvider } from "@/features/logs";
+import { LogNavigationStateProvider, Logs } from "@/features/logs";
 import { ReposManagement } from "@/features/repos";
 import { Signup } from "@/features/signup";
 import { UsersManagement } from "@/features/users";
@@ -215,9 +215,9 @@ function AppRoutes() {
             {
               path: "logs",
               element: (
-                <UrlLogContextProvider>
+                <LogNavigationStateProvider>
                   <Logs />
-                </UrlLogContextProvider>
+                </LogNavigationStateProvider>
               ),
             },
             {

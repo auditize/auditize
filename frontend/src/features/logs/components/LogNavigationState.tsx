@@ -12,18 +12,18 @@ import {
   getLogFilter,
   normalizeFilterColumnsForApi,
   unnormalizeFilterColumnsFromApi,
-} from "../logfilters";
-import { useLogFilterMutation } from "../logfilters/api";
+} from "../../logfilters";
+import { useLogFilterMutation } from "../../logfilters/api";
 import {
   buildLogSearchParams,
   LogSearchParams,
   logSearchParamsToURLSearchParams,
-} from "./api";
+} from "../api";
 import {
   DEFAULT_COLUMNS,
   useLogRepoQuery,
   useLogSelectedColumns,
-} from "./hooks";
+} from "../hooks";
 
 type LogContextProps = {
   displayedLogId: string | null;
@@ -36,36 +36,6 @@ type LogContextProps = {
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
-
-export function StateLogContextProvider({
-  repoId,
-  children,
-}: {
-  repoId: string;
-  children: React.ReactNode;
-}) {
-  const [displayedLogId, setDisplayedLogId] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useState<LogSearchParams>({
-    ...buildLogSearchParams(),
-    repoId,
-  });
-  const [selectedColumns, setSelectedColumns] = useLogSelectedColumns(repoId);
-
-  return (
-    <StateLogContext.Provider
-      value={{
-        displayedLogId,
-        setDisplayedLogId,
-        searchParams,
-        setSearchParams,
-        selectedColumns,
-        setSelectedColumns,
-      }}
-    >
-      {children}
-    </StateLogContext.Provider>
-  );
-}
 
 function unflattensCustomFields(
   params: Record<string, string>,
@@ -103,7 +73,7 @@ function unflattensLogSearchParameters(
 
 const UrlLogContext = createContext<LogContextProps | null>(null);
 
-export function UrlLogContextProvider({
+export function LogNavigationStateProvider({
   children,
 }: {
   children: React.ReactNode;
@@ -234,7 +204,40 @@ export function UrlLogContextProvider({
   );
 }
 
-export function useLogContext(): LogContextProps {
+function LogNavigationForWebComponentStateProvider({
+  repoId,
+  children,
+}: {
+  repoId: string;
+  children: React.ReactNode;
+}) {
+  const [displayedLogId, setDisplayedLogId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useState<LogSearchParams>({
+    ...buildLogSearchParams(),
+    repoId,
+  });
+  const [selectedColumns, setSelectedColumns] = useLogSelectedColumns(repoId);
+
+  return (
+    <StateLogContext.Provider
+      value={{
+        displayedLogId,
+        setDisplayedLogId,
+        searchParams,
+        setSearchParams,
+        selectedColumns,
+        setSelectedColumns,
+      }}
+    >
+      {children}
+    </StateLogContext.Provider>
+  );
+}
+
+LogNavigationStateProvider.ForWebComponent =
+  LogNavigationForWebComponentStateProvider;
+
+export function useLogNavigationState(): LogContextProps {
   const stateLogContext = useContext(StateLogContext);
   const urlLogContext = useContext(UrlLogContext);
 

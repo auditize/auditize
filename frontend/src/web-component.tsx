@@ -7,7 +7,7 @@ import rsuiteCss from "rsuite/dist/rsuite-no-reset.min.css?inline";
 
 import { theme } from "@/theme";
 
-import { Logs, StateLogProvider } from "./features/logs";
+import { LogNavigationStateProvider, Logs } from "./features/logs";
 import { I18nProvider } from "./i18n";
 import layersCss from "./layers.css?inline";
 import { enableAccessTokenAuthentication, setBaseURL } from "./utils/axios";
@@ -56,9 +56,9 @@ class LogWebComponent extends HTMLElement {
             getRootElement={() => document.getElementById("webco")!}
           >
             <I18nProvider lang={lang}>
-              <StateLogProvider repoId={repoId}>
+              <LogNavigationStateProvider.ForWebComponent repoId={repoId}>
                 <Logs withRepoSearchParam={false} withLogFilters={false} />
-              </StateLogProvider>
+              </LogNavigationStateProvider.ForWebComponent>
             </I18nProvider>
           </MantineProvider>
         </QueryClientProvider>

@@ -16,9 +16,9 @@ import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { humanizeDate } from "@/utils/date";
 
 import { CustomField, Log } from "../api";
-import { useLogContext } from "../context";
 import { LogDetails } from "./LogDetails";
 import { useLogFields } from "./LogFieldSelector";
+import { useLogNavigationState } from "./LogNavigationState";
 import { useLogTranslator } from "./LogTranslation";
 
 export type TableSearchParamChangeHandler = (
@@ -1110,7 +1110,7 @@ export function LogTable({
   // NB: null means default columns
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
-  const { setDisplayedLogId } = useLogContext();
+  const { setDisplayedLogId } = useLogNavigationState();
   const logTranslator = useLogTranslator(repoId);
 
   let columns = [

@@ -3,9 +3,9 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import { buildLogSearchParams } from "../api";
-import { useLogContext } from "../context";
 import { LogLoader } from "./LogLoader";
 import { LogNavigation } from "./LogNavigation";
+import { useLogNavigationState } from "./LogNavigationState";
 
 export function Logs({
   withRepoSearchParam = true,
@@ -16,7 +16,7 @@ export function Logs({
 }) {
   const { t } = useTranslation();
   const { searchParams, setSearchParams, selectedColumns, setSelectedColumns } =
-    useLogContext();
+    useLogNavigationState();
   useDocumentTitle(t("log.list.documentTitle"));
 
   return (

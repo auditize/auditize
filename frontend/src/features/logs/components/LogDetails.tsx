@@ -24,16 +24,14 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { Breadcrumb } from "rsuite";
 
 import { Section } from "@/components/Section";
 import { humanizeDate } from "@/utils/date";
-import { titlize } from "@/utils/format";
 import { iconSize } from "@/utils/ui";
 
 import { getLog } from "../api";
-import { useLogContext } from "../context";
+import { useLogNavigationState } from "./LogNavigationState";
 import { useLogTranslator } from "./LogTranslation";
 
 function KeyValueTable({
@@ -136,7 +134,7 @@ function NodePath({ value }: { value: { ref: string; name: string }[] }) {
 export function LogDetails({ repoId }: { repoId?: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const { displayedLogId, setDisplayedLogId } = useLogContext();
+  const { displayedLogId, setDisplayedLogId } = useLogNavigationState();
   const {
     data: log,
     error,

@@ -55,9 +55,9 @@ import {
   LogSearchParams,
   logSearchParamsToURLSearchParams,
 } from "../api";
-import { useLogContext } from "../context";
 import { useLogRepoQuery } from "../hooks";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
+import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
 import { useLogTranslator } from "./LogTranslation";
 import { NodeSelector } from "./NodeSelector";
@@ -1047,7 +1047,7 @@ export function ExtraActions({
   withLogFilters: boolean;
 }) {
   const { t } = useTranslation();
-  const { filterId } = useLogContext();
+  const { filterId } = useLogNavigationState();
   const [
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
