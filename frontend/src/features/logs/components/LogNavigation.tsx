@@ -1008,9 +1008,6 @@ function columnsToCsvFields(columns: string[]): string[] {
         // actor, source, resource, details)
         return [column];
       }
-      if (column === "date") {
-        return ["saved_at"];
-      }
       if (column === "actor") {
         return ["actor_name"];
       }

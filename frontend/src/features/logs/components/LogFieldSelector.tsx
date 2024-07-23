@@ -51,7 +51,7 @@ export function useLogFields(
 
   return {
     fields: [
-      { group: "Date", items: [_({ value: "date", label: "Date" })] },
+      { group: "Date", items: [_({ value: "savedAt", label: "Date" })] },
       {
         group: "Action",
         items: [

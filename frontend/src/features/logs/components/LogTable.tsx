@@ -704,7 +704,7 @@ function ColumnSelector({
 
 export function sortFields(a: string, b: string) {
   const order: { [key: string]: number } = {
-    date: 0,
+    savedAt: 0,
     "source.": 1,
     actor: 2,
     actorType: 3,
@@ -754,7 +754,7 @@ function fieldToColumn(
 ) {
   const { t } = i18n;
 
-  if (field === "date")
+  if (field === "savedAt")
     return {
       accessor: "savedAt",
       title: t("log.date"),

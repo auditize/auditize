@@ -11,18 +11,10 @@ export function normalizeFilterColumnsForApi(columns: string[]): string[] {
       // actor, source, resource, details)
       return column;
     }
-    if (column === "date") {
-      return "saved_at";
-    }
     return changeCase.snakeCase(column);
   });
 }
 
 export function unnormalizeFilterColumnsFromApi(columns: string[]): string[] {
-  return columns.map((column) => {
-    if (column === "saved_at") {
-      return "date";
-    }
-    return changeCase.camelCase(column);
-  });
+  return columns.map((col) => changeCase.camelCase(col));
 }
