@@ -1059,6 +1059,7 @@ export function ExtraActions({
   const filterListQuery = useQuery({
     queryKey: ["logFilters"],
     queryFn: () => getLogFilters().then(([filters]) => filters),
+    enabled: withLogFilters,
   });
   const filterMutation = useLogFilterMutation(filterId!, {
     onError: () => {
