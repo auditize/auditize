@@ -2,6 +2,7 @@ import { Stack, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import {
   ResourceCreation,
@@ -52,6 +53,7 @@ export function LogFilterCreation({
 }) {
   const { t } = useTranslation();
   const form = useLogFilterForm({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     form.reset();
@@ -71,6 +73,10 @@ export function LogFilterCreation({
           columns,
         })
       }
+      onSaveSuccess={(filterId) => {
+        onClose();
+        navigate(`/logs?filterId=${filterId}`);
+      }}
       queryKeyForInvalidation={["logFilters"]}
     >
       <LogFilterForm form={form} />
