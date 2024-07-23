@@ -237,6 +237,7 @@ export default {
       save: "Sauvegarder le filtre",
       update: "Mettre à jour le filtre actif",
       updateError: "Impossible de mettre à jour le filtre",
+      updateSuccess: "Le filtre a été mis à jour",
       form: {
         name: {
           label: "Nom",

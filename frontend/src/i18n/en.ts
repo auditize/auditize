@@ -234,6 +234,7 @@ export default {
       save: "Save filter",
       update: "Update current filter",
       updateError: "Unable to update filter",
+      updateSuccess: "The filter has been updated",
       manage: "Manage filters",
       form: {
         name: {

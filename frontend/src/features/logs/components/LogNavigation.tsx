@@ -1058,6 +1058,10 @@ export function ExtraActions({
   });
   const filterMutation = useLogFilterMutation(filterId!, {
     onSuccess: () => {
+      notifications.show({
+        message: t("log.filter.updateSuccess"),
+        color: "green",
+      });
       navigate(`/logs?filterId=${filterId}`);
     },
     onError: () => {
