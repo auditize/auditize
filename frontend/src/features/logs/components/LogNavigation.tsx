@@ -27,7 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as changeCase from "change-case";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -1042,6 +1042,7 @@ export function ExtraActions({
 }) {
   const { t } = useTranslation();
   const { filterId } = useLogNavigationState();
+  const navigate = useNavigate();
   const [
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
@@ -1056,6 +1057,9 @@ export function ExtraActions({
     enabled: withLogFilters,
   });
   const filterMutation = useLogFilterMutation(filterId!, {
+    onSuccess: () => {
+      navigate(`/logs?filterId=${filterId}`);
+    },
     onError: () => {
       notifications.show({
         title: t("common.errorModalTitle"),

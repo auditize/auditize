@@ -87,7 +87,10 @@ export async function updateLogFilter(
 
 export function useLogFilterMutation(
   id: string,
-  { onError }: { onError?: (error: Error) => void } = {},
+  {
+    onSuccess,
+    onError,
+  }: { onSuccess?: () => void; onError?: (error: Error) => void } = {},
 ) {
   const queryClient = useQueryClient();
   const filterMutation = useMutation({
@@ -96,6 +99,9 @@ export function useLogFilterMutation(
       queryClient.invalidateQueries({
         queryKey: ["logFilter", id],
       });
+      if (onSuccess) {
+        onSuccess();
+      }
     },
     onError,
   });
