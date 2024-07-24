@@ -28,6 +28,10 @@ export default {
         label: "Translations",
         placeholder: "Select a log translation profile",
       },
+      retentionPeriod: {
+        label: "Retention period",
+        placeholder: "Retention period in days",
+      },
       status: {
         label: "Status",
         value: {
