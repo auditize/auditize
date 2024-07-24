@@ -357,6 +357,9 @@ def validate_csv_fields(fields: list[str]):
 
         raise ValidationError(f"Invalid field name: {field!r}")
 
+    if len(fields) != len(set(fields)):
+        raise ValidationError("Duplicate field names are forbidden")
+
 
 async def get_logs_as_csv(
     dbm: DatabaseManager, repo_id: str, *, fields: list[str], **kwargs

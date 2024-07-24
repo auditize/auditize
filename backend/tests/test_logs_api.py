@@ -2180,6 +2180,16 @@ async def test_get_logs_as_csv_with_fields_param(
     )
 
 
+async def test_get_logs_as_csv_with_fields_param_duplicated(
+    log_read_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    await log_read_client.assert_get_bad_request(
+        f"/repos/{repo.id}/logs/csv",
+        params={"fields": "saved_at,action_type,action_type"},
+    )
+
+
 async def test_get_logs_as_csv_with_filter(
     log_rw_client: HttpTestHelper,
     repo: PreparedRepo,

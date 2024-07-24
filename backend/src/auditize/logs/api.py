@@ -461,7 +461,7 @@ async def get_logs_as_csv(
         service.CSV_BUILTIN_FIELDS
     ),
 ):
-    # NB: since we cannot properly handle an error in a StreamingResponse,
+    # NB: as we cannot properly handle an error in a StreamingResponse,
     # we perform as much validation as possible before calling get_logs_as_csv
     await get_log_db_for_reading(dbm, repo_id)
     fields = fields.split(",")  # convert fields string to a list
