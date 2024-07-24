@@ -61,7 +61,7 @@ import { useLogTranslator } from "./LogTranslation";
 import { NodeSelector } from "./NodeSelector";
 
 const FIXED_SEARCH_PARAM_NAMES = new Set([
-  "date",
+  "savedAt",
   "actionCategory",
   "actionType",
   "node",
@@ -392,14 +392,14 @@ function SearchParamField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(searchParams.repoId);
-  if (name === "date") {
+  if (name === "savedAt") {
     // FIXME: don't use useDisclosure here
     const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
       <SearchParamFieldPopover
         title={t("log.date")}
-        removable={!FIXED_SEARCH_PARAM_NAMES.has("date")}
-        onRemove={() => onRemove("date")}
+        removable={!FIXED_SEARCH_PARAM_NAMES.has("savedAt")}
+        onRemove={() => onRemove("savedAt")}
         isSet={!!(searchParams.since || searchParams.until)}
         opened={opened}
         onChange={toggle}
@@ -826,7 +826,7 @@ function searchParamsToSearchParamNames(
 
   // Date
   if (searchParams.since || searchParams.until) {
-    names.add("date");
+    names.add("savedAt");
   }
 
   // Action
@@ -938,7 +938,7 @@ function removeSearchParam(
   }
 
   // Handle date
-  if (paramName === "date") {
+  if (paramName === "savedAt") {
     setSearchParam("since", null);
     setSearchParam("until", null);
     return;
