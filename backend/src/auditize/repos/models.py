@@ -19,12 +19,14 @@ class Repo(BaseModel):
     name: str
     status: RepoStatus = Field(default=RepoStatus.enabled)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    retention_period: int | None = Field(default=None)
     log_i18n_profile_id: Optional[str] = Field(default=None)
 
 
 class RepoUpdate(BaseModel):
     name: Optional[str] = None
     status: Optional[RepoStatus] = None
+    retention_period: int | None = None
     log_i18n_profile_id: Optional[str] = None
 
 

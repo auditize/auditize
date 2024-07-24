@@ -46,15 +46,26 @@ def _RepoIdField():  # noqa
     )
 
 
+def _RepoRetentionPeriodField(**kwargs):  # noqa
+    return Field(
+        description="The repository retention period in days",
+        ge=1,
+        json_schema_extra={"example": 30},
+        **kwargs,
+    )
+
+
 class RepoCreationRequest(BaseModel):
     name: str = _RepoNameField()
     status: RepoStatus = _RepoStatusField(default=RepoStatus.enabled)
+    retention_period: Optional[int] = _RepoRetentionPeriodField(default=None)
     log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
 
 
 class RepoUpdateRequest(BaseModel):
     name: Optional[str] = _RepoNameField(default=None)
     status: Optional[RepoStatus] = _RepoStatusField(default=None)
+    retention_period: Optional[int] = _RepoRetentionPeriodField(default=None)
     log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
 
 
@@ -103,6 +114,7 @@ class _BaseRepoReadingResponse(BaseModel):
 
 class RepoReadingResponse(_BaseRepoReadingResponse):
     status: RepoStatus = _RepoStatusField()
+    retention_period: Optional[int] = _RepoRetentionPeriodField()
     log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField()
     stats: Optional[RepoStatsData] = Field(
         description="The repository stats (available if `include=stats` has been set in query parameters)",
