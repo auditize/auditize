@@ -23,7 +23,6 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import * as changeCase from "change-case";
 import { useEffect, useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -41,6 +40,7 @@ import {
 } from "@/features/logfilters";
 import { useLogRepoListQuery } from "@/features/repos";
 import { titlize } from "@/utils/format";
+import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
 import { iconSize } from "@/utils/ui";
 
 import {
@@ -1001,13 +1001,6 @@ function columnsToCsvFields(columns: string[]): string[] {
   return columns
     .toSorted(sortFields)
     .map((column) => {
-      if (column.includes(".")) {
-        // make a special case for custom fields (that contains ".") because
-        // changeCase.snakeCase transforms "." to "_"
-        // it assumes that the custom field group is all lowercase (which is currently true:
-        // actor, source, resource, details)
-        return [column];
-      }
       if (column === "actor") {
         return ["actor_name"];
       }
@@ -1026,7 +1019,7 @@ function columnsToCsvFields(columns: string[]): string[] {
       if (column === "attachment") {
         return ["attachment_name"];
       }
-      return [changeCase.snakeCase(column)];
+      return [camelCaseToSnakeCaseString(column)];
     })
     .flat();
 }

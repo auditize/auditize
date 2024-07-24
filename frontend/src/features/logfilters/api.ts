@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import camelcaseKeys from "camelcase-keys";
 
 import {
   PagePaginationInfo,
@@ -32,16 +31,7 @@ export interface LogFilterUpdate {
 export async function createLogFilter(
   logFilter: LogFilterCreation,
 ): Promise<string> {
-  const data = await reqPost(
-    "/users/me/logs/filters",
-    {
-      name: logFilter.name,
-      repo_id: logFilter.repoId,
-      search_params: logFilter.searchParams,
-      columns: logFilter.columns,
-    },
-    { disableBodySnakecase: true },
-  );
+  const data = await reqPost("/users/me/logs/filters", logFilter);
   return data.id;
 }
 
@@ -49,40 +39,18 @@ export async function getLogFilters(
   search: string | null = null,
   page = 1,
 ): Promise<[LogFilter[], PagePaginationInfo]> {
-  const [filters, pagination] = await reqGetPaginated(
-    "/users/me/logs/filters",
-    { q: search, page },
-    { disableResponseCamelcase: true },
-  );
-  return [
-    camelcaseKeys(filters, { deep: true, exclude: [/.*\..*/] }),
-    pagination,
-  ];
+  return await reqGetPaginated("/users/me/logs/filters", { q: search, page });
 }
 
 export async function getLogFilter(logFilterId: string): Promise<LogFilter> {
-  const filter = await reqGet(
-    `/users/me/logs/filters/${logFilterId}`,
-    undefined,
-    { disableResponseCamelcase: true },
-  );
-  return camelcaseKeys(filter, { deep: true, exclude: [/.*\..*/] });
+  return await reqGet(`/users/me/logs/filters/${logFilterId}`);
 }
 
 export async function updateLogFilter(
   id: string,
   update: LogFilterUpdate,
 ): Promise<void> {
-  await reqPatch(
-    `/users/me/logs/filters/${id}`,
-    {
-      name: update.name,
-      repo_id: update.repoId,
-      search_params: update.searchParams,
-      columns: update.columns,
-    },
-    { disableBodySnakecase: true },
-  );
+  await reqPatch(`/users/me/logs/filters/${id}`, update);
 }
 
 export function useLogFilterMutation(

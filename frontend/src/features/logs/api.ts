@@ -1,6 +1,5 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import snakecaseKeys from "snakecase-keys";
 
 import { getAllPagePaginatedItems, reqGet } from "@/utils/api";
 
@@ -68,21 +67,14 @@ export type LogNode = {
 
 export async function getLogs(
   cursor: string | null,
-  params?: LogSearchParams,
+  params: LogSearchParams,
   limit = 30,
 ): Promise<{ logs: Log[]; nextCursor: string | null }> {
-  const data = await reqGet(
-    `/repos/${params!.repoId}/logs`,
-    snakecaseKeys(
-      {
-        limit,
-        ...(params ? params.serialize({ includeRepoId: false }) : {}),
-        ...(cursor && { cursor }),
-      },
-      { exclude: [/.*\..*/] }, // exclude custom fields (i.e "actor.role")
-    ),
-    { disableParamsSnakecase: true },
-  );
+  const data = await reqGet(`/repos/${params.repoId}/logs`, {
+    limit,
+    ...params.serialize({ includeRepoId: false }),
+    ...(cursor && { cursor }),
+  });
   return {
     logs: data.items,
     nextCursor: data.pagination.nextCursor,

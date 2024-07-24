@@ -1,6 +1,5 @@
-import snakecaseKeys from "snakecase-keys";
-
 import { deserializeDate, serializeDate } from "@/utils/date";
+import { camelCaseToSnakeCaseObjectKeys } from "@/utils/switchCase";
 
 export class LogSearchParams {
   repoId: string = "";
@@ -132,9 +131,7 @@ export class LogSearchParams {
 
     // Snake case keys
     if (snakeCase) {
-      serialized = snakecaseKeys(serialized, {
-        exclude: [/.*\..*/],
-      }); // exclude custom fields (i.e "actor.role"));
+      serialized = camelCaseToSnakeCaseObjectKeys(serialized);
     }
 
     return serialized;

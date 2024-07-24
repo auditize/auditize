@@ -3569,21 +3569,6 @@ camelcase-css@^2.0.1:
   resolved "https://registry.npmjs.org/camelcase-css/-/camelcase-css-2.0.1.tgz"
   integrity sha512-QOSvevhslijgYwRx6Rv7zKdMF8lbRmx+uQGx2+vDc+KI/eBnsy9kit5aj23AgGu3pa4t9AgwbnXWqS+iOY+2aA==
 
-camelcase-keys@^9.1.3:
-  version "9.1.3"
-  resolved "https://registry.npmjs.org/camelcase-keys/-/camelcase-keys-9.1.3.tgz"
-  integrity sha512-Rircqi9ch8AnZscQcsA1C47NFdaO3wukpmIRzYcDOrmvgt78hM/sj5pZhZNec2NM12uk5vTwRHZ4anGcrC4ZTg==
-  dependencies:
-    camelcase "^8.0.0"
-    map-obj "5.0.0"
-    quick-lru "^6.1.1"
-    type-fest "^4.3.2"
-
-camelcase@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.npmjs.org/camelcase/-/camelcase-8.0.0.tgz"
-  integrity sha512-8WB3Jcas3swSvjIeA2yvCJ+Miyz5l1ZmB6HFb9R1317dt9LCQoswg/BGrmAmkWVEszSrrg4RwmO46qIm2OEnSA==
-
 caniuse-lite@^1.0.30001587:
   version "1.0.30001603"
   resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001603.tgz"
@@ -4195,14 +4180,6 @@ dom-lib@^3.1.3, dom-lib@^3.3.1:
   integrity sha512-N2mpo8qQmB9wIMZJVjER+BSh4GJiZZ7S6EjnMtyETcXo90hpITUDXpUhqOcfXZ2ZefytuYYKTZMp3CGR2X+tDA==
   dependencies:
     "@babel/runtime" "^7.20.0"
-
-dot-case@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.npmjs.org/dot-case/-/dot-case-3.0.4.tgz"
-  integrity sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==
-  dependencies:
-    no-case "^3.0.4"
-    tslib "^2.0.3"
 
 dotenv-expand@^10.0.0:
   version "10.0.0"
@@ -6154,13 +6131,6 @@ loupe@^2.3.6, loupe@^2.3.7:
   dependencies:
     get-func-name "^2.0.1"
 
-lower-case@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.npmjs.org/lower-case/-/lower-case-2.0.2.tgz"
-  integrity sha512-7fm3l3NAF9WfN6W3JOmf5drwpVqX78JtoGJ3A6W0a6ZnldM41w2fV5D490psKFTpMds8TJse/eHLFFsNHHjHgg==
-  dependencies:
-    tslib "^2.0.3"
-
 lru-cache@^10.2.0:
   version "10.2.0"
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-10.2.0.tgz"
@@ -6218,16 +6188,6 @@ mantine-datatable@^7.10.1:
   version "7.10.1"
   resolved "https://registry.npmjs.org/mantine-datatable/-/mantine-datatable-7.10.1.tgz"
   integrity sha512-RYMJCL5HKdelorEy9e9Og+7beVVE2+NLb+jpcibZ1m1ted4Q/kKbP0v2ytbgBADd4iXjmiqyzX3DOHesORe3Bg==
-
-map-obj@^4.1.0:
-  version "4.3.0"
-  resolved "https://registry.npmjs.org/map-obj/-/map-obj-4.3.0.tgz"
-  integrity sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ==
-
-map-obj@5.0.0:
-  version "5.0.0"
-  resolved "https://registry.npmjs.org/map-obj/-/map-obj-5.0.0.tgz"
-  integrity sha512-2L3MIgJynYrZ3TYMriLDLWocz15okFakV6J12HXvMXDHui2x/zgChzg1u9mFFGbbGWE+GsLpQByt4POb9Or+uA==
 
 map-or-similar@^1.5.0:
   version "1.5.0"
@@ -6457,14 +6417,6 @@ neo-async@^2.5.0, neo-async@^2.6.2:
   version "2.6.2"
   resolved "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
-
-no-case@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.npmjs.org/no-case/-/no-case-3.0.4.tgz"
-  integrity sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==
-  dependencies:
-    lower-case "^2.0.2"
-    tslib "^2.0.3"
 
 node-dir@^0.1.17:
   version "0.1.17"
@@ -7122,11 +7074,6 @@ queue-microtask@^1.2.2:
   version "1.2.3"
   resolved "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==
-
-quick-lru@^6.1.1:
-  version "6.1.2"
-  resolved "https://registry.npmjs.org/quick-lru/-/quick-lru-6.1.2.tgz"
-  integrity sha512-AAFUA5O1d83pIHEhJwWCq/RQcRukCkn/NSm2QsTEMle5f2hP0ChI2+3Xb051PZCkLryI/Ir1MVKviT2FIloaTQ==
 
 ramda@0.29.0:
   version "0.29.0"
@@ -7840,23 +7787,6 @@ slice-ansi@^4.0.0:
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
 
-snake-case@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.npmjs.org/snake-case/-/snake-case-3.0.4.tgz"
-  integrity sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==
-  dependencies:
-    dot-case "^3.0.4"
-    tslib "^2.0.3"
-
-snakecase-keys@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.npmjs.org/snakecase-keys/-/snakecase-keys-8.0.0.tgz"
-  integrity sha512-qS7XvESuFxskrmD8/O9tOMdLdV9YTuPfNLdRJIvNJKNEZtH9XVPwmZioROwl4TsVDbOFqlQ/o7pURuF8MnjYsg==
-  dependencies:
-    map-obj "^4.1.0"
-    snake-case "^3.0.4"
-    type-fest "^4.15.0"
-
 source-map-js@^1.0.1, source-map-js@^1.2.0:
   version "1.2.0"
   resolved "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.0.tgz"
@@ -8482,11 +8412,6 @@ tslib@^2.0.1:
   resolved "https://registry.npmjs.org/tslib/-/tslib-2.6.2.tgz"
   integrity sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==
 
-tslib@^2.0.3:
-  version "2.6.2"
-  resolved "https://registry.npmjs.org/tslib/-/tslib-2.6.2.tgz"
-  integrity sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==
-
 tslib@^2.1.0:
   version "2.6.2"
   resolved "https://registry.npmjs.org/tslib/-/tslib-2.6.2.tgz"
@@ -8534,7 +8459,7 @@ type-fest@^2.19.0:
   resolved "https://registry.npmjs.org/type-fest/-/type-fest-2.19.0.tgz"
   integrity sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA==
 
-type-fest@^4.12.0, type-fest@^4.15.0, type-fest@^4.3.2:
+type-fest@^4.12.0:
   version "4.15.0"
   resolved "https://registry.npmjs.org/type-fest/-/type-fest-4.15.0.tgz"
   integrity sha512-tB9lu0pQpX5KJq54g+oHOLumOx+pMep4RaM6liXh2PKmVRFF+/vAtUP0ZaJ0kOySfVNjF6doBWPHhBhISKdlIA==

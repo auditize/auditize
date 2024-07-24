@@ -1,7 +1,8 @@
-import camelcaseKeys from "camelcase-keys";
-import snakecaseKeys from "snakecase-keys";
-
 import { axiosInstance } from "./axios";
+import {
+  camelCaseToSnakeCaseObjectKeys,
+  snakeCaseToCamelCaseObjectKeys,
+} from "./switchCase";
 
 export type PagePaginationInfo = {
   page: number;
@@ -23,10 +24,10 @@ export async function getAllPagePaginatedItems<T>(
 
   while (true) {
     const response = await axiosInstance.get(path, {
-      params: snakecaseKeys({ page, ...filter }),
+      params: camelCaseToSnakeCaseObjectKeys({ page, ...filter }),
     });
     const { items, pagination } = response.data;
-    allItems.push(...camelcaseKeys(items, { deep: true }));
+    allItems.push(...snakeCaseToCamelCaseObjectKeys(items));
     if (pagination.page >= pagination.total_pages) {
       break;
     }
@@ -36,24 +37,20 @@ export async function getAllPagePaginatedItems<T>(
   return allItems;
 }
 
-export async function reqPost(
-  path: string,
-  data: any,
-  { disableBodySnakecase }: { disableBodySnakecase?: boolean } = {},
-): Promise<any> {
-  data = disableBodySnakecase ? data : snakecaseKeys(data, { deep: true });
-  const response = await axiosInstance.post(path, data);
-  return camelcaseKeys(response.data, { deep: true });
+export async function reqPost(path: string, data: any): Promise<any> {
+  const response = await axiosInstance.post(
+    path,
+    camelCaseToSnakeCaseObjectKeys(data),
+  );
+  return snakeCaseToCamelCaseObjectKeys(response.data);
 }
 
-export async function reqPatch(
-  path: string,
-  data: any,
-  { disableBodySnakecase }: { disableBodySnakecase?: boolean } = {},
-): Promise<any> {
-  data = disableBodySnakecase ? data : snakecaseKeys(data, { deep: true });
-  const response = await axiosInstance.patch(path, data);
-  return camelcaseKeys(response.data, { deep: true });
+export async function reqPatch(path: string, data: any): Promise<any> {
+  const response = await axiosInstance.patch(
+    path,
+    camelCaseToSnakeCaseObjectKeys(data),
+  );
+  return snakeCaseToCamelCaseObjectKeys(response.data);
 }
 
 export async function reqDelete(path: string): Promise<void> {
@@ -64,37 +61,26 @@ export async function reqGet(
   path: string,
   params = {},
   {
-    disableParamsSnakecase,
-    disableResponseCamelcase,
+    raw = false,
   }: {
-    disableParamsSnakecase?: boolean;
-    disableResponseCamelcase?: boolean;
+    raw?: boolean;
   } = {},
 ): Promise<any> {
   const response = await axiosInstance.get(path, {
-    params: disableParamsSnakecase ? params : snakecaseKeys(params),
+    params: raw ? params : camelCaseToSnakeCaseObjectKeys(params),
   });
-  return disableResponseCamelcase
-    ? response.data
-    : camelcaseKeys(response.data, { deep: true });
+  return raw ? response.data : snakeCaseToCamelCaseObjectKeys(response.data);
 }
 
 export async function reqGetPaginated(
   path: string,
   params = {},
-  {
-    disableResponseCamelcase,
-  }: {
-    disableResponseCamelcase?: boolean;
-  } = {},
 ): Promise<[any[], PagePaginationInfo]> {
   const response = await axiosInstance.get(path, {
-    params: snakecaseKeys(params, { deep: true }),
+    params: camelCaseToSnakeCaseObjectKeys(params),
   });
   return [
-    disableResponseCamelcase
-      ? response.data.items
-      : camelcaseKeys(response.data.items, { deep: true }),
+    snakeCaseToCamelCaseObjectKeys(response.data.items),
     response.data.pagination,
   ];
 }

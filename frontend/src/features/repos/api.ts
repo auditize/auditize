@@ -93,7 +93,7 @@ export async function getRepoTranslation(
   return await reqGet(
     `/repos/${repoId}/translations/${lang}`,
     {},
-    { disableResponseCamelcase: true },
+    { raw: true },
   );
 }
 
