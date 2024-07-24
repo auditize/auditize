@@ -238,6 +238,7 @@ export default {
       update: "Mettre à jour le filtre actif",
       updateError: "Impossible de mettre à jour le filtre",
       updateSuccess: "Le filtre a été mis à jour",
+      manage: "Gérer les filtres",
       form: {
         name: {
           label: "Nom",
