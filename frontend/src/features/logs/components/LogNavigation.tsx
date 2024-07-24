@@ -1030,6 +1030,20 @@ function columnsToCsvFields(columns: string[]): string[] {
   );
 }
 
+// NB: this function is a hack to avoid calling useNavigate outside react-router-dom
+// in Web Component mode (where withLogFilters=false).
+// Using a hook within a conditional statement should not be a problem since the
+// withLogFilters has a fixed value that never changes during the lifecycle of the component.
+function useRedirectToFilter(withLogFilters: boolean): (id: string) => void {
+  if (withLogFilters) {
+    const navigate = useNavigate();
+    return (id: string) => navigate(`/logs?filterId=${id}`);
+  } else {
+    // will never be called
+    return () => {};
+  }
+}
+
 export function ExtraActions({
   searchParams: logSearchParams,
   selectedColumns,
@@ -1041,7 +1055,7 @@ export function ExtraActions({
 }) {
   const { t } = useTranslation();
   const { filterId } = useLogNavigationState();
-  const navigate = useNavigate();
+  const redirectToFilter = useRedirectToFilter(withLogFilters);
   const [
     filterPopoverOpened,
     { open: openFilterPopover, close: closeFilterPopover },
@@ -1058,7 +1072,7 @@ export function ExtraActions({
   const filterMutation = useLogFilterMutation(filterId!, {
     onSuccess: () => {
       notifySuccess(t("log.filter.updateSuccess"));
-      navigate(`/logs?filterId=${filterId}`);
+      redirectToFilter(filterId!);
     },
     onError: () => {
       notifyError(t("log.filter.updateError"));
@@ -1077,17 +1091,21 @@ export function ExtraActions({
 
   return (
     <>
-      <LogFilterCreation
-        repoId={logSearchParams.repoId}
-        searchParams={serializedLogSearchParams}
-        columns={normalizeFilterColumnsForApi(selectedColumns)}
-        opened={filterPopoverOpened}
-        onClose={closeFilterPopover}
-      />
-      <LogFilterDrawer
-        opened={filterDrawerOpened}
-        onClose={closeFilterDrawer}
-      />
+      {withLogFilters && (
+        <>
+          <LogFilterCreation
+            repoId={logSearchParams.repoId}
+            searchParams={serializedLogSearchParams}
+            columns={normalizeFilterColumnsForApi(selectedColumns)}
+            opened={filterPopoverOpened}
+            onClose={closeFilterPopover}
+          />
+          <LogFilterDrawer
+            opened={filterDrawerOpened}
+            onClose={closeFilterDrawer}
+          />
+        </>
+      )}
       <Menu shadow="md" withinPortal={false}>
         <Menu.Target>
           <ActionIcon size="input-sm">
