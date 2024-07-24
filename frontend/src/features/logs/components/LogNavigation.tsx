@@ -998,30 +998,36 @@ function removeSearchParam(
 }
 
 function columnsToCsvFields(columns: string[]): string[] {
-  return columns
-    .toSorted(sortFields)
-    .map((column) => {
-      if (column === "actor") {
-        return ["actor_name"];
-      }
-      if (column === "action") {
-        return ["action_type", "action_category"];
-      }
-      if (column === "resource") {
-        return ["resource_type", "resource_name"];
-      }
-      if (column === "node") {
-        return ["node_path:name"];
-      }
-      if (column === "tag") {
-        return ["tag_type"];
-      }
-      if (column === "attachment") {
-        return ["attachment_name"];
-      }
-      return [camelCaseToSnakeCaseString(column)];
-    })
-    .flat();
+  return Array.from(
+    // If the user has also selected a field like "action_type", "action_category" etc..,
+    // we use a Set to avoid duplicates
+    new Set(
+      columns
+        .toSorted(sortFields)
+        .map((column) => {
+          if (column === "actor") {
+            return ["actor_name"];
+          }
+          if (column === "action") {
+            return ["action_type", "action_category"];
+          }
+          if (column === "resource") {
+            return ["resource_type", "resource_name"];
+          }
+          if (column === "node") {
+            return ["node_path:name"];
+          }
+          if (column === "tag") {
+            return ["tag_type"];
+          }
+          if (column === "attachment") {
+            return ["attachment_name"];
+          }
+          return [camelCaseToSnakeCaseString(column)];
+        })
+        .flat(),
+    ),
+  );
 }
 
 export function ExtraActions({
