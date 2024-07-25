@@ -1,12 +1,11 @@
 import base64
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import callee
 import pytest
 
 from auditize.database import DatabaseManager
-from auditize.logs.models import Log
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.http import HttpTestHelper, create_http_client
 from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import callee
 import pytest
 from bson import ObjectId
@@ -5,8 +7,13 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
 from auditize.logs.models import CustomField, Log
-from auditize.logs.service import save_log, save_log_attachment
+from auditize.logs.service import (
+    apply_log_retention_period,
+    save_log,
+    save_log_attachment,
+)
 from helpers.database import assert_collection
+from helpers.http import HttpTestHelper
 from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
@@ -160,3 +167,46 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
             {"parent_node_ref": "1", "ref": "1:1", "name": "Entity A"},
         ],
     )
+
+
+async def test_log_retention_period_disabled(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
+):
+    await repo.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=3650)
+    )
+    await apply_log_retention_period(dbm)
+    assert await repo.db.logs.count_documents({}) == 1
+
+
+async def test_log_retention_period_enabled(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    # we test with repos:
+    # - repo_1 with retention period and 1 log that must be deleted and 1 log that must be kept
+    # - repo_2 without retention period and 2 logs that must be kept
+
+    repo_1 = await PreparedRepo.create(
+        dbm, PreparedRepo.prepare_data({"retention_period": 30})
+    )
+    repo_1_log_1 = await repo_1.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=31)
+    )
+    repo_1_log_2 = await repo_1.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=29)
+    )
+
+    repo_2 = await PreparedRepo.create(dbm)
+    repo_2_log_1 = await repo_2.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=31)
+    )
+    repo_2_log_2 = await repo_2.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=29)
+    )
+
+    await apply_log_retention_period(dbm)
+
+    assert await repo_1.db.logs.count_documents({}) == 1
+    assert await repo_1.db.logs.find_one({"_id": ObjectId(repo_1_log_2.id)}) is not None
+
+    assert await repo_2.db.logs.count_documents({}) == 2

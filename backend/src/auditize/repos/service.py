@@ -199,3 +199,8 @@ async def ensure_repos_in_permissions_exist(
             raise ValidationError(
                 f"Repo {repo_id!r} cannot be assigned in log permissions as it does not exist"
             )
+
+
+async def get_retention_period_enabled_repos(dbm: DatabaseManager) -> list[Repo]:
+    results = dbm.core_db.repos.find({"retention_period": {"$ne": None}})
+    return [Repo.model_validate(result) async for result in results]

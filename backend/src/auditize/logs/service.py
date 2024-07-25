@@ -1,6 +1,6 @@
 import csv
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from io import StringIO
 from itertools import count
@@ -11,7 +11,7 @@ from bson import ObjectId
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
-from auditize.helpers.datetime import serialize_datetime
+from auditize.helpers.datetime import now, serialize_datetime
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
@@ -22,10 +22,13 @@ from auditize.helpers.resources.service import (
 )
 from auditize.logs.db import (
     LogDatabase,
+    get_log_db_for_maintenance,
     get_log_db_for_reading,
     get_log_db_for_writing,
 )
 from auditize.logs.models import CustomField, Log, Node
+from auditize.repos.models import Repo
+from auditize.repos.service import get_retention_period_enabled_repos
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
@@ -648,3 +651,21 @@ async def get_log_node(
         ):
             raise UnknownModelException()
     return await _get_log_node(db, node_ref)
+
+
+async def _apply_log_retention_period(dbm: DatabaseManager, repo: Repo):
+    if not repo.retention_period:
+        return
+
+    db = await get_log_db_for_maintenance(dbm, repo.id)
+    result = await db.logs.delete_many(
+        {"saved_at": {"$lt": now() - timedelta(days=repo.retention_period)}}
+    )
+    print(
+        f"Deleted {result.deleted_count} logs older than {repo.retention_period} days for repo {repo.name!r} ({repo.id})"
+    )
+
+
+async def apply_log_retention_period(dbm: DatabaseManager):
+    for repo in await get_retention_period_enabled_repos(dbm):
+        await _apply_log_retention_period(dbm, repo)

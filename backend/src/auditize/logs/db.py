@@ -67,3 +67,5 @@ get_log_db_for_reading = partial(
 get_log_db_for_writing = partial(_get_log_db, statuses=[RepoStatus.enabled])
 
 get_log_db_for_config = partial(_get_log_db, statuses=None)
+
+get_log_db_for_maintenance = partial(_get_log_db, statuses=None)
