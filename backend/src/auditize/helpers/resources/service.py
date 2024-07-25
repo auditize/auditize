@@ -56,7 +56,7 @@ async def get_resource_document(
     return result
 
 
-async def does_resource_document_exist(
+async def has_resource_document(
     collection: AsyncIOMotorCollection, filter: str | dict
 ) -> bool:
     try:

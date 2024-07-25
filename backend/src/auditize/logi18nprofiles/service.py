@@ -5,8 +5,8 @@ from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.helpers.resources.service import (
     create_resource_document,
     delete_resource_document,
-    does_resource_document_exist,
     get_resource_document,
+    has_resource_document,
     update_resource_document,
 )
 from auditize.logi18nprofiles.models import (
@@ -83,4 +83,4 @@ async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: str):
 
 
 async def does_log_i18n_profile_exist(dbm: DatabaseManager, profile_id: str) -> bool:
-    return await does_resource_document_exist(dbm.core_db.logi18nprofiles, profile_id)
+    return await has_resource_document(dbm.core_db.logi18nprofiles, profile_id)
