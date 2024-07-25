@@ -69,6 +69,16 @@ class PreparedRepo:
             )
         return PreparedLog(log_id, data, self)
 
+    async def create_log_with_node_path(
+        self, client: HttpTestHelper, node_path: list[str]
+    ):
+        return await self.create_log(
+            client,
+            PreparedLog.prepare_data(
+                {"node_path": [{"name": node, "ref": node} for node in node_path]}
+            ),
+        )
+
     async def update_status(self, client: HttpTestHelper, status: str):
         await client.assert_patch(
             f"/repos/{self.id}", json={"status": status}, expected_status_code=204
