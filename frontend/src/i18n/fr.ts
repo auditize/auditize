@@ -53,6 +53,8 @@ export default {
         name: "Nom",
         id: "Identifiant",
         status: "Statut",
+        retentionPeriod: "Rétention",
+        retentionPeriodValue: "{{days}}j",
         logs: "Journaux",
         storage: "Stockage",
         createdAt: "Date de création",
