@@ -55,7 +55,7 @@ class PreparedRepo:
         }
 
     async def create_log(
-        self, client: HttpTestHelper, data: dict = None, saved_at: datetime = None
+        self, client: HttpTestHelper, data: dict = None, *, saved_at: datetime = None
     ) -> PreparedLog:
         if data is None:
             data = PreparedLog.prepare_data()
@@ -70,13 +70,14 @@ class PreparedRepo:
         return PreparedLog(log_id, data, self)
 
     async def create_log_with_node_path(
-        self, client: HttpTestHelper, node_path: list[str]
+        self, client: HttpTestHelper, node_path: list[str], *, saved_at: datetime = None
     ):
         return await self.create_log(
             client,
             PreparedLog.prepare_data(
                 {"node_path": [{"name": node, "ref": node} for node in node_path]}
             ),
+            saved_at=saved_at,
         )
 
     async def update_status(self, client: HttpTestHelper, status: str):

@@ -5,12 +5,13 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 from auditize.database import BaseDatabase, Collection, DatabaseManager
 from auditize.exceptions import PermissionDenied
-from auditize.repos.models import RepoStatus
+from auditize.repos.models import Repo, RepoStatus
 
 
 class LogDatabase(BaseDatabase):
-    def __init__(self, name: str, client: AsyncIOMotorClient):
+    def __init__(self, name: str, repo: Repo, client: AsyncIOMotorClient):
         super().__init__(name, client)
+        self.repo: Repo = repo
         self._cache = Cache(Cache.MEMORY)
 
     async def consolidate_data(
@@ -57,7 +58,7 @@ async def _get_log_db(
                 "The repository status does not allow the requested operation"
             )
 
-    return LogDatabase(get_log_db_name(dbm, repo_id), dbm.client)
+    return LogDatabase(get_log_db_name(dbm, repo_id), repo, dbm.client)
 
 
 get_log_db_for_reading = partial(

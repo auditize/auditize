@@ -14,6 +14,7 @@ from auditize.logs.service import (
 )
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
+from helpers.logs import PreparedLog
 from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
@@ -210,3 +211,195 @@ async def test_log_retention_period_enabled(
     assert await repo_1.db.logs.find_one({"_id": ObjectId(repo_1_log_2.id)}) is not None
 
     assert await repo_2.db.logs.count_documents({}) == 2
+
+
+async def test_log_retention_period_purge_consolidated_data(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    repo = await PreparedRepo.create(
+        dbm, PreparedRepo.prepare_data({"retention_period": 30})
+    )
+    repo: PreparedRepo  # make PyCharm happy
+    log_1 = await repo.create_log(
+        superadmin_client,
+        data=PreparedLog.prepare_data(
+            {
+                "action": {"category": "category", "type": "action_type_to_be_kept"},
+                "source": [{"name": "source_field_to_be_kept", "value": "value"}],
+                "actor": {
+                    "name": "some actor",
+                    "ref": "actor:123",
+                    "type": "actor_type_to_be_kept",
+                    "extra": [
+                        {"name": "actor_extra_field_to_be_kept", "value": "value"}
+                    ],
+                },
+                "resource": {
+                    "name": "some resource",
+                    "ref": "resource:123",
+                    "type": "resource_type_to_be_kept",
+                    "extra": [
+                        {"name": "resource_extra_field_to_be_kept", "value": "value"}
+                    ],
+                },
+                "tags": [{"type": "tag_type_to_be_kept"}],
+                "details": [{"name": "detail_field_to_be_kept", "value": "value"}],
+            }
+        ),
+        saved_at=datetime.now() - timedelta(days=10),
+    )
+    await log_1.upload_attachment(
+        superadmin_client,
+        name="file.txt",
+        data=b"hello",
+        type="attachment_type_to_be_kept",
+        mime_type="mime-type/to-be-kept",
+    )
+    log_2 = await repo.create_log(
+        superadmin_client,
+        data=PreparedLog.prepare_data(
+            {
+                "action": {"category": "category", "type": "action_type_to_be_purged"},
+                "source": [{"name": "source_field_to_be_purged", "value": "value"}],
+                "actor": {
+                    "name": "some other actor",
+                    "ref": "actor:456",
+                    "type": "actor_type_to_be_purged",
+                    "extra": [
+                        {"name": "actor_extra_field_to_be_purged", "value": "value"}
+                    ],
+                },
+                "resource": {
+                    "name": "some other resource",
+                    "ref": "resource:456",
+                    "type": "resource_type_to_be_purged",
+                    "extra": [
+                        {"name": "resource_extra_field_to_be_purged", "value": "value"}
+                    ],
+                },
+                "tags": [{"type": "tag_type_to_be_purged"}],
+                "details": [{"name": "detail_field_to_be_purged", "value": "value"}],
+            }
+        ),
+        saved_at=datetime.now() - timedelta(days=40),
+    )
+    await log_2.upload_attachment(
+        superadmin_client,
+        name="file.txt",
+        data=b"hello",
+        type="attachment_type_to_be_purged",
+        mime_type="mime-type/to-be-purged",
+    )
+
+    await apply_log_retention_period(dbm)
+
+    await assert_consolidated_data(
+        repo.db.log_actions,
+        [{"category": "category", "type": "action_type_to_be_kept"}],
+    )
+    await assert_consolidated_data(
+        repo.db.log_source_fields, [{"name": "source_field_to_be_kept"}]
+    )
+    await assert_consolidated_data(
+        repo.db.log_actor_types, [{"type": "actor_type_to_be_kept"}]
+    )
+    await assert_consolidated_data(
+        repo.db.log_actor_extra_fields,
+        [{"name": "actor_extra_field_to_be_kept"}],
+    )
+    await assert_consolidated_data(
+        repo.db.log_resource_types, [{"type": "resource_type_to_be_kept"}]
+    )
+    await assert_consolidated_data(
+        repo.db.log_resource_extra_fields,
+        [{"name": "resource_extra_field_to_be_kept"}],
+    )
+    await assert_consolidated_data(
+        repo.db.log_tag_types, [{"type": "tag_type_to_be_kept"}]
+    )
+    await assert_consolidated_data(
+        repo.db.log_detail_fields, [{"name": "detail_field_to_be_kept"}]
+    )
+    await assert_consolidated_data(
+        repo.db.log_attachment_types,
+        [{"type": "attachment_type_to_be_kept"}],
+    )
+    await assert_consolidated_data(
+        repo.db.log_attachment_mime_types,
+        [{"mime_type": "mime-type/to-be-kept"}],
+    )
+
+
+async def test_log_retention_period_purge_log_nodes_1(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    repo = await PreparedRepo.create(
+        dbm, PreparedRepo.prepare_data({"retention_period": 30})
+    )
+    repo: PreparedRepo  # make PyCharm happy
+    # We have the following log node hierarchy:
+    # - A
+    #   - AA
+    #     - AAA
+    #   - AB
+    #     - ABA
+    #   - AC
+    await repo.create_log_with_node_path(
+        superadmin_client,
+        ["A", "AA", "AAA"],
+        saved_at=datetime.now() - timedelta(days=40),
+    )
+    await repo.create_log_with_node_path(
+        superadmin_client,
+        ["A", "AB", "ABA"],
+        saved_at=datetime.now() - timedelta(days=40),
+    )
+    await repo.create_log_with_node_path(
+        superadmin_client,
+        ["A", "AB"],
+    )
+    await repo.create_log_with_node_path(
+        superadmin_client,
+        ["A", "AC"],
+    )
+
+    await apply_log_retention_period(dbm)
+
+    await assert_consolidated_data(
+        repo.db.log_nodes,
+        [
+            {"_id": callee.Any(), "parent_node_ref": None, "ref": "A", "name": "A"},
+            {"_id": callee.Any(), "parent_node_ref": "A", "ref": "AB", "name": "AB"},
+            {"_id": callee.Any(), "parent_node_ref": "A", "ref": "AC", "name": "AC"},
+        ],
+    )
+
+
+async def test_log_retention_period_purge_log_nodes_2(
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+):
+    repo = await PreparedRepo.create(
+        dbm, PreparedRepo.prepare_data({"retention_period": 30})
+    )
+    repo: PreparedRepo  # make PyCharm happy
+    # We have the following log node hierarchy:
+    # - A
+    #   - AA
+    #   - AB
+    await repo.create_log_with_node_path(
+        superadmin_client,
+        ["A", "AA"],
+        saved_at=datetime.now() - timedelta(days=40),
+    )
+    await repo.create_log_with_node_path(
+        superadmin_client,
+        ["A", "AB"],
+        saved_at=datetime.now() - timedelta(days=40),
+    )
+
+    await apply_log_retention_period(dbm)
+
+    await assert_consolidated_data(
+        repo.db.log_nodes,
+        [],
+    )
