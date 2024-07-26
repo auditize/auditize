@@ -91,16 +91,6 @@ function RepoForm({
         disabled={readOnly}
         {...form.getInputProps("name")}
       />
-      <LogI18nProfileSelector form={form} readOnly={readOnly} />
-      <NumberInput
-        label={t("repo.form.retentionPeriod.label")}
-        placeholder={t("repo.form.retentionPeriod.placeholder")}
-        min={1}
-        stepHoldDelay={500}
-        stepHoldInterval={50}
-        disabled={readOnly}
-        {...form.getInputProps("retentionPeriod")}
-      />
       <Radio.Group
         label={t("repo.form.status.label")}
         {...form.getInputProps("status")}
@@ -123,6 +113,16 @@ function RepoForm({
           />
         </Group>
       </Radio.Group>
+      <NumberInput
+        label={t("repo.form.retentionPeriod.label")}
+        placeholder={t("repo.form.retentionPeriod.placeholder")}
+        min={1}
+        stepHoldDelay={500}
+        stepHoldInterval={50}
+        disabled={readOnly}
+        {...form.getInputProps("retentionPeriod")}
+      />
+      <LogI18nProfileSelector form={form} readOnly={readOnly} />
     </Stack>
   );
 }
