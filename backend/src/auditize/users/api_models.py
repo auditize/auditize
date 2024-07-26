@@ -50,8 +50,10 @@ def _UserLangField(default: Lang | None = Lang.EN, **kwargs):  # noqa
 
 
 def _UserPasswordField(**kwargs):  # noqa
+    min_length = kwargs.pop("min_length", 8)
     return Field(
         description="The user password",
+        min_length=min_length,
         json_schema_extra={"example": "some very highly secret password"},
         **kwargs,
     )
@@ -120,7 +122,9 @@ class UserSignupSetPasswordRequest(BaseModel):
 
 class UserAuthenticationRequest(BaseModel):
     email: str = _UserEmailField()
-    password: str = _UserPasswordField()
+    # NB: there is no minimal length for the password here as the constraints
+    # apply when the user choose his password, not when he uses it
+    password: str = _UserPasswordField(min_length=None)
 
 
 class UserMeResponse(BaseModel):

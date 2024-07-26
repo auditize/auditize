@@ -367,6 +367,15 @@ async def test_user_signup_set_password(
     )
 
 
+async def test_user_signup_set_password_too_short(
+    anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
+):
+    await anon_client.assert_post_bad_request(
+        f"/users/signup/{await user.signup_token}",
+        json={"password": "short"},
+    )
+
+
 async def test_user_signup_set_password_token_expired(
     anon_client: HttpTestHelper, user: PreparedUser
 ):
