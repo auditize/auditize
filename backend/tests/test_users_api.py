@@ -450,6 +450,21 @@ async def test_update_user_me(user_builder: UserBuilder, dbm: DatabaseManager):
     await assert_collection(dbm.core_db.users, [user.expected_document({"lang": "fr"})])
 
 
+async def test_update_user_me_forbidden_field(
+    user_builder: UserBuilder, dbm: DatabaseManager
+):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_patch_ok(
+            "/users/me",
+            json={"first_name": "I cannot do this"},
+        )
+
+    # ensure nothing changed
+    await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+
 async def test_update_user_me_as_unauthorized(anon_client: HttpTestHelper):
     await anon_client.assert_patch_unauthorized(
         "/users/me",
