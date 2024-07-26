@@ -24,3 +24,15 @@ shell-tasks:
 	docker exec -it $(NAME)-tasks-1 /bin/bash
 
 shell: shell-web
+
+ps:
+	docker compose -p $(NAME) ps
+
+log-web:
+	docker compose -p $(NAME) logs -f web
+
+log-tasks:
+	docker compose -p $(NAME) logs -f tasks
+
+log:
+	docker compose -p $(NAME) logs -f web tasks
