@@ -64,6 +64,15 @@ export function ReposManagement() {
         [t("repo.list.column.id"), (repo: Repo) => <RepoId value={repo.id} />],
         [t("repo.list.column.status"), (repo: Repo) => repo.status],
         [
+          t("repo.list.column.retentionPeriod"),
+          (repo: Repo) =>
+            repo.retentionPeriod
+              ? t("repo.list.column.retentionPeriodValue", {
+                  days: repo.retentionPeriod,
+                })
+              : "n/a",
+        ],
+        [
           t("repo.list.column.logs"),
           (repo: Repo) => repo.stats!.logCount.toLocaleString(),
         ],

@@ -1,31 +1,37 @@
 import csv
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from io import StringIO
 from itertools import count
 from typing import Any, AsyncGenerator
 
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
-from auditize.helpers.datetime import serialize_datetime
+from auditize.helpers.datetime import now, serialize_datetime
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.helpers.resources.service import (
     create_resource_document,
+    delete_resource_document,
     get_resource_document,
+    has_resource_document,
     update_resource_document,
 )
 from auditize.logs.db import (
     LogDatabase,
+    get_log_db_for_maintenance,
     get_log_db_for_reading,
     get_log_db_for_writing,
 )
 from auditize.logs.models import CustomField, Log, Node
+from auditize.repos.models import Repo
+from auditize.repos.service import get_retention_period_enabled_repos
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
@@ -648,3 +654,162 @@ async def get_log_node(
         ):
             raise UnknownModelException()
     return await _get_log_node(db, node_ref)
+
+
+async def _apply_log_retention_period(dbm: DatabaseManager, repo: Repo):
+    if not repo.retention_period:
+        return
+
+    db = await get_log_db_for_maintenance(dbm, repo.id)
+    result = await db.logs.delete_many(
+        {"saved_at": {"$lt": now() - timedelta(days=repo.retention_period)}}
+    )
+    if result.deleted_count > 0:
+        print(
+            f"Deleted {result.deleted_count} logs older than {repo.retention_period} days "
+            f"from log repository {repo.name!r}"
+        )
+
+
+async def _purge_orphan_consolidated_data_collection(
+    db: LogDatabase, collection: AsyncIOMotorCollection, filter: callable
+):
+    docs = collection.find({})
+    async for doc in docs:
+        has_associated_logs = await has_resource_document(
+            db.logs,
+            filter(doc),
+        )
+        if not has_associated_logs:
+            await collection.delete_one({"_id": doc["_id"]})
+            print(
+                f"Deleted orphan consolidated {collection.name} item "
+                f"{doc!r} from log repository {db.repo.name!r}"
+            )
+
+
+async def _purge_orphan_consolidated_log_actions(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_actions,
+        lambda data: {"action.type": data["type"], "action.category": data["category"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_source_fields(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_source_fields,
+        lambda data: {"source.name": data["name"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_actor_types(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_actor_types,
+        lambda data: {"actor.type": data["type"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_actor_custom_fields(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_actor_extra_fields,
+        lambda data: {"actor.extra.name": data["name"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_resource_types(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_resource_types,
+        lambda data: {"resource.type": data["type"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_resource_custom_fields(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_resource_extra_fields,
+        lambda data: {"resource.extra.name": data["name"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_tag_types(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_tag_types,
+        lambda data: {"tags.type": data["type"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_detail_fields(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_detail_fields,
+        lambda data: {"details.name": data["name"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_attachment_types(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_attachment_types,
+        lambda data: {"attachments.type": data["type"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_attachment_mime_types(db: LogDatabase):
+    await _purge_orphan_consolidated_data_collection(
+        db,
+        db.log_attachment_mime_types,
+        lambda data: {"attachments.mime_type": data["mime_type"]},
+    )
+
+
+async def _purge_orphan_consolidated_log_node_if_needed(db: LogDatabase, node: Node):
+    """
+    This function assumes that the node has no children and delete it if it has no associated logs.
+    It performs the same operation recursively on its ancestors.
+    """
+    has_associated_logs = await has_resource_document(
+        db.logs, {"node_path.ref": node.ref}
+    )
+    if not has_associated_logs:
+        await delete_resource_document(db.log_nodes, node.id)
+        print(f"Deleted orphan log node {node!r} from log repository {db.repo.name!r}")
+        if node.parent_node_ref:
+            parent_node = await _get_log_node(db, node.parent_node_ref)
+            if not parent_node.has_children:
+                await _purge_orphan_consolidated_log_node_if_needed(db, parent_node)
+
+
+async def _purge_orphan_consolidated_log_nodes(db: LogDatabase):
+    docs = await _get_log_nodes(
+        db, match={}, pipeline_extra=[{"$match": {"has_children": False}}]
+    )
+    async for doc in docs:
+        node = Node.model_validate(doc)
+        await _purge_orphan_consolidated_log_node_if_needed(db, node)
+
+
+async def _purge_orphan_consolidated_log_data(dbm: DatabaseManager, repo: Repo):
+    db = await get_log_db_for_maintenance(dbm, repo.id)
+    await _purge_orphan_consolidated_log_actions(db)
+    await _purge_orphan_consolidated_log_source_fields(db)
+    await _purge_orphan_consolidated_log_actor_types(db)
+    await _purge_orphan_consolidated_log_actor_custom_fields(db)
+    await _purge_orphan_consolidated_log_resource_types(db)
+    await _purge_orphan_consolidated_log_resource_custom_fields(db)
+    await _purge_orphan_consolidated_log_tag_types(db)
+    await _purge_orphan_consolidated_log_detail_fields(db)
+    await _purge_orphan_consolidated_log_attachment_types(db)
+    await _purge_orphan_consolidated_log_attachment_mime_types(db)
+    await _purge_orphan_consolidated_log_nodes(db)
+
+
+async def apply_log_retention_period(dbm: DatabaseManager):
+    for repo in await get_retention_period_enabled_repos(dbm):
+        await _apply_log_retention_period(dbm, repo)
+        await _purge_orphan_consolidated_log_data(dbm, repo)

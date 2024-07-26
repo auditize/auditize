@@ -7,11 +7,33 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: root
     volumes:
       - mongo-data:/data/db
+    ports:
+      - "27018:27017" # for debugging purposes
   web:
-    image: auditize
+    image: auditize/web
     ports:
       - "8001:80"
     environment:
+      - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
+      # required:
+      - AUDITIZE_JWT_SIGNING_KEY=${AUDITIZE_JWT_SIGNING_KEY}
+      # optional:
+      - AUDITIZE_BASE_URL
+      - AUDITIZE_SMTP_SERVER
+      - AUDITIZE_SMTP_PORT
+      - AUDITIZE_SMTP_USERNAME
+      - AUDITIZE_SMTP_PASSWORD
+      - AUDITIZE_SMTP_SENDER
+      - AUDITIZE_CORS_ALLOW_ORIGINS
+      - AUDITIZE_CORS_ALLOW_CREDENTIALS
+      - AUDITIZE_CORS_ALLOW_METHODS
+      - AUDITIZE_CORS_ALLOW_HEADERS
+      - AUDITIZE_USER_SESSION_TOKEN_LIFETIME
+      - AUDITIZE_ACCESS_TOKEN_LIFETIME
+      - AUDITIZE_ATTACHMENT_MAX_SIZE
+  tasks:
+    image: auditize/tasks
+    environment: # fix environment duplication
       - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
       # required:
       - AUDITIZE_JWT_SIGNING_KEY=${AUDITIZE_JWT_SIGNING_KEY}

@@ -1,4 +1,11 @@
-import { Group, Radio, Select, Stack, TextInput } from "@mantine/core";
+import {
+  Group,
+  NumberInput,
+  Radio,
+  Select,
+  Stack,
+  TextInput,
+} from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -12,18 +19,23 @@ import { getAllLogI18nProfiles } from "@/features/logi18nprofiles";
 
 import { createRepo, getRepo, RepoStatus, updateRepo } from "../api";
 
-function useRepoForm(values: { name?: string; status?: RepoStatus }) {
+function useRepoForm() {
   const { t } = useTranslation();
   return useForm({
     initialValues: {
       name: "",
       status: "enabled" as RepoStatus,
       logI18nProfileId: null as string | null,
-      ...values,
+      retentionPeriod: null as number | null,
     },
     validate: {
       name: isNotEmpty(t("repo.form.name.required")),
     },
+    transformValues: (values) => ({
+      ...values,
+      retentionPeriod:
+        (values.retentionPeriod as any) === "" ? null : values.retentionPeriod,
+    }),
   });
 }
 
@@ -79,7 +91,6 @@ function RepoForm({
         disabled={readOnly}
         {...form.getInputProps("name")}
       />
-      <LogI18nProfileSelector form={form} readOnly={readOnly} />
       <Radio.Group
         label={t("repo.form.status.label")}
         {...form.getInputProps("status")}
@@ -102,6 +113,16 @@ function RepoForm({
           />
         </Group>
       </Radio.Group>
+      <NumberInput
+        label={t("repo.form.retentionPeriod.label")}
+        placeholder={t("repo.form.retentionPeriod.placeholder")}
+        min={1}
+        stepHoldDelay={500}
+        stepHoldInterval={50}
+        disabled={readOnly}
+        {...form.getInputProps("retentionPeriod")}
+      />
+      <LogI18nProfileSelector form={form} readOnly={readOnly} />
     </Stack>
   );
 }
@@ -114,7 +135,7 @@ export function RepoCreation({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const form = useRepoForm({});
+  const form = useRepoForm();
 
   useEffect(() => {
     form.reset();
@@ -126,7 +147,7 @@ export function RepoCreation({
       opened={!!opened}
       onClose={onClose}
       onSubmit={form.onSubmit}
-      onSave={() => createRepo(form.values)}
+      onSave={() => createRepo(form.getTransformedValues())}
       queryKeyForInvalidation={["repos"]}
     >
       <RepoForm form={form} />
@@ -144,7 +165,7 @@ export function RepoEdition({
   readOnly: boolean;
 }) {
   const { t } = useTranslation();
-  const form = useRepoForm({});
+  const form = useRepoForm();
 
   return (
     <ResourceEdition
@@ -153,12 +174,17 @@ export function RepoEdition({
       queryKeyForLoad={["repo", repoId]}
       queryFnForLoad={() => getRepo(repoId!)}
       onDataLoaded={(data) => {
-        const { name, logI18nProfileId, status } = data;
-        form.setValues({ name, logI18nProfileId, status });
+        const { name, status, retentionPeriod, logI18nProfileId } = data;
+        form.setValues({
+          name,
+          status,
+          retentionPeriod: retentionPeriod ?? "",
+          logI18nProfileId,
+        });
       }}
       title={t("repo.edit.title")}
       onSubmit={form.onSubmit}
-      onSave={() => updateRepo(repoId!, form.values)}
+      onSave={() => updateRepo(repoId!, form.getTransformedValues())}
       queryKeyForInvalidation={["repos"]}
       disabledSaving={readOnly}
     >

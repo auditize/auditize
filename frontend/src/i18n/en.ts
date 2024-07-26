@@ -28,6 +28,10 @@ export default {
         label: "Translations",
         placeholder: "Select a log translation profile",
       },
+      retentionPeriod: {
+        label: "Retention period",
+        placeholder: "Retention period in days",
+      },
       status: {
         label: "Status",
         value: {
@@ -49,10 +53,12 @@ export default {
         name: "Name",
         id: "ID",
         status: "Status",
+        retentionPeriod: "Retention",
+        retentionPeriodValue: "{{days}}d",
         logs: "Logs",
         storage: "Storage",
-        createdAt: "Created at",
-        lastLog: "Last log",
+        createdAt: "Created At",
+        lastLog: "Last Log",
       },
     },
     delete: {

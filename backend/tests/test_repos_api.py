@@ -87,6 +87,24 @@ async def test_repo_create_with_log_i18n_profile(
     await assert_collection(dbm.core_db.repos, [repo.expected_document()])
 
 
+async def test_repo_create_with_retention_period(
+    superadmin_client: HttpTestHelper,
+    dbm: DatabaseManager,
+):
+    data = {
+        "name": "myrepo",
+        "retention_period": 30,
+    }
+
+    resp = await superadmin_client.assert_post_created(
+        "/repos",
+        json=data,
+        expected_json={"id": callee.IsA(str)},
+    )
+    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
+    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+
+
 async def test_repo_create_missing_name(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
@@ -176,6 +194,37 @@ async def test_repo_update_unset_log_i18n_profile_id(
     )
 
 
+async def test_repo_update_set_retention_period(
+    repo_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    dbm: DatabaseManager,
+):
+    await repo_write_client.assert_patch_no_content(
+        f"/repos/{repo.id}",
+        json={"retention_period": 30},
+    )
+    await assert_collection(
+        dbm.core_db.repos,
+        [repo.expected_document({"retention_period": 30})],
+    )
+
+
+async def test_repo_update_unset_retention_period(
+    repo_write_client: HttpTestHelper,
+    dbm: DatabaseManager,
+):
+    repo = await PreparedRepo.create(dbm, {"name": "repo", "retention_period": 30})
+    repo: PreparedRepo  # make pycharm happy
+    await repo_write_client.assert_patch_no_content(
+        f"/repos/{repo.id}",
+        json={"retention_period": None},
+    )
+    await assert_collection(
+        dbm.core_db.repos,
+        [repo.expected_document({"retention_period": None})],
+    )
+
+
 async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
@@ -221,6 +270,28 @@ async def test_repo_update_forbidden(
 
 async def test_repo_get(repo_read_client: HttpTestHelper, repo: PreparedRepo):
     await repo_read_client.assert_get(
+        f"/repos/{repo.id}",
+        expected_status_code=200,
+        expected_json=repo.expected_api_response(),
+    )
+
+
+async def test_repo_get_with_all_fields(
+    superadmin_client: HttpTestHelper,
+    log_i18n_profile: PreparedLogI18nProfile,
+    dbm: DatabaseManager,
+):
+    repo = await PreparedRepo.create(
+        dbm,
+        {
+            "name": "repo",
+            "log_i18n_profile_id": log_i18n_profile.id,
+            "retention_period": 30,
+            "status": "readonly",
+        },
+    )
+    repo: PreparedRepo  # make pycharm happy
+    await superadmin_client.assert_get(
         f"/repos/{repo.id}",
         expected_status_code=200,
         expected_json=repo.expected_api_response(),
@@ -539,6 +610,7 @@ async def test_repo_list_user_repos_simple(
                         ),
                         "status",
                         "created_at",
+                        "retention_period",
                         "stats",
                         "log_i18n_profile_id",
                     )

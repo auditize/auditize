@@ -9,8 +9,8 @@ from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.helpers.resources.service import (
     create_resource_document,
     delete_resource_document,
-    does_resource_document_exist,
     get_resource_document,
+    has_resource_document,
     update_resource_document,
 )
 from auditize.logi18nprofiles.models import LogTranslation
@@ -170,7 +170,7 @@ async def delete_repo(dbm: DatabaseManager, repo_id: str):
 async def is_i18n_log_profile_used_by_repo(
     dbm: DatabaseManager, profile_id: str
 ) -> bool:
-    return await does_resource_document_exist(
+    return await has_resource_document(
         dbm.core_db.repos, {"log_i18n_profile_id": profile_id}
     )
 
@@ -199,3 +199,8 @@ async def ensure_repos_in_permissions_exist(
             raise ValidationError(
                 f"Repo {repo_id!r} cannot be assigned in log permissions as it does not exist"
             )
+
+
+async def get_retention_period_enabled_repos(dbm: DatabaseManager) -> list[Repo]:
+    results = dbm.core_db.repos.find({"retention_period": {"$ne": None}})
+    return [Repo.model_validate(result) async for result in results]

@@ -28,6 +28,10 @@ export default {
         label: "Traductions",
         placeholder: "Sélectionner un profil de traduction",
       },
+      retentionPeriod: {
+        label: "Période de rétention",
+        placeholder: "Période de rétention en jours",
+      },
       status: {
         label: "Statut",
         value: {
@@ -49,6 +53,8 @@ export default {
         name: "Nom",
         id: "Identifiant",
         status: "Statut",
+        retentionPeriod: "Rétention",
+        retentionPeriodValue: "{{days}}j",
         logs: "Journaux",
         storage: "Stockage",
         createdAt: "Date de création",

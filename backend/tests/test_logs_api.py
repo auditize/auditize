@@ -1,12 +1,11 @@
 import base64
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import callee
 import pytest
 
 from auditize.database import DatabaseManager
-from auditize.logs.models import Log
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.http import HttpTestHelper, create_http_client
 from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog
@@ -1183,17 +1182,6 @@ async def test_get_logs_filter_no_result(
     )
 
 
-async def _prepare_log_with_node_path(
-    client: HttpTestHelper, repo: PreparedRepo, node_path: list[str]
-):
-    return await repo.create_log(
-        client,
-        PreparedLog.prepare_data(
-            {"node_path": [{"name": node, "ref": node} for node in node_path]}
-        ),
-    )
-
-
 async def _test_get_logs_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
@@ -1225,8 +1213,8 @@ async def test_get_logs_with_limited_node_visibility_1(
     repo: PreparedRepo,
     apikey_builder: ApikeyBuilder,
 ):
-    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A"])
-    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["B"])
+    log1 = await repo.create_log_with_node_path(superadmin_client, ["A"])
+    log2 = await repo.create_log_with_node_path(superadmin_client, ["B"])
 
     await _test_get_logs_visibility(apikey_builder, repo, ["A"], {}, [log1])
     await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log2])
@@ -1238,9 +1226,9 @@ async def test_get_logs_with_limited_node_visibility_2(
     repo: PreparedRepo,
     apikey_builder: ApikeyBuilder,
 ):
-    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
-    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B"])
-    log3 = await _prepare_log_with_node_path(superadmin_client, repo, ["A"])
+    log1 = await repo.create_log_with_node_path(superadmin_client, ["A", "B", "C"])
+    log2 = await repo.create_log_with_node_path(superadmin_client, ["A", "B"])
+    log3 = await repo.create_log_with_node_path(superadmin_client, ["A"])
 
     await _test_get_logs_visibility(apikey_builder, repo, ["A"], {}, [log3, log2, log1])
     await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log2, log1])
@@ -1252,8 +1240,8 @@ async def test_get_logs_with_limited_node_visibility_3(
     repo: PreparedRepo,
     apikey_builder: ApikeyBuilder,
 ):
-    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
-    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "D", "E"])
+    log1 = await repo.create_log_with_node_path(superadmin_client, ["A", "B", "C"])
+    log2 = await repo.create_log_with_node_path(superadmin_client, ["A", "D", "E"])
 
     await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log1])
     await _test_get_logs_visibility(apikey_builder, repo, ["D"], {}, [log2])
@@ -1264,8 +1252,8 @@ async def test_get_logs_with_limited_node_visibility_4(
     repo: PreparedRepo,
     user_builder: UserBuilder,
 ):
-    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
-    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "D"])
+    log1 = await repo.create_log_with_node_path(superadmin_client, ["A", "B", "C"])
+    log2 = await repo.create_log_with_node_path(superadmin_client, ["A", "B", "D"])
 
     await _test_get_logs_visibility(user_builder, repo, ["B"], {}, [log2, log1])
     await _test_get_logs_visibility(user_builder, repo, ["D"], {}, [log2])
@@ -1312,8 +1300,8 @@ async def _test_get_log_visibility(
 async def test_get_log_visibility(
     superadmin_client: HttpTestHelper, repo: PreparedRepo, apikey_builder: ApikeyBuilder
 ):
-    log1 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "C"])
-    log2 = await _prepare_log_with_node_path(superadmin_client, repo, ["A", "B", "D"])
+    log1 = await repo.create_log_with_node_path(superadmin_client, ["A", "B", "C"])
+    log2 = await repo.create_log_with_node_path(superadmin_client, ["A", "B", "D"])
 
     await _test_get_log_visibility(apikey_builder, repo, ["B"], log1, 200)
     await _test_get_log_visibility(apikey_builder, repo, ["B"], log2, 200)
@@ -1380,12 +1368,12 @@ async def test_get_log_nodes_visibility(
     #     ├── BAA
     #     └── BAB
     #
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAA"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAB"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABA"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABB"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["B", "BA", "BAA"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["B", "BA", "BAB"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AA", "AAA"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AA", "AAB"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AB", "ABA"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AB", "ABB"])
+    await repo.create_log_with_node_path(superadmin_client, ["B", "BA", "BAA"])
+    await repo.create_log_with_node_path(superadmin_client, ["B", "BA", "BAB"])
 
     # Test with a user without node restriction
     await _test_get_log_nodes_visibility(
@@ -1507,10 +1495,10 @@ async def test_get_log_node_visibility(
     #     ├── ABA
     #     └── ABB
 
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAA"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AA", "AAB"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABA"])
-    await _prepare_log_with_node_path(superadmin_client, repo, ["A", "AB", "ABB"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AA", "AAA"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AA", "AAB"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AB", "ABA"])
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AB", "ABB"])
 
     await _test_get_log_node_visibility(apikey_builder, repo, [], "A", 200)
     await _test_get_log_node_visibility(apikey_builder, repo, [], "AA", 200)
