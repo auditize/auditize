@@ -19,6 +19,8 @@ RUN cd /src && . "/root/.nvm/nvm.sh" && ./build.sh
 
 FROM python:3.12 AS base
 
+RUN apt-get update
+
 COPY --from=build /src/backend/dist /dist
 
 RUN pip install /dist/*.whl
