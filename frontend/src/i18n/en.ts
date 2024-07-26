@@ -332,6 +332,7 @@ export default {
     title: "Account Settings",
     tab: {
       general: "General",
+      password: "Password",
     },
     form: {
       lang: {
