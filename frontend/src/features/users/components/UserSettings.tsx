@@ -37,6 +37,7 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
       const { password } = form.getValues();
       return updateUserMe({ password });
     },
+    onSuccess: () => onClose(),
   });
 
   return (
@@ -84,6 +85,7 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
     mutationFn: () => updateUserMe(form.values),
     onSuccess: (userInfo) => {
       updateUserInfo(userInfo);
+      onClose();
     },
   });
 
