@@ -8,3 +8,6 @@ up:
 
 down:
 	docker compose -p $(NAME) down
+
+shell:
+	docker exec -it $(NAME)-web-1 /bin/bash
