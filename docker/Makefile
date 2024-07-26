@@ -1,7 +1,8 @@
 NAME=auditize
 
 build:
-	cd .. && docker build . -f docker/Dockerfile -t $(NAME)
+	cd .. && docker build . -f docker/Dockerfile.base -t $(NAME)/base
+	cd .. && docker build . -f docker/Dockerfile.web -t $(NAME)/web
 
 up:
 	docker compose -p $(NAME) up -d

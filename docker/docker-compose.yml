@@ -8,7 +8,7 @@ services:
     volumes:
       - mongo-data:/data/db
   web:
-    image: auditize
+    image: auditize/web
     ports:
       - "8001:80"
     environment:
