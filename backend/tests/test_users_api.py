@@ -428,7 +428,7 @@ async def test_get_user_me_as_apikey(apikey_client: HttpTestHelper):
     await apikey_client.assert_get_forbidden("/users/me")
 
 
-async def test_update_user_me(user_builder: UserBuilder, dbm: DatabaseManager):
+async def test_update_user_me_lang(user_builder: UserBuilder, dbm: DatabaseManager):
     user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -448,6 +448,29 @@ async def test_update_user_me(user_builder: UserBuilder, dbm: DatabaseManager):
         )
 
     await assert_collection(dbm.core_db.users, [user.expected_document({"lang": "fr"})])
+
+
+async def test_update_user_me_password(
+    user_builder: UserBuilder, anon_client: HttpTestHelper, dbm: DatabaseManager
+):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_patch_ok(
+            "/users/me",
+            json={
+                "password": "new_password",
+            },
+        )
+
+    # Make sure we don't have side effects in DB
+    await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+    # Make sure the new password actually works
+    await anon_client.assert_post_ok(
+        "/auth/user/login",
+        json={"email": user.email, "password": "new_password"},
+    )
 
 
 async def test_update_user_me_forbidden_field(
