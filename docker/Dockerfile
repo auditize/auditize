@@ -13,7 +13,7 @@ RUN pip3 install build --break-system-packages
 RUN curl -o - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 RUN . "/root/.nvm/nvm.sh" && nvm install 20
 
-# Build the project
+# Build the project (front & back)
 COPY . /src
 RUN cd /src && . "/root/.nvm/nvm.sh" && ./build.sh
 
@@ -25,4 +25,4 @@ COPY --from=build /src/backend/dist /dist
 
 RUN pip install /dist/*.whl
 
-CMD ["sh", "-c", "python -m auditize bootstrap_superadmin && uvicorn auditize.main:app --host 0.0.0.0 --port 80"]
+ENTRYPOINT ["sh", "-c", "python -m auditize bootstrap_superadmin && uvicorn auditize.main:app --host 0.0.0.0 --port 80"]
