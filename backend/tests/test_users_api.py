@@ -1,3 +1,4 @@
+import re
 from unittest.mock import patch
 
 import callee
@@ -40,9 +41,15 @@ async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManag
             callee.IsA(str),  # subject
             callee.Regex(".*/signup/[0-9a-f]{64}.*"),  # body
         )
+        match = re.search(r"([0-9a-f]{64})", mock.call_args[0][2])
+        signup_token = match.group(1)
 
     user = PreparedUser(resp.json()["id"], data, dbm)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+    # Check that the signup token actually works
+    client = HttpTestHelper.spawn()
+    await client.assert_get_ok(f"/users/signup/{signup_token}")
 
 
 async def test_user_create_lang_fr(
