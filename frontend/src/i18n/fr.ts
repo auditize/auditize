@@ -311,6 +311,7 @@ export default {
     loading: "Chargement...",
     notCurrentlyAvailable: "Actuellement indisponible",
     errorModalTitle: "Une erreur est survenue",
+    send: "Envoyer",
   },
   resource: {
     list: {
@@ -362,5 +363,18 @@ export default {
       },
     },
     signIn: "Connexion",
+  },
+  forgotPassword: {
+    link: "Mot de passe oublié ?",
+    title: "Demander un changement de mot de passe",
+    description:
+      "Veuillez saisir votre email pour recevoir un lien de réinitialisation de votre mot de passe.",
+    form: {
+      email: {
+        label: "Email",
+        placeholder: "Votre email",
+        invalid: "Email invalide",
+      },
+    },
   },
 };

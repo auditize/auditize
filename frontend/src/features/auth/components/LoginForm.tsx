@@ -1,14 +1,28 @@
-import { Button, Center, Stack, TextInput, Title } from "@mantine/core";
+import {
+  Alert,
+  Anchor,
+  Box,
+  Button,
+  Center,
+  Group,
+  LoadingOverlay,
+  Modal,
+  Stack,
+  TextInput,
+  Title,
+} from "@mantine/core";
 import { isEmail, useForm } from "@mantine/form";
-import { useDocumentTitle } from "@mantine/hooks";
+import { useDisclosure, useDocumentTitle } from "@mantine/hooks";
+import { IconInfoSquare } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
+import { CustomModalTitle } from "@/components/CustomModalTitle";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 
-import { CurrentUserInfo, logIn } from "../api";
+import { CurrentUserInfo, forgotPassword, logIn } from "../api";
 import { useCurrentUser } from "../contexts";
 
 function getDefaultPageForUser(
@@ -31,6 +45,67 @@ function getDefaultPageForUser(
     return "/repos";
   }
   return "/";
+}
+
+function ForgotPassword({
+  opened,
+  onClose,
+}: {
+  opened: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const form = useForm({
+    initialValues: {
+      email: "",
+    },
+
+    validate: {
+      email: isEmail(t("login.form.email.invalid")),
+    },
+  });
+  const mutation = useMutation({
+    mutationFn: forgotPassword,
+    onSuccess: () => onClose(),
+  });
+
+  useEffect(() => {
+    if (!opened) {
+      form.reset();
+    }
+  }, [opened]);
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={<CustomModalTitle>{t("forgotPassword.title")}</CustomModalTitle>}
+    >
+      <form onSubmit={form.onSubmit((values) => mutation.mutate(values.email))}>
+        <Stack>
+          <LoadingOverlay visible={mutation.isPending} />
+          <Alert variant="light" color="blue" icon={<IconInfoSquare />}>
+            {t("forgotPassword.description")}
+          </Alert>
+          <TextInput
+            {...form.getInputProps("email")}
+            key={form.key("email")}
+            label={t("login.form.email.label")}
+            placeholder={t("login.form.email.placeholder")}
+          />
+          <Group justify="center">
+            <Button onClick={onClose}>{t("common.cancel")}</Button>
+            <Button type="submit" color="blue">
+              {t("common.send")}
+            </Button>
+          </Group>
+          <InlineErrorMessage>
+            {mutation.error ? mutation.error.message : null}
+          </InlineErrorMessage>
+        </Stack>
+      </form>
+    </Modal>
+  );
 }
 
 export function LoginForm({
@@ -65,6 +140,10 @@ export function LoginForm({
       setError(error.message);
     },
   });
+  const [
+    forgotPasswordOpened,
+    { open: openForgotPassword, close: closeForgotPassword },
+  ] = useDisclosure();
   useDocumentTitle(t("login.title"));
 
   if (currentUser) {
@@ -95,6 +174,13 @@ export function LoginForm({
             <Button type="submit">{t("login.signIn")}</Button>
             <InlineErrorMessage>{error}</InlineErrorMessage>
           </Stack>
+          <Anchor onClick={openForgotPassword} size="sm">
+            {"(" + t("forgotPassword.link") + ")"}
+          </Anchor>
+          <ForgotPassword
+            opened={forgotPasswordOpened}
+            onClose={closeForgotPassword}
+          />
         </Stack>
       </Center>
     </form>

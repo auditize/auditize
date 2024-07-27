@@ -27,3 +27,7 @@ export async function logOut(): Promise<void> {
 export async function getCurrentUserInfo(): Promise<CurrentUserInfo> {
   return reqGet("/users/me");
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  return reqPost("/users/forgot-password", { email });
+}
