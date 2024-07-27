@@ -72,6 +72,7 @@ class HttpTestHelper(AsyncClient):
 
     assert_post_ok = partialmethod(assert_post, expected_status_code=200)
     assert_post_created = partialmethod(assert_post, expected_status_code=201)
+    assert_post_no_content = partialmethod(assert_post, expected_status_code=204)
     assert_post_bad_request = partialmethod(assert_post, expected_status_code=400)
     assert_post_unauthorized = partialmethod(assert_post, expected_status_code=401)
     assert_post_forbidden = partialmethod(assert_post, expected_status_code=403)

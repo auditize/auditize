@@ -150,3 +150,7 @@ class UserMeResponse(BaseModel):
 class UserMeUpdateRequest(BaseModel):
     lang: Optional[Lang] = _UserLangField(default=None)
     password: Optional[str] = _UserPasswordField(default=None)
+
+
+class UserPasswordResetRequest(BaseModel):
+    email: str = _UserEmailField()

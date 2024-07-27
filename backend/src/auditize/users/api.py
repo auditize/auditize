@@ -17,6 +17,7 @@ from auditize.users.api_models import (
     UserListResponse,
     UserMeResponse,
     UserMeUpdateRequest,
+    UserPasswordResetRequest,
     UserReadingResponse,
     UserSignupInfoResponse,
     UserSignupSetPasswordRequest,
@@ -176,3 +177,19 @@ async def set_user_password(
     request: UserSignupSetPasswordRequest,
 ):
     await service.update_user_password_by_signup_token(dbm, token, request.password)
+
+
+@router.post(
+    "/users/forgot-password",
+    summary="Send user password reset email",
+    description="For security reasons, this endpoint will always return a 204 status code"
+    "whether the email exists or not.",
+    tags=["users"],
+    status_code=204,
+    responses=error_responses(400),
+)
+async def forgot_password(
+    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
+    reset_request: UserPasswordResetRequest,
+):
+    await service.send_user_password_reset_link(dbm, reset_request.email)

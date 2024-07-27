@@ -174,3 +174,30 @@ async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> 
         raise AuthenticationFailure()
 
     return user
+
+
+def _send_password_reset_link(user: User):
+    config = get_config()
+    send_email(
+        user.email,
+        "Change your password on Auditize",
+        f"Please follow this link to reset your password: "
+        f"{config.base_url}/signup/{user.signup_token.token}",
+    )
+
+
+async def send_user_password_reset_link(dbm: DatabaseManager, email: str):
+    try:
+        user = await get_user_by_email(dbm, email)
+    except UnknownModelException:
+        # in case of unknown email, just do nothing to avoid leaking information
+        return
+    user.signup_token = _generate_signup_token()
+    await update_resource_document(
+        dbm.core_db.users,
+        user.id,
+        {
+            "signup_token": user.signup_token.model_dump(),
+        },
+    )
+    _send_password_reset_link(user)
