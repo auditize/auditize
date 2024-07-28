@@ -182,7 +182,7 @@ def _send_password_reset_link(user: User):
         user.email,
         "Change your password on Auditize",
         f"Please follow this link to reset your password: "
-        f"{config.base_url}/signup/{user.signup_token.token}",
+        f"{config.base_url}/reset-password/{user.signup_token.token}",
     )
 
 

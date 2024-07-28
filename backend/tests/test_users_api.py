@@ -34,7 +34,7 @@ async def _wrap_signup_link_sending(func, expected_email: str) -> str:
         mock.assert_called_once_with(
             expected_email,  # to
             callee.IsA(str),  # subject
-            callee.Regex(".*/signup/[0-9a-f]{64}.*"),  # body
+            callee.Regex(".*/[0-9a-f]{64}.*"),  # body
         )
         match = re.search(r"([0-9a-f]{64})", mock.call_args[0][2])
         return match.group(1)
