@@ -40,23 +40,23 @@ export function I18nProvider({
   // Algorithm to determine the language:
   // 1. If lang is provided (coming from /users/me), use it.
   // 2. If lang is not provided (the user is not authenticated),
-  //    use the saved language from local storage
-  // 3. If the saved language is not available, use the browser language.
+  //    use the last known user language previously saved in local storage
+  // 3. If the last language is not available, use the browser language.
   const { i18n } = useTranslation();
-  const [savedLang, setSavedLang] = useLocalStorage<string>({
+  const [defaultLang, setDefaultLang] = useLocalStorage<string>({
     key: "auditize-default-lang",
     defaultValue: window.navigator.language,
   });
   useEffect(() => {
     if (lang) {
       i18n.changeLanguage(lang);
-      setSavedLang(lang);
+      setDefaultLang(lang);
     } else {
-      i18n.changeLanguage(savedLang);
+      i18n.changeLanguage(defaultLang);
     }
-  }, [lang]);
+  }, [lang, defaultLang]);
   return (
-    <I18nContext.Provider value={{ lang: lang ?? savedLang }}>
+    <I18nContext.Provider value={{ lang: lang ?? defaultLang }}>
       {children}
     </I18nContext.Provider>
   );
@@ -65,7 +65,7 @@ export function I18nProvider({
 export function useI18nContext() {
   const context = useContext(I18nContext);
   if (!context) {
-    throw new Error("useI18nContext must be used within an I18NProvider");
+    throw new Error("useI18nContext must be used within an I18nProvider");
   }
   return context;
 }

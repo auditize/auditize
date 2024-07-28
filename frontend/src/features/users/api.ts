@@ -31,6 +31,7 @@ export type UserUpdate = {
 
 export type UserMeUpdate = {
   lang?: string;
+  password?: string;
 };
 
 export async function createUser(user: UserCreation): Promise<string> {

@@ -4,18 +4,73 @@ import {
   Group,
   LoadingOverlay,
   Modal,
+  PasswordInput,
   Select,
   Stack,
   Tabs,
 } from "@mantine/core";
-import { useForm } from "@mantine/form";
+import { isNotEmpty, matchesField, useForm } from "@mantine/form";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { CustomModalTitle } from "@/components/CustomModalTitle";
+import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import { useAuthenticatedUser } from "@/features/auth";
 
 import { updateUserMe } from "../api";
+
+function PasswordChange({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
+  const form = useForm({
+    mode: "uncontrolled",
+    initialValues: {
+      password: "",
+      passwordConfirmation: "",
+    },
+    validate: {
+      password: isNotEmpty("Password is required"),
+      passwordConfirmation: matchesField("password", "Passwords do not match"),
+    },
+  });
+  const mutation = useMutation({
+    mutationFn: () => {
+      const { password } = form.getValues();
+      return updateUserMe({ password });
+    },
+    onSuccess: () => onClose(),
+  });
+
+  return (
+    <Box px="lg">
+      <LoadingOverlay visible={mutation.isPending} />
+      <form onSubmit={form.onSubmit(() => mutation.mutate())}>
+        <Stack>
+          <PasswordInput
+            {...form.getInputProps("password")}
+            label="Password"
+            placeholder="Password"
+            key={form.key("password")}
+          />
+          <PasswordInput
+            {...form.getInputProps("passwordConfirmation")}
+            label="Password confirmation"
+            placeholder="Password confirmation"
+            key={form.key("passwordConfirmation")}
+          />
+          <Group>
+            <Button onClick={onClose}>{t("common.cancel")}</Button>
+            <Button type="submit" color="blue">
+              {t("common.save")}
+            </Button>
+          </Group>
+          <InlineErrorMessage>
+            {mutation.error ? mutation.error.message : null}
+          </InlineErrorMessage>
+        </Stack>
+      </form>
+    </Box>
+  );
+}
 
 function GeneralSettings({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
@@ -30,6 +85,7 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
     mutationFn: () => updateUserMe(form.values),
     onSuccess: (userInfo) => {
       updateUserInfo(userInfo);
+      onClose();
     },
   });
 
@@ -78,9 +134,15 @@ export function UserSettings({
           <Tabs.Tab value="general">
             {t("accountSettings.tab.general")}
           </Tabs.Tab>
+          <Tabs.Tab value="password">
+            {t("accountSettings.tab.password")}
+          </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="general">
           <GeneralSettings onClose={onClose} />
+        </Tabs.Panel>
+        <Tabs.Panel value="password">
+          <PasswordChange onClose={onClose} />
         </Tabs.Panel>
       </Tabs>
     </Modal>

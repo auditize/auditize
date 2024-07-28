@@ -1,10 +1,13 @@
+import re
 from unittest.mock import patch
 
 import callee
 import pytest
+from bson import ObjectId
 from httpx import Response
 
 from auditize.database import DatabaseManager
+from auditize.users.api import get_user
 from conftest import UserBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection
@@ -25,24 +28,45 @@ UNKNOWN_SIGNUP_TOKEN = (
 )
 
 
+async def _wrap_signup_link_sending(func, expected_email: str) -> str:
+    with patch("auditize.users.service.send_email") as mock:
+        await func()
+        mock.assert_called_once_with(
+            expected_email,  # to
+            callee.IsA(str),  # subject
+            callee.Regex(".*/[0-9a-f]{64}.*"),  # body
+        )
+        match = re.search(r"([0-9a-f]{64})", mock.call_args[0][2])
+        return match.group(1)
+
+
+async def _assert_signup_token_validity(token: str):
+    # this function does not intend to test the endpoint, but only
+    # check that the token is valid
+    client = HttpTestHelper.spawn()
+    await client.assert_get_ok(f"/users/signup/{token}")
+
+
 async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManager):
     data = PreparedUser.prepare_data()
+    user_id = ""
 
-    with patch("auditize.users.service.send_email") as mock:
+    async def func():
+        nonlocal user_id
         resp = await user_write_client.assert_post(
             "/users",
             json=data,
             expected_status_code=201,
             expected_json={"id": callee.IsA(str)},
         )
-        mock.assert_called_once_with(
-            data["email"],  # to
-            callee.IsA(str),  # subject
-            callee.Regex(".*/signup/[0-9a-f]{64}.*"),  # body
-        )
+        user_id = resp.json()["id"]
 
-    user = PreparedUser(resp.json()["id"], data, dbm)
+    signup_token = await _wrap_signup_link_sending(func, data["email"])
+
+    user = PreparedUser(user_id, data, dbm)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+    await _assert_signup_token_validity(signup_token)
 
 
 async def test_user_create_lang_fr(
@@ -348,13 +372,20 @@ async def test_user_signup_unknown(anon_client: HttpTestHelper):
     )
 
 
-async def test_user_signup_set_password(
+async def _assert_user_password_validity(email: str, password: str):
+    client = HttpTestHelper.spawn()
+    await client.assert_post_ok(
+        "/auth/user/login",
+        json={"email": email, "password": password},
+    )
+
+
+async def test_user_signup_set_password_fresh_user(
     anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
 ):
-    await anon_client.assert_post(
+    await anon_client.assert_post_no_content(
         f"/users/signup/{await user.signup_token}",
         json={"password": "new_password"},
-        expected_status_code=204,
     )
 
     await assert_collection(
@@ -364,6 +395,47 @@ async def test_user_signup_set_password(
                 {"password_hash": callee.IsA(str), "signup_token": None}
             )
         ],
+    )
+
+    await _assert_user_password_validity(user.email, "new_password")
+
+
+async def test_user_signup_set_password_after_forgot_password(
+    user_builder: UserBuilder, dbm: DatabaseManager
+):
+    user = await user_builder({})
+
+    async def func():
+        await HttpTestHelper.spawn().assert_post_no_content(
+            "/users/forgot-password",
+            json={"email": user.email},
+        )
+
+    signup_token = await _wrap_signup_link_sending(func, user.email)
+
+    await HttpTestHelper.spawn().assert_post_no_content(
+        f"/users/signup/{signup_token}",
+        json={"password": "new_password"},
+    )
+
+    await assert_collection(
+        dbm.core_db.users,
+        [
+            user.expected_document(
+                {"password_hash": callee.IsA(str), "signup_token": None}
+            )
+        ],
+    )
+
+    await _assert_user_password_validity(user.email, "new_password")
+
+
+async def test_user_signup_set_password_too_short(
+    anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
+):
+    await anon_client.assert_post_bad_request(
+        f"/users/signup/{await user.signup_token}",
+        json={"password": "short"},
     )
 
 
@@ -428,7 +500,7 @@ async def test_get_user_me_as_apikey(apikey_client: HttpTestHelper):
     await apikey_client.assert_get_forbidden("/users/me")
 
 
-async def test_update_user_me(user_builder: UserBuilder, dbm: DatabaseManager):
+async def test_update_user_me_lang(user_builder: UserBuilder, dbm: DatabaseManager):
     user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -450,6 +522,44 @@ async def test_update_user_me(user_builder: UserBuilder, dbm: DatabaseManager):
     await assert_collection(dbm.core_db.users, [user.expected_document({"lang": "fr"})])
 
 
+async def test_update_user_me_password(
+    user_builder: UserBuilder, anon_client: HttpTestHelper, dbm: DatabaseManager
+):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_patch_ok(
+            "/users/me",
+            json={
+                "password": "new_password",
+            },
+        )
+
+    # Make sure we don't have side effects in DB
+    await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+    # Make sure the new password actually works
+    await anon_client.assert_post_ok(
+        "/auth/user/login",
+        json={"email": user.email, "password": "new_password"},
+    )
+
+
+async def test_update_user_me_forbidden_field(
+    user_builder: UserBuilder, dbm: DatabaseManager
+):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        await client.assert_patch_ok(
+            "/users/me",
+            json={"first_name": "I cannot do this"},
+        )
+
+    # ensure nothing changed
+    await assert_collection(dbm.core_db.users, [user.expected_document()])
+
+
 async def test_update_user_me_as_unauthorized(anon_client: HttpTestHelper):
     await anon_client.assert_patch_unauthorized(
         "/users/me",
@@ -466,6 +576,55 @@ async def test_update_user_me_as_apikey(apikey_client: HttpTestHelper):
             "lang": "fr",
         },
     )
+
+
+async def test_user_forgot_password_with_enrolled_user(
+    user_builder: UserBuilder, dbm: DatabaseManager
+):
+    user = await user_builder({})
+
+    async def func():
+        await HttpTestHelper.spawn().assert_post_no_content(
+            "/users/forgot-password",
+            json={"email": user.email},
+        )
+
+    signup_token = await _wrap_signup_link_sending(func, user.email)
+
+    await _assert_signup_token_validity(signup_token)
+
+
+async def test_user_forgot_password_with_not_yet_enrolled_user(
+    user: PreparedUser, dbm: DatabaseManager
+):
+    async def func():
+        await HttpTestHelper.spawn().assert_post_no_content(
+            "/users/forgot-password",
+            json={"email": user.email},
+        )
+
+    signup_token = await _wrap_signup_link_sending(func, user.email)
+
+    await _assert_signup_token_validity(signup_token)
+
+
+async def test_user_forgot_password_with_enrolled_user_and_pending_forgot_password(
+    user_builder: UserBuilder, dbm: DatabaseManager
+):
+    user = await user_builder({})
+
+    async def func():
+        await HttpTestHelper.spawn().assert_post_no_content(
+            "/users/forgot-password",
+            json={"email": user.email},
+        )
+
+    # For an already enrolled user, make sure we can trigger a second
+    # forgot password request
+    signup_token_1 = await _wrap_signup_link_sending(func, user.email)
+    signup_token_2 = await _wrap_signup_link_sending(func, user.email)
+
+    await _assert_signup_token_validity(signup_token_2)
 
 
 class TestPermissions(BasePermissionTests):

@@ -308,6 +308,7 @@ export default {
     loading: "Loading...",
     notCurrentlyAvailable: "Not currently available",
     errorModalTitle: "An error occurred",
+    send: "Send",
   },
   resource: {
     list: {
@@ -332,6 +333,7 @@ export default {
     title: "Account Settings",
     tab: {
       general: "General",
+      password: "Password",
     },
     form: {
       lang: {
@@ -359,5 +361,17 @@ export default {
       },
     },
     signIn: "Login",
+  },
+  forgotPassword: {
+    link: "I forgot my password",
+    title: "Ask for a password reset",
+    description: "Enter your email address to receive a password reset link.",
+    form: {
+      email: {
+        label: "Email",
+        placeholder: "Your email",
+        invalid: "Invalid email",
+      },
+    },
   },
 };

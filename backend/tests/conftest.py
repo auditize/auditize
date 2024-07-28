@@ -121,9 +121,9 @@ def user_builder(dbm) -> UserBuilder:
         return await PreparedUser.inject_into_db(
             dbm,
             user=PreparedUser.prepare_model(
-                password="dummy", permissions=permissions, lang=lang
+                password="dummypassword", permissions=permissions, lang=lang
             ),
-            password="dummy",
+            password="dummypassword",
         )
 
     return func
