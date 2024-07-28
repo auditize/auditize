@@ -1,7 +1,6 @@
 import {
   Alert,
   Anchor,
-  Box,
   Button,
   Center,
   Group,
@@ -153,36 +152,38 @@ export function LoginForm({
   }
 
   return (
-    <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
-      <Center pt="4rem">
-        <Stack align="center">
-          <Title order={1}>{t("login.welcome")}</Title>
-          <Stack pt="1rem" gap="1.25rem">
-            <TextInput
-              {...form.getInputProps("email")}
-              key={form.key("email")}
-              label={t("login.form.email.label")}
-              placeholder={t("login.form.email.placeholder")}
-            />
-            <TextInput
-              {...form.getInputProps("password")}
-              key={form.key("password")}
-              label={t("login.form.password.label")}
-              placeholder={t("login.form.password.placeholder")}
-              type="password"
-            />
-            <Button type="submit">{t("login.signIn")}</Button>
-            <InlineErrorMessage>{error}</InlineErrorMessage>
+    <>
+      <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
+        <Center pt="4rem">
+          <Stack align="center">
+            <Title order={1}>{t("login.welcome")}</Title>
+            <Stack pt="1rem" gap="1.25rem">
+              <TextInput
+                {...form.getInputProps("email")}
+                key={form.key("email")}
+                label={t("login.form.email.label")}
+                placeholder={t("login.form.email.placeholder")}
+              />
+              <TextInput
+                {...form.getInputProps("password")}
+                key={form.key("password")}
+                label={t("login.form.password.label")}
+                placeholder={t("login.form.password.placeholder")}
+                type="password"
+              />
+              <Button type="submit">{t("login.signIn")}</Button>
+              <InlineErrorMessage>{error}</InlineErrorMessage>
+            </Stack>
+            <Anchor onClick={openForgotPassword} size="sm">
+              {"(" + t("forgotPassword.link") + ")"}
+            </Anchor>
           </Stack>
-          <Anchor onClick={openForgotPassword} size="sm">
-            {"(" + t("forgotPassword.link") + ")"}
-          </Anchor>
-          <ForgotPassword
-            opened={forgotPasswordOpened}
-            onClose={closeForgotPassword}
-          />
-        </Stack>
-      </Center>
-    </form>
+        </Center>
+      </form>
+      <ForgotPassword
+        opened={forgotPasswordOpened}
+        onClose={closeForgotPassword}
+      />
+    </>
   );
 }
