@@ -36,7 +36,7 @@ import {
 } from "@/features/auth";
 import { LogNavigationStateProvider, Logs } from "@/features/logs";
 import { ReposManagement } from "@/features/repos";
-import { Signup } from "@/features/signup";
+import { ResetPassword, Signup } from "@/features/signup";
 import { UsersManagement } from "@/features/users";
 import { theme } from "@/theme";
 
@@ -247,6 +247,14 @@ function AppRoutes() {
       element: (
         <I18nProvider>
           <Signup />
+        </I18nProvider>
+      ),
+    },
+    {
+      path: "/reset-password/:token",
+      element: (
+        <I18nProvider>
+          <ResetPassword />
         </I18nProvider>
       ),
     },

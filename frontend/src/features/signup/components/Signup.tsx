@@ -26,7 +26,13 @@ function useSignupForm() {
   });
 }
 
-export function Signup({}) {
+function BaseResetPassword({
+  title,
+  successMessage,
+}: {
+  title: string;
+  successMessage: string;
+}) {
   const { token } = useParams();
   const form = useSignupForm();
   const query = useQuery({
@@ -54,7 +60,7 @@ export function Signup({}) {
   if (mutation.isSuccess) {
     return (
       <Center>
-        <h1>Signup successful!</h1>
+        <h1>{successMessage}</h1>
       </Center>
     );
   }
@@ -65,7 +71,7 @@ export function Signup({}) {
         onSubmit={form.onSubmit((values) => mutation.mutate(values.password))}
       >
         <Stack w="25rem" p="1rem">
-          <h1>Sign up !</h1>
+          <h1>{title}</h1>
           <TextInput
             {...form.getInputProps("firstName")}
             label="First name"
@@ -101,5 +107,20 @@ export function Signup({}) {
         </Stack>
       </form>
     </Center>
+  );
+}
+
+export function Signup() {
+  return (
+    <BaseResetPassword title="Signup !" successMessage="Signup successful !" />
+  );
+}
+
+export function ResetPassword() {
+  return (
+    <BaseResetPassword
+      title="Reset your password"
+      successMessage="Your password has been successfully reset"
+    />
   );
 }
