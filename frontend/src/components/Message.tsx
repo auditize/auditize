@@ -17,7 +17,7 @@ namespace Message {
         color="green"
         icon={<IconCheckbox />}
       >
-        <Text>{children}</Text>
+        <Text size="sm">{children}</Text>
       </Alert>
     );
   }
@@ -36,7 +36,7 @@ namespace Message {
         color="blue"
         icon={<IconInfoSquare />}
       >
-        <Text>{children}</Text>
+        <Text size="sm">{children}</Text>
       </Alert>
     );
   }
