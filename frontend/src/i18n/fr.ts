@@ -306,6 +306,7 @@ export default {
     save: "Enregistrer",
     cancel: "Annuler",
     confirm: "Confirmer",
+    submit: "Valider",
     close: "Fermer",
     ok: "Ok",
     loading: "Chargement...",
@@ -378,5 +379,38 @@ export default {
         invalid: "Email invalide",
       },
     },
+  },
+  passwordSetup: {
+    form: {
+      firstName: {
+        label: "Prénom",
+      },
+      lastName: {
+        label: "Nom",
+      },
+      email: {
+        label: "Email",
+      },
+      password: {
+        label: "Mot de passe",
+        placeholder: "Mot de passe",
+        required: "Le mot de passe est requis.",
+      },
+      passwordConfirmation: {
+        label: "Confirmation du mot de passe",
+        placeholder: "Confirmation du mot de passe",
+        doesNotMatch: "Les mots de passe ne correspondent pas.",
+      },
+    },
+    setupAccount: {
+      title: "Finalisez la création de votre compte Auditize",
+      success: "La création de votre compte a été finalisée avec succès.",
+    },
+    resetPassword: {
+      title: "Réinitialisez votre mot de passe Auditize",
+      success: "Votre mot de passe a été réinitialisé avec succès.",
+    },
+    loginLink:
+      "Vous pouvez maintenant vous connecter en <1>cliquant sur ce lien</1>.",
   },
 };

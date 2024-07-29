@@ -303,6 +303,7 @@ export default {
     save: "Save",
     cancel: "Cancel",
     confirm: "Confirm",
+    submit: "Submit",
     close: "Close",
     ok: "Ok",
     loading: "Loading...",
@@ -375,5 +376,37 @@ export default {
         invalid: "Invalid email",
       },
     },
+  },
+  passwordSetup: {
+    form: {
+      firstName: {
+        label: "First Name",
+      },
+      lastName: {
+        label: "Last Name",
+      },
+      email: {
+        label: "Email",
+      },
+      password: {
+        label: "Password",
+        placeholder: "Password",
+        required: "Password is required.",
+      },
+      passwordConfirmation: {
+        label: "Password confirmation",
+        placeholder: "Password confirmation",
+        doesNotMatch: "Passwords do not match.",
+      },
+    },
+    setupAccount: {
+      title: "Set up your Auditize account",
+      success: "The setup of your user account is now complete.",
+    },
+    resetPassword: {
+      title: "Reset your Auditize password",
+      success: "Your password has been successfully updated.",
+    },
+    loginLink: "You can now log in by <1>clicking on this link</1>.",
   },
 };
