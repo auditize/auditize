@@ -310,6 +310,7 @@ export default {
     close: "Fermer",
     ok: "Ok",
     loading: "Chargement...",
+    notAvailable: "Non disponible",
     notCurrentlyAvailable: "Actuellement indisponible",
     errorModalTitle: "Une erreur est survenue",
     send: "Envoyer",
@@ -337,10 +338,21 @@ export default {
     title: "Paramètres du compte",
     tab: {
       general: "Général",
+      password: "Mot de passe",
     },
     form: {
       lang: {
         label: "Langue",
+      },
+      password: {
+        label: "Mot de passe",
+        placeholder: "Mot de passe",
+        required: "Le mot de passe est requis.",
+      },
+      passwordConfirmation: {
+        label: "Confirmation du mot de passe",
+        placeholder: "Confirmation du mot de passe",
+        doesNotMatch: "Les mots de passe ne correspondent pas.",
       },
     },
   },

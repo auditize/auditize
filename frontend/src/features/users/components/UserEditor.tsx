@@ -76,8 +76,8 @@ function UserEditor({
         <Select
           label={t("user.form.language.label")}
           data={[
-            { value: "en", label: "English" },
-            { value: "fr", label: "Français" },
+            { value: "en", label: t("language.en") },
+            { value: "fr", label: t("language.fr") },
           ]}
           allowDeselect={false}
           {...form.getInputProps("lang")}

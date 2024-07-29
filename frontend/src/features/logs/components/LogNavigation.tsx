@@ -119,6 +119,7 @@ function RepoSelector({
   repoId?: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   const repoQuery = useLogRepoListQuery();
 
   return (
@@ -131,10 +132,10 @@ function RepoSelector({
       onChange={(value) => onChange(value || "")}
       placeholder={
         repoQuery.error
-          ? "Not available"
+          ? t("common.notCurrentlyAvailable")
           : repoQuery.isPending
-            ? "Loading..."
-            : "Repository"
+            ? t("common.loading")
+            : undefined
       }
       disabled={repoQuery.isPending}
       clearable={false}
@@ -218,6 +219,7 @@ function SelectSearchParamField({
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
 }) {
+  const { t } = useTranslation();
   const { isPending, error, data } = useQuery({
     queryKey: [
       "logConsolidatedData",
@@ -263,10 +265,10 @@ function SelectSearchParamField({
         onChange={(value) => onChange(searchParamName, value)}
         placeholder={
           error
-            ? "Not currently available"
+            ? t("common.notCurrentlyAvailable")
             : data && data.length > 0
               ? label
-              : "No data available"
+              : t("common.notAvailable")
         }
       />
     </SearchParamFieldPopover>

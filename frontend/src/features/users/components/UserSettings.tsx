@@ -28,8 +28,11 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
       passwordConfirmation: "",
     },
     validate: {
-      password: isNotEmpty("Password is required"),
-      passwordConfirmation: matchesField("password", "Passwords do not match"),
+      password: isNotEmpty(t("accountSettings.form.password.required")),
+      passwordConfirmation: matchesField(
+        "password",
+        t("accountSettings.form.passwordConfirmation.doesNotMatch"),
+      ),
     },
   });
   const mutation = useMutation({
@@ -47,14 +50,16 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
         <Stack>
           <PasswordInput
             {...form.getInputProps("password")}
-            label="Password"
-            placeholder="Password"
+            label={t("accountSettings.form.password.label")}
+            placeholder={t("accountSettings.form.password.placeholder")}
             key={form.key("password")}
           />
           <PasswordInput
             {...form.getInputProps("passwordConfirmation")}
-            label="Password confirmation"
-            placeholder="Password confirmation"
+            label={t("accountSettings.form.passwordConfirmation.label")}
+            placeholder={t(
+              "accountSettings.form.passwordConfirmation.placeholder",
+            )}
             key={form.key("passwordConfirmation")}
           />
           <Group>
@@ -97,8 +102,8 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
           <Select
             label={t("user.form.language.label")}
             data={[
-              { value: "en", label: "English" },
-              { value: "fr", label: "Français" },
+              { value: "en", label: t("language.en") },
+              { value: "fr", label: t("language.fr") },
             ]}
             allowDeselect={false}
             {...form.getInputProps("lang")}

@@ -307,6 +307,7 @@ export default {
     close: "Close",
     ok: "Ok",
     loading: "Loading...",
+    notAvailable: "Not available",
     notCurrentlyAvailable: "Not currently available",
     errorModalTitle: "An error occurred",
     send: "Send",
@@ -339,6 +340,16 @@ export default {
     form: {
       lang: {
         label: "Language",
+      },
+      password: {
+        label: "Password",
+        placeholder: "Password",
+        required: "Password is required.",
+      },
+      passwordConfirmation: {
+        label: "Password confirmation",
+        placeholder: "Password confirmation",
+        doesNotMatch: "Passwords do not match.",
       },
     },
   },
