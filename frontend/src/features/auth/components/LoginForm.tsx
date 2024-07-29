@@ -64,12 +64,12 @@ function ForgotPassword({
   });
   const mutation = useMutation({
     mutationFn: forgotPassword,
-    onSuccess: () => onClose(),
   });
 
   useEffect(() => {
     if (!opened) {
       form.reset();
+      mutation.reset();
     }
   }, [opened]);
 
@@ -88,17 +88,27 @@ function ForgotPassword({
             key={form.key("email")}
             label={t("login.form.email.label")}
             placeholder={t("login.form.email.placeholder")}
+            disabled={mutation.isSuccess}
             data-autofocus
           />
-          <Group justify="center">
-            <Button onClick={onClose}>{t("common.cancel")}</Button>
-            <Button type="submit" color="blue">
-              {t("common.send")}
-            </Button>
-          </Group>
           <InlineErrorMessage>
             {mutation.error ? mutation.error.message : null}
           </InlineErrorMessage>
+          {mutation.isSuccess && (
+            <Message.Success>{t("forgotPassword.emailSent")}</Message.Success>
+          )}
+          <Group justify="center">
+            {mutation.isSuccess ? (
+              <Button onClick={onClose}>{t("common.close")}</Button>
+            ) : (
+              <>
+                <Button onClick={onClose}>{t("common.cancel")}</Button>
+                <Button type="submit" color="blue">
+                  {t("common.send")}
+                </Button>
+              </>
+            )}
+          </Group>
         </Stack>
       </form>
     </Modal>

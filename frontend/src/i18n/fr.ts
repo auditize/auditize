@@ -369,6 +369,8 @@ export default {
     title: "Demander un changement de mot de passe",
     description:
       "Veuillez saisir votre email pour recevoir un lien de réinitialisation de votre mot de passe.",
+    emailSent:
+      "Un email de réinitialisation de mot de passe vous a été envoyé (si l'adresse email indiquée est valide).",
     form: {
       email: {
         label: "Email",

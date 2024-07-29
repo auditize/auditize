@@ -366,6 +366,8 @@ export default {
     link: "I forgot my password",
     title: "Ask for a password reset",
     description: "Enter your email address to receive a password reset link.",
+    emailSent:
+      "A password reset link has been sent to your email address (if your email address is correct).",
     form: {
       email: {
         label: "Email",
