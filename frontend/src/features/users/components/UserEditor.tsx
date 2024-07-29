@@ -33,6 +33,22 @@ function useUserForm(values: { name?: string }) {
   });
 }
 
+function useUserEditorState(opened: boolean) {
+  const form = useUserForm({});
+  const [permissions, setPermissions] = useState<Permissions>(() =>
+    emptyPermissions(),
+  );
+
+  useEffect(() => {
+    if (!opened) {
+      form.reset();
+      setPermissions(emptyPermissions());
+    }
+  }, [opened]);
+
+  return { form, permissions, setPermissions };
+}
+
 function UserEditor({
   form,
   permissions,
@@ -95,16 +111,8 @@ export function UserCreation({
   opened?: boolean;
   onClose: () => void;
 }) {
-  const form = useUserForm({});
-  const [permissions, setPermissions] = useState<Permissions>(() =>
-    emptyPermissions(),
-  );
   const { t } = useTranslation();
-
-  useEffect(() => {
-    form.reset();
-    setPermissions(emptyPermissions());
-  }, [opened]);
+  const { form, permissions, setPermissions } = useUserEditorState(!!opened);
 
   return (
     <ResourceCreation
@@ -134,10 +142,7 @@ export function UserEdition({
   readOnly: boolean;
 }) {
   const { t } = useTranslation();
-  const form = useUserForm({});
-  const [permissions, setPermissions] = useState<Permissions>(() =>
-    emptyPermissions(),
-  );
+  const { form, permissions, setPermissions } = useUserEditorState(!!userId);
 
   return (
     <ResourceEdition

@@ -37,6 +37,22 @@ function useApikeyForm() {
   });
 }
 
+function useApiKeyEditorState(opened: boolean) {
+  const form = useApikeyForm();
+  const [permissions, setPermissions] = useState<Permissions>(() =>
+    emptyPermissions(),
+  );
+
+  useEffect(() => {
+    if (!opened) {
+      form.reset();
+      setPermissions(emptyPermissions());
+    }
+  }, [opened]);
+
+  return { form, permissions, setPermissions };
+}
+
 function BaseApikeyForm({
   form,
   readOnly,
@@ -148,16 +164,13 @@ export function ApikeyCreation({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const form = useApikeyForm();
-  const [permissions, setPermissions] = useState<Permissions>(() =>
-    emptyPermissions(),
-  );
+  const { form, permissions, setPermissions } = useApiKeyEditorState(!!opened);
   const [secret, setSecret] = useState<string | null>(null);
 
   useEffect(() => {
-    form.reset();
-    setSecret(null);
-    setPermissions(emptyPermissions());
+    if (!opened) {
+      setSecret(null);
+    }
   }, [opened]);
 
   return (
@@ -195,10 +208,8 @@ export function ApikeyEdition({
   onClose: () => void;
   readOnly: boolean;
 }) {
-  const form = useApikeyForm();
-  const [permissions, setPermissions] = useState<Permissions>(() =>
-    emptyPermissions(),
-  );
+  const { form, permissions, setPermissions } =
+    useApiKeyEditorState(!!apikeyId);
 
   return (
     <ResourceEdition

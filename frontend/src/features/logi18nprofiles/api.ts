@@ -23,7 +23,7 @@ export type LogI18nProfileUpdate = {
   translations?: Record<string, object | null>;
 };
 
-export async function createLogi18nProfile(
+export async function createLogI18nProfile(
   profile: LogI18nProfileCreation,
 ): Promise<string> {
   const resp = await reqPost("/log-i18n-profiles", profile);

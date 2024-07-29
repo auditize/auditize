@@ -39,6 +39,18 @@ function useRepoForm() {
   });
 }
 
+function useRepoEditorState(opened: boolean) {
+  const form = useRepoForm();
+
+  useEffect(() => {
+    if (!opened) {
+      form.reset();
+    }
+  }, [opened]);
+
+  return { form };
+}
+
 function LogI18nProfileSelector({
   form,
   readOnly,
@@ -135,11 +147,7 @@ export function RepoCreation({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const form = useRepoForm();
-
-  useEffect(() => {
-    form.reset();
-  }, [opened]);
+  const { form } = useRepoEditorState(!!opened);
 
   return (
     <ResourceCreation
@@ -165,7 +173,7 @@ export function RepoEdition({
   readOnly: boolean;
 }) {
   const { t } = useTranslation();
-  const form = useRepoForm();
+  const { form } = useRepoEditorState(!!repoId);
 
   return (
     <ResourceEdition

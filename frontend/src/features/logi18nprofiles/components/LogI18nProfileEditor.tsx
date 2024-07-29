@@ -18,7 +18,7 @@ import {
 } from "@/components/ResourceManagement";
 
 import {
-  createLogi18nProfile,
+  createLogI18nProfile,
   getLogI18nProfile,
   updateLogi18nProfile,
 } from "../api";
@@ -34,6 +34,22 @@ function useLogI18nProfileForm(values: { name?: string }) {
       name: isNotEmpty(t("logi18nprofile.form.name.required")),
     },
   });
+}
+
+function useLogI18nProfileEditorState(opened: boolean) {
+  const form = useLogI18nProfileForm({});
+  const [translations, setTranslations] = useState<
+    Record<string, object | null>
+  >({});
+
+  useEffect(() => {
+    if (!opened) {
+      form.reset();
+      setTranslations({});
+    }
+  }, [opened]);
+
+  return { form, translations, setTranslations };
 }
 
 function TranslationFileInput({
@@ -197,12 +213,8 @@ export function LogI18nProfileCreation({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const form = useLogI18nProfileForm({});
-  const [translations, setTranslations] = useState<Record<string, object>>({});
-
-  useEffect(() => {
-    form.reset();
-  }, [opened]);
+  const { form, translations, setTranslations } =
+    useLogI18nProfileEditorState(!!opened);
 
   return (
     <ResourceCreation
@@ -210,18 +222,23 @@ export function LogI18nProfileCreation({
       opened={!!opened}
       onClose={onClose}
       onSubmit={form.onSubmit}
-      onSave={() => createLogi18nProfile({ ...form.values, translations })}
+      onSave={() =>
+        createLogI18nProfile({
+          ...form.values,
+          translations: translations as Record<string, object>,
+        })
+      }
       queryKeyForInvalidation={["logi18nprofiles"]}
     >
       <LogI18nProfileForm form={form}>
         <TranslationFileCreationInput
           lang="en"
-          translations={translations}
+          translations={translations as Record<string, object>}
           setTranslations={setTranslations}
         />
         <TranslationFileCreationInput
           lang="fr"
-          translations={translations}
+          translations={translations as Record<string, object>}
           setTranslations={setTranslations}
         />
       </LogI18nProfileForm>
@@ -239,10 +256,8 @@ export function LogI18nProfileEdition({
   readOnly: boolean;
 }) {
   const { t } = useTranslation();
-  const form = useLogI18nProfileForm({});
-  const [translations, setTranslations] = useState<
-    Record<string, object | null>
-  >({});
+  const { form, translations, setTranslations } =
+    useLogI18nProfileEditorState(!!profileId);
 
   return (
     <ResourceEdition
