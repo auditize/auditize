@@ -32,7 +32,7 @@ function RepoId({ value }: { value: string }) {
   );
 }
 
-export function ReposManagement() {
+export function RepoManagement() {
   const { currentUser } = useAuthenticatedUser();
   const { t } = useTranslation();
   const readOnly = currentUser.permissions.management.repos.write === false;

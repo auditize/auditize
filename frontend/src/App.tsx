@@ -35,7 +35,7 @@ import {
   useCurrentUser,
 } from "@/features/auth";
 import { LogNavigationStateProvider, Logs } from "@/features/logs";
-import { ReposManagement } from "@/features/repos";
+import { RepoManagement } from "@/features/repos";
 import { ResetPassword, Signup } from "@/features/signup";
 import { UsersManagement } from "@/features/users";
 import { theme } from "@/theme";
@@ -224,7 +224,7 @@ function AppRoutes() {
             },
             {
               path: "repos",
-              element: <ReposManagement />,
+              element: <RepoManagement />,
             },
             {
               path: "log-i18n-profiles",
