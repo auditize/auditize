@@ -1,5 +1,4 @@
 import {
-  Alert,
   Anchor,
   Button,
   Center,
@@ -12,7 +11,6 @@ import {
 } from "@mantine/core";
 import { isEmail, useForm } from "@mantine/form";
 import { useDisclosure, useDocumentTitle } from "@mantine/hooks";
-import { IconInfoSquare } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +18,7 @@ import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { CustomModalTitle } from "@/components/CustomModalTitle";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import Message from "@/components/Message";
 
 import { CurrentUserInfo, forgotPassword, logIn } from "../api";
 import { useCurrentUser } from "../contexts";
@@ -83,9 +82,7 @@ function ForgotPassword({
       <form onSubmit={form.onSubmit((values) => mutation.mutate(values.email))}>
         <Stack>
           <LoadingOverlay visible={mutation.isPending} />
-          <Alert variant="light" color="blue" icon={<IconInfoSquare />}>
-            {t("forgotPassword.description")}
-          </Alert>
+          <Message.Info>{t("forgotPassword.description")}</Message.Info>
           <TextInput
             {...form.getInputProps("email")}
             key={form.key("email")}

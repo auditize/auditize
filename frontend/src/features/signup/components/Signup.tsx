@@ -1,22 +1,20 @@
 import {
-  Alert,
   Anchor,
   Button,
   Center,
   PasswordInput,
   Stack,
-  Text,
   TextInput,
   Title,
 } from "@mantine/core";
 import { isNotEmpty, matchesField, useForm } from "@mantine/form";
-import { IconCheckbox } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import React, { useEffect } from "react";
 import { NavLink, useParams } from "react-router-dom";
 
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import Message from "@/components/Message";
 
 import { getSignupInfo, setPassword } from "../api";
 
@@ -118,16 +116,16 @@ function BaseResetPassword({
           <InlineErrorMessage>{mutation.error}</InlineErrorMessage>
         </Stack>
         {mutation.isSuccess && (
-          <Alert variant="light" color="green" icon={<IconCheckbox />}>
-            <Text>
+          <Message.Success>
+            <>
               {successMessage} <br />
               You can now log in by&nbsp;
               <Anchor component={NavLink} to="/login">
                 clicking on this link
               </Anchor>
               .
-            </Text>
-          </Alert>
+            </>
+          </Message.Success>
         )}
       </form>
     </Center>
