@@ -88,6 +88,7 @@ function ForgotPassword({
             key={form.key("email")}
             label={t("login.form.email.label")}
             placeholder={t("login.form.email.placeholder")}
+            data-autofocus
           />
           <Group justify="center">
             <Button onClick={onClose}>{t("common.cancel")}</Button>
