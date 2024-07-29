@@ -62,6 +62,7 @@ function logoutConfirmationModal(onLogout: () => void) {
         await logOut();
         onLogout();
       },
+      groupProps: { justify: "center" },
     });
 }
 

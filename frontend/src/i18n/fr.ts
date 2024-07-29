@@ -307,6 +307,7 @@ export default {
     cancel: "Annuler",
     confirm: "Confirmer",
     submit: "Valider",
+    delete: "Supprimer",
     close: "Fermer",
     ok: "Ok",
     loading: "Chargement...",
@@ -330,8 +331,6 @@ export default {
       confirm: {
         title: "Confirmer la suppression",
       },
-      cancel: "Annuler",
-      delete: "Supprimer",
     },
   },
   accountSettings: {

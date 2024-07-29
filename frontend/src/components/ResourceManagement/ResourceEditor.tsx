@@ -1,4 +1,12 @@
-import { Box, Button, Group, LoadingOverlay, Modal, Text } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Group,
+  LoadingOverlay,
+  Modal,
+  Space,
+  Text,
+} from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { FormEventHandler, useEffect, useState } from "react";
@@ -6,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { InlineErrorMessage } from "../InlineErrorMessage";
+import { ModalActionButtons } from "../ModalActionButtons";
 import { ModalTitle } from "../ModalTitle";
 
 interface ResourceEditorProps {
@@ -72,19 +81,12 @@ function ResourceEditor({
           />
           <form onSubmit={onSubmit(() => mutation.mutate())}>
             {children}
-            <Group justify="center" pt="md">
-              {!disabledSaving && (
-                <>
-                  <Button onClick={onClose}>{t("common.cancel")}</Button>
-                  <Button type="submit" color="blue">
-                    {t("common.save")}
-                  </Button>
-                </>
-              )}
-              {disabledSaving && (
-                <Button onClick={onClose}>{t("common.close")}</Button>
-              )}
-            </Group>
+            <Space h="md" />
+            <ModalActionButtons
+              validateButtonLabel={t("common.save")}
+              onClose={onClose}
+              closeOnly={disabledSaving}
+            />
           </form>
           <InlineErrorMessage>{error}</InlineErrorMessage>
         </Box>

@@ -2,7 +2,6 @@ import {
   Anchor,
   Button,
   Center,
-  Group,
   LoadingOverlay,
   Modal,
   Stack,
@@ -18,6 +17,7 @@ import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import Message from "@/components/Message";
+import { ModalActionButtons } from "@/components/ModalActionButtons";
 import { ModalTitle } from "@/components/ModalTitle";
 
 import { CurrentUserInfo, forgotPassword, logIn } from "../api";
@@ -97,18 +97,11 @@ function ForgotPassword({
           {mutation.isSuccess && (
             <Message.Success>{t("forgotPassword.emailSent")}</Message.Success>
           )}
-          <Group justify="center">
-            {mutation.isSuccess ? (
-              <Button onClick={onClose}>{t("common.close")}</Button>
-            ) : (
-              <>
-                <Button onClick={onClose}>{t("common.cancel")}</Button>
-                <Button type="submit" color="blue">
-                  {t("common.send")}
-                </Button>
-              </>
-            )}
-          </Group>
+          <ModalActionButtons
+            validateButtonLabel={t("common.send")}
+            onClose={onClose}
+            closeOnly={mutation.isSuccess}
+          />
         </Stack>
       </form>
     </Modal>

@@ -1,7 +1,5 @@
 import {
   Box,
-  Button,
-  Group,
   LoadingOverlay,
   Modal,
   PasswordInput,
@@ -14,6 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import { ModalActionButtons } from "@/components/ModalActionButtons";
 import { ModalTitle } from "@/components/ModalTitle";
 import { useAuthenticatedUser } from "@/features/auth";
 
@@ -62,12 +61,10 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
             )}
             key={form.key("passwordConfirmation")}
           />
-          <Group>
-            <Button onClick={onClose}>{t("common.cancel")}</Button>
-            <Button type="submit" color="blue">
-              {t("common.save")}
-            </Button>
-          </Group>
+          <ModalActionButtons
+            validateButtonLabel={t("common.save")}
+            onClose={onClose}
+          />
           <InlineErrorMessage>
             {mutation.error ? mutation.error.message : null}
           </InlineErrorMessage>
@@ -108,12 +105,10 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
             allowDeselect={false}
             {...form.getInputProps("lang")}
           />
-          <Group>
-            <Button onClick={onClose}>{t("common.cancel")}</Button>
-            <Button type="submit" color="blue">
-              {t("common.save")}
-            </Button>
-          </Group>
+          <ModalActionButtons
+            validateButtonLabel={t("common.save")}
+            onClose={onClose}
+          />
         </Stack>
       </form>
     </Box>

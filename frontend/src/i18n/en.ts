@@ -304,6 +304,7 @@ export default {
     cancel: "Cancel",
     confirm: "Confirm",
     submit: "Submit",
+    delete: "Delete",
     close: "Close",
     ok: "Ok",
     loading: "Loading...",
@@ -327,8 +328,6 @@ export default {
       confirm: {
         title: "Confirm deletion",
       },
-      cancel: "Cancel",
-      delete: "Delete",
     },
   },
   accountSettings: {

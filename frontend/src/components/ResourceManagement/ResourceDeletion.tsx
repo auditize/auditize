@@ -1,9 +1,10 @@
-import { Box, Button, Group, Modal, Text } from "@mantine/core";
+import { Box, Button, Group, LoadingOverlay, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { InlineErrorMessage } from "../InlineErrorMessage";
+import { ModalActionButtons } from "../ModalActionButtons";
 import { ModalTitle } from "../ModalTitle";
 
 interface ResourceDeletionProps {
@@ -41,20 +42,20 @@ export function ResourceDeletion({
     >
       <div>
         <Box>
+          <LoadingOverlay visible={mutation.isPending} />
           <Text pb="sm">{message}</Text>
-          <Group justify="center">
-            <Button onClick={onClose} size="xs" variant="outline">
-              {t("resource.delete.cancel")}
-            </Button>
-            <Button
-              onClick={() => mutation.mutate()}
-              disabled={mutation.isPending}
-              size="xs"
-              color="red"
-            >
-              {t("resource.delete.delete")}
-            </Button>
-          </Group>
+          <form
+            onSubmit={(e) => {
+              mutation.mutate();
+              e.preventDefault();
+            }}
+          >
+            <ModalActionButtons
+              validateButtonLabel={t("common.delete")}
+              onClose={onClose}
+              dangerous
+            />
+          </form>
           <InlineErrorMessage>
             {mutation.error &&
               t("common.error", { error: mutation.error.message })}
