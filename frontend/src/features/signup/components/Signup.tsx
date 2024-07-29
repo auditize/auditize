@@ -1,15 +1,26 @@
-import { Button, Center, PasswordInput, Stack, TextInput } from "@mantine/core";
+import {
+  Alert,
+  Anchor,
+  Button,
+  Center,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
 import { isNotEmpty, matchesField, useForm } from "@mantine/form";
+import { IconCheckbox } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
-import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect } from "react";
+import { NavLink, useParams } from "react-router-dom";
 
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 
 import { getSignupInfo, setPassword } from "../api";
 
-function useSignupForm() {
+function useResetPasswordForm() {
   return useForm({
     mode: "uncontrolled",
     initialValues: {
@@ -31,10 +42,10 @@ function BaseResetPassword({
   successMessage,
 }: {
   title: string;
-  successMessage: string;
+  successMessage: React.ReactNode;
 }) {
   const { token } = useParams();
-  const form = useSignupForm();
+  const form = useResetPasswordForm();
   const query = useQuery({
     queryKey: ["signup", token],
     queryFn: () => getSignupInfo(token!),
@@ -57,21 +68,18 @@ function BaseResetPassword({
     );
   }
 
-  if (mutation.isSuccess) {
-    return (
-      <Center>
-        <h1>{successMessage}</h1>
-      </Center>
-    );
-  }
+  const disabledForm =
+    query.isLoading || mutation.isPending || mutation.isSuccess;
 
   return (
     <Center>
       <form
         onSubmit={form.onSubmit((values) => mutation.mutate(values.password))}
       >
-        <Stack w="25rem" p="1rem">
-          <h1>{title}</h1>
+        <Stack w="25rem" p="1rem" pt="3rem">
+          <Title order={1} ta="center">
+            {title}
+          </Title>
           <TextInput
             {...form.getInputProps("firstName")}
             label="First name"
@@ -95,16 +103,32 @@ function BaseResetPassword({
             label="Password"
             placeholder="Password"
             key={form.key("password")}
+            disabled={disabledForm}
           />
           <PasswordInput
             {...form.getInputProps("passwordConfirmation")}
             label="Password confirmation"
             placeholder="Password confirmation"
             key={form.key("passwordConfirmation")}
+            disabled={disabledForm}
           />
-          <Button type="submit">Submit</Button>
+          <Button type="submit" disabled={disabledForm}>
+            Submit
+          </Button>
           <InlineErrorMessage>{mutation.error}</InlineErrorMessage>
         </Stack>
+        {mutation.isSuccess && (
+          <Alert variant="light" color="green" icon={<IconCheckbox />}>
+            <Text>
+              {successMessage} <br />
+              You can now log in by&nbsp;
+              <Anchor component={NavLink} to="/login">
+                clicking on this link
+              </Anchor>
+              .
+            </Text>
+          </Alert>
+        )}
       </form>
     </Center>
   );
@@ -112,7 +136,10 @@ function BaseResetPassword({
 
 export function Signup() {
   return (
-    <BaseResetPassword title="Signup !" successMessage="Signup successful !" />
+    <BaseResetPassword
+      title="Signup !"
+      successMessage="The setup of your user account is now complete."
+    />
   );
 }
 
@@ -120,7 +147,7 @@ export function ResetPassword() {
   return (
     <BaseResetPassword
       title="Reset your password"
-      successMessage="Your password has been successfully reset"
+      successMessage="Your password has been successfully updated."
     />
   );
 }
