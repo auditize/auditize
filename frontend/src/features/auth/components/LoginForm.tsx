@@ -16,9 +16,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
-import { CustomModalTitle } from "@/components/CustomModalTitle";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import Message from "@/components/Message";
+import { ModalTitle } from "@/components/ModalTitle";
 
 import { CurrentUserInfo, forgotPassword, logIn } from "../api";
 import { useCurrentUser } from "../contexts";
@@ -77,7 +77,7 @@ function ForgotPassword({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={<CustomModalTitle>{t("forgotPassword.title")}</CustomModalTitle>}
+      title={<ModalTitle>{t("forgotPassword.title")}</ModalTitle>}
     >
       <form onSubmit={form.onSubmit((values) => mutation.mutate(values.email))}>
         <Stack>

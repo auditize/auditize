@@ -13,8 +13,8 @@ import { isNotEmpty, matchesField, useForm } from "@mantine/form";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-import { CustomModalTitle } from "@/components/CustomModalTitle";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import { ModalTitle } from "@/components/ModalTitle";
 import { useAuthenticatedUser } from "@/features/auth";
 
 import { updateUserMe } from "../api";
@@ -130,7 +130,7 @@ export function UserSettings({
   const { t } = useTranslation();
   return (
     <Modal
-      title={<CustomModalTitle>{t("accountSettings.title")}</CustomModalTitle>}
+      title={<ModalTitle>{t("accountSettings.title")}</ModalTitle>}
       opened={opened}
       onClose={onClose}
     >

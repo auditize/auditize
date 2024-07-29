@@ -4,6 +4,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { InlineErrorMessage } from "../InlineErrorMessage";
+import { ModalTitle } from "../ModalTitle";
 
 interface ResourceDeletionProps {
   message: React.ReactNode;
@@ -32,7 +33,7 @@ export function ResourceDeletion({
 
   return (
     <Modal
-      title={<Text fw={600}>{t("resource.delete.confirm.title")}</Text>}
+      title={<ModalTitle>{t("resource.delete.confirm.title")}</ModalTitle>}
       size="lg"
       padding="lg"
       opened={opened}

@@ -5,8 +5,8 @@ import { FormEventHandler, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { CustomModalTitle } from "../CustomModalTitle";
 import { InlineErrorMessage } from "../InlineErrorMessage";
+import { ModalTitle } from "../ModalTitle";
 
 interface ResourceEditorProps {
   title: string;
@@ -57,7 +57,7 @@ function ResourceEditor({
 
   return (
     <Modal
-      title={<CustomModalTitle>{title}</CustomModalTitle>}
+      title={<ModalTitle>{title}</ModalTitle>}
       size="lg"
       padding="lg"
       opened={opened}

@@ -40,6 +40,7 @@ import { ResetPassword, Signup } from "@/features/signup";
 import { UsersManagement } from "@/features/users";
 import { theme } from "@/theme";
 
+import { ModalTitle } from "./components/ModalTitle";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikeys";
 import { logOut } from "./features/auth";
@@ -54,7 +55,7 @@ function logoutConfirmationModal(onLogout: () => void) {
   const { t } = i18n;
   return () =>
     modals.openConfirmModal({
-      title: t("logout.title"),
+      title: <ModalTitle>{t("logout.title")}</ModalTitle>,
       children: <Text size="sm">{t("logout.confirm")}</Text>,
       labels: { confirm: t("common.confirm"), cancel: t("common.cancel") },
       onConfirm: async () => {
