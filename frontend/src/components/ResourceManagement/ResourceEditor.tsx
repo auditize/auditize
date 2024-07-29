@@ -110,12 +110,13 @@ type ResourceEditionProps = Omit<
 };
 
 function ErrorModal({ message }: { message: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const handleClose = () => navigate(-1);
 
   return (
     <Modal
-      title={<Text fw={600}>An error occured</Text>}
+      title={<ModalTitle>{t("common.errorModalTitle")}</ModalTitle>}
       size="lg"
       padding="lg"
       opened={true}
@@ -125,7 +126,7 @@ function ErrorModal({ message }: { message: string }) {
         <Box>
           <Text pb="sm">{message}</Text>
           <Group justify="center">
-            <Button onClick={handleClose}>Close</Button>
+            <Button onClick={handleClose}>{t("common.close")}</Button>
           </Group>
         </Box>
       </div>
