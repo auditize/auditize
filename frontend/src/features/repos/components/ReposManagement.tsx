@@ -47,8 +47,6 @@ export function ReposManagement() {
         </>
       }
       name={t("repo.repo")}
-      path="/repos"
-      resourceName="repo"
       queryKey={(search, page) => [
         "repos",
         "list",

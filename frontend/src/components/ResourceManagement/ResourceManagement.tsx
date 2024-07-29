@@ -133,8 +133,6 @@ function Search({
 export function ResourceManagement({
   title,
   name,
-  path,
-  resourceName,
   stateMode = "url",
   queryKey,
   queryFn,
@@ -145,8 +143,6 @@ export function ResourceManagement({
 }: {
   title: React.ReactNode;
   name: string;
-  path?: string;
-  resourceName: string;
   stateMode?: "url" | "useState";
   queryKey: (search: string | null, page: number) => any[];
   queryFn: (search: string | null, page: number) => () => Promise<any>;

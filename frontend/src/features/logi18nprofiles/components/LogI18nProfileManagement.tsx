@@ -28,8 +28,6 @@ export function LogI18nProfileManagement() {
         </>
       }
       name={t("logi18nprofile.logi18nprofile")}
-      path="/log-i18n-profiles"
-      resourceName="logi18nprofile"
       queryKey={(search, page) => ["logi18nprofiles", "list", search, page]}
       queryFn={(search, page) => () => getLogI18nProfiles(search, page)}
       columnBuilders={[
