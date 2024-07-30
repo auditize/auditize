@@ -12,7 +12,7 @@ import {
 import { IconColumns3 } from "@tabler/icons-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import i18n from "i18next";
-import { DataTable } from "mantine-datatable";
+import { DataTable, DataTableColumn } from "mantine-datatable";
 import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -1176,12 +1176,14 @@ export function LogTable({
     <>
       <Stack>
         <DataTable
-          columns={buildDataTableColumns({
-            repoId: searchParams.repoId,
-            onTableSearchParamChange,
-            selectedColumns,
-            onSelectedColumnsChange,
-          })}
+          columns={
+            buildDataTableColumns({
+              repoId: searchParams.repoId,
+              onTableSearchParamChange,
+              selectedColumns,
+              onSelectedColumnsChange,
+            }) as DataTableColumn<Log>[]
+          }
           records={logs}
           onRowClick={({ record }) => setDisplayedLogId(record.id)}
           fetching={query.isFetching || query.isFetchingNextPage}
