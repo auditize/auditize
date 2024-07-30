@@ -1,5 +1,4 @@
 import { useLocalStorage } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -69,7 +68,7 @@ export function LogNavigationStateProvider({
   const filterId = urlSearchParams.get("filterId");
   const location = useLocation();
   const navigate = useNavigate();
-  const repoQuery = useLogRepoListQuery();
+  const repoListQuery = useLogRepoListQuery();
   const [defaultRepo, setDefaultRepo] = useLocalStorage({
     key: "auditize-default-repo",
     getInitialValueInEffect: false,
@@ -145,9 +144,9 @@ export function LogNavigationStateProvider({
 
   // Auto-select repository if the repoId is not in the URL
   useEffect(() => {
-    if (!filterId && !logSearchParams.repoId && repoQuery.data) {
+    if (!filterId && !logSearchParams.repoId && repoListQuery.data) {
       // repo has not been auto-selected yet
-      const repos = repoQuery.data;
+      const repos = repoListQuery.data;
 
       // if no default repo or default repo is not in the list, select the first one (if any)
       if (!defaultRepo || !repos.find((repo) => repo.id === defaultRepo)) {

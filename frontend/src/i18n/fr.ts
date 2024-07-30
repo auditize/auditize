@@ -226,6 +226,7 @@ export default {
         clear: "Effacer",
       },
       documentTitle: "Journaux",
+      noRepos: "Aucun dépôt de journaux n'a encore été créé",
       noResults: "Pas de résultats",
       loadMore: "Voir plus",
       untilMustBeGreaterThanSince:

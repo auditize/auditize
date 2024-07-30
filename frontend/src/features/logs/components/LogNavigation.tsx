@@ -120,24 +120,24 @@ function RepoSelector({
   onChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
-  const repoQuery = useLogRepoListQuery();
+  const query = useLogRepoListQuery();
 
   return (
     <Select
-      data={repoQuery.data?.map((repo) => ({
+      data={query.data?.map((repo) => ({
         label: repo.name,
         value: repo.id,
       }))}
       value={repoId || null}
       onChange={(value) => onChange(value || "")}
       placeholder={
-        repoQuery.error
+        query.error
           ? t("common.notCurrentlyAvailable")
-          : repoQuery.isPending
+          : query.isPending
             ? t("common.loading")
             : undefined
       }
-      disabled={repoQuery.isPending}
+      disabled={query.isPending}
       clearable={false}
       display="flex"
       comboboxProps={{ withinPortal: false }}
