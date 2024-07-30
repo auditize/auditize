@@ -379,6 +379,45 @@ function NodeSearchParamField({
   );
 }
 
+function DateInterval({
+  searchParams,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  searchParams: LogSearchParams;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [opened, { toggle }] = useDisclosure(openedByDefault);
+  return (
+    <SearchParamFieldPopover
+      title={t("log.date")}
+      removable={!FIXED_SEARCH_PARAM_NAMES.has("savedAt")}
+      onRemove={() => onRemove("savedAt")}
+      isSet={!!(searchParams.since || searchParams.until)}
+      opened={opened}
+      onChange={toggle}
+    >
+      <Stack>
+        <CustomDateTimePicker
+          placeholder={t("log.dateFrom")}
+          value={searchParams.since}
+          onChange={(value) => onChange("since", value)}
+        />
+        <CustomDateTimePicker
+          placeholder={t("log.dateTo")}
+          value={searchParams.until}
+          onChange={(value) => onChange("until", value)}
+          initToEndOfDay
+        />
+      </Stack>
+    </SearchParamFieldPopover>
+  );
+}
+
 function SearchParamField({
   name,
   searchParams,
@@ -394,32 +433,15 @@ function SearchParamField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(searchParams.repoId);
+
   if (name === "savedAt") {
-    // FIXME: don't use useDisclosure here
-    const [opened, { toggle }] = useDisclosure(openedByDefault);
     return (
-      <SearchParamFieldPopover
-        title={t("log.date")}
-        removable={!FIXED_SEARCH_PARAM_NAMES.has("savedAt")}
-        onRemove={() => onRemove("savedAt")}
-        isSet={!!(searchParams.since || searchParams.until)}
-        opened={opened}
-        onChange={toggle}
-      >
-        <Stack>
-          <CustomDateTimePicker
-            placeholder={t("log.dateFrom")}
-            value={searchParams.since}
-            onChange={(value) => onChange("since", value)}
-          />
-          <CustomDateTimePicker
-            placeholder={t("log.dateTo")}
-            value={searchParams.until}
-            onChange={(value) => onChange("until", value)}
-            initToEndOfDay
-          />
-        </Stack>
-      </SearchParamFieldPopover>
+      <DateInterval
+        searchParams={searchParams}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
     );
   }
 
