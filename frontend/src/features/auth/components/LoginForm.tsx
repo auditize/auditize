@@ -86,7 +86,6 @@ function ForgotPassword({
           <TextInput
             {...form.getInputProps("email")}
             key={form.key("email")}
-            label={t("login.form.email.label")}
             placeholder={t("login.form.email.placeholder")}
             disabled={mutation.isSuccess}
             data-autofocus
