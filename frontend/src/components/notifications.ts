@@ -10,7 +10,7 @@ export function notifySuccess(message: string) {
 
 export function notifyError(message: string) {
   notifications.show({
-    title: t("common.errorModalTitle"),
+    title: t("common.unexpectedError"),
     message: message,
     color: "red",
     autoClose: false,

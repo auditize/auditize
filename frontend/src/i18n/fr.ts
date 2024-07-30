@@ -318,7 +318,7 @@ export default {
     loading: "Chargement...",
     notAvailable: "Non disponible",
     notCurrentlyAvailable: "Actuellement indisponible",
-    errorModalTitle: "Une erreur est survenue",
+    unexpectedError: "Une erreur est survenue",
     send: "Envoyer",
   },
   resource: {

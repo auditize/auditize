@@ -1101,15 +1101,15 @@ function buildDataTableColumns({
   onTableSearchParamChange,
   selectedColumns,
   onSelectedColumnsChange,
+  logTranslator,
 }: {
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
   selectedColumns: string[];
   // NB: null means default columns
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
+  logTranslator: (type: string, key: string) => string;
 }) {
-  const logTranslator = useLogTranslator(repoId);
-
   return [
     ...selectedColumns
       .toSorted(sortFields)
@@ -1163,11 +1163,16 @@ export function LogTable({
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
   const { t } = useTranslation();
+  const logTranslator = useLogTranslator(searchParams.repoId);
   const query = useLogSearchQuery(searchParams);
   const { setDisplayedLogId } = useLogNavigationState();
 
   if (query.error) {
-    return <div>Error: {query.error.message}</div>;
+    return (
+      <div>
+        {t("common.unexpectedError")}: {query.error.message}
+      </div>
+    );
   }
 
   const logs = query.data?.pages.flatMap((page) => page.logs);
@@ -1182,6 +1187,7 @@ export function LogTable({
               onTableSearchParamChange,
               selectedColumns,
               onSelectedColumnsChange,
+              logTranslator,
             }) as DataTableColumn<Log>[]
           }
           records={logs}

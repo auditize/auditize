@@ -116,7 +116,7 @@ function ErrorModal({ message }: { message: string }) {
 
   return (
     <Modal
-      title={<ModalTitle>{t("common.errorModalTitle")}</ModalTitle>}
+      title={<ModalTitle>{t("common.unexpectedError")}</ModalTitle>}
       size="lg"
       padding="lg"
       opened={true}

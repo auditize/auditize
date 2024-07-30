@@ -315,7 +315,7 @@ export default {
     loading: "Loading...",
     notAvailable: "Not available",
     notCurrentlyAvailable: "Not currently available",
-    errorModalTitle: "An error occurred",
+    unexpectedError: "An error occurred",
     send: "Send",
   },
   resource: {
