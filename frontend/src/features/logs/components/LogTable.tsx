@@ -10,11 +10,9 @@ import {
   useCombobox,
 } from "@mantine/core";
 import { IconColumns3 } from "@tabler/icons-react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import deepEqual from "deep-equal";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import i18n from "i18next";
 import { DataTable } from "mantine-datatable";
-import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -1142,40 +1140,15 @@ function buildDataTableColumns({
 }
 
 function useLogSearchQuery(searchParams: LogSearchParams) {
-  const query = useInfiniteQuery({
+  return useInfiniteQuery({
     queryKey: ["logs", searchParams.serialize()],
     queryFn: async ({ pageParam }: { pageParam: string | null }) =>
       await getLogs(pageParam, searchParams),
     enabled: !!searchParams.repoId,
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+    staleTime: 0,
   });
-
-  const currentSearchParamsRef = useRef<LogSearchParams | null>(null);
-  const queryClient = useQueryClient();
-
-  // If the user apply search params A, then search params B, then search params A again,
-  // he will see the logs of search params A with result pages already loaded, which can be confusing.
-  // To avoid this, we remove the query for the previous search params when the user applies different search params.
-  useEffect(() => {
-    if (!deepEqual(searchParams, currentSearchParamsRef.current)) {
-      queryClient.removeQueries({
-        queryKey: ["logs", currentSearchParamsRef.current],
-      });
-      currentSearchParamsRef.current = searchParams;
-    }
-  });
-
-  // See comment above: we need to remove the result for the current search params when the component is unmounted,
-  // because the useEffect above won't have a currentSearchParamsRef if the component is unmounted and remounted.
-  useEffect(() => {
-    return () =>
-      queryClient.removeQueries({
-        queryKey: ["logs", currentSearchParamsRef.current],
-      });
-  }, []);
-
-  return query;
 }
 
 export function LogTable({
@@ -1210,7 +1183,7 @@ export function LogTable({
           })}
           records={logs}
           onRowClick={({ record }) => setDisplayedLogId(record.id)}
-          fetching={query.isPending || query.isFetchingNextPage}
+          fetching={query.isFetching || query.isFetchingNextPage}
           minHeight={150}
           noRecordsText="No logs found"
         />

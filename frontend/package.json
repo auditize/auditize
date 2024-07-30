@@ -33,7 +33,6 @@
     "change-case": "^5.4.4",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.10",
-    "deep-equal": "^2.2.3",
     "filesize": "^10.1.2",
     "i18next": "^23.11.5",
     "mantine-datatable": "^7.10.1",
