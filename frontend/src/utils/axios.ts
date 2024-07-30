@@ -7,21 +7,27 @@ export const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-// Simulate network latency
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const delay = ((Math.random() * 1000) % 200) + 100; // Random delay between 100 and 300 ms
+const latency_min = Number(import.meta.env.VITE_AXIOS_LATENCY_MIN);
+const latency_max = Number(import.meta.env.VITE_AXIOS_LATENCY_MAX);
 
-    return new Promise((resolve) =>
-      setTimeout(() => {
-        resolve(config);
-      }, delay),
-    );
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
+if (latency_min && latency_max) {
+  // Simulate network latency
+  axiosInstance.interceptors.request.use(
+    (config) => {
+      const delay =
+        ((Math.random() * 10000) % (latency_max - latency_min)) + latency_min;
+
+      return new Promise((resolve) =>
+        setTimeout(() => {
+          resolve(config);
+        }, delay),
+      );
+    },
+    (error) => {
+      return Promise.reject(error);
+    },
+  );
+}
 
 export function enableAccessTokenAuthentication(accessToken: string) {
   axiosInstance.defaults.headers.common["Authorization"] =
