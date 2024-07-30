@@ -37,26 +37,20 @@ export function I18nProvider({
   lang?: string;
   children: React.ReactNode;
 }) {
-  // Algorithm to determine the language:
-  // 1. If lang is provided (coming from /users/me), use it.
-  // 2. If lang is not provided (the user is not authenticated),
-  //    use the last known user language previously saved in local storage
-  // 3. If the last language is not available, use the browser language.
   const { i18n } = useTranslation();
-  const [defaultLang, setDefaultLang] = useLocalStorage<string>({
-    key: "auditize-default-lang",
-    defaultValue: window.navigator.language,
+  const [storedLang, setStoredLang] = useLocalStorage<string>({
+    key: "auditize-lang",
+    getInitialValueInEffect: false,
   });
+  const effectiveLang = lang ?? storedLang ?? window.navigator.language;
+
   useEffect(() => {
-    if (lang) {
-      i18n.changeLanguage(lang);
-      setDefaultLang(lang);
-    } else {
-      i18n.changeLanguage(defaultLang);
-    }
-  }, [lang, defaultLang]);
+    i18n.changeLanguage(effectiveLang);
+    setStoredLang(effectiveLang);
+  }, [effectiveLang]);
+
   return (
-    <I18nContext.Provider value={{ lang: lang ?? defaultLang }}>
+    <I18nContext.Provider value={{ lang: effectiveLang }}>
       {children}
     </I18nContext.Provider>
   );
