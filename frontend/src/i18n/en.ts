@@ -223,6 +223,8 @@ export default {
         clear: "Clear",
       },
       documentTitle: "Logs",
+      noResults: "No results",
+      loadMore: "Load more",
     },
     view: {
       name: "Name",

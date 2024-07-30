@@ -226,6 +226,8 @@ export default {
         clear: "Effacer",
       },
       documentTitle: "Journaux",
+      noResults: "Pas de résultats",
+      loadMore: "Voir plus",
     },
     view: {
       name: "Nom",

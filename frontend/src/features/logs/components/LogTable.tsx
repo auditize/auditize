@@ -1162,6 +1162,7 @@ export function LogTable({
   selectedColumns: string[];
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
+  const { t } = useTranslation();
   const query = useLogSearchQuery(searchParams);
   const { setDisplayedLogId } = useLogNavigationState();
 
@@ -1185,7 +1186,7 @@ export function LogTable({
           onRowClick={({ record }) => setDisplayedLogId(record.id)}
           fetching={query.isFetching || query.isFetchingNextPage}
           minHeight={150}
-          noRecordsText="No logs found"
+          noRecordsText={t("log.list.noResults")}
         />
         {logs && logs.length > 0 && (
           <Center>
@@ -1194,7 +1195,7 @@ export function LogTable({
               disabled={!query.hasNextPage || query.isFetchingNextPage}
               loading={query.isFetchingNextPage}
             >
-              Load more
+              {t("log.list.loadMore")}
             </Button>
           </Center>
         )}
