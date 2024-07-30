@@ -27,6 +27,7 @@ def test_get_config():
     assert config.cors_allow_methods == []
     assert config.cors_allow_headers == []
     assert config.is_cors_enabled() is False
+    assert config.cookie_secure is True
 
 
 def test_config_without_mandatory_variable():
@@ -55,6 +56,7 @@ def test_config_minimum_viable_config():
     assert config.cors_allow_methods == []
     assert config.cors_allow_headers == []
     assert config.is_cors_enabled() is False
+    assert config.cookie_secure is True
 
 
 def test_config_var_mongodb_uri():
@@ -159,3 +161,10 @@ def test_config_cors_enabled_bis():
     assert config.cors_allow_credentials is False
     assert config.cors_allow_methods == ["*"]
     assert config.cors_allow_headers == []
+
+
+def test_config_cookie_secure_turned_off():
+    config = Config.load_from_env(
+        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_COOKIE_SECURE": "false"}
+    )
+    assert config.cookie_secure is False

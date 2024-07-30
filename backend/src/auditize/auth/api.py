@@ -7,6 +7,7 @@ from auditize.apikeys.api_models import AccessTokenRequest, AccessTokenResponse
 from auditize.auth.authorizer import Authenticated, get_authenticated
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
+from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.models import Permissions
@@ -29,6 +30,7 @@ async def login_user(
     request: UserAuthenticationRequest,
     response: Response,
 ) -> UserMeResponse:
+    config = get_config()
     user = await service.authenticate_user(dbm, request.email, request.password)
     token, expires_at = generate_session_token(user.email)
 
@@ -38,7 +40,7 @@ async def login_user(
         expires=expires_at,
         httponly=True,
         samesite="strict",
-        secure=True,
+        secure=config.cookie_secure,
     )
 
     return UserMeResponse.from_user(user)
