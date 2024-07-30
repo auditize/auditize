@@ -3,19 +3,25 @@ import {
   Anchor,
   Badge,
   Breadcrumbs,
+  Button,
+  Center,
   Stack,
   Text,
   useCombobox,
 } from "@mantine/core";
 import { IconColumns3 } from "@tabler/icons-react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import deepEqual from "deep-equal";
 import i18n from "i18next";
-import { DataTable, DataTableColumn } from "mantine-datatable";
+import { DataTable } from "mantine-datatable";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { humanizeDate } from "@/utils/date";
 
-import { CustomField, Log } from "../api";
+import { CustomField, getLogs, Log } from "../api";
+import { LogSearchParams } from "../LogSearchParams";
 import { LogDetails } from "./LogDetails";
 import { useLogFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
@@ -1092,28 +1098,21 @@ function fieldToColumn(
   console.error(`Unknown field: ${field}`);
 }
 
-export function LogTable({
+function buildDataTableColumns({
   repoId,
-  logs,
-  isLoading,
-  footer,
   onTableSearchParamChange,
   selectedColumns,
   onSelectedColumnsChange,
 }: {
   repoId: string;
-  logs?: Log[];
-  isLoading: boolean;
-  footer: React.ReactNode;
   onTableSearchParamChange: TableSearchParamChangeHandler;
   selectedColumns: string[];
   // NB: null means default columns
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
 }) {
-  const { setDisplayedLogId } = useLogNavigationState();
   const logTranslator = useLogTranslator(repoId);
 
-  let columns = [
+  return [
     ...selectedColumns
       .toSorted(sortFields)
       .map((column) =>
@@ -1140,21 +1139,94 @@ export function LogTable({
       ),
     },
   ];
+}
+
+function useLogSearchQuery(searchParams: LogSearchParams) {
+  const query = useInfiniteQuery({
+    queryKey: ["logs", searchParams.serialize()],
+    queryFn: async ({ pageParam }: { pageParam: string | null }) =>
+      await getLogs(pageParam, searchParams),
+    enabled: !!searchParams.repoId,
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+
+  const currentSearchParamsRef = useRef<LogSearchParams | null>(null);
+  const queryClient = useQueryClient();
+
+  // If the user apply search params A, then search params B, then search params A again,
+  // he will see the logs of search params A with result pages already loaded, which can be confusing.
+  // To avoid this, we remove the query for the previous search params when the user applies different search params.
+  useEffect(() => {
+    if (!deepEqual(searchParams, currentSearchParamsRef.current)) {
+      queryClient.removeQueries({
+        queryKey: ["logs", currentSearchParamsRef.current],
+      });
+      currentSearchParamsRef.current = searchParams;
+    }
+  });
+
+  // See comment above: we need to remove the result for the current search params when the component is unmounted,
+  // because the useEffect above won't have a currentSearchParamsRef if the component is unmounted and remounted.
+  useEffect(() => {
+    return () =>
+      queryClient.removeQueries({
+        queryKey: ["logs", currentSearchParamsRef.current],
+      });
+  }, []);
+
+  return query;
+}
+
+export function LogTable({
+  searchParams,
+  onTableSearchParamChange,
+  selectedColumns,
+  onSelectedColumnsChange,
+}: {
+  searchParams: LogSearchParams;
+  onTableSearchParamChange: TableSearchParamChangeHandler;
+  selectedColumns: string[];
+  onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
+}) {
+  const query = useLogSearchQuery(searchParams);
+  const { setDisplayedLogId } = useLogNavigationState();
+
+  if (query.error) {
+    return <div>Error: {query.error.message}</div>;
+  }
+
+  const logs = query.data?.pages.flatMap((page) => page.logs);
 
   return (
     <>
       <Stack>
         <DataTable
-          columns={columns as DataTableColumn<Log>[]}
+          columns={buildDataTableColumns({
+            repoId: searchParams.repoId,
+            onTableSearchParamChange,
+            selectedColumns,
+            onSelectedColumnsChange,
+          })}
           records={logs}
           onRowClick={({ record }) => setDisplayedLogId(record.id)}
-          fetching={isLoading}
+          fetching={query.isPending || query.isFetchingNextPage}
           minHeight={150}
           noRecordsText="No logs found"
         />
-        {logs && logs.length > 0 && footer}
+        {logs && logs.length > 0 && (
+          <Center>
+            <Button
+              onClick={() => query.fetchNextPage()}
+              disabled={!query.hasNextPage || query.isFetchingNextPage}
+              loading={query.isFetchingNextPage}
+            >
+              Load more
+            </Button>
+          </Center>
+        )}
       </Stack>
-      <LogDetails repoId={repoId} />
+      <LogDetails repoId={searchParams.repoId} />
     </>
   );
 }

@@ -3,9 +3,9 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import { LogSearchParams } from "../LogSearchParams";
-import { LogLoader } from "./LogLoader";
 import { LogNavigation } from "./LogNavigation";
 import { useLogNavigationState } from "./LogNavigationState";
+import { LogTable } from "./LogTable";
 
 export function Logs({
   withRepoSearchParam = true,
@@ -30,9 +30,9 @@ export function Logs({
         withRepoSearchParam={withRepoSearchParam}
         withLogFilters={withLogFilters}
       />
-      <LogLoader
+      <LogTable
         searchParams={searchParams}
-        onTableSearchParamsChange={(name, value) => {
+        onTableSearchParamChange={(name, value) => {
           setSearchParams(
             LogSearchParams.fromProperties({
               repoId: searchParams.repoId,
