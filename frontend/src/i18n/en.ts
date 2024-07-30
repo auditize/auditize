@@ -225,6 +225,8 @@ export default {
       documentTitle: "Logs",
       noResults: "No results",
       loadMore: "Load more",
+      untilMustBeGreaterThanSince:
+        "The end date must be greater than the start date",
     },
     view: {
       name: "Name",

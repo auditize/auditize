@@ -228,6 +228,8 @@ export default {
       documentTitle: "Journaux",
       noResults: "Pas de résultats",
       loadMore: "Voir plus",
+      untilMustBeGreaterThanSince:
+        "La date de fin doit être postérieure à celle de début",
     },
     view: {
       name: "Nom",

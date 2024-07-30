@@ -392,6 +392,10 @@ function DateInterval({
 }) {
   const { t } = useTranslation();
   const [opened, { toggle }] = useDisclosure(openedByDefault);
+  const [untilError, setUntilError] = useState<string | null>(null);
+  const isIntervalValid = (since: Date | null, until: Date | null) =>
+    !since || !until || since <= until;
+
   return (
     <SearchParamFieldPopover
       title={t("log.date")}
@@ -405,13 +409,31 @@ function DateInterval({
         <CustomDateTimePicker
           placeholder={t("log.dateFrom")}
           value={searchParams.since}
-          onChange={(value) => onChange("since", value)}
+          onChange={(since) => {
+            onChange("since", since);
+            setUntilError(
+              isIntervalValid(since, searchParams.until)
+                ? null
+                : t("log.list.untilMustBeGreaterThanSince"),
+            );
+          }}
         />
         <CustomDateTimePicker
           placeholder={t("log.dateTo")}
           value={searchParams.until}
-          onChange={(value) => onChange("until", value)}
+          onChange={(until) => {
+            if (isIntervalValid(searchParams.since, until)) {
+              onChange("until", until);
+              setUntilError(null);
+            } else {
+              setUntilError(t("log.list.untilMustBeGreaterThanSince"));
+            }
+          }}
           initToEndOfDay
+          dateTimePickerProps={{
+            error: untilError ?? undefined,
+            excludeDate: (until) => !isIntervalValid(searchParams.since, until),
+          }}
         />
       </Stack>
     </SearchParamFieldPopover>
