@@ -36,7 +36,7 @@ from auditize.repos.service import get_retention_period_enabled_repos
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 
-CSV_BUILTIN_FIELDS = (
+CSV_BUILTIN_COLUMNS = (
     "log_id",
     "saved_at",
     "action_type",
@@ -352,23 +352,23 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
     return data
 
 
-def validate_csv_fields(fields: list[str]):
-    for field in fields:
-        if field in CSV_BUILTIN_FIELDS:
+def validate_csv_columns(cols: list[str]):
+    for col in cols:
+        if col in CSV_BUILTIN_COLUMNS:
             continue
 
-        parts = field.split(".")
+        parts = col.split(".")
         if len(parts) == 2 and parts[0] in ("source", "actor", "resource", "details"):
             continue
 
-        raise ValidationError(f"Invalid field name: {field!r}")
+        raise ValidationError(f"Invalid column name: {col!r}")
 
-    if len(fields) != len(set(fields)):
-        raise ValidationError("Duplicate field names are forbidden")
+    if len(cols) != len(set(cols)):
+        raise ValidationError("Duplicated column names are forbidden")
 
 
 async def get_logs_as_csv(
-    dbm: DatabaseManager, repo_id: str, *, fields: list[str], **kwargs
+    dbm: DatabaseManager, repo_id: str, *, columns: list[str], **kwargs
 ) -> AsyncGenerator[str, None]:
     max_rows = get_config().csv_max_rows
     returned_rows = 0
@@ -377,7 +377,7 @@ async def get_logs_as_csv(
     for i in count(0):
         csv_buffer = StringIO()
         csv_writer = csv.DictWriter(
-            csv_buffer, fieldnames=fields, extrasaction="ignore"
+            csv_buffer, fieldnames=columns, extrasaction="ignore"
         )
         if i == 0:
             csv_writer.writeheader()

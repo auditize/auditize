@@ -431,16 +431,15 @@ class _CsvResponse(Response):
     media_type = "text/csv"
 
 
-_FIELDS_DESCRIPTION = f"""
-Comma-separated list of fields to include in the CSV output. The available fields are:
-{"\n".join(f"- `{field}`" for field in service.CSV_BUILTIN_FIELDS)}
-- `source.*`
-- `actor.*`
-- `resource.*`
-- `details.*`
+_COLUMNS_DESCRIPTION = f"""
+Comma-separated list of columns to include in the CSV output. Available columns are:
+{"\n".join(f"- `{col}`" for col in service.CSV_BUILTIN_COLUMNS)}
+- `source.<custom-field>`
+- `actor.<custom-field>`
+- `resource.<custom-field>`
+- `details.<custom-field>`
 
-
-The `*` stands for the name of a custom field. For example, `actor.role` will include a `role` custom field of the actor.
+Example of column name if you have a "role" custom field for the actor: `actor.role`.
 
 """
 
@@ -457,15 +456,15 @@ async def get_logs_as_csv(
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
     search_params: Annotated[LogSearchQueryParams, Depends()],
-    fields: Annotated[str, Query(description=_FIELDS_DESCRIPTION)] = ",".join(
-        service.CSV_BUILTIN_FIELDS
+    columns: Annotated[str, Query(description=_COLUMNS_DESCRIPTION)] = ",".join(
+        service.CSV_BUILTIN_COLUMNS
     ),
 ):
     # NB: as we cannot properly handle an error in a StreamingResponse,
     # we perform as much validation as possible before calling get_logs_as_csv
     await get_log_db_for_reading(dbm, repo_id)
-    fields = fields.split(",")  # convert fields string to a list
-    service.validate_csv_fields(fields)
+    columns = columns.split(",")  # convert columns string to a list
+    service.validate_csv_columns(columns)
 
     filename = f"auditize-logs_{repo_id}_{now().strftime("%Y%m%d%H%M%S")}.csv"
 
@@ -473,7 +472,7 @@ async def get_logs_as_csv(
         service.get_logs_as_csv(
             dbm,
             repo_id,
-            fields=fields,
+            columns=columns,
             authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
             action_type=search_params.action_type,
             action_category=search_params.action_category,

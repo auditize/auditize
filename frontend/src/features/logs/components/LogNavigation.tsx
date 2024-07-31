@@ -1043,7 +1043,7 @@ function removeSearchParam(
   throw new Error(`Unknown search param name: ${paramName}`);
 }
 
-function columnsToCsvFields(columns: string[]): string[] {
+function columnsToCsvColumns(columns: string[]): string[] {
   return Array.from(
     // If the user has also selected a field like "action_type", "action_category" etc..,
     // we use a Set to avoid duplicates
@@ -1169,7 +1169,7 @@ export function ExtraActions({
           </Menu.Item>
           <Menu.Item
             component="a"
-            href={`${csvExportUrl}&fields=${columnsToCsvFields(selectedColumns).join(",")}`}
+            href={`${csvExportUrl}&columns=${columnsToCsvColumns(selectedColumns).join(",")}`}
             leftSection={<IconDownload style={iconSize(14)} />}
           >
             {t("log.csv.csvExportCurrent")}

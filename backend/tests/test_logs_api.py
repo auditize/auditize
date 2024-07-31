@@ -2079,7 +2079,7 @@ async def test_get_log_node_not_enabled_repo_status(
     )
 
 
-async def test_get_logs_as_csv_minimal_fields(
+async def test_get_logs_as_csv_minimal_log(
     log_read_client: HttpTestHelper,
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
@@ -2100,7 +2100,7 @@ async def test_get_logs_as_csv_minimal_fields(
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
 
-async def test_get_logs_as_csv_all_fields(
+async def test_get_logs_as_csv_log_with_all_fields(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     log = await repo.create_log(
@@ -2148,7 +2148,7 @@ async def test_get_logs_as_csv_all_fields(
     )
 
 
-async def test_get_logs_as_csv_with_fields_param(
+async def test_get_logs_as_csv_with_columns_param(
     log_read_client: HttpTestHelper,
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
@@ -2160,7 +2160,7 @@ async def test_get_logs_as_csv_with_fields_param(
 
     resp = await log_read_client.assert_get_ok(
         f"/repos/{repo.id}/logs/csv",
-        params={"fields": "saved_at,action_type,action_category"},
+        params={"columns": "saved_at,action_type,action_category"},
     )
     assert (
         resp.text == "saved_at,action_type,action_category\r\n"
@@ -2168,13 +2168,13 @@ async def test_get_logs_as_csv_with_fields_param(
     )
 
 
-async def test_get_logs_as_csv_with_fields_param_duplicated(
+async def test_get_logs_as_csv_with_columns_duplication(
     log_read_client: HttpTestHelper,
     repo: PreparedRepo,
 ):
     await log_read_client.assert_get_bad_request(
         f"/repos/{repo.id}/logs/csv",
-        params={"fields": "saved_at,action_type,action_type"},
+        params={"columns": "saved_at,action_type,action_type"},
     )
 
 
@@ -2238,7 +2238,7 @@ async def test_get_logs_as_csv_custom_fields(
     resp = await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs/csv",
         params={
-            "fields": "log_id,source.source_field,actor.actor_field,resource.resource_field,details.detail_field"
+            "columns": "log_id,source.source_field,actor.actor_field,resource.resource_field,details.detail_field"
         },
     )
     assert (
@@ -2276,15 +2276,14 @@ async def test_get_logs_as_csv_with_csv_max_rows_unlimited(
     assert len(resp.text.splitlines()) == 16  # 15 logs + header
 
 
-async def test_get_logs_as_csv_unknown_field(
+async def test_get_logs_as_csv_unknown_column(
     log_rw_client: HttpTestHelper,
     repo: PreparedRepo,
 ):
-    # Requesting an unknown custom field should not raise an error since they are lazy created
     await log_rw_client.assert_get_bad_request(
         f"/repos/{repo.id}/logs/csv",
         params={
-            "fields": "unknown_field",
+            "columns": "unknown_column",
         },
     )
 
@@ -2293,11 +2292,11 @@ async def test_get_logs_as_csv_unknown_custom_field(
     log_rw_client: HttpTestHelper,
     repo: PreparedRepo,
 ):
-    # Requesting an unknown custom field should not raise an error since they are lazy created
+    # Requesting an unknown custom field column should not raise an error since they are lazy created
     await log_rw_client.assert_get_ok(
         f"/repos/{repo.id}/logs/csv",
         params={
-            "fields": "source.unknown_field",
+            "columns": "source.unknown_column",
         },
     )
 
