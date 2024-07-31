@@ -201,6 +201,7 @@ export default {
     tagNames: "Tag names",
     tagRef: "Tag refs.",
     tagRefs: "Tag refs.",
+    hasAttachment: "Has attachment",
     attachment: "Attachment",
     attachments: "Attachments",
     attachmentType: "Attachment type",

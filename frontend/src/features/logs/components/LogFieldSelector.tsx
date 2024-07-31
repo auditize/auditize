@@ -135,6 +135,7 @@ export function useLogFields(
           ...(enableCompositeFields
             ? [_({ value: "attachment", label: t("log.attachment") + " *" })]
             : []),
+          _({ value: "hasAttachment", label: t("log.hasAttachment") }),
           _({ value: "attachmentName", label: t("log.attachmentName") }),
           _({ value: "attachmentType", label: t("log.attachmentType") }),
           _({

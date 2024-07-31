@@ -204,6 +204,7 @@ export default {
     tagNames: "Noms des étiquettes",
     tagRef: "Référence de l'étiquette",
     tagRefs: "Références des étiquettes",
+    hasAttachment: "Inclut une pièce jointe",
     attachment: "Pièce jointe",
     attachments: "Pièces jointes",
     attachmentType: "Type de pièce jointe",

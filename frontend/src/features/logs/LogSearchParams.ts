@@ -18,6 +18,7 @@ export class LogSearchParams {
   tagRef: string = "";
   tagType: string = "";
   tagName: string = "";
+  hasAttachment: boolean | undefined;
   attachmentName: string = "";
   attachmentType: string = "";
   attachmentMimeType: string = "";
@@ -44,6 +45,7 @@ export class LogSearchParams {
       this.tagRef,
       this.tagType,
       this.tagName,
+      this.hasAttachment,
       this.attachmentName,
       this.attachmentType,
       this.attachmentMimeType,
@@ -111,6 +113,7 @@ export class LogSearchParams {
       tagName: this.tagName,
 
       // Attachment
+      hasAttachment: this.hasAttachment,
       attachmentName: this.attachmentName,
       attachmentType: this.attachmentType,
       attachmentMimeType: this.attachmentMimeType,
@@ -122,7 +125,7 @@ export class LogSearchParams {
     // Remove null and empty strings
     serialized = Object.fromEntries(
       Object.entries(serialized).filter(
-        ([, value]) => value !== null && value !== "",
+        ([, value]) => value !== null && value !== undefined && value !== "",
       ),
     );
 
@@ -148,7 +151,7 @@ export class LogSearchParams {
     return customFields;
   }
 
-  static deserialize(obj: Record<string, string>): LogSearchParams {
+  static deserialize(obj: Record<string, any>): LogSearchParams {
     const params = new LogSearchParams();
     params.repoId = obj.repoId ?? "";
     params.since = obj.since ? deserializeDate(obj.since) : null;
@@ -171,6 +174,12 @@ export class LogSearchParams {
     params.tagRef = obj.tagRef ?? "";
     params.tagType = obj.tagType ?? "";
     params.tagName = obj.tagName ?? "";
+    params.hasAttachment =
+      typeof obj.hasAttachment === "boolean"
+        ? obj.hasAttachment ?? undefined
+        : obj.hasAttachment === "true"
+          ? true
+          : undefined;
     params.attachmentName = obj.attachmentName ?? "";
     params.attachmentType = obj.attachmentType ?? "";
     params.attachmentMimeType = obj.attachmentMimeType ?? "";

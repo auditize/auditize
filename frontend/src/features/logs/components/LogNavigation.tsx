@@ -10,6 +10,7 @@ import {
   Select,
   Space,
   Stack,
+  Switch,
   TextInput,
   useCombobox,
 } from "@mantine/core";
@@ -440,6 +441,42 @@ function DateInterval({
   );
 }
 
+function HasAttachmentSearchParamField({
+  searchParams,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  searchParams: LogSearchParams;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [opened, { toggle }] = useDisclosure(openedByDefault);
+  return (
+    <SearchParamFieldPopover
+      title={t("log.hasAttachment")}
+      opened={opened}
+      isSet={searchParams.hasAttachment !== undefined}
+      onChange={toggle}
+      removable={!FIXED_SEARCH_PARAM_NAMES.has("hasAttachment")}
+      onRemove={() => onRemove("hasAttachment")}
+    >
+      <Switch
+        checked={searchParams.hasAttachment ?? false}
+        onChange={(event) =>
+          onChange(
+            "hasAttachment",
+            event.currentTarget.checked ? true : undefined,
+          )
+        }
+        label={t("log.hasAttachment")}
+      />
+    </SearchParamFieldPopover>
+  );
+}
+
 function SearchParamField({
   name,
   searchParams,
@@ -699,6 +736,17 @@ function SearchParamField({
     );
   }
 
+  if (name === "hasAttachment") {
+    return (
+      <HasAttachmentSearchParamField
+        searchParams={searchParams}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
   if (name === "attachmentName") {
     return (
       <TextInputSearchParamField
@@ -920,6 +968,9 @@ function searchParamsToSearchParamNames(
   }
 
   // Attachment
+  if (searchParams.hasAttachment) {
+    names.add("hasAttachment");
+  }
   if (searchParams.attachmentName) {
     names.add("attachmentName");
   }
@@ -956,6 +1007,7 @@ function removeSearchParam(
     "tagRef",
     "tagType",
     "tagName",
+    "hasAttachment",
     "attachmentName",
     "attachmentType",
     "attachmentMimeType",
