@@ -12,8 +12,8 @@ import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
 export function useLogFields(
   repoId: string,
-  fixedFields: Set<string> | undefined,
-  enableCompositeFields: boolean,
+  mode: "search" | "columns",
+  disabledFields?: Set<string>,
 ) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
@@ -44,7 +44,7 @@ export function useLogFields(
   const _ = ({ value, label }: { value: string; label: string }) => ({
     value,
     label,
-    disabled: fixedFields && fixedFields.has(value),
+    disabled: disabledFields && disabledFields.has(value),
   });
 
   return {
@@ -53,7 +53,7 @@ export function useLogFields(
       {
         group: "Action",
         items: [
-          ...(enableCompositeFields
+          ...(mode === "columns"
             ? [_({ value: "action", label: t("log.action") + " *" })]
             : []),
           _({ value: "actionCategory", label: t("log.actionCategory") }),
@@ -63,7 +63,7 @@ export function useLogFields(
       {
         group: "Actor",
         items: [
-          ...(enableCompositeFields
+          ...(mode === "columns"
             ? [_({ value: "actor", label: t("log.actor") + " *" })]
             : []),
           _({ value: "actorType", label: t("log.actorType") }),
@@ -92,7 +92,7 @@ export function useLogFields(
       {
         group: t("log.resource"),
         items: [
-          ...(enableCompositeFields
+          ...(mode === "columns"
             ? [_({ value: "resource", label: t("log.resource") + " *" })]
             : []),
           _({ value: "resourceType", label: t("log.resourceType") }),
@@ -121,7 +121,7 @@ export function useLogFields(
       {
         group: t("log.tag"),
         items: [
-          ...(enableCompositeFields
+          ...(mode === "columns"
             ? [_({ value: "tag", label: t("log.tag") + " *" })]
             : []),
           _({ value: "tagType", label: t("log.tagType") }),
@@ -132,10 +132,12 @@ export function useLogFields(
       {
         group: "Attachment",
         items: [
-          ...(enableCompositeFields
+          ...(mode === "columns"
             ? [_({ value: "attachment", label: t("log.attachment") + " *" })]
             : []),
-          _({ value: "hasAttachment", label: t("log.hasAttachment") }),
+          ...(mode === "search"
+            ? [_({ value: "hasAttachment", label: t("log.hasAttachment") })]
+            : []),
           _({ value: "attachmentName", label: t("log.attachmentName") }),
           _({ value: "attachmentType", label: t("log.attachmentType") }),
           _({
@@ -160,14 +162,10 @@ export function useLogFields(
 
 export function useLogFieldNames(
   repoId: string,
-  fixedFields: Set<string> | undefined,
-  enableCompositeFields: boolean,
+  mode: "search" | "columns",
+  disabledFields?: Set<string>,
 ) {
-  const { fields, loading } = useLogFields(
-    repoId,
-    fixedFields,
-    enableCompositeFields,
-  );
+  const { fields, loading } = useLogFields(repoId, mode, disabledFields);
   const fieldNames = useMemo(
     () =>
       loading

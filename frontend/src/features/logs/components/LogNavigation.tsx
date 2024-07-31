@@ -846,8 +846,8 @@ function SearchParamFieldSelector({
 }) {
   const { fields, loading: logFieldsLoading } = useLogFields(
     repoId,
+    "search",
     FIXED_SEARCH_PARAM_NAMES,
-    false,
   );
   const logConsolidatedDataLoading = useLogConsolidatedDataPrefetch(repoId);
   const comboboxStore = useCombobox();
@@ -1280,8 +1280,8 @@ export function LogNavigation({
   );
   const availableSearchParamFieldNames = useLogFieldNames(
     editedParams.repoId,
+    "search",
     FIXED_SEARCH_PARAM_NAMES,
-    false,
   );
   const [addedSearchParamName, setAddedSearchParamName] = useState<
     string | null

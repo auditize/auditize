@@ -648,11 +648,7 @@ function ColumnSelector({
   onColumnReset: () => void;
 }) {
   const { t } = useTranslation();
-  const { fields, loading: fieldsLoading } = useLogFields(
-    repoId,
-    undefined,
-    true,
-  );
+  const { fields, loading: fieldsLoading } = useLogFields(repoId, "columns");
   const comboboxStore = useCombobox();
 
   return (
