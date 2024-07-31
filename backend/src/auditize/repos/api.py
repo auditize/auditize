@@ -14,7 +14,6 @@ from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
-from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.logi18nprofiles.api_models import LogTranslation
 from auditize.permissions.assertions import (
