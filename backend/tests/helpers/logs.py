@@ -44,7 +44,6 @@ class PreparedLog:
         *,
         data: bytes = "some text content",
         name="attachment.txt",
-        description=None,
         type="text_file",
         mime_type=None,
     ):
@@ -52,7 +51,6 @@ class PreparedLog:
             f"/repos/{self.repo.id}/logs/{self.id}/attachments",
             files={"file": (name, data)},
             data={
-                "description": description,
                 "type": type,
                 "mime_type": mime_type,
             },
@@ -61,7 +59,6 @@ class PreparedLog:
         self._attachments.append(
             {
                 "name": name,
-                "description": description,
                 "type": type,
                 "mime_type": mime_type,
             }

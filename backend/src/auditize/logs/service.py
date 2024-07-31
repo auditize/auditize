@@ -53,7 +53,6 @@ CSV_BUILTIN_COLUMNS = (
     "attachment_name",
     "attachment_type",
     "attachment_mime_type",
-    "attachment_description",
     "node_path:ref",
     "node_path:name",
 )
@@ -149,15 +148,12 @@ async def save_log_attachment(
     log_id: str,
     *,
     name: str,
-    description: str | None,
     type: str,
     mime_type: str,
     data: bytes,
 ):
     db = await get_log_db_for_writing(dbm, repo_id)
-    attachment = Log.Attachment(
-        name=name, description=description, type=type, mime_type=mime_type, data=data
-    )
+    attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
     await update_resource_document(
         db.logs,
         log_id,
@@ -228,7 +224,6 @@ async def get_logs(
     tag_type: str = None,
     tag_name: str = None,
     attachment_name: str = None,
-    attachment_description: str = None,
     attachment_type: str = None,
     attachment_mime_type: str = None,
     node_ref: str = None,
@@ -277,10 +272,6 @@ async def get_logs(
         criteria.append({"tags.name": _text_search_filter(tag_name)})
     if attachment_name:
         criteria.append({"attachments.name": _text_search_filter(attachment_name)})
-    if attachment_description:
-        criteria.append(
-            {"attachments.description": _text_search_filter(attachment_description)}
-        )
     if attachment_type:
         criteria.append({"attachments.type": attachment_type})
     if attachment_mime_type:
@@ -335,9 +326,6 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
     data["tag_name"] = "|".join(tag.name or "" for tag in log.tags)
     data["attachment_name"] = "|".join(
         attachment.name for attachment in log.attachments
-    )
-    data["attachment_description"] = "|".join(
-        attachment.description or "" for attachment in log.attachments
     )
     data["attachment_type"] = "|".join(
         attachment.type for attachment in log.attachments

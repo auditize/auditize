@@ -239,7 +239,6 @@ async def test_add_attachment_binary_and_all_fields(
         data={
             "type": "binary",
             "name": "test_file.bin",
-            "description": "A binary file",
             "mime_type": "application/octet-stream",
         },
         expected_status_code=204,
@@ -249,7 +248,6 @@ async def test_add_attachment_binary_and_all_fields(
             "attachments": [
                 {
                     "name": "test_file.bin",
-                    "description": "A binary file",
                     "type": "binary",
                     "mime_type": "application/octet-stream",
                     "data": data,
@@ -384,7 +382,6 @@ async def test_get_log_all_fields(
                 "attachments": [
                     {
                         "name": "test.txt",
-                        "description": None,
                         "type": "text",
                         "mime_type": "text/plain",
                         "saved_at": DATETIME_FORMAT,
@@ -555,7 +552,7 @@ async def test_get_logs_with_attachment(
     await log_rw_client.assert_post(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
-        data={"type": "text_file", "description": "A text file"},
+        data={"type": "text_file"},
         expected_status_code=204,
     )
 
@@ -568,7 +565,6 @@ async def test_get_logs_with_attachment(
                         "attachments": [
                             {
                                 "name": "file.txt",
-                                "description": "A text file",
                                 "type": "text_file",
                                 "mime_type": "text/plain",
                                 "saved_at": DATETIME_FORMAT,
@@ -952,28 +948,10 @@ async def test_get_logs_filter_attachment_name(
         log_rw_client,
         data=b"test data",
         name="find_me",
-        description="A test attachment",
         type="text",
         mime_type="text/plain",
     )
     await _test_get_logs_filter(log_rw_client, repo, log, {"attachment_name": "FIND"})
-
-
-async def test_get_logs_filter_attachment_description(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    log = await repo.create_log(log_rw_client)
-    await log.upload_attachment(
-        log_rw_client,
-        data=b"test data",
-        name="attachment",
-        description="find_me",
-        type="text",
-        mime_type="text/plain",
-    )
-    await _test_get_logs_filter(
-        log_rw_client, repo, log, {"attachment_description": "FIND"}
-    )
 
 
 async def test_get_logs_filter_attachment_type(
@@ -2094,8 +2072,8 @@ async def test_get_logs_as_csv_minimal_log(
     )
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,attachment_description,node_path:ref,node_path:name\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,,,,,,,,,,,,,,customer:1,Customer 1\r\n"
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,node_path:ref,node_path:name\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,,,,,,,,,,,,,customer:1,Customer 1\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
@@ -2135,7 +2113,6 @@ async def test_get_logs_as_csv_log_with_all_fields(
         name="attachment.txt",
         mime_type="text/plain",
         type="attachment_type",
-        description="attachment_description",
     )
 
     resp = await log_rw_client.assert_get_ok(
@@ -2143,8 +2120,8 @@ async def test_get_logs_as_csv_log_with_all_fields(
     )
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,attachment_description,node_path:ref,node_path:name\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,user:123,user,User 123,core,module,Core Module,|rich_tag:1,simple_tag|rich_tag,|Rich tag,attachment.txt,attachment_type,text/plain,attachment_description,customer:1,Customer 1\r\n"
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,node_path:ref,node_path:name\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user_login,authentication,user:123,user,User 123,core,module,Core Module,|rich_tag:1,simple_tag|rich_tag,|Rich tag,attachment.txt,attachment_type,text/plain,customer:1,Customer 1\r\n"
     )
 
 
@@ -2203,8 +2180,8 @@ async def test_get_logs_as_csv_with_filter(
     )
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,attachment_description,node_path:ref,node_path:name\r\n"
-        f"{log1.id},2024-01-01T00:00:00Z,action_type_1,action_category_1,,,,,,,,,,,,,,customer:1,Customer 1\r\n"
+        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,node_path:ref,node_path:name\r\n"
+        f"{log1.id},2024-01-01T00:00:00Z,action_type_1,action_category_1,,,,,,,,,,,,,customer:1,Customer 1\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 

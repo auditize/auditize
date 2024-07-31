@@ -2,8 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { labelize, titlize } from "@/utils/format";
-
 import {
   getAllLogActorCustomFields,
   getAllLogDetailFields,
@@ -138,10 +136,6 @@ export function useLogFields(
             ? [_({ value: "attachment", label: t("log.attachment") + " *" })]
             : []),
           _({ value: "attachmentName", label: t("log.attachmentName") }),
-          _({
-            value: "attachmentDescription",
-            label: t("log.attachmentDescription"),
-          }),
           _({ value: "attachmentType", label: t("log.attachmentType") }),
           _({
             value: "attachmentMimeType",

@@ -19,7 +19,6 @@ export class LogSearchParams {
   tagType: string = "";
   tagName: string = "";
   attachmentName: string = "";
-  attachmentDescription: string = "";
   attachmentType: string = "";
   attachmentMimeType: string = "";
   nodeRef: string = "";
@@ -46,7 +45,6 @@ export class LogSearchParams {
       this.tagType,
       this.tagName,
       this.attachmentName,
-      this.attachmentDescription,
       this.attachmentType,
       this.attachmentMimeType,
       this.nodeRef,
@@ -114,7 +112,6 @@ export class LogSearchParams {
 
       // Attachment
       attachmentName: this.attachmentName,
-      attachmentDescription: this.attachmentDescription,
       attachmentType: this.attachmentType,
       attachmentMimeType: this.attachmentMimeType,
 
@@ -175,7 +172,6 @@ export class LogSearchParams {
     params.tagType = obj.tagType ?? "";
     params.tagName = obj.tagName ?? "";
     params.attachmentName = obj.attachmentName ?? "";
-    params.attachmentDescription = obj.attachmentDescription ?? "";
     params.attachmentType = obj.attachmentType ?? "";
     params.attachmentMimeType = obj.attachmentMimeType ?? "";
     params.nodeRef = obj.nodeRef ?? "";

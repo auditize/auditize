@@ -115,7 +115,6 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         log_id,
         name="file.txt",
         type="text",
-        description=None,
         mime_type="text/plain",
         data=b"hello",
     )

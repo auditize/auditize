@@ -24,7 +24,6 @@ type Tag = {
 
 type Attachment = {
   name: string;
-  description: string;
   type: string;
   mimeType: string;
 };

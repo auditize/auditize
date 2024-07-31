@@ -267,7 +267,7 @@ export function LogDetails({ repoId }: { repoId?: string }) {
                   <Anchor
                     href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
                   >
-                    {field.description || field.name}
+                    {field.name}
                   </Anchor>,
                 ] as [React.ReactNode, React.ReactNode],
             )}

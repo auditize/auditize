@@ -391,14 +391,6 @@ async def add_attachment(
             json_schema_extra={"example": "config.json"},
         ),
     ] = None,
-    description: Annotated[
-        str,
-        Form(
-            title="Attachment description",
-            description="An optional description of the attachment",
-            json_schema_extra={"example": "Configuration file"},
-        ),
-    ] = None,
     mime_type: Annotated[
         str,
         Form(
@@ -419,7 +411,6 @@ async def add_attachment(
         dbm,
         repo_id,
         log_id,
-        description=description,
         name=name or file.filename,
         type=type,
         mime_type=mime_type or file.content_type or "application/octet-stream",
@@ -490,7 +481,6 @@ async def get_logs_as_csv(
             tag_name=search_params.tag_name,
             tag_ref=search_params.tag_ref,
             attachment_name=search_params.attachment_name,
-            attachment_description=search_params.attachment_description,
             attachment_type=search_params.attachment_type,
             attachment_mime_type=search_params.attachment_mime_type,
             node_ref=search_params.node_ref,
@@ -593,7 +583,6 @@ async def get_logs(
         tag_name=search_params.tag_name,
         tag_ref=search_params.tag_ref,
         attachment_name=search_params.attachment_name,
-        attachment_description=search_params.attachment_description,
         attachment_type=search_params.attachment_type,
         attachment_mime_type=search_params.attachment_mime_type,
         node_ref=search_params.node_ref,

@@ -209,8 +209,6 @@ export default {
     attachmentMimeTypes: "Attachment MIME types",
     attachmentName: "Attachment name",
     attachmentNames: "Attachment names",
-    attachmentDescription: "Attachment description",
-    attachmentDescriptions: "Attachment descriptions",
     attachmentRef: "Attachment ref.",
     attachmentRefs: "Attachment refs.",
     node: "Node",

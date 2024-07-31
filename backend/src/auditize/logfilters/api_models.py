@@ -37,7 +37,6 @@ _BUILTIN_FILTER_COLUMNS = (
     "attachment_name",
     "attachment_type",
     "attachment_mime_type",
-    "attachment_description",
     "node",
 )
 _CUSTOM_FIELD_GROUPS = (
@@ -55,7 +54,7 @@ class LogFilterSearchParamsData(BaseLogSearchParams):
     def validate_extra(self):
         for name in self.__pydantic_extra__:
             if not FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN.match(name):
-                raise ValueError(f"Invalid custom field name: {name}")
+                raise ValueError(f"Invalid search parameter name: {name!r}")
         return self
 
 

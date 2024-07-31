@@ -212,8 +212,6 @@ export default {
     attachmentMimeTypes: "Types MIME des pièces jointes",
     attachmentName: "Nom de la pièce jointe",
     attachmentNames: "Noms des pièces jointes",
-    attachmentDescription: "Description de la pièce jointe",
-    attachmentDescriptions: "Descriptions des pièces jointes",
     attachmentRef: "Référence de la pièce jointe",
     attachmentRefs: "Références des pièces jointes",
     node: "Arborescence",

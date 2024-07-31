@@ -565,32 +565,6 @@ function AttachmentNamesField({
   );
 }
 
-function AttachmentDescriptionsField({
-  log,
-  onTableSearchParamChange,
-}: {
-  log: Log;
-  onTableSearchParamChange: TableSearchParamChangeHandler;
-}) {
-  return (
-    <Breadcrumbs separator=", ">
-      {log.attachments.map((attachment, i) => (
-        <InlineSearchParamLink
-          key={i}
-          onClick={() =>
-            onTableSearchParamChange(
-              "attachmentDescription",
-              attachment.description,
-            )
-          }
-        >
-          {attachment.description}
-        </InlineSearchParamLink>
-      ))}
-    </Breadcrumbs>
-  );
-}
-
 function AttachmentTypesField({
   log,
   repoId,
@@ -726,14 +700,13 @@ export function sortFields(a: string, b: string) {
     "details.": 15,
     attachment: 16,
     atachmentName: 17,
-    attachmentDescription: 18,
-    attachmentType: 19,
-    attachmentMimeType: 20,
-    node: 21,
-    tag: 22,
-    tagType: 23,
-    tagName: 24,
-    tagRef: 25,
+    attachmentType: 18,
+    attachmentMimeType: 19,
+    node: 20,
+    tag: 21,
+    tagType: 22,
+    tagName: 23,
+    tagRef: 24,
   };
   const splitFieldName = (name: string) => {
     const parts = name.split(".");
@@ -1038,18 +1011,6 @@ function fieldToColumn(
       title: t("log.attachmentNames"),
       render: (log: Log) => (
         <AttachmentNamesField
-          log={log}
-          onTableSearchParamChange={onTableSearchParamChange}
-        />
-      ),
-    };
-
-  if (field === "attachmentDescription")
-    return {
-      accessor: "attachmentDescription",
-      title: t("log.attachmentDescriptions"),
-      render: (log: Log) => (
-        <AttachmentDescriptionsField
           log={log}
           onTableSearchParamChange={onTableSearchParamChange}
         />

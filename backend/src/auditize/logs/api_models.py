@@ -292,7 +292,6 @@ class LogCreationResponse(BaseModel):
 
 class _AttachmentData(BaseModel):
     name: str
-    description: Optional[str]
     type: str
     mime_type: str
     saved_at: datetime
@@ -392,7 +391,6 @@ class BaseLogSearchParams(BaseModel):
     tag_type: Optional[str] = Field(default=None)
     tag_name: Optional[str] = Field(default=None)
     attachment_name: Optional[str] = Field(default=None)
-    attachment_description: Optional[str] = Field(default=None)
     attachment_type: Optional[str] = Field(default=None)
     attachment_mime_type: Optional[str] = Field(default=None)
     node_ref: Optional[str] = Field(default=None)

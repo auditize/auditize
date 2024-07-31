@@ -33,7 +33,6 @@ class Log(BaseModel):
 
     class AttachmentMetadata(BaseModel):
         name: str
-        description: Optional[str] = Field(default=None)
         type: str
         mime_type: str
         saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

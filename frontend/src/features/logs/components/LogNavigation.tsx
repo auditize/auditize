@@ -712,19 +712,6 @@ function SearchParamField({
     );
   }
 
-  if (name === "attachmentDescription") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.attachmentDescription")}
-        searchParams={searchParams}
-        searchParamName="attachmentDescription"
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
   if (name === "attachmentType") {
     return (
       <SelectSearchParamField
@@ -936,9 +923,6 @@ function searchParamsToSearchParamNames(
   if (searchParams.attachmentName) {
     names.add("attachmentName");
   }
-  if (searchParams.attachmentDescription) {
-    names.add("attachmentDescription");
-  }
   if (searchParams.attachmentType) {
     names.add("attachmentType");
   }
@@ -973,7 +957,6 @@ function removeSearchParam(
     "tagType",
     "tagName",
     "attachmentName",
-    "attachmentDescription",
     "attachmentType",
     "attachmentMimeType",
     "nodeRef",
