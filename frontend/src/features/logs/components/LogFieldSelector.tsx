@@ -17,24 +17,22 @@ export function useLogFields(
 ) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const { data: actorCustomFields, isPending: actorCustomFieldsPending } =
-    useQuery({
-      queryKey: ["logActorCustomFields", repoId],
-      queryFn: () => getAllLogActorCustomFields(repoId),
-      enabled: !!repoId,
-    });
-  const { data: resourceCustomFields, isPending: resourceCustomFieldsPending } =
-    useQuery({
-      queryKey: ["logResourceCustomFields", repoId],
-      queryFn: () => getAllLogResourceCustomFields(repoId),
-      enabled: !!repoId,
-    });
-  const { data: detailFields, isPending: detailFieldsPending } = useQuery({
+  const actorCustomFieldListQuery = useQuery({
+    queryKey: ["logActorCustomFields", repoId],
+    queryFn: () => getAllLogActorCustomFields(repoId),
+    enabled: !!repoId,
+  });
+  const resourceCustomFieldListQuery = useQuery({
+    queryKey: ["logResourceCustomFields", repoId],
+    queryFn: () => getAllLogResourceCustomFields(repoId),
+    enabled: !!repoId,
+  });
+  const detailFieldListQuery = useQuery({
     queryKey: ["logDetailFields", repoId],
     queryFn: () => getAllLogDetailFields(repoId),
     enabled: !!repoId,
   });
-  const { data: sourceFields, isPending: sourceFieldsPending } = useQuery({
+  const sourceFieldListQuery = useQuery({
     queryKey: ["logSourceFields", repoId],
     queryFn: () => getAllLogSourceFields(repoId),
     enabled: !!repoId,
@@ -69,7 +67,7 @@ export function useLogFields(
           _({ value: "actorType", label: t("log.actorType") }),
           _({ value: "actorName", label: t("log.actorName") }),
           _({ value: "actorRef", label: t("log.actorRef") }),
-          ...(actorCustomFields ?? []).map((field) =>
+          ...(actorCustomFieldListQuery.data ?? []).map((field) =>
             _({
               value: `actor.${field}`,
               label:
@@ -82,7 +80,7 @@ export function useLogFields(
       },
       {
         group: t("log.source"),
-        items: (sourceFields ?? []).map((field) =>
+        items: (sourceFieldListQuery.data ?? []).map((field) =>
           _({
             value: `source.${field}`,
             label: logTranslator("source_field", field),
@@ -98,7 +96,7 @@ export function useLogFields(
           _({ value: "resourceType", label: t("log.resourceType") }),
           _({ value: "resourceName", label: t("log.resourceName") }),
           _({ value: "resourceRef", label: t("log.resourceRef") }),
-          ...(resourceCustomFields ?? []).map((field) =>
+          ...(resourceCustomFieldListQuery.data ?? []).map((field) =>
             _({
               value: `resource.${field}`,
               label:
@@ -111,7 +109,7 @@ export function useLogFields(
       },
       {
         group: t("log.details"),
-        items: (detailFields ?? []).map((field) =>
+        items: (detailFieldListQuery.data ?? []).map((field) =>
           _({
             value: `details.${field}`,
             label: logTranslator("detail_field", field),
@@ -152,11 +150,11 @@ export function useLogFields(
       },
     ],
     loading:
-      actorCustomFieldsPending ||
-      resourceCustomFieldsPending ||
-      detailFieldsPending ||
-      sourceFieldsPending ||
-      logTranslationQuery.isLoading,
+      actorCustomFieldListQuery.isPending ||
+      resourceCustomFieldListQuery.isPending ||
+      detailFieldListQuery.isPending ||
+      sourceFieldListQuery.isPending ||
+      logTranslationQuery.isPending,
   };
 }
 
@@ -166,12 +164,7 @@ export function useLogFieldNames(
   disabledFields?: Set<string>,
 ) {
   const { fields, loading } = useLogFields(repoId, mode, disabledFields);
-  const fieldNames = useMemo(
-    () =>
-      loading
-        ? null
-        : fields.map((group) => group.items.map((item) => item.value)).flat(),
-    [repoId, loading],
-  );
-  return fieldNames;
+  return loading
+    ? null
+    : fields.map((group) => group.items.map((item) => item.value)).flat();
 }
