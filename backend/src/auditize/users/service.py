@@ -23,25 +23,25 @@ from auditize.helpers.resources.service import (
 )
 from auditize.permissions.operations import normalize_permissions, update_permissions
 from auditize.repos.service import ensure_repos_in_permissions_exist
-from auditize.users.models import SignupToken, User, UserUpdate
+from auditize.users.models import PasswordResetToken, User, UserUpdate
 
-_DEFAULT_SIGNUP_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
+_DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
 
 
-def _generate_signup_token() -> SignupToken:
-    return SignupToken(
+def _generate_password_reset_token() -> PasswordResetToken:
+    return PasswordResetToken(
         token=secrets.token_hex(32),
-        expires_at=now() + timedelta(seconds=_DEFAULT_SIGNUP_TOKEN_LIFETIME),
+        expires_at=now() + timedelta(seconds=_DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME),
     )
 
 
-def _send_signup_email(user: User):
+def _send_account_setup_email(user: User):
     config = get_config()
     send_email(
         user.email,
         "Welcome to Auditize",
         f"Welcome, {user.first_name}! Please click the following link to complete your registration: "
-        f"{config.base_url}/signup/{user.signup_token.token}",
+        f"{config.base_url}/account-setup/{user.password_reset_token.token}",
     )
 
 
@@ -63,9 +63,9 @@ async def save_user(dbm: DatabaseManager, user: User) -> str:
 
 async def create_user(dbm: DatabaseManager, user: User) -> str:
     user = user.model_copy()
-    user.signup_token = _generate_signup_token()
+    user.password_reset_token = _generate_password_reset_token()
     user_id = await save_user(dbm, user)
-    _send_signup_email(user)
+    _send_account_setup_email(user)
     return user_id
 
 
@@ -97,12 +97,15 @@ async def get_user_by_email(dbm: DatabaseManager, email: str) -> User:
     return await _get_user(dbm, {"email": email})
 
 
-def _build_signup_token_filter(token: str):
-    return {"signup_token.token": token, "signup_token.expires_at": {"$gt": now()}}
+def _build_password_reset_token_filter(token: str):
+    return {
+        "password_reset_token.token": token,
+        "password_reset_token.expires_at": {"$gt": now()},
+    }
 
 
-async def get_user_by_signup_token(dbm: DatabaseManager, token: str) -> User:
-    return await _get_user(dbm, _build_signup_token_filter(token))
+async def get_user_by_password_reset_token(dbm: DatabaseManager, token: str) -> User:
+    return await _get_user(dbm, _build_password_reset_token_filter(token))
 
 
 # NB: this function is let public to be used in tests and to make sure that passwords
@@ -111,14 +114,14 @@ def hash_user_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
-async def update_user_password_by_signup_token(
+async def update_user_password_by_password_reset_token(
     dbm: DatabaseManager, token: str, password: str
 ):
     password_hash = hash_user_password(password)
     await update_resource_document(
         dbm.core_db.users,
-        _build_signup_token_filter(token),
-        {"password_hash": password_hash, "signup_token": None},
+        _build_password_reset_token_filter(token),
+        {"password_hash": password_hash, "password_reset_token": None},
     )
 
 
@@ -182,7 +185,7 @@ def _send_password_reset_link(user: User):
         user.email,
         "Change your password on Auditize",
         f"Please follow this link to reset your password: "
-        f"{config.base_url}/reset-password/{user.signup_token.token}",
+        f"{config.base_url}/password-reset/{user.password_reset_token.token}",
     )
 
 
@@ -192,12 +195,12 @@ async def send_user_password_reset_link(dbm: DatabaseManager, email: str):
     except UnknownModelException:
         # in case of unknown email, just do nothing to avoid leaking information
         return
-    user.signup_token = _generate_signup_token()
+    user.password_reset_token = _generate_password_reset_token()
     await update_resource_document(
         dbm.core_db.users,
         user.id,
         {
-            "signup_token": user.signup_token.model_dump(),
+            "password_reset_token": user.password_reset_token.model_dump(),
         },
     )
     _send_password_reset_link(user)

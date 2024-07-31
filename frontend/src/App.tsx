@@ -35,8 +35,8 @@ import {
   useCurrentUser,
 } from "@/features/auth";
 import { LogNavigationStateProvider, Logs } from "@/features/logs";
+import { AccountSetup, PasswordReset } from "@/features/password-setup";
 import { RepoManagement } from "@/features/repos";
-import { ResetPassword, Signup } from "@/features/signup";
 import { UsersManagement } from "@/features/users";
 import { theme } from "@/theme";
 
@@ -245,18 +245,18 @@ function AppRoutes() {
           element: <CatchAll />,
         },
     {
-      path: "/signup/:token",
+      path: "/account-setup/:token",
       element: (
         <I18nProvider>
-          <Signup />
+          <AccountSetup />
         </I18nProvider>
       ),
     },
     {
-      path: "/reset-password/:token",
+      path: "/password-reset/:token",
       element: (
         <I18nProvider>
-          <ResetPassword />
+          <PasswordReset />
         </I18nProvider>
       ),
     },

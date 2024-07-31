@@ -17,9 +17,9 @@ import { NavLink, useParams } from "react-router-dom";
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import Message from "@/components/Message";
 
-import { getSignupInfo, setPassword } from "../api";
+import { getPasswordResetInfo, setPassword } from "../api";
 
-function useResetPasswordForm() {
+function usePasswordSetupForm() {
   const { t } = useTranslation();
   return useForm({
     mode: "uncontrolled",
@@ -40,7 +40,7 @@ function useResetPasswordForm() {
   });
 }
 
-function BaseResetPassword({
+function PasswordSetup({
   title,
   successMessage,
 }: {
@@ -49,10 +49,10 @@ function BaseResetPassword({
 }) {
   const { t } = useTranslation();
   const { token } = useParams();
-  const form = useResetPasswordForm();
+  const form = usePasswordSetupForm();
   const query = useQuery({
-    queryKey: ["signup", token],
-    queryFn: () => getSignupInfo(token!),
+    queryKey: ["passwordReset", token],
+    queryFn: () => getPasswordResetInfo(token!),
   });
   const mutation = useMutation({
     mutationFn: (password: string) => setPassword(token!, password),
@@ -145,22 +145,22 @@ function BaseResetPassword({
   );
 }
 
-export function Signup() {
+export function AccountSetup() {
   const { t } = useTranslation();
   return (
-    <BaseResetPassword
-      title={t("passwordSetup.setupAccount.title")}
-      successMessage={t("passwordSetup.setupAccount.success")}
+    <PasswordSetup
+      title={t("passwordSetup.accountSetup.title")}
+      successMessage={t("passwordSetup.accountSetup.success")}
     />
   );
 }
 
-export function ResetPassword() {
+export function PasswordReset() {
   const { t } = useTranslation();
   return (
-    <BaseResetPassword
-      title={t("passwordSetup.resetPassword.title")}
-      successMessage={t("passwordSetup.resetPassword.success")}
+    <PasswordSetup
+      title={t("passwordSetup.passwordReset.title")}
+      successMessage={t("passwordSetup.passwordReset.success")}
     />
   );
 }

@@ -3,11 +3,9 @@ from unittest.mock import patch
 
 import callee
 import pytest
-from bson import ObjectId
 from httpx import Response
 
 from auditize.database import DatabaseManager
-from auditize.users.api import get_user
 from conftest import UserBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection
@@ -23,12 +21,12 @@ from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
 
-UNKNOWN_SIGNUP_TOKEN = (
+UNKNOWN_PASSWORD_RESET_TOKEN = (
     "5620281609bbdc9796751a1cb1ac58efb27497b1fd14a0788faa83ada93e6048"
 )
 
 
-async def _wrap_signup_link_sending(func, expected_email: str) -> str:
+async def _wrap_password_reset_link_sending(func, expected_email: str) -> str:
     with patch("auditize.users.service.send_email") as mock:
         await func()
         mock.assert_called_once_with(
@@ -40,11 +38,11 @@ async def _wrap_signup_link_sending(func, expected_email: str) -> str:
         return match.group(1)
 
 
-async def _assert_signup_token_validity(token: str):
+async def _assert_password_reset_token_validity(token: str):
     # this function does not intend to test the endpoint, but only
     # check that the token is valid
     client = HttpTestHelper.spawn()
-    await client.assert_get_ok(f"/users/signup/{token}")
+    await client.assert_get_ok(f"/users/password-reset/{token}")
 
 
 async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManager):
@@ -61,12 +59,12 @@ async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManag
         )
         user_id = resp.json()["id"]
 
-    signup_token = await _wrap_signup_link_sending(func, data["email"])
+    password_reset_token = await _wrap_password_reset_link_sending(func, data["email"])
 
     user = PreparedUser(user_id, data, dbm)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
 
-    await _assert_signup_token_validity(signup_token)
+    await _assert_password_reset_token_validity(password_reset_token)
 
 
 async def test_user_create_lang_fr(
@@ -347,9 +345,9 @@ async def test_user_delete_last_superadmin(
     )
 
 
-async def test_user_signup(anon_client: HttpTestHelper, user: PreparedUser):
+async def test_user_password_reset(anon_client: HttpTestHelper, user: PreparedUser):
     await anon_client.assert_get(
-        f"/users/signup/{await user.signup_token}",
+        f"/users/password-reset/{await user.password_reset_token}",
         expected_status_code=200,
         expected_json={
             "first_name": user.data["first_name"],
@@ -359,16 +357,18 @@ async def test_user_signup(anon_client: HttpTestHelper, user: PreparedUser):
     )
 
 
-async def test_user_signup_expired(anon_client: HttpTestHelper, user: PreparedUser):
-    await user.expire_signup_token()
+async def test_user_password_reset_expired(
+    anon_client: HttpTestHelper, user: PreparedUser
+):
+    await user.expire_password_reset_token()
     await anon_client.assert_get_not_found(
-        f"/users/signup/{await user.signup_token}",
+        f"/users/password-reset/{await user.password_reset_token}",
     )
 
 
-async def test_user_signup_unknown(anon_client: HttpTestHelper):
+async def test_user_password_reset_unknown(anon_client: HttpTestHelper):
     await anon_client.assert_get_not_found(
-        f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
+        f"/users/password-reset/{UNKNOWN_PASSWORD_RESET_TOKEN}",
     )
 
 
@@ -380,11 +380,11 @@ async def _assert_user_password_validity(email: str, password: str):
     )
 
 
-async def test_user_signup_set_password_fresh_user(
+async def test_user_password_reset_set_password_fresh_user(
     anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
 ):
     await anon_client.assert_post_no_content(
-        f"/users/signup/{await user.signup_token}",
+        f"/users/password-reset/{await user.password_reset_token}",
         json={"password": "new_password"},
     )
 
@@ -392,7 +392,7 @@ async def test_user_signup_set_password_fresh_user(
         dbm.core_db.users,
         [
             user.expected_document(
-                {"password_hash": callee.IsA(str), "signup_token": None}
+                {"password_hash": callee.IsA(str), "password_reset_token": None}
             )
         ],
     )
@@ -400,7 +400,7 @@ async def test_user_signup_set_password_fresh_user(
     await _assert_user_password_validity(user.email, "new_password")
 
 
-async def test_user_signup_set_password_after_forgot_password(
+async def test_user_password_reset_set_password_after_forgot_password(
     user_builder: UserBuilder, dbm: DatabaseManager
 ):
     user = await user_builder({})
@@ -411,10 +411,10 @@ async def test_user_signup_set_password_after_forgot_password(
             json={"email": user.email},
         )
 
-    signup_token = await _wrap_signup_link_sending(func, user.email)
+    password_reset_token = await _wrap_password_reset_link_sending(func, user.email)
 
     await HttpTestHelper.spawn().assert_post_no_content(
-        f"/users/signup/{signup_token}",
+        f"/users/password-reset/{password_reset_token}",
         json={"password": "new_password"},
     )
 
@@ -422,7 +422,7 @@ async def test_user_signup_set_password_after_forgot_password(
         dbm.core_db.users,
         [
             user.expected_document(
-                {"password_hash": callee.IsA(str), "signup_token": None}
+                {"password_hash": callee.IsA(str), "password_reset_token": None}
             )
         ],
     )
@@ -430,28 +430,30 @@ async def test_user_signup_set_password_after_forgot_password(
     await _assert_user_password_validity(user.email, "new_password")
 
 
-async def test_user_signup_set_password_too_short(
+async def test_user_password_reset_set_password_too_short(
     anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
 ):
     await anon_client.assert_post_bad_request(
-        f"/users/signup/{await user.signup_token}",
+        f"/users/password-reset/{await user.password_reset_token}",
         json={"password": "short"},
     )
 
 
-async def test_user_signup_set_password_token_expired(
+async def test_user_password_reset_set_password_token_expired(
     anon_client: HttpTestHelper, user: PreparedUser
 ):
-    await user.expire_signup_token()
+    await user.expire_password_reset_token()
     await anon_client.assert_post_not_found(
-        f"/users/signup/{await user.signup_token}",
+        f"/users/password-reset/{await user.password_reset_token}",
         json={"password": "new_password"},
     )
 
 
-async def test_user_signup_set_password_token_unknown(anon_client: HttpTestHelper):
+async def test_user_password_reset_set_password_token_unknown(
+    anon_client: HttpTestHelper,
+):
     await anon_client.assert_post_not_found(
-        f"/users/signup/{UNKNOWN_SIGNUP_TOKEN}",
+        f"/users/password-reset/{UNKNOWN_PASSWORD_RESET_TOKEN}",
         json={"password": "new_password"},
     )
 
@@ -589,9 +591,9 @@ async def test_user_forgot_password_with_enrolled_user(
             json={"email": user.email},
         )
 
-    signup_token = await _wrap_signup_link_sending(func, user.email)
+    password_reset_token = await _wrap_password_reset_link_sending(func, user.email)
 
-    await _assert_signup_token_validity(signup_token)
+    await _assert_password_reset_token_validity(password_reset_token)
 
 
 async def test_user_forgot_password_with_not_yet_enrolled_user(
@@ -603,9 +605,9 @@ async def test_user_forgot_password_with_not_yet_enrolled_user(
             json={"email": user.email},
         )
 
-    signup_token = await _wrap_signup_link_sending(func, user.email)
+    password_reset_token = await _wrap_password_reset_link_sending(func, user.email)
 
-    await _assert_signup_token_validity(signup_token)
+    await _assert_password_reset_token_validity(password_reset_token)
 
 
 async def test_user_forgot_password_with_enrolled_user_and_pending_forgot_password(
@@ -621,10 +623,10 @@ async def test_user_forgot_password_with_enrolled_user_and_pending_forgot_passwo
 
     # For an already enrolled user, make sure we can trigger a second
     # forgot password request
-    signup_token_1 = await _wrap_signup_link_sending(func, user.email)
-    signup_token_2 = await _wrap_signup_link_sending(func, user.email)
+    password_reset_token_1 = await _wrap_password_reset_link_sending(func, user.email)
+    password_reset_token_2 = await _wrap_password_reset_link_sending(func, user.email)
 
-    await _assert_signup_token_validity(signup_token_2)
+    await _assert_password_reset_token_validity(password_reset_token_2)
 
 
 class TestPermissions(BasePermissionTests):

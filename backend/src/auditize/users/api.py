@@ -17,10 +17,10 @@ from auditize.users.api_models import (
     UserListResponse,
     UserMeResponse,
     UserMeUpdateRequest,
+    UserPasswordResetInfoResponse,
     UserPasswordResetRequest,
+    UserPasswordResetRequestRequest,
     UserReadingResponse,
-    UserSignupInfoResponse,
-    UserSignupSetPasswordRequest,
     UserUpdateRequest,
 )
 from auditize.users.models import User, UserUpdate
@@ -151,21 +151,21 @@ async def delete_user(
 
 
 @router.get(
-    "/users/signup/{token}",
-    summary="Get user signup info",
+    "/users/password-reset/{token}",
+    summary="Get user password-reset info",
     tags=["users"],
     responses=error_responses(404),
 )
-async def get_user_signup_info(
+async def get_user_password_reset_info(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    token: Annotated[str, Path(description="Signup token")],
-) -> UserSignupInfoResponse:
-    user = await service.get_user_by_signup_token(dbm, token)
-    return UserSignupInfoResponse.model_validate(user.model_dump())
+    token: Annotated[str, Path(description="Password-reset token")],
+) -> UserPasswordResetInfoResponse:
+    user = await service.get_user_by_password_reset_token(dbm, token)
+    return UserPasswordResetInfoResponse.model_validate(user.model_dump())
 
 
 @router.post(
-    "/users/signup/{token}",
+    "/users/password-reset/{token}",
     summary="Set user password",
     tags=["users"],
     status_code=204,
@@ -173,15 +173,17 @@ async def get_user_signup_info(
 )
 async def set_user_password(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    token: Annotated[str, Path(description="Signup token")],
-    request: UserSignupSetPasswordRequest,
+    token: Annotated[str, Path(description="Password-reset token")],
+    request: UserPasswordResetRequest,
 ):
-    await service.update_user_password_by_signup_token(dbm, token, request.password)
+    await service.update_user_password_by_password_reset_token(
+        dbm, token, request.password
+    )
 
 
 @router.post(
     "/users/forgot-password",
-    summary="Send user password reset email",
+    summary="Send user password-reset email",
     description="For security reasons, this endpoint will always return a 204 status code"
     "whether the email exists or not.",
     tags=["users"],
@@ -190,6 +192,6 @@ async def set_user_password(
 )
 async def forgot_password(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    reset_request: UserPasswordResetRequest,
+    reset_request: UserPasswordResetRequestRequest,
 ):
     await service.send_user_password_reset_link(dbm, reset_request.email)

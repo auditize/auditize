@@ -83,12 +83,12 @@ class PreparedUser:
             dbm=dbm,
         )
 
-    async def expire_signup_token(self):
+    async def expire_password_reset_token(self):
         await self.dbm.core_db.users.update_one(
             {"_id": ObjectId(self.id)},
             {
                 "$set": {
-                    "signup_token.expires_at": datetime.now(timezone.utc)
+                    "password_reset_token.expires_at": datetime.now(timezone.utc)
                     - timedelta(days=1)
                 }
             },
@@ -99,9 +99,13 @@ class PreparedUser:
         return self.data["email"]
 
     @property
-    async def signup_token(self) -> str | None:
+    async def password_reset_token(self) -> str | None:
         user_model = await get_user(self.dbm, self.id)
-        return user_model.signup_token.token if user_model.signup_token else None
+        return (
+            user_model.password_reset_token.token
+            if user_model.password_reset_token
+            else None
+        )
 
     async def log_in(self, client: HttpTestHelper) -> Response:
         return await client.assert_post(
@@ -121,7 +125,7 @@ class PreparedUser:
         return get_cookie_by_name(resp, "session").value
 
     def expected_document(self, extra=None) -> dict:
-        signup_token = {
+        password_reset_token = {
             "token": callee.Regex(r"^[0-9a-f]{64}$"),
             "expires_at": callee.IsA(datetime),
         }
@@ -134,7 +138,7 @@ class PreparedUser:
             "permissions": DEFAULT_PERMISSIONS,
             "password_hash": callee.IsA(str) if self.password else None,
             "created_at": callee.IsA(datetime),
-            "signup_token": None if self.password else signup_token,
+            "password_reset_token": None if self.password else password_reset_token,
             **(extra or {}),
         }
 

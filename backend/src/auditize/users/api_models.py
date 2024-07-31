@@ -110,13 +110,13 @@ class UserListResponse(PagePaginatedResponse[User, UserReadingResponse]):
         return UserReadingResponse.model_validate(user.model_dump())
 
 
-class UserSignupInfoResponse(BaseModel):
+class UserPasswordResetInfoResponse(BaseModel):
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
 
 
-class UserSignupSetPasswordRequest(BaseModel):
+class UserPasswordResetRequest(BaseModel):
     password: str = _UserPasswordField()
 
 
@@ -152,5 +152,6 @@ class UserMeUpdateRequest(BaseModel):
     password: Optional[str] = _UserPasswordField(default=None)
 
 
-class UserPasswordResetRequest(BaseModel):
+# NB: yes, the request of a request...
+class UserPasswordResetRequestRequest(BaseModel):
     email: str = _UserEmailField()

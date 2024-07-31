@@ -414,11 +414,11 @@ export default {
         doesNotMatch: "Passwords do not match.",
       },
     },
-    setupAccount: {
+    accountSetup: {
       title: "Set up your Auditize account",
       success: "The setup of your user account is now complete.",
     },
-    resetPassword: {
+    passwordReset: {
       title: "Reset your Auditize password",
       success: "Your password has been successfully updated.",
     },

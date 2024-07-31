@@ -418,11 +418,11 @@ export default {
         doesNotMatch: "Les mots de passe ne correspondent pas.",
       },
     },
-    setupAccount: {
+    accountSetup: {
       title: "Finalisez la création de votre compte Auditize",
       success: "La création de votre compte a été finalisée avec succès.",
     },
-    resetPassword: {
+    passwordReset: {
       title: "Réinitialisez votre mot de passe Auditize",
       success: "Votre mot de passe a été réinitialisé avec succès.",
     },
