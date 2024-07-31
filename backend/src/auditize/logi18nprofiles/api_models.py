@@ -53,9 +53,9 @@ class LogI18nProfileCreationResponse(BaseModel):
 
 
 class LogI18nProfileUpdateRequest(BaseModel):
-    name: Optional[str] = _ProfileNameField(default=None)
-    translations: Optional[dict[Lang, LogTranslation | None]] = (
-        _ProfileTranslationsField(default=None)
+    name: str = _ProfileNameField(default=None)
+    translations: dict[Lang, LogTranslation | None] = _ProfileTranslationsField(
+        default=None
     )
 
 

@@ -59,7 +59,11 @@ async def update_profile(
     update: LogI18nProfileUpdateRequest,
 ):
     await service.update_log_i18n_profile(
-        dbm, profile_id, LogI18nProfileUpdate.model_validate(update.model_dump())
+        dbm,
+        profile_id,
+        # we use exclude_none=True instead of exclude_unset=True
+        # to keep the potential empty dict fields in LogTranslation sub-model
+        LogI18nProfileUpdate.model_validate(update.model_dump(exclude_none=True)),
     )
 
 
