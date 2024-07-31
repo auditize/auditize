@@ -653,7 +653,7 @@ async def _test_get_logs_filter(
     not_to_be_found=None,
 ):
     # Create logs that are not supposed to be returned
-    if not not_to_be_found:
+    if not_to_be_found is None:
         not_to_be_found = [PreparedLog.prepare_data()]
     for other in not_to_be_found:
         await repo.create_log(client, other)
@@ -938,6 +938,35 @@ async def test_get_logs_filter_tag_ref(
         ]
 
     await _test_get_logs_filter(log_rw_client, repo, func, {"tag_ref": "find_me"})
+
+
+async def test_get_logs_filter_has_attachment(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_with_attachment = await repo.create_log(log_rw_client)
+    await log_with_attachment.upload_attachment(
+        log_rw_client,
+        data=b"test data",
+        name="find_me",
+        type="text",
+        mime_type="text/plain",
+    )
+    log_without_attachment = await repo.create_log(log_rw_client)
+
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        log_with_attachment,
+        {"has_attachment": True},
+        not_to_be_found=[],
+    )
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        log_without_attachment,
+        {"has_attachment": False},
+        not_to_be_found=[],
+    )
 
 
 async def test_get_logs_filter_attachment_name(

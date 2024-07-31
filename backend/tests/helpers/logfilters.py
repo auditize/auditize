@@ -12,6 +12,7 @@ DEFAULT_SEARCH_PARAMETERS = {
     "actor_name": None,
     "actor_ref": None,
     "actor_type": None,
+    "has_attachment": None,
     "attachment_mime_type": None,
     "attachment_name": None,
     "attachment_type": None,

@@ -390,6 +390,7 @@ class BaseLogSearchParams(BaseModel):
     tag_ref: Optional[str] = Field(default=None)
     tag_type: Optional[str] = Field(default=None)
     tag_name: Optional[str] = Field(default=None)
+    has_attachment: Optional[bool] = Field(default=None)
     attachment_name: Optional[str] = Field(default=None)
     attachment_type: Optional[str] = Field(default=None)
     attachment_mime_type: Optional[str] = Field(default=None)

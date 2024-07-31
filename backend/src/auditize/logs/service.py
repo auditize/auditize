@@ -223,6 +223,7 @@ async def get_logs(
     tag_ref: str = None,
     tag_type: str = None,
     tag_name: str = None,
+    has_attachment: bool = None,
     attachment_name: str = None,
     attachment_type: str = None,
     attachment_mime_type: str = None,
@@ -270,6 +271,11 @@ async def get_logs(
         criteria.append({"tags.type": tag_type})
     if tag_name:
         criteria.append({"tags.name": _text_search_filter(tag_name)})
+    if has_attachment is not None:
+        if has_attachment:
+            criteria.append({"attachments": {"$not": {"$size": 0}}})
+        else:
+            criteria.append({"attachments": {"$size": 0}})
     if attachment_name:
         criteria.append({"attachments.name": _text_search_filter(attachment_name)})
     if attachment_type:

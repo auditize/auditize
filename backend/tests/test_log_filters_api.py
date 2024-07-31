@@ -1,3 +1,5 @@
+from typing import Any
+
 import callee
 import pytest
 
@@ -54,9 +56,10 @@ async def test_log_filter_create_simple(
 async def test_log_filter_create_all_builtin_field_search_parameters(
     log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
 ):
-    params = {k: "some value" for k in DEFAULT_SEARCH_PARAMETERS}
+    params: dict[str, Any] = {k: "some value" for k in DEFAULT_SEARCH_PARAMETERS}
     params["since"] = "2021-01-01T00:00:00Z"
     params["until"] = "2021-01-02T00:00:00Z"
+    params["has_attachment"] = True
     await _test_log_filter_creation(
         log_read_user,
         {
