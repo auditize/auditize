@@ -4,7 +4,7 @@ import pytest
 
 from auditize.__main__ import main
 from auditize.database import DatabaseManager
-from helpers.http import create_http_client
+from helpers.http import HttpTestHelper
 from helpers.users import PreparedUser
 
 pytestmark = pytest.mark.anyio
@@ -13,7 +13,7 @@ pytestmark = pytest.mark.anyio
 async def test_empty_db(dbm: DatabaseManager):
     with patch("auditize.__main__.get_dbm", lambda: dbm):
         await main(["bootstrap_superadmin"])
-    client = create_http_client()
+    client = HttpTestHelper.spawn()
     resp = await client.assert_post_ok(
         "/auth/user/login",
         json={"email": "super.admin@example.net", "password": "auditize"},

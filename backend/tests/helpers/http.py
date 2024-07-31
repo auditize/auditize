@@ -153,15 +153,9 @@ class HttpTestHelper(AsyncClient):
     assert_get_forbidden = partialmethod(assert_get, expected_status_code=403)
     assert_get_not_found = partialmethod(assert_get, expected_status_code=404)
 
-    @staticmethod
-    def spawn() -> "HttpTestHelper":
-        return create_http_client()
-
-
-def create_http_client() -> HttpTestHelper:
-    return HttpTestHelper(
-        transport=ASGITransport(app=app), base_url="https://localhost"
-    )
+    @classmethod
+    def spawn(cls) -> "HttpTestHelper":
+        return cls(transport=ASGITransport(app=app), base_url="https://localhost")
 
 
 def get_cookie_by_name(resp: Response, name) -> Cookie:

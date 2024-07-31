@@ -31,7 +31,7 @@ from auditize.database import DatabaseManager
 pytest.register_assert_rewrite("helpers")
 from helpers.apikeys import PreparedApikey
 from helpers.database import setup_test_dbm, teardown_test_dbm
-from helpers.http import HttpTestHelper, create_http_client
+from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
@@ -66,7 +66,7 @@ async def user_client(dbm: DatabaseManager):
 
 @pytest.fixture(scope="function")
 async def anon_client():
-    async with create_http_client() as client:
+    async with HttpTestHelper.spawn() as client:
         yield client
 
 

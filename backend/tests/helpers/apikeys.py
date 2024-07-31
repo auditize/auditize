@@ -9,7 +9,7 @@ from auditize.apikeys.service import create_apikey
 from auditize.database import DatabaseManager
 from auditize.permissions.models import Permissions
 
-from .http import HttpTestHelper, create_http_client
+from .http import HttpTestHelper
 from .permissions.constants import DEFAULT_PERMISSIONS
 
 
@@ -85,6 +85,6 @@ class PreparedApikey:
         }
 
     def client(self) -> HttpTestHelper:
-        c = create_http_client()
+        c = HttpTestHelper.spawn()
         c.headers["Authorization"] = f"Bearer {self.key}"
         return c

@@ -16,7 +16,7 @@ from auditize.users.service import (
     hash_user_password,
 )
 
-from .http import HttpTestHelper, create_http_client, get_cookie_by_name
+from .http import HttpTestHelper, get_cookie_by_name
 from .logfilters import PreparedLogFilter
 from .permissions.constants import DEFAULT_PERMISSIONS
 
@@ -112,7 +112,7 @@ class PreparedUser:
 
     @asynccontextmanager
     async def client(self) -> AsyncIterator[HttpTestHelper]:
-        async with create_http_client() as client:
+        async with HttpTestHelper.spawn() as client:
             await self.log_in(client)
             yield client
 

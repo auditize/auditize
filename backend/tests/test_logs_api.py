@@ -7,7 +7,7 @@ import pytest
 
 from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, UserBuilder
-from helpers.http import HttpTestHelper, create_http_client
+from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog
 from helpers.pagination import (
     do_test_page_pagination_common_scenarios,
@@ -604,7 +604,7 @@ async def test_get_logs_access_control_without_explicit_nodes(
     )
     access_token = resp.json()["access_token"]
 
-    client = create_http_client()
+    client = HttpTestHelper.spawn()
     await client.assert_get_ok(
         f"/repos/{repo.id}/logs", headers={"Authorization": f"Bearer {access_token}"}
     )

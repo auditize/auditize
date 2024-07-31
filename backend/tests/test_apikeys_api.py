@@ -7,7 +7,7 @@ from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection
-from helpers.http import HttpTestHelper, create_http_client
+from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_OBJECT_ID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.tests import BasePermissionTests
@@ -34,7 +34,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper, dbm: DatabaseM
     await assert_collection(dbm.core_db.apikeys, [apikey.expected_document()])
 
     # Test that the key actually works
-    apikey_client = create_http_client()
+    apikey_client = HttpTestHelper.spawn()
     await apikey_client.assert_get(
         "/apikeys",
         headers={"Authorization": f"Bearer {apikey.key}"},
