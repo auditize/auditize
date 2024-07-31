@@ -18,5 +18,5 @@ class Apikey(BaseModel):
 
 
 class ApikeyUpdate(BaseModel):
-    name: Optional[str] = None
-    permissions: Optional[Permissions] = None
+    name: str = None
+    permissions: Permissions = None
