@@ -647,35 +647,20 @@ async def test_get_logs_limit_and_cursor(
 async def _test_get_logs_filter(
     client: HttpTestHelper,
     repo: PreparedRepo,
-    to_be_found,
-    search_params,
+    search_params: dict,
+    expected_log: PreparedLog,
     *,
-    not_to_be_found=None,
+    extra_log=True,
 ):
-    # Create logs that are not supposed to be returned
-    if not_to_be_found is None:
-        not_to_be_found = [PreparedLog.prepare_data()]
-    for other in not_to_be_found:
-        await repo.create_log(client, other)
-
-    # to_be_found is a PreparedLog instance of an already created log
-    if isinstance(to_be_found, PreparedLog):
-        log = to_be_found
-    else:
-        # to_be_found is a function that will modify a log data template
-        if callable(to_be_found):
-            log_data = PreparedLog.prepare_data()
-            to_be_found(log_data)
-        # to be found is the actual log data
-        else:
-            log_data = to_be_found
-        log = await repo.create_log(client, log_data)
+    # Create a log that is not supposed to be returned
+    if extra_log:
+        await repo.create_log(client)
 
     await client.assert_get(
         f"/repos/{repo.id}/logs",
         params=search_params,
         expected_json={
-            "items": [log.expected_api_response()],
+            "items": [expected_log.expected_api_response()],
             "pagination": {"next_cursor": None},
         },
     )
@@ -684,260 +669,298 @@ async def _test_get_logs_filter(
 async def test_get_logs_filter_action_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["action"]["type"] = "find_me"
+    log = await repo.create_log_with(
+        log_rw_client, {"action": {"category": "category", "type": "find_me"}}
+    )
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"action_type": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, {"action_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_action_category(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["action"]["category"] = "find_me"
+    log = await repo.create_log_with(
+        log_rw_client, {"action": {"category": "find_me", "type": "type"}}
+    )
 
     await _test_get_logs_filter(
-        log_rw_client, repo, func, {"action_category": "find_me"}
+        log_rw_client, repo, {"action_category": "find_me"}, log
     )
 
 
 async def test_get_logs_filter_actor_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["actor"] = {"type": "find_me", "ref": "user:123", "name": "User 123"}
+    log = await repo.create_log_with(
+        log_rw_client,
+        {"actor": {"type": "find_me", "ref": "user:123", "name": "User 123"}},
+    )
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"actor_type": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, {"actor_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_actor_name(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["actor"] = {"type": "user", "ref": "user:123", "name": "find_me"}
+    log = await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "user:123", "name": "find_me"}}
+    )
 
     # filter on actor_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, func, {"actor_name": "FIND"})
+    await _test_get_logs_filter(log_rw_client, repo, {"actor_name": "FIND"}, log)
 
 
 async def test_get_logs_filter_actor_ref(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["actor"] = {"type": "user", "ref": "user:123", "name": "find_me"}
+    log = await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "user:123", "name": "find_me"}}
+    )
 
     # filter on actor_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, func, {"actor_ref": "user:123"})
+    await _test_get_logs_filter(log_rw_client, repo, {"actor_ref": "user:123"}, log)
 
 
 async def test_get_logs_filter_actor_extra(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
+    log_1 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "actor": {
+                "type": "user",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [
+                    {"name": "field_1", "value": "foo"},
+                    {"name": "field_2", "value": "bar"},
+                ],
+            }
+        },
+    )
+    log_2 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "actor": {
+                "type": "user",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [
+                    {"name": "field_1", "value": "bar"},
+                    {"name": "field_2", "value": "foo"},
+                ],
+            }
+        },
+    )
+
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        to_be_found=PreparedLog.prepare_data(
-            {
-                "actor": {
-                    "type": "user",
-                    "ref": "user:123",
-                    "name": "User 123",
-                    "extra": [
-                        {"name": "field_1", "value": "foo"},
-                        {"name": "field_2", "value": "bar"},
-                    ],
-                }
-            }
-        ),
-        not_to_be_found=[
-            PreparedLog.prepare_data(
-                {
-                    "actor": {
-                        "type": "user",
-                        "ref": "user:123",
-                        "name": "User 123",
-                        "extra": [
-                            {"name": "field_1", "value": "bar"},
-                            {"name": "field_2", "value": "foo"},
-                        ],
-                    }
-                }
-            ),
-        ],
-        search_params={
+        {
             "actor.field_1": "foo",
             "actor.field_2": "bar",
         },
+        log_1,
+        extra_log=False,
     )
 
 
 async def test_get_logs_filter_resource_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["resource"] = {"ref": "core", "type": "find_me", "name": "Core Module"}
+    log = await repo.create_log_with(
+        log_rw_client,
+        {"resource": {"ref": "core", "type": "find_me", "name": "Core Module"}},
+    )
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"resource_type": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, {"resource_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_resource_name(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["resource"] = {"ref": "core", "type": "module", "name": "find_me"}
+    log = await repo.create_log_with(
+        log_rw_client,
+        {"resource": {"ref": "core", "type": "module", "name": "find_me"}},
+    )
 
     # filter on resource_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, func, {"resource_name": "FIND"})
+    await _test_get_logs_filter(log_rw_client, repo, {"resource_name": "FIND"}, log)
 
 
 async def test_get_logs_filter_resource_ref(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["resource"] = {"ref": "core", "type": "module", "name": "find_me"}
+    log = await repo.create_log_with(
+        log_rw_client,
+        {"resource": {"ref": "core", "type": "module", "name": "find_me"}},
+    )
 
     # filter on resource_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, func, {"resource_ref": "core"})
+    await _test_get_logs_filter(log_rw_client, repo, {"resource_ref": "core"}, log)
 
 
 async def test_get_logs_filter_resource_extra(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
+    log_1 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "resource": {
+                "type": "config-profile",
+                "ref": "config-profile:123",
+                "name": "Config Profile 123",
+                "extra": [
+                    {"name": "field_1", "value": "foo"},
+                    {"name": "field_2", "value": "bar"},
+                ],
+            }
+        },
+    )
+    log_2 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "resource": {
+                "type": "config-profile",
+                "ref": "config-profile:123",
+                "name": "Config Profile 123",
+                "extra": [
+                    {"name": "field_1", "value": "bar"},
+                    {"name": "field_2", "value": "foo"},
+                ],
+            }
+        },
+    )
+
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        to_be_found=PreparedLog.prepare_data(
-            {
-                "resource": {
-                    "type": "config-profile",
-                    "ref": "config-profile:123",
-                    "name": "Config Profile 123",
-                    "extra": [
-                        {"name": "field_1", "value": "foo"},
-                        {"name": "field_2", "value": "bar"},
-                    ],
-                }
-            }
-        ),
-        not_to_be_found=[
-            PreparedLog.prepare_data(
-                {
-                    "resource": {
-                        "type": "config-profile",
-                        "ref": "config-profile:123",
-                        "name": "Config Profile 123",
-                        "extra": [
-                            {"name": "field_1", "value": "bar"},
-                            {"name": "field_2", "value": "foo"},
-                        ],
-                    }
-                }
-            ),
-        ],
-        search_params={
+        {
             "resource.field_1": "foo",
             "resource.field_2": "bar",
         },
+        log_1,
+        extra_log=False,
     )
 
 
 async def test_get_logs_filter_details(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
+    log_1 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "details": [
+                {"name": "field_1", "value": "foo"},
+                {"name": "field_2", "value": "bar"},
+            ]
+        },
+    )
+
+    log_2 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "details": [
+                {"name": "field_1", "value": "bar"},
+                {"name": "field_2", "value": "foo"},
+            ]
+        },
+    )
+
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        to_be_found=PreparedLog.prepare_data(
-            {
-                "details": [
-                    {"name": "field_1", "value": "foo"},
-                    {"name": "field_2", "value": "bar"},
-                ]
-            }
-        ),
-        not_to_be_found=[
-            PreparedLog.prepare_data(
-                {
-                    "details": [
-                        {"name": "field_1", "value": "bar"},
-                        {"name": "field_2", "value": "foo"},
-                    ]
-                }
-            ),
-        ],
-        search_params={
+        {
             "details.field_1": "foo",
             "details.field_2": "bar",
         },
+        log_1,
+        extra_log=False,
     )
 
 
 async def test_get_logs_filter_source(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
+    log_1 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "source": [
+                {"name": "field_1", "value": "foo"},
+                {"name": "field_2", "value": "bar"},
+            ]
+        },
+    )
+
+    log_2 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "source": [
+                {"name": "field_1", "value": "bar"},
+                {"name": "field_2", "value": "foo"},
+            ]
+        },
+    )
+
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        to_be_found=PreparedLog.prepare_data(
-            {
-                "source": [
-                    {"name": "field_1", "value": "foo"},
-                    {"name": "field_2", "value": "bar"},
-                ]
-            }
-        ),
-        not_to_be_found=[
-            PreparedLog.prepare_data(
-                {
-                    "source": [
-                        {"name": "field_1", "value": "bar"},
-                        {"name": "field_2", "value": "foo"},
-                    ]
-                }
-            ),
-        ],
-        search_params={
+        {
             "source.field_1": "foo",
             "source.field_2": "bar",
         },
+        log_1,
+        extra_log=False,
     )
 
 
 async def test_get_logs_filter_tag_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["tags"] = [
-            {"type": "simple_tag"},
-            {"ref": "rich_tag:1", "type": "find_me", "name": "Rich tag"},
-        ]
+    log = await repo.create_log_with(
+        log_rw_client,
+        {
+            "tags": [
+                {"type": "simple_tag"},
+                {"ref": "rich_tag:1", "type": "find_me", "name": "Rich tag"},
+            ]
+        },
+    )
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"tag_type": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, {"tag_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_tag_name(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["tags"] = [
-            {"type": "simple_tag"},
-            {"ref": "rich_tag:1", "type": "rich_tag", "name": "find_me"},
-        ]
+    log = await repo.create_log_with(
+        log_rw_client,
+        {
+            "tags": [
+                {"type": "simple_tag"},
+                {"ref": "rich_tag:1", "type": "rich_tag", "name": "find_me"},
+            ]
+        },
+    )
 
     # filter on tag_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, func, {"tag_name": "FIND"})
+    await _test_get_logs_filter(log_rw_client, repo, {"tag_name": "FIND"}, log)
 
 
 async def test_get_logs_filter_tag_ref(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["tags"] = [
-            {"type": "simple_tag"},
-            {"ref": "find_me", "type": "rich_tag", "name": "Rich tag"},
-        ]
+    log = await repo.create_log_with(
+        log_rw_client,
+        {
+            "tags": [
+                {"type": "simple_tag"},
+                {"ref": "find_me", "type": "rich_tag", "name": "Rich tag"},
+            ]
+        },
+    )
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"tag_ref": "find_me"})
+    await _test_get_logs_filter(log_rw_client, repo, {"tag_ref": "find_me"}, log)
 
 
 async def test_get_logs_filter_has_attachment(
@@ -956,16 +979,16 @@ async def test_get_logs_filter_has_attachment(
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        log_with_attachment,
         {"has_attachment": True},
-        not_to_be_found=[],
+        log_with_attachment,
+        extra_log=False,
     )
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        log_without_attachment,
         {"has_attachment": False},
-        not_to_be_found=[],
+        log_without_attachment,
+        extra_log=False,
     )
 
 
@@ -980,7 +1003,7 @@ async def test_get_logs_filter_attachment_name(
         type="text",
         mime_type="text/plain",
     )
-    await _test_get_logs_filter(log_rw_client, repo, log, {"attachment_name": "FIND"})
+    await _test_get_logs_filter(log_rw_client, repo, {"attachment_name": "FIND"}, log)
 
 
 async def test_get_logs_filter_attachment_type(
@@ -995,7 +1018,7 @@ async def test_get_logs_filter_attachment_type(
         mime_type="text/plain",
     )
     await _test_get_logs_filter(
-        log_rw_client, repo, log, {"attachment_type": "find_me"}
+        log_rw_client, repo, {"attachment_type": "find_me"}, log
     )
 
 
@@ -1011,32 +1034,40 @@ async def test_get_logs_filter_attachment_mime_type(
         mime_type="text/plain",
     )
     await _test_get_logs_filter(
-        log_rw_client, repo, log, {"attachment_mime_type": "text/plain"}
+        log_rw_client, repo, {"attachment_mime_type": "text/plain"}, log
     )
 
 
 async def test_get_logs_filter_node_id_exact_node(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["node_path"] = [
-            {"ref": "find_me:1", "name": "Customer 1"},
-            {"ref": "find_me:2", "name": "Customer 2"},
-        ]
+    log = await repo.create_log_with(
+        log_rw_client,
+        {
+            "node_path": [
+                {"ref": "find_me:1", "name": "Customer 1"},
+                {"ref": "find_me:2", "name": "Entity A"},
+            ]
+        },
+    )
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"node_ref": "find_me:2"})
+    await _test_get_logs_filter(log_rw_client, repo, {"node_ref": "find_me:2"}, log)
 
 
 async def test_get_logs_filter_node_id_ascendant_node(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    def func(log):
-        log["node_path"] = [
-            {"ref": "find_me:1", "name": "Customer 1"},
-            {"ref": "find_me:2", "name": "Customer 2"},
-        ]
+    log = await repo.create_log_with(
+        log_rw_client,
+        {
+            "node_path": [
+                {"ref": "find_me:1", "name": "Customer 1"},
+                {"ref": "find_me:2", "name": "Entity B"},
+            ]
+        },
+    )
 
-    await _test_get_logs_filter(log_rw_client, repo, func, {"node_ref": "find_me:1"})
+    await _test_get_logs_filter(log_rw_client, repo, {"node_ref": "find_me:1"}, log)
 
 
 async def test_get_logs_filter_since(log_rw_client: HttpTestHelper, repo: PreparedRepo):
@@ -1047,13 +1078,12 @@ async def test_get_logs_filter_since(log_rw_client: HttpTestHelper, repo: Prepar
         log_rw_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z")
     )
 
-    await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs",
-        params={"since": "2024-01-01T12:00:00Z"},
-        expected_json={
-            "items": [log2.expected_api_response()],
-            "pagination": {"next_cursor": None},
-        },
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        {"since": "2024-01-01T12:00:00Z"},
+        log2,
+        extra_log=False,
     )
 
 
@@ -1065,13 +1095,12 @@ async def test_get_logs_filter_until(log_rw_client: HttpTestHelper, repo: Prepar
         log_rw_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z")
     )
 
-    await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs",
-        params={"until": "2024-01-01T12:00:00Z"},
-        expected_json={
-            "items": [log1.expected_api_response()],
-            "pagination": {"next_cursor": None},
-        },
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        {"until": "2024-01-01T12:00:00Z"},
+        log1,
+        extra_log=False,
     )
 
 
@@ -1085,13 +1114,12 @@ async def test_get_logs_filter_until_milliseconds(
         log_rw_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z")
     )
 
-    await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs",
-        params={"until": "2023-12-31T23:59:59Z"},
-        expected_json={
-            "items": [log1.expected_api_response()],
-            "pagination": {"next_cursor": None},
-        },
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        {"until": "2023-12-31T23:59:59Z"},
+        log1,
+        extra_log=False,
     )
 
 
@@ -1108,44 +1136,51 @@ async def test_get_logs_filter_between_since_and_until(
         log_rw_client, saved_at=datetime.fromisoformat("2024-01-03T00:00:00Z")
     )
 
-    resp = await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs",
-        params={"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"},
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        {"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"},
+        log2,
+        extra_log=False,
     )
-    assert resp.json() == {
-        "items": [log2.expected_api_response()],
-        "pagination": {"next_cursor": None},
-    }
 
 
 async def test_get_logs_filter_multiple_criteria(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    log1_data = PreparedLog.prepare_data()
-    log1_data["action"]["type"] = "find_me_action_type"
-    log1 = await repo.create_log(log_rw_client, log1_data)
+    log_1 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "action": {"type": "find_me_action_type", "category": "category"},
+        },
+    )
 
-    log2_data = PreparedLog.prepare_data()
-    log2_data["action"]["category"] = "find_me_action_category"
-    log2 = await repo.create_log(log_rw_client, log2_data)
+    log_2 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "action": {"type": "type", "category": "find_me_action_category"},
+        },
+    )
 
-    log3_data = PreparedLog.prepare_data()
-    log3_data["action"] = {
-        "type": "find_me_action_type",
-        "category": "find_me_action_category",
-    }
-    log3 = await repo.create_log(log_rw_client, log3_data)
+    log_3 = await repo.create_log_with(
+        log_rw_client,
+        {
+            "action": {
+                "type": "find_me_action_type",
+                "category": "find_me_action_category",
+            },
+        },
+    )
 
-    await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs",
-        params={
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        {
             "action_type": "find_me_action_type",
             "action_category": "find_me_action_category",
         },
-        expected_json={
-            "items": [log3.expected_api_response()],
-            "pagination": {"next_cursor": None},
-        },
+        log_3,
+        extra_log=False,
     )
 
 
@@ -1154,9 +1189,10 @@ async def test_get_logs_empty_string_filter_params(
 ):
     log = await repo.create_log(log_rw_client)
 
-    resp = await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs",
-        params={
+    await _test_get_logs_filter(
+        log_rw_client,
+        repo,
+        {
             "action_type": "",
             "action_category": "",
             "actor_type": "",
@@ -1170,11 +1206,9 @@ async def test_get_logs_empty_string_filter_params(
             "since": "",
             "until": "",
         },
+        log,
+        extra_log=False,
     )
-    assert resp.json() == {
-        "items": [log.expected_api_response()],
-        "pagination": {"next_cursor": None},
-    }
 
 
 async def test_get_logs_filter_no_result(
@@ -1182,7 +1216,7 @@ async def test_get_logs_filter_no_result(
 ):
     log = await repo.create_log(log_rw_client)
 
-    await log_rw_client.assert_get(
+    await log_rw_client.assert_get_ok(
         f"/repos/{repo.id}/logs",
         params={"action_type": "not to be found"},
         expected_json={"items": [], "pagination": {"next_cursor": None}},
