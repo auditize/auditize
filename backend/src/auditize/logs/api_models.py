@@ -1,6 +1,5 @@
-import re
 from datetime import datetime
-from typing import Annotated, Optional, Pattern
+from typing import Annotated, Optional
 
 from fastapi import Request
 from pydantic import (
@@ -20,9 +19,6 @@ from auditize.logs.models import Log
 
 
 class _CustomFieldData(BaseModel):
-    # No brackets, dots or colons in field names:
-    # - brackets are used in the query string to access nested fields (e.g. details[foo])
-    # - dots and colons may be used for special usage in the future
     name: str = Field(title="Field name", pattern=IDENTIFIER_PATTERN)
     value: str = Field(title="Field value")
 

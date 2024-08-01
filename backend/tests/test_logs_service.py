@@ -223,26 +223,26 @@ async def test_log_retention_period_purge_consolidated_data(
         superadmin_client,
         data=PreparedLog.prepare_data(
             {
-                "action": {"category": "category", "type": "action_type_to_be_kept"},
-                "source": [{"name": "source_field_to_be_kept", "value": "value"}],
+                "action": {"category": "category", "type": "action-type-to-be-kept"},
+                "source": [{"name": "source-field-to-be-kept", "value": "value"}],
                 "actor": {
                     "name": "some actor",
                     "ref": "actor:123",
-                    "type": "actor_type_to_be_kept",
+                    "type": "actor-type-to-be-kept",
                     "extra": [
-                        {"name": "actor_extra_field_to_be_kept", "value": "value"}
+                        {"name": "actor-extra-field-to-be-kept", "value": "value"}
                     ],
                 },
                 "resource": {
                     "name": "some resource",
                     "ref": "resource:123",
-                    "type": "resource_type_to_be_kept",
+                    "type": "resource-type-to-be-kept",
                     "extra": [
-                        {"name": "resource_extra_field_to_be_kept", "value": "value"}
+                        {"name": "resource-extra-field-to-be-kept", "value": "value"}
                     ],
                 },
-                "tags": [{"type": "tag_type_to_be_kept"}],
-                "details": [{"name": "detail_field_to_be_kept", "value": "value"}],
+                "tags": [{"type": "tag-type-to-be-kept"}],
+                "details": [{"name": "detail-field-to-be-kept", "value": "value"}],
             }
         ),
         saved_at=datetime.now() - timedelta(days=10),
@@ -251,33 +251,33 @@ async def test_log_retention_period_purge_consolidated_data(
         superadmin_client,
         name="file.txt",
         data=b"hello",
-        type="attachment_type_to_be_kept",
+        type="attachment-type-to-be-kept",
         mime_type="mime-type/to-be-kept",
     )
     log_2 = await repo.create_log(
         superadmin_client,
         data=PreparedLog.prepare_data(
             {
-                "action": {"category": "category", "type": "action_type_to_be_purged"},
-                "source": [{"name": "source_field_to_be_purged", "value": "value"}],
+                "action": {"category": "category", "type": "action-type-to-be-purged"},
+                "source": [{"name": "source-field-to-be-purged", "value": "value"}],
                 "actor": {
                     "name": "some other actor",
                     "ref": "actor:456",
-                    "type": "actor_type_to_be_purged",
+                    "type": "actor-type-to-be-purged",
                     "extra": [
-                        {"name": "actor_extra_field_to_be_purged", "value": "value"}
+                        {"name": "actor-extra-field-to-be-purged", "value": "value"}
                     ],
                 },
                 "resource": {
                     "name": "some other resource",
                     "ref": "resource:456",
-                    "type": "resource_type_to_be_purged",
+                    "type": "resource-type-to-be-purged",
                     "extra": [
-                        {"name": "resource_extra_field_to_be_purged", "value": "value"}
+                        {"name": "resource-extra-field-to-be-purged", "value": "value"}
                     ],
                 },
-                "tags": [{"type": "tag_type_to_be_purged"}],
-                "details": [{"name": "detail_field_to_be_purged", "value": "value"}],
+                "tags": [{"type": "tag-type-to-be-purged"}],
+                "details": [{"name": "detail-field-to-be-purged", "value": "value"}],
             }
         ),
         saved_at=datetime.now() - timedelta(days=40),
@@ -286,7 +286,7 @@ async def test_log_retention_period_purge_consolidated_data(
         superadmin_client,
         name="file.txt",
         data=b"hello",
-        type="attachment_type_to_be_purged",
+        type="attachment-type-to-be-purged",
         mime_type="mime-type/to-be-purged",
     )
 
@@ -294,34 +294,34 @@ async def test_log_retention_period_purge_consolidated_data(
 
     await assert_consolidated_data(
         repo.db.log_actions,
-        [{"category": "category", "type": "action_type_to_be_kept"}],
+        [{"category": "category", "type": "action-type-to-be-kept"}],
     )
     await assert_consolidated_data(
-        repo.db.log_source_fields, [{"name": "source_field_to_be_kept"}]
+        repo.db.log_source_fields, [{"name": "source-field-to-be-kept"}]
     )
     await assert_consolidated_data(
-        repo.db.log_actor_types, [{"type": "actor_type_to_be_kept"}]
+        repo.db.log_actor_types, [{"type": "actor-type-to-be-kept"}]
     )
     await assert_consolidated_data(
         repo.db.log_actor_extra_fields,
-        [{"name": "actor_extra_field_to_be_kept"}],
+        [{"name": "actor-extra-field-to-be-kept"}],
     )
     await assert_consolidated_data(
-        repo.db.log_resource_types, [{"type": "resource_type_to_be_kept"}]
+        repo.db.log_resource_types, [{"type": "resource-type-to-be-kept"}]
     )
     await assert_consolidated_data(
         repo.db.log_resource_extra_fields,
-        [{"name": "resource_extra_field_to_be_kept"}],
+        [{"name": "resource-extra-field-to-be-kept"}],
     )
     await assert_consolidated_data(
-        repo.db.log_tag_types, [{"type": "tag_type_to_be_kept"}]
+        repo.db.log_tag_types, [{"type": "tag-type-to-be-kept"}]
     )
     await assert_consolidated_data(
-        repo.db.log_detail_fields, [{"name": "detail_field_to_be_kept"}]
+        repo.db.log_detail_fields, [{"name": "detail-field-to-be-kept"}]
     )
     await assert_consolidated_data(
         repo.db.log_attachment_types,
-        [{"type": "attachment_type_to_be_kept"}],
+        [{"type": "attachment-type-to-be-kept"}],
     )
     await assert_consolidated_data(
         repo.db.log_attachment_mime_types,

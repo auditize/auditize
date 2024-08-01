@@ -436,8 +436,8 @@ class LogProvider:
         node_path = random.choice(self.node_paths)
         return {
             "action": {
-                "category": "job_offers",
-                "type": "job_offer_creation",
+                "category": "job-offers",
+                "type": "job-offer-creation",
             },
             "actor": random.choice(self.registered_actors),
             "source": [
@@ -446,18 +446,18 @@ class LogProvider:
                     "value": "myATS",
                 },
                 {
-                    "name": "application_version",
+                    "name": "application-version",
                     "value": "1.0.0",
                 },
             ],
             "resource": {
                 "ref": str(uuid.uuid4()),
-                "type": "job_offer",
+                "type": "job-offer",
                 "name": job_title + " in " + node_path[-1]["name"],
             },
             "details": [
                 {
-                    "name": "job_title",
+                    "name": "job-title",
                     "value": job_title,
                 }
             ],
@@ -467,8 +467,8 @@ class LogProvider:
     def _build_job_offer_close_log(self, job_offer_log, reason):
         return {
             "action": {
-                "category": "job_offers",
-                "type": "job_offer_close",
+                "category": "job-offers",
+                "type": "job-offer-close",
             },
             "actor": job_offer_log["actor"],
             "source": [
@@ -477,7 +477,7 @@ class LogProvider:
                     "value": "myATS",
                 },
                 {
-                    "name": "application_version",
+                    "name": "application-version",
                     "value": "1.0.0",
                 },
             ],
@@ -502,13 +502,13 @@ class LogProvider:
         ]
         return {
             "action": {
-                "category": "job_applications",
-                "type": "job_application",
+                "category": "job-applications",
+                "type": "job-application",
             },
             "actor": applicant,
             "source": [
                 {
-                    "name": "job_board",
+                    "name": "job-board",
                     "value": "Get a job today !",
                 },
             ],
@@ -534,8 +534,8 @@ class LogProvider:
     ):
         return {
             "action": {
-                "category": "job_applications",
-                "type": "job_application_status_change",
+                "category": "job-applications",
+                "type": "job-application-status-change",
             },
             "actor": job_offer_log["actor"],
             "source": [
@@ -544,7 +544,7 @@ class LogProvider:
                     "value": "myATS",
                 },
                 {
-                    "name": "application_version",
+                    "name": "application-version",
                     "value": "1.0.0",
                 },
             ],
@@ -581,7 +581,7 @@ class LogProvider:
         return {
             "action": {
                 "category": "users",
-                "type": "user_creation",
+                "type": "user-creation",
             },
             "actor": random.choice(self.registered_actors),
             "source": [
@@ -590,7 +590,7 @@ class LogProvider:
                     "value": "myATS",
                 },
                 {
-                    "name": "application_version",
+                    "name": "application-version",
                     "value": "1.0.0",
                 },
             ],
@@ -601,7 +601,7 @@ class LogProvider:
             },
             "details": [
                 {
-                    "name": "granted_role",
+                    "name": "granted-role",
                     "value": "Administrator",
                 }
             ],

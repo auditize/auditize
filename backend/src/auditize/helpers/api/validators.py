@@ -1,9 +1,9 @@
 import re
 
-IDENTIFIER_PATTERN_STRING = r"^[a-z0-9_-]+$"
+IDENTIFIER_PATTERN_STRING = r"^[a-z0-9-]+$"
 IDENTIFIER_PATTERN = re.compile(IDENTIFIER_PATTERN_STRING)
 FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING = (
-    r"(?:source|details|actor|resource)\.[a-z0-9_-]+"
+    r"(?:source|details|actor|resource)\.[a-z0-9-]+"
 )
 FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN = re.compile(
     FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING
