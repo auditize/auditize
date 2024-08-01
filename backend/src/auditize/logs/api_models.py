@@ -379,6 +379,11 @@ class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItemData]):
 
 
 class BaseLogSearchParams(BaseModel):
+    # All those fields are left Optional[] because FastAPI seems to explicitly pass None
+    # (the default value) to the class constructor instead of not passing the value at all.
+    # That triggers a pydantic validation error because None is not explicitly allowed.
+    # The Optional[] is also needed because (among others) this model is used in GET /users/me/logs/filters
+    # for the search_params field (where field values can be None).
     action_type: Optional[str] = Field(default=None)
     action_category: Optional[str] = Field(default=None)
     actor_type: Optional[str] = Field(default=None)
