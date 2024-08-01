@@ -81,8 +81,6 @@ function SourceField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
-  const logTranslator = useLogTranslator(repoId);
-
   if (!log.source) {
     return null;
   }
@@ -97,7 +95,7 @@ function SourceField({
         onTableSearchParamChange("source", new Map([[fieldName, fieldValue]]))
       }
     >
-      {logTranslator("source_field", fieldValue)}
+      {fieldValue}
     </InlineSearchParamLink>
   );
 }
