@@ -33,9 +33,9 @@ class User(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    email: Optional[str] = None
-    lang: Optional[Lang] = None
-    permissions: Optional[Permissions] = None
-    password: Optional[str] = None
+    first_name: str = None
+    last_name: str = None
+    email: str = None
+    lang: Lang = None
+    permissions: Permissions = None
+    password: str = None

@@ -64,7 +64,7 @@ async def update_apikey(
     apikey: ApikeyUpdateRequest,
 ):
     _ensure_cannot_alter_own_apikey(authenticated, apikey_id)
-    apikey_model = ApikeyUpdate.model_validate(apikey.model_dump())
+    apikey_model = ApikeyUpdate.model_validate(apikey.model_dump(exclude_unset=True))
     if apikey_model.permissions:
         authorize_grant(authenticated.permissions, apikey_model.permissions)
     await service.update_apikey(dbm, apikey_id, apikey_model)

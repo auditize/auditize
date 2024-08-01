@@ -49,8 +49,8 @@ class ApikeyCreationRequest(BaseModel):
 
 
 class ApikeyUpdateRequest(BaseModel):
-    name: Optional[str] = _ApikeyNameField(default=None)
-    permissions: Optional[PermissionsInputData] = _ApikeyPermissionsField(default=None)
+    name: str = _ApikeyNameField(default=None)
+    permissions: PermissionsInputData = _ApikeyPermissionsField(default=None)
 
 
 class ApikeyCreationResponse(BaseModel):

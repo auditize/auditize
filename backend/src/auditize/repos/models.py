@@ -24,9 +24,9 @@ class Repo(BaseModel):
 
 
 class RepoUpdate(BaseModel):
-    name: Optional[str] = None
-    status: Optional[RepoStatus] = None
-    retention_period: int | None = None
+    name: str = None
+    status: RepoStatus = None
+    retention_period: Optional[int] = None
     log_i18n_profile_id: Optional[str] = None
 
 

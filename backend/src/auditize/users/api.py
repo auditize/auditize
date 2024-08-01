@@ -64,7 +64,7 @@ async def update_user_me(
     update_request: UserMeUpdateRequest,
 ):
     authenticated.ensure_user()
-    update = UserUpdate.model_validate(update_request.model_dump())
+    update = UserUpdate.model_validate(update_request.model_dump(exclude_unset=True))
     await service.update_user(dbm, authenticated.user.id, update)
     user = await service.get_user(dbm, authenticated.user.id)
     return UserMeResponse.from_user(user)
@@ -85,7 +85,7 @@ async def update_user(
 ):
     _ensure_cannot_alter_own_user(authenticated, user_id)
 
-    user_model = UserUpdate.model_validate(user.model_dump())
+    user_model = UserUpdate.model_validate(user.model_dump(exclude_unset=True))
     if user_model.permissions:
         authorize_grant(authenticated.permissions, user_model.permissions)
     await service.update_user(dbm, user_id, user_model)

@@ -63,8 +63,8 @@ class RepoCreationRequest(BaseModel):
 
 
 class RepoUpdateRequest(BaseModel):
-    name: Optional[str] = _RepoNameField(default=None)
-    status: Optional[RepoStatus] = _RepoStatusField(default=None)
+    name: str = _RepoNameField(default=None)
+    status: RepoStatus = _RepoStatusField(default=None)
     retention_period: Optional[int] = _RepoRetentionPeriodField(default=None)
     log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
 

@@ -30,5 +30,5 @@ class LogI18nProfile(BaseModel):
 
 
 class LogI18nProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    translations: Optional[dict[Lang, LogTranslation | None]] = None
+    name: str = None
+    translations: dict[Lang, LogTranslation | None] = None

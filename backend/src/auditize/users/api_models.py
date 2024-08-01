@@ -84,11 +84,11 @@ class UserCreationRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    first_name: Optional[str] = _UserFirstNameField(default=None)
-    last_name: Optional[str] = _UserLastNameField(default=None)
-    email: Optional[str] = _UserEmailField(default=None)
-    lang: Optional[Lang] = _UserLangField(default=None)
-    permissions: Optional[PermissionsInputData] = _UserPermissionsField(default=None)
+    first_name: str = _UserFirstNameField(default=None)
+    last_name: str = _UserLastNameField(default=None)
+    email: str = _UserEmailField(default=None)
+    lang: Lang = _UserLangField(default=None)
+    permissions: PermissionsInputData = _UserPermissionsField(default=None)
 
 
 class UserCreationResponse(BaseModel):
@@ -148,8 +148,8 @@ class UserMeResponse(BaseModel):
 
 
 class UserMeUpdateRequest(BaseModel):
-    lang: Optional[Lang] = _UserLangField(default=None)
-    password: Optional[str] = _UserPasswordField(default=None)
+    lang: Lang = _UserLangField(default=None)
+    password: str = _UserPasswordField(default=None)
 
 
 # NB: yes, the request of a request...

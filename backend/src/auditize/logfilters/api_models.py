@@ -154,12 +154,10 @@ class LogFilterCreationResponse(BaseModel):
 
 
 class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
-    name: Optional[str] = _NameField(default=None)
-    repo_id: Optional[str] = _RepoIdField(default=None)
-    search_params: Optional[LogFilterSearchParamsData] = _SearchParamsField(
-        default=None
-    )
-    columns: Optional[list[str]] = _ColumnsField(default=None)
+    name: str = _NameField(default=None)
+    repo_id: str = _RepoIdField(default=None)
+    search_params: LogFilterSearchParamsData = _SearchParamsField(default=None)
+    columns: list[str] = _ColumnsField(default=None)
 
 
 class LogFilterReadingResponse(BaseModel):
