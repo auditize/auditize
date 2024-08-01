@@ -1,8 +1,8 @@
+import uuid
 from datetime import datetime, timedelta
 
 import callee
 import pytest
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
@@ -40,7 +40,7 @@ def make_log_data(**extra) -> Log:
 async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data()
     log_id = await save_log(dbm, repo.id, log)
-    db_log = await repo.db.logs.find_one({"_id": ObjectId(log_id)})
+    db_log = await repo.db.logs.find_one({"_id": uuid.UUID(log_id)})
     assert list(db_log.keys()) == [
         "_id",
         "action",
@@ -207,7 +207,9 @@ async def test_log_retention_period_enabled(
     await apply_log_retention_period(dbm)
 
     assert await repo_1.db.logs.count_documents({}) == 1
-    assert await repo_1.db.logs.find_one({"_id": ObjectId(repo_1_log_2.id)}) is not None
+    assert (
+        await repo_1.db.logs.find_one({"_id": uuid.UUID(repo_1_log_2.id)}) is not None
+    )
 
     assert await repo_2.db.logs.count_documents({}) == 2
 

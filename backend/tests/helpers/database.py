@@ -1,15 +1,15 @@
 import os
 import random
 
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import DatabaseManager, get_dbm
+from auditize.database import DatabaseManager, get_dbm, setup_mongo_client
 from auditize.logs.db import get_log_db_name
 from auditize.main import app
 
 
 def setup_test_dbm():
-    mongo_client = AsyncIOMotorClient()
+    mongo_client = setup_mongo_client()
     name_prefix = "test_%04d" % int(random.random() * 10000)
     try:
         name_prefix += "_" + os.environ["PYTEST_XDIST_WORKER"]

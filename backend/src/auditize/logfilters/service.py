@@ -1,4 +1,4 @@
-from bson import ObjectId
+import uuid
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
@@ -32,7 +32,7 @@ async def create_log_filter(dbm: DatabaseManager, log_filter: LogFilter) -> str:
 
 
 def _log_filter_discriminator(user_id: str, log_filter_id) -> dict:
-    return {"_id": ObjectId(log_filter_id), "user_id": user_id}
+    return {"_id": uuid.UUID(log_filter_id), "user_id": user_id}
 
 
 async def update_log_filter(

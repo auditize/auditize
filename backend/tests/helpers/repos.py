@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 
 import callee
-from bson import ObjectId
 
 from auditize.database import DatabaseManager
 from auditize.logs.db import LogDatabase, get_log_db_for_config
@@ -33,7 +32,7 @@ class PreparedRepo:
 
     def expected_document(self, extra=None):
         return {
-            "_id": ObjectId(self.id),
+            "_id": uuid.UUID(self.id),
             "name": self.data["name"],
             "status": self.data.get("status", "enabled"),
             "retention_period": self.data.get("retention_period", None),
@@ -65,7 +64,7 @@ class PreparedRepo:
         log_id = resp.json()["id"]
         if saved_at:
             self.db.logs.update_one(
-                {"_id": ObjectId(log_id)}, {"$set": {"saved_at": saved_at}}
+                {"_id": uuid.UUID(log_id)}, {"$set": {"saved_at": saved_at}}
             )
         return PreparedLog(log_id, data, self)
 

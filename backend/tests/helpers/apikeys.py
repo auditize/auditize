@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 
 import callee
-from bson import ObjectId
 
 from auditize.apikeys.models import Apikey
 from auditize.apikeys.service import create_apikey
@@ -68,7 +67,7 @@ class PreparedApikey:
 
     def expected_document(self, extra=None):
         return {
-            "_id": ObjectId(self.id),
+            "_id": uuid.UUID(self.id),
             "name": self.data["name"],
             "key_hash": callee.IsA(str),
             "created_at": callee.IsA(datetime),

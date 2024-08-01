@@ -1,6 +1,5 @@
+import uuid
 from typing import Any, Sequence
-
-from bson import ObjectId
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
@@ -156,7 +155,7 @@ async def get_user_repos(
 
     repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
     if repo_ids is not None:
-        filter["_id"] = {"$in": list(map(ObjectId, repo_ids))}
+        filter["_id"] = {"$in": list(map(uuid.UUID, repo_ids))}
 
     return await _get_repos(dbm, filter, page, page_size)
 

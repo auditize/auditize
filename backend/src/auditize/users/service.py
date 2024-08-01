@@ -1,8 +1,8 @@
 import secrets
+import uuid
 from datetime import timedelta
 
 import bcrypt
-from bson import ObjectId
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager
@@ -90,7 +90,7 @@ async def _get_user(dbm: DatabaseManager, filter: dict) -> User:
 
 
 async def get_user(dbm: DatabaseManager, user_id: str) -> User:
-    return await _get_user(dbm, {"_id": ObjectId(user_id)})
+    return await _get_user(dbm, {"_id": uuid.UUID(user_id)})
 
 
 async def get_user_by_email(dbm: DatabaseManager, email: str) -> User:
@@ -151,7 +151,7 @@ async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: str):
     user = await get_user(dbm, user_id)
     if user.permissions.is_superadmin:
         other_superadmin = await dbm.core_db.users.find_one(
-            {"_id": {"$ne": ObjectId(user_id)}, "permissions.is_superadmin": True}
+            {"_id": {"$ne": uuid.UUID(user_id)}, "permissions.is_superadmin": True}
         )
         if not other_superadmin:
             raise ConstraintViolation(

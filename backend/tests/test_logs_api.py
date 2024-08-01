@@ -8,7 +8,7 @@ import pytest
 from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.http import HttpTestHelper
-from helpers.logs import UNKNOWN_OBJECT_ID, PreparedLog
+from helpers.logs import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
     do_test_page_pagination_common_scenarios,
     do_test_page_pagination_empty_data,
@@ -295,7 +295,7 @@ async def test_add_attachment_unknown_log(
     repo: PreparedRepo,
 ):
     await log_write_client.assert_post_not_found(
-        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}/attachments",
+        f"/repos/{repo.id}/logs/{UNKNOWN_UUID}/attachments",
         files={"file": ("test.txt", "test data")},
         data={"type": "text"},
     )
@@ -400,14 +400,12 @@ async def test_get_log_all_fields(
 
 
 async def test_get_log_not_found(log_read_client: HttpTestHelper, repo: PreparedRepo):
-    await log_read_client.assert_get_not_found(
-        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}"
-    )
+    await log_read_client.assert_get_not_found(f"/repos/{repo.id}/logs/{UNKNOWN_UUID}")
 
 
 async def test_get_log_unknown_repo(log_read_client: HttpTestHelper):
     await log_read_client.assert_get_not_found(
-        f"/repos/{UNKNOWN_OBJECT_ID}/logs/{UNKNOWN_OBJECT_ID}"
+        f"/repos/{UNKNOWN_UUID}/logs/{UNKNOWN_UUID}"
     )
 
 
@@ -485,7 +483,7 @@ async def test_get_log_attachment_not_found_log_id(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
     await log_read_client.assert_get_not_found(
-        f"/repos/{repo.id}/logs/{UNKNOWN_OBJECT_ID}/attachments/0"
+        f"/repos/{repo.id}/logs/{UNKNOWN_UUID}/attachments/0"
     )
 
 
@@ -588,7 +586,7 @@ async def test_get_logs_with_attachment(
 async def test_get_logs_unknown_repo(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await log_read_client.assert_get_not_found(f"/repos/{UNKNOWN_OBJECT_ID}/logs")
+    await log_read_client.assert_get_not_found(f"/repos/{UNKNOWN_UUID}/logs")
 
 
 async def test_get_logs_forbidden(
@@ -1603,7 +1601,7 @@ class _ConsolidatedDataTest:
         )
 
     async def test_not_found(self, log_read_client: HttpTestHelper):
-        await log_read_client.assert_get_not_found(self.get_path(UNKNOWN_OBJECT_ID))
+        await log_read_client.assert_get_not_found(self.get_path(UNKNOWN_UUID))
 
     async def test_forbidden(
         self, no_permission_client: HttpTestHelper, repo: PreparedRepo
@@ -2351,7 +2349,7 @@ async def test_get_logs_as_csv_unknown_custom_field(
 async def test_get_logs_as_csv_unknown_repo(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await log_read_client.assert_get_not_found(f"/repos/{UNKNOWN_OBJECT_ID}/logs/csv")
+    await log_read_client.assert_get_not_found(f"/repos/{UNKNOWN_UUID}/logs/csv")
 
 
 async def test_get_logs_as_csv_forbidden(

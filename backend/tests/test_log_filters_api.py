@@ -8,7 +8,7 @@ from conftest import UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logfilters import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
-from helpers.logs import UNKNOWN_OBJECT_ID
+from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repos import PreparedRepo
 from helpers.users import PreparedUser
@@ -263,7 +263,7 @@ async def test_log_filter_create_invalid_repo(
             "/users/me/logs/filters",
             json={
                 "name": "my filter",
-                "repo_id": UNKNOWN_OBJECT_ID,
+                "repo_id": UNKNOWN_UUID,
                 "search_params": {},
                 "columns": [],
             },
@@ -405,7 +405,7 @@ async def test_log_filter_update_invalid_repo(
         await client.assert_patch_bad_request(
             f"/users/me/logs/filters/{log_filter.id}",
             json={
-                "repo_id": UNKNOWN_OBJECT_ID,
+                "repo_id": UNKNOWN_UUID,
             },
         )
 
@@ -434,7 +434,7 @@ async def test_log_filter_update_unknown(
     async with log_read_user.client() as client:
         client: HttpTestHelper
         await client.assert_patch_not_found(
-            f"/users/me/logs/filters/{UNKNOWN_OBJECT_ID}", json={}
+            f"/users/me/logs/filters/{UNKNOWN_UUID}", json={}
         )
 
 
@@ -511,7 +511,7 @@ async def test_log_filter_get_all_fields_set(
 async def test_log_filter_get_unknown(log_read_user: PreparedUser, repo: PreparedRepo):
     async with log_read_user.client() as client:
         client: HttpTestHelper
-        await client.assert_get_not_found(f"/users/me/logs/filters/{UNKNOWN_OBJECT_ID}")
+        await client.assert_get_not_found(f"/users/me/logs/filters/{UNKNOWN_UUID}")
 
 
 async def test_log_filter_get_forbidden(user_builder: UserBuilder, repo: PreparedRepo):
@@ -670,7 +670,7 @@ async def test_log_filter_delete(
 
 async def test_log_filter_delete_unknown(log_read_user_client: HttpTestHelper):
     await log_read_user_client.assert_delete_not_found(
-        f"/users/me/logs/filters/{UNKNOWN_OBJECT_ID}"
+        f"/users/me/logs/filters/{UNKNOWN_UUID}"
     )
 
 

@@ -10,7 +10,7 @@ from conftest import ApikeyBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
-from helpers.logs import UNKNOWN_OBJECT_ID
+from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repos import PreparedRepo
 from helpers.utils import strip_dict_keys
@@ -136,7 +136,7 @@ async def test_repo_create_unknown_log_i18n_profile_id(
 ):
     await repo_write_client.assert_post_bad_request(
         "/repos",
-        json={"name": "myrepo", "log_i18n_profile_id": UNKNOWN_OBJECT_ID},
+        json={"name": "myrepo", "log_i18n_profile_id": UNKNOWN_UUID},
     )
 
 
@@ -243,7 +243,7 @@ async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
     await repo_write_client.assert_patch_not_found(
-        f"/repos/{UNKNOWN_OBJECT_ID}",
+        f"/repos/{UNKNOWN_UUID}",
         json={"name": "Repo Updated"},
     )
 
@@ -346,7 +346,7 @@ async def test_repo_get_with_stats(
 async def test_repo_get_unknown_id(
     repo_read_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    await repo_read_client.assert_get_not_found(f"/repos/{UNKNOWN_OBJECT_ID}")
+    await repo_read_client.assert_get_not_found(f"/repos/{UNKNOWN_UUID}")
 
 
 async def test_repo_get_forbidden(
@@ -414,7 +414,7 @@ async def test_repo_get_translation_for_user_unknown_id(
     log_read_user_client: HttpTestHelper, dbm: DatabaseManager
 ):
     await log_read_user_client.assert_get_not_found(
-        f"/repos/{UNKNOWN_OBJECT_ID}/translation"
+        f"/repos/{UNKNOWN_UUID}/translation"
     )
 
 
@@ -488,7 +488,7 @@ async def test_repo_get_translation_unknown_id(
     log_read_user_client: HttpTestHelper, dbm: DatabaseManager
 ):
     await log_read_user_client.assert_get_not_found(
-        f"/repos/{UNKNOWN_OBJECT_ID}/translations/en"
+        f"/repos/{UNKNOWN_UUID}/translations/en"
     )
 
 
@@ -764,7 +764,7 @@ async def test_repo_delete(
 async def test_repo_delete_unknown_id(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    await repo_write_client.assert_delete_not_found(f"/repos/{UNKNOWN_OBJECT_ID}")
+    await repo_write_client.assert_delete_not_found(f"/repos/{UNKNOWN_UUID}")
 
 
 async def test_repo_delete_forbidden(

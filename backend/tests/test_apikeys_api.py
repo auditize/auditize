@@ -1,6 +1,7 @@
+import uuid
+
 import callee
 import pytest
-from bson import ObjectId
 from httpx import Response
 
 from auditize.database import DatabaseManager
@@ -8,7 +9,7 @@ from conftest import ApikeyBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
-from helpers.logs import UNKNOWN_OBJECT_ID
+from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.tests import BasePermissionTests
 from helpers.users import PreparedUser
@@ -96,7 +97,7 @@ async def test_apikey_update(
 
 async def test_apikey_update_unknown_id(apikey_write_client: HttpTestHelper):
     await apikey_write_client.assert_patch_not_found(
-        f"/apikeys/{UNKNOWN_OBJECT_ID}",
+        f"/apikeys/{UNKNOWN_UUID}",
         json={"name": "update"},
     )
 
@@ -135,7 +136,7 @@ async def test_apikey_regenerate_key(
     apikey: PreparedApikey,
     dbm: DatabaseManager,
 ):
-    mongo_document = await dbm.core_db.apikeys.find_one({"_id": ObjectId(apikey.id)})
+    mongo_document = await dbm.core_db.apikeys.find_one({"_id": uuid.UUID(apikey.id)})
 
     await apikey_write_client.assert_post(
         f"/apikeys/{apikey.id}/key",
@@ -180,7 +181,7 @@ async def test_apikey_get(apikey_read_client: HttpTestHelper, apikey: PreparedAp
 
 
 async def test_apikey_get_unknown_id(apikey_read_client: HttpTestHelper):
-    await apikey_read_client.assert_get_not_found(f"/apikeys/{UNKNOWN_OBJECT_ID}")
+    await apikey_read_client.assert_get_not_found(f"/apikeys/{UNKNOWN_UUID}")
 
 
 async def test_apikey_get_forbidden(
@@ -241,7 +242,7 @@ async def test_apikey_delete(
 
 
 async def test_apikey_delete_unknown_id(apikey_write_client: HttpTestHelper):
-    await apikey_write_client.assert_delete_not_found(f"/apikeys/{UNKNOWN_OBJECT_ID}")
+    await apikey_write_client.assert_delete_not_found(f"/apikeys/{UNKNOWN_UUID}")
 
 
 async def test_apikey_delete_unauthorized(

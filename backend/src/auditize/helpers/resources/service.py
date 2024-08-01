@@ -1,4 +1,5 @@
-from bson import ObjectId
+import uuid
+
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import BaseModel
 from pymongo.errors import DuplicateKeyError
@@ -8,7 +9,7 @@ from auditize.exceptions import ConstraintViolation, UnknownModelException
 
 def _normalize_filter(filter: str | dict) -> dict:
     if isinstance(filter, str):
-        return {"_id": ObjectId(filter)}
+        return {"_id": uuid.UUID(filter)}
     return filter
 
 
@@ -19,7 +20,7 @@ async def create_resource_document(
         document = document.model_dump(exclude={"id"})
 
     try:
-        result = await collection.insert_one(document)
+        result = await collection.insert_one({**document, "_id": uuid.uuid4()})
     except DuplicateKeyError:
         raise ConstraintViolation()
 

@@ -1,7 +1,7 @@
+import uuid
 from datetime import datetime
 
 import pytest
-from bson import ObjectId
 
 from auditize.helpers.pagination.cursor.service import (
     InvalidPaginationCursor,
@@ -11,7 +11,7 @@ from auditize.helpers.pagination.cursor.service import (
 
 def test_pagination_cursor():
     # build initial cursor
-    obj_id = ObjectId("60f3b3b3b3b3b3b3b3b3b3b3")
+    obj_id = uuid.UUID("cc12c9bb-0b33-43cd-a410-e3f9c848a62b")
     date = datetime.fromisoformat("2021-07-19T00:00:00Z")
     cursor = PaginationCursor(id=obj_id, date=date)
 

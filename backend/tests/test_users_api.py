@@ -10,7 +10,7 @@ from conftest import UserBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
-from helpers.logs import UNKNOWN_OBJECT_ID
+from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.constants import (
     DEFAULT_APPLICABLE_PERMISSIONS,
@@ -189,7 +189,7 @@ async def test_user_update_partial(
 
 async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
     await user_write_client.assert_patch_not_found(
-        f"/users/{UNKNOWN_OBJECT_ID}",
+        f"/users/{UNKNOWN_UUID}",
         json={"first_name": "John Updated"},
     )
 
@@ -238,7 +238,7 @@ async def test_user_get(user_read_client: HttpTestHelper, user: PreparedUser):
 
 
 async def test_user_get_unknown_id(user_read_client: HttpTestHelper):
-    await user_read_client.assert_get_not_found(f"/users/{UNKNOWN_OBJECT_ID}")
+    await user_read_client.assert_get_not_found(f"/users/{UNKNOWN_UUID}")
 
 
 async def test_user_get_forbidden(
@@ -314,7 +314,7 @@ async def test_user_delete(
 
 
 async def test_user_delete_unknown_id(user_write_client: HttpTestHelper):
-    await user_write_client.assert_delete_not_found(f"/users/{UNKNOWN_OBJECT_ID}")
+    await user_write_client.assert_delete_not_found(f"/users/{UNKNOWN_UUID}")
 
 
 async def test_user_delete_forbidden(

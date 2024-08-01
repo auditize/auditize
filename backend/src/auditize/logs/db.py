@@ -1,3 +1,4 @@
+import uuid
 from functools import partial
 
 from aiocache import Cache
@@ -23,7 +24,9 @@ class LogDatabase(BaseDatabase):
         )
         if await self._cache.exists(cache_key):
             return
-        result = await collection.update_one(data, {"$set": {}}, upsert=True)
+        result = await collection.update_one(
+            data, {"$set": {}, "$setOnInsert": {"_id": uuid.uuid4()}}, upsert=True
+        )
         await self._cache.set(cache_key, result)
 
     # Collections

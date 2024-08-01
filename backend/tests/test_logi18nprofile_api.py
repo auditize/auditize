@@ -5,7 +5,7 @@ from auditize.database import DatabaseManager
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
-from helpers.logs import UNKNOWN_OBJECT_ID
+from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repos import PreparedRepo
 
@@ -348,7 +348,7 @@ async def test_log_i18n_profile_update_not_found(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
     await repo_write_client.assert_patch_not_found(
-        f"/log-i18n-profiles/{UNKNOWN_OBJECT_ID}",
+        f"/log-i18n-profiles/{UNKNOWN_UUID}",
         json={
             "name": "i18n",
         },
@@ -387,7 +387,7 @@ async def test_log_i18n_profile_get_not_found(
     repo_read_client: HttpTestHelper, dbm: DatabaseManager
 ):
     await repo_read_client.assert_get_not_found(
-        f"/log-i18n-profiles/{UNKNOWN_OBJECT_ID}",
+        f"/log-i18n-profiles/{UNKNOWN_UUID}",
     )
 
 
@@ -433,7 +433,7 @@ async def test_log_i18n_profile_translation_get_not_found(
     repo_read_client: HttpTestHelper, dbm: DatabaseManager
 ):
     await repo_read_client.assert_get_not_found(
-        f"/log-i18n-profiles/{UNKNOWN_OBJECT_ID}/translations/en",
+        f"/log-i18n-profiles/{UNKNOWN_UUID}/translations/en",
     )
 
 
@@ -525,7 +525,7 @@ async def test_log_i18n_profile_delete_unknown_id(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
     await repo_write_client.assert_delete_not_found(
-        f"/log-i18n-profiles/{UNKNOWN_OBJECT_ID}"
+        f"/log-i18n-profiles/{UNKNOWN_UUID}"
     )
 
 

@@ -4,10 +4,10 @@ from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator
 
 import callee
-from bson import ObjectId
 from httpx import Response
 
 from auditize.database import DatabaseManager
+from auditize.helpers.resources.service import create_resource_document
 from auditize.permissions.models import Permissions
 from auditize.users.models import Lang, User
 from auditize.users.service import (
@@ -71,9 +71,11 @@ class PreparedUser:
     ) -> "PreparedUser":
         if user is None:
             user = cls.prepare_model(password=password)
-        result = await dbm.core_db.users.insert_one(build_document_from_user(user))
+        user_id = await create_resource_document(
+            dbm.core_db.users, build_document_from_user(user)
+        )
         return cls(
-            id=str(result.inserted_id),
+            id=user_id,
             data={
                 "first_name": user.first_name,
                 "last_name": user.last_name,
@@ -85,7 +87,7 @@ class PreparedUser:
 
     async def expire_password_reset_token(self):
         await self.dbm.core_db.users.update_one(
-            {"_id": ObjectId(self.id)},
+            {"_id": uuid.UUID(self.id)},
             {
                 "$set": {
                     "password_reset_token.expires_at": datetime.now(timezone.utc)
@@ -130,7 +132,7 @@ class PreparedUser:
             "expires_at": callee.IsA(datetime),
         }
         return {
-            "_id": ObjectId(self.id),
+            "_id": uuid.UUID(self.id),
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],

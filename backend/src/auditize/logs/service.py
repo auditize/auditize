@@ -1,12 +1,12 @@
 import csv
 import re
+import uuid
 from datetime import datetime, timedelta
 from functools import partial
 from io import StringIO
 from itertools import count
 from typing import Any, AsyncGenerator
 
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.config import get_config
@@ -167,7 +167,7 @@ async def get_log(
     dbm: DatabaseManager, repo_id: str, log_id: str, authorized_nodes: set[str]
 ) -> Log:
     db = await get_log_db_for_reading(dbm, repo_id)
-    filter = {"_id": ObjectId(log_id)}
+    filter = {"_id": uuid.UUID(log_id)}
     if authorized_nodes:
         filter["node_path.ref"] = {"$in": list(authorized_nodes)}
     document = await get_resource_document(

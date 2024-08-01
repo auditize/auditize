@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 
 import callee
-from bson import ObjectId
 
 from auditize.database import DatabaseManager
 from auditize.logi18nprofiles.models import LogI18nProfile
@@ -104,7 +103,7 @@ class PreparedLogI18nProfile:
 
     def expected_document(self, extra=None):
         return {
-            "_id": ObjectId(self.id),
+            "_id": uuid.UUID(self.id),
             "created_at": callee.IsA(datetime),
             "name": self.data["name"],
             "translations": {

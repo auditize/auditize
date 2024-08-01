@@ -6,7 +6,7 @@ from auditize.database import DatabaseManager
 from ..apikeys import PreparedApikey
 from ..database import assert_collection
 from ..http import HttpTestHelper
-from ..logs import UNKNOWN_OBJECT_ID
+from ..logs import UNKNOWN_UUID
 from ..repos import PreparedRepo
 from ..users import PreparedUser
 
@@ -121,7 +121,7 @@ class BasePermissionTests:
                         "logs": {
                             "repos": [
                                 {
-                                    "repo_id": UNKNOWN_OBJECT_ID,
+                                    "repo_id": UNKNOWN_UUID,
                                     "read": True,
                                     "write": True,
                                 }
@@ -241,7 +241,7 @@ class BasePermissionTests:
                 "permissions": {
                     "logs": {
                         "repos": [
-                            {"repo_id": UNKNOWN_OBJECT_ID, "read": True, "write": True}
+                            {"repo_id": UNKNOWN_UUID, "read": True, "write": True}
                         ],
                     },
                 }

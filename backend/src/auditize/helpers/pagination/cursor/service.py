@@ -1,15 +1,15 @@
 import base64
 import binascii
 import json
+import uuid
 from datetime import datetime
 
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.helpers.datetime import serialize_datetime
 
 
-# NB: a custom exception is not 100% necessary, but it make tests easier
+# NB: a custom exception is not really necessary, but it makes tests easier
 class InvalidPaginationCursor(ValueError):
     pass
 
@@ -19,7 +19,7 @@ class PaginationCursor:
     This class assumes a pagination sorted by date and _id
     """
 
-    def __init__(self, date: datetime, id: ObjectId):
+    def __init__(self, date: datetime, id: uuid.UUID):
         self.date = date
         self.id = id
 
@@ -31,7 +31,9 @@ class PaginationCursor:
             raise InvalidPaginationCursor(value)
 
         try:
-            return cls(datetime.fromisoformat(decoded["date"]), ObjectId(decoded["id"]))
+            return cls(
+                datetime.fromisoformat(decoded["date"]), uuid.UUID(decoded["id"])
+            )
         except (KeyError, ValueError):
             raise InvalidPaginationCursor(value)
 

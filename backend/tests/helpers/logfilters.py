@@ -2,9 +2,8 @@ import uuid
 from datetime import datetime
 
 import callee
-from bson import ObjectId
 
-from .logs import UNKNOWN_OBJECT_ID
+from .logs import UNKNOWN_UUID
 
 DEFAULT_SEARCH_PARAMETERS = {
     "action_category": None,
@@ -37,7 +36,7 @@ class PreparedLogFilter:
     def prepare_data(extra=None):
         return {
             "name": f"Filter {uuid.uuid4()}",
-            "repo_id": UNKNOWN_OBJECT_ID,
+            "repo_id": UNKNOWN_UUID,
             "search_params": {"action_type": "some action"},
             "columns": ["saved_at", "action_type"],
             **(extra or {}),
@@ -45,7 +44,7 @@ class PreparedLogFilter:
 
     def expected_document(self, extra=None):
         return {
-            "_id": ObjectId(self.id),
+            "_id": uuid.UUID(self.id),
             "name": self.data["name"],
             "created_at": callee.IsA(datetime),
             "repo_id": self.data["repo_id"],

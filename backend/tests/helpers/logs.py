@@ -1,15 +1,15 @@
+import uuid
 from datetime import datetime
 
 import callee
-from bson import ObjectId
 from icecream import ic
 
 from .http import HttpTestHelper
 from .utils import DATETIME_FORMAT
 
-# A valid ObjectId, but not existing in the database
+# A valid UUID, but not existing in the database
 # FIXME: should be moved to a more general module
-UNKNOWN_OBJECT_ID = "65fab045f097fe0b9b664c99"
+UNKNOWN_UUID = "e42350b9-db1c-42f9-a08a-b1265f1b9bf5"
 
 
 class PreparedLog:
@@ -95,7 +95,7 @@ class PreparedLog:
         del expected["id"]
 
         db_log = await self.repo.db.logs.find_one(
-            {"_id": ObjectId(self.id)}, {"_id": 0}
+            {"_id": uuid.UUID(self.id)}, {"_id": 0}
         )
         ic(db_log)
         assert db_log == expected

@@ -1,6 +1,7 @@
 from datetime import timezone
 from functools import lru_cache
 
+from bson.binary import UuidRepresentation
 from bson.codec_options import CodecOptions
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
@@ -14,7 +15,12 @@ class Collection:
     @lru_cache
     def __get__(self, db: "BaseDatabase", _) -> AsyncIOMotorCollection:
         return db.db.get_collection(
-            self.name, codec_options=CodecOptions(tz_aware=True, tzinfo=timezone.utc)
+            self.name,
+            codec_options=CodecOptions(
+                tz_aware=True,
+                tzinfo=timezone.utc,
+                uuid_representation=UuidRepresentation.STANDARD,
+            ),
         )
 
 
@@ -58,7 +64,11 @@ class CoreDatabase(BaseDatabase):
     log_filters = Collection("log_filters")
 
 
-_mongo_client = AsyncIOMotorClient(get_config().mongodb_uri)
+def setup_mongo_client(uri: str = None) -> AsyncIOMotorClient:
+    return AsyncIOMotorClient(uri)
+
+
+_mongo_client = setup_mongo_client(get_config().mongodb_uri)
 
 
 class DatabaseManager:
