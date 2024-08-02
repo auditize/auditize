@@ -231,6 +231,62 @@ async def test_create_log_invalid_identifiers(
         )
 
 
+async def test_create_log_cannot_have_nodes_with_same_name_and_parent(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    """Check that we cannot create a log with the same node name (but different refs) twice at the same level"""
+
+    await repo.create_log_with(
+        log_write_client,
+        {
+            "node_path": [
+                {"ref": "Node A", "name": "Node A"},
+                {"ref": "Node B", "name": "Node B"},
+            ]
+        },
+    )
+
+    await log_write_client.assert_post_constraint_violation(
+        f"/repos/{repo.id}/logs",
+        json=PreparedLog.prepare_data(
+            {
+                "node_path": [
+                    {"ref": "Node A", "name": "Node A"},
+                    {"ref": "Another ref for Node B", "name": "Node B"},
+                ]
+            }
+        ),
+    )
+
+
+async def test_create_log_can_have_have_nodes_with_same_name_but_different_parents(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    """Check that we can create a log with the same node name as long as they have different parents"""
+
+    await repo.create_log_with(
+        log_write_client,
+        {
+            "node_path": [
+                {"ref": "Node A", "name": "Node A"},
+                {"ref": "Node B ref 1", "name": "Node B"},
+            ]
+        },
+    )
+
+    await log_write_client.assert_post_created(
+        f"/repos/{repo.id}/logs",
+        json=PreparedLog.prepare_data(
+            {
+                "node_path": [
+                    {"ref": "Node C", "name": "Node C"},
+                    {"ref": "Node B ref 2", "name": "Node B"},
+                ]
+            }
+        ),
+    )
+
+
 async def test_add_attachment_binary_and_all_fields(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -2141,7 +2197,7 @@ async def test_get_logs_as_csv_minimal_log(
     assert (
         resp.text
         == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,node_path:ref,node_path:name\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,user-login,authentication,,,,,,,,,,,,,customer:1,Customer 1\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user-login,authentication,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
@@ -2189,7 +2245,7 @@ async def test_get_logs_as_csv_log_with_all_fields(
     assert (
         resp.text
         == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,node_path:ref,node_path:name\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,user-login,authentication,user:123,user,User 123,core,module,Core Module,|rich_tag:1,simple-tag|rich-tag,|Rich tag,attachment.txt,attachment-type,text/plain,customer:1,Customer 1\r\n"
+        f"{log.id},2024-01-01T00:00:00Z,user-login,authentication,user:123,user,User 123,core,module,Core Module,|rich_tag:1,simple-tag|rich-tag,|Rich tag,attachment.txt,attachment-type,text/plain,entity,Entity\r\n"
     )
 
 
@@ -2249,7 +2305,7 @@ async def test_get_logs_as_csv_with_filter(
     assert (
         resp.text
         == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,node_path:ref,node_path:name\r\n"
-        f"{log1.id},2024-01-01T00:00:00Z,action-type-1,action-category-1,,,,,,,,,,,,,customer:1,Customer 1\r\n"
+        f"{log1.id},2024-01-01T00:00:00Z,action-type-1,action-category-1,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 

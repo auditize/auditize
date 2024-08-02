@@ -11,7 +11,11 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager
-from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.exceptions import (
+    ConstraintViolation,
+    UnknownModelException,
+    ValidationError,
+)
 from auditize.helpers.datetime import now, serialize_datetime
 from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
 from auditize.helpers.pagination.page.models import PagePaginationInfo
@@ -118,26 +122,43 @@ async def consolidate_log_attachment(
     )
 
 
+async def _consolidate_log(db: LogDatabase, log: Log):
+    await consolidate_log_action(db, log.action)
+    await consolidate_log_source(db, log.source)
+    if log.actor:
+        await consolidate_log_actor(db, log.actor)
+    if log.resource:
+        await consolidate_log_resource(db, log.resource)
+    await consolidate_log_details(db, log.details)
+    await consolidate_log_tags(db, log.tags)
+    await consolidate_log_node_path(db, log.node_path)
+
+
+async def _check_log(db: LogDatabase, log: Log):
+    parent_node_ref = None
+    for node in log.node_path:
+        if await has_resource_document(
+            db.log_nodes,
+            {
+                "parent_node_ref": parent_node_ref,
+                "name": node.name,
+                "ref": {"$ne": node.ref},
+            },
+        ):
+            raise ConstraintViolation(
+                f"Node {node.ref!r} is invalid, there are other logs with "
+                f"the same node name at the same level (same parent)"
+            )
+        parent_node_ref = node.ref
+
+
 async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
     db = await get_log_db_for_writing(dbm, repo_id)
 
+    await _check_log(db, log)
     log_id = await create_resource_document(db.logs, log)
 
-    await consolidate_log_action(db, log.action)
-
-    await consolidate_log_source(db, log.source)
-
-    if log.actor:
-        await consolidate_log_actor(db, log.actor)
-
-    if log.resource:
-        await consolidate_log_resource(db, log.resource)
-
-    await consolidate_log_details(db, log.details)
-
-    await consolidate_log_tags(db, log.tags)
-
-    await consolidate_log_node_path(db, log.node_path)
+    await _consolidate_log(db, log)
 
     return log_id
 
