@@ -17,7 +17,7 @@ from auditize.logi18nprofiles.service import (
     does_log_i18n_profile_exist,
     get_log_i18n_profile_translation,
 )
-from auditize.logs.db import get_log_db_for_config
+from auditize.logs.db import LogDatabase, get_log_db_for_config
 from auditize.permissions.assertions import (
     can_read_logs,
     can_write_logs,
@@ -37,20 +37,25 @@ async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
             )
 
 
-async def create_repo(dbm: DatabaseManager, repo: Repo) -> str:
+async def create_repo(
+    dbm: DatabaseManager, repo: Repo, log_db: LogDatabase = None
+) -> str:
     await _validate_repo(dbm, repo)
     repo_id = uuid.uuid4()
     await create_resource_document(
         dbm.core_db.repos,
         {
             **repo.model_dump(exclude={"id", "log_db_name"}),
-            "log_db_name": f"{dbm.name_prefix}_logs_{repo_id}",
+            "log_db_name": (
+                log_db.name if log_db else f"{dbm.name_prefix}_logs_{repo_id}"
+            ),
         },
         resource_id=repo_id,
     )
     repo_id = str(repo_id)
-    logs_db = await get_log_db_for_config(dbm, repo_id)
-    await logs_db.setup()
+    if not log_db:
+        log_db = await get_log_db_for_config(dbm, repo_id)
+        await log_db.setup()
     return repo_id
 
 

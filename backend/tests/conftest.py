@@ -27,10 +27,11 @@ os.environ.update(
 )
 
 from auditize.database import DatabaseManager
+from auditize.logs.db import LogDatabase
 
 pytest.register_assert_rewrite("helpers")
 from helpers.apikeys import PreparedApikey
-from helpers.database import setup_test_dbm, teardown_test_dbm
+from helpers.database import cleanup_db, setup_test_dbm, teardown_test_dbm
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.repos import PreparedRepo
@@ -70,17 +71,36 @@ async def anon_client():
         yield client
 
 
-@pytest.fixture(scope="function", autouse=True)
-async def dbm():
+@pytest.fixture(scope="session")
+async def _dbm():
     test_dbm = setup_test_dbm()
     await test_dbm.setup()
     yield test_dbm
     await teardown_test_dbm(test_dbm)
 
 
+@pytest.fixture(scope="session")
+async def _log_db(_dbm: DatabaseManager):
+    log_db = LogDatabase(_dbm.name_prefix + "_logs", _dbm.client)
+    await log_db.setup()
+    return log_db
+
+
 @pytest.fixture(scope="function")
-async def repo(dbm):
-    return await PreparedRepo.create(dbm)
+async def log_db(_log_db):
+    yield _log_db
+    await cleanup_db(_log_db.db)
+
+
+@pytest.fixture(scope="function")
+async def dbm(_dbm):
+    yield _dbm
+    await cleanup_db(_dbm.core_db.db)
+
+
+@pytest.fixture(scope="function")
+async def repo(dbm, log_db):
+    return await PreparedRepo.create(dbm, log_db=log_db)
 
 
 @pytest.fixture(scope="function")

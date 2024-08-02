@@ -6,6 +6,7 @@ import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
+from auditize.logs.db import LogDatabase
 from auditize.logs.models import CustomField, Log
 from auditize.logs.service import (
     apply_log_retention_period,
@@ -215,10 +216,10 @@ async def test_log_retention_period_enabled(
 
 
 async def test_log_retention_period_purge_consolidated_data(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
 ):
     repo = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"retention_period": 30})
+        dbm, PreparedRepo.prepare_data({"retention_period": 30}), log_db=log_db
     )
     repo: PreparedRepo  # make PyCharm happy
     log_1 = await repo.create_log(
@@ -332,10 +333,10 @@ async def test_log_retention_period_purge_consolidated_data(
 
 
 async def test_log_retention_period_purge_log_nodes_1(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
 ):
     repo = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"retention_period": 30})
+        dbm, PreparedRepo.prepare_data({"retention_period": 30}), log_db=log_db
     )
     repo: PreparedRepo  # make PyCharm happy
     # We have the following log node hierarchy:
@@ -377,10 +378,10 @@ async def test_log_retention_period_purge_log_nodes_1(
 
 
 async def test_log_retention_period_purge_log_nodes_2(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
 ):
     repo = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"retention_period": 30})
+        dbm, PreparedRepo.prepare_data({"retention_period": 30}), log_db=log_db
     )
     repo: PreparedRepo  # make PyCharm happy
     # We have the following log node hierarchy:

@@ -6,6 +6,7 @@ from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
+from auditize.logs.db import LogDatabase
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
@@ -179,9 +180,10 @@ async def test_repo_update_unset_log_i18n_profile_id(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
     dbm: DatabaseManager,
+    log_db: LogDatabase,
 ):
     repo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}
+        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}, log_db=log_db
     )
     repo: PreparedRepo  # make pycharm happy
     await repo_write_client.assert_patch_no_content(
@@ -212,8 +214,11 @@ async def test_repo_update_set_retention_period(
 async def test_repo_update_unset_retention_period(
     repo_write_client: HttpTestHelper,
     dbm: DatabaseManager,
+    log_db: LogDatabase,
 ):
-    repo = await PreparedRepo.create(dbm, {"name": "repo", "retention_period": 30})
+    repo = await PreparedRepo.create(
+        dbm, {"name": "repo", "retention_period": 30}, log_db=log_db
+    )
     repo: PreparedRepo  # make pycharm happy
     await repo_write_client.assert_patch_no_content(
         f"/repos/{repo.id}",
@@ -229,9 +234,10 @@ async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
     dbm: DatabaseManager,
+    log_db,
 ):
     repo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}
+        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}, log_db=log_db
     )
     repo: PreparedRepo  # make pycharm happy
     await repo_write_client.assert_patch_no_content(
@@ -280,6 +286,7 @@ async def test_repo_get_with_all_fields(
     superadmin_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
     dbm: DatabaseManager,
+    log_db: LogDatabase,
 ):
     repo = await PreparedRepo.create(
         dbm,
@@ -289,6 +296,7 @@ async def test_repo_get_with_all_fields(
             "retention_period": 30,
             "status": "readonly",
         },
+        log_db=log_db,
     )
     repo: PreparedRepo  # make pycharm happy
     await superadmin_client.assert_get(
@@ -365,7 +373,7 @@ async def test_repo_get_translation_for_user_not_configured(
 
 
 async def test_repo_get_translation_for_user_not_available_for_user_lang(
-    user_builder: UserBuilder, dbm: DatabaseManager
+    user_builder: UserBuilder, dbm: DatabaseManager, log_db: LogDatabase
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -375,7 +383,7 @@ async def test_repo_get_translation_for_user_not_available_for_user_lang(
         },
     )
     repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
     )
     user = await user_builder({"logs": {"read": True}}, lang="fr")
 
@@ -388,7 +396,7 @@ async def test_repo_get_translation_for_user_not_available_for_user_lang(
 
 
 async def test_repo_get_translation_for_user_available_for_user_lang(
-    user_builder: UserBuilder, dbm: DatabaseManager
+    user_builder: UserBuilder, dbm: DatabaseManager, log_db: LogDatabase
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -398,7 +406,7 @@ async def test_repo_get_translation_for_user_available_for_user_lang(
         },
     )
     repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
     )
     user = await user_builder({"logs": {"read": True}}, lang="fr")
 
@@ -446,7 +454,7 @@ async def test_repo_get_translation_not_configured(
 
 
 async def test_repo_get_translation_not_available_for_lang(
-    log_read_client: HttpTestHelper, dbm: DatabaseManager
+    log_read_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -456,7 +464,7 @@ async def test_repo_get_translation_not_available_for_lang(
         },
     )
     repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
     )
     await log_read_client.assert_get_ok(
         f"/repos/{repo.id}/translations/fr",
@@ -465,7 +473,7 @@ async def test_repo_get_translation_not_available_for_lang(
 
 
 async def test_repo_get_translation_for_user_available_for_lang(
-    log_read_client: HttpTestHelper, dbm: DatabaseManager
+    log_read_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -475,7 +483,7 @@ async def test_repo_get_translation_for_user_available_for_lang(
         },
     )
     repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}
+        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
     )
 
     await log_read_client.assert_get_ok(
@@ -537,7 +545,8 @@ async def test_repo_list_with_stats(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
     await repo.create_log(
-        superadmin_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00.123Z")
+        superadmin_client,
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00.123Z"),
     )
 
     await superadmin_client.assert_get(

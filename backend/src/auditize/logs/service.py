@@ -699,7 +699,7 @@ async def _purge_orphan_consolidated_data_collection(
             await collection.delete_one({"_id": doc["_id"]})
             print(
                 f"Deleted orphan consolidated {collection.name} item "
-                f"{doc!r} from log repository {db.repo.name!r}"
+                f"{doc!r} from log repository {db.name!r}"
             )
 
 
@@ -793,7 +793,7 @@ async def _purge_orphan_consolidated_log_node_if_needed(db: LogDatabase, node: N
     )
     if not has_associated_logs:
         await delete_resource_document(db.log_nodes, node.id)
-        print(f"Deleted orphan log node {node!r} from log repository {db.repo.name!r}")
+        print(f"Deleted orphan log node {node!r} from log repository {db.name!r}")
         if node.parent_node_ref:
             parent_node = await _get_log_node(db, node.parent_node_ref)
             if not parent_node.has_children:

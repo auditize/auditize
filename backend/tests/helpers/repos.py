@@ -23,10 +23,10 @@ class PreparedRepo:
         return {"name": f"Repo {uuid.uuid4()}", **(extra or {})}
 
     @classmethod
-    async def create(cls, dbm: DatabaseManager, data=None):
+    async def create(cls, dbm: DatabaseManager, data=None, log_db: LogDatabase = None):
         if not data:
             data = cls.prepare_data()
-        repo_id = await create_repo(dbm, Repo(**data))
+        repo_id = await create_repo(dbm, Repo(**data), log_db=log_db)
         logs_db = await get_log_db_for_config(dbm, repo_id)
         return cls(str(repo_id), data, logs_db)
 
