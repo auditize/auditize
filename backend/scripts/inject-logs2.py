@@ -398,20 +398,22 @@ def generate_node_paths(count: int):
     # - first level is the depth of the item
     # - second level is the value itself (the city, the state, etc...)
     # and the value of the second level dict is a UUID
-    refs = defaultdict(defaultdict)
-    for item in cities:
-        for level, value in enumerate(item):
-            refs[level][value] = str(uuid.uuid4())
+    refs = {}
+    for city in cities:
+        for level in range(len(city)):
+            segment = city[level:]
+            if segment not in refs:
+                refs[segment] = str(uuid.uuid4())
 
-    for item, _ in zip(cities, range(count)):
+    for city, _ in zip(cities, range(count)):
         yield list(
             reversed(
                 [
                     {
-                        "ref": refs[level][value],
+                        "ref": refs[city[level:]],
                         "name": value,
                     }
-                    for level, value in enumerate(item)
+                    for level, value in enumerate(city)
                 ]
             )
         )
