@@ -39,7 +39,16 @@ async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
 
 async def create_repo(dbm: DatabaseManager, repo: Repo) -> str:
     await _validate_repo(dbm, repo)
-    repo_id = await create_resource_document(dbm.core_db.repos, repo)
+    repo_id = uuid.uuid4()
+    await create_resource_document(
+        dbm.core_db.repos,
+        {
+            **repo.model_dump(exclude={"id", "log_db_name"}),
+            "log_db_name": f"{dbm.name_prefix}_logs_{repo_id}",
+        },
+        resource_id=repo_id,
+    )
+    repo_id = str(repo_id)
     logs_db = await get_log_db_for_config(dbm, repo_id)
     await logs_db.setup()
     return repo_id

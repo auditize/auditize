@@ -78,10 +78,6 @@ class LogDatabase(BaseDatabase):
     log_nodes = Collection("log_nodes")
 
 
-def get_log_db_name(dbm: DatabaseManager, repo_id: str) -> str:
-    return f"{dbm.name_prefix}_repo_{repo_id}"
-
-
 async def _get_log_db(
     dbm: DatabaseManager, repo: str | Repo, statuses: list[RepoStatus]
 ) -> LogDatabase:
@@ -97,7 +93,7 @@ async def _get_log_db(
                 "The repository status does not allow the requested operation"
             )
 
-    return LogDatabase(get_log_db_name(dbm, repo.id), repo, dbm.client)
+    return LogDatabase(repo.log_db_name, repo, dbm.client)
 
 
 get_log_db_for_reading = partial(

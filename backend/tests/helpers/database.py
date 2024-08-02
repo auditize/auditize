@@ -4,7 +4,6 @@ import random
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager, get_dbm, setup_mongo_client
-from auditize.logs.db import get_log_db_name
 from auditize.main import app
 
 
@@ -25,7 +24,7 @@ async def teardown_test_dbm(test_dbm):
 
     # Drop logs databases and core database
     async for repo in test_dbm.core_db.repos.find({}):
-        await test_dbm.client.drop_database(get_log_db_name(test_dbm, repo["_id"]))
+        await test_dbm.client.drop_database(repo["log_db_name"])
     await test_dbm.core_db.client.drop_database(test_dbm.core_db.name)
 
     test_dbm.client.close()

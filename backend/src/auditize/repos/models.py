@@ -17,6 +17,7 @@ class Repo(BaseModel):
         alias="_id",
     )
     name: str
+    log_db_name: str = Field(default=None)
     status: RepoStatus = Field(default=RepoStatus.enabled)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     retention_period: int | None = Field(default=None)

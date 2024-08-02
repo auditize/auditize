@@ -34,6 +34,7 @@ class PreparedRepo:
         return {
             "_id": uuid.UUID(self.id),
             "name": self.data["name"],
+            "log_db_name": callee.IsA(str),
             "status": self.data.get("status", "enabled"),
             "retention_period": self.data.get("retention_period", None),
             "log_i18n_profile_id": self.data.get("log_i18n_profile_id", None),

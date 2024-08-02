@@ -14,13 +14,18 @@ def _normalize_filter(filter: str | dict) -> dict:
 
 
 async def create_resource_document(
-    collection: AsyncIOMotorCollection, document: dict | BaseModel
+    collection: AsyncIOMotorCollection,
+    document: dict | BaseModel,
+    *,
+    resource_id: uuid.UUID = None,
 ) -> str:
     if isinstance(document, BaseModel):
         document = document.model_dump(exclude={"id"})
+    if not resource_id:
+        resource_id = uuid.uuid4()
 
     try:
-        result = await collection.insert_one({**document, "_id": uuid.uuid4()})
+        result = await collection.insert_one({**document, "_id": resource_id})
     except DuplicateKeyError:
         raise ConstraintViolation()
 
