@@ -81,8 +81,15 @@ class DatabaseManager:
     def spawn(cls, client: AsyncIOMotorClient = None, name_prefix="auditize"):
         return cls(client or _mongo_client, name_prefix)
 
-    def setup(self):
-        return self.core_db.setup()
+    async def setup(self):
+        # avoid circular imports
+        from auditize.logs.db import get_log_db_for_maintenance
+        from auditize.repos.service import get_all_repos
+
+        await self.core_db.setup()
+        for repo in await get_all_repos(self):
+            log_db = await get_log_db_for_maintenance(self, repo)
+            await log_db.setup()
 
 
 _dbm = DatabaseManager.spawn(_mongo_client)

@@ -29,6 +29,40 @@ class LogDatabase(BaseDatabase):
         )
         await self._cache.set(cache_key, result)
 
+    async def setup(self):
+        # Log collection indexes
+        await self.logs.create_index({"saved_at": -1})
+        await self.logs.create_index("action.type")
+        await self.logs.create_index("action.category")
+        await self.logs.create_index({"source.name": 1, "source.value": 1})
+        await self.logs.create_index("actor.ref")
+        await self.logs.create_index("actor.name")
+        await self.logs.create_index({"actor.extra.name": 1, "actor.extra.value": 1})
+        await self.logs.create_index("resource.type")
+        await self.logs.create_index("resource.ref")
+        await self.logs.create_index("resource.name")
+        await self.logs.create_index(
+            {"resource.extra.name": 1, "resource.extra.value": 1}
+        )
+        await self.logs.create_index({"details.name": 1, "details.value": 1})
+        await self.logs.create_index("tags.type")
+        await self.logs.create_index("tags.ref")
+        await self.logs.create_index("node_path.ref")
+
+        # Consolidated data indexes
+        await self.log_actions.create_index("type")
+        await self.log_actions.create_index("category")
+        await self.log_source_fields.create_index("name", unique=True)
+        await self.log_actor_types.create_index("type", unique=True)
+        await self.log_actor_extra_fields.create_index("name", unique=True)
+        await self.log_resource_types.create_index("type", unique=True)
+        await self.log_resource_extra_fields.create_index("name", unique=True)
+        await self.log_detail_fields.create_index("name", unique=True)
+        await self.log_tag_types.create_index("type", unique=True)
+        await self.log_attachment_types.create_index("type", unique=True)
+        await self.log_attachment_mime_types.create_index("mime_type", unique=True)
+        await self.log_nodes.create_index("ref", unique=True)
+
     # Collections
     logs = Collection("logs")
     log_actions = Collection("log_actions")
@@ -49,11 +83,13 @@ def get_log_db_name(dbm: DatabaseManager, repo_id: str) -> str:
 
 
 async def _get_log_db(
-    dbm: DatabaseManager, repo_id: str, statuses: list[RepoStatus]
+    dbm: DatabaseManager, repo: str | Repo, statuses: list[RepoStatus]
 ) -> LogDatabase:
     from auditize.repos.service import get_repo  # avoid circular import
 
-    repo = await get_repo(dbm, repo_id)
+    if type(repo) is str:
+        repo = await get_repo(dbm, repo)
+
     if statuses:
         if repo.status not in statuses:
             # NB: we could also raise a ConstraintViolation, to be discussed
@@ -61,7 +97,7 @@ async def _get_log_db(
                 "The repository status does not allow the requested operation"
             )
 
-    return LogDatabase(get_log_db_name(dbm, repo_id), repo, dbm.client)
+    return LogDatabase(get_log_db_name(dbm, repo.id), repo, dbm.client)
 
 
 get_log_db_for_reading = partial(

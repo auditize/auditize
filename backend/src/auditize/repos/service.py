@@ -39,7 +39,10 @@ async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
 
 async def create_repo(dbm: DatabaseManager, repo: Repo) -> str:
     await _validate_repo(dbm, repo)
-    return await create_resource_document(dbm.core_db.repos, repo)
+    repo_id = await create_resource_document(dbm.core_db.repos, repo)
+    logs_db = await get_log_db_for_config(dbm, repo_id)
+    await logs_db.setup()
+    return repo_id
 
 
 async def update_repo(dbm: DatabaseManager, repo_id: str, update: RepoUpdate):
@@ -103,6 +106,11 @@ async def get_repos(
     return await _get_repos(
         dbm, {"$text": {"$search": query}} if query else None, page, page_size
     )
+
+
+async def get_all_repos(dbm: DatabaseManager):
+    results = dbm.core_db.repos.find({})
+    return [Repo.model_validate(result) async for result in results]
 
 
 def _get_authorized_repo_ids_for_user(
