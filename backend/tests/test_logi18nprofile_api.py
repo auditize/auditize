@@ -3,6 +3,7 @@ import pytest
 
 from auditize.database import DatabaseManager
 from auditize.logs.db import LogDatabase
+from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
@@ -511,12 +512,9 @@ async def test_log_i18n_profile_delete(
 async def test_log_i18n_profile_delete_while_used_by_repo(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
-    dbm: DatabaseManager,
-    log_db: LogDatabase,
+    repo_builder: RepoBuilder,
 ):
-    await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}, log_db=log_db
-    )
+    await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
 
     await repo_write_client.assert_delete_constraint_violation(
         f"/log-i18n-profiles/{log_i18n_profile.id}"

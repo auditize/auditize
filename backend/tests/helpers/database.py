@@ -4,6 +4,7 @@ import random
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
 from auditize.database import DatabaseManager, get_dbm, setup_mongo_client
+from auditize.logs.db import LogDatabase
 from auditize.main import app
 
 
@@ -37,3 +38,28 @@ async def assert_collection(collection: AsyncIOMotorCollection, expected):
 async def cleanup_db(db: AsyncIOMotorDatabase):
     for collection_name in await db.list_collection_names():
         await db[collection_name].delete_many({})
+
+
+class TestLogDatabasePool:
+    def __init__(self, dbm: DatabaseManager):
+        self.dbm = dbm
+        self._cache = {}
+
+    async def get_db(self) -> LogDatabase:
+        for db, is_used in self._cache.items():
+            if not is_used:
+                self._cache[db] = True
+                return db
+        else:
+            db = LogDatabase(
+                f"{self.dbm.name_prefix}_logs_{len(self._cache)}", self.dbm.client
+            )
+            await db.setup()
+            self._cache[db] = True
+            return db
+
+    async def release(self):
+        for db, is_used in self._cache.items():
+            if is_used:
+                await cleanup_db(db.db)
+                self._cache[db] = False

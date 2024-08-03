@@ -31,7 +31,12 @@ from auditize.logs.db import LogDatabase
 
 pytest.register_assert_rewrite("helpers")
 from helpers.apikeys import PreparedApikey
-from helpers.database import cleanup_db, setup_test_dbm, teardown_test_dbm
+from helpers.database import (
+    TestLogDatabasePool,
+    cleanup_db,
+    setup_test_dbm,
+    teardown_test_dbm,
+)
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.repos import PreparedRepo
@@ -86,10 +91,9 @@ async def _log_db(_dbm: DatabaseManager):
     return log_db
 
 
-@pytest.fixture(scope="function")
-async def log_db(_log_db):
-    yield _log_db
-    await cleanup_db(_log_db.db)
+@pytest.fixture(scope="session")
+async def _log_db_pool(_dbm: DatabaseManager):
+    return TestLogDatabasePool(_dbm)
 
 
 @pytest.fixture(scope="function")
@@ -98,9 +102,23 @@ async def dbm(_dbm):
     await cleanup_db(_dbm.core_db.db)
 
 
+RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]
+
+
 @pytest.fixture(scope="function")
-async def repo(dbm, log_db):
-    return await PreparedRepo.create(dbm, log_db=log_db)
+async def repo_builder(dbm, _log_db_pool) -> RepoBuilder:
+    async def func(extra):
+        return await PreparedRepo.create(
+            dbm, PreparedRepo.prepare_data(extra), log_db=await _log_db_pool.get_db()
+        )
+
+    yield func
+    await _log_db_pool.release()
+
+
+@pytest.fixture(scope="function")
+async def repo(repo_builder):
+    return await repo_builder({})
 
 
 @pytest.fixture(scope="function")

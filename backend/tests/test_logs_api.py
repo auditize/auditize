@@ -6,7 +6,7 @@ import callee
 import pytest
 
 from auditize.database import DatabaseManager
-from conftest import ApikeyBuilder, UserBuilder
+from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
@@ -20,12 +20,12 @@ pytestmark = pytest.mark.anyio
 
 
 async def test_log_repo_access_control(
-    apikey_builder: ApikeyBuilder, dbm: DatabaseManager
+    apikey_builder: ApikeyBuilder, repo_builder: RepoBuilder
 ):
     # Test that access control based on repo_id is properly enforced by the API
 
-    repo_1 = await PreparedRepo.create(dbm)
-    repo_2 = await PreparedRepo.create(dbm)
+    repo_1 = await repo_builder({})
+    repo_2 = await repo_builder({})
 
     apikey = await apikey_builder(
         {
@@ -113,11 +113,9 @@ async def test_create_log_all_fields(
 
 @pytest.mark.parametrize("status", ["readonly", "disabled"])
 async def test_create_log_not_allowed_by_repo_status(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager, status: str
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, status: str
 ):
-    repo: PreparedRepo = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"status": status})
-    )
+    repo = await repo_builder({"status": status})
     await superadmin_client.assert_post_forbidden(
         f"/repos/{repo.id}/logs", json=PreparedLog.prepare_data()
     )

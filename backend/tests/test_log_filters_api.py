@@ -5,7 +5,7 @@ import pytest
 
 from auditize.database import DatabaseManager
 from auditize.logs.db import LogDatabase
-from conftest import UserBuilder
+from conftest import RepoBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logfilters import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
@@ -365,15 +365,16 @@ async def test_log_filter_update_simple(
 
 
 async def test_log_filter_update_all_params(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo_builder: RepoBuilder, dbm: DatabaseManager
 ):
-    repo_bis = await PreparedRepo.create(dbm)
+    repo_1 = await repo_builder({})
+    repo_2 = await repo_builder({})
 
     await _test_log_filter_update(
         log_read_user,
         {
             "name": "my filter",
-            "repo_id": repo.id,
+            "repo_id": repo_1.id,
             "search_params": {
                 "action_type": "some action",
             },
@@ -384,7 +385,7 @@ async def test_log_filter_update_all_params(
         },
         {
             "name": "new name",
-            "repo_id": repo_bis.id,
+            "repo_id": repo_2.id,
             "search_params": {"action_category": "some category"},
             "columns": [
                 "action_type",

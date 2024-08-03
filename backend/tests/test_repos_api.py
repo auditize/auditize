@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
 from auditize.logs.db import LogDatabase
-from conftest import ApikeyBuilder, UserBuilder
+from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
@@ -179,13 +179,10 @@ async def test_repo_update_set_log_i18n_profile_id(
 async def test_repo_update_unset_log_i18n_profile_id(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
+    repo_builder: RepoBuilder,
     dbm: DatabaseManager,
-    log_db: LogDatabase,
 ):
-    repo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}, log_db=log_db
-    )
-    repo: PreparedRepo  # make pycharm happy
+    repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
     await repo_write_client.assert_patch_no_content(
         f"/repos/{repo.id}",
         json={"log_i18n_profile_id": None},
@@ -213,13 +210,10 @@ async def test_repo_update_set_retention_period(
 
 async def test_repo_update_unset_retention_period(
     repo_write_client: HttpTestHelper,
+    repo_builder: RepoBuilder,
     dbm: DatabaseManager,
-    log_db: LogDatabase,
 ):
-    repo = await PreparedRepo.create(
-        dbm, {"name": "repo", "retention_period": 30}, log_db=log_db
-    )
-    repo: PreparedRepo  # make pycharm happy
+    repo = await repo_builder({"retention_period": 30})
     await repo_write_client.assert_patch_no_content(
         f"/repos/{repo.id}",
         json={"retention_period": None},
@@ -233,13 +227,10 @@ async def test_repo_update_unset_retention_period(
 async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
+    repo_builder: RepoBuilder,
     dbm: DatabaseManager,
-    log_db,
 ):
-    repo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": log_i18n_profile.id}, log_db=log_db
-    )
-    repo: PreparedRepo  # make pycharm happy
+    repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
     await repo_write_client.assert_patch_no_content(
         f"/repos/{repo.id}",
         json={},
@@ -255,14 +246,14 @@ async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
 
 
 async def test_repo_update_already_used_name(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+    repo_write_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
-    repo1 = await PreparedRepo.create(dbm)
-    repo2 = await PreparedRepo.create(dbm)
+    repo_1 = await repo_builder({})
+    repo_2 = await repo_builder({})
 
     await repo_write_client.assert_patch_constraint_violation(
-        f"/repos/{repo1.id}",
-        json={"name": repo2.data["name"]},
+        f"/repos/{repo_1.id}",
+        json={"name": repo_2.data["name"]},
     )
 
 
@@ -285,20 +276,16 @@ async def test_repo_get(repo_read_client: HttpTestHelper, repo: PreparedRepo):
 async def test_repo_get_with_all_fields(
     superadmin_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
-    dbm: DatabaseManager,
-    log_db: LogDatabase,
+    repo_builder: RepoBuilder,
 ):
-    repo = await PreparedRepo.create(
-        dbm,
+    repo = await repo_builder(
         {
-            "name": "repo",
             "log_i18n_profile_id": log_i18n_profile.id,
             "retention_period": 30,
             "status": "readonly",
-        },
-        log_db=log_db,
+        }
     )
-    repo: PreparedRepo  # make pycharm happy
+
     await superadmin_client.assert_get(
         f"/repos/{repo.id}",
         expected_status_code=200,
@@ -373,7 +360,9 @@ async def test_repo_get_translation_for_user_not_configured(
 
 
 async def test_repo_get_translation_for_user_not_available_for_user_lang(
-    user_builder: UserBuilder, dbm: DatabaseManager, log_db: LogDatabase
+    user_builder: UserBuilder,
+    repo_builder: RepoBuilder,
+    dbm: DatabaseManager,
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -382,9 +371,7 @@ async def test_repo_get_translation_for_user_not_available_for_user_lang(
             "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
         },
     )
-    repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
-    )
+    repo = await repo_builder({"log_i18n_profile_id": profile.id})
     user = await user_builder({"logs": {"read": True}}, lang="fr")
 
     async with user.client() as client:
@@ -396,7 +383,7 @@ async def test_repo_get_translation_for_user_not_available_for_user_lang(
 
 
 async def test_repo_get_translation_for_user_available_for_user_lang(
-    user_builder: UserBuilder, dbm: DatabaseManager, log_db: LogDatabase
+    user_builder: UserBuilder, repo_builder: RepoBuilder, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -405,9 +392,7 @@ async def test_repo_get_translation_for_user_available_for_user_lang(
             "translations": {"fr": PreparedLogI18nProfile.FRENCH_TRANSLATION},
         },
     )
-    repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
-    )
+    repo = await repo_builder({"log_i18n_profile_id": profile.id})
     user = await user_builder({"logs": {"read": True}}, lang="fr")
 
     async with user.client() as client:
@@ -454,7 +439,7 @@ async def test_repo_get_translation_not_configured(
 
 
 async def test_repo_get_translation_not_available_for_lang(
-    log_read_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
+    log_read_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -463,9 +448,7 @@ async def test_repo_get_translation_not_available_for_lang(
             "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
         },
     )
-    repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
-    )
+    repo = await repo_builder({"log_i18n_profile_id": profile.id})
     await log_read_client.assert_get_ok(
         f"/repos/{repo.id}/translations/fr",
         expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
@@ -473,7 +456,9 @@ async def test_repo_get_translation_not_available_for_lang(
 
 
 async def test_repo_get_translation_for_user_available_for_lang(
-    log_read_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
+    log_read_client: HttpTestHelper,
+    repo_builder: RepoBuilder,
+    dbm: DatabaseManager,
 ):
     profile = await PreparedLogI18nProfile.create(
         dbm,
@@ -482,9 +467,7 @@ async def test_repo_get_translation_for_user_available_for_lang(
             "translations": {"fr": PreparedLogI18nProfile.FRENCH_TRANSLATION},
         },
     )
-    repo: PreparedRepo = await PreparedRepo.create(
-        dbm, {"name": "repo", "log_i18n_profile_id": profile.id}, log_db=log_db
-    )
+    repo = await repo_builder({"log_i18n_profile_id": profile.id})
 
     await log_read_client.assert_get_ok(
         f"/repos/{repo.id}/translations/fr",
@@ -514,8 +497,8 @@ async def test_repo_get_translation_forbidden(
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/translations/fr")
 
 
-async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager):
-    repos = [await PreparedRepo.create(dbm) for _ in range(5)]
+async def test_repo_list(repo_read_client: HttpTestHelper, repo_builder: RepoBuilder):
+    repos = [await repo_builder({}) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
         repo_read_client,
@@ -528,9 +511,9 @@ async def test_repo_list(repo_read_client: HttpTestHelper, dbm: DatabaseManager)
 
 
 async def test_repo_list_with_search(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+    repo_read_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
-    repos = [await PreparedRepo.create(dbm, {"name": f"repo_{i}"}) for i in range(2)]
+    repos = [await repo_builder({"name": f"repo_{i}"}) for i in range(2)]
 
     await repo_read_client.assert_get_ok(
         "/repos?q=repo_1",
@@ -571,13 +554,11 @@ async def test_repo_list_with_stats(
 
 
 async def test_repo_list_all_statuses(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     repos = []
     for i, status in enumerate(("enabled", "readonly", "disabled")):
-        repo: PreparedRepo = await PreparedRepo.create(
-            dbm, {"name": f"repo_{i}", "status": status}
-        )
+        repo = await repo_builder({"name": f"repo_{i}", "status": status})
         repos.append(repo)
 
     await superadmin_client.assert_get_ok(
@@ -652,17 +633,13 @@ async def _test_repo_list_user_repos(
 
 
 async def test_repo_list_user_repos_with_permissions(
-    user_builder: UserBuilder, dbm: DatabaseManager
+    user_builder: UserBuilder, repo_builder: RepoBuilder
 ):
-    repo_1 = await PreparedRepo.create(dbm, {"name": "repo_1"})
-    repo_2 = await PreparedRepo.create(dbm, {"name": "repo_2"})
-    repo_3 = await PreparedRepo.create(dbm, {"name": "repo_3"})
-    repo_readonly = await PreparedRepo.create(
-        dbm, {"name": "repo_readonly", "status": "readonly"}
-    )
-    repo_disabled = await PreparedRepo.create(
-        dbm, {"name": "repo_disabled", "status": "disabled"}
-    )
+    repo_1 = await repo_builder({"name": "repo_1"})
+    repo_2 = await repo_builder({"name": "repo_2"})
+    repo_3 = await repo_builder({"name": "repo_3"})
+    repo_readonly = await repo_builder({"name": "repo_readonly", "status": "readonly"})
+    repo_disabled = await repo_builder({"name": "repo_disabled", "status": "disabled"})
 
     # Test #1 with user having read&write permissions on all repos
     user = await user_builder({"logs": {"read": True, "write": True}})

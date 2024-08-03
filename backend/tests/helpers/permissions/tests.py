@@ -2,6 +2,7 @@ import callee
 from httpx import Response
 
 from auditize.database import DatabaseManager
+from conftest import RepoBuilder
 
 from ..apikeys import PreparedApikey
 from ..database import assert_collection
@@ -43,9 +44,11 @@ class BasePermissionTests:
     ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
-    async def test_create_custom_permissions(self, dbm: DatabaseManager):
-        repo_1 = await PreparedRepo.create(dbm)
-        repo_2 = await PreparedRepo.create(dbm)
+    async def test_create_custom_permissions(
+        self, repo_builder: RepoBuilder, dbm: DatabaseManager
+    ):
+        repo_1 = await repo_builder({})
+        repo_2 = await repo_builder({})
 
         grantor = await self.inject_grantor(dbm, {"is_superadmin": True})
         assignee_data = self.prepare_assignee_data(

@@ -13,6 +13,7 @@ from auditize.logs.service import (
     save_log,
     save_log_attachment,
 )
+from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logs import PreparedLog
@@ -181,15 +182,13 @@ async def test_log_retention_period_disabled(
 
 
 async def test_log_retention_period_enabled(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
 ):
     # we test with repos:
     # - repo_1 with retention period and 1 log that must be deleted and 1 log that must be kept
     # - repo_2 without retention period and 2 logs that must be kept
 
-    repo_1 = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"retention_period": 30})
-    )
+    repo_1 = await repo_builder({"retention_period": 30})
     repo_1_log_1 = await repo_1.create_log(
         superadmin_client, saved_at=datetime.now() - timedelta(days=31)
     )
@@ -197,7 +196,7 @@ async def test_log_retention_period_enabled(
         superadmin_client, saved_at=datetime.now() - timedelta(days=29)
     )
 
-    repo_2 = await PreparedRepo.create(dbm)
+    repo_2 = await repo_builder({})
     repo_2_log_1 = await repo_2.create_log(
         superadmin_client, saved_at=datetime.now() - timedelta(days=31)
     )
@@ -216,12 +215,9 @@ async def test_log_retention_period_enabled(
 
 
 async def test_log_retention_period_purge_consolidated_data(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
 ):
-    repo = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"retention_period": 30}), log_db=log_db
-    )
-    repo: PreparedRepo  # make PyCharm happy
+    repo = await repo_builder({"retention_period": 30})
     log_1 = await repo.create_log(
         superadmin_client,
         data=PreparedLog.prepare_data(
@@ -333,12 +329,9 @@ async def test_log_retention_period_purge_consolidated_data(
 
 
 async def test_log_retention_period_purge_log_nodes_1(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
 ):
-    repo = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"retention_period": 30}), log_db=log_db
-    )
-    repo: PreparedRepo  # make PyCharm happy
+    repo = await repo_builder({"retention_period": 30})
     # We have the following log node hierarchy:
     # - A
     #   - AA
@@ -378,12 +371,11 @@ async def test_log_retention_period_purge_log_nodes_1(
 
 
 async def test_log_retention_period_purge_log_nodes_2(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager, log_db: LogDatabase
+    superadmin_client: HttpTestHelper,
+    repo_builder: RepoBuilder,
+    dbm: DatabaseManager,
 ):
-    repo = await PreparedRepo.create(
-        dbm, PreparedRepo.prepare_data({"retention_period": 30}), log_db=log_db
-    )
-    repo: PreparedRepo  # make PyCharm happy
+    repo = await repo_builder({"retention_period": 30})
     # We have the following log node hierarchy:
     # - A
     #   - AA
