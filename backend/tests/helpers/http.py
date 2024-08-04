@@ -43,7 +43,14 @@ class HttpTestHelper(AsyncClient):
             files=files,
             data=data,
         )
-        ic("RESPONSE", id(self), resp.status_code, resp.headers, resp.text)
+        ic(
+            "RESPONSE",
+            id(self),
+            resp.elapsed,
+            resp.status_code,
+            resp.headers,
+            resp.text,
+        )
         if expected_status_code is not None:
             assert resp.status_code == expected_status_code
         if expected_json is not None:
