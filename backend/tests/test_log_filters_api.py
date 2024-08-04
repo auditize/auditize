@@ -4,7 +4,6 @@ import callee
 import pytest
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogDatabase
 from conftest import RepoBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper

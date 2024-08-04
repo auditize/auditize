@@ -111,7 +111,12 @@ async def get_user_by_password_reset_token(dbm: DatabaseManager, token: str) -> 
 # NB: this function is let public to be used in tests and to make sure that passwords
 # are hashed in a consistent way
 def hash_user_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    # https://github.com/pyca/bcrypt/?tab=readme-ov-file#adjustable-work-factor
+    # NB: we use a different number of rounds in test mode to speed up tests
+    # With default rounds (12), POST /auth/user/login takes about 0.2s vs 0.001s with 4 rounds
+    return bcrypt.hashpw(
+        password.encode(), bcrypt.gensalt(rounds=4 if get_config().test_mode else None)
+    ).decode()
 
 
 async def update_user_password_by_password_reset_token(

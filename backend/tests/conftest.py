@@ -14,7 +14,7 @@ ic.configureOutput(includeContext=True)
 # environment variables.
 
 for key in os.environ:
-    if key.startswith("AUDITIZE_"):
+    if key.startswith("AUDITIZE_") or key.startswith("_AUDITIZE_"):
         del os.environ[key]
 
 os.environ.update(
@@ -23,6 +23,7 @@ os.environ.update(
         "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
         "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
         "AUDITIZE_CSV_MAX_ROWS": "10",
+        "_AUDITIZE_TEST_MODE": "true",
     }
 )
 

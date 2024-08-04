@@ -4,6 +4,7 @@ from functools import partial
 from aiocache import Cache
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
+from auditize.config import get_config
 from auditize.database import BaseDatabase, Collection, DatabaseManager
 from auditize.exceptions import PermissionDenied
 from auditize.repos.models import Repo, RepoStatus
@@ -29,28 +30,34 @@ class LogDatabase(BaseDatabase):
         await self._cache.set(cache_key, result)
 
     async def setup(self):
+        config = get_config()
+
         # Log collection indexes
-        await self.logs.create_index({"saved_at": -1})
-        await self.logs.create_index("action.type")
-        await self.logs.create_index("action.category")
-        await self.logs.create_index({"source.name": 1, "source.value": 1})
-        await self.logs.create_index("actor.ref")
-        await self.logs.create_index("actor.name")
-        await self.logs.create_index({"actor.extra.name": 1, "actor.extra.value": 1})
-        await self.logs.create_index("resource.type")
-        await self.logs.create_index("resource.ref")
-        await self.logs.create_index("resource.name")
-        await self.logs.create_index(
-            {"resource.extra.name": 1, "resource.extra.value": 1}
-        )
-        await self.logs.create_index({"details.name": 1, "details.value": 1})
-        await self.logs.create_index("tags.type")
-        await self.logs.create_index("tags.ref")
-        await self.logs.create_index("node_path.ref")
+        if not config.test_mode:
+            await self.logs.create_index({"saved_at": -1})
+            await self.logs.create_index("action.type")
+            await self.logs.create_index("action.category")
+            await self.logs.create_index({"source.name": 1, "source.value": 1})
+            await self.logs.create_index("actor.ref")
+            await self.logs.create_index("actor.name")
+            await self.logs.create_index(
+                {"actor.extra.name": 1, "actor.extra.value": 1}
+            )
+            await self.logs.create_index("resource.type")
+            await self.logs.create_index("resource.ref")
+            await self.logs.create_index("resource.name")
+            await self.logs.create_index(
+                {"resource.extra.name": 1, "resource.extra.value": 1}
+            )
+            await self.logs.create_index({"details.name": 1, "details.value": 1})
+            await self.logs.create_index("tags.type")
+            await self.logs.create_index("tags.ref")
+            await self.logs.create_index("node_path.ref")
 
         # Consolidated data indexes
-        await self.log_actions.create_index("type")
-        await self.log_actions.create_index("category")
+        if not config.test_mode:
+            await self.log_actions.create_index("type")
+            await self.log_actions.create_index("category")
         await self.log_source_fields.create_index("name", unique=True)
         await self.log_actor_types.create_index("type", unique=True)
         await self.log_actor_extra_fields.create_index("name", unique=True)
