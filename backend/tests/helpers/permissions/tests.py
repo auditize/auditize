@@ -255,6 +255,31 @@ class BasePermissionTests:
             },
         )
 
+    async def test_update_permissions_unknown_repo_in_existing_permissions(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        dbm: DatabaseManager,
+    ):
+        assignee = await self.create_assignee(
+            superadmin_client,
+            dbm,
+            self.prepare_assignee_data(
+                {
+                    "logs": {
+                        "repos": [
+                            {"repo_id": repo.id, "read": True, "write": True},
+                        ]
+                    }
+                }
+            ),
+        )
+        await superadmin_client.assert_delete_no_content(f"/repos/{repo.id}")
+        await superadmin_client.assert_patch_no_content(
+            f"{self.base_path}/{assignee.id}",
+            json={"permissions": {"management": {"repos": {"write": True}}}},
+        )
+
     async def test_update_forbidden_permissions(self, dbm: DatabaseManager):
         grantor = await self.inject_grantor(
             dbm,
