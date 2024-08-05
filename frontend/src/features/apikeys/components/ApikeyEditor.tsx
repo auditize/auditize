@@ -14,6 +14,7 @@ import {
 } from "@/components/ResourceManagement";
 import {
   emptyPermissions,
+  usePermissionsNormalizer,
   WithPermissionManagement,
 } from "@/features/permissions";
 import { Permissions } from "@/features/permissions/types";
@@ -165,6 +166,8 @@ export function ApikeyCreation({
 }) {
   const { t } = useTranslation();
   const { form, permissions, setPermissions } = useApiKeyEditorState(!!opened);
+  const normalizePermissions = usePermissionsNormalizer();
+
   const [secret, setSecret] = useState<string | null>(null);
 
   useEffect(() => {
@@ -179,7 +182,12 @@ export function ApikeyCreation({
       opened={!!opened}
       onClose={onClose}
       onSubmit={form.onSubmit}
-      onSave={() => createApikey({ ...form.values, permissions })}
+      onSave={() =>
+        createApikey({
+          ...form.values,
+          permissions: normalizePermissions(permissions),
+        })
+      }
       onSaveSuccess={(data) => {
         const [_, key] = data as [string, string];
         setSecret(key);
@@ -210,6 +218,7 @@ export function ApikeyEdition({
 }) {
   const { form, permissions, setPermissions } =
     useApiKeyEditorState(!!apikeyId);
+  const normalizePermissions = usePermissionsNormalizer();
 
   return (
     <ResourceEdition
@@ -224,7 +233,12 @@ export function ApikeyEdition({
       }}
       title={t("apikey.edit.title")}
       onSubmit={form.onSubmit}
-      onSave={() => updateApikey(apikeyId!, { ...form.values, permissions })}
+      onSave={() =>
+        updateApikey(apikeyId!, {
+          ...form.values,
+          permissions: normalizePermissions(permissions),
+        })
+      }
       queryKeyForInvalidation={["apikeys"]}
       disabledSaving={readOnly}
     >

@@ -10,6 +10,7 @@ import {
 import {
   emptyPermissions,
   Permissions,
+  usePermissionsNormalizer,
   WithPermissionManagement,
 } from "@/features/permissions";
 
@@ -113,6 +114,7 @@ export function UserCreation({
 }) {
   const { t } = useTranslation();
   const { form, permissions, setPermissions } = useUserEditorState(!!opened);
+  const normalizePermissions = usePermissionsNormalizer();
 
   return (
     <ResourceCreation
@@ -120,7 +122,12 @@ export function UserCreation({
       opened={!!opened}
       onClose={onClose}
       onSubmit={form.onSubmit}
-      onSave={() => createUser({ ...form.values, permissions })}
+      onSave={() =>
+        createUser({
+          ...form.values,
+          permissions: normalizePermissions(permissions),
+        })
+      }
       queryKeyForInvalidation={["users"]}
     >
       <UserEditor
@@ -143,6 +150,7 @@ export function UserEdition({
 }) {
   const { t } = useTranslation();
   const { form, permissions, setPermissions } = useUserEditorState(!!userId);
+  const normalizePermissions = usePermissionsNormalizer();
 
   return (
     <ResourceEdition
@@ -157,7 +165,12 @@ export function UserEdition({
       }}
       title={t("user.edit.title")}
       onSubmit={form.onSubmit}
-      onSave={() => updateUser(userId!, { ...form.values, permissions })}
+      onSave={() =>
+        updateUser(userId!, {
+          ...form.values,
+          permissions: normalizePermissions(permissions),
+        })
+      }
       queryKeyForInvalidation={["users"]}
       disabledSaving={readOnly}
     >
