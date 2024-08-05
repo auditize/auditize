@@ -60,7 +60,7 @@ function LogI18nProfileSelector({
 }) {
   const { t } = useTranslation();
   const query = useQuery({
-    queryKey: ["i18nProfiles"],
+    queryKey: ["logi18nprofiles"],
     queryFn: getAllLogI18nProfiles,
   });
 

@@ -178,7 +178,7 @@ function LogsPermissionManagement({
 
   // NB: silent loading and error handling here
   const { data } = useQuery({
-    queryKey: ["assignable-log-repos"],
+    queryKey: ["repos", "available-for-permissions"],
     queryFn: () => getAllMyRepos({}),
     placeholderData: [],
   });

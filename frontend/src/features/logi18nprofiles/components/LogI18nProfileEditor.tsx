@@ -263,7 +263,7 @@ export function LogI18nProfileEdition({
     <ResourceEdition
       resourceId={profileId}
       onClose={onClose}
-      queryKeyForLoad={["logi18nprofile", profileId]}
+      queryKeyForLoad={["logi18nprofiles", profileId]}
       queryFnForLoad={() => getLogI18nProfile(profileId!)}
       onDataLoaded={(data) => {
         const { name, translations } = data;
