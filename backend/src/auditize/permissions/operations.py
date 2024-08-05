@@ -219,12 +219,13 @@ def update_permissions(
     # Update logs permissions
     new.logs.read = _update_permission(orig_perms.logs.read, update_perms.logs.read)
     new.logs.write = _update_permission(orig_perms.logs.write, update_perms.logs.write)
+    all_repo_perms = {perms.repo_id: perms for perms in orig_perms.logs.repos}
     for update_repo_perms in update_perms.logs.repos:
-        orig_repo_perms = orig_perms.logs.get_repo_permissions(
-            update_repo_perms.repo_id
-        )
-        new.logs.repos.append(
-            RepoLogPermissions(
+        if update_repo_perms.read is False and update_repo_perms.write is False:
+            all_repo_perms.pop(update_repo_perms.repo_id, None)
+        else:
+            orig_repo_perms = all_repo_perms.get(update_repo_perms.repo_id)
+            all_repo_perms[update_repo_perms.repo_id] = RepoLogPermissions(
                 repo_id=update_repo_perms.repo_id,
                 read=_update_permission(
                     orig_repo_perms and orig_repo_perms.read, update_repo_perms.read
@@ -238,7 +239,7 @@ def update_permissions(
                     else (orig_repo_perms.nodes if orig_repo_perms else [])
                 ),
             )
-        )
+    new.logs.repos = list(all_repo_perms.values())
 
     # Update management permissions
     new.management.repos = _update_rw_permissions(

@@ -588,6 +588,76 @@ def test_update_permission_grant_read_logs_on_nodes_3():
     )
 
 
+def test_update_permissions_add_repo():
+    _test_update_permission(
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "read": True, "write": True},
+                ],
+            },
+        },
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo2", "read": True, "write": True},
+                ],
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {"repo_id": "repo1", "read": True, "write": True, "nodes": []},
+                    {"repo_id": "repo2", "read": True, "write": True, "nodes": []},
+                ],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_update_permissions_drop_repo():
+    _test_update_permission(
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "read": True, "write": True},
+                    {"repo_id": "repo2", "read": True, "write": True},
+                ],
+            },
+        },
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": "repo1", "read": False, "write": False},
+                ],
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {"repo_id": "repo2", "read": True, "write": True, "nodes": []},
+                ],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
 def _test_get_applicable_permissions(input: dict, expected: dict):
     input = Permissions.model_validate(input)
     assert compute_applicable_permissions(input).model_dump() == expected
