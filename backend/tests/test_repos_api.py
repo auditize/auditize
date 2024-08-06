@@ -739,10 +739,10 @@ async def test_repo_list_user_repos_as_apikey(apikey_builder: ApikeyBuilder):
         await client.assert_get_forbidden("/users/me/repos")
 
 
-async def test_repo_delete(
-    repo_write_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
-):
-    await repo_write_client.assert_delete(f"/repos/{repo.id}", expected_status_code=204)
+async def test_repo_delete(repo_write_client: HttpTestHelper, dbm: DatabaseManager):
+    resp = await repo_write_client.assert_post_created("/repos", json={"name": "repo"})
+    repo_id = resp.json()["id"]
+    await repo_write_client.assert_delete_no_content(f"/repos/{repo_id}")
 
     await assert_collection(dbm.core_db.repos, [])
 
