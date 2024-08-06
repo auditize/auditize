@@ -226,11 +226,11 @@ async def list_user_repos(
     response = UserRepoListResponse.build(repos, page_info)
     for repo_response, repo in zip(response.items, repos):
         repo_response.permissions = RepoLogPermissionsData(
-            read_logs=(
+            read=(
                 repo.status in (RepoStatus.enabled, RepoStatus.readonly)
                 and authenticated.comply(can_read_logs(repo_response.id))
             ),
-            write_logs=(
+            write=(
                 repo.status == RepoStatus.enabled
                 and authenticated.comply(can_write_logs(repo_response.id))
             ),

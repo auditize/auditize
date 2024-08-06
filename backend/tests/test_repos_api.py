@@ -596,8 +596,8 @@ async def test_repo_list_user_repos_simple(
                         repo.expected_api_response(
                             {
                                 "permissions": {
-                                    "read_logs": True,
-                                    "write_logs": True,
+                                    "read": True,
+                                    "write": True,
                                     "readable_nodes": [],
                                 }
                             }
@@ -654,23 +654,23 @@ async def test_repo_list_user_repos_with_permissions(
             {},
             {
                 repo_1.id: {
-                    "read_logs": True,
-                    "write_logs": True,
+                    "read": True,
+                    "write": True,
                     "readable_nodes": [],
                 },
                 repo_2.id: {
-                    "read_logs": True,
-                    "write_logs": True,
+                    "read": True,
+                    "write": True,
                     "readable_nodes": [],
                 },
                 repo_3.id: {
-                    "read_logs": True,
-                    "write_logs": True,
+                    "read": True,
+                    "write": True,
                     "readable_nodes": [],
                 },
                 repo_readonly.id: {
-                    "read_logs": True,
-                    "write_logs": False,
+                    "read": True,
+                    "write": False,
                     "readable_nodes": [],
                 },
             },
@@ -702,23 +702,23 @@ async def test_repo_list_user_repos_with_permissions(
             {},
             {
                 repo_1.id: {
-                    "read_logs": True,
-                    "write_logs": False,
+                    "read": True,
+                    "write": False,
                     "readable_nodes": [],
                 },
                 repo_2.id: {
-                    "read_logs": False,
-                    "write_logs": True,
+                    "read": False,
+                    "write": True,
                     "readable_nodes": [],
                 },
                 repo_3.id: {
-                    "read_logs": True,
-                    "write_logs": True,
+                    "read": True,
+                    "write": True,
                     "readable_nodes": ["node1"],
                 },
                 repo_readonly.id: {
-                    "read_logs": True,
-                    "write_logs": False,
+                    "read": True,
+                    "write": False,
                     "readable_nodes": [],
                 },
             },
@@ -728,18 +728,18 @@ async def test_repo_list_user_repos_with_permissions(
             {"has_read_permission": True},
             {
                 repo_1.id: {
-                    "read_logs": True,
-                    "write_logs": False,
+                    "read": True,
+                    "write": False,
                     "readable_nodes": [],
                 },
                 repo_3.id: {
-                    "read_logs": True,
-                    "write_logs": True,
+                    "read": True,
+                    "write": True,
                     "readable_nodes": ["node1"],
                 },
                 repo_readonly.id: {
-                    "read_logs": True,
-                    "write_logs": False,
+                    "read": True,
+                    "write": False,
                     "readable_nodes": [],
                 },
             },
@@ -749,13 +749,13 @@ async def test_repo_list_user_repos_with_permissions(
             {"has_write_permission": True},
             {
                 repo_2.id: {
-                    "read_logs": False,
-                    "write_logs": True,
+                    "read": False,
+                    "write": True,
                     "readable_nodes": [],
                 },
                 repo_3.id: {
-                    "read_logs": True,
-                    "write_logs": True,
+                    "read": True,
+                    "write": True,
                     "readable_nodes": ["node1"],
                 },
             },
@@ -765,8 +765,8 @@ async def test_repo_list_user_repos_with_permissions(
             {"has_read_permission": True, "has_write_permission": True},
             {
                 repo_3.id: {
-                    "read_logs": True,
-                    "write_logs": True,
+                    "read": True,
+                    "write": True,
                     "readable_nodes": ["node1"],
                 }
             },

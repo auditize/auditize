@@ -34,8 +34,8 @@ export interface UserRepo {
   id: string;
   name: string;
   permissions: {
-    readLogs: boolean;
-    writeLogs: boolean;
+    read: boolean;
+    write: boolean;
     readableNodes: string[];
   };
 }

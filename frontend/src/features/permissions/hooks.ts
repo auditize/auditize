@@ -51,10 +51,8 @@ export function usePermissionsNormalizer() {
           );
           return {
             repoId: repoPerms.repoId,
-            read: assignableRepo?.permissions.readLogs
-              ? repoPerms.read
-              : undefined,
-            write: assignableRepo?.permissions.writeLogs
+            read: assignableRepo?.permissions.read ? repoPerms.read : undefined,
+            write: assignableRepo?.permissions.write
               ? repoPerms.write
               : undefined,
             readableNodes: repoPerms.readableNodes,
