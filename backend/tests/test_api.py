@@ -31,3 +31,8 @@ async def test_internal_error(superadmin_client: HttpTestHelper):
             json={"name": "Repo"},
             expected_status_code=500,
         )
+
+
+async def test_internal_route_not_found():
+    client = HttpTestHelper.spawn()
+    await client.assert_post_not_found("/this-route-does-not-exist")

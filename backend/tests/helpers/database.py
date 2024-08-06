@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
 from auditize.database import DatabaseManager, get_dbm, setup_mongo_client
 from auditize.logs.db import LogDatabase
-from auditize.main import app
+from auditize.main import api_app
 
 
 def setup_test_dbm():
@@ -16,12 +16,12 @@ def setup_test_dbm():
     except KeyError:
         pass
     test_dbm = DatabaseManager.spawn(client=mongo_client, name_prefix=name_prefix)
-    app.dependency_overrides[get_dbm] = lambda: test_dbm
+    api_app.dependency_overrides[get_dbm] = lambda: test_dbm
     return test_dbm
 
 
 async def teardown_test_dbm(test_dbm):
-    app.dependency_overrides[get_dbm] = get_dbm
+    api_app.dependency_overrides[get_dbm] = get_dbm
 
     for db_name in await test_dbm.client.list_database_names():
         if db_name.startswith(test_dbm.name_prefix):

@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 
 from auditize.apikeys.api import router as apikeys_router
@@ -33,7 +32,7 @@ async def setup_db(_):
     yield
 
 
-def setup_cors():
+def setup_cors(app: FastAPI):
     config = get_config()
     if not config.is_cors_enabled():
         return
@@ -50,18 +49,17 @@ def setup_cors():
     )
 
 
-app = FastAPI(
-    lifespan=setup_db,
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
-)
+app = FastAPI()
+
+api_app = FastAPI(lifespan=setup_db)
+
 
 ###
 # Setup CORS according to the configuration
 ###
 
-setup_cors()
+setup_cors(app)
+setup_cors(api_app)
 
 
 ###
@@ -69,12 +67,12 @@ setup_cors()
 ###
 
 
-@app.exception_handler(AuditizeException)
+@api_app.exception_handler(AuditizeException)
 def exception_handler(_, exc):
     return make_response_from_exception(exc)
 
 
-@app.exception_handler(RequestValidationError)
+@api_app.exception_handler(RequestValidationError)
 def request_validation_error_handler(_, exc):
     return make_response_from_exception(exc)
 
@@ -83,7 +81,7 @@ def request_validation_error_handler(_, exc):
 # API Router
 ###
 
-api_router = APIRouter(prefix="/api")
+api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(logs_router)
 api_router.include_router(repos_router)
@@ -92,7 +90,9 @@ api_router.include_router(apikeys_router)
 api_router.include_router(logi18nprofiles_router)
 api_router.include_router(log_filters_router)
 
-app.include_router(api_router)
+api_app.include_router(api_router)
+
+app.mount("/api", api_app)
 
 
 ###
@@ -108,10 +108,8 @@ async def index_html_redirection(request, call_next):
     return response
 
 
-app.mount("", StaticFiles(directory=HTML_DIR), name="html")
-
 ###
 # OpenAPI customization
 ###
 
-customize_openapi(app)
+customize_openapi(api_app)
