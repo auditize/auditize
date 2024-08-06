@@ -40,7 +40,7 @@ async def _test_repo_create(
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
     assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": repo.id, "read": True, "write": True, "nodes": []}
+        {"repo_id": repo.id, "read": True, "write": True, "readable_nodes": []}
     ]
 
 
@@ -598,7 +598,7 @@ async def test_repo_list_user_repos_simple(
                                 "permissions": {
                                     "read_logs": True,
                                     "write_logs": True,
-                                    "nodes": [],
+                                    "readable_nodes": [],
                                 }
                             }
                         ),
@@ -653,10 +653,26 @@ async def test_repo_list_user_repos_with_permissions(
             client,
             {},
             {
-                repo_1.id: {"read_logs": True, "write_logs": True, "nodes": []},
-                repo_2.id: {"read_logs": True, "write_logs": True, "nodes": []},
-                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": []},
-                repo_readonly.id: {"read_logs": True, "write_logs": False, "nodes": []},
+                repo_1.id: {
+                    "read_logs": True,
+                    "write_logs": True,
+                    "readable_nodes": [],
+                },
+                repo_2.id: {
+                    "read_logs": True,
+                    "write_logs": True,
+                    "readable_nodes": [],
+                },
+                repo_3.id: {
+                    "read_logs": True,
+                    "write_logs": True,
+                    "readable_nodes": [],
+                },
+                repo_readonly.id: {
+                    "read_logs": True,
+                    "write_logs": False,
+                    "readable_nodes": [],
+                },
             },
         )
 
@@ -671,7 +687,7 @@ async def test_repo_list_user_repos_with_permissions(
                         "repo_id": repo_3.id,
                         "read": True,
                         "write": True,
-                        "nodes": ["node1"],
+                        "readable_nodes": ["node1"],
                     },
                     {"repo_id": repo_readonly.id, "read": True, "write": True},
                     {"repo_id": repo_disabled.id, "read": True, "write": True},
@@ -685,33 +701,75 @@ async def test_repo_list_user_repos_with_permissions(
             client,
             {},
             {
-                repo_1.id: {"read_logs": True, "write_logs": False, "nodes": []},
-                repo_2.id: {"read_logs": False, "write_logs": True, "nodes": []},
-                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]},
-                repo_readonly.id: {"read_logs": True, "write_logs": False, "nodes": []},
+                repo_1.id: {
+                    "read_logs": True,
+                    "write_logs": False,
+                    "readable_nodes": [],
+                },
+                repo_2.id: {
+                    "read_logs": False,
+                    "write_logs": True,
+                    "readable_nodes": [],
+                },
+                repo_3.id: {
+                    "read_logs": True,
+                    "write_logs": True,
+                    "readable_nodes": ["node1"],
+                },
+                repo_readonly.id: {
+                    "read_logs": True,
+                    "write_logs": False,
+                    "readable_nodes": [],
+                },
             },
         )
         await _test_repo_list_user_repos(
             client,
             {"has_read_permission": True},
             {
-                repo_1.id: {"read_logs": True, "write_logs": False, "nodes": []},
-                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]},
-                repo_readonly.id: {"read_logs": True, "write_logs": False, "nodes": []},
+                repo_1.id: {
+                    "read_logs": True,
+                    "write_logs": False,
+                    "readable_nodes": [],
+                },
+                repo_3.id: {
+                    "read_logs": True,
+                    "write_logs": True,
+                    "readable_nodes": ["node1"],
+                },
+                repo_readonly.id: {
+                    "read_logs": True,
+                    "write_logs": False,
+                    "readable_nodes": [],
+                },
             },
         )
         await _test_repo_list_user_repos(
             client,
             {"has_write_permission": True},
             {
-                repo_2.id: {"read_logs": False, "write_logs": True, "nodes": []},
-                repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]},
+                repo_2.id: {
+                    "read_logs": False,
+                    "write_logs": True,
+                    "readable_nodes": [],
+                },
+                repo_3.id: {
+                    "read_logs": True,
+                    "write_logs": True,
+                    "readable_nodes": ["node1"],
+                },
             },
         )
         await _test_repo_list_user_repos(
             client,
             {"has_read_permission": True, "has_write_permission": True},
-            {repo_3.id: {"read_logs": True, "write_logs": True, "nodes": ["node1"]}},
+            {
+                repo_3.id: {
+                    "read_logs": True,
+                    "write_logs": True,
+                    "readable_nodes": ["node1"],
+                }
+            },
         )
 
     # Test #3 with user having no log permissions (but can manage repos)
@@ -834,7 +892,7 @@ async def test_repo_delete_with_related_resources(
                                     "repo_id": repo.id,
                                     "read": True,
                                     "write": False,
-                                    "nodes": [],
+                                    "readable_nodes": [],
                                 }
                             ],
                         },
@@ -858,7 +916,7 @@ async def test_repo_delete_with_related_resources(
                                     "repo_id": repo.id,
                                     "read": True,
                                     "write": False,
-                                    "nodes": [],
+                                    "readable_nodes": [],
                                 }
                             ],
                         },

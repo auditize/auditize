@@ -1292,7 +1292,13 @@ async def _test_get_logs_visibility(
     apikey = await builder(
         {
             "logs": {
-                "repos": [{"repo_id": repo.id, "read": True, "nodes": authorized_nodes}]
+                "repos": [
+                    {
+                        "repo_id": repo.id,
+                        "read": True,
+                        "readable_nodes": authorized_nodes,
+                    }
+                ]
             }
         }
     )
@@ -1379,7 +1385,13 @@ async def _test_get_log_visibility(
     apikey = await builder(
         {
             "logs": {
-                "repos": [{"repo_id": repo.id, "read": True, "nodes": authorized_nodes}]
+                "repos": [
+                    {
+                        "repo_id": repo.id,
+                        "read": True,
+                        "readable_nodes": authorized_nodes,
+                    }
+                ]
             }
         }
     )
@@ -1421,7 +1433,13 @@ async def _test_get_log_nodes_visibility(
     authenticated = await builder(
         {
             "logs": {
-                "repos": [{"repo_id": repo.id, "read": True, "nodes": authorized_nodes}]
+                "repos": [
+                    {
+                        "repo_id": repo.id,
+                        "read": True,
+                        "readable_nodes": authorized_nodes,
+                    }
+                ]
             }
         }
     )
@@ -1560,7 +1578,13 @@ async def _test_get_log_node_visibility(
     apikey = await builder(
         {
             "logs": {
-                "repos": [{"repo_id": repo.id, "read": True, "nodes": authorized_nodes}]
+                "repos": [
+                    {
+                        "repo_id": repo.id,
+                        "read": True,
+                        "readable_nodes": authorized_nodes,
+                    }
+                ]
             }
         }
     )

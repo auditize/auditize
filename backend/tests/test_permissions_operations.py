@@ -117,7 +117,7 @@ def test_normalization_read_logs_on_all_repos():
                         "repo_id": "repo4",
                         "read": True,
                         "write": True,
-                        "nodes": ["node1", "node2"],
+                        "readable_nodes": ["node1", "node2"],
                     },
                 ],
             },
@@ -128,9 +128,24 @@ def test_normalization_read_logs_on_all_repos():
                 "read": True,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": False, "write": True, "nodes": []},
-                    {"repo_id": "repo2", "read": False, "write": True, "nodes": []},
-                    {"repo_id": "repo4", "read": False, "write": True, "nodes": []},
+                    {
+                        "repo_id": "repo1",
+                        "read": False,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
+                    {
+                        "repo_id": "repo2",
+                        "read": False,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
+                    {
+                        "repo_id": "repo4",
+                        "read": False,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
                 ],
             },
             "management": {
@@ -153,7 +168,7 @@ def test_normalization_repo_nodes_without_read_permission():
                         "repo_id": "repo1",
                         "read": False,
                         "write": True,
-                        "nodes": ["node1", "node2"],
+                        "readable_nodes": ["node1", "node2"],
                     },
                 ],
             },
@@ -164,7 +179,12 @@ def test_normalization_repo_nodes_without_read_permission():
                 "read": False,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": False, "write": True, "nodes": []},
+                    {
+                        "repo_id": "repo1",
+                        "read": False,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
                 ],
             },
             "management": {
@@ -195,8 +215,18 @@ def test_normalization_write_logs_on_all_repos():
                 "read": False,
                 "write": True,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": False, "nodes": []},
-                    {"repo_id": "repo3", "read": True, "write": False, "nodes": []},
+                    {
+                        "repo_id": "repo1",
+                        "read": True,
+                        "write": False,
+                        "readable_nodes": [],
+                    },
+                    {
+                        "repo_id": "repo3",
+                        "read": True,
+                        "write": False,
+                        "readable_nodes": [],
+                    },
                 ],
             },
             "management": {
@@ -306,7 +336,7 @@ def test_authorize_grant_on_logs_with_node():
     granted_perms = {
         "logs": {
             "repos": [
-                {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+                {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
             ]
         }
     }
@@ -465,7 +495,12 @@ def test_update_permission_drop_individual_permissions():
                 "read": True,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": False, "write": True, "nodes": []},
+                    {
+                        "repo_id": "repo1",
+                        "read": False,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
                 ],
             },
             "management": {
@@ -483,7 +518,7 @@ def test_update_permission_grant_read_logs_on_nodes_1():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+                    {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
                 ],
             },
         },
@@ -497,7 +532,7 @@ def test_update_permission_grant_read_logs_on_nodes_1():
                         "repo_id": "repo1",
                         "read": True,
                         "write": False,
-                        "nodes": ["node1"],
+                        "readable_nodes": ["node1"],
                     },
                 ],
             },
@@ -515,14 +550,14 @@ def test_update_permission_grant_read_logs_on_nodes_2():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+                    {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
                 ],
             },
         },
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "nodes": []},
+                    {"repo_id": "repo1", "read": True, "readable_nodes": []},
                 ],
             },
         },
@@ -536,7 +571,7 @@ def test_update_permission_grant_read_logs_on_nodes_2():
                         "repo_id": "repo1",
                         "read": True,
                         "write": False,
-                        "nodes": [],
+                        "readable_nodes": [],
                     },
                 ],
             },
@@ -554,7 +589,7 @@ def test_update_permission_grant_read_logs_on_nodes_3():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "nodes": ["node1"]},
+                    {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
                 ],
             },
         },
@@ -575,7 +610,7 @@ def test_update_permission_grant_read_logs_on_nodes_3():
                         "repo_id": "repo1",
                         "read": True,
                         "write": True,
-                        "nodes": ["node1"],
+                        "readable_nodes": ["node1"],
                     },
                 ],
             },
@@ -610,8 +645,18 @@ def test_update_permissions_add_repo():
                 "read": False,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True, "nodes": []},
-                    {"repo_id": "repo2", "read": True, "write": True, "nodes": []},
+                    {
+                        "repo_id": "repo1",
+                        "read": True,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
+                    {
+                        "repo_id": "repo2",
+                        "read": True,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
                 ],
             },
             "management": {
@@ -646,7 +691,12 @@ def test_update_permissions_drop_repo():
                 "read": False,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo2", "read": True, "write": True, "nodes": []},
+                    {
+                        "repo_id": "repo2",
+                        "read": True,
+                        "write": True,
+                        "readable_nodes": [],
+                    },
                 ],
             },
             "management": {
@@ -691,7 +741,7 @@ def test_get_applicable_permissions_partial_rights():
                         "repo_id": "repo3",
                         "read": True,
                         "write": False,
-                        "nodes": ["node1"],
+                        "readable_nodes": ["node1"],
                     },
                 ],
             },

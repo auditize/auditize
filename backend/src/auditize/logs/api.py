@@ -311,7 +311,9 @@ async def get_log_nodes(
     nodes, pagination = await service.get_log_nodes(
         dbm,
         repo_id,
-        authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
+        authorized_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
+            repo_id
+        ),
         page=page_params.page,
         page_size=page_params.page_size,
         **filter_args,
@@ -332,7 +334,10 @@ async def get_log_node(
     node_ref: Annotated[str, Path(title="Node ref")],
 ) -> LogNodeResponse:
     node = await service.get_log_node(
-        dbm, repo_id, node_ref, authenticated.permissions.logs.get_repo_nodes(repo_id)
+        dbm,
+        repo_id,
+        node_ref,
+        authenticated.permissions.logs.get_repo_readable_nodes(repo_id),
     )
     return LogNodeResponse.model_validate(node.model_dump())
 
@@ -464,7 +469,9 @@ async def get_logs_as_csv(
             dbm,
             repo_id,
             columns=columns,
-            authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
+            authorized_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
+                repo_id
+            ),
             action_type=search_params.action_type,
             action_category=search_params.action_category,
             source=search_params.source,
@@ -510,7 +517,9 @@ async def get_log(
         dbm,
         repo_id,
         log_id,
-        authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
+        authorized_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
+            repo_id
+        ),
     )
     return LogReadingResponse.model_validate(log.model_dump())
 
@@ -567,7 +576,9 @@ async def get_logs(
     logs, next_cursor = await service.get_logs(
         dbm,
         repo_id,
-        authorized_nodes=authenticated.permissions.logs.get_repo_nodes(repo_id),
+        authorized_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
+            repo_id
+        ),
         action_type=search_params.action_type,
         action_category=search_params.action_category,
         source=search_params.source,

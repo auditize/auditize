@@ -57,7 +57,7 @@ export function usePermissionsNormalizer() {
             write: assignableRepo?.permissions.writeLogs
               ? repoPerms.write
               : undefined,
-            nodes: repoPerms.nodes,
+            readableNodes: repoPerms.readableNodes,
           };
         })
         .filter(

@@ -61,7 +61,7 @@ class BasePermissionTests:
                             {
                                 "repo_id": repo_2.id,
                                 "read": True,
-                                "nodes": ["customer:1"],
+                                "readable_nodes": ["customer:1"],
                             },
                         ],
                     },
@@ -91,13 +91,13 @@ class BasePermissionTests:
                                         "repo_id": repo_1.id,
                                         "read": True,
                                         "write": True,
-                                        "nodes": [],
+                                        "readable_nodes": [],
                                     },
                                     {
                                         "repo_id": repo_2.id,
                                         "read": True,
                                         "write": False,
-                                        "nodes": ["customer:1"],
+                                        "readable_nodes": ["customer:1"],
                                     },
                                 ],
                             },
@@ -191,7 +191,7 @@ class BasePermissionTests:
                                     "repo_id": repo.id,
                                     "read": True,
                                     "write": True,
-                                    "nodes": ["node1"],
+                                    "readable_nodes": ["node1"],
                                 }
                             ],
                         },
@@ -219,7 +219,7 @@ class BasePermissionTests:
                                         "repo_id": repo.id,
                                         "read": True,
                                         "write": True,
-                                        "nodes": ["node1"],
+                                        "readable_nodes": ["node1"],
                                     }
                                 ],
                             },

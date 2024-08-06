@@ -39,7 +39,7 @@ class ManagementPermissions(BaseModel):
 
 class RepoLogPermissions(ReadWritePermissions):
     repo_id: str
-    nodes: list[str] | None = Field(default=None)
+    readable_nodes: list[str] | None = Field(default=None)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -63,9 +63,9 @@ class LogPermissions(ReadWritePermissions):
                 return perms
         return None
 
-    def get_repo_nodes(self, repo_id: str) -> set[str]:
+    def get_repo_readable_nodes(self, repo_id: str) -> set[str]:
         perms = self.get_repo_permissions(repo_id)
-        return set(perms.nodes) if perms and perms.nodes else set()
+        return set(perms.readable_nodes) if perms and perms.readable_nodes else set()
 
 
 class Permissions(BaseModel):

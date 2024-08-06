@@ -82,8 +82,8 @@ function LogRepoPermissionManagement({
       />
       <MultiNodeSelectorPicker
         repoId={perms.repoId}
-        nodeRefs={perms.nodes}
-        onChange={(nodes) => onChange({ ...perms, nodes })}
+        nodeRefs={perms.readableNodes}
+        onChange={(nodes) => onChange({ ...perms, readableNodes: nodes })}
         disabled={readOnly || !assignablePerms.read || !perms.read}
       />
     </Group>
@@ -219,7 +219,7 @@ function LogsPermissionManagement({
                         repoId: assignableRepo.id,
                         read: false,
                         write: false,
-                        nodes: [],
+                        readableNodes: [],
                       }
                     }
                     assignablePerms={{
@@ -227,7 +227,8 @@ function LogsPermissionManagement({
                         ? false
                         : assignablePerms.read === "all" ||
                           (assignableRepo.permissions.readLogs &&
-                            assignableRepo.permissions.nodes.length === 0),
+                            assignableRepo.permissions.readableNodes.length ===
+                              0),
                       write: perms.write
                         ? false
                         : assignablePerms.write === "all" ||

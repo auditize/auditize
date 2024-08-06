@@ -40,7 +40,7 @@ def _normalize_repo_permissions(
             repo_id=single_repo_perms.repo_id,
             read=read,
             write=write,
-            nodes=(single_repo_perms.nodes or []) if read else [],
+            readable_nodes=(single_repo_perms.readable_nodes or []) if read else [],
         )
 
     return [perms for perms in normalized.values() if perms.read or perms.write]
@@ -167,7 +167,7 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
                     grantor_repo_perms
                     and grantor_repo_perms.read
                     # grantor must have global access to the repo, not a node subset, to grant read access:
-                    and not grantor_repo_perms.nodes
+                    and not grantor_repo_perms.readable_nodes
                 )
                 or grantor_perms.logs.read,
                 f"logs read on repo {assignee_repo_perms.repo_id!r}",
@@ -233,10 +233,10 @@ def update_permissions(
                 write=_update_permission(
                     orig_repo_perms and orig_repo_perms.write, update_repo_perms.write
                 ),
-                nodes=(
-                    update_repo_perms.nodes
-                    if update_repo_perms.nodes is not None
-                    else (orig_repo_perms.nodes if orig_repo_perms else [])
+                readable_nodes=(
+                    update_repo_perms.readable_nodes
+                    if update_repo_perms.readable_nodes is not None
+                    else (orig_repo_perms.readable_nodes if orig_repo_perms else [])
                 ),
             )
     new.logs.repos = list(all_repo_perms.values())
