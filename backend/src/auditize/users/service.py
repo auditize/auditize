@@ -22,6 +22,7 @@ from auditize.helpers.resources.service import (
     update_resource_document,
 )
 from auditize.permissions.operations import normalize_permissions, update_permissions
+from auditize.permissions.service import remove_repo_from_permissions
 from auditize.repos.service import ensure_repos_in_permissions_exist
 from auditize.users.models import PasswordResetToken, User, UserUpdate
 
@@ -167,6 +168,10 @@ async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: str):
 async def delete_user(dbm: DatabaseManager, user_id: str):
     await _forbid_last_superadmin_deletion(dbm, user_id)
     await delete_resource_document(dbm.core_db.users, user_id)
+
+
+async def remove_repo_from_users_permissions(dbm: DatabaseManager, repo_id: str):
+    await remove_repo_from_permissions(dbm.core_db.users, repo_id)
 
 
 async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> User:

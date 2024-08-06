@@ -183,9 +183,17 @@ async def get_user_repos(
 
 
 async def delete_repo(dbm: DatabaseManager, repo_id: str):
+    # avoid circular imports
+    from auditize.apikeys.service import remove_repo_from_apikeys_permissions
+    from auditize.logfilters.service import delete_log_filters_with_repo
+    from auditize.users.service import remove_repo_from_users_permissions
+
     logs_db = await get_log_db_for_config(dbm, repo_id)
     await delete_resource_document(dbm.core_db.repos, repo_id)
     await logs_db.client.drop_database(logs_db.name)
+    await remove_repo_from_users_permissions(dbm, repo_id)
+    await remove_repo_from_apikeys_permissions(dbm, repo_id)
+    await delete_log_filters_with_repo(dbm, repo_id)
 
 
 async def is_i18n_log_profile_used_by_repo(

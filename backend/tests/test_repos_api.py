@@ -8,12 +8,16 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from auditize.database import DatabaseManager
 from auditize.logs.db import LogDatabase
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
+from helpers.apikeys import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
+from helpers.logfilters import PreparedLogFilter
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
+from helpers.permissions.constants import DEFAULT_PERMISSIONS
 from helpers.repos import PreparedRepo
+from helpers.users import PreparedUser
 from helpers.utils import strip_dict_keys
 
 pytestmark = pytest.mark.anyio
@@ -745,6 +749,129 @@ async def test_repo_delete(repo_write_client: HttpTestHelper, dbm: DatabaseManag
     await repo_write_client.assert_delete_no_content(f"/repos/{repo_id}")
 
     await assert_collection(dbm.core_db.repos, [])
+
+
+async def test_repo_delete_with_related_resources(
+    user_builder: UserBuilder, repo: PreparedRepo, dbm: DatabaseManager
+):
+    superadmin = await user_builder({"is_superadmin": True})
+
+    async with superadmin.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+
+        resp = await client.assert_post_created("/repos", json={"name": "repo"})
+        to_be_deleted_repo_id = resp.json()["id"]
+
+        # Create an API key with permissions on the to_be_deleted_repo + another repo
+        apikey = await PreparedApikey.create(
+            client,
+            dbm,
+            {
+                "name": "apikey",
+                "permissions": {
+                    "logs": {
+                        "repos": [
+                            {"repo_id": to_be_deleted_repo_id, "read": True},
+                            {"repo_id": repo.id, "read": True},
+                        ]
+                    }
+                },
+            },
+        )
+
+        # Create a user with permissions on the to_be_deleted_repo + another repo
+        user = await PreparedUser.create(
+            client,
+            dbm,
+            PreparedUser.prepare_data(
+                {
+                    "permissions": {
+                        "logs": {
+                            "repos": [
+                                {"repo_id": to_be_deleted_repo_id, "read": True},
+                                {"repo_id": repo.id, "read": True},
+                            ]
+                        }
+                    },
+                }
+            ),
+        )
+
+        # Create a log filter with the to_be_deleted_repo and another filter with another repo
+        await superadmin.create_log_filter(
+            {
+                "name": "filter_to_be_deleted",
+                "repo_id": to_be_deleted_repo_id,
+                "search_params": {},
+                "columns": [],
+            }
+        )
+        log_filter = await superadmin.create_log_filter(
+            {
+                "name": "filter",
+                "repo_id": repo.id,
+                "search_params": {},
+                "columns": [],
+            },
+        )
+
+        await client.assert_delete_no_content(f"/repos/{to_be_deleted_repo_id}")
+
+    # Check that the related resources have been deleted
+    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+    await assert_collection(
+        dbm.core_db.apikeys,
+        [
+            apikey.expected_document(
+                {
+                    "permissions": {
+                        **DEFAULT_PERMISSIONS,
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": [
+                                {
+                                    "repo_id": repo.id,
+                                    "read": True,
+                                    "write": False,
+                                    "nodes": [],
+                                }
+                            ],
+                        },
+                    }
+                }
+            )
+        ],
+    )
+    await assert_collection(
+        dbm.core_db.users,
+        [
+            user.expected_document(
+                {
+                    "permissions": {
+                        **DEFAULT_PERMISSIONS,
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": [
+                                {
+                                    "repo_id": repo.id,
+                                    "read": True,
+                                    "write": False,
+                                    "nodes": [],
+                                }
+                            ],
+                        },
+                    }
+                }
+            )
+        ],
+        filter={"email": user.email},
+    )
+    await assert_collection(
+        dbm.core_db.log_filters,
+        [log_filter.expected_document({"user_id": superadmin.id})],
+    )
 
 
 async def test_repo_delete_unknown_id(

@@ -13,6 +13,7 @@ from auditize.helpers.resources.service import (
     update_resource_document,
 )
 from auditize.permissions.operations import normalize_permissions, update_permissions
+from auditize.permissions.service import remove_repo_from_permissions
 from auditize.repos.service import ensure_repos_in_permissions_exist
 
 
@@ -87,3 +88,7 @@ async def get_apikeys(
 
 async def delete_apikey(dbm: DatabaseManager, apikey_id: str):
     await delete_resource_document(dbm.core_db.apikeys, apikey_id)
+
+
+async def remove_repo_from_apikeys_permissions(dbm: DatabaseManager, repo_id: str):
+    await remove_repo_from_permissions(dbm.core_db.apikeys, repo_id)

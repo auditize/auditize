@@ -75,3 +75,10 @@ async def delete_log_filter(dbm: DatabaseManager, user_id: str, log_filter_id: s
     await delete_resource_document(
         dbm.core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
     )
+
+
+async def delete_log_filters_with_repo(dbm: DatabaseManager, repo_id: str):
+    try:
+        await delete_resource_document(dbm.core_db.log_filters, {"repo_id": repo_id})
+    except UnknownModelException:
+        pass

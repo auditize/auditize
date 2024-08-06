@@ -30,8 +30,10 @@ async def teardown_test_dbm(test_dbm):
     test_dbm.client.close()
 
 
-async def assert_collection(collection: AsyncIOMotorCollection, expected):
-    results = await collection.find({}).to_list(None)
+async def assert_collection(
+    collection: AsyncIOMotorCollection, expected, *, filter=None
+):
+    results = await collection.find(filter or {}).to_list(None)
     assert results == expected
 
 
