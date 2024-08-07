@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
-from typing import Annotated, Optional
+from typing import Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, Field
+
+from auditize.resource.models import HasId
 
 
 class CustomField(BaseModel):
@@ -9,7 +11,7 @@ class CustomField(BaseModel):
     value: str
 
 
-class Log(BaseModel):
+class Log(BaseModel, HasId):
     class Action(BaseModel):
         type: str
         category: str
@@ -44,10 +46,6 @@ class Log(BaseModel):
         ref: str
         name: str
 
-    id: Annotated[Optional[str], BeforeValidator(str)] = Field(
-        default=None,
-        alias="_id",
-    )
     action: Action
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: list[CustomField] = Field(default_factory=list)
@@ -59,10 +57,7 @@ class Log(BaseModel):
     node_path: list[Node] = Field(default_factory=list)
 
 
-class Node(BaseModel):
-    id: Annotated[str, BeforeValidator(str)] = Field(
-        alias="_id",
-    )
+class Node(BaseModel, HasId):
     ref: str
     name: str
     parent_node_ref: str | None

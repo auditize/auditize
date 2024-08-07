@@ -1,8 +1,6 @@
-from datetime import datetime, timezone
-from typing import Annotated, Optional
+from pydantic import BaseModel, Field
 
-from pydantic import BaseModel, BeforeValidator, Field
-
+from auditize.resource.models import HasCreatedAt, HasId
 from auditize.users.models import Lang
 
 
@@ -19,13 +17,8 @@ class LogTranslation(BaseModel):
     attachment_type: dict[str, str] = Field(default_factory=dict)
 
 
-class LogI18nProfile(BaseModel):
-    id: Annotated[Optional[str], BeforeValidator(str)] = Field(
-        default=None,
-        alias="_id",
-    )
+class LogI18nProfile(BaseModel, HasId, HasCreatedAt):
     name: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     translations: dict[Lang, LogTranslation] = Field(default_factory=dict)
 
 
