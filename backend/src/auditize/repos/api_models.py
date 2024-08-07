@@ -5,8 +5,8 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.repos.models import Repo, RepoStatus
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 def _RepoLogI18nProfileIdField(**kwargs):  # noqa

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import (
     BaseModel,
@@ -12,9 +11,9 @@ from pydantic import (
 
 from auditize.helpers.api.validators import FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN
 from auditize.helpers.datetime import serialize_datetime
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logfilters.models import LogFilter
 from auditize.logs.api_models import BaseLogSearchParams
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 _BUILTIN_FILTER_COLUMNS = (
     "saved_at",

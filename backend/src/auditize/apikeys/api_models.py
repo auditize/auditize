@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_serializer
 
 from auditize.apikeys.models import Apikey
 from auditize.helpers.datetime import serialize_datetime
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 def _ApikeyNameField(**kwargs):  # noqa

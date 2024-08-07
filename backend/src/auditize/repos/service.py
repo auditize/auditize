@@ -3,8 +3,6 @@ from typing import Any, Sequence
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
-from auditize.helpers.pagination.page.models import PagePaginationInfo
-from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.logi18nprofiles.models import LogTranslation
 from auditize.logi18nprofiles.service import (
     does_log_i18n_profile_exist,
@@ -19,6 +17,8 @@ from auditize.permissions.assertions import (
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import is_authorized
 from auditize.repos.models import Repo, RepoStats, RepoStatus, RepoUpdate
+from auditize.resource.pagination.page.models import PagePaginationInfo
+from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
     delete_resource_document,

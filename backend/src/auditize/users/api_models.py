@@ -1,12 +1,12 @@
 from pydantic import BaseModel, EmailStr, Field
 
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import (
     ApplicablePermissionsData,
     PermissionsInputData,
     PermissionsOutputData,
 )
 from auditize.permissions.operations import compute_applicable_permissions
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.users.models import Lang, User
 
 

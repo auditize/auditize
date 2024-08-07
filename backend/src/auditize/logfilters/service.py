@@ -2,10 +2,10 @@ import uuid
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
-from auditize.helpers.pagination.page.models import PagePaginationInfo
-from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.logfilters.models import LogFilter, LogFilterUpdate
 from auditize.repos.service import get_repo
+from auditize.resource.pagination.page.models import PagePaginationInfo
+from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
     delete_resource_document,

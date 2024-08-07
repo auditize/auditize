@@ -7,7 +7,6 @@ from auditize.auth.authorizer import (
 )
 from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
-from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logfilters import service
 from auditize.logfilters.api_models import (
     LogFilterCreationRequest,
@@ -19,6 +18,7 @@ from auditize.logfilters.api_models import (
 from auditize.logfilters.models import LogFilter, LogFilterUpdate
 from auditize.permissions.assertions import can_read_logs
 from auditize.resource.api_models import ResourceSearchParams
+from auditize.resource.pagination.page.api_models import PagePaginationParams
 
 router = APIRouter(responses=error_responses(401, 403))
 

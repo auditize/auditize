@@ -1,11 +1,10 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logi18nprofiles.models import LogI18nProfile
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.users.models import Lang
 
 

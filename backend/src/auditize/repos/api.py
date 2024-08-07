@@ -13,7 +13,6 @@ from auditize.auth.authorizer import (
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
-from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logi18nprofiles.api_models import LogTranslation
 from auditize.permissions.assertions import (
     can_read_logs,
@@ -41,6 +40,7 @@ from auditize.repos.api_models import (
 )
 from auditize.repos.models import Repo, RepoStatus, RepoUpdate
 from auditize.resource.api_models import ResourceSearchParams
+from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.users.models import Lang, UserUpdate
 from auditize.users.service import update_user
 

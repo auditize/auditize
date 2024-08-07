@@ -14,9 +14,9 @@ from pydantic import (
 
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import serialize_datetime, validate_datetime
-from auditize.helpers.pagination.cursor.api_models import CursorPaginatedResponse
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.logs.models import Log
+from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 class _CustomFieldData(BaseModel):

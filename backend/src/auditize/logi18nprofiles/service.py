@@ -1,12 +1,12 @@
 from auditize.database import DatabaseManager
 from auditize.exceptions import ConstraintViolation
-from auditize.helpers.pagination.page.models import PagePaginationInfo
-from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.logi18nprofiles.models import (
     LogI18nProfile,
     LogI18nProfileUpdate,
     LogTranslation,
 )
+from auditize.resource.pagination.page.models import PagePaginationInfo
+from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
     delete_resource_document,

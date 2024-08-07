@@ -16,13 +16,13 @@ from auditize.auth.authorizer import Authenticated, Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
-from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.permissions.assertions import (
     can_read_apikeys,
     can_write_apikeys,
 )
 from auditize.permissions.operations import authorize_grant
 from auditize.resource.api_models import ResourceSearchParams
+from auditize.resource.pagination.page.api_models import PagePaginationParams
 
 router = APIRouter(responses=error_responses(401, 403))
 

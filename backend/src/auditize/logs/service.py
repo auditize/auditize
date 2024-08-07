@@ -17,9 +17,6 @@ from auditize.exceptions import (
     ValidationError,
 )
 from auditize.helpers.datetime import now, serialize_datetime
-from auditize.helpers.pagination.cursor.service import find_paginated_by_cursor
-from auditize.helpers.pagination.page.models import PagePaginationInfo
-from auditize.helpers.pagination.page.service import find_paginated_by_page
 from auditize.logs.db import (
     LogDatabase,
     get_log_db_for_maintenance,
@@ -29,6 +26,9 @@ from auditize.logs.db import (
 from auditize.logs.models import CustomField, Log, LogSearchParams, Node
 from auditize.repos.models import Repo
 from auditize.repos.service import get_retention_period_enabled_repos
+from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
+from auditize.resource.pagination.page.models import PagePaginationInfo
+from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
     delete_resource_document,
