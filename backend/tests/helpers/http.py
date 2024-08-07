@@ -5,7 +5,7 @@ from httpx import ASGITransport, AsyncClient, Response
 from icecream import ic
 from starlette.requests import Request
 
-from auditize.main import app
+from auditize.app import app
 
 
 class HttpTestHelper(AsyncClient):
