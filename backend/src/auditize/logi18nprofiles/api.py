@@ -6,7 +6,6 @@ from auditize.auth.authorizer import Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
-from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.logi18nprofiles import service
 from auditize.logi18nprofiles.api_models import (
     LogI18nProfileCreationRequest,
@@ -21,6 +20,7 @@ from auditize.permissions.assertions import (
     can_read_repos,
     can_write_repos,
 )
+from auditize.resource.api_models import ResourceSearchParams
 from auditize.users.models import Lang
 
 router = APIRouter(responses=error_responses(401, 403))

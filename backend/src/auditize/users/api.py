@@ -7,9 +7,9 @@ from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.helpers.pagination.page.api_models import PagePaginationParams
-from auditize.helpers.resources.api_models import ResourceSearchParams
 from auditize.permissions.assertions import can_read_users, can_write_users
 from auditize.permissions.operations import authorize_grant
+from auditize.resource.api_models import ResourceSearchParams
 from auditize.users import service
 from auditize.users.api_models import (
     UserCreationRequest,

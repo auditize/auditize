@@ -5,13 +5,6 @@ from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
 from auditize.helpers.pagination.page.models import PagePaginationInfo
 from auditize.helpers.pagination.page.service import find_paginated_by_page
-from auditize.helpers.resources.service import (
-    create_resource_document,
-    delete_resource_document,
-    get_resource_document,
-    has_resource_document,
-    update_resource_document,
-)
 from auditize.logi18nprofiles.models import LogTranslation
 from auditize.logi18nprofiles.service import (
     does_log_i18n_profile_exist,
@@ -26,6 +19,13 @@ from auditize.permissions.assertions import (
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import is_authorized
 from auditize.repos.models import Repo, RepoStats, RepoStatus, RepoUpdate
+from auditize.resource.service import (
+    create_resource_document,
+    delete_resource_document,
+    get_resource_document,
+    has_resource_document,
+    update_resource_document,
+)
 from auditize.users.models import Lang, User
 
 

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, EmailStr, Field
 
 from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
