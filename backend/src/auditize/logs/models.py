@@ -67,3 +67,31 @@ class Node(BaseModel):
     name: str
     parent_node_ref: str | None
     has_children: bool
+
+
+class BaseLogSearchParams(BaseModel):
+    action_type: Optional[str] = Field(default=None)
+    action_category: Optional[str] = Field(default=None)
+    actor_type: Optional[str] = Field(default=None)
+    actor_name: Optional[str] = Field(default=None)
+    actor_ref: Optional[str] = Field(default=None)
+    resource_type: Optional[str] = Field(default=None)
+    resource_name: Optional[str] = Field(default=None)
+    resource_ref: Optional[str] = Field(default=None)
+    tag_ref: Optional[str] = Field(default=None)
+    tag_type: Optional[str] = Field(default=None)
+    tag_name: Optional[str] = Field(default=None)
+    has_attachment: Optional[bool] = Field(default=None)
+    attachment_name: Optional[str] = Field(default=None)
+    attachment_type: Optional[str] = Field(default=None)
+    attachment_mime_type: Optional[str] = Field(default=None)
+    node_ref: Optional[str] = Field(default=None)
+    since: Optional[datetime] = Field(default=None)
+    until: Optional[datetime] = Field(default=None)
+
+
+class LogSearchParams(BaseLogSearchParams):
+    actor_extra: Optional[dict] = Field(default=None)
+    resource_extra: Optional[dict] = Field(default=None)
+    source: Optional[dict] = Field(default=None)
+    details: Optional[dict] = Field(default=None)

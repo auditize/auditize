@@ -8,6 +8,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_serializer,
+    model_serializer,
     model_validator,
 )
 
@@ -417,18 +418,13 @@ class LogSearchQueryParams(BaseLogSearchParams):
                 params[parts[1]] = param_value
         return params
 
-    @property
-    def details(self) -> dict[str, str]:
-        return self._get_custom_field_search_params("details")
-
-    @property
-    def source(self) -> dict[str, str]:
-        return self._get_custom_field_search_params("source")
-
-    @property
-    def actor_extra(self) -> dict[str, str]:
-        return self._get_custom_field_search_params("actor")
-
-    @property
-    def resource_extra(self) -> dict[str, str]:
-        return self._get_custom_field_search_params("resource")
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler):
+        serialized = handler(self)
+        return {
+            **serialized,
+            "details": self._get_custom_field_search_params("details"),
+            "source": self._get_custom_field_search_params("source"),
+            "actor_extra": self._get_custom_field_search_params("actor"),
+            "resource_extra": self._get_custom_field_search_params("resource"),
+        }

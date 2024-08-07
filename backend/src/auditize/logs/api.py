@@ -29,7 +29,7 @@ from auditize.logs.api_models import (
     NameListResponse,
 )
 from auditize.logs.db import get_log_db_for_reading
-from auditize.logs.models import Log
+from auditize.logs.models import Log, LogSearchParams
 
 router = APIRouter(
     responses=error_responses(401, 403, 404),
@@ -468,32 +468,11 @@ async def get_logs_as_csv(
         service.get_logs_as_csv(
             dbm,
             repo_id,
-            columns=columns,
             authorized_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
                 repo_id
             ),
-            action_type=search_params.action_type,
-            action_category=search_params.action_category,
-            source=search_params.source,
-            actor_type=search_params.actor_type,
-            actor_name=search_params.actor_name,
-            actor_ref=search_params.actor_ref,
-            actor_extra=search_params.actor_extra,
-            resource_type=search_params.resource_type,
-            resource_name=search_params.resource_name,
-            resource_ref=search_params.resource_ref,
-            resource_extra=search_params.resource_extra,
-            details=search_params.details,
-            tag_type=search_params.tag_type,
-            tag_name=search_params.tag_name,
-            tag_ref=search_params.tag_ref,
-            has_attachment=search_params.has_attachment,
-            attachment_name=search_params.attachment_name,
-            attachment_type=search_params.attachment_type,
-            attachment_mime_type=search_params.attachment_mime_type,
-            node_ref=search_params.node_ref,
-            since=search_params.since,
-            until=search_params.until,
+            search_params=LogSearchParams.model_validate(search_params.model_dump()),
+            columns=columns,
         ),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
@@ -579,28 +558,7 @@ async def get_logs(
         authorized_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
             repo_id
         ),
-        action_type=search_params.action_type,
-        action_category=search_params.action_category,
-        source=search_params.source,
-        actor_type=search_params.actor_type,
-        actor_name=search_params.actor_name,
-        actor_ref=search_params.actor_ref,
-        actor_extra=search_params.actor_extra,
-        resource_type=search_params.resource_type,
-        resource_name=search_params.resource_name,
-        resource_ref=search_params.resource_ref,
-        resource_extra=search_params.resource_extra,
-        details=search_params.details,
-        tag_type=search_params.tag_type,
-        tag_name=search_params.tag_name,
-        tag_ref=search_params.tag_ref,
-        has_attachment=search_params.has_attachment,
-        attachment_name=search_params.attachment_name,
-        attachment_type=search_params.attachment_type,
-        attachment_mime_type=search_params.attachment_mime_type,
-        node_ref=search_params.node_ref,
-        since=search_params.since,
-        until=search_params.until,
+        search_params=LogSearchParams.model_validate(search_params.model_dump()),
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,
     )

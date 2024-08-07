@@ -33,7 +33,7 @@ from auditize.logs.db import (
     get_log_db_for_reading,
     get_log_db_for_writing,
 )
-from auditize.logs.models import CustomField, Log, Node
+from auditize.logs.models import CustomField, Log, LogSearchParams, Node
 from auditize.repos.models import Repo
 from auditize.repos.service import get_retention_period_enabled_repos
 
@@ -224,33 +224,71 @@ def _custom_field_search_filter(params: dict[str, str]) -> dict:
     }
 
 
+def _get_criteria_from_search_params(
+    search_params: LogSearchParams,
+) -> list[dict[str, Any]]:
+    sp = search_params
+    criteria = []
+    if sp.action_type:
+        criteria.append({"action.type": sp.action_type})
+    if sp.action_category:
+        criteria.append({"action.category": sp.action_category})
+    if sp.source:
+        criteria.append({"source": _custom_field_search_filter(sp.source)})
+    if sp.actor_type:
+        criteria.append({"actor.type": sp.actor_type})
+    if sp.actor_name:
+        criteria.append({"actor.name": _text_search_filter(sp.actor_name)})
+    if sp.actor_ref:
+        criteria.append({"actor.ref": sp.actor_ref})
+    if sp.actor_extra:
+        criteria.append({"actor.extra": _custom_field_search_filter(sp.actor_extra)})
+    if sp.resource_type:
+        criteria.append({"resource.type": sp.resource_type})
+    if sp.resource_name:
+        criteria.append({"resource.name": _text_search_filter(sp.resource_name)})
+    if sp.resource_ref:
+        criteria.append({"resource.ref": sp.resource_ref})
+    if sp.resource_extra:
+        criteria.append(
+            {"resource.extra": _custom_field_search_filter(sp.resource_extra)}
+        )
+    if sp.details:
+        criteria.append({"details": _custom_field_search_filter(sp.details)})
+    if sp.tag_ref:
+        criteria.append({"tags.ref": sp.tag_ref})
+    if sp.tag_type:
+        criteria.append({"tags.type": sp.tag_type})
+    if sp.tag_name:
+        criteria.append({"tags.name": _text_search_filter(sp.tag_name)})
+    if sp.has_attachment is not None:
+        if sp.has_attachment:
+            criteria.append({"attachments": {"$not": {"$size": 0}}})
+        else:
+            criteria.append({"attachments": {"$size": 0}})
+    if sp.attachment_name:
+        criteria.append({"attachments.name": _text_search_filter(sp.attachment_name)})
+    if sp.attachment_type:
+        criteria.append({"attachments.type": sp.attachment_type})
+    if sp.attachment_mime_type:
+        criteria.append({"attachments.mime_type": sp.attachment_mime_type})
+    if sp.node_ref:
+        criteria.append({"node_path.ref": sp.node_ref})
+    if sp.since:
+        criteria.append({"saved_at": {"$gte": sp.since}})
+    if sp.until:
+        # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
+        # will also include logs saved at 23:59:59.500 for instance
+        criteria.append({"saved_at": {"$lte": sp.until.replace(microsecond=999999)}})
+    return criteria
+
+
 async def get_logs(
     dbm: DatabaseManager,
     repo: str | LogDatabase,
     *,
     authorized_nodes: set[str] = None,
-    action_type: str = None,
-    action_category: str = None,
-    actor_type: str = None,
-    actor_name: str = None,
-    actor_ref: str = None,
-    actor_extra: dict = None,
-    resource_type: str = None,
-    resource_name: str = None,
-    resource_ref: str = None,
-    resource_extra: dict = None,
-    details: dict = None,
-    source: dict = None,
-    tag_ref: str = None,
-    tag_type: str = None,
-    tag_name: str = None,
-    has_attachment: bool = None,
-    attachment_name: str = None,
-    attachment_type: str = None,
-    attachment_mime_type: str = None,
-    node_ref: str = None,
-    since: datetime = None,
-    until: datetime = None,
+    search_params: LogSearchParams = None,
     limit: int = 10,
     pagination_cursor: str = None,
 ) -> tuple[list[Log], str | None]:
@@ -262,55 +300,8 @@ async def get_logs(
     criteria: list[dict[str, Any]] = []
     if authorized_nodes:
         criteria.append({"node_path.ref": {"$in": list(authorized_nodes)}})
-    if action_type:
-        criteria.append({"action.type": action_type})
-    if action_category:
-        criteria.append({"action.category": action_category})
-    if source:
-        criteria.append({"source": _custom_field_search_filter(source)})
-    if actor_type:
-        criteria.append({"actor.type": actor_type})
-    if actor_name:
-        criteria.append({"actor.name": _text_search_filter(actor_name)})
-    if actor_ref:
-        criteria.append({"actor.ref": actor_ref})
-    if actor_extra:
-        criteria.append({"actor.extra": _custom_field_search_filter(actor_extra)})
-    if resource_type:
-        criteria.append({"resource.type": resource_type})
-    if resource_name:
-        criteria.append({"resource.name": _text_search_filter(resource_name)})
-    if resource_ref:
-        criteria.append({"resource.ref": resource_ref})
-    if resource_extra:
-        criteria.append({"resource.extra": _custom_field_search_filter(resource_extra)})
-    if details:
-        criteria.append({"details": _custom_field_search_filter(details)})
-    if tag_ref:
-        criteria.append({"tags.ref": tag_ref})
-    if tag_type:
-        criteria.append({"tags.type": tag_type})
-    if tag_name:
-        criteria.append({"tags.name": _text_search_filter(tag_name)})
-    if has_attachment is not None:
-        if has_attachment:
-            criteria.append({"attachments": {"$not": {"$size": 0}}})
-        else:
-            criteria.append({"attachments": {"$size": 0}})
-    if attachment_name:
-        criteria.append({"attachments.name": _text_search_filter(attachment_name)})
-    if attachment_type:
-        criteria.append({"attachments.type": attachment_type})
-    if attachment_mime_type:
-        criteria.append({"attachments.mime_type": attachment_mime_type})
-    if node_ref:
-        criteria.append({"node_path.ref": node_ref})
-    if since:
-        criteria.append({"saved_at": {"$gte": since}})
-    if until:
-        # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
-        # will also include logs saved at 23:59:59.500 for instance
-        criteria.append({"saved_at": {"$lte": until.replace(microsecond=999999)}})
+    if search_params:
+        criteria.extend(_get_criteria_from_search_params(search_params))
 
     results, next_cursor = await find_paginated_by_cursor(
         db.logs,
@@ -383,7 +374,12 @@ def validate_csv_columns(cols: list[str]):
 
 
 async def get_logs_as_csv(
-    dbm: DatabaseManager, repo_id: str, *, columns: list[str], **kwargs
+    dbm: DatabaseManager,
+    repo_id: str,
+    *,
+    authorized_nodes: set[str] = None,
+    search_params: LogSearchParams = None,
+    columns: list[str],
 ) -> AsyncGenerator[str, None]:
     max_rows = get_config().csv_max_rows
     returned_rows = 0
@@ -399,9 +395,10 @@ async def get_logs_as_csv(
         logs, cursor = await get_logs(
             dbm,
             logs_db,
+            authorized_nodes=authorized_nodes,
+            search_params=search_params,
             pagination_cursor=cursor,
             limit=min(100, max_rows - returned_rows) if max_rows > 0 else 100,
-            **kwargs,
         )
         returned_rows += len(logs)
         csv_writer.writerows(map(_log_to_dict, logs))
