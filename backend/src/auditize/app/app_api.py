@@ -21,7 +21,6 @@ from auditize.users.api import router as users_router
 
 @asynccontextmanager
 async def setup_db(_):
-    # FIXME: avoid initializing the default database in a test context
     dbm = get_dbm()
     await dbm.setup()
     yield
