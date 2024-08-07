@@ -5,7 +5,7 @@ import { Permissions } from "../types";
 
 function formatRwPermissions(
   label: string,
-  { read, write }: { read: boolean; write: boolean },
+  { read, write }: { read?: boolean; write?: boolean },
 ): string | null {
   if (!read && !write) {
     return null;
