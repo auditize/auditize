@@ -5,9 +5,9 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 
 class LogFilterSearchParams(BaseModel):
-    # Allow custom fields such as actor.custom_field
-    # the validation of the custom fields is done by the corresponding model
-    # in api_models.py
+    # Allow custom fields such as actor.custom_field.
+    # The validation of the custom fields is done by the corresponding model
+    # in api_models.py.
     model_config = ConfigDict(extra="allow")
 
     action_type: Optional[str] = Field(default=None)
@@ -21,6 +21,7 @@ class LogFilterSearchParams(BaseModel):
     tag_ref: Optional[str] = Field(default=None)
     tag_type: Optional[str] = Field(default=None)
     tag_name: Optional[str] = Field(default=None)
+    has_attachment: Optional[bool] = Field(default=None)
     attachment_name: Optional[str] = Field(default=None)
     attachment_type: Optional[str] = Field(default=None)
     attachment_mime_type: Optional[str] = Field(default=None)
