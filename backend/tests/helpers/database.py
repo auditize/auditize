@@ -3,9 +3,9 @@ import random
 
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
+from auditize.app import api_app
 from auditize.database import DatabaseManager, get_dbm, setup_mongo_client
 from auditize.logs.db import LogDatabase
-from auditize.main import api_app
 
 
 def setup_test_dbm():
