@@ -5,13 +5,13 @@ from fastapi.exceptions import RequestValidationError
 
 from auditize.apikeys.api import router as apikeys_router
 from auditize.app.cors import setup_cors
+from auditize.app.openapi import customize_openapi
 from auditize.auth.api import router as auth_router
 from auditize.database import get_dbm
 from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
     make_response_from_exception,
 )
-from auditize.helpers.openapi import customize_openapi
 from auditize.logfilters.api import router as log_filters_router
 from auditize.logi18nprofiles.api import router as logi18nprofiles_router
 from auditize.logs.api import router as logs_router
