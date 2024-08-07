@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorCursor
 
-from auditize.helpers.pagination.page.models import PagePaginationInfo
+from auditize.resource.pagination.page.models import PagePaginationInfo
 
 
 async def find_paginated_by_page(

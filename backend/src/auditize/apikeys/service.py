@@ -4,17 +4,17 @@ import secrets
 from auditize.apikeys.models import Apikey, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import DatabaseManager
-from auditize.helpers.pagination.page.models import PagePaginationInfo
-from auditize.helpers.pagination.page.service import find_paginated_by_page
-from auditize.helpers.resources.service import (
+from auditize.permissions.operations import normalize_permissions, update_permissions
+from auditize.permissions.service import remove_repo_from_permissions
+from auditize.repos.service import ensure_repos_in_permissions_exist
+from auditize.resource.pagination.page.models import PagePaginationInfo
+from auditize.resource.pagination.page.service import find_paginated_by_page
+from auditize.resource.service import (
     create_resource_document,
     delete_resource_document,
     get_resource_document,
     update_resource_document,
 )
-from auditize.permissions.operations import normalize_permissions, update_permissions
-from auditize.permissions.service import remove_repo_from_permissions
-from auditize.repos.service import ensure_repos_in_permissions_exist
 
 
 def _hash_key(key: str) -> str:

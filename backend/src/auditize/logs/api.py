@@ -15,8 +15,6 @@ from auditize.helpers.api.validators import (
     IDENTIFIER_PATTERN_STRING,
 )
 from auditize.helpers.datetime import now
-from auditize.helpers.pagination.cursor.api_models import CursorPaginationParams
-from auditize.helpers.pagination.page.api_models import PagePaginationParams
 from auditize.logs import service
 from auditize.logs.api_models import (
     LogCreationRequest,
@@ -30,6 +28,8 @@ from auditize.logs.api_models import (
 )
 from auditize.logs.db import get_log_db_for_reading
 from auditize.logs.models import Log, LogSearchParams
+from auditize.resource.pagination.cursor.api_models import CursorPaginationParams
+from auditize.resource.pagination.page.api_models import PagePaginationParams
 
 router = APIRouter(
     responses=error_responses(401, 403, 404),

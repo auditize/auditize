@@ -13,17 +13,17 @@ from auditize.exceptions import (
 )
 from auditize.helpers.datetime import now
 from auditize.helpers.email import send_email
-from auditize.helpers.pagination.page.models import PagePaginationInfo
-from auditize.helpers.pagination.page.service import find_paginated_by_page
-from auditize.helpers.resources.service import (
+from auditize.permissions.operations import normalize_permissions, update_permissions
+from auditize.permissions.service import remove_repo_from_permissions
+from auditize.repos.service import ensure_repos_in_permissions_exist
+from auditize.resource.pagination.page.models import PagePaginationInfo
+from auditize.resource.pagination.page.service import find_paginated_by_page
+from auditize.resource.service import (
     create_resource_document,
     delete_resource_document,
     get_resource_document,
     update_resource_document,
 )
-from auditize.permissions.operations import normalize_permissions, update_permissions
-from auditize.permissions.service import remove_repo_from_permissions
-from auditize.repos.service import ensure_repos_in_permissions_exist
 from auditize.users.models import PasswordResetToken, User, UserUpdate
 
 _DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours

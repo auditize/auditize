@@ -1,14 +1,13 @@
-from typing import Optional
-
 from pydantic import BaseModel, EmailStr, Field
 
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
 from auditize.permissions.api_models import (
     ApplicablePermissionsData,
     PermissionsInputData,
     PermissionsOutputData,
 )
 from auditize.permissions.operations import compute_applicable_permissions
+from auditize.resource.api_models import IdField
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.users.models import Lang, User
 
 
@@ -60,10 +59,7 @@ def _UserPasswordField(**kwargs):  # noqa
 
 
 def _UserIdField():  # noqa
-    return Field(
-        description="The user ID",
-        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
-    )
+    return IdField(description="User ID")
 
 
 def _UserPermissionsField(**kwargs):  # noqa

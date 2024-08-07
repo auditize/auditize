@@ -1,8 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, Field
+
+from auditize.resource.models import HasCreatedAt, HasId
 
 
 class RepoStatus(str, Enum):
@@ -11,15 +13,10 @@ class RepoStatus(str, Enum):
     disabled = "disabled"
 
 
-class Repo(BaseModel):
-    id: Annotated[Optional[str], BeforeValidator(str)] = Field(
-        default=None,
-        alias="_id",
-    )
+class Repo(BaseModel, HasId, HasCreatedAt):
     name: str
     log_db_name: str = Field(default=None)
     status: RepoStatus = Field(default=RepoStatus.enabled)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     retention_period: int | None = Field(default=None)
     log_i18n_profile_id: Optional[str] = Field(default=None)
 

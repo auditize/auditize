@@ -7,8 +7,8 @@ import callee
 from httpx import Response
 
 from auditize.database import DatabaseManager
-from auditize.helpers.resources.service import create_resource_document
 from auditize.permissions.models import Permissions
+from auditize.resource.service import create_resource_document
 from auditize.users.models import Lang, User
 from auditize.users.service import (
     build_document_from_user,

@@ -7,21 +7,25 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
-    field_serializer,
     model_serializer,
     model_validator,
 )
 
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
-from auditize.helpers.datetime import serialize_datetime, validate_datetime
-from auditize.helpers.pagination.cursor.api_models import CursorPaginatedResponse
-from auditize.helpers.pagination.page.api_models import PagePaginatedResponse
+from auditize.helpers.datetime import validate_datetime
 from auditize.logs.models import Log
+from auditize.resource.api_models import HasDatetimeSerialization, IdField
+from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
+from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 class _CustomFieldData(BaseModel):
     name: str = Field(title="Field name", pattern=IDENTIFIER_PATTERN)
     value: str = Field(title="Field value")
+
+
+def _LogIdField(**kwargs):  # noqa
+    return IdField("Log ID", **kwargs)
 
 
 def _ActionTypeField():  # noqa
@@ -284,22 +288,18 @@ class LogCreationRequest(BaseModel):
 
 
 class LogCreationResponse(BaseModel):
-    id: str
+    id: str = _LogIdField()
 
 
-class _AttachmentData(BaseModel):
+class _AttachmentData(BaseModel, HasDatetimeSerialization):
     name: str
     type: str
     mime_type: str
     saved_at: datetime
 
-    @field_serializer("saved_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
 
-
-class LogReadingResponse(BaseModel):
-    id: str
+class LogReadingResponse(BaseModel, HasDatetimeSerialization):
+    id: str = _LogIdField()
     action: _ActionData = _ActionField()
     source: list[_CustomFieldData] = _SourceField()
     actor: Optional[_ActorOutputData] = _ActorField()
@@ -309,10 +309,6 @@ class LogReadingResponse(BaseModel):
     node_path: list[_NodeData] = _NodePathField()
     attachments: list[_AttachmentData] = Field()
     saved_at: datetime
-
-    @field_serializer("saved_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
 
 
 class LogsReadingResponse(CursorPaginatedResponse[Log, LogReadingResponse]):

@@ -1,10 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
-from typing import Annotated, Optional
+from typing import Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, Field
 
 from auditize.permissions.models import Permissions
+from auditize.resource.models import HasCreatedAt, HasId
 
 
 class PasswordResetToken(BaseModel):
@@ -17,11 +18,7 @@ class Lang(str, Enum):
     FR = "fr"
 
 
-class User(BaseModel):
-    id: Annotated[Optional[str], BeforeValidator(str)] = Field(
-        default=None,
-        alias="_id",
-    )
+class User(BaseModel, HasId, HasCreatedAt):
     first_name: str
     last_name: str
     email: str
@@ -29,7 +26,6 @@ class User(BaseModel):
     password_hash: Optional[str] = Field(default=None)
     permissions: Permissions = Field(default_factory=Permissions)
     password_reset_token: Optional[PasswordResetToken] = Field(default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class UserUpdate(BaseModel):
