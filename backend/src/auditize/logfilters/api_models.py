@@ -11,7 +11,7 @@ from pydantic import (
 from auditize.helpers.api.validators import FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN
 from auditize.logfilters.models import LogFilter
 from auditize.logs.api_models import BaseLogSearchParams
-from auditize.resource.api_models import HasDatetimeSerialization
+from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 _BUILTIN_FILTER_COLUMNS = (
@@ -56,10 +56,9 @@ class LogFilterSearchParamsData(BaseLogSearchParams):
         return self
 
 
-def _IdField(**kwargs):  # noqa
-    return Field(
-        description="ID of the filter",
-        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+def _FilterIdField(**kwargs):  # noqa
+    return IdField(
+        description="Filter ID",
         **kwargs,
     )
 
@@ -148,7 +147,7 @@ class LogFilterCreationRequest(BaseModel, _ValidateColumnsMixin):
 
 
 class LogFilterCreationResponse(BaseModel):
-    id: str
+    id: str = _FilterIdField()
 
 
 class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
@@ -159,7 +158,7 @@ class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
 
 
 class LogFilterReadingResponse(BaseModel, HasDatetimeSerialization):
-    id: str = _IdField()
+    id: str = _FilterIdField()
     created_at: datetime = _CreatedAtField()
     name: str = _NameField()
     repo_id: str = _RepoIdField()

@@ -14,7 +14,7 @@ from pydantic import (
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import validate_datetime
 from auditize.logs.models import Log
-from auditize.resource.api_models import HasDatetimeSerialization
+from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
@@ -22,6 +22,10 @@ from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 class _CustomFieldData(BaseModel):
     name: str = Field(title="Field name", pattern=IDENTIFIER_PATTERN)
     value: str = Field(title="Field value")
+
+
+def _LogIdField(**kwargs):  # noqa
+    return IdField("Log ID", **kwargs)
 
 
 def _ActionTypeField():  # noqa
@@ -284,7 +288,7 @@ class LogCreationRequest(BaseModel):
 
 
 class LogCreationResponse(BaseModel):
-    id: str
+    id: str = _LogIdField()
 
 
 class _AttachmentData(BaseModel, HasDatetimeSerialization):
@@ -295,7 +299,7 @@ class _AttachmentData(BaseModel, HasDatetimeSerialization):
 
 
 class LogReadingResponse(BaseModel, HasDatetimeSerialization):
-    id: str
+    id: str = _LogIdField()
     action: _ActionData = _ActionField()
     source: list[_CustomFieldData] = _SourceField()
     actor: Optional[_ActorOutputData] = _ActorField()

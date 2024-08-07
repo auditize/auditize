@@ -5,16 +5,13 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.repos.models import Repo, RepoStatus
-from auditize.resource.api_models import HasDatetimeSerialization
+from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 def _RepoLogI18nProfileIdField(**kwargs):  # noqa
-    return Field(
-        description="The log i18n profile ID",
-        json_schema_extra={
-            "example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D",
-        },
+    return IdField(
+        description="Log i18n profile ID",
         **kwargs,
     )
 
@@ -40,10 +37,7 @@ def _RepoStatusField(**kwargs):  # noqa
 
 
 def _RepoIdField():  # noqa
-    return Field(
-        description="The repository ID",
-        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
-    )
+    return IdField(description="Repository ID")
 
 
 def _RepoRetentionPeriodField(**kwargs):  # noqa

@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.logi18nprofiles.models import LogI18nProfile
-from auditize.resource.api_models import HasDatetimeSerialization
+from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.users.models import Lang
 
@@ -33,7 +33,7 @@ def _ProfileNameField(**kwargs):  # noqa
 
 
 def _ProfileIdField():  # noqa
-    return Field()
+    return IdField("Profile ID")
 
 
 def _ProfileCreatedAtField():  # noqa

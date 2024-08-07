@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from auditize.apikeys.models import Apikey
 from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
-from auditize.resource.api_models import HasDatetimeSerialization
+from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
@@ -17,10 +17,7 @@ def _ApikeyNameField(**kwargs):  # noqa
 
 
 def _ApikeyIdField():  # noqa
-    return Field(
-        description="The API key ID",
-        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
-    )
+    return IdField(description="API key ID")
 
 
 def _ApikeyKeyField(description="The API key secret", **kwargs):  # noqa
