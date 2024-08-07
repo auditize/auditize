@@ -4,15 +4,14 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_serializer,
     field_validator,
     model_validator,
 )
 
 from auditize.helpers.api.validators import FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN
-from auditize.helpers.datetime import serialize_datetime
 from auditize.logfilters.models import LogFilter
 from auditize.logs.api_models import BaseLogSearchParams
+from auditize.resource.api_models import HasDatetimeSerialization
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 _BUILTIN_FILTER_COLUMNS = (
@@ -159,17 +158,13 @@ class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
     columns: list[str] = _ColumnsField(default=None)
 
 
-class LogFilterReadingResponse(BaseModel):
+class LogFilterReadingResponse(BaseModel, HasDatetimeSerialization):
     id: str = _IdField()
     created_at: datetime = _CreatedAtField()
     name: str = _NameField()
     repo_id: str = _RepoIdField()
     search_params: LogFilterSearchParamsData = _SearchParamsField()
     columns: list[str] = _ColumnsField()
-
-    @field_serializer("created_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
 
 
 class LogFilterListResponse(PagePaginatedResponse[LogFilter, LogFilterReadingResponse]):

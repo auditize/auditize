@@ -2,10 +2,10 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field
 
-from auditize.helpers.datetime import serialize_datetime
 from auditize.repos.models import Repo, RepoStatus
+from auditize.resource.api_models import HasDatetimeSerialization
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
@@ -73,15 +73,11 @@ class RepoCreationResponse(BaseModel):
     id: str = _RepoIdField()
 
 
-class RepoStatsData(BaseModel):
+class RepoStatsData(BaseModel, HasDatetimeSerialization):
     first_log_date: datetime | None = Field(description="The first log date")
     last_log_date: datetime | None = Field(description="The last log date")
     log_count: int = Field(description="The log count")
     storage_size: int = Field(description="The database storage size")
-
-    @field_serializer("first_log_date", "last_log_date", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value) if value else None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -112,7 +108,7 @@ class _BaseRepoReadingResponse(BaseModel):
     name: str = _RepoNameField()
 
 
-class RepoReadingResponse(_BaseRepoReadingResponse):
+class RepoReadingResponse(_BaseRepoReadingResponse, HasDatetimeSerialization):
     status: RepoStatus = _RepoStatusField()
     retention_period: Optional[int] = _RepoRetentionPeriodField()
     log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField()
@@ -121,10 +117,6 @@ class RepoReadingResponse(_BaseRepoReadingResponse):
         default=None,
     )
     created_at: datetime = Field(description="The repository creation date")
-
-    @field_serializer("created_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
 
 
 class UserRepoReadingResponse(_BaseRepoReadingResponse):

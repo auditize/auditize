@@ -7,14 +7,14 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
-    field_serializer,
     model_serializer,
     model_validator,
 )
 
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
-from auditize.helpers.datetime import serialize_datetime, validate_datetime
+from auditize.helpers.datetime import validate_datetime
 from auditize.logs.models import Log
+from auditize.resource.api_models import HasDatetimeSerialization
 from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
@@ -287,18 +287,14 @@ class LogCreationResponse(BaseModel):
     id: str
 
 
-class _AttachmentData(BaseModel):
+class _AttachmentData(BaseModel, HasDatetimeSerialization):
     name: str
     type: str
     mime_type: str
     saved_at: datetime
 
-    @field_serializer("saved_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
 
-
-class LogReadingResponse(BaseModel):
+class LogReadingResponse(BaseModel, HasDatetimeSerialization):
     id: str
     action: _ActionData = _ActionField()
     source: list[_CustomFieldData] = _SourceField()
@@ -309,10 +305,6 @@ class LogReadingResponse(BaseModel):
     node_path: list[_NodeData] = _NodePathField()
     attachments: list[_AttachmentData] = Field()
     saved_at: datetime
-
-    @field_serializer("saved_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
 
 
 class LogsReadingResponse(CursorPaginatedResponse[Log, LogReadingResponse]):

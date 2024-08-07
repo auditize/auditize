@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field
 
-from auditize.helpers.datetime import serialize_datetime
 from auditize.logi18nprofiles.models import LogI18nProfile
+from auditize.resource.api_models import HasDatetimeSerialization
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.users.models import Lang
 
@@ -58,15 +58,11 @@ class LogI18nProfileUpdateRequest(BaseModel):
     )
 
 
-class LogI18nProfileReadingResponse(BaseModel):
+class LogI18nProfileReadingResponse(BaseModel, HasDatetimeSerialization):
     id: str = _ProfileIdField()
     name: str = _ProfileNameField()
     translations: dict[Lang, LogTranslation] = _ProfileTranslationsField()
     created_at: datetime = _ProfileCreatedAtField()
-
-    @field_serializer("created_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
 
 
 class LogI18nProfileListResponse(

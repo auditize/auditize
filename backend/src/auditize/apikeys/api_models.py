@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field
 
 from auditize.apikeys.models import Apikey
-from auditize.helpers.datetime import serialize_datetime
 from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
+from auditize.resource.api_models import HasDatetimeSerialization
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
@@ -77,14 +77,10 @@ class AccessTokenRequest(BaseModel):
     permissions: PermissionsInputData = _ApikeyPermissionsField()
 
 
-class AccessTokenResponse(BaseModel):
+class AccessTokenResponse(BaseModel, HasDatetimeSerialization):
     access_token: str = Field(
         description="The access token",
     )
     expires_at: datetime = Field(
         description="The access token expiration time",
     )
-
-    @field_serializer("expires_at", when_used="json")
-    def serialize_datetime(self, value):
-        return serialize_datetime(value)
