@@ -10,7 +10,7 @@ from pydantic import (
 )
 
 from auditize.helpers.api.validators import FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN
-from auditize.logfilters.models import LogFilter
+from auditize.log_filter.models import LogFilter
 from auditize.logs.api_models import BaseLogSearchParams
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse

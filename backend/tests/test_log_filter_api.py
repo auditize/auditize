@@ -8,7 +8,7 @@ from auditize.database import DatabaseManager
 from conftest import RepoBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
-from helpers.logfilters import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
+from helpers.log_filter import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
 from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repo import PreparedRepo

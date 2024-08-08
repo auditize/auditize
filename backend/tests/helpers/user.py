@@ -17,7 +17,7 @@ from auditize.user.service import (
 )
 
 from .http import HttpTestHelper, get_cookie_by_name
-from .logfilters import PreparedLogFilter
+from .log_filter import PreparedLogFilter
 from .permissions.constants import DEFAULT_PERMISSIONS
 
 
