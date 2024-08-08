@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
@@ -59,7 +60,7 @@ async def update_filter(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_logs()),
     update: LogFilterUpdateRequest,
-    filter_id: str,
+    filter_id: UUID,
 ):
     authenticated.ensure_user()
     await service.update_log_filter(
@@ -80,7 +81,7 @@ async def update_filter(
 async def get_filter(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_logs()),
-    filter_id: str,
+    filter_id: UUID,
 ) -> LogFilterReadingResponse:
     authenticated.ensure_user()
     log_filter = await service.get_log_filter(dbm, authenticated.user.id, filter_id)
@@ -119,7 +120,7 @@ async def list_log_filters(
 async def delete_filter(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_logs()),
-    filter_id: str,
+    filter_id: UUID,
 ):
     authenticated.ensure_user()
     await service.delete_log_filter(dbm, authenticated.user.id, filter_id)

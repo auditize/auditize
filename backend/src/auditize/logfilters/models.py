@@ -3,7 +3,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.logs.models import BaseLogSearchParams
-from auditize.resource.models import HasCreatedAt, HasId
+from auditize.resource.models import HasCreatedAt, HasUuid
 
 
 class LogFilterSearchParams(BaseLogSearchParams):
@@ -13,7 +13,7 @@ class LogFilterSearchParams(BaseLogSearchParams):
     model_config = ConfigDict(extra="allow")
 
 
-class LogFilter(BaseModel, HasId, HasCreatedAt):
+class LogFilter(BaseModel, HasUuid, HasCreatedAt):
     name: str
     repo_id: str
     user_id: UUID
