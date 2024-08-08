@@ -9,6 +9,7 @@ from auditize.auth.authorizer import (
     Authenticated,
     Authorized,
     AuthorizedOnLogsRead,
+    AuthorizedUser,
     get_authenticated,
 )
 from auditize.database import DatabaseManager, get_dbm
@@ -139,10 +140,9 @@ async def get_repo(
 )
 async def get_repo_translation_for_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: AuthorizedOnLogsRead(),
+    authenticated: AuthorizedUser(can_read_logs()),
     repo_id: UUID,
 ) -> LogTranslation:
-    authenticated.ensure_user()
     translation = await service.get_repo_translation(
         dbm, repo_id, authenticated.user.lang
     )
@@ -197,7 +197,7 @@ async def list_repos(
 )
 async def list_user_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: AuthorizedUser(),
     has_read_permission: Annotated[
         bool,
         Query(
@@ -212,9 +212,6 @@ async def list_user_repos(
     ] = False,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> UserRepoListResponse:
-    if not authenticated.user:
-        raise PermissionDenied("This endpoint is only available for users")
-
     repos, page_info = await service.get_user_repos(
         dbm,
         user=authenticated.user,

@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends
 from starlette.responses import Response
 
 from auditize.apikey.api_models import AccessTokenRequest, AccessTokenResponse
-from auditize.auth.authorizer import Authenticated, get_authenticated
+from auditize.auth.authorizer import (
+    Authorized,
+    AuthorizedApikey,
+)
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
@@ -54,7 +57,7 @@ async def login_user(
     responses=error_responses(401),
 )
 async def logout_user(
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: Authorized(),
     response: Response,
 ):
     response.delete_cookie("session", httponly=True, samesite="strict", secure=True)
@@ -68,10 +71,9 @@ async def logout_user(
     responses=error_responses(401, 403),
 )
 async def auth_access_token(
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: AuthorizedApikey(),
     request: AccessTokenRequest,
 ) -> AccessTokenResponse:
-    authenticated.ensure_apikey()
     permissions = Permissions.model_validate(request.permissions.model_dump())
     authorize_grant(authenticated.permissions, permissions)
     access_token, expires_at = generate_access_token(

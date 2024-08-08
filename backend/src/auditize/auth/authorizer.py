@@ -154,13 +154,26 @@ async def get_authenticated(
     return await authenticate_user(dbm, request)
 
 
-def _authorized(assertion: PermissionAssertion):
-    def func(authenticated: Authenticated = Depends(get_authenticated)):
-        if not authenticated.comply(assertion):
+class _Authorized:
+    def __init__(self, assertion: PermissionAssertion = None):
+        self.assertion = assertion
+
+    def __call__(self, authenticated: Authenticated = Depends(get_authenticated)):
+        if self.assertion and not authenticated.comply(self.assertion):
             raise PermissionDenied()
         return authenticated
 
-    return func
+
+class _AuthorizedUser(_Authorized):
+    def __call__(self, authenticated: Authenticated = Depends(get_authenticated)):
+        authenticated.ensure_user()
+        return super().__call__(authenticated)
+
+
+class _AuthorizedApikey(_Authorized):
+    def __call__(self, authenticated: Authenticated = Depends(get_authenticated)):
+        authenticated.ensure_apikey()
+        return super().__call__(authenticated)
 
 
 def _authorized_on_logs(assertion_func: Callable[[UUID], PermissionAssertion]):
@@ -173,8 +186,16 @@ def _authorized_on_logs(assertion_func: Callable[[UUID], PermissionAssertion]):
     return func
 
 
-def Authorized(assertion: PermissionAssertion) -> Type[Authenticated]:  # noqa
-    return Annotated[Authenticated, Depends(_authorized(assertion))]
+def Authorized(assertion: PermissionAssertion = None) -> Type[Authenticated]:  # noqa
+    return Annotated[Authenticated, Depends(_Authorized(assertion))]
+
+
+def AuthorizedUser(assertion: PermissionAssertion = None) -> Type[Authenticated]:  # noqa
+    return Annotated[Authenticated, Depends(_AuthorizedUser(assertion))]
+
+
+def AuthorizedApikey(assertion: PermissionAssertion = None) -> Type[Authenticated]:  # noqa
+    return Annotated[Authenticated, Depends(_AuthorizedApikey(assertion))]
 
 
 def AuthorizedOnLogsRead() -> Type[Authenticated]:  # noqa

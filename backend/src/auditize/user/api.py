@@ -3,7 +3,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path
 
-from auditize.auth.authorizer import Authenticated, Authorized, get_authenticated
+from auditize.auth.authorizer import (
+    Authenticated,
+    Authorized,
+    AuthorizedUser,
+)
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
@@ -61,10 +65,9 @@ async def create_user(
 )
 async def update_user_me(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: AuthorizedUser(),
     update_request: UserMeUpdateRequest,
 ):
-    authenticated.ensure_user()
     update = UserUpdate.model_validate(update_request.model_dump(exclude_unset=True))
     await service.update_user(dbm, authenticated.user.id, update)
     user = await service.get_user(dbm, authenticated.user.id)
@@ -98,9 +101,8 @@ async def update_user(
     tags=["users"],
 )
 async def get_user_me(
-    authenticated: Annotated[Authenticated, Depends(get_authenticated)],
+    authenticated: AuthorizedUser(),
 ) -> UserMeResponse:
-    authenticated.ensure_user()
     return UserMeResponse.from_user(authenticated.user)
 
 
