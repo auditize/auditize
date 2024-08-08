@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from auditize.apikeys.models import Apikey
+from auditize.apikey.models import Apikey
 from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse

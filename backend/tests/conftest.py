@@ -31,7 +31,7 @@ from auditize.database import DatabaseManager
 from auditize.logs.db import LogDatabase
 
 pytest.register_assert_rewrite("helpers")
-from helpers.apikeys import PreparedApikey
+from helpers.apikey import PreparedApikey
 from helpers.database import (
     TestLogDatabasePool,
     cleanup_db,

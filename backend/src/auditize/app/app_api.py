@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 
-from auditize.apikeys.api import router as apikeys_router
+from auditize.apikey.api import router as apikeys_router
 from auditize.app.cors import setup_cors
 from auditize.app.openapi import customize_openapi
 from auditize.auth.api import router as auth_router

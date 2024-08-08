@@ -183,7 +183,7 @@ async def get_user_repos(
 
 async def delete_repo(dbm: DatabaseManager, repo_id: UUID):
     # avoid circular imports
-    from auditize.apikeys.service import remove_repo_from_apikeys_permissions
+    from auditize.apikey.service import remove_repo_from_apikeys_permissions
     from auditize.logfilters.service import delete_log_filters_with_repo
     from auditize.user.service import remove_repo_from_users_permissions
 

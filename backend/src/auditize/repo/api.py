@@ -3,8 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from auditize.apikeys.models import ApikeyUpdate
-from auditize.apikeys.service import update_apikey
+from auditize.apikey.models import ApikeyUpdate
+from auditize.apikey.service import update_apikey
 from auditize.auth.authorizer import (
     Authenticated,
     Authorized,

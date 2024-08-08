@@ -5,8 +5,8 @@ from uuid import UUID
 import pytest
 from authlib.jose import jwt
 
-from auditize.apikeys.models import ApikeyUpdate
-from auditize.apikeys.service import update_apikey
+from auditize.apikey.models import ApikeyUpdate
+from auditize.apikey.service import update_apikey
 from auditize.auth.authorizer import get_authenticated
 from auditize.auth.jwt import (
     generate_access_token,
@@ -17,7 +17,7 @@ from auditize.database import DatabaseManager
 from auditize.exceptions import AuthenticationFailure
 from auditize.permissions.models import Permissions
 from conftest import ApikeyBuilder
-from helpers.apikeys import PreparedApikey
+from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper, make_http_request
 from helpers.user import PreparedUser
 

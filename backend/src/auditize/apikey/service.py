@@ -2,7 +2,7 @@ import hashlib
 import secrets
 from uuid import UUID
 
-from auditize.apikeys.models import Apikey, ApikeyUpdate
+from auditize.apikey.models import Apikey, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import DatabaseManager
 from auditize.permissions.operations import normalize_permissions, update_permissions

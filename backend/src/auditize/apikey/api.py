@@ -3,8 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from auditize.apikeys import service
-from auditize.apikeys.api_models import (
+from auditize.apikey import service
+from auditize.apikey.api_models import (
     ApikeyCreationRequest,
     ApikeyCreationResponse,
     ApikeyListResponse,
@@ -12,7 +12,7 @@ from auditize.apikeys.api_models import (
     ApikeyRegenerationResponse,
     ApikeyUpdateRequest,
 )
-from auditize.apikeys.models import Apikey, ApikeyUpdate
+from auditize.apikey.models import Apikey, ApikeyUpdate
 from auditize.auth.authorizer import Authenticated, Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied

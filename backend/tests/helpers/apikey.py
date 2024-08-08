@@ -3,8 +3,8 @@ from datetime import datetime
 
 import callee
 
-from auditize.apikeys.models import Apikey
-from auditize.apikeys.service import create_apikey
+from auditize.apikey.models import Apikey
+from auditize.apikey.service import create_apikey
 from auditize.database import DatabaseManager
 from auditize.permissions.models import Permissions
 

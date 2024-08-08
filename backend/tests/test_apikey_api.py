@@ -6,7 +6,7 @@ from httpx import Response
 
 from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder
-from helpers.apikeys import PreparedApikey
+from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_UUID

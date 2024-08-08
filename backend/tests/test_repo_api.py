@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from auditize.database import DatabaseManager
 from auditize.logs.db import LogDatabase
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
-from helpers.apikeys import PreparedApikey
+from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logfilters import PreparedLogFilter
