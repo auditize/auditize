@@ -11,7 +11,7 @@ from helpers.http import HttpTestHelper
 from helpers.logfilters import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
 from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
-from helpers.repos import PreparedRepo
+from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 
 pytestmark = pytest.mark.anyio

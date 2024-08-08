@@ -24,8 +24,8 @@ from auditize.logs.db import (
     get_log_db_for_writing,
 )
 from auditize.logs.models import CustomField, Log, LogSearchParams, Node
-from auditize.repos.models import Repo
-from auditize.repos.service import get_retention_period_enabled_repos
+from auditize.repo.models import Repo
+from auditize.repo.service import get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page

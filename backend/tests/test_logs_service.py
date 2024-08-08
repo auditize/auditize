@@ -16,7 +16,7 @@ from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logs import PreparedLog
-from helpers.repos import PreparedRepo
+from helpers.repo import PreparedRepo
 
 pytestmark = pytest.mark.anyio
 

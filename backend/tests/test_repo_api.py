@@ -17,7 +17,7 @@ from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.constants import DEFAULT_PERMISSIONS
-from helpers.repos import PreparedRepo
+from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 from helpers.utils import strip_dict_keys
 

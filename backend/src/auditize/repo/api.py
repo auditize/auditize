@@ -27,8 +27,8 @@ from auditize.permissions.models import (
     Permissions,
     RepoLogPermissions,
 )
-from auditize.repos import service
-from auditize.repos.api_models import (
+from auditize.repo import service
+from auditize.repo.api_models import (
     RepoCreationRequest,
     RepoCreationResponse,
     RepoIncludeOptions,
@@ -39,7 +39,7 @@ from auditize.repos.api_models import (
     RepoUpdateRequest,
     UserRepoListResponse,
 )
-from auditize.repos.models import Repo, RepoStatus, RepoUpdate
+from auditize.repo.models import Repo, RepoStatus, RepoUpdate
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.user.models import Lang, UserUpdate

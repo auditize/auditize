@@ -79,7 +79,7 @@ async def get_log_i18n_profiles(
 
 async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: UUID):
     # NB: workaround circular import
-    from auditize.repos.service import is_log_i18n_profile_used_by_repo
+    from auditize.repo.service import is_log_i18n_profile_used_by_repo
 
     if await is_log_i18n_profile_used_by_repo(dbm, profile_id):
         raise ConstraintViolation(

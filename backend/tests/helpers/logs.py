@@ -14,7 +14,7 @@ UNKNOWN_UUID = "e42350b9-db1c-42f9-a08a-b1265f1b9bf5"
 
 class PreparedLog:
     def __init__(self, id: str, data: dict, repo):
-        from .repos import PreparedRepo  # avoid circular import
+        from .repo import PreparedRepo  # avoid circular import
 
         self.id = id
         self.data = data

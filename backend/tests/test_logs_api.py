@@ -13,7 +13,7 @@ from helpers.pagination import (
     do_test_page_pagination_common_scenarios,
     do_test_page_pagination_empty_data,
 )
-from helpers.repos import PreparedRepo
+from helpers.repo import PreparedRepo
 from helpers.utils import DATETIME_FORMAT
 
 pytestmark = pytest.mark.anyio

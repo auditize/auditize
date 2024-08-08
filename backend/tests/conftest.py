@@ -40,7 +40,7 @@ from helpers.database import (
 )
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
-from helpers.repos import PreparedRepo
+from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 
 

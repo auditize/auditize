@@ -10,7 +10,7 @@ from ..apikeys import PreparedApikey
 from ..database import assert_collection
 from ..http import HttpTestHelper
 from ..logs import UNKNOWN_UUID
-from ..repos import PreparedRepo
+from ..repo import PreparedRepo
 from ..user import PreparedUser
 
 

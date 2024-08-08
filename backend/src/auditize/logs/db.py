@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from auditize.config import get_config
 from auditize.database import BaseDatabase, Collection, DatabaseManager
 from auditize.exceptions import PermissionDenied
-from auditize.repos.models import Repo, RepoStatus
+from auditize.repo.models import Repo, RepoStatus
 
 
 class LogDatabase(BaseDatabase):
@@ -87,7 +87,7 @@ class LogDatabase(BaseDatabase):
 async def _get_log_db(
     dbm: DatabaseManager, repo: UUID | Repo, statuses: list[RepoStatus]
 ) -> LogDatabase:
-    from auditize.repos.service import get_repo  # avoid circular import
+    from auditize.repo.service import get_repo  # avoid circular import
 
     if type(repo) is UUID:
         repo = await get_repo(dbm, repo)

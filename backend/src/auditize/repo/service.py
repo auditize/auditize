@@ -16,7 +16,7 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import is_authorized
-from auditize.repos.models import Repo, RepoStats, RepoStatus, RepoUpdate
+from auditize.repo.models import Repo, RepoStats, RepoStatus, RepoUpdate
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (

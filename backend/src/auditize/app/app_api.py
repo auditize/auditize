@@ -15,7 +15,7 @@ from auditize.helpers.api.errors import (
 from auditize.logfilters.api import router as log_filters_router
 from auditize.logi18nprofiles.api import router as logi18nprofiles_router
 from auditize.logs.api import router as logs_router
-from auditize.repos.api import router as repos_router
+from auditize.repo.api import router as repos_router
 from auditize.user.api import router as users_router
 
 
