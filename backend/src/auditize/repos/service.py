@@ -1,5 +1,5 @@
-import uuid
 from typing import Any, Sequence
+from uuid import UUID, uuid4
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
@@ -39,9 +39,9 @@ async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
 
 async def create_repo(
     dbm: DatabaseManager, repo: Repo, log_db: LogDatabase = None
-) -> str:
+) -> UUID:
     await _validate_repo(dbm, repo)
-    repo_id = uuid.uuid4()
+    repo_id = uuid4()
     await create_resource_document(
         dbm.core_db.repos,
         {
@@ -52,24 +52,23 @@ async def create_repo(
         },
         resource_id=repo_id,
     )
-    repo_id = str(repo_id)
     if not log_db:
         log_db = await get_log_db_for_config(dbm, repo_id)
         await log_db.setup()
     return repo_id
 
 
-async def update_repo(dbm: DatabaseManager, repo_id: str, update: RepoUpdate):
+async def update_repo(dbm: DatabaseManager, repo_id: UUID, update: RepoUpdate):
     await _validate_repo(dbm, update)
     await update_resource_document(dbm.core_db.repos, repo_id, update)
 
 
-async def get_repo(dbm: DatabaseManager, repo_id: str) -> Repo:
+async def get_repo(dbm: DatabaseManager, repo_id: UUID) -> Repo:
     result = await get_resource_document(dbm.core_db.repos, repo_id)
     return Repo.model_validate(result)
 
 
-async def get_repo_stats(dbm: DatabaseManager, repo_id: str) -> RepoStats:
+async def get_repo_stats(dbm: DatabaseManager, repo_id: UUID) -> RepoStats:
     logs_db = await get_log_db_for_config(dbm, repo_id)
     results = await logs_db.logs.aggregate(
         [
@@ -129,7 +128,7 @@ async def get_all_repos(dbm: DatabaseManager):
 
 def _get_authorized_repo_ids_for_user(
     user: User, has_read_perm: bool, has_write_perm: bool
-) -> Sequence[str] | None:
+) -> Sequence[UUID] | None:
     no_filtering_needed = any(
         (
             is_authorized(
@@ -177,12 +176,12 @@ async def get_user_repos(
 
     repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
     if repo_ids is not None:
-        filter["_id"] = {"$in": list(map(uuid.UUID, repo_ids))}
+        filter["_id"] = {"$in": repo_ids}
 
     return await _get_repos(dbm, filter, page, page_size)
 
 
-async def delete_repo(dbm: DatabaseManager, repo_id: str):
+async def delete_repo(dbm: DatabaseManager, repo_id: UUID):
     # avoid circular imports
     from auditize.apikeys.service import remove_repo_from_apikeys_permissions
     from auditize.logfilters.service import delete_log_filters_with_repo
@@ -196,8 +195,8 @@ async def delete_repo(dbm: DatabaseManager, repo_id: str):
     await delete_log_filters_with_repo(dbm, repo_id)
 
 
-async def is_i18n_log_profile_used_by_repo(
-    dbm: DatabaseManager, profile_id: str
+async def is_log_i18n_profile_used_by_repo(
+    dbm: DatabaseManager, profile_id: UUID
 ) -> bool:
     return await has_resource_document(
         dbm.core_db.repos, {"log_i18n_profile_id": profile_id}
@@ -205,7 +204,7 @@ async def is_i18n_log_profile_used_by_repo(
 
 
 async def get_repo_translation(
-    dbm: DatabaseManager, repo_id: str, lang: Lang
+    dbm: DatabaseManager, repo_id: UUID, lang: Lang
 ) -> LogTranslation:
     repo = await get_repo(dbm, repo_id)
     if not repo.log_i18n_profile_id:
@@ -226,7 +225,7 @@ async def ensure_repos_in_permissions_exist(
             await get_repo(dbm, repo_id)
         except UnknownModelException:
             raise ValidationError(
-                f"Repo {repo_id!r} cannot be assigned in log permissions as it does not exist"
+                f"Repo {repo_id} cannot be assigned in log permissions as it does not exist"
             )
 
 

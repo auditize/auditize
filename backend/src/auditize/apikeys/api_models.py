@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -50,12 +51,12 @@ class ApikeyUpdateRequest(BaseModel):
 
 
 class ApikeyCreationResponse(BaseModel):
-    id: str = _ApikeyIdField()
+    id: UUID = _ApikeyIdField()
     key: str = _ApikeyKeyField()
 
 
 class ApikeyReadingResponse(BaseModel):
-    id: str = _ApikeyIdField()
+    id: UUID = _ApikeyIdField()
     name: str = _ApikeyNameField()
     permissions: PermissionsOutputData = _ApikeyPermissionsField()
 

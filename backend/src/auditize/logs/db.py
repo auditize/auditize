@@ -1,5 +1,5 @@
-import uuid
 from functools import partial
+from uuid import UUID, uuid4
 
 from aiocache import Cache
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
@@ -25,7 +25,7 @@ class LogDatabase(BaseDatabase):
         if await self._cache.exists(cache_key):
             return
         result = await collection.update_one(
-            data, {"$set": {}, "$setOnInsert": {"_id": uuid.uuid4()}}, upsert=True
+            data, {"$set": {}, "$setOnInsert": {"_id": uuid4()}}, upsert=True
         )
         await self._cache.set(cache_key, result)
 
@@ -85,11 +85,11 @@ class LogDatabase(BaseDatabase):
 
 
 async def _get_log_db(
-    dbm: DatabaseManager, repo: str | Repo, statuses: list[RepoStatus]
+    dbm: DatabaseManager, repo: UUID | Repo, statuses: list[RepoStatus]
 ) -> LogDatabase:
     from auditize.repos.service import get_repo  # avoid circular import
 
-    if type(repo) is str:
+    if type(repo) is UUID:
         repo = await get_repo(dbm, repo)
 
     if statuses:

@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 import callee
 import pytest
@@ -40,7 +41,7 @@ async def _test_repo_create(
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
     assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": repo.id, "read": True, "write": True, "readable_nodes": []}
+        {"repo_id": UUID(repo.id), "read": True, "write": True, "readable_nodes": []}
     ]
 
 
@@ -176,7 +177,7 @@ async def test_repo_update_set_log_i18n_profile_id(
     )
     await assert_collection(
         dbm.core_db.repos,
-        [repo.expected_document({"log_i18n_profile_id": log_i18n_profile.id})],
+        [repo.expected_document({"log_i18n_profile_id": UUID(log_i18n_profile.id)})],
     )
 
 
@@ -889,7 +890,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": repo.id,
+                                    "repo_id": UUID(repo.id),
                                     "read": True,
                                     "write": False,
                                     "readable_nodes": [],
@@ -913,7 +914,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": repo.id,
+                                    "repo_id": UUID(repo.id),
                                     "read": True,
                                     "write": False,
                                     "readable_nodes": [],
@@ -928,7 +929,7 @@ async def test_repo_delete_with_related_resources(
     )
     await assert_collection(
         dbm.core_db.log_filters,
-        [log_filter.expected_document({"user_id": superadmin.id})],
+        [log_filter.expected_document({"user_id": UUID(superadmin.id)})],
     )
 
 

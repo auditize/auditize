@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
 
 __all__ = (
@@ -44,12 +46,12 @@ class ManagementPermissionsOutputData(BaseModel):
 
 
 class RepoLogPermissionsInputData(ReadWritePermissionsInputData):
-    repo_id: str
+    repo_id: UUID
     readable_nodes: list[str] | None = Field(default=None)
 
 
 class RepoLogPermissionsOutputData(ReadWritePermissionsOutputData):
-    repo_id: str
+    repo_id: UUID
     readable_nodes: list[str]
 
 

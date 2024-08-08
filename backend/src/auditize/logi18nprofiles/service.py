@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from auditize.database import DatabaseManager
 from auditize.exceptions import ConstraintViolation
 from auditize.logi18nprofiles.models import (
@@ -16,13 +18,15 @@ from auditize.resource.service import (
 )
 
 
-async def create_log_i18n_profile(dbm: DatabaseManager, profile: LogI18nProfile) -> str:
+async def create_log_i18n_profile(
+    dbm: DatabaseManager, profile: LogI18nProfile
+) -> UUID:
     profile_id = await create_resource_document(dbm.core_db.logi18nprofiles, profile)
     return profile_id
 
 
 async def update_log_i18n_profile(
-    dbm: DatabaseManager, profile_id: str, update: LogI18nProfileUpdate
+    dbm: DatabaseManager, profile_id: UUID, update: LogI18nProfileUpdate
 ):
     profile = await get_log_i18n_profile(dbm, profile_id)
     if update.name:
@@ -38,13 +42,15 @@ async def update_log_i18n_profile(
     await update_resource_document(dbm.core_db.logi18nprofiles, profile_id, profile)
 
 
-async def get_log_i18n_profile(dbm: DatabaseManager, profile_id: str) -> LogI18nProfile:
+async def get_log_i18n_profile(
+    dbm: DatabaseManager, profile_id: UUID
+) -> LogI18nProfile:
     result = await get_resource_document(dbm.core_db.logi18nprofiles, profile_id)
     return LogI18nProfile.model_validate(result)
 
 
 async def get_log_i18n_profile_translation(
-    dbm: DatabaseManager, profile_id: str, lang: str
+    dbm: DatabaseManager, profile_id: UUID, lang: str
 ) -> LogTranslation:
     result = await get_resource_document(
         dbm.core_db.logi18nprofiles, profile_id, projection={"translations." + lang: 1}
@@ -71,16 +77,16 @@ async def get_log_i18n_profiles(
     ], page_info
 
 
-async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: str):
+async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: UUID):
     # NB: workaround circular import
-    from auditize.repos.service import is_i18n_log_profile_used_by_repo
+    from auditize.repos.service import is_log_i18n_profile_used_by_repo
 
-    if await is_i18n_log_profile_used_by_repo(dbm, profile_id):
+    if await is_log_i18n_profile_used_by_repo(dbm, profile_id):
         raise ConstraintViolation(
             f"Cannot delete log i18n profile {profile_id!r}: profile is used by one or more repositories"
         )
     await delete_resource_document(dbm.core_db.logi18nprofiles, profile_id)
 
 
-async def does_log_i18n_profile_exist(dbm: DatabaseManager, profile_id: str) -> bool:
+async def does_log_i18n_profile_exist(dbm: DatabaseManager, profile_id: UUID) -> bool:
     return await has_resource_document(dbm.core_db.logi18nprofiles, profile_id)

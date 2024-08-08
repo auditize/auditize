@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 import callee
 import pytest
@@ -31,7 +32,7 @@ async def _test_log_filter_creation(
 
     await assert_collection(
         dbm.core_db.log_filters,
-        [log_filter.expected_document({"user_id": user.id})],
+        [log_filter.expected_document({"user_id": UUID(user.id)})],
     )
 
 
@@ -335,7 +336,7 @@ async def _test_log_filter_update(
     await assert_collection(
         dbm.core_db.log_filters,
         [
-            log_filter.expected_document({**update, "user_id": log_read_user.id}),
+            log_filter.expected_document({**update, "user_id": UUID(log_read_user.id)}),
         ],
     )
 

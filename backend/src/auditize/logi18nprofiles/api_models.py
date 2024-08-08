@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -48,7 +49,7 @@ class LogI18nProfileCreationRequest(BaseModel):
 
 
 class LogI18nProfileCreationResponse(BaseModel):
-    id: str = _ProfileIdField()
+    id: UUID = _ProfileIdField()
 
 
 class LogI18nProfileUpdateRequest(BaseModel):
@@ -59,7 +60,7 @@ class LogI18nProfileUpdateRequest(BaseModel):
 
 
 class LogI18nProfileReadingResponse(BaseModel, HasDatetimeSerialization):
-    id: str = _ProfileIdField()
+    id: UUID = _ProfileIdField()
     name: str = _ProfileNameField()
     translations: dict[Lang, LogTranslation] = _ProfileTranslationsField()
     created_at: datetime = _ProfileCreatedAtField()

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import PermissionAssertion
 from auditize.permissions.models import (
@@ -31,7 +33,7 @@ def _normalize_repo_permissions(
 
     # the function uses internally a dict to normalize the permissions to handle possible duplicates
     # between repo_id (the last permission line wins)
-    normalized: dict[str, RepoLogPermissions] = {}
+    normalized: dict[UUID, RepoLogPermissions] = {}
 
     for single_repo_perms in repo_perms:
         read = False if global_read else (single_repo_perms.read or False)
@@ -170,13 +172,13 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
                     and not grantor_repo_perms.readable_nodes
                 )
                 or grantor_perms.logs.read,
-                f"logs read on repo {assignee_repo_perms.repo_id!r}",
+                f"logs read on repo {assignee_repo_perms.repo_id}",
             )
             _authorize_grant(
                 assignee_repo_perms.write,
                 (grantor_repo_perms and grantor_repo_perms.write)
                 or grantor_perms.logs.write,
-                f"logs write on repo {assignee_repo_perms.repo_id!r}",
+                f"logs write on repo {assignee_repo_perms.repo_id}",
             )
 
     # Check management.{repos,users,apikeys} grants

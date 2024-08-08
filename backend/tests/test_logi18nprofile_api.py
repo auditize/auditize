@@ -2,14 +2,12 @@ import callee
 import pytest
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogDatabase
 from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
-from helpers.repos import PreparedRepo
 
 pytestmark = pytest.mark.anyio
 

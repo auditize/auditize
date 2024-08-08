@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
@@ -55,7 +56,7 @@ async def create_profile(
 async def update_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_repos()),
-    profile_id: str,
+    profile_id: UUID,
     update: LogI18nProfileUpdateRequest,
 ):
     await service.update_log_i18n_profile(
@@ -76,7 +77,7 @@ async def update_profile(
 async def get_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_repos()),
-    profile_id: str,
+    profile_id: UUID,
 ) -> LogI18nProfileReadingResponse:
     profile = await service.get_log_i18n_profile(dbm, profile_id)
     return LogI18nProfileReadingResponse.model_validate(profile.model_dump())
@@ -91,7 +92,7 @@ async def get_profile(
 async def get_profile_translation(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_repos()),
-    profile_id: str,
+    profile_id: UUID,
     lang: Lang,
 ) -> LogTranslation:
     translation = await service.get_log_i18n_profile_translation(dbm, profile_id, lang)
@@ -128,6 +129,6 @@ async def list_profiles(
 async def delete_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_repos()),
-    profile_id: str,
+    profile_id: UUID,
 ):
     await service.delete_log_i18n_profile(dbm, profile_id)

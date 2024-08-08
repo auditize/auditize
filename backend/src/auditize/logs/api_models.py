@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Annotated, Optional
+from uuid import UUID
 
 from fastapi import Request
 from pydantic import (
@@ -288,7 +289,7 @@ class LogCreationRequest(BaseModel):
 
 
 class LogCreationResponse(BaseModel):
-    id: str = _LogIdField()
+    id: UUID = _LogIdField()
 
 
 class _AttachmentData(BaseModel, HasDatetimeSerialization):
@@ -299,7 +300,7 @@ class _AttachmentData(BaseModel, HasDatetimeSerialization):
 
 
 class LogReadingResponse(BaseModel, HasDatetimeSerialization):
-    id: str = _LogIdField()
+    id: UUID = _LogIdField()
     action: _ActionData = _ActionField()
     source: list[_CustomFieldData] = _SourceField()
     actor: Optional[_ActorOutputData] = _ActorField()

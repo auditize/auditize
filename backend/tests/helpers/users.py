@@ -1,7 +1,7 @@
-import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator
+from uuid import UUID, uuid4
 
 import callee
 from httpx import Response
@@ -30,7 +30,7 @@ class PreparedUser:
 
     @staticmethod
     def prepare_data(extra=None):
-        rand = str(uuid.uuid4())
+        rand = str(uuid4())
         return {
             "first_name": f"John {rand}",
             "last_name": f"Doe {rand}",
@@ -53,7 +53,7 @@ class PreparedUser:
 
     @staticmethod
     def prepare_model(*, password="dummypassword", permissions=None, lang=None) -> User:
-        rand = str(uuid.uuid4())
+        rand = str(uuid4())
         model = User(
             first_name=f"John {rand}",
             last_name=f"Doe {rand}",
@@ -71,11 +71,12 @@ class PreparedUser:
     ) -> "PreparedUser":
         if user is None:
             user = cls.prepare_model(password=password)
+        # FIXME: auditize.users.service.save_user should be used here
         user_id = await create_resource_document(
             dbm.core_db.users, build_document_from_user(user)
         )
         return cls(
-            id=user_id,
+            id=str(user_id),
             data={
                 "first_name": user.first_name,
                 "last_name": user.last_name,
@@ -87,7 +88,7 @@ class PreparedUser:
 
     async def expire_password_reset_token(self):
         await self.dbm.core_db.users.update_one(
-            {"_id": uuid.UUID(self.id)},
+            {"_id": UUID(self.id)},
             {
                 "$set": {
                     "password_reset_token.expires_at": datetime.now(timezone.utc)
@@ -102,7 +103,7 @@ class PreparedUser:
 
     @property
     async def password_reset_token(self) -> str | None:
-        user_model = await get_user(self.dbm, self.id)
+        user_model = await get_user(self.dbm, UUID(self.id))
         return (
             user_model.password_reset_token.token
             if user_model.password_reset_token
@@ -132,7 +133,7 @@ class PreparedUser:
             "expires_at": callee.IsA(datetime),
         }
         return {
-            "_id": uuid.UUID(self.id),
+            "_id": UUID(self.id),
             "first_name": self.data["first_name"],
             "last_name": self.data["last_name"],
             "email": self.data["email"],

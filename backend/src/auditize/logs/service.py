@@ -1,11 +1,11 @@
 import csv
 import re
-import uuid
 from datetime import timedelta
 from functools import partial
 from io import StringIO
 from itertools import count
 from typing import Any, AsyncGenerator
+from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
@@ -152,7 +152,7 @@ async def _check_log(db: LogDatabase, log: Log):
         parent_node_ref = node.ref
 
 
-async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
+async def save_log(dbm: DatabaseManager, repo_id: UUID, log: Log) -> UUID:
     db = await get_log_db_for_writing(dbm, repo_id)
 
     await _check_log(db, log)
@@ -165,8 +165,8 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
 
 async def save_log_attachment(
     dbm: DatabaseManager,
-    repo_id: str,
-    log_id: str,
+    repo_id: UUID,
+    log_id: UUID,
     *,
     name: str,
     type: str,
@@ -185,10 +185,10 @@ async def save_log_attachment(
 
 
 async def get_log(
-    dbm: DatabaseManager, repo_id: str, log_id: str, authorized_nodes: set[str]
+    dbm: DatabaseManager, repo_id: UUID, log_id: UUID, authorized_nodes: set[str]
 ) -> Log:
     db = await get_log_db_for_reading(dbm, repo_id)
-    filter = {"_id": uuid.UUID(log_id)}
+    filter = {"_id": log_id}
     if authorized_nodes:
         filter["node_path.ref"] = {"$in": list(authorized_nodes)}
     document = await get_resource_document(
@@ -200,7 +200,7 @@ async def get_log(
 
 
 async def get_log_attachment(
-    dbm: DatabaseManager, repo_id: str, log_id: str, attachment_idx: int
+    dbm: DatabaseManager, repo_id: UUID, log_id: UUID, attachment_idx: int
 ) -> Log.Attachment:
     db = await get_log_db_for_reading(dbm, repo_id)
     doc = await get_resource_document(
@@ -285,7 +285,7 @@ def _get_criteria_from_search_params(
 
 async def get_logs(
     dbm: DatabaseManager,
-    repo: str | LogDatabase,
+    repo: UUID | LogDatabase,
     *,
     authorized_nodes: set[str] = None,
     search_params: LogSearchParams = None,
@@ -375,7 +375,7 @@ def validate_csv_columns(cols: list[str]):
 
 async def get_logs_as_csv(
     dbm: DatabaseManager,
-    repo_id: str,
+    repo_id: UUID,
     *,
     authorized_nodes: set[str] = None,
     search_params: LogSearchParams = None,
@@ -596,7 +596,7 @@ async def _get_nodes_hierarchy(db: LogDatabase, node_refs: set[str]) -> set[str]
 
 async def get_log_nodes(
     dbm: DatabaseManager,
-    repo_id: str,
+    repo_id: UUID,
     authorized_nodes: set[str],
     *,
     parent_node_ref=NotImplemented,
@@ -654,7 +654,7 @@ async def _get_log_node(db: LogDatabase, node_ref: str) -> Log.Node:
 
 
 async def get_log_node(
-    dbm: DatabaseManager, repo_id: str, node_ref: str, authorized_nodes: set[str]
+    dbm: DatabaseManager, repo_id: UUID, node_ref: str, authorized_nodes: set[str]
 ) -> Log.Node:
     db = await get_log_db_for_reading(dbm, repo_id)
     if authorized_nodes:

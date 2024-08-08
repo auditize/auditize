@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -141,27 +142,27 @@ class _ValidateColumnsMixin:
 
 class LogFilterCreationRequest(BaseModel, _ValidateColumnsMixin):
     name: str = _NameField()
-    repo_id: str = _RepoIdField()
+    repo_id: UUID = _RepoIdField()
     search_params: LogFilterSearchParamsData = _SearchParamsField()
     columns: list[str] = _ColumnsField()
 
 
 class LogFilterCreationResponse(BaseModel):
-    id: str = _FilterIdField()
+    id: UUID = _FilterIdField()
 
 
 class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
     name: str = _NameField(default=None)
-    repo_id: str = _RepoIdField(default=None)
+    repo_id: UUID = _RepoIdField(default=None)
     search_params: LogFilterSearchParamsData = _SearchParamsField(default=None)
     columns: list[str] = _ColumnsField(default=None)
 
 
 class LogFilterReadingResponse(BaseModel, HasDatetimeSerialization):
-    id: str = _FilterIdField()
+    id: UUID = _FilterIdField()
     created_at: datetime = _CreatedAtField()
     name: str = _NameField()
-    repo_id: str = _RepoIdField()
+    repo_id: UUID = _RepoIdField()
     search_params: LogFilterSearchParamsData = _SearchParamsField()
     columns: list[str] = _ColumnsField()
 
