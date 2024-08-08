@@ -99,7 +99,7 @@ class PreparedLogI18nProfile:
         if not data:
             data = cls.prepare_data()
         profile_id = await create_log_i18n_profile(dbm, LogI18nProfile(**data))
-        return cls(profile_id, data)
+        return cls(str(profile_id), data)
 
     def expected_document(self, extra=None):
         return {

@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -18,14 +19,14 @@ class Repo(BaseModel, HasId, HasCreatedAt):
     log_db_name: str = Field(default=None)
     status: RepoStatus = Field(default=RepoStatus.enabled)
     retention_period: int | None = Field(default=None)
-    log_i18n_profile_id: Optional[str] = Field(default=None)
+    log_i18n_profile_id: Optional[UUID] = Field(default=None)
 
 
 class RepoUpdate(BaseModel):
     name: str = None
     status: RepoStatus = None
     retention_period: Optional[int] = None
-    log_i18n_profile_id: Optional[str] = None
+    log_i18n_profile_id: Optional[UUID] = None
 
 
 class RepoStats(BaseModel):

@@ -177,7 +177,7 @@ async def test_repo_update_set_log_i18n_profile_id(
     )
     await assert_collection(
         dbm.core_db.repos,
-        [repo.expected_document({"log_i18n_profile_id": log_i18n_profile.id})],
+        [repo.expected_document({"log_i18n_profile_id": UUID(log_i18n_profile.id)})],
     )
 
 

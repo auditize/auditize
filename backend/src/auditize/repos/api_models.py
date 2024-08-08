@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,14 +54,14 @@ class RepoCreationRequest(BaseModel):
     name: str = _RepoNameField()
     status: RepoStatus = _RepoStatusField(default=RepoStatus.enabled)
     retention_period: Optional[int] = _RepoRetentionPeriodField(default=None)
-    log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
+    log_i18n_profile_id: Optional[UUID] = _RepoLogI18nProfileIdField(default=None)
 
 
 class RepoUpdateRequest(BaseModel):
     name: str = _RepoNameField(default=None)
     status: RepoStatus = _RepoStatusField(default=None)
     retention_period: Optional[int] = _RepoRetentionPeriodField(default=None)
-    log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField(default=None)
+    log_i18n_profile_id: Optional[UUID] = _RepoLogI18nProfileIdField(default=None)
 
 
 class RepoCreationResponse(BaseModel):
@@ -105,7 +106,7 @@ class _BaseRepoReadingResponse(BaseModel):
 class RepoReadingResponse(_BaseRepoReadingResponse, HasDatetimeSerialization):
     status: RepoStatus = _RepoStatusField()
     retention_period: Optional[int] = _RepoRetentionPeriodField()
-    log_i18n_profile_id: Optional[str] = _RepoLogI18nProfileIdField()
+    log_i18n_profile_id: Optional[UUID] = _RepoLogI18nProfileIdField()
     stats: Optional[RepoStatsData] = Field(
         description="The repository stats (available if `include=stats` has been set in query parameters)",
         default=None,

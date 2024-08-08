@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from auditize.resource.models import HasCreatedAt, HasId
+from auditize.resource.models import HasCreatedAt, HasUuid
 from auditize.users.models import Lang
 
 
@@ -17,7 +17,7 @@ class LogTranslation(BaseModel):
     attachment_type: dict[str, str] = Field(default_factory=dict)
 
 
-class LogI18nProfile(BaseModel, HasId, HasCreatedAt):
+class LogI18nProfile(BaseModel, HasUuid, HasCreatedAt):
     name: str
     translations: dict[Lang, LogTranslation] = Field(default_factory=dict)
 

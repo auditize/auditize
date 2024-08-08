@@ -1,5 +1,6 @@
-import uuid
 from datetime import datetime
+from typing import Any
+from uuid import UUID, uuid4
 
 import callee
 
@@ -20,24 +21,31 @@ class PreparedRepo:
 
     @staticmethod
     def prepare_data(extra=None):
-        return {"name": f"Repo {uuid.uuid4()}", **(extra or {})}
+        return {"name": f"Repo {uuid4()}", **(extra or {})}
 
     @classmethod
     async def create(cls, dbm: DatabaseManager, data=None, log_db: LogDatabase = None):
         if not data:
-            data = cls.prepare_data()
-        repo_id = await create_repo(dbm, Repo(**data), log_db=log_db)
+            data: dict[str, Any] = cls.prepare_data()
+        model_data = data.copy()
+        if "log_i18n_profile_id" in model_data:
+            model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
+        repo_id = await create_repo(dbm, Repo(**model_data), log_db=log_db)
         logs_db = await get_log_db_for_config(dbm, repo_id)
         return cls(str(repo_id), data, logs_db)
 
     def expected_document(self, extra=None):
         return {
-            "_id": uuid.UUID(self.id),
+            "_id": UUID(self.id),
             "name": self.data["name"],
             "log_db_name": callee.IsA(str),
             "status": self.data.get("status", "enabled"),
             "retention_period": self.data.get("retention_period", None),
-            "log_i18n_profile_id": self.data.get("log_i18n_profile_id", None),
+            "log_i18n_profile_id": (
+                UUID(self.data["log_i18n_profile_id"])
+                if "log_i18n_profile_id" in self.data
+                else None
+            ),
             "created_at": callee.IsA(datetime),
             **(extra or {}),
         }
@@ -65,7 +73,7 @@ class PreparedRepo:
         log_id = resp.json()["id"]
         if saved_at:
             self.db.logs.update_one(
-                {"_id": uuid.UUID(log_id)}, {"$set": {"saved_at": saved_at}}
+                {"_id": UUID(log_id)}, {"$set": {"saved_at": saved_at}}
             )
         return PreparedLog(log_id, data, self)
 

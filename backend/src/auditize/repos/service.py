@@ -1,5 +1,5 @@
-import uuid
 from typing import Any, Sequence
+from uuid import UUID, uuid4
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
@@ -41,7 +41,7 @@ async def create_repo(
     dbm: DatabaseManager, repo: Repo, log_db: LogDatabase = None
 ) -> str:
     await _validate_repo(dbm, repo)
-    repo_id = uuid.uuid4()
+    repo_id = uuid4()
     await create_resource_document(
         dbm.core_db.repos,
         {
@@ -177,7 +177,7 @@ async def get_user_repos(
 
     repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
     if repo_ids is not None:
-        filter["_id"] = {"$in": list(map(uuid.UUID, repo_ids))}
+        filter["_id"] = {"$in": list(map(UUID, repo_ids))}
 
     return await _get_repos(dbm, filter, page, page_size)
 
@@ -196,8 +196,8 @@ async def delete_repo(dbm: DatabaseManager, repo_id: str):
     await delete_log_filters_with_repo(dbm, repo_id)
 
 
-async def is_i18n_log_profile_used_by_repo(
-    dbm: DatabaseManager, profile_id: str
+async def is_log_i18n_profile_used_by_repo(
+    dbm: DatabaseManager, profile_id: UUID
 ) -> bool:
     return await has_resource_document(
         dbm.core_db.repos, {"log_i18n_profile_id": profile_id}
