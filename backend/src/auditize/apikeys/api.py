@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
@@ -27,8 +28,8 @@ from auditize.resource.pagination.page.api_models import PagePaginationParams
 router = APIRouter(responses=error_responses(401, 403))
 
 
-def _ensure_cannot_alter_own_apikey(authenticated: Authenticated, apikey_id: str):
-    if authenticated.apikey and str(authenticated.apikey.id) == apikey_id:
+def _ensure_cannot_alter_own_apikey(authenticated: Authenticated, apikey_id: UUID):
+    if authenticated.apikey and authenticated.apikey.id == apikey_id:
         raise PermissionDenied("Cannot alter own apikey")
 
 
@@ -60,7 +61,7 @@ async def create_apikey(
 async def update_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_apikeys()),
-    apikey_id: str,
+    apikey_id: UUID,
     apikey: ApikeyUpdateRequest,
 ):
     _ensure_cannot_alter_own_apikey(authenticated, apikey_id)
@@ -79,7 +80,7 @@ async def update_apikey(
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_apikeys()),
-    apikey_id: str,
+    apikey_id: UUID,
 ) -> ApikeyReadingResponse:
     apikey = await service.get_apikey(dbm, apikey_id)
     return ApikeyReadingResponse.model_validate(apikey.model_dump())
@@ -115,7 +116,7 @@ async def list_apikeys(
 async def delete_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_apikeys()),
-    apikey_id: str,
+    apikey_id: UUID,
 ):
     _ensure_cannot_alter_own_apikey(authenticated, apikey_id)
     await service.delete_apikey(dbm, apikey_id)
@@ -131,7 +132,7 @@ async def delete_apikey(
 async def regenerate_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_apikeys()),
-    apikey_id: str,
+    apikey_id: UUID,
 ) -> ApikeyRegenerationResponse:
     _ensure_cannot_alter_own_apikey(authenticated, apikey_id)
     key = await service.regenerate_apikey(dbm, apikey_id)

@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+from uuid import UUID
 
 from auditize.apikeys.models import Apikey, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
@@ -27,7 +28,7 @@ def _generate_key() -> tuple[str, str]:
     return value, _hash_key(value)
 
 
-async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[str, str]:
+async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[UUID, str]:
     await ensure_repos_in_permissions_exist(dbm, apikey.permissions)
     key, key_hash = _generate_key()
     apikey_id = await create_resource_document(
@@ -38,10 +39,10 @@ async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[str, str]
             "permissions": normalize_permissions(apikey.permissions).model_dump(),
         },
     )
-    return apikey_id, key
+    return UUID(apikey_id), key
 
 
-async def update_apikey(dbm: DatabaseManager, apikey_id: str, update: ApikeyUpdate):
+async def update_apikey(dbm: DatabaseManager, apikey_id: UUID, update: ApikeyUpdate):
     doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
     if update.permissions:
         apikey = await get_apikey(dbm, apikey_id)
@@ -52,7 +53,7 @@ async def update_apikey(dbm: DatabaseManager, apikey_id: str, update: ApikeyUpda
     await update_resource_document(dbm.core_db.apikeys, apikey_id, doc_update)
 
 
-async def regenerate_apikey(dbm: DatabaseManager, apikey_id: str) -> str:
+async def regenerate_apikey(dbm: DatabaseManager, apikey_id: UUID) -> str:
     key, key_hash = _generate_key()
     await update_resource_document(
         dbm.core_db.apikeys, apikey_id, {"key_hash": key_hash}
@@ -65,7 +66,7 @@ async def _get_apikey(dbm: DatabaseManager, filter: any) -> Apikey:
     return Apikey.model_validate(result)
 
 
-async def get_apikey(dbm: DatabaseManager, apikey_id: str) -> Apikey:
+async def get_apikey(dbm: DatabaseManager, apikey_id: UUID) -> Apikey:
     return await _get_apikey(dbm, apikey_id)
 
 
@@ -86,7 +87,7 @@ async def get_apikeys(
     return [Apikey.model_validate(result) async for result in results], page_info
 
 
-async def delete_apikey(dbm: DatabaseManager, apikey_id: str):
+async def delete_apikey(dbm: DatabaseManager, apikey_id: UUID):
     await delete_resource_document(dbm.core_db.apikeys, apikey_id)
 
 

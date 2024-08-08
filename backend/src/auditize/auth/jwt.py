@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from authlib.jose import JsonWebToken
 from authlib.jose.errors import ExpiredTokenError, JoseError
@@ -66,11 +67,11 @@ def get_user_email_from_session_token(token: str) -> str:
 
 
 def generate_access_token_payload(
-    apikey_id: str, permissions: Permissions
+    apikey_id: UUID, permissions: Permissions
 ) -> tuple[dict, datetime]:
     return _generate_jwt_payload(
         {
-            "sub": _SUB_PREFIX_ACCESS_TOKEN + apikey_id,
+            "sub": _SUB_PREFIX_ACCESS_TOKEN + str(apikey_id),
             "permissions": permissions.model_dump(),
         },
         get_config().access_token_lifetime,
@@ -78,7 +79,7 @@ def generate_access_token_payload(
 
 
 def generate_access_token(
-    apikey_id: str, permissions: Permissions
+    apikey_id: UUID, permissions: Permissions
 ) -> tuple[str, datetime]:
     payload, expires_at = generate_access_token_payload(apikey_id, permissions)
     return _sign_jwt_token(payload), expires_at
