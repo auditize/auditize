@@ -26,7 +26,7 @@ from auditize.resource.service import (
     has_resource_document,
     update_resource_document,
 )
-from auditize.users.models import Lang, User
+from auditize.user.models import Lang, User
 
 
 async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
@@ -185,7 +185,7 @@ async def delete_repo(dbm: DatabaseManager, repo_id: UUID):
     # avoid circular imports
     from auditize.apikeys.service import remove_repo_from_apikeys_permissions
     from auditize.logfilters.service import delete_log_filters_with_repo
-    from auditize.users.service import remove_repo_from_users_permissions
+    from auditize.user.service import remove_repo_from_users_permissions
 
     logs_db = await get_log_db_for_config(dbm, repo_id)
     await delete_resource_document(dbm.core_db.repos, repo_id)

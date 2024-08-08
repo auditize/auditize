@@ -11,8 +11,8 @@ from auditize.permissions.assertions import can_read_users, can_write_users
 from auditize.permissions.operations import authorize_grant
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
-from auditize.users import service
-from auditize.users.api_models import (
+from auditize.user import service
+from auditize.user.api_models import (
     UserCreationRequest,
     UserCreationResponse,
     UserListResponse,
@@ -24,7 +24,7 @@ from auditize.users.api_models import (
     UserReadingResponse,
     UserUpdateRequest,
 )
-from auditize.users.models import User, UserUpdate
+from auditize.user.models import User, UserUpdate
 
 router = APIRouter(responses=error_responses(401, 403))
 

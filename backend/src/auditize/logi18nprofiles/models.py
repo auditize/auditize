@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from auditize.resource.models import HasCreatedAt, HasId
-from auditize.users.models import Lang
+from auditize.user.models import Lang
 
 
 class LogTranslation(BaseModel):

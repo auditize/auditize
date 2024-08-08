@@ -22,7 +22,7 @@ from auditize.permissions.assertions import (
 )
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
-from auditize.users.models import Lang
+from auditize.user.models import Lang
 
 router = APIRouter(responses=error_responses(401, 403))
 

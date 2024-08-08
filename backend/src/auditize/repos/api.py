@@ -42,8 +42,8 @@ from auditize.repos.api_models import (
 from auditize.repos.models import Repo, RepoStatus, RepoUpdate
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
-from auditize.users.models import Lang, UserUpdate
-from auditize.users.service import update_user
+from auditize.user.models import Lang, UserUpdate
+from auditize.user.service import update_user
 
 router = APIRouter(responses=error_responses(401, 403))
 

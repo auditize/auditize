@@ -18,7 +18,7 @@ from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.constants import DEFAULT_PERMISSIONS
 from helpers.repos import PreparedRepo
-from helpers.users import PreparedUser
+from helpers.user import PreparedUser
 from helpers.utils import strip_dict_keys
 
 pytestmark = pytest.mark.anyio

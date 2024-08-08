@@ -9,7 +9,7 @@ from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.permissions.constants import DEFAULT_APPLICABLE_PERMISSIONS
-from helpers.users import PreparedUser
+from helpers.user import PreparedUser
 from helpers.utils import DATETIME_FORMAT
 
 pytestmark = pytest.mark.anyio

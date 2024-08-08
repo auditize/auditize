@@ -12,8 +12,8 @@ from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import authorize_grant
-from auditize.users import service
-from auditize.users.api_models import UserAuthenticationRequest, UserMeResponse
+from auditize.user import service
+from auditize.user.api_models import UserAuthenticationRequest, UserMeResponse
 
 router = APIRouter()
 

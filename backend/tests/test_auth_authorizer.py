@@ -19,7 +19,7 @@ from auditize.permissions.models import Permissions
 from conftest import ApikeyBuilder
 from helpers.apikeys import PreparedApikey
 from helpers.http import HttpTestHelper, make_http_request
-from helpers.users import PreparedUser
+from helpers.user import PreparedUser
 
 pytestmark = pytest.mark.anyio
 

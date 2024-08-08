@@ -41,7 +41,7 @@ from helpers.database import (
 from helpers.http import HttpTestHelper
 from helpers.logi18nprofiles import PreparedLogI18nProfile
 from helpers.repos import PreparedRepo
-from helpers.users import PreparedUser
+from helpers.user import PreparedUser
 
 
 @pytest.fixture(scope="session")

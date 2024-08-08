@@ -17,7 +17,7 @@ from helpers.permissions.constants import (
     SUPERADMIN_APPLICABLE_PERMISSIONS,
 )
 from helpers.permissions.tests import BasePermissionTests
-from helpers.users import PreparedUser
+from helpers.user import PreparedUser
 
 pytestmark = pytest.mark.anyio
 
@@ -27,7 +27,7 @@ UNKNOWN_PASSWORD_RESET_TOKEN = (
 
 
 async def _wrap_password_reset_link_sending(func, expected_email: str) -> str:
-    with patch("auditize.users.service.send_email") as mock:
+    with patch("auditize.user.service.send_email") as mock:
         await func()
         mock.assert_called_once_with(
             expected_email,  # to

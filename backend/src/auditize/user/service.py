@@ -24,7 +24,7 @@ from auditize.resource.service import (
     get_resource_document,
     update_resource_document,
 )
-from auditize.users.models import PasswordResetToken, User, UserUpdate
+from auditize.user.models import PasswordResetToken, User, UserUpdate
 
 _DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
 

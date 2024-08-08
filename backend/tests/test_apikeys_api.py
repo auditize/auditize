@@ -12,7 +12,7 @@ from helpers.http import HttpTestHelper
 from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.tests import BasePermissionTests
-from helpers.users import PreparedUser
+from helpers.user import PreparedUser
 
 pytestmark = pytest.mark.anyio
 

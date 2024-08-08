@@ -22,8 +22,8 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import authorize_grant
-from auditize.users.models import User
-from auditize.users.service import get_user_by_email
+from auditize.user.models import User
+from auditize.user.service import get_user_by_email
 
 _BEARER_PREFIX = "Bearer "
 

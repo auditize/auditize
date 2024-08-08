@@ -11,7 +11,7 @@ from ..database import assert_collection
 from ..http import HttpTestHelper
 from ..logs import UNKNOWN_UUID
 from ..repos import PreparedRepo
-from ..users import PreparedUser
+from ..user import PreparedUser
 
 
 class BasePermissionTests:

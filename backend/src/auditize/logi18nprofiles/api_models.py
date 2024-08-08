@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from auditize.logi18nprofiles.models import LogI18nProfile
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
-from auditize.users.models import Lang
+from auditize.user.models import Lang
 
 
 class LogTranslation(BaseModel):
