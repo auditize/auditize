@@ -57,10 +57,8 @@ def build_document_from_user(user: User) -> dict:
 
 async def save_user(dbm: DatabaseManager, user: User) -> UUID:
     await ensure_repos_in_permissions_exist(dbm, user.permissions)
-    return UUID(
-        await create_resource_document(
-            dbm.core_db.users, build_document_from_user(user)
-        )
+    return await create_resource_document(
+        dbm.core_db.users, build_document_from_user(user)
     )
 
 

@@ -1,5 +1,5 @@
-import uuid
 from datetime import datetime, timedelta
+from uuid import UUID
 
 import callee
 import pytest
@@ -40,7 +40,7 @@ def make_log_data(**extra) -> Log:
 
 async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data()
-    log_id = await save_log(dbm, repo.id, log)
+    log_id = await save_log(dbm, UUID(repo.id), log)
     db_log = await repo.db.logs.find_one({"_id": log_id})
     assert list(db_log.keys()) == [
         "_id",
@@ -79,7 +79,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.resource.extra.append(CustomField(name="some_key", value="some_value"))
     log.details.append(CustomField(name="detail_name", value="detail_value"))
     log.tags = [Log.Tag(ref="tag_ref", type="rich_tag", name="rich_tag_name")]
-    await save_log(dbm, repo.id, log)
+    await save_log(dbm, UUID(repo.id), log)
     await assert_consolidated_data(
         repo.db.log_actions, {"category": "authentication", "type": "login"}
     )
@@ -109,10 +109,10 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         Log.Tag(type="simple_tag"),
     ]
     log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
-    log_id = await save_log(dbm, repo.id, log)
+    log_id = await save_log(dbm, UUID(repo.id), log)
     await save_log_attachment(
         dbm,
-        repo.id,
+        UUID(repo.id),
         log_id,
         name="file.txt",
         type="text",
@@ -206,9 +206,7 @@ async def test_log_retention_period_enabled(
     await apply_log_retention_period(dbm)
 
     assert await repo_1.db.logs.count_documents({}) == 1
-    assert (
-        await repo_1.db.logs.find_one({"_id": uuid.UUID(repo_1_log_2.id)}) is not None
-    )
+    assert await repo_1.db.logs.find_one({"_id": UUID(repo_1_log_2.id)}) is not None
 
     assert await repo_2.db.logs.count_documents({}) == 2
 

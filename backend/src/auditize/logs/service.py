@@ -160,7 +160,7 @@ async def save_log(dbm: DatabaseManager, repo_id: UUID, log: Log) -> UUID:
 
     await _consolidate_log(db, log)
 
-    return UUID(log_id)
+    return log_id
 
 
 async def save_log_attachment(

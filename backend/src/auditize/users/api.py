@@ -113,7 +113,7 @@ async def get_user_me(
 async def get_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_users()),
-    user_id: str,
+    user_id: UUID,
 ) -> UserReadingResponse:
     user = await service.get_user(dbm, user_id)
     return UserReadingResponse.model_validate(user.model_dump())

@@ -28,7 +28,7 @@ async def _validate_log_filter(
 
 async def create_log_filter(dbm: DatabaseManager, log_filter: LogFilter) -> UUID:
     await _validate_log_filter(dbm, log_filter)
-    return UUID(await create_resource_document(dbm.core_db.log_filters, log_filter))
+    return await create_resource_document(dbm.core_db.log_filters, log_filter)
 
 
 def _log_filter_discriminator(user_id: UUID, log_filter_id: UUID) -> dict:

@@ -39,7 +39,7 @@ async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[UUID, str
             "permissions": normalize_permissions(apikey.permissions).model_dump(),
         },
     )
-    return UUID(apikey_id), key
+    return apikey_id, key
 
 
 async def update_apikey(dbm: DatabaseManager, apikey_id: UUID, update: ApikeyUpdate):

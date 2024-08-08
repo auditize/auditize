@@ -85,14 +85,12 @@ class LogDatabase(BaseDatabase):
 
 
 async def _get_log_db(
-    dbm: DatabaseManager, repo: str | UUID | Repo, statuses: list[RepoStatus]
+    dbm: DatabaseManager, repo: UUID | Repo, statuses: list[RepoStatus]
 ) -> LogDatabase:
     from auditize.repos.service import get_repo  # avoid circular import
 
     if type(repo) is UUID:
         repo = await get_repo(dbm, repo)
-    elif type(repo) is str:
-        repo = await get_repo(dbm, UUID(repo))
 
     if statuses:
         if repo.status not in statuses:

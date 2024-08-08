@@ -22,7 +22,7 @@ async def create_log_i18n_profile(
     dbm: DatabaseManager, profile: LogI18nProfile
 ) -> UUID:
     profile_id = await create_resource_document(dbm.core_db.logi18nprofiles, profile)
-    return UUID(profile_id)
+    return profile_id
 
 
 async def update_log_i18n_profile(
