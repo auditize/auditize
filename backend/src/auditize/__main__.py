@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 from auditize.database import get_dbm
-from auditize.logs.service import apply_log_retention_period
+from auditize.log.service import apply_log_retention_period
 from auditize.permissions.models import Permissions
 from auditize.user.models import User
 from auditize.user.service import get_users, hash_user_password, save_user

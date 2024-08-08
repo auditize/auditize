@@ -9,7 +9,7 @@ from conftest import RepoBuilder
 from ..apikey import PreparedApikey
 from ..database import assert_collection
 from ..http import HttpTestHelper
-from ..logs import UNKNOWN_UUID
+from ..log import UNKNOWN_UUID
 from ..repo import PreparedRepo
 from ..user import PreparedUser
 

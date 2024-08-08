@@ -8,7 +8,7 @@ import pytest
 from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.http import HttpTestHelper
-from helpers.logs import UNKNOWN_UUID, PreparedLog
+from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
     do_test_page_pagination_common_scenarios,
     do_test_page_pagination_empty_data,
@@ -2391,7 +2391,7 @@ async def test_get_logs_as_csv_with_csv_max_rows_unlimited(
     for _ in range(15):
         await repo.create_log(log_rw_client)
 
-    with patch("auditize.logs.service.get_config") as mock:
+    with patch("auditize.log.service.get_config") as mock:
         mock.return_value.csv_max_rows = 0
         resp = await log_rw_client.assert_get_ok(
             f"/repos/{repo.id}/logs/csv",

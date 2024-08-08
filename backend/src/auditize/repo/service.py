@@ -3,12 +3,12 @@ from uuid import UUID, uuid4
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.log.db import LogDatabase, get_log_db_for_config
 from auditize.log_i18n_profile.models import LogTranslation
 from auditize.log_i18n_profile.service import (
     does_log_i18n_profile_exist,
     get_log_i18n_profile_translation,
 )
-from auditize.logs.db import LogDatabase, get_log_db_for_config
 from auditize.permissions.assertions import (
     can_read_logs,
     can_write_logs,

@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from auditize.logs.models import BaseLogSearchParams
+from auditize.log.models import BaseLogSearchParams
 from auditize.resource.models import HasCreatedAt, HasId
 
 

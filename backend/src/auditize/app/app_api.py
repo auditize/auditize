@@ -12,9 +12,9 @@ from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
     make_response_from_exception,
 )
+from auditize.log.api import router as logs_router
 from auditize.log_filter.api import router as log_filters_router
 from auditize.log_i18n_profile.api import router as logi18nprofiles_router
-from auditize.logs.api import router as logs_router
 from auditize.repo.api import router as repos_router
 from auditize.user.api import router as users_router
 

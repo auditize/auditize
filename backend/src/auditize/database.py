@@ -83,7 +83,7 @@ class DatabaseManager:
 
     async def setup(self):
         # avoid circular imports
-        from auditize.logs.db import get_log_db_for_maintenance
+        from auditize.log.db import get_log_db_for_maintenance
         from auditize.repo.service import get_all_repos
 
         await self.core_db.setup()

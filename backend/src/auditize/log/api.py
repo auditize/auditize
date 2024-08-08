@@ -16,8 +16,8 @@ from auditize.helpers.api.validators import (
     IDENTIFIER_PATTERN_STRING,
 )
 from auditize.helpers.datetime import now
-from auditize.logs import service
-from auditize.logs.api_models import (
+from auditize.log import service
+from auditize.log.api_models import (
     LogCreationRequest,
     LogCreationResponse,
     LogNodeListResponse,
@@ -27,8 +27,8 @@ from auditize.logs.api_models import (
     LogsReadingResponse,
     NameListResponse,
 )
-from auditize.logs.db import get_log_db_for_reading
-from auditize.logs.models import Log, LogSearchParams
+from auditize.log.db import get_log_db_for_reading
+from auditize.log.models import Log, LogSearchParams
 from auditize.resource.pagination.cursor.api_models import CursorPaginationParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 

@@ -3,7 +3,7 @@ from datetime import datetime
 
 import callee
 
-from .logs import UNKNOWN_UUID
+from .log import UNKNOWN_UUID
 
 DEFAULT_SEARCH_PARAMETERS = {
     "action_category": None,

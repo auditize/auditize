@@ -17,13 +17,13 @@ from auditize.exceptions import (
     ValidationError,
 )
 from auditize.helpers.datetime import now, serialize_datetime
-from auditize.logs.db import (
+from auditize.log.db import (
     LogDatabase,
     get_log_db_for_maintenance,
     get_log_db_for_reading,
     get_log_db_for_writing,
 )
-from auditize.logs.models import CustomField, Log, LogSearchParams, Node
+from auditize.log.models import CustomField, Log, LogSearchParams, Node
 from auditize.repo.models import Repo
 from auditize.repo.service import get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import find_paginated_by_cursor

@@ -28,7 +28,7 @@ os.environ.update(
 )
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogDatabase
+from auditize.log.db import LogDatabase
 
 pytest.register_assert_rewrite("helpers")
 from helpers.apikey import PreparedApikey

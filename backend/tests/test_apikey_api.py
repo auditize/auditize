@@ -9,7 +9,7 @@ from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
-from helpers.logs import UNKNOWN_UUID
+from helpers.log import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.tests import BasePermissionTests
 from helpers.user import PreparedUser

@@ -6,8 +6,8 @@ import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
-from auditize.logs.models import CustomField, Log
-from auditize.logs.service import (
+from auditize.log.models import CustomField, Log
+from auditize.log.service import (
     apply_log_retention_period,
     save_log,
     save_log_attachment,
@@ -15,7 +15,7 @@ from auditize.logs.service import (
 from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
-from helpers.logs import PreparedLog
+from helpers.log import PreparedLog
 from helpers.repo import PreparedRepo
 
 pytestmark = pytest.mark.anyio

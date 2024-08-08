@@ -5,12 +5,12 @@ from uuid import UUID, uuid4
 import callee
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogDatabase, get_log_db_for_config
+from auditize.log.db import LogDatabase, get_log_db_for_config
 from auditize.repo.models import Repo
 from auditize.repo.service import create_repo
 
 from .http import HttpTestHelper
-from .logs import PreparedLog
+from .log import PreparedLog
 
 
 class PreparedRepo:
