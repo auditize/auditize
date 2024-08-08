@@ -129,7 +129,7 @@ async def get_all_repos(dbm: DatabaseManager):
 
 def _get_authorized_repo_ids_for_user(
     user: User, has_read_perm: bool, has_write_perm: bool
-) -> Sequence[str] | None:
+) -> Sequence[UUID] | None:
     no_filtering_needed = any(
         (
             is_authorized(
@@ -177,7 +177,7 @@ async def get_user_repos(
 
     repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
     if repo_ids is not None:
-        filter["_id"] = {"$in": list(map(UUID, repo_ids))}
+        filter["_id"] = {"$in": repo_ids}
 
     return await _get_repos(dbm, filter, page, page_size)
 
@@ -223,7 +223,7 @@ async def ensure_repos_in_permissions_exist(
 ):
     for repo_id in permissions.logs.get_repos():
         try:
-            await get_repo(dbm, UUID(repo_id))
+            await get_repo(dbm, repo_id)
         except UnknownModelException:
             raise ValidationError(
                 f"Repo {repo_id} cannot be assigned in log permissions as it does not exist"

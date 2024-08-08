@@ -1,4 +1,5 @@
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,7 +39,7 @@ class ManagementPermissions(BaseModel):
 
 
 class RepoLogPermissions(ReadWritePermissions):
-    repo_id: str
+    repo_id: UUID
     readable_nodes: list[str] | None = Field(default=None)
 
     model_config = ConfigDict(extra="forbid")
@@ -49,7 +50,7 @@ class LogPermissions(ReadWritePermissions):
 
     model_config = ConfigDict(extra="forbid")
 
-    def get_repos(self, *, can_read=False, can_write=False) -> list[str]:
+    def get_repos(self, *, can_read=False, can_write=False) -> list[UUID]:
         def perms_ok(perms: ReadWritePermissions):
             read_ok = perms.read if can_read else True
             write_ok = perms.write if can_write else True
@@ -57,13 +58,13 @@ class LogPermissions(ReadWritePermissions):
 
         return [perms.repo_id for perms in self.repos if perms_ok(perms)]
 
-    def get_repo_permissions(self, repo_id: str) -> RepoLogPermissions | None:
+    def get_repo_permissions(self, repo_id: UUID) -> RepoLogPermissions | None:
         for perms in self.repos:
             if perms.repo_id == repo_id:
                 return perms
         return None
 
-    def get_repo_readable_nodes(self, repo_id: str) -> set[str]:
+    def get_repo_readable_nodes(self, repo_id: UUID) -> set[str]:
         perms = self.get_repo_permissions(repo_id)
         return set(perms.readable_nodes) if perms and perms.readable_nodes else set()
 

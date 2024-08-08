@@ -229,14 +229,14 @@ async def list_user_repos(
         repo_response.permissions = RepoLogPermissionsData(
             read=(
                 repo.status in (RepoStatus.enabled, RepoStatus.readonly)
-                and authenticated.comply(can_read_logs(str(repo_response.id)))
+                and authenticated.comply(can_read_logs(repo_response.id))
             ),
             write=(
                 repo.status == RepoStatus.enabled
-                and authenticated.comply(can_write_logs(str(repo_response.id)))
+                and authenticated.comply(can_write_logs(repo_response.id))
             ),
             readable_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
-                str(repo_response.id)
+                repo_response.id
             ),
         )
 

@@ -39,7 +39,7 @@ router = APIRouter(
 
 async def _get_consolidated_data(
     dbm: DatabaseManager,
-    repo_id: str,
+    repo_id: UUID,
     get_data_func,
     page_params,
     **kwargs,
@@ -64,7 +64,7 @@ async def _get_consolidated_data(
 async def get_log_action_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
     category: str = None,
 ) -> NameListResponse:
@@ -86,7 +86,7 @@ async def get_log_action_types(
 async def get_log_action_categories(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -106,7 +106,7 @@ async def get_log_action_categories(
 async def get_log_actor_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -127,7 +127,7 @@ async def get_log_actor_types(
 async def get_log_actor_extras(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -147,7 +147,7 @@ async def get_log_actor_extras(
 async def get_log_resource_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -168,7 +168,7 @@ async def get_log_resource_types(
 async def get_log_resource_extras(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -188,7 +188,7 @@ async def get_log_resource_extras(
 async def get_log_tag_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -209,7 +209,7 @@ async def get_log_tag_types(
 async def get_log_source_fields(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -230,7 +230,7 @@ async def get_log_source_fields(
 async def get_log_detail_fields(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -251,7 +251,7 @@ async def get_log_detail_fields(
 async def get_log_attachment_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -272,7 +272,7 @@ async def get_log_attachment_types(
 async def get_log_attachment_mime_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -292,7 +292,7 @@ async def get_log_attachment_mime_types(
 async def get_log_nodes(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     root: bool = False,
     parent_node_ref: str = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
@@ -331,7 +331,7 @@ async def get_log_nodes(
 async def get_log_node(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     node_ref: Annotated[str, Path(title="Node ref")],
 ) -> LogNodeResponse:
     node = await service.get_log_node(
@@ -354,7 +354,7 @@ async def get_log_node(
 async def create_log(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsWrite(),
-    repo_id: str,
+    repo_id: UUID,
     log_req: LogCreationRequest,
 ) -> LogCreationResponse:
     log_id = await service.save_log(
@@ -375,7 +375,7 @@ async def create_log(
 async def add_attachment(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsWrite(),
-    repo_id: str,
+    repo_id: UUID,
     log_id: Annotated[
         UUID,
         Path(title="Log ID", description="The ID of the log to attach the file to"),
@@ -452,7 +452,7 @@ Example of column name if you have a "role" custom field for the actor: `actor.r
 async def get_logs_as_csv(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     columns: Annotated[str, Query(description=_COLUMNS_DESCRIPTION)] = ",".join(
         service.CSV_BUILTIN_COLUMNS
@@ -491,7 +491,7 @@ async def get_logs_as_csv(
 async def get_log(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     log_id: Annotated[UUID, Path(title="Log ID")],
 ) -> LogReadingResponse:
     log = await service.get_log(
@@ -528,7 +528,7 @@ async def get_log(
 async def get_log_attachment(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     log_id: UUID = Path(title="Log ID"),
     attachment_idx: int = Path(
         title="Attachment index",
@@ -549,7 +549,7 @@ async def get_log_attachment(
 async def get_logs(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> LogsReadingResponse:

@@ -41,7 +41,7 @@ async def _test_repo_create(
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
     assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": repo.id, "read": True, "write": True, "readable_nodes": []}
+        {"repo_id": UUID(repo.id), "read": True, "write": True, "readable_nodes": []}
     ]
 
 
@@ -890,7 +890,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": repo.id,
+                                    "repo_id": UUID(repo.id),
                                     "read": True,
                                     "write": False,
                                     "readable_nodes": [],
@@ -914,7 +914,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": repo.id,
+                                    "repo_id": UUID(repo.id),
                                     "read": True,
                                     "write": False,
                                     "readable_nodes": [],

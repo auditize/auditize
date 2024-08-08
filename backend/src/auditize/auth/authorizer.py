@@ -1,5 +1,6 @@
 import dataclasses
 from typing import Annotated, Callable, Type
+from uuid import UUID
 
 from fastapi import Depends
 from starlette.requests import Request
@@ -162,8 +163,8 @@ def _authorized(assertion: PermissionAssertion):
     return func
 
 
-def _authorized_on_logs(assertion_func: Callable[[str], PermissionAssertion]):
-    def func(repo_id: str, authenticated: Authenticated = Depends(get_authenticated)):
+def _authorized_on_logs(assertion_func: Callable[[UUID], PermissionAssertion]):
+    def func(repo_id: UUID, authenticated: Authenticated = Depends(get_authenticated)):
         assertion = assertion_func(repo_id)
         if not authenticated.comply(assertion):
             raise PermissionDenied()

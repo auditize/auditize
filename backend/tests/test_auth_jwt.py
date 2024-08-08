@@ -1,4 +1,5 @@
 import time
+import uuid
 
 import pytest
 from icecream import ic
@@ -27,7 +28,7 @@ async def test_user_session_token():
 
 
 async def test_access_token():
-    apikey_id = "664db94fc87d3061a3333d8b"
+    apikey_id = uuid.uuid4()
     permissions = Permissions()
     permissions.management.repos.read = True
     now = int(time.time())

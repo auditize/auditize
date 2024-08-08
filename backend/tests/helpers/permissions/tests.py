@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import callee
 from httpx import Response
 
@@ -88,13 +90,13 @@ class BasePermissionTests:
                                 "write": False,
                                 "repos": [
                                     {
-                                        "repo_id": repo_1.id,
+                                        "repo_id": UUID(repo_1.id),
                                         "read": True,
                                         "write": True,
                                         "readable_nodes": [],
                                     },
                                     {
-                                        "repo_id": repo_2.id,
+                                        "repo_id": UUID(repo_2.id),
                                         "read": True,
                                         "write": False,
                                         "readable_nodes": ["customer:1"],
@@ -216,7 +218,7 @@ class BasePermissionTests:
                                 "write": False,
                                 "repos": [
                                     {
-                                        "repo_id": repo.id,
+                                        "repo_id": UUID(repo.id),
                                         "read": True,
                                         "write": True,
                                         "readable_nodes": ["node1"],

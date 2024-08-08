@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -72,7 +73,10 @@ def generate_access_token_payload(
     return _generate_jwt_payload(
         {
             "sub": _SUB_PREFIX_ACCESS_TOKEN + str(apikey_id),
-            "permissions": permissions.model_dump(),
+            # NB: this data will be serialized to JSON by authlib.jose using json.dumps internally,
+            # unfortunately json.dumps does not support UUID serialization, that's why we
+            # have to do this dump->load extra step to get UUID instances turned into strings
+            "permissions": json.loads(permissions.model_dump_json()),
         },
         get_config().access_token_lifetime,
     )
@@ -85,7 +89,7 @@ def generate_access_token(
     return _sign_jwt_token(payload), expires_at
 
 
-def get_access_token_data(token: str) -> tuple[str, Permissions]:
+def get_access_token_data(token: str) -> tuple[UUID, Permissions]:
     payload = _get_jwt_token_payload(token)
     sub = payload["sub"]
 
@@ -95,4 +99,4 @@ def get_access_token_data(token: str) -> tuple[str, Permissions]:
 
     permissions = Permissions.model_validate(payload["permissions"])
 
-    return apikey_id, permissions
+    return UUID(apikey_id), permissions

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from uuid import UUID
 
 import pytest
 from icecream import ic
@@ -13,6 +14,11 @@ from auditize.permissions.operations import (
     normalize_permissions,
     update_permissions,
 )
+
+REPO_1 = UUID("8276de01-c6f2-4174-bbbf-cadb8e9832e6")
+REPO_2 = UUID("4b3a4f91-8131-4d06-8edb-7d9d1353217b")
+REPO_3 = UUID("14f27afe-902d-4176-8612-920bc59f95cb")
+REPO_4 = UUID("8ecdf2db-c70d-4cad-8610-d4334e65d0df")
 
 
 def _test_access_perms_normalization(input: dict, expected: dict):
@@ -53,8 +59,8 @@ def test_normalization_superadmin_with_explicit_permissions():
                 "read": True,
                 "write": True,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True},
-                    {"repo_id": "repo2", "read": True, "write": True},
+                    {"repo_id": REPO_1, "read": True, "write": True},
+                    {"repo_id": REPO_2, "read": True, "write": True},
                 ],
             },
         },
@@ -82,8 +88,8 @@ def test_normalization_superadmin_with_log_permissions():
                 "read": True,
                 "write": True,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True},
-                    {"repo_id": "repo2", "read": True, "write": True},
+                    {"repo_id": REPO_1, "read": True, "write": True},
+                    {"repo_id": REPO_2, "read": True, "write": True},
                 ],
             },
         },
@@ -110,11 +116,11 @@ def test_normalization_read_logs_on_all_repos():
                 "read": True,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True},
-                    {"repo_id": "repo2", "read": False, "write": True},
-                    {"repo_id": "repo3", "read": True, "write": False},
+                    {"repo_id": REPO_1, "read": True, "write": True},
+                    {"repo_id": REPO_2, "read": False, "write": True},
+                    {"repo_id": REPO_3, "read": True, "write": False},
                     {
-                        "repo_id": "repo4",
+                        "repo_id": REPO_4,
                         "read": True,
                         "write": True,
                         "readable_nodes": ["node1", "node2"],
@@ -129,19 +135,19 @@ def test_normalization_read_logs_on_all_repos():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": False,
                         "write": True,
                         "readable_nodes": [],
                     },
                     {
-                        "repo_id": "repo2",
+                        "repo_id": REPO_2,
                         "read": False,
                         "write": True,
                         "readable_nodes": [],
                     },
                     {
-                        "repo_id": "repo4",
+                        "repo_id": REPO_4,
                         "read": False,
                         "write": True,
                         "readable_nodes": [],
@@ -165,7 +171,7 @@ def test_normalization_repo_nodes_without_read_permission():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": False,
                         "write": True,
                         "readable_nodes": ["node1", "node2"],
@@ -180,7 +186,7 @@ def test_normalization_repo_nodes_without_read_permission():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": False,
                         "write": True,
                         "readable_nodes": [],
@@ -203,9 +209,9 @@ def test_normalization_write_logs_on_all_repos():
                 "read": False,
                 "write": True,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True},
-                    {"repo_id": "repo2", "read": False, "write": True},
-                    {"repo_id": "repo3", "read": True, "write": False},
+                    {"repo_id": REPO_1, "read": True, "write": True},
+                    {"repo_id": REPO_2, "read": False, "write": True},
+                    {"repo_id": REPO_3, "read": True, "write": False},
                 ],
             },
         },
@@ -216,13 +222,13 @@ def test_normalization_write_logs_on_all_repos():
                 "write": True,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": True,
                         "write": False,
                         "readable_nodes": [],
                     },
                     {
-                        "repo_id": "repo3",
+                        "repo_id": REPO_3,
                         "read": True,
                         "write": False,
                         "readable_nodes": [],
@@ -245,9 +251,9 @@ def test_normalization_read_and_write_logs_on_all_repos():
                 "read": True,
                 "write": True,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True},
-                    {"repo_id": "repo2", "read": False, "write": True},
-                    {"repo_id": "repo3", "read": True, "write": False},
+                    {"repo_id": REPO_1, "read": True, "write": True},
+                    {"repo_id": REPO_2, "read": False, "write": True},
+                    {"repo_id": REPO_3, "read": True, "write": False},
                 ],
             },
         },
@@ -292,8 +298,8 @@ def test_authorize_grant_as_superadmin():
         {"is_superadmin": False},
         {"logs": {"read": True, "write": True}},
         {"logs": {"read": False, "write": False}},
-        {"logs": {"repos": [{"repo_id": "repo1", "read": True, "write": True}]}},
-        {"logs": {"repos": [{"repo_id": "repo1", "read": False, "write": False}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "read": True, "write": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "read": False, "write": False}]}},
         {"management": {"repos": {"read": True, "write": True}}},
         {"management": {"repos": {"read": False, "write": False}}},
         {"management": {"users": {"read": True, "write": True}}},
@@ -311,8 +317,8 @@ def test_authorize_grant_as_no_right():
         {"is_superadmin": False},
         {"logs": {"read": True, "write": True}},
         {"logs": {"read": False, "write": False}},
-        {"logs": {"repos": [{"repo_id": "repo1", "read": True, "write": True}]}},
-        {"logs": {"repos": [{"repo_id": "repo1", "read": False, "write": False}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "read": True, "write": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "read": False, "write": False}]}},
         {"management": {"repos": {"read": True, "write": True}}},
         {"management": {"repos": {"read": False, "write": False}}},
         {"management": {"users": {"read": True, "write": True}}},
@@ -336,13 +342,13 @@ def test_authorize_grant_on_logs_with_node():
     granted_perms = {
         "logs": {
             "repos": [
-                {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
+                {"repo_id": REPO_1, "read": True, "readable_nodes": ["node1"]},
             ]
         }
     }
 
     assert_authorized(
-        {"logs": {"repos": [{"repo_id": "repo1", "read": True, "write": False}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "read": True, "write": False}]}},
         granted_perms,
     )
 
@@ -356,22 +362,22 @@ def test_permission_assertions_on_logs_as_permissions_specific_repos():
     perms = {
         "logs": {
             "repos": [
-                {"repo_id": "repo1", "read": True, "write": False},
-                {"repo_id": "repo2", "read": False, "write": True},
+                {"repo_id": REPO_1, "read": True, "write": False},
+                {"repo_id": REPO_2, "read": False, "write": True},
             ]
         }
     }
     assert_authorized(
         perms,
         ###
-        {"logs": {"repos": [{"repo_id": "repo1", "read": True}]}},
-        {"logs": {"repos": [{"repo_id": "repo2", "write": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "read": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_2, "write": True}]}},
     )
     assert_unauthorized(
         perms,
         ###
-        {"logs": {"repos": [{"repo_id": "repo1", "write": True}]}},
-        {"logs": {"repos": [{"repo_id": "repo2", "read": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "write": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_2, "read": True}]}},
     )
 
 
@@ -411,7 +417,7 @@ def test_update_permission_grant_superadmin():
                 "read": True,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "write": True},
+                    {"repo_id": REPO_1, "write": True},
                 ],
             },
             "management": {"repos": {"read": True, "write": True}},
@@ -440,7 +446,7 @@ def test_update_permission_grant_individual_permissions():
                 "read": True,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "write": True},
+                    {"repo_id": REPO_1, "write": True},
                 ],
             },
             "management": {"repos": {"read": True, "write": True}},
@@ -484,7 +490,7 @@ def test_update_permission_drop_individual_permissions():
             "logs": {
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "write": True},
+                    {"repo_id": REPO_1, "write": True},
                 ],
             },
             "management": {"users": {"read": False}},
@@ -496,7 +502,7 @@ def test_update_permission_drop_individual_permissions():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": False,
                         "write": True,
                         "readable_nodes": [],
@@ -518,7 +524,7 @@ def test_update_permission_grant_read_logs_on_nodes_1():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
+                    {"repo_id": REPO_1, "read": True, "readable_nodes": ["node1"]},
                 ],
             },
         },
@@ -529,7 +535,7 @@ def test_update_permission_grant_read_logs_on_nodes_1():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": True,
                         "write": False,
                         "readable_nodes": ["node1"],
@@ -550,14 +556,14 @@ def test_update_permission_grant_read_logs_on_nodes_2():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
+                    {"repo_id": REPO_1, "read": True, "readable_nodes": ["node1"]},
                 ],
             },
         },
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "readable_nodes": []},
+                    {"repo_id": REPO_1, "read": True, "readable_nodes": []},
                 ],
             },
         },
@@ -568,7 +574,7 @@ def test_update_permission_grant_read_logs_on_nodes_2():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": True,
                         "write": False,
                         "readable_nodes": [],
@@ -589,14 +595,14 @@ def test_update_permission_grant_read_logs_on_nodes_3():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "readable_nodes": ["node1"]},
+                    {"repo_id": REPO_1, "read": True, "readable_nodes": ["node1"]},
                 ],
             },
         },
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "write": True},
+                    {"repo_id": REPO_1, "write": True},
                 ],
             },
         },
@@ -607,7 +613,7 @@ def test_update_permission_grant_read_logs_on_nodes_3():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": True,
                         "write": True,
                         "readable_nodes": ["node1"],
@@ -628,14 +634,14 @@ def test_update_permissions_add_repo():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True},
+                    {"repo_id": REPO_1, "read": True, "write": True},
                 ],
             },
         },
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo2", "read": True, "write": True},
+                    {"repo_id": REPO_2, "read": True, "write": True},
                 ],
             },
         },
@@ -646,13 +652,13 @@ def test_update_permissions_add_repo():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo1",
+                        "repo_id": REPO_1,
                         "read": True,
                         "write": True,
                         "readable_nodes": [],
                     },
                     {
-                        "repo_id": "repo2",
+                        "repo_id": REPO_2,
                         "read": True,
                         "write": True,
                         "readable_nodes": [],
@@ -673,15 +679,15 @@ def test_update_permissions_drop_repo():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": True},
-                    {"repo_id": "repo2", "read": True, "write": True},
+                    {"repo_id": REPO_1, "read": True, "write": True},
+                    {"repo_id": REPO_2, "read": True, "write": True},
                 ],
             },
         },
         {
             "logs": {
                 "repos": [
-                    {"repo_id": "repo1", "read": False, "write": False},
+                    {"repo_id": REPO_1, "read": False, "write": False},
                 ],
             },
         },
@@ -692,7 +698,7 @@ def test_update_permissions_drop_repo():
                 "write": False,
                 "repos": [
                     {
-                        "repo_id": "repo2",
+                        "repo_id": REPO_2,
                         "read": True,
                         "write": True,
                         "readable_nodes": [],
@@ -735,10 +741,10 @@ def test_get_applicable_permissions_partial_rights():
                 "read": False,
                 "write": False,
                 "repos": [
-                    {"repo_id": "repo1", "read": True, "write": False},
-                    {"repo_id": "repo2", "read": False, "write": True},
+                    {"repo_id": REPO_1, "read": True, "write": False},
+                    {"repo_id": REPO_2, "read": False, "write": True},
                     {
-                        "repo_id": "repo3",
+                        "repo_id": REPO_3,
                         "read": True,
                         "write": False,
                         "readable_nodes": ["node1"],
@@ -789,7 +795,7 @@ def test_get_applicable_permissions_no_rights():
 
 
 def test_authorize_access():
-    assertion = can_read_logs("repo1")
+    assertion = can_read_logs(REPO_1)
 
     # OK case
     authorize_access(Permissions(is_superadmin=True), assertion)

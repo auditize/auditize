@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable
+from uuid import UUID
 
 from auditize.permissions.models import Permissions
 
@@ -24,7 +25,7 @@ PermissionAssertion = Callable[[Permissions], bool]
 @dataclass
 class LogPermissionAssertion:
     permission_type: str  # "read" or "write"
-    repo_id: str = None
+    repo_id: UUID = None
 
     def __call__(self, perms: Permissions) -> bool:
         if perms.is_superadmin:
@@ -55,11 +56,11 @@ class LogPermissionAssertion:
         )  # pragma: no cover, cannot happen
 
 
-def can_read_logs(repo_id: str = None) -> PermissionAssertion:
+def can_read_logs(repo_id: UUID = None) -> PermissionAssertion:
     return LogPermissionAssertion(permission_type="read", repo_id=repo_id)
 
 
-def can_write_logs(repo_id: str = None) -> PermissionAssertion:
+def can_write_logs(repo_id: UUID = None) -> PermissionAssertion:
     return LogPermissionAssertion(permission_type="write", repo_id=repo_id)
 
 
