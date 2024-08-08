@@ -6,7 +6,6 @@ import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogDatabase
 from auditize.logs.models import CustomField, Log
 from auditize.logs.service import (
     apply_log_retention_period,
@@ -42,7 +41,7 @@ def make_log_data(**extra) -> Log:
 async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data()
     log_id = await save_log(dbm, repo.id, log)
-    db_log = await repo.db.logs.find_one({"_id": uuid.UUID(log_id)})
+    db_log = await repo.db.logs.find_one({"_id": log_id})
     assert list(db_log.keys()) == [
         "_id",
         "action",

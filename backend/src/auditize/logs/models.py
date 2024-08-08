@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from auditize.resource.models import HasId
+from auditize.resource.models import HasUuid
 
 
 class CustomField(BaseModel):
@@ -11,7 +11,7 @@ class CustomField(BaseModel):
     value: str
 
 
-class Log(BaseModel, HasId):
+class Log(BaseModel, HasUuid):
     class Action(BaseModel):
         type: str
         category: str
@@ -57,7 +57,7 @@ class Log(BaseModel, HasId):
     node_path: list[Node] = Field(default_factory=list)
 
 
-class Node(BaseModel, HasId):
+class Node(BaseModel, HasUuid):
     ref: str
     name: str
     parent_node_ref: str | None

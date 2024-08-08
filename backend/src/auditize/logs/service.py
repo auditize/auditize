@@ -1,11 +1,11 @@
 import csv
 import re
-import uuid
 from datetime import timedelta
 from functools import partial
 from io import StringIO
 from itertools import count
 from typing import Any, AsyncGenerator
+from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
@@ -152,7 +152,7 @@ async def _check_log(db: LogDatabase, log: Log):
         parent_node_ref = node.ref
 
 
-async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
+async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> UUID:
     db = await get_log_db_for_writing(dbm, repo_id)
 
     await _check_log(db, log)
@@ -160,13 +160,13 @@ async def save_log(dbm: DatabaseManager, repo_id: str, log: Log) -> str:
 
     await _consolidate_log(db, log)
 
-    return log_id
+    return UUID(log_id)
 
 
 async def save_log_attachment(
     dbm: DatabaseManager,
     repo_id: str,
-    log_id: str,
+    log_id: UUID,
     *,
     name: str,
     type: str,
@@ -185,10 +185,10 @@ async def save_log_attachment(
 
 
 async def get_log(
-    dbm: DatabaseManager, repo_id: str, log_id: str, authorized_nodes: set[str]
+    dbm: DatabaseManager, repo_id: str, log_id: UUID, authorized_nodes: set[str]
 ) -> Log:
     db = await get_log_db_for_reading(dbm, repo_id)
-    filter = {"_id": uuid.UUID(log_id)}
+    filter = {"_id": log_id}
     if authorized_nodes:
         filter["node_path.ref"] = {"$in": list(authorized_nodes)}
     document = await get_resource_document(
@@ -200,7 +200,7 @@ async def get_log(
 
 
 async def get_log_attachment(
-    dbm: DatabaseManager, repo_id: str, log_id: str, attachment_idx: int
+    dbm: DatabaseManager, repo_id: str, log_id: UUID, attachment_idx: int
 ) -> Log.Attachment:
     db = await get_log_db_for_reading(dbm, repo_id)
     doc = await get_resource_document(

@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, Path, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
@@ -376,7 +377,8 @@ async def add_attachment(
     authenticated: AuthorizedOnLogsWrite(),
     repo_id: str,
     log_id: Annotated[
-        str, Path(title="Log ID", description="The ID of the log to attach the file to")
+        UUID,
+        Path(title="Log ID", description="The ID of the log to attach the file to"),
     ],
     file: UploadFile,
     type: Annotated[
@@ -490,7 +492,7 @@ async def get_log(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
-    log_id: Annotated[str, Path(title="Log ID")],
+    log_id: Annotated[UUID, Path(title="Log ID")],
 ) -> LogReadingResponse:
     log = await service.get_log(
         dbm,
@@ -527,7 +529,7 @@ async def get_log_attachment(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
     repo_id: str,
-    log_id: str = Path(title="Log ID"),
+    log_id: UUID = Path(title="Log ID"),
     attachment_idx: int = Path(
         title="Attachment index",
         description="The index of the attachment in the log's attachments list (starts from 0)",
