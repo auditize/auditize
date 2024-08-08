@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
@@ -31,12 +31,12 @@ async def create_log_filter(dbm: DatabaseManager, log_filter: LogFilter) -> str:
     return await create_resource_document(dbm.core_db.log_filters, log_filter)
 
 
-def _log_filter_discriminator(user_id: str, log_filter_id) -> dict:
-    return {"_id": uuid.UUID(log_filter_id), "user_id": user_id}
+def _log_filter_discriminator(user_id: UUID, log_filter_id) -> dict:
+    return {"_id": UUID(log_filter_id), "user_id": user_id}
 
 
 async def update_log_filter(
-    dbm: DatabaseManager, user_id: str, log_filter_id: str, update: LogFilterUpdate
+    dbm: DatabaseManager, user_id: UUID, log_filter_id: str, update: LogFilterUpdate
 ):
     await _validate_log_filter(dbm, update)
     await update_resource_document(
@@ -47,7 +47,7 @@ async def update_log_filter(
 
 
 async def get_log_filter(
-    dbm: DatabaseManager, user_id: str, log_filter_id: str
+    dbm: DatabaseManager, user_id: UUID, log_filter_id: str
 ) -> LogFilter:
     result = await get_resource_document(
         dbm.core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
@@ -56,7 +56,7 @@ async def get_log_filter(
 
 
 async def get_log_filters(
-    dbm: DatabaseManager, user_id: str, query: str, page: int, page_size: int
+    dbm: DatabaseManager, user_id: UUID, query: str, page: int, page_size: int
 ) -> tuple[list[LogFilter], PagePaginationInfo]:
     doc_filter = {"user_id": user_id}
     if query:
@@ -71,7 +71,7 @@ async def get_log_filters(
     return [LogFilter.model_validate(result) async for result in results], page_info
 
 
-async def delete_log_filter(dbm: DatabaseManager, user_id: str, log_filter_id: str):
+async def delete_log_filter(dbm: DatabaseManager, user_id: UUID, log_filter_id: str):
     await delete_resource_document(
         dbm.core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
     )

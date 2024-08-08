@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from auditize.permissions.models import Permissions
-from auditize.resource.models import HasCreatedAt, HasId
+from auditize.resource.models import HasCreatedAt, HasUuid
 
 
 class PasswordResetToken(BaseModel):
@@ -18,7 +18,7 @@ class Lang(str, Enum):
     FR = "fr"
 
 
-class User(BaseModel, HasId, HasCreatedAt):
+class User(BaseModel, HasUuid, HasCreatedAt):
     first_name: str
     last_name: str
     email: str

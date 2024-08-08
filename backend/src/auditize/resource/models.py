@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Annotated, Optional
+from uuid import UUID
 
 from pydantic import BeforeValidator, Field
 
@@ -9,6 +10,10 @@ class HasId:
         default=None,
         alias="_id",
     )
+
+
+class HasUuid:
+    id: Optional[UUID] = Field(default=None, alias="_id")
 
 
 class HasCreatedAt:

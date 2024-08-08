@@ -1,6 +1,6 @@
 import secrets
-import uuid
 from datetime import timedelta
+from uuid import UUID
 
 import bcrypt
 
@@ -55,14 +55,16 @@ def build_document_from_user(user: User) -> dict:
     }
 
 
-async def save_user(dbm: DatabaseManager, user: User) -> str:
+async def save_user(dbm: DatabaseManager, user: User) -> UUID:
     await ensure_repos_in_permissions_exist(dbm, user.permissions)
-    return await create_resource_document(
-        dbm.core_db.users, build_document_from_user(user)
+    return UUID(
+        await create_resource_document(
+            dbm.core_db.users, build_document_from_user(user)
+        )
     )
 
 
-async def create_user(dbm: DatabaseManager, user: User) -> str:
+async def create_user(dbm: DatabaseManager, user: User) -> UUID:
     user = user.model_copy()
     user.password_reset_token = _generate_password_reset_token()
     user_id = await save_user(dbm, user)
@@ -70,7 +72,7 @@ async def create_user(dbm: DatabaseManager, user: User) -> str:
     return user_id
 
 
-async def update_user(dbm: DatabaseManager, user_id: str, update: UserUpdate):
+async def update_user(dbm: DatabaseManager, user_id: UUID, update: UserUpdate):
     doc_update = update.model_dump(
         exclude_unset=True, exclude={"permissions", "password"}
     )
@@ -85,13 +87,13 @@ async def update_user(dbm: DatabaseManager, user_id: str, update: UserUpdate):
     await update_resource_document(dbm.core_db.users, user_id, doc_update)
 
 
-async def _get_user(dbm: DatabaseManager, filter: dict) -> User:
+async def _get_user(dbm: DatabaseManager, filter: UUID | dict) -> User:
     result = await get_resource_document(dbm.core_db.users, filter)
     return User.model_validate(result)
 
 
-async def get_user(dbm: DatabaseManager, user_id: str) -> User:
-    return await _get_user(dbm, {"_id": uuid.UUID(user_id)})
+async def get_user(dbm: DatabaseManager, user_id: UUID) -> User:
+    return await _get_user(dbm, user_id)
 
 
 async def get_user_by_email(dbm: DatabaseManager, email: str) -> User:
@@ -153,11 +155,11 @@ async def get_users(
     return [User.model_validate(result) async for result in results], page_info
 
 
-async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: str):
+async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: UUID):
     user = await get_user(dbm, user_id)
     if user.permissions.is_superadmin:
         other_superadmin = await dbm.core_db.users.find_one(
-            {"_id": {"$ne": uuid.UUID(user_id)}, "permissions.is_superadmin": True}
+            {"_id": {"$ne": user_id}, "permissions.is_superadmin": True}
         )
         if not other_superadmin:
             raise ConstraintViolation(
@@ -165,7 +167,7 @@ async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: str):
             )
 
 
-async def delete_user(dbm: DatabaseManager, user_id: str):
+async def delete_user(dbm: DatabaseManager, user_id: UUID):
     await _forbid_last_superadmin_deletion(dbm, user_id)
     await delete_resource_document(dbm.core_db.users, user_id)
 

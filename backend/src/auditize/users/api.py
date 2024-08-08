@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path
 
@@ -28,8 +29,8 @@ from auditize.users.models import User, UserUpdate
 router = APIRouter(responses=error_responses(401, 403))
 
 
-def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: str):
-    if authenticated.user and str(authenticated.user.id) == user_id:
+def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: UUID):
+    if authenticated.user and authenticated.user.id == user_id:
         raise PermissionDenied("Cannot alter own user")
 
 
@@ -80,7 +81,7 @@ async def update_user_me(
 async def update_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_users()),
-    user_id: str,
+    user_id: UUID,
     user: UserUpdateRequest,
 ):
     _ensure_cannot_alter_own_user(authenticated, user_id)
@@ -144,7 +145,7 @@ async def list_users(
 async def delete_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_users()),
-    user_id: str,
+    user_id: UUID,
 ):
     _ensure_cannot_alter_own_user(authenticated, user_id)
     await service.delete_user(dbm, user_id)

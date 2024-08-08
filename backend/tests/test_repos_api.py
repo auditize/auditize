@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 import callee
 import pytest
@@ -928,7 +929,7 @@ async def test_repo_delete_with_related_resources(
     )
     await assert_collection(
         dbm.core_db.log_filters,
-        [log_filter.expected_document({"user_id": superadmin.id})],
+        [log_filter.expected_document({"user_id": UUID(superadmin.id)})],
     )
 
 

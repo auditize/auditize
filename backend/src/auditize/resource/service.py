@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID, uuid4
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import BaseModel
@@ -7,9 +7,11 @@ from pymongo.errors import DuplicateKeyError
 from auditize.exceptions import ConstraintViolation, UnknownModelException
 
 
-def _normalize_filter(filter: str | dict) -> dict:
+def _normalize_filter(filter: str | UUID | dict) -> dict:
+    if isinstance(filter, UUID):
+        return {"_id": filter}
     if isinstance(filter, str):
-        return {"_id": uuid.UUID(filter)}
+        return {"_id": UUID(filter)}
     return filter
 
 
@@ -17,12 +19,12 @@ async def create_resource_document(
     collection: AsyncIOMotorCollection,
     document: dict | BaseModel,
     *,
-    resource_id: uuid.UUID = None,
+    resource_id: UUID = None,
 ) -> str:
     if isinstance(document, BaseModel):
         document = document.model_dump(exclude={"id"})
     if not resource_id:
-        resource_id = uuid.uuid4()
+        resource_id = uuid4()
 
     try:
         result = await collection.insert_one({**document, "_id": resource_id})
@@ -34,7 +36,7 @@ async def create_resource_document(
 
 async def update_resource_document(
     collection: AsyncIOMotorCollection,
-    filter: str | dict,
+    filter: str | UUID | dict,
     update: dict | BaseModel,
     *,
     operator="$set",
@@ -54,7 +56,9 @@ async def update_resource_document(
 
 
 async def get_resource_document(
-    collection: AsyncIOMotorCollection, filter: str | dict, projection: dict = None
+    collection: AsyncIOMotorCollection,
+    filter: str | UUID | dict,
+    projection: dict = None,
 ):
     result = await collection.find_one(_normalize_filter(filter), projection=projection)
     if not result:
@@ -63,7 +67,7 @@ async def get_resource_document(
 
 
 async def has_resource_document(
-    collection: AsyncIOMotorCollection, filter: str | dict
+    collection: AsyncIOMotorCollection, filter: str | UUID | dict
 ) -> bool:
     try:
         await get_resource_document(collection, filter, projection={"_id": 1})
@@ -73,7 +77,7 @@ async def has_resource_document(
 
 
 async def delete_resource_document(
-    collection: AsyncIOMotorCollection, filter: str | dict
+    collection: AsyncIOMotorCollection, filter: str | UUID | dict
 ):
     result = await collection.delete_one(_normalize_filter(filter))
     if result.deleted_count == 0:

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr, Field
 
 from auditize.permissions.api_models import (
@@ -88,11 +90,11 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserCreationResponse(BaseModel):
-    id: str = _UserIdField()
+    id: UUID = _UserIdField()
 
 
 class UserReadingResponse(BaseModel):
-    id: str = _UserIdField()
+    id: UUID = _UserIdField()
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
@@ -124,7 +126,7 @@ class UserAuthenticationRequest(BaseModel):
 
 
 class UserMeResponse(BaseModel):
-    id: str = _UserIdField()
+    id: UUID = _UserIdField()
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
