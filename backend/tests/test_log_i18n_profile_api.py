@@ -5,7 +5,7 @@ from auditize.database import DatabaseManager
 from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
-from helpers.logi18nprofiles import PreparedLogI18nProfile
+from helpers.log_i18n_profile import PreparedLogI18nProfile
 from helpers.logs import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 

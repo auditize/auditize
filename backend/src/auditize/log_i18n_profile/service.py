@@ -2,7 +2,7 @@ from uuid import UUID
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import ConstraintViolation
-from auditize.logi18nprofiles.models import (
+from auditize.log_i18n_profile.models import (
     LogI18nProfile,
     LogI18nProfileUpdate,
     LogTranslation,

@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends
 from auditize.auth.authorizer import Authorized
 from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
-from auditize.logi18nprofiles import service
-from auditize.logi18nprofiles.api_models import (
+from auditize.log_i18n_profile import service
+from auditize.log_i18n_profile.api_models import (
     LogI18nProfileCreationRequest,
     LogI18nProfileCreationResponse,
     LogI18nProfileListResponse,
@@ -15,7 +15,7 @@ from auditize.logi18nprofiles.api_models import (
     LogI18nProfileUpdateRequest,
     LogTranslation,
 )
-from auditize.logi18nprofiles.models import LogI18nProfile, LogI18nProfileUpdate
+from auditize.log_i18n_profile.models import LogI18nProfile, LogI18nProfileUpdate
 from auditize.permissions.assertions import (
     can_read_repos,
     can_write_repos,

@@ -39,7 +39,7 @@ from helpers.database import (
     teardown_test_dbm,
 )
 from helpers.http import HttpTestHelper
-from helpers.logi18nprofiles import PreparedLogI18nProfile
+from helpers.log_i18n_profile import PreparedLogI18nProfile
 from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 

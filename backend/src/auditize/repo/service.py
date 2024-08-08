@@ -3,8 +3,8 @@ from uuid import UUID, uuid4
 
 from auditize.database import DatabaseManager
 from auditize.exceptions import UnknownModelException, ValidationError
-from auditize.logi18nprofiles.models import LogTranslation
-from auditize.logi18nprofiles.service import (
+from auditize.log_i18n_profile.models import LogTranslation
+from auditize.log_i18n_profile.service import (
     does_log_i18n_profile_exist,
     get_log_i18n_profile_translation,
 )

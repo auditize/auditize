@@ -14,7 +14,7 @@ from auditize.auth.authorizer import (
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
-from auditize.logi18nprofiles.api_models import LogTranslation
+from auditize.log_i18n_profile.api_models import LogTranslation
 from auditize.permissions.assertions import (
     can_read_logs,
     can_read_repos,
