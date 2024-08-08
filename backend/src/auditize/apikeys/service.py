@@ -91,5 +91,5 @@ async def delete_apikey(dbm: DatabaseManager, apikey_id: UUID):
     await delete_resource_document(dbm.core_db.apikeys, apikey_id)
 
 
-async def remove_repo_from_apikeys_permissions(dbm: DatabaseManager, repo_id: str):
+async def remove_repo_from_apikeys_permissions(dbm: DatabaseManager, repo_id: UUID):
     await remove_repo_from_permissions(dbm.core_db.apikeys, repo_id)

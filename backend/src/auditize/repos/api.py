@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
@@ -93,7 +94,7 @@ async def create_repo(
 async def update_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_repos()),
-    repo_id: str,
+    repo_id: UUID,
     update: RepoUpdateRequest,
 ):
     await service.update_repo(
@@ -121,7 +122,7 @@ async def _handle_repo_include_options(
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_read_repos()),
-    repo_id: str,
+    repo_id: UUID,
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
 ) -> RepoReadingResponse:
     repo = await service.get_repo(dbm, repo_id)
@@ -139,7 +140,7 @@ async def get_repo(
 async def get_repo_translation_for_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
 ) -> LogTranslation:
     authenticated.ensure_user()
     translation = await service.get_repo_translation(
@@ -157,7 +158,7 @@ async def get_repo_translation_for_user(
 async def get_repo_translation(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: AuthorizedOnLogsRead(),
-    repo_id: str,
+    repo_id: UUID,
     lang: Lang,
 ) -> LogTranslation:
     translation = await service.get_repo_translation(dbm, repo_id, lang)
@@ -228,14 +229,14 @@ async def list_user_repos(
         repo_response.permissions = RepoLogPermissionsData(
             read=(
                 repo.status in (RepoStatus.enabled, RepoStatus.readonly)
-                and authenticated.comply(can_read_logs(repo_response.id))
+                and authenticated.comply(can_read_logs(str(repo_response.id)))
             ),
             write=(
                 repo.status == RepoStatus.enabled
-                and authenticated.comply(can_write_logs(repo_response.id))
+                and authenticated.comply(can_write_logs(str(repo_response.id)))
             ),
             readable_nodes=authenticated.permissions.logs.get_repo_readable_nodes(
-                repo_response.id
+                str(repo_response.id)
             ),
         )
 
@@ -252,6 +253,6 @@ async def list_user_repos(
 async def delete_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authenticated: Authorized(can_write_repos()),
-    repo_id: str,
+    repo_id: UUID,
 ):
     await service.delete_repo(dbm, repo_id)

@@ -43,11 +43,13 @@ class PreparedLogFilter:
         }
 
     def expected_document(self, extra=None):
+        repo_id = (
+            extra["repo_id"] if extra and "repo_id" in extra else self.data["repo_id"]
+        )
         return {
             "_id": uuid.UUID(self.id),
             "name": self.data["name"],
             "created_at": callee.IsA(datetime),
-            "repo_id": self.data["repo_id"],
             "search_params": {
                 **DEFAULT_SEARCH_PARAMETERS,
                 **self.data["search_params"],
@@ -64,6 +66,7 @@ class PreparedLogFilter:
             },
             "columns": self.data["columns"],
             **(extra or {}),
+            "repo_id": uuid.UUID(repo_id),
         }
 
     def expected_api_response(self, extra=None) -> dict:

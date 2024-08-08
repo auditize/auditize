@@ -59,17 +59,17 @@ async def create_repo(
     return repo_id
 
 
-async def update_repo(dbm: DatabaseManager, repo_id: str, update: RepoUpdate):
+async def update_repo(dbm: DatabaseManager, repo_id: UUID, update: RepoUpdate):
     await _validate_repo(dbm, update)
     await update_resource_document(dbm.core_db.repos, repo_id, update)
 
 
-async def get_repo(dbm: DatabaseManager, repo_id: str) -> Repo:
+async def get_repo(dbm: DatabaseManager, repo_id: UUID) -> Repo:
     result = await get_resource_document(dbm.core_db.repos, repo_id)
     return Repo.model_validate(result)
 
 
-async def get_repo_stats(dbm: DatabaseManager, repo_id: str) -> RepoStats:
+async def get_repo_stats(dbm: DatabaseManager, repo_id: UUID) -> RepoStats:
     logs_db = await get_log_db_for_config(dbm, repo_id)
     results = await logs_db.logs.aggregate(
         [
@@ -182,7 +182,7 @@ async def get_user_repos(
     return await _get_repos(dbm, filter, page, page_size)
 
 
-async def delete_repo(dbm: DatabaseManager, repo_id: str):
+async def delete_repo(dbm: DatabaseManager, repo_id: UUID):
     # avoid circular imports
     from auditize.apikeys.service import remove_repo_from_apikeys_permissions
     from auditize.logfilters.service import delete_log_filters_with_repo
@@ -205,7 +205,7 @@ async def is_log_i18n_profile_used_by_repo(
 
 
 async def get_repo_translation(
-    dbm: DatabaseManager, repo_id: str, lang: Lang
+    dbm: DatabaseManager, repo_id: UUID, lang: Lang
 ) -> LogTranslation:
     repo = await get_repo(dbm, repo_id)
     if not repo.log_i18n_profile_id:
@@ -223,10 +223,10 @@ async def ensure_repos_in_permissions_exist(
 ):
     for repo_id in permissions.logs.get_repos():
         try:
-            await get_repo(dbm, repo_id)
+            await get_repo(dbm, UUID(repo_id))
         except UnknownModelException:
             raise ValidationError(
-                f"Repo {repo_id!r} cannot be assigned in log permissions as it does not exist"
+                f"Repo {repo_id} cannot be assigned in log permissions as it does not exist"
             )
 
 

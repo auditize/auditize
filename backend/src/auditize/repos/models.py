@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from auditize.resource.models import HasCreatedAt, HasId
+from auditize.resource.models import HasCreatedAt, HasUuid
 
 
 class RepoStatus(str, Enum):
@@ -14,7 +14,7 @@ class RepoStatus(str, Enum):
     disabled = "disabled"
 
 
-class Repo(BaseModel, HasId, HasCreatedAt):
+class Repo(BaseModel, HasUuid, HasCreatedAt):
     name: str
     log_db_name: str = Field(default=None)
     status: RepoStatus = Field(default=RepoStatus.enabled)

@@ -15,7 +15,7 @@ class LogFilterSearchParams(BaseLogSearchParams):
 
 class LogFilter(BaseModel, HasUuid, HasCreatedAt):
     name: str
-    repo_id: str
+    repo_id: UUID
     user_id: UUID
     search_params: LogFilterSearchParams
     columns: list[str]
@@ -23,6 +23,6 @@ class LogFilter(BaseModel, HasUuid, HasCreatedAt):
 
 class LogFilterUpdate(BaseModel):
     name: str = Field(default=None)
-    repo_id: str = Field(default=None)
+    repo_id: UUID = Field(default=None)
     search_params: LogFilterSearchParams = Field(default=None)
     columns: list[str] = Field(default=None)

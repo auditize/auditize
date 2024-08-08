@@ -65,7 +65,7 @@ class RepoUpdateRequest(BaseModel):
 
 
 class RepoCreationResponse(BaseModel):
-    id: str = _RepoIdField()
+    id: UUID = _RepoIdField()
 
 
 class RepoStatsData(BaseModel, HasDatetimeSerialization):
@@ -99,7 +99,7 @@ class RepoLogPermissionsData(BaseModel):
 
 
 class _BaseRepoReadingResponse(BaseModel):
-    id: str = _RepoIdField()
+    id: UUID = _RepoIdField()
     name: str = _RepoNameField()
 
 

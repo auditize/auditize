@@ -172,7 +172,7 @@ async def delete_user(dbm: DatabaseManager, user_id: UUID):
     await delete_resource_document(dbm.core_db.users, user_id)
 
 
-async def remove_repo_from_users_permissions(dbm: DatabaseManager, repo_id: str):
+async def remove_repo_from_users_permissions(dbm: DatabaseManager, repo_id: UUID):
     await remove_repo_from_permissions(dbm.core_db.users, repo_id)
 
 
