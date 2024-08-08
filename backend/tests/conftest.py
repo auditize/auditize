@@ -28,10 +28,10 @@ os.environ.update(
 )
 
 from auditize.database import DatabaseManager
-from auditize.logs.db import LogDatabase
+from auditize.log.db import LogDatabase
 
 pytest.register_assert_rewrite("helpers")
-from helpers.apikeys import PreparedApikey
+from helpers.apikey import PreparedApikey
 from helpers.database import (
     TestLogDatabasePool,
     cleanup_db,
@@ -39,9 +39,9 @@ from helpers.database import (
     teardown_test_dbm,
 )
 from helpers.http import HttpTestHelper
-from helpers.logi18nprofiles import PreparedLogI18nProfile
-from helpers.repos import PreparedRepo
-from helpers.users import PreparedUser
+from helpers.log_i18n_profile import PreparedLogI18nProfile
+from helpers.repo import PreparedRepo
+from helpers.user import PreparedUser
 
 
 @pytest.fixture(scope="session")

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from starlette.responses import Response
 
-from auditize.apikeys.api_models import AccessTokenRequest, AccessTokenResponse
+from auditize.apikey.api_models import AccessTokenRequest, AccessTokenResponse
 from auditize.auth.authorizer import Authenticated, get_authenticated
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
@@ -12,8 +12,8 @@ from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import authorize_grant
-from auditize.users import service
-from auditize.users.api_models import UserAuthenticationRequest, UserMeResponse
+from auditize.user import service
+from auditize.user.api_models import UserAuthenticationRequest, UserMeResponse
 
 router = APIRouter()
 

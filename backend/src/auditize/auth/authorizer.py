@@ -5,8 +5,8 @@ from uuid import UUID
 from fastapi import Depends
 from starlette.requests import Request
 
-from auditize.apikeys.models import Apikey
-from auditize.apikeys.service import get_apikey, get_apikey_by_key
+from auditize.apikey.models import Apikey
+from auditize.apikey.service import get_apikey, get_apikey_by_key
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX, APIKEY_SECRET_PREFIX
 from auditize.auth.jwt import get_access_token_data, get_user_email_from_session_token
 from auditize.database import DatabaseManager, get_dbm
@@ -22,8 +22,8 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import authorize_grant
-from auditize.users.models import User
-from auditize.users.service import get_user_by_email
+from auditize.user.models import User
+from auditize.user.service import get_user_by_email
 
 _BEARER_PREFIX = "Bearer "
 

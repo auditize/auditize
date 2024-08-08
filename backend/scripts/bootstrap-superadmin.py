@@ -7,8 +7,8 @@ import sys
 from auditize.database import get_dbm
 from auditize.exceptions import UnknownModelException
 from auditize.permissions.models import Permissions
-from auditize.users.models import User
-from auditize.users.service import get_user_by_email, hash_user_password, save_user
+from auditize.user.models import User
+from auditize.user.service import get_user_by_email, hash_user_password, save_user
 
 
 def get_password() -> str:

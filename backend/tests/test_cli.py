@@ -5,7 +5,7 @@ import pytest
 from auditize.__main__ import main
 from auditize.database import DatabaseManager
 from helpers.http import HttpTestHelper
-from helpers.users import PreparedUser
+from helpers.user import PreparedUser
 
 pytestmark = pytest.mark.anyio
 
