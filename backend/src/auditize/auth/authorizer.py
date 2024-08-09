@@ -198,9 +198,9 @@ def AuthorizedApikey(assertion: PermissionAssertion = None) -> Type[Authenticate
     return Annotated[Authenticated, Depends(_AuthorizedApikey(assertion))]
 
 
-def AuthorizedOnLogsRead() -> Type[Authenticated]:  # noqa
+def AuthorizedForLogRead() -> Type[Authenticated]:  # noqa
     return Annotated[Authenticated, Depends(_authorized_on_logs(can_read_logs))]
 
 
-def AuthorizedOnLogsWrite() -> Type[Authenticated]:  # noqa
+def AuthorizedForLogWrite() -> Type[Authenticated]:  # noqa
     return Annotated[Authenticated, Depends(_authorized_on_logs(can_write_logs))]

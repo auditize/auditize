@@ -8,7 +8,7 @@ from auditize.apikey.service import update_apikey
 from auditize.auth.authorizer import (
     Authenticated,
     Authorized,
-    AuthorizedOnLogsRead,
+    AuthorizedForLogRead,
     AuthorizedUser,
     get_authenticated,
 )
@@ -157,7 +157,7 @@ async def get_repo_translation_for_user(
 )
 async def get_repo_translation(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: AuthorizedOnLogsRead(),
+    authenticated: AuthorizedForLogRead(),
     repo_id: UUID,
     lang: Lang,
 ) -> LogTranslation:
