@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import pytest
@@ -38,3 +39,9 @@ async def test_purge_expired_logs(dbm: DatabaseManager):
     with patch("auditize.__main__.apply_log_retention_period") as mock:
         await main(["purge-expired-logs"])
         mock.assert_called_once()
+
+
+async def test_config(capsys):
+    await main(["config"])
+    # simply check that the output is valid JSON
+    json.loads(capsys.readouterr().out)

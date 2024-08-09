@@ -1,8 +1,10 @@
 import argparse
 import asyncio
 import getpass
+import json
 import sys
 
+from auditize.config import Config
 from auditize.database import get_dbm
 from auditize.exceptions import ConstraintViolation
 from auditize.log.service import apply_log_retention_period
@@ -66,6 +68,11 @@ async def purge_expired_logs():
     await apply_log_retention_period(get_dbm())
 
 
+async def dump_config():
+    config = Config.load_from_env()
+    print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
+
+
 async def main(args):
     parser = argparse.ArgumentParser()
     sub_parsers = parser.add_subparsers(required=True)
@@ -92,6 +99,10 @@ async def main(args):
     # CMD purge-expired
     purge_expired_logs_parser = sub_parsers.add_parser("purge-expired-logs")
     purge_expired_logs_parser.set_defaults(func=lambda _: purge_expired_logs())
+
+    # CMD config
+    config_parser = sub_parsers.add_parser("config")
+    config_parser.set_defaults(func=lambda _: dump_config())
 
     parsed_args = parser.parse_args(args)
     await parsed_args.func(parsed_args)
