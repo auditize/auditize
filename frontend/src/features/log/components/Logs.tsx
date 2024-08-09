@@ -3,7 +3,7 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import Message from "@/components/Message";
-import { useLogRepoListQuery } from "@/features/repos";
+import { useLogRepoListQuery } from "@/features/repo";
 
 import { LogSearchParams } from "../LogSearchParams";
 import { LogNavigation } from "./LogNavigation";

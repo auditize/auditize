@@ -15,7 +15,7 @@ import {
   ResourceCreation,
   ResourceEdition,
 } from "@/components/ResourceManagement";
-import { getAllLogI18nProfiles } from "@/features/logi18nprofiles";
+import { getAllLogI18nProfiles } from "@/features/log-i18n-profile";
 
 import { createRepo, getRepo, RepoStatus, updateRepo } from "../api";
 

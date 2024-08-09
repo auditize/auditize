@@ -10,8 +10,8 @@ import {
   normalizeFilterColumnsForApi,
   unnormalizeFilterColumnsFromApi,
   useLogFilterMutation,
-} from "@/features/logfilters";
-import { useLogRepoListQuery } from "@/features/repos";
+} from "@/features/log-filter";
+import { useLogRepoListQuery } from "@/features/repo";
 import { addQueryParamToLocation } from "@/utils/router";
 
 import { LogSearchParams } from "../LogSearchParams";

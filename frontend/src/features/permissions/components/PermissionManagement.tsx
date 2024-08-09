@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import { Section } from "@/components/Section";
 import { useAuthenticatedUser } from "@/features/auth";
-import { MultiNodeSelectorPicker } from "@/features/logs";
-import { getAllMyRepos } from "@/features/repos";
+import { MultiNodeSelectorPicker } from "@/features/log";
+import { getAllMyRepos } from "@/features/repo";
 
 import {
   ApplicablePermissions,

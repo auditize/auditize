@@ -8,7 +8,7 @@ import rsuiteCss from "rsuite/dist/rsuite-no-reset.min.css?inline";
 
 import { theme } from "@/theme";
 
-import { LogNavigationStateProvider, Logs } from "./features/logs";
+import { LogNavigationStateProvider, Logs } from "./features/log";
 import { I18nProvider } from "./i18n";
 import layersCss from "./layers.css?inline";
 import { enableAccessTokenAuthentication, setBaseURL } from "./utils/axios";

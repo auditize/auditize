@@ -38,8 +38,8 @@ import {
   LogFilterDrawer,
   normalizeFilterColumnsForApi,
   useLogFilterMutation,
-} from "@/features/logfilters";
-import { useLogRepoListQuery } from "@/features/repos";
+} from "@/features/log-filter";
+import { useLogRepoListQuery } from "@/features/repo";
 import { titlize } from "@/utils/format";
 import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
 import { iconSize } from "@/utils/ui";

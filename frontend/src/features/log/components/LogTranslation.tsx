@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getRepoTranslation } from "@/features/repos";
+import { getRepoTranslation } from "@/features/repo";
 import { useI18nContext } from "@/i18n";
 import { titlize } from "@/utils/format";
 

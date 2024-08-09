@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuthenticatedUser } from "../auth";
-import { getAllMyRepos } from "../repos";
+import { getAllMyRepos } from "../repo";
 import { Permissions } from "./types";
 
 export function usePermissionsNormalizer() {

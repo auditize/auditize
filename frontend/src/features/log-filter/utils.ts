@@ -3,7 +3,7 @@ import {
   snakeCaseToCamelCaseString,
 } from "@/utils/switchCase";
 
-import { sortFields } from "../logs/components/LogTable";
+import { sortFields } from "../log/components/LogTable";
 
 export function normalizeFilterColumnsForApi(columns: string[]): string[] {
   return columns

@@ -34,18 +34,18 @@ import {
   useAuthenticatedUser,
   useCurrentUser,
 } from "@/features/auth";
-import { LogNavigationStateProvider, Logs } from "@/features/logs";
+import { LogNavigationStateProvider, Logs } from "@/features/log";
 import { AccountSetup, PasswordReset } from "@/features/password-setup";
-import { RepoManagement } from "@/features/repos";
-import { UsersManagement } from "@/features/users";
+import { RepoManagement } from "@/features/repo";
+import { UsersManagement } from "@/features/user";
 import { theme } from "@/theme";
 
 import { ModalTitle } from "./components/ModalTitle";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
-import { ApikeysManagement } from "./features/apikeys";
+import { ApikeysManagement } from "./features/apikey";
 import { logOut } from "./features/auth";
-import { LogI18nProfileManagement } from "./features/logi18nprofiles";
-import { UserSettings } from "./features/users";
+import { LogI18nProfileManagement } from "./features/log-i18n-profile";
+import { UserSettings } from "./features/user";
 import { I18nProvider } from "./i18n";
 import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
