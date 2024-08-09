@@ -32,3 +32,9 @@ async def test_not_empty_db(dbm: DatabaseManager, user: PreparedUser):
     assert await dbm.core_db.users.count_documents({}) == 1
     await main(["bootstrap-default-superadmin"])
     assert await dbm.core_db.users.count_documents({}) == 1
+
+
+async def test_purge_expired_logs(dbm: DatabaseManager):
+    with patch("auditize.__main__.apply_log_retention_period") as mock:
+        await main(["purge-expired-logs"])
+        mock.assert_called_once()
