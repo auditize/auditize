@@ -36,7 +36,7 @@ router = APIRouter(responses=error_responses(401, 403))
 )
 async def create_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_write_repos()),
+    authorized: Authorized(can_write_repos()),
     profile: LogI18nProfileCreationRequest,
 ) -> LogI18nProfileCreationResponse:
     profile_id = await service.create_log_i18n_profile(
@@ -55,7 +55,7 @@ async def create_profile(
 )
 async def update_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_write_repos()),
+    authorized: Authorized(can_write_repos()),
     profile_id: UUID,
     update: LogI18nProfileUpdateRequest,
 ):
@@ -76,7 +76,7 @@ async def update_profile(
 )
 async def get_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_read_repos()),
+    authorized: Authorized(can_read_repos()),
     profile_id: UUID,
 ) -> LogI18nProfileReadingResponse:
     profile = await service.get_log_i18n_profile(dbm, profile_id)
@@ -91,7 +91,7 @@ async def get_profile(
 )
 async def get_profile_translation(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_read_repos()),
+    authorized: Authorized(can_read_repos()),
     profile_id: UUID,
     lang: Lang,
 ) -> LogTranslation:
@@ -106,7 +106,7 @@ async def get_profile_translation(
 )
 async def list_profiles(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_read_repos()),
+    authorized: Authorized(can_read_repos()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> LogI18nProfileListResponse:
@@ -128,7 +128,7 @@ async def list_profiles(
 )
 async def delete_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_write_repos()),
+    authorized: Authorized(can_write_repos()),
     profile_id: UUID,
 ):
     await service.delete_log_i18n_profile(dbm, profile_id)

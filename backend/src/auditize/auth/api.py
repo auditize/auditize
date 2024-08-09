@@ -57,7 +57,7 @@ async def login_user(
     responses=error_responses(401),
 )
 async def logout_user(
-    authenticated: Authorized(),
+    authorized: Authorized(),
     response: Response,
 ):
     response.delete_cookie("session", httponly=True, samesite="strict", secure=True)
@@ -71,13 +71,13 @@ async def logout_user(
     responses=error_responses(401, 403),
 )
 async def auth_access_token(
-    authenticated: AuthorizedApikey(),
+    authorized: AuthorizedApikey(),
     request: AccessTokenRequest,
 ) -> AccessTokenResponse:
     permissions = Permissions.model_validate(request.permissions.model_dump())
-    authorize_grant(authenticated.permissions, permissions)
+    authorize_grant(authorized.permissions, permissions)
     access_token, expires_at = generate_access_token(
-        authenticated.apikey.id, permissions
+        authorized.apikey.id, permissions
     )
 
     return AccessTokenResponse(

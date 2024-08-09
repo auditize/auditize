@@ -33,8 +33,8 @@ from auditize.user.models import User, UserUpdate
 router = APIRouter(responses=error_responses(401, 403))
 
 
-def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: UUID):
-    if authenticated.user and authenticated.user.id == user_id:
+def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
+    if authorized.user and authorized.user.id == user_id:
         raise PermissionDenied("Cannot alter own user")
 
 
@@ -47,11 +47,11 @@ def _ensure_cannot_alter_own_user(authenticated: Authenticated, user_id: UUID):
 )
 async def create_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_write_users()),
+    authorized: Authorized(can_write_users()),
     user: UserCreationRequest,
 ) -> UserCreationResponse:
     user_model = User.model_validate(user.model_dump())
-    authorize_grant(authenticated.permissions, user_model.permissions)
+    authorize_grant(authorized.permissions, user_model.permissions)
     user_id = await service.create_user(dbm, user_model)
     return UserCreationResponse(id=user_id)
 
@@ -65,12 +65,12 @@ async def create_user(
 )
 async def update_user_me(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: AuthorizedUser(),
+    authorized: AuthorizedUser(),
     update_request: UserMeUpdateRequest,
 ):
     update = UserUpdate.model_validate(update_request.model_dump(exclude_unset=True))
-    await service.update_user(dbm, authenticated.user.id, update)
-    user = await service.get_user(dbm, authenticated.user.id)
+    await service.update_user(dbm, authorized.user.id, update)
+    user = await service.get_user(dbm, authorized.user.id)
     return UserMeResponse.from_user(user)
 
 
@@ -83,27 +83,27 @@ async def update_user_me(
 )
 async def update_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_write_users()),
+    authorized: Authorized(can_write_users()),
     user_id: UUID,
     user: UserUpdateRequest,
 ):
-    _ensure_cannot_alter_own_user(authenticated, user_id)
+    _ensure_cannot_alter_own_user(authorized, user_id)
 
     user_model = UserUpdate.model_validate(user.model_dump(exclude_unset=True))
     if user_model.permissions:
-        authorize_grant(authenticated.permissions, user_model.permissions)
+        authorize_grant(authorized.permissions, user_model.permissions)
     await service.update_user(dbm, user_id, user_model)
 
 
 @router.get(
     "/users/me",
-    summary="Get authenticated user",
+    summary="Get authorized user",
     tags=["users"],
 )
 async def get_user_me(
-    authenticated: AuthorizedUser(),
+    authorized: AuthorizedUser(),
 ) -> UserMeResponse:
-    return UserMeResponse.from_user(authenticated.user)
+    return UserMeResponse.from_user(authorized.user)
 
 
 @router.get(
@@ -114,7 +114,7 @@ async def get_user_me(
 )
 async def get_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_read_users()),
+    authorized: Authorized(can_read_users()),
     user_id: UUID,
 ) -> UserReadingResponse:
     user = await service.get_user(dbm, user_id)
@@ -124,7 +124,7 @@ async def get_user(
 @router.get("/users", summary="List users", tags=["users"])
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_read_users()),
+    authorized: Authorized(can_read_users()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> UserListResponse:
@@ -146,10 +146,10 @@ async def list_users(
 )
 async def delete_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authenticated: Authorized(can_write_users()),
+    authorized: Authorized(can_write_users()),
     user_id: UUID,
 ):
-    _ensure_cannot_alter_own_user(authenticated, user_id)
+    _ensure_cannot_alter_own_user(authorized, user_id)
     await service.delete_user(dbm, user_id)
 
 
