@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import sys
 
@@ -8,7 +9,7 @@ from auditize.user.models import User
 from auditize.user.service import get_users, hash_user_password, save_user
 
 
-async def bootstrap_superadmin():
+async def bootstrap_default_superadmin():
     dbm = get_dbm()
     users, _ = await get_users(dbm, query=None, page=1, page_size=1)
     if len(users) > 0:
@@ -30,13 +31,18 @@ async def purge_expired_logs():
 
 
 async def main(args):
-    if args[0] == "bootstrap_superadmin":
-        await bootstrap_superadmin()
-    elif args[0] == "purge_expired_logs":
-        await purge_expired_logs()
-    else:
-        print("Usage: python -m auditize CMD", file=sys.stderr)
-        return 1
+    parser = argparse.ArgumentParser()
+    sub_parsers = parser.add_subparsers()
+    bootstrap_default_superadmin_parser = sub_parsers.add_parser(
+        "bootstrap-default-superadmin"
+    )
+    bootstrap_default_superadmin_parser.set_defaults(func=bootstrap_default_superadmin)
+    purge_expired_logs_parser = sub_parsers.add_parser("purge-expired-logs")
+    purge_expired_logs_parser.set_defaults(func=purge_expired_logs)
+
+    args = parser.parse_args(args)
+    await args.func()
+
     return 0
 
 
