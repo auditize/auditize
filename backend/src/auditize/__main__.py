@@ -4,12 +4,11 @@ import getpass
 import sys
 
 from auditize.database import get_dbm
-from auditize.exceptions import UnknownModelException
+from auditize.exceptions import ConstraintViolation
 from auditize.log.service import apply_log_retention_period
 from auditize.permissions.models import Permissions
 from auditize.user.models import User
 from auditize.user.service import (
-    get_user_by_email,
     get_users,
     hash_user_password,
     save_user,
@@ -28,18 +27,9 @@ def _get_password() -> str:
     return password
 
 
-async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
-    dbm = get_dbm()
-
-    password = _get_password()
-
-    try:
-        await get_user_by_email(dbm, email)
-    except UnknownModelException:
-        pass
-    else:
-        sys.exit(f"Error: user with email {email} already exists")
-
+async def _bootstrap_superadmin(
+    dbm, email: str, first_name: str, last_name: str, password: str
+):
     await save_user(
         dbm,
         User(
@@ -50,24 +40,26 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
             permissions=Permissions(is_superadmin=True),
         ),
     )
+
+
+async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
+    dbm = get_dbm()
+    password = _get_password()
+
+    try:
+        await _bootstrap_superadmin(dbm, email, first_name, last_name, password)
+    except ConstraintViolation:
+        sys.exit(f"Error: user with email {email} already exists")
     print(f"User with email {email} has been successfully created")
 
 
 async def bootstrap_default_superadmin():
     dbm = get_dbm()
     users, _ = await get_users(dbm, query=None, page=1, page_size=1)
-    if len(users) > 0:
-        return
-    await save_user(
-        dbm,
-        User(
-            first_name="Super",
-            last_name="Admin",
-            email="super.admin@example.net",
-            password_hash=hash_user_password("auditize"),
-            permissions=Permissions(is_superadmin=True),
-        ),
-    )
+    if not users:
+        await _bootstrap_superadmin(
+            dbm, "super.admin@example.net", "Super", "Admin", "auditize"
+        )
 
 
 async def purge_expired_logs():
