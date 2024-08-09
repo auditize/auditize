@@ -8,7 +8,7 @@ set -x
 
 declare | grep ^AUDITIZE_ >  /etc/cron.d/auditize
 cat <<EOF >> /etc/cron.d/auditize
-* * * * * root /usr/local/bin/python -m auditize purge_expired_logs >> /var/log/auditize.log 2>&1
+* * * * * root /usr/local/bin/python -m auditize purge-expired-logs >> /var/log/auditize.log 2>&1
 EOF
 
 exec cron -f & tail -F /var/log/auditize.log

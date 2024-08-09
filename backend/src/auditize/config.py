@@ -1,5 +1,4 @@
 import dataclasses
-import json
 import os
 from threading import Lock
 
@@ -142,6 +141,9 @@ class Config:
     def is_cors_enabled(self):
         return bool(self.cors_allow_origins)
 
+    def to_dict(self):
+        return dataclasses.asdict(self)
+
 
 _config = None
 _config_lock = Lock()
@@ -155,13 +157,3 @@ def get_config() -> Config:
             if _config is None:
                 _config = Config.load_from_env()
     return _config
-
-
-def _print_config():
-    config = Config.load_from_env()
-    print(json.dumps(dataclasses.asdict(config), ensure_ascii=False, indent=4))
-
-
-# Print the actual auditize configuration with "python -m auditize.config"
-if __name__ == "__main__":
-    _print_config()
