@@ -100,7 +100,8 @@ async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
     for node in node_path:
         await db.consolidate_data(
             db.log_nodes,
-            {"parent_node_ref": parent_node_ref, "ref": node.ref, "name": node.name},
+            {"ref": node.ref},
+            {"parent_node_ref": parent_node_ref, "name": node.name},
         )
         parent_node_ref = node.ref
 

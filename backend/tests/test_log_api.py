@@ -7,6 +7,7 @@ import pytest
 
 from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
+from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
@@ -1989,6 +1990,78 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
             log = await repo.create_log(client)
             await log.upload_attachment(client, mime_type=f"text/plain{val}")
         return [f"text/plain{val}" for val in values]
+
+
+async def test_log_node_consolidation_rename_node(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
+):
+    await repo.create_log_with(
+        superadmin_client,
+        {
+            "node_path": [
+                {"ref": "A", "name": "Name of A"},
+                {"ref": "AA", "name": "Name of AA"},
+            ]
+        },
+    )
+    await repo.create_log_with(
+        superadmin_client,
+        {
+            "node_path": [
+                {"ref": "A", "name": "Name of A"},
+                {"ref": "AA", "name": "New name of AA"},
+            ]
+        },
+    )
+    await assert_collection(
+        repo.db.log_nodes,
+        [
+            {
+                "_id": callee.Any(),
+                "parent_node_ref": None,
+                "ref": "A",
+                "name": "Name of A",
+            },
+            {
+                "_id": callee.Any(),
+                "parent_node_ref": "A",
+                "ref": "AA",
+                "name": "New name of AA",
+            },
+        ],
+    )
+
+
+async def test_log_node_consolidation_move_node(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
+):
+    await repo.create_log_with_node_path(superadmin_client, ["A", "AA"])
+    await repo.create_log_with_node_path(superadmin_client, ["B"])
+    await repo.create_log_with_node_path(superadmin_client, ["B", "AA"])
+
+    await assert_collection(
+        repo.db.log_nodes,
+        [
+            {
+                "_id": callee.Any(),
+                "parent_node_ref": None,
+                "ref": "A",
+                "name": "A",
+            },
+            {
+                "_id": callee.Any(),
+                "parent_node_ref": "B",
+                "ref": "AA",
+                "name": "AA",
+            },
+            {
+                "_id": callee.Any(),
+                "parent_node_ref": None,
+                "ref": "B",
+                "name": "B",
+            },
+        ],
+    )
 
 
 @pytest.mark.parametrize(

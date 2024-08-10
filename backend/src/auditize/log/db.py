@@ -16,16 +16,23 @@ class LogDatabase(BaseDatabase):
         self._cache = Cache(Cache.MEMORY)
 
     async def consolidate_data(
-        self, collection: AsyncIOMotorCollection, data: dict[str, str]
+        self,
+        collection: AsyncIOMotorCollection,
+        data: dict[str, str],
+        update: dict[str, str] = None,
     ):
+        if update is None:
+            update = {}
         cache_key = "%s:%s" % (
             collection.name,
-            ":".join(val or "" for val in data.values()),
+            ":".join(val or "" for val in {**data, **update}.values()),
         )
         if await self._cache.exists(cache_key):
             return
         result = await collection.update_one(
-            data, {"$set": {}, "$setOnInsert": {"_id": uuid4()}}, upsert=True
+            data,
+            {"$set": update, "$setOnInsert": {"_id": uuid4()}},
+            upsert=True,
         )
         await self._cache.set(cache_key, result)
 
