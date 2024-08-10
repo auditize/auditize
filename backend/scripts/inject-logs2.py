@@ -4,8 +4,8 @@ import json
 import os
 import random
 import sys
+import time
 import uuid
-from collections import defaultdict
 from dataclasses import dataclass
 
 import requests
@@ -677,10 +677,13 @@ def main(argv):
 
     provider = LogProvider.prepare()
 
+    start_time = time.time()
+
     for (log, attachments), i in zip(provider.build_logs(), range(count)):
         print("Inject log %d of %d" % (i + 1, count), end="\r")
         inject_log(base_url, repo_id, api_key, log, attachments)
     print()
+    print(f"Done in {time.time() - start_time:.2f}s")
 
 
 if __name__ == "__main__":
