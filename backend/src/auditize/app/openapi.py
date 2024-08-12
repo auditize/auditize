@@ -47,9 +47,24 @@ def _fix_422(schema):
                 del responses["422"]
 
 
+def _add_security_scheme(schema):
+    schema["components"]["securitySchemes"] = {
+        "apikeyAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "description": "The API client must be authenticated through an API key. API keys can be obtained through "
+            "the Auditize user interface. "
+            "An API key looks like `aak-ewTddehtMoRjBYtbKzaLy8jqn0hZmh78_iy5Ohg_x4Y` "
+            "(API keys are always prefixed with `aak-`)",
+        }
+    }
+    schema["security"] = [{"apikeyAuth": []}]
+
+
 def _customize_openapi_schema(schema):
     _fix_nullable(schema)
     _fix_422(schema)
+    _add_security_scheme(schema)
 
 
 def customize_openapi(app):
