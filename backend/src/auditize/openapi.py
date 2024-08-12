@@ -1,6 +1,41 @@
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 
+_TAGS = [
+    {
+        "name": "auth",
+        "description": "Authentication",
+    },
+    {
+        "name": "user",
+        "description": "User management",
+    },
+    {
+        "name": "apikey",
+        "description": "API key management",
+    },
+    {
+        "name": "repo",
+        "description": "Repository management",
+    },
+    {
+        "name": "log-i18n-profile",
+        "description": "Log i18n profile management",
+    },
+    {
+        "name": "log-filter",
+        "description": "Log filter management",
+    },
+    {
+        "name": "log",
+        "description": "Log API",
+    },
+    {
+        "name": "internal",
+        "description": "Internal endpoints (for internal use only)",
+    },
+]
+
 
 def _iter_property_fields(schema):
     for component in schema["components"]["schemas"]:
@@ -68,16 +103,26 @@ def _filter_out_internal_routes(routes):
             yield route
 
 
+def _filter_out_empty_tags(tags: list[dict], routes):
+    for tag in tags:
+        if any(
+            tag["name"] in route.tags for route in routes if isinstance(route, APIRoute)
+        ):
+            yield tag
+
+
 def get_customized_openapi_schema(app, include_internal_routes=True):
+    routes = (
+        app.routes
+        if include_internal_routes
+        else list(_filter_out_internal_routes(app.routes))
+    )
     schema = get_openapi(
         title="Auditize",
         version="0.1.0",
         description="Auditize API",
-        routes=(
-            app.routes
-            if include_internal_routes
-            else list(_filter_out_internal_routes(app.routes))
-        ),
+        routes=routes,
+        tags=list(_filter_out_empty_tags(_TAGS, routes)),
         servers=[{"url": "/api"}],
     )
 
