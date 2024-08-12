@@ -45,3 +45,9 @@ async def test_config(capsys):
     await main(["config"])
     # simply check that the output is valid JSON
     json.loads(capsys.readouterr().out)
+
+
+async def test_openapi(capsys):
+    await main(["openapi"])
+    # simply check that the output is valid JSON
+    json.loads(capsys.readouterr().out)

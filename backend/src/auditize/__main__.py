@@ -4,6 +4,7 @@ import getpass
 import json
 import sys
 
+from auditize.app import api_app
 from auditize.config import Config
 from auditize.database import get_dbm
 from auditize.exceptions import ConstraintViolation
@@ -73,6 +74,10 @@ async def dump_config():
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 
 
+async def dump_openapi():
+    print(json.dumps(api_app.openapi(), ensure_ascii=False, indent=4))
+
+
 async def main(args):
     parser = argparse.ArgumentParser()
     sub_parsers = parser.add_subparsers(required=True)
@@ -103,6 +108,10 @@ async def main(args):
     # CMD config
     config_parser = sub_parsers.add_parser("config")
     config_parser.set_defaults(func=lambda _: dump_config())
+
+    # CMD openapi
+    openapi_parser = sub_parsers.add_parser("openapi")
+    openapi_parser.set_defaults(func=lambda _: dump_openapi())
 
     parsed_args = parser.parse_args(args)
     await parsed_args.func(parsed_args)
