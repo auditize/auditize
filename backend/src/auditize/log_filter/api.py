@@ -19,13 +19,14 @@ from auditize.permissions.assertions import can_read_logs
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 
-router = APIRouter(responses=error_responses(401, 403))
+router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
 
 
 @router.post(
     "/users/me/logs/filters",
     summary="Create log filter",
-    tags=["log-filters"],
+    operation_id="create_log_filter",
+    tags=["log-filter"],
     status_code=201,
     responses=error_responses(400, 409),
 )
@@ -49,7 +50,8 @@ async def create_filter(
 @router.patch(
     "/users/me/logs/filters/{filter_id}",
     summary="Update log filter",
-    tags=["log-filters"],
+    operation_id="update_log_filter",
+    tags=["log-filter"],
     status_code=204,
     responses=error_responses(400, 404, 409),
 )
@@ -70,7 +72,8 @@ async def update_filter(
 @router.get(
     "/users/me/logs/filters/{filter_id}",
     summary="Get log filter",
-    tags=["log-filters"],
+    operation_id="get_log_filter",
+    tags=["log-filter"],
     status_code=200,
     responses=error_responses(404),
 )
@@ -86,7 +89,8 @@ async def get_filter(
 @router.get(
     "/users/me/logs/filters",
     summary="List log filters",
-    tags=["log-filters"],
+    operation_id="list_log_filters",
+    tags=["log-filter"],
 )
 async def list_log_filters(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -107,7 +111,8 @@ async def list_log_filters(
 @router.delete(
     "/users/me/logs/filters/{filter_id}",
     summary="Delete log filter",
-    tags=["log-filters"],
+    operation_id="delete_log_filter",
+    tags=["log-filter"],
     status_code=204,
     responses=error_responses(404),
 )

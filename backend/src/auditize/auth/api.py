@@ -5,8 +5,8 @@ from starlette.responses import Response
 
 from auditize.apikey.api_models import AccessTokenRequest, AccessTokenResponse
 from auditize.auth.authorizer import (
-    Authorized,
     AuthorizedApikey,
+    AuthorizedUser,
 )
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
@@ -24,7 +24,8 @@ router = APIRouter()
 @router.post(
     "/auth/user/login",
     summary="User login",
-    tags=["auth"],
+    operation_id="user_login",
+    tags=["auth", "internal"],
     status_code=200,
     responses=error_responses(400, 401),
 )
@@ -52,12 +53,13 @@ async def login_user(
 @router.post(
     "/auth/user/logout",
     summary="User logout",
-    tags=["auth"],
+    operation_id="user_logout",
+    tags=["auth", "internal"],
     status_code=204,
     responses=error_responses(401),
 )
 async def logout_user(
-    authorized: Authorized(),
+    authorized: AuthorizedUser(),
     response: Response,
 ):
     response.delete_cookie("session", httponly=True, samesite="strict", secure=True)
@@ -66,6 +68,7 @@ async def logout_user(
 @router.post(
     "/auth/access-token",
     summary="Generate access token",
+    operation_id="generate_access_token",
     tags=["auth"],
     status_code=200,
     responses=error_responses(401, 403),
@@ -76,9 +79,7 @@ async def auth_access_token(
 ) -> AccessTokenResponse:
     permissions = Permissions.model_validate(request.permissions.model_dump())
     authorize_grant(authorized.permissions, permissions)
-    access_token, expires_at = generate_access_token(
-        authorized.apikey.id, permissions
-    )
+    access_token, expires_at = generate_access_token(authorized.apikey.id, permissions)
 
     return AccessTokenResponse(
         access_token=ACCESS_TOKEN_PREFIX + access_token, expires_at=expires_at

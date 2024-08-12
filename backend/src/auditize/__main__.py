@@ -5,6 +5,7 @@ import json
 import sys
 
 from auditize.app import api_app
+from auditize.app.openapi import get_customized_openapi_schema
 from auditize.config import Config
 from auditize.database import get_dbm
 from auditize.exceptions import ConstraintViolation
@@ -75,7 +76,13 @@ async def dump_config():
 
 
 async def dump_openapi():
-    print(json.dumps(api_app.openapi(), ensure_ascii=False, indent=4))
+    print(
+        json.dumps(
+            get_customized_openapi_schema(api_app, include_internal_routes=False),
+            ensure_ascii=False,
+            indent=4,
+        )
+    )
 
 
 async def main(args):

@@ -30,7 +30,8 @@ router = APIRouter(responses=error_responses(401, 403))
 @router.post(
     "/log-i18n-profiles",
     summary="Create log i18n profile",
-    tags=["log-i18n-profiles"],
+    operation_id="create_log_i18n_profile",
+    tags=["log-i18n-profile"],
     status_code=201,
     responses=error_responses(400, 409),
 )
@@ -49,7 +50,8 @@ async def create_profile(
 @router.patch(
     "/log-i18n-profiles/{profile_id}",
     summary="Update log i18n profile",
-    tags=["log-i18n-profiles"],
+    operation_id="update_log_i18n_profile",
+    tags=["log-i18n-profile"],
     status_code=204,
     responses=error_responses(400, 409),
 )
@@ -71,7 +73,8 @@ async def update_profile(
 @router.get(
     "/log-i18n-profiles/{profile_id}",
     summary="Get log i18n profile",
-    tags=["log-i18n-profiles"],
+    operation_id="get_log_i18n_profile",
+    tags=["log-i18n-profile"],
     responses=error_responses(404),
 )
 async def get_profile(
@@ -86,7 +89,8 @@ async def get_profile(
 @router.get(
     "/log-i18n-profiles/{profile_id}/translations/{lang}",
     summary="Get log i18n profile translation",
-    tags=["log-i18n-profiles"],
+    operation_id="get_log_i18n_profile_translation",
+    tags=["log-i18n-profile"],
     responses=error_responses(404),
 )
 async def get_profile_translation(
@@ -102,7 +106,8 @@ async def get_profile_translation(
 @router.get(
     "/log-i18n-profiles",
     summary="List log i18n profiles",
-    tags=["log-i18n-profiles"],
+    operation_id="list_log_i18n_profiles",
+    tags=["log-i18n-profile"],
 )
 async def list_profiles(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -122,7 +127,8 @@ async def list_profiles(
 @router.delete(
     "/log-i18n-profiles/{profile_id}",
     summary="Delete log i18n profile",
-    tags=["log-i18n-profiles"],
+    operation_id="delete_log_i18n_profile",
+    tags=["log-i18n-profile"],
     status_code=204,
     responses=error_responses(404),
 )

@@ -1,4 +1,5 @@
 from fastapi.openapi.utils import get_openapi
+from fastapi.routing import APIRoute
 
 
 def _iter_property_fields(schema):
@@ -61,12 +62,22 @@ def _add_security_scheme(schema):
     schema["security"] = [{"apikeyAuth": []}]
 
 
-def get_customized_openapi_schema(app):
+def _filter_out_internal_routes(routes):
+    for route in routes:
+        if isinstance(route, APIRoute) and "internal" not in route.tags:
+            yield route
+
+
+def get_customized_openapi_schema(app, include_internal_routes=True):
     schema = get_openapi(
         title="Auditize",
         version="0.1.0",
         description="Auditize API",
-        routes=app.routes,
+        routes=(
+            app.routes
+            if include_internal_routes
+            else list(_filter_out_internal_routes(app.routes))
+        ),
         servers=[{"url": "/api"}],
     )
 

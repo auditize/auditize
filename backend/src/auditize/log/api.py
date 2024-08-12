@@ -56,10 +56,10 @@ async def _get_consolidated_data(
 
 @router.get(
     "/repos/{repo_id}/logs/actions/types",
-    summary="Get log action types",
-    operation_id="get_log_action_types",
+    summary="List log action types",
+    operation_id="list_log_action_types",
     responses=error_responses(401, 403, 404),
-    tags=["logs"],
+    tags=["log"],
 )
 async def get_log_action_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -79,9 +79,9 @@ async def get_log_action_types(
 
 @router.get(
     "/repos/{repo_id}/logs/actions/categories",
-    summary="Get log action categories",
-    operation_id="get_log_action_categories",
-    tags=["logs"],
+    summary="List log action categories",
+    operation_id="list_log_action_categories",
+    tags=["log"],
 )
 async def get_log_action_categories(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -99,9 +99,9 @@ async def get_log_action_categories(
 
 @router.get(
     "/repos/{repo_id}/logs/actors/types",
-    summary="Get log actor types",
-    operation_id="get_log_actor_types",
-    tags=["logs"],
+    summary="List log actor types",
+    operation_id="list_log_actor_types",
+    tags=["log"],
 )
 async def get_log_actor_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -119,9 +119,9 @@ async def get_log_actor_types(
 
 @router.get(
     "/repos/{repo_id}/logs/actors/extras",
-    summary="Get log actor extra field names",
-    operation_id="get_log_actor_extras",
-    tags=["logs"],
+    summary="List log actor custom field names",
+    operation_id="list_log_actor_extras",
+    tags=["log"],
     response_model=NameListResponse,
 )
 async def get_log_actor_extras(
@@ -140,9 +140,9 @@ async def get_log_actor_extras(
 
 @router.get(
     "/repos/{repo_id}/logs/resources/types",
-    summary="Get log resource types",
-    operation_id="get_log_resource_types",
-    tags=["logs"],
+    summary="List log resource types",
+    operation_id="list_log_resource_types",
+    tags=["log"],
 )
 async def get_log_resource_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -160,9 +160,9 @@ async def get_log_resource_types(
 
 @router.get(
     "/repos/{repo_id}/logs/resources/extras",
-    summary="Get log resource extra field names",
-    operation_id="get_log_resource_extras",
-    tags=["logs"],
+    summary="List log resource custom field names",
+    operation_id="list_log_resource_extras",
+    tags=["log"],
     response_model=NameListResponse,
 )
 async def get_log_resource_extras(
@@ -181,9 +181,9 @@ async def get_log_resource_extras(
 
 @router.get(
     "/repos/{repo_id}/logs/tags/types",
-    summary="Get log tag types",
-    operation_id="get_log_tag_types",
-    tags=["logs"],
+    summary="List log tag types",
+    operation_id="list_log_tag_types",
+    tags=["log"],
 )
 async def get_log_tag_types(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -201,9 +201,9 @@ async def get_log_tag_types(
 
 @router.get(
     "/repos/{repo_id}/logs/sources",
-    summary="Get log source field names",
-    operation_id="get_log_source_fields",
-    tags=["logs"],
+    summary="List log source field names",
+    operation_id="list_log_source_fields",
+    tags=["log"],
     response_model=NameListResponse,
 )
 async def get_log_source_fields(
@@ -222,9 +222,9 @@ async def get_log_source_fields(
 
 @router.get(
     "/repos/{repo_id}/logs/details",
-    summary="Get log detail field names",
-    operation_id="get_log_detail_fields",
-    tags=["logs"],
+    summary="List log detail field names",
+    operation_id="list_log_detail_fields",
+    tags=["log"],
     response_model=NameListResponse,
 )
 async def get_log_detail_fields(
@@ -243,9 +243,9 @@ async def get_log_detail_fields(
 
 @router.get(
     "/repos/{repo_id}/logs/attachments/types",
-    summary="Get log attachment types",
-    operation_id="get_log_attachment_types",
-    tags=["logs"],
+    summary="List log attachment types",
+    operation_id="list_log_attachment_types",
+    tags=["log"],
     response_model=NameListResponse,
 )
 async def get_log_attachment_types(
@@ -264,9 +264,9 @@ async def get_log_attachment_types(
 
 @router.get(
     "/repos/{repo_id}/logs/attachments/mime-types",
-    summary="Get log attachment MIME types",
-    operation_id="get_log_attachment_mime_types",
-    tags=["logs"],
+    summary="List log attachment MIME types",
+    operation_id="list_log_attachment_mime_types",
+    tags=["log"],
     response_model=NameListResponse,
 )
 async def get_log_attachment_mime_types(
@@ -285,9 +285,9 @@ async def get_log_attachment_mime_types(
 
 @router.get(
     "/repos/{repo_id}/logs/nodes",
-    summary="Get log nodes",
-    operation_id="get_log_nodes",
-    tags=["logs"],
+    summary="List log nodes",
+    operation_id="list_log_nodes",
+    tags=["log"],
 )
 async def get_log_nodes(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -322,9 +322,9 @@ async def get_log_nodes(
 
 @router.get(
     "/repos/{repo_id}/logs/nodes/ref:{node_ref}",
-    summary="Get a log node",
+    summary="Get log node",
     operation_id="get_log_node",
-    tags=["logs"],
+    tags=["log"],
 )
 async def get_log_node(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -347,7 +347,7 @@ async def get_log_node(
     summary="Create a log",
     operation_id="create_log",
     responses=error_responses(400),
-    tags=["logs"],
+    tags=["log"],
 )
 async def create_log(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -363,12 +363,12 @@ async def create_log(
 
 @router.post(
     "/repos/{repo_id}/logs/{log_id}/attachments",
-    status_code=204,
-    response_class=Response,
     summary="Add a file attachment to a log",
     operation_id="add_log_attachment",
+    tags=["log"],
+    status_code=204,
+    response_class=Response,
     responses=error_responses(400, 413),
-    tags=["logs"],
 )
 async def add_attachment(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -452,10 +452,10 @@ _CUSTOM_FIELDS_DESCRIPTION = (
 
 @router.get(
     "/repos/{repo_id}/logs/csv",
-    summary="Get logs as CSV",
+    summary="List logs as CSV file",
     description=_CUSTOM_FIELDS_DESCRIPTION,
-    operation_id="get_logs_csv",
-    tags=["logs"],
+    operation_id="list_logs_csv",
+    tags=["log"],
     response_class=_CsvResponse,
 )
 async def get_logs_as_csv(
@@ -492,9 +492,9 @@ async def get_logs_as_csv(
 
 @router.get(
     "/repos/{repo_id}/logs/{log_id}",
-    summary="Get a log",
+    summary="Get log",
     operation_id="get_log",
-    tags=["logs"],
+    tags=["log"],
     status_code=200,
 )
 async def get_log(
@@ -516,7 +516,7 @@ async def get_log(
     "/repos/{repo_id}/logs/{log_id}/attachments/{attachment_idx}",
     summary="Download a log attachment",
     operation_id="get_log_attachment",
-    tags=["logs"],
+    tags=["log"],
     response_class=Response,
     responses={
         200: {
@@ -552,10 +552,10 @@ async def get_log_attachment(
 
 @router.get(
     "/repos/{repo_id}/logs",
-    summary="Get logs",
+    summary="List logs",
     description=_CUSTOM_FIELDS_DESCRIPTION,
-    operation_id="get_logs",
-    tags=["logs"],
+    operation_id="list_logs",
+    tags=["log"],
 )
 async def get_logs(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],

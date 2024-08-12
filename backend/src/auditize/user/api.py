@@ -41,7 +41,8 @@ def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
 @router.post(
     "/users",
     summary="Create user",
-    tags=["users"],
+    operation_id="create_user",
+    tags=["user"],
     status_code=201,
     responses=error_responses(400, 409),
 )
@@ -59,7 +60,8 @@ async def create_user(
 @router.patch(
     "/users/me",
     summary="Update authenticated user",
-    tags=["users"],
+    operation_id="update_user_me",
+    tags=["user", "internal"],
     status_code=200,
     responses=error_responses(400),
 )
@@ -77,7 +79,8 @@ async def update_user_me(
 @router.patch(
     "/users/{user_id}",
     summary="Update user",
-    tags=["users"],
+    operation_id="update_user",
+    tags=["user"],
     status_code=204,
     responses=error_responses(400, 404, 409),
 )
@@ -98,7 +101,8 @@ async def update_user(
 @router.get(
     "/users/me",
     summary="Get authorized user",
-    tags=["users"],
+    operation_id="get_user_me",
+    tags=["user", "internal"],
 )
 async def get_user_me(
     authorized: AuthorizedUser(),
@@ -109,7 +113,8 @@ async def get_user_me(
 @router.get(
     "/users/{user_id}",
     summary="Get user",
-    tags=["users"],
+    operation_id="get_user",
+    tags=["user"],
     responses=error_responses(404),
 )
 async def get_user(
@@ -121,7 +126,7 @@ async def get_user(
     return UserReadingResponse.model_validate(user.model_dump())
 
 
-@router.get("/users", summary="List users", tags=["users"])
+@router.get("/users", summary="List users", operation_id="list_users", tags=["user"])
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_read_users()),
@@ -140,7 +145,8 @@ async def list_users(
 @router.delete(
     "/users/{user_id}",
     summary="Delete user",
-    tags=["users"],
+    operation_id="delete_user",
+    tags=["user"],
     status_code=204,
     responses=error_responses(404, 409),
 )
@@ -156,7 +162,8 @@ async def delete_user(
 @router.get(
     "/users/password-reset/{token}",
     summary="Get user password-reset info",
-    tags=["users"],
+    operation_id="get_user_password_reset_info",
+    tags=["user", "internal"],
     responses=error_responses(404),
 )
 async def get_user_password_reset_info(
@@ -170,7 +177,8 @@ async def get_user_password_reset_info(
 @router.post(
     "/users/password-reset/{token}",
     summary="Set user password",
-    tags=["users"],
+    operation_id="set_user_password",
+    tags=["user", "internal"],
     status_code=204,
     responses=error_responses(400, 404),
 )
@@ -187,9 +195,10 @@ async def set_user_password(
 @router.post(
     "/users/forgot-password",
     summary="Send user password-reset email",
+    operation_id="forgot_password",
     description="For security reasons, this endpoint will always return a 204 status code"
-    "whether the email exists or not.",
-    tags=["users"],
+    "whether the provided email exists or not.",
+    tags=["user", "internal"],
     status_code=204,
     responses=error_responses(400),
 )

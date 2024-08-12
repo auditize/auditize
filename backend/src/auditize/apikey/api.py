@@ -36,7 +36,8 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
 @router.post(
     "/apikeys",
     summary="Create API key",
-    tags=["apikeys"],
+    operation_id="create_apikey",
+    tags=["apikey"],
     status_code=201,
     responses=error_responses(400, 409),
 )
@@ -54,7 +55,8 @@ async def create_apikey(
 @router.patch(
     "/apikeys/{apikey_id}",
     summary="Update API key",
-    tags=["apikeys"],
+    operation_id="update_apikey",
+    tags=["apikey"],
     status_code=204,
     responses=error_responses(400, 404, 409),
 )
@@ -74,7 +76,8 @@ async def update_apikey(
 @router.get(
     "/apikeys/{apikey_id}",
     summary="Get API key",
-    tags=["apikeys"],
+    operation_id="get_apikey",
+    tags=["apikey"],
     responses=error_responses(404),
 )
 async def get_repo(
@@ -89,7 +92,8 @@ async def get_repo(
 @router.get(
     "/apikeys",
     summary="List API keys",
-    tags=["apikeys"],
+    operation_id="list_apikeys",
+    tags=["apikey"],
 )
 async def list_apikeys(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -109,7 +113,8 @@ async def list_apikeys(
 @router.delete(
     "/apikeys/{apikey_id}",
     summary="Delete API key",
-    tags=["apikeys"],
+    operation_id="delete_apikey",
+    tags=["apikey"],
     status_code=204,
     responses=error_responses(404),
 )
@@ -124,8 +129,9 @@ async def delete_apikey(
 
 @router.post(
     "/apikeys/{apikey_id}/key",
-    summary="Re-regenerate API key secret",
-    tags=["apikeys"],
+    summary="Re-generate API key secret",
+    operation_id="generate_apikey_new_secret",
+    tags=["apikey"],
     status_code=200,
     responses=error_responses(404),
 )

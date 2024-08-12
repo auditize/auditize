@@ -49,7 +49,8 @@ router = APIRouter(responses=error_responses(401, 403))
 @router.post(
     "/repos",
     summary="Create log repository",
-    tags=["repos"],
+    operation_id="create_repo",
+    tags=["repo"],
     status_code=201,
     responses=error_responses(400, 409),
 )
@@ -85,7 +86,8 @@ async def create_repo(
 @router.patch(
     "/repos/{repo_id}",
     summary="Update log repository",
-    tags=["repos"],
+    operation_id="update_repo",
+    tags=["repo"],
     status_code=204,
     responses=error_responses(400, 404, 409),
 )
@@ -114,7 +116,7 @@ async def _handle_repo_include_options(
 @router.get(
     "/repos/{repo_id}",
     summary="Get log repository",
-    tags=["repos"],
+    tags=["repo"],
     responses=error_responses(404),
 )
 async def get_repo(
@@ -132,7 +134,8 @@ async def get_repo(
 @router.get(
     "/repos/{repo_id}/translation",
     summary="Get log repository translation for the authenticated user",
-    tags=["repos"],
+    operation_id="get_repo_translation_for_user",
+    tags=["repo", "internal"],
     responses=error_responses(404),
 )
 async def get_repo_translation_for_user(
@@ -147,7 +150,8 @@ async def get_repo_translation_for_user(
 @router.get(
     "/repos/{repo_id}/translations/{lang}",
     summary="Get log repository translation",
-    tags=["repos"],
+    operation_id="get_repo_translation",
+    tags=["repo"],
     responses=error_responses(404),
 )
 async def get_repo_translation(
@@ -163,7 +167,8 @@ async def get_repo_translation(
 @router.get(
     "/repos",
     summary="List log repositories",
-    tags=["repos"],
+    operation_id="list_repos",
+    tags=["repo"],
 )
 async def list_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -188,7 +193,8 @@ async def list_repos(
 @router.get(
     "/users/me/repos",
     summary="List user accessible repositories",
-    tags=["users"],
+    operation_id="list_user_repos",
+    tags=["user", "internal"],
 )
 async def list_user_repos(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -238,7 +244,8 @@ async def list_user_repos(
 @router.delete(
     "/repos/{repo_id}",
     summary="Delete log repository",
-    tags=["repos"],
+    operation_id="delete_repo",
+    tags=["repo"],
     status_code=204,
     responses=error_responses(404),
 )
