@@ -76,6 +76,7 @@ def customize_openapi(app):
             version="0.1.0",
             description="Auditize API",
             routes=app.routes,
+            servers=[{"url": "/api"}],
         )
 
         _customize_openapi_schema(openapi_schema)
