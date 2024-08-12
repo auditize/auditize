@@ -5,11 +5,11 @@ import json
 import sys
 
 from auditize.app import api_app
-from auditize.app.openapi import get_customized_openapi_schema
 from auditize.config import Config
 from auditize.database import get_dbm
 from auditize.exceptions import ConstraintViolation
 from auditize.log.service import apply_log_retention_period
+from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
 from auditize.user.models import User
 from auditize.user.service import (
