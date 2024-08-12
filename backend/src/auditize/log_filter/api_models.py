@@ -9,7 +9,10 @@ from pydantic import (
     model_validator,
 )
 
-from auditize.helpers.api.validators import FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN
+from auditize.helpers.api.validators import (
+    FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN,
+    FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING,
+)
 from auditize.log.api_models import BaseLogSearchParams
 from auditize.log_filter.models import LogFilter
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
@@ -47,7 +50,18 @@ _CUSTOM_FIELD_GROUPS = (
 
 
 class LogFilterSearchParamsData(BaseLogSearchParams):
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(
+        extra="allow",
+        json_schema_extra={
+            "patternProperties": {
+                FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING: {
+                    "type": "string",
+                    "description": "Custom fields",
+                }
+            },
+            "additionalProperties": False,
+        },
+    )
 
     @model_validator(mode="after")
     def validate_extra(self):

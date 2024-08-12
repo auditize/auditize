@@ -312,9 +312,7 @@ async def get_log_nodes(
     nodes, pagination = await service.get_log_nodes(
         dbm,
         repo_id,
-        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(
-            repo_id
-        ),
+        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
         page=page_params.page,
         page_size=page_params.page_size,
         **filter_args,
@@ -441,10 +439,21 @@ Example of column name if you have a "role" custom field for the actor: `actor.r
 
 """
 
+_CUSTOM_FIELDS_DESCRIPTION = (
+    "This endpoint also accepts search on custom fields through the extra parameters:\n"
+    "- `source.<custom-field>`\n"
+    "- `actor.<custom-field>`\n"
+    "- `resource.<custom-field>`\n"
+    "- `details.<custom-field>`\n"
+    "\n"
+    "Example: `/repos/{repo_id}/logs?actor.role=admin`"
+)
+
 
 @router.get(
     "/repos/{repo_id}/logs/csv",
     summary="Get logs as CSV",
+    description=_CUSTOM_FIELDS_DESCRIPTION,
     operation_id="get_logs_csv",
     tags=["logs"],
     response_class=_CsvResponse,
@@ -498,9 +507,7 @@ async def get_log(
         dbm,
         repo_id,
         log_id,
-        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(
-            repo_id
-        ),
+        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
     )
     return LogReadingResponse.model_validate(log.model_dump())
 
@@ -544,7 +551,11 @@ async def get_log_attachment(
 
 
 @router.get(
-    "/repos/{repo_id}/logs", summary="Get logs", operation_id="get_logs", tags=["logs"]
+    "/repos/{repo_id}/logs",
+    summary="Get logs",
+    description=_CUSTOM_FIELDS_DESCRIPTION,
+    operation_id="get_logs",
+    tags=["logs"],
 )
 async def get_logs(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
@@ -557,9 +568,7 @@ async def get_logs(
     logs, next_cursor = await service.get_logs(
         dbm,
         repo_id,
-        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(
-            repo_id
-        ),
+        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
         search_params=LogSearchParams.model_validate(search_params.model_dump()),
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,
