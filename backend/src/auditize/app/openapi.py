@@ -61,27 +61,27 @@ def _add_security_scheme(schema):
     schema["security"] = [{"apikeyAuth": []}]
 
 
-def _customize_openapi_schema(schema):
+def get_customized_openapi_schema(app):
+    schema = get_openapi(
+        title="Auditize",
+        version="0.1.0",
+        description="Auditize API",
+        routes=app.routes,
+        servers=[{"url": "/api"}],
+    )
+
     _fix_nullable(schema)
     _fix_422(schema)
     _add_security_scheme(schema)
+
+    return schema
 
 
 def customize_openapi(app):
     def custom_openapi():
         if app.openapi_schema:
             return app.openapi_schema
-        openapi_schema = get_openapi(
-            title="Auditize",
-            version="0.1.0",
-            description="Auditize API",
-            routes=app.routes,
-            servers=[{"url": "/api"}],
-        )
-
-        _customize_openapi_schema(openapi_schema)
-
-        app.openapi_schema = openapi_schema
+        app.openapi_schema = get_customized_openapi_schema(app)
         return app.openapi_schema
 
     app.openapi = custom_openapi
