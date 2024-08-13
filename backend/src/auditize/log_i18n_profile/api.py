@@ -17,8 +17,8 @@ from auditize.log_i18n_profile.api_models import (
 )
 from auditize.log_i18n_profile.models import LogI18nProfile, LogI18nProfileUpdate
 from auditize.permissions.assertions import (
-    can_read_repos,
-    can_write_repos,
+    can_read_repo,
+    can_write_repo,
 )
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
@@ -37,7 +37,7 @@ router = APIRouter(responses=error_responses(401, 403))
 )
 async def create_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_repos()),
+    authorized: Authorized(can_write_repo()),
     profile: LogI18nProfileCreationRequest,
 ) -> LogI18nProfileCreationResponse:
     profile_id = await service.create_log_i18n_profile(
@@ -57,7 +57,7 @@ async def create_profile(
 )
 async def update_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_repos()),
+    authorized: Authorized(can_write_repo()),
     profile_id: UUID,
     update: LogI18nProfileUpdateRequest,
 ):
@@ -79,7 +79,7 @@ async def update_profile(
 )
 async def get_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_read_repos()),
+    authorized: Authorized(can_read_repo()),
     profile_id: UUID,
 ) -> LogI18nProfileReadingResponse:
     profile = await service.get_log_i18n_profile(dbm, profile_id)
@@ -95,7 +95,7 @@ async def get_profile(
 )
 async def get_profile_translation(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_read_repos()),
+    authorized: Authorized(can_read_repo()),
     profile_id: UUID,
     lang: Lang,
 ) -> LogTranslation:
@@ -111,7 +111,7 @@ async def get_profile_translation(
 )
 async def list_profiles(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_read_repos()),
+    authorized: Authorized(can_read_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> LogI18nProfileListResponse:
@@ -134,7 +134,7 @@ async def list_profiles(
 )
 async def delete_profile(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_repos()),
+    authorized: Authorized(can_write_repo()),
     profile_id: UUID,
 ):
     await service.delete_log_i18n_profile(dbm, profile_id)

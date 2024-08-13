@@ -18,8 +18,8 @@ from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import (
-    can_read_apikeys,
-    can_write_apikeys,
+    can_read_apikey,
+    can_write_apikey,
 )
 from auditize.permissions.operations import authorize_grant
 from auditize.resource.api_models import ResourceSearchParams
@@ -43,7 +43,7 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
 )
 async def create_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_apikeys()),
+    authorized: Authorized(can_write_apikey()),
     apikey: ApikeyCreationRequest,
 ) -> ApikeyCreationResponse:
     apikey_model = Apikey.model_validate(apikey.model_dump())
@@ -62,7 +62,7 @@ async def create_apikey(
 )
 async def update_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_apikeys()),
+    authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
     apikey: ApikeyUpdateRequest,
 ):
@@ -82,7 +82,7 @@ async def update_apikey(
 )
 async def get_repo(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_read_apikeys()),
+    authorized: Authorized(can_read_apikey()),
     apikey_id: UUID,
 ) -> ApikeyReadingResponse:
     apikey = await service.get_apikey(dbm, apikey_id)
@@ -97,7 +97,7 @@ async def get_repo(
 )
 async def list_apikeys(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_read_apikeys()),
+    authorized: Authorized(can_read_apikey()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> ApikeyListResponse:
@@ -120,7 +120,7 @@ async def list_apikeys(
 )
 async def delete_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_apikeys()),
+    authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
 ):
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
@@ -137,7 +137,7 @@ async def delete_apikey(
 )
 async def regenerate_apikey(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_apikeys()),
+    authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
 ) -> ApikeyRegenerationResponse:
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)

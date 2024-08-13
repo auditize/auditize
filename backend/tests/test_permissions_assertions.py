@@ -4,14 +4,14 @@ from uuid import UUID
 from icecream import ic
 
 from auditize.permissions.assertions import (
-    can_read_apikeys,
+    can_read_apikey,
     can_read_logs,
-    can_read_repos,
-    can_read_users,
-    can_write_apikeys,
+    can_read_repo,
+    can_read_user,
+    can_write_apikey,
     can_write_logs,
-    can_write_repos,
-    can_write_users,
+    can_write_repo,
+    can_write_user,
     permissions_and,
     permissions_or,
 )
@@ -42,12 +42,12 @@ def test_permission_assertions_as_superadmin():
         {"is_superadmin": True},
         can_read_logs(REPO_1),
         can_write_logs(REPO_2),
-        can_read_repos(),
-        can_write_repos(),
-        can_read_users(),
-        can_write_users(),
-        can_read_apikeys(),
-        can_write_apikeys(),
+        can_read_repo(),
+        can_write_repo(),
+        can_read_user(),
+        can_write_user(),
+        can_read_apikey(),
+        can_write_apikey(),
     )
 
 
@@ -56,12 +56,12 @@ def test_permission_assertions_as_no_right():
         {},
         can_read_logs(REPO_1),
         can_write_logs(REPO_2),
-        can_read_repos(),
-        can_write_repos(),
-        can_read_users(),
-        can_write_users(),
-        can_read_apikeys(),
-        can_write_apikeys(),
+        can_read_repo(),
+        can_write_repo(),
+        can_read_user(),
+        can_write_user(),
+        can_read_apikey(),
+        can_write_apikey(),
     )
 
 
@@ -101,11 +101,11 @@ def test_permission_assertions_on_management_as_specific_permissions():
         }
     }
     permission_assertions = {
-        "repos": {"read": can_read_repos(), "write": can_write_repos()},
-        "users": {"read": can_read_users(), "write": can_write_users()},
+        "repos": {"read": can_read_repo(), "write": can_write_repo()},
+        "users": {"read": can_read_user(), "write": can_write_user()},
         "apikeys": {
-            "read": can_read_apikeys(),
-            "write": can_write_apikeys(),
+            "read": can_read_apikey(),
+            "write": can_write_apikey(),
         },
     }
     for entity_type in "repos", "users", "apikeys":

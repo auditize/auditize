@@ -9,12 +9,12 @@ __all__ = (
     "PermissionAssertion",
     "can_read_logs",
     "can_write_logs",
-    "can_read_repos",
-    "can_write_repos",
-    "can_read_users",
-    "can_write_users",
-    "can_read_apikeys",
-    "can_write_apikeys",
+    "can_read_repo",
+    "can_write_repo",
+    "can_read_user",
+    "can_write_user",
+    "can_read_apikey",
+    "can_write_apikey",
     "permissions_and",
     "permissions_or",
 )
@@ -94,22 +94,22 @@ class EntityPermissionAssertion:
         )  # pragma: no cover, cannot happen
 
 
-can_read_repos = partial(
+can_read_repo = partial(
     EntityPermissionAssertion, permission_type="read", entity_type="repos"
 )
-can_write_repos = partial(
+can_write_repo = partial(
     EntityPermissionAssertion, permission_type="write", entity_type="repos"
 )
-can_read_users = partial(
+can_read_user = partial(
     EntityPermissionAssertion, permission_type="read", entity_type="users"
 )
-can_write_users = partial(
+can_write_user = partial(
     EntityPermissionAssertion, permission_type="write", entity_type="users"
 )
-can_read_apikeys = partial(
+can_read_apikey = partial(
     EntityPermissionAssertion, permission_type="read", entity_type="apikeys"
 )
-can_write_apikeys = partial(
+can_write_apikey = partial(
     EntityPermissionAssertion, permission_type="write", entity_type="apikeys"
 )
 

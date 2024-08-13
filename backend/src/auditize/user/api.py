@@ -11,7 +11,7 @@ from auditize.auth.authorizer import (
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
-from auditize.permissions.assertions import can_read_users, can_write_users
+from auditize.permissions.assertions import can_read_user, can_write_user
 from auditize.permissions.operations import authorize_grant
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
@@ -48,7 +48,7 @@ def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
 )
 async def create_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_users()),
+    authorized: Authorized(can_write_user()),
     user: UserCreationRequest,
 ) -> UserCreationResponse:
     user_model = User.model_validate(user.model_dump())
@@ -86,7 +86,7 @@ async def update_user_me(
 )
 async def update_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_users()),
+    authorized: Authorized(can_write_user()),
     user_id: UUID,
     user: UserUpdateRequest,
 ):
@@ -119,7 +119,7 @@ async def get_user_me(
 )
 async def get_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_read_users()),
+    authorized: Authorized(can_read_user()),
     user_id: UUID,
 ) -> UserReadingResponse:
     user = await service.get_user(dbm, user_id)
@@ -129,7 +129,7 @@ async def get_user(
 @router.get("/users", summary="List users", operation_id="list_users", tags=["user"])
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_read_users()),
+    authorized: Authorized(can_read_user()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> UserListResponse:
@@ -152,7 +152,7 @@ async def list_users(
 )
 async def delete_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
-    authorized: Authorized(can_write_users()),
+    authorized: Authorized(can_write_user()),
     user_id: UUID,
 ):
     _ensure_cannot_alter_own_user(authorized, user_id)
