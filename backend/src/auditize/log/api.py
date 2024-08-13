@@ -57,6 +57,7 @@ async def _get_consolidated_data(
 @router.get(
     "/repos/{repo_id}/logs/actions/types",
     summary="List log action types",
+    description="Requires `log:read` permission.",
     operation_id="list_log_action_types",
     responses=error_responses(401, 403, 404),
     tags=["log"],
@@ -80,6 +81,7 @@ async def get_log_action_types(
 @router.get(
     "/repos/{repo_id}/logs/actions/categories",
     summary="List log action categories",
+    description="Requires `log:read` permission.",
     operation_id="list_log_action_categories",
     tags=["log"],
 )
@@ -100,6 +102,7 @@ async def get_log_action_categories(
 @router.get(
     "/repos/{repo_id}/logs/actors/types",
     summary="List log actor types",
+    description="Requires `log:read` permission.",
     operation_id="list_log_actor_types",
     tags=["log"],
 )
@@ -120,6 +123,7 @@ async def get_log_actor_types(
 @router.get(
     "/repos/{repo_id}/logs/actors/extras",
     summary="List log actor custom field names",
+    description="Requires `log:read` permission.",
     operation_id="list_log_actor_extras",
     tags=["log"],
     response_model=NameListResponse,
@@ -141,6 +145,7 @@ async def get_log_actor_extras(
 @router.get(
     "/repos/{repo_id}/logs/resources/types",
     summary="List log resource types",
+    description="Requires `log:read` permission.",
     operation_id="list_log_resource_types",
     tags=["log"],
 )
@@ -161,6 +166,7 @@ async def get_log_resource_types(
 @router.get(
     "/repos/{repo_id}/logs/resources/extras",
     summary="List log resource custom field names",
+    description="Requires `log:read` permission.",
     operation_id="list_log_resource_extras",
     tags=["log"],
     response_model=NameListResponse,
@@ -182,6 +188,7 @@ async def get_log_resource_extras(
 @router.get(
     "/repos/{repo_id}/logs/tags/types",
     summary="List log tag types",
+    description="Requires `log:read` permission.",
     operation_id="list_log_tag_types",
     tags=["log"],
 )
@@ -202,6 +209,7 @@ async def get_log_tag_types(
 @router.get(
     "/repos/{repo_id}/logs/sources",
     summary="List log source field names",
+    description="Requires `log:read` permission.",
     operation_id="list_log_source_fields",
     tags=["log"],
     response_model=NameListResponse,
@@ -223,6 +231,7 @@ async def get_log_source_fields(
 @router.get(
     "/repos/{repo_id}/logs/details",
     summary="List log detail field names",
+    description="Requires `log:read` permission.",
     operation_id="list_log_detail_fields",
     tags=["log"],
     response_model=NameListResponse,
@@ -244,6 +253,7 @@ async def get_log_detail_fields(
 @router.get(
     "/repos/{repo_id}/logs/attachments/types",
     summary="List log attachment types",
+    description="Requires `log:read` permission.",
     operation_id="list_log_attachment_types",
     tags=["log"],
     response_model=NameListResponse,
@@ -265,6 +275,7 @@ async def get_log_attachment_types(
 @router.get(
     "/repos/{repo_id}/logs/attachments/mime-types",
     summary="List log attachment MIME types",
+    description="Requires `log:read` permission.",
     operation_id="list_log_attachment_mime_types",
     tags=["log"],
     response_model=NameListResponse,
@@ -286,6 +297,7 @@ async def get_log_attachment_mime_types(
 @router.get(
     "/repos/{repo_id}/logs/nodes",
     summary="List log nodes",
+    description="Requires `log:read` permission.",
     operation_id="list_log_nodes",
     tags=["log"],
 )
@@ -323,6 +335,7 @@ async def get_log_nodes(
 @router.get(
     "/repos/{repo_id}/logs/nodes/ref:{node_ref}",
     summary="Get log node",
+    description="Requires `log:read` permission.",
     operation_id="get_log_node",
     tags=["log"],
 )
@@ -345,6 +358,7 @@ async def get_log_node(
     "/repos/{repo_id}/logs",
     status_code=201,
     summary="Create a log",
+    description="Requires `log:write` permission.",
     operation_id="create_log",
     responses=error_responses(400),
     tags=["log"],
@@ -364,6 +378,7 @@ async def create_log(
 @router.post(
     "/repos/{repo_id}/logs/{log_id}/attachments",
     summary="Add a file attachment to a log",
+    description="Requires `log:write` permission.",
     operation_id="add_log_attachment",
     tags=["log"],
     status_code=204,
@@ -440,6 +455,8 @@ Example of column name if you have a "role" custom field for the actor: `actor.r
 """
 
 _CUSTOM_FIELDS_DESCRIPTION = (
+    "Requires `log:read` permission.\n"
+    "\n"
     "This endpoint also accepts search on custom fields through the extra parameters:\n"
     "- `source.<custom-field>`\n"
     "- `actor.<custom-field>`\n"
@@ -493,6 +510,7 @@ async def get_logs_as_csv(
 @router.get(
     "/repos/{repo_id}/logs/{log_id}",
     summary="Get log",
+    description="Requires `log:read` permission.",
     operation_id="get_log",
     tags=["log"],
     status_code=200,
@@ -515,6 +533,7 @@ async def get_log(
 @router.get(
     "/repos/{repo_id}/logs/{log_id}/attachments/{attachment_idx}",
     summary="Download a log attachment",
+    description="Requires `log:read` permission.",
     operation_id="get_log_attachment",
     tags=["log"],
     response_class=Response,

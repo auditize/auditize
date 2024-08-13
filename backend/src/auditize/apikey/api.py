@@ -36,6 +36,7 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
 @router.post(
     "/apikeys",
     summary="Create API key",
+    description="Requires `apikey:write` permission.",
     operation_id="create_apikey",
     tags=["apikey"],
     status_code=201,
@@ -55,6 +56,7 @@ async def create_apikey(
 @router.patch(
     "/apikeys/{apikey_id}",
     summary="Update API key",
+    description="Requires `apikey:write` permission.",
     operation_id="update_apikey",
     tags=["apikey"],
     status_code=204,
@@ -76,6 +78,7 @@ async def update_apikey(
 @router.get(
     "/apikeys/{apikey_id}",
     summary="Get API key",
+    description="Requires `apikey:read` permission.",
     operation_id="get_apikey",
     tags=["apikey"],
     responses=error_responses(404),
@@ -92,6 +95,7 @@ async def get_repo(
 @router.get(
     "/apikeys",
     summary="List API keys",
+    description="Requires `apikey:read` permission.",
     operation_id="list_apikeys",
     tags=["apikey"],
 )
@@ -113,6 +117,7 @@ async def list_apikeys(
 @router.delete(
     "/apikeys/{apikey_id}",
     summary="Delete API key",
+    description="Requires `apikey:write` permission.",
     operation_id="delete_apikey",
     tags=["apikey"],
     status_code=204,
@@ -130,6 +135,7 @@ async def delete_apikey(
 @router.post(
     "/apikeys/{apikey_id}/key",
     summary="Re-generate API key secret",
+    description="Requires `apikey:write` permission.",
     operation_id="generate_apikey_new_secret",
     tags=["apikey"],
     status_code=200,

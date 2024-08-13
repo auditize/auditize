@@ -41,6 +41,7 @@ def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
 @router.post(
     "/users",
     summary="Create user",
+    description="Requires `user:write` permission.",
     operation_id="create_user",
     tags=["user"],
     status_code=201,
@@ -113,6 +114,7 @@ async def get_user_me(
 @router.get(
     "/users/{user_id}",
     summary="Get user",
+    description="Requires `user:read` permission.",
     operation_id="get_user",
     tags=["user"],
     responses=error_responses(404),
@@ -126,7 +128,13 @@ async def get_user(
     return UserReadingResponse.model_validate(user.model_dump())
 
 
-@router.get("/users", summary="List users", operation_id="list_users", tags=["user"])
+@router.get(
+    "/users",
+    summary="List users",
+    description="Requires `user:read` permission.",
+    operation_id="list_users",
+    tags=["user"],
+)
 async def list_users(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_read_user()),
@@ -145,6 +153,7 @@ async def list_users(
 @router.delete(
     "/users/{user_id}",
     summary="Delete user",
+    description="Requires `user:write` permission.",
     operation_id="delete_user",
     tags=["user"],
     status_code=204,

@@ -49,6 +49,7 @@ router = APIRouter(responses=error_responses(401, 403))
 @router.post(
     "/repos",
     summary="Create log repository",
+    description="Requires `repo:write` permission.",
     operation_id="create_repo",
     tags=["repo"],
     status_code=201,
@@ -86,6 +87,7 @@ async def create_repo(
 @router.patch(
     "/repos/{repo_id}",
     summary="Update log repository",
+    description="Requires `repo:write` permission.",
     operation_id="update_repo",
     tags=["repo"],
     status_code=204,
@@ -116,6 +118,7 @@ async def _handle_repo_include_options(
 @router.get(
     "/repos/{repo_id}",
     summary="Get log repository",
+    description="Requires `repo:read` permission.",
     tags=["repo"],
     responses=error_responses(404),
 )
@@ -134,6 +137,7 @@ async def get_repo(
 @router.get(
     "/repos/{repo_id}/translation",
     summary="Get log repository translation for the authenticated user",
+    description="Requires `log:read` permission.",
     operation_id="get_repo_translation_for_user",
     tags=["repo", "internal"],
     responses=error_responses(404),
@@ -150,6 +154,7 @@ async def get_repo_translation_for_user(
 @router.get(
     "/repos/{repo_id}/translations/{lang}",
     summary="Get log repository translation",
+    description="Requires `log:read` permission.",
     operation_id="get_repo_translation",
     tags=["repo"],
     responses=error_responses(404),
@@ -167,6 +172,7 @@ async def get_repo_translation(
 @router.get(
     "/repos",
     summary="List log repositories",
+    description="Requires `repo:read` permission.",
     operation_id="list_repos",
     tags=["repo"],
 )
@@ -193,6 +199,7 @@ async def list_repos(
 @router.get(
     "/users/me/repos",
     summary="List user accessible repositories",
+    description="Requires `repo:read` permission.",
     operation_id="list_user_repos",
     tags=["user", "internal"],
 )
@@ -244,6 +251,7 @@ async def list_user_repos(
 @router.delete(
     "/repos/{repo_id}",
     summary="Delete log repository",
+    description="Requires `repo:write` permission.",
     operation_id="delete_repo",
     tags=["repo"],
     status_code=204,
