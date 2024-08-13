@@ -309,9 +309,9 @@ async def get_log_nodes(
     parent_node_ref: str = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> LogNodeListResponse:
-    if root and parent_node_ref is not None:
+    if not (root ^ (parent_node_ref is not None)):
         raise ValidationError(
-            "Parameters 'root' and 'parent_node_ref' are mutually exclusive."
+            "Parameters 'root' and 'parent_node_ref' are mutually exclusive and one of them must be provided"
         )
 
     if root:

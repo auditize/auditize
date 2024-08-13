@@ -2079,7 +2079,7 @@ async def test_log_node_consolidation_move_node(
         "/logs/details",
         "/logs/attachments/types",
         "/logs/attachments/mime-types",
-        "/logs/nodes",
+        "/logs/nodes?root=true",
     ],
 )
 @pytest.mark.parametrize(
@@ -2099,47 +2099,6 @@ async def test_get_log_related_endpoints_not_enabled_repo_status(
     await repo.update_status(superadmin_client, repo_status)
     await superadmin_client.assert_get(
         f"/repos/{repo.id}{path}", expected_status_code=status_code
-    )
-
-
-async def test_get_log_nodes_without_filters(
-    log_read_client: HttpTestHelper,
-    superadmin_client: HttpTestHelper,
-    repo: PreparedRepo,
-):
-    for i in range(4):
-        await repo.create_log(
-            superadmin_client,
-            PreparedLog.prepare_data(
-                {
-                    "node_path": [
-                        {"ref": f"customer", "name": f"Customer"},
-                        {"ref": f"entity:{i}", "name": f"Entity {i}"},
-                    ]
-                }
-            ),
-        )
-
-    await do_test_page_pagination_common_scenarios(
-        log_read_client,
-        f"/repos/{repo.id}/logs/nodes",
-        [
-            {
-                "ref": "customer",
-                "name": "Customer",
-                "parent_node_ref": None,
-                "has_children": True,
-            }
-        ]
-        + [
-            {
-                "ref": f"entity:{i}",
-                "name": f"Entity {i}",
-                "parent_node_ref": "customer",
-                "has_children": False,
-            }
-            for i in range(4)
-        ],
     )
 
 
@@ -2195,7 +2154,22 @@ async def test_get_log_nodes_with_filters(
 
 async def test_get_log_nodes_empty(log_read_client: HttpTestHelper, repo: PreparedRepo):
     await do_test_page_pagination_empty_data(
-        log_read_client, f"/repos/{repo.id}/logs/nodes"
+        log_read_client, f"/repos/{repo.id}/logs/nodes?root=true"
+    )
+
+
+async def test_get_log_nodes_no_root_or_parent_node_ref_params(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await log_read_client.assert_get_bad_request(f"/repos/{repo.id}/logs/nodes")
+
+
+async def test_get_log_nodes_both_root_or_parent_node_ref_params(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await log_read_client.assert_get_bad_request(
+        f"/repos/{repo.id}/logs/nodes",
+        params={"root": "true", "parent_node_ref": "customer:1"},
     )
 
 
