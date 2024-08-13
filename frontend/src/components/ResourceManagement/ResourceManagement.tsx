@@ -163,18 +163,18 @@ export function ResourceManagement({
     search,
     setSearch,
   } = useResourceManagementState(stateMode);
-  const { isPending, data, error } = useQuery({
+  const resourcesQuery = useQuery({
     queryKey: queryKey(search, page),
     queryFn: queryFn(search, page),
   });
 
-  if (error) {
-    return <div>Error: {error.message}</div>;
+  if (resourcesQuery.error) {
+    return <div>Error: {resourcesQuery.error.message}</div>;
   }
 
   let rows;
   let pagination;
-  if (isPending) {
+  if (resourcesQuery.isPending) {
     rows = Array.from({ length: 10 }).map((_, rowIndex) => (
       <Table.Tr key={rowIndex} style={{ height: "2rem" }}>
         {Array.from({ length: columnBuilders.length + 1 }, (_, colIndex) => (
@@ -186,7 +186,7 @@ export function ResourceManagement({
     ));
   } else {
     let resources;
-    [resources, pagination] = data;
+    [resources, pagination] = resourcesQuery.data;
     rows = resources.map((resource: any) => (
       <ResourceTableRow
         key={resource.id}

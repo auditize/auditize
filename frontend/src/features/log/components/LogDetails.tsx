@@ -135,11 +135,7 @@ export function LogDetails({ repoId }: { repoId?: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
   const { displayedLogId, setDisplayedLogId } = useLogNavigationState();
-  const {
-    data: log,
-    error,
-    isPending,
-  } = useQuery({
+  const logQuery = useQuery({
     queryKey: ["log", repoId, displayedLogId],
     queryFn: () => getLog(repoId!, displayedLogId!),
     enabled: displayedLogId !== null,
@@ -147,15 +143,16 @@ export function LogDetails({ repoId }: { repoId?: string }) {
 
   // FIXME: improve loading and error handling
 
-  if (isPending) {
+  if (logQuery.isPending) {
     return null;
   }
 
-  if (error) {
-    return <div>{error.message}</div>;
+  if (logQuery.error) {
+    return <div>{logQuery.error.message}</div>;
   }
 
   const baseURL = window.auditizeBaseURL ?? "";
+  const log = logQuery.data;
 
   return (
     <Modal.Root

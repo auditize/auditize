@@ -17,14 +17,14 @@ const AuthContext = createContext<AuthContextProps | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loggedIn, setLoggedIn] = useState<CurrentUserInfo | null>(null);
   const [loggedOut, setLoggedOut] = useState<boolean>(false);
-  const { data: defaultAuthData, isPending } = useQuery({
+  const authQuery = useQuery({
     queryKey: ["/users/me"],
     // FIXME: handle possible errors and make a distinction between 401 and others
     queryFn: () => getCurrentUserInfo(),
     staleTime: Infinity,
   });
 
-  const currentUser = loggedOut ? null : loggedIn || defaultAuthData || null;
+  const currentUser = loggedOut ? null : loggedIn || authQuery.data || null;
 
   return (
     <AuthContext.Provider
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoggedIn(user);
         },
         isAuthenticated: currentUser !== null,
-        isRefreshingAuthData: isPending,
+        isRefreshingAuthData: authQuery.isPending,
       }}
     >
       {children}

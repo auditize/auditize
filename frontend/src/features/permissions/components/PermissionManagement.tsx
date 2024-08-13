@@ -177,7 +177,7 @@ function LogsPermissionManagement({
   const { t } = useTranslation();
 
   // NB: silent loading and error handling here
-  const { data } = useQuery({
+  const reposQuery = useQuery({
     queryKey: ["repos", "available-for-permissions"],
     queryFn: () => getAllMyRepos({}),
     placeholderData: [],
@@ -209,7 +209,7 @@ function LogsPermissionManagement({
                 />
               </Table.Td>
             </Table.Tr>
-            {data?.map((assignableRepo) => (
+            {reposQuery.data?.map((assignableRepo) => (
               <Table.Tr key={assignableRepo.id}>
                 <Table.Td>{assignableRepo.name}</Table.Td>
                 <Table.Td>

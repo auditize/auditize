@@ -141,9 +141,9 @@ export function ResourceEdition({
   onDataLoaded,
   ...props
 }: ResourceEditionProps) {
-  // here we use isFetching instead of isPending to avoid displaying obsolete data
+  // We use isFetching instead of isPending to avoid displaying obsolete data
   // in case the user re-edits a resource he just saved
-  const { data, isFetching, error } = useQuery({
+  const resourceQuery = useQuery({
     queryKey: queryKeyForLoad,
     queryFn: queryFnForLoad,
     enabled: !!resourceId,
@@ -151,16 +151,20 @@ export function ResourceEdition({
   });
 
   useEffect(() => {
-    if (!isFetching && data) {
-      onDataLoaded(data);
+    if (!resourceQuery.isFetching && resourceQuery.data) {
+      onDataLoaded(resourceQuery.data);
     }
-  }, [data, isFetching]);
+  }, [resourceQuery.data, resourceQuery.isFetching]);
 
-  if (error) {
-    return <ErrorModal message={error.message} />;
+  if (resourceQuery.error) {
+    return <ErrorModal message={resourceQuery.error.message} />;
   } else {
     return (
-      <ResourceEditor opened={!!resourceId} isLoading={isFetching} {...props} />
+      <ResourceEditor
+        opened={!!resourceId}
+        isLoading={resourceQuery.isFetching}
+        {...props}
+      />
     );
   }
 }

@@ -147,55 +147,55 @@ function RepoSelector({
 }
 
 function useLogConsolidatedDataPrefetch(repoId: string) {
-  const { isPending: actionCategoryPending } = useQuery({
+  const actionCategoriesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actionCategory", repoId],
     queryFn: () => getAllLogActionCategories(repoId),
     enabled: !!repoId,
   });
-  const { isPending: actionTypePending } = useQuery({
+  const actionTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actionType", repoId],
     queryFn: () => getAllLogActionTypes(repoId),
     enabled: !!repoId,
   });
-  const { isPending: actorTypePending } = useQuery({
+  const actorTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actorType", repoId],
     queryFn: () => getAllLogActorTypes(repoId),
     enabled: !!repoId,
   });
-  const { isPending: resourceTypePending } = useQuery({
+  const resourceTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "resourceType", repoId],
     queryFn: () => getAllLogResourceTypes(repoId),
     enabled: !!repoId,
   });
-  const { isPending: tagTypePending } = useQuery({
+  const tagTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "tagType", repoId],
     queryFn: () => getAllLogTagTypes(repoId),
     enabled: !!repoId,
   });
-  const { isPending: attachmentTypePending } = useQuery({
+  const attachmentTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "attachmentType", repoId],
     queryFn: () => getAllAttachmentTypes(repoId),
     enabled: !!repoId,
   });
-  const { isPending: attachmentMimeTypePending } = useQuery({
+  const attachmentMimeTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "attachmentMimeType", repoId],
     queryFn: () => getAllAttachmentMimeTypes(repoId),
     enabled: !!repoId,
   });
-  const { isPending: nodePending } = useQuery({
+  const logNodesQuery = useQuery({
     queryKey: ["logConsolidatedData", "node", repoId],
     queryFn: () => getAllLogNodes(repoId),
     enabled: !!repoId,
   });
   return (
-    actionCategoryPending ||
-    actionTypePending ||
-    actorTypePending ||
-    resourceTypePending ||
-    tagTypePending ||
-    attachmentTypePending ||
-    attachmentMimeTypePending ||
-    nodePending
+    actionCategoriesQuery.isPending ||
+    actionTypesQuery.isPending ||
+    actorTypesQuery.isPending ||
+    resourceTypesQuery.isPending ||
+    tagTypesQuery.isPending ||
+    attachmentTypesQuery.isPending ||
+    attachmentMimeTypesQuery.isPending ||
+    logNodesQuery.isPending
   );
 }
 
@@ -221,7 +221,7 @@ function SelectSearchParamField({
   onRemove: (name: string) => void;
 }) {
   const { t } = useTranslation();
-  const { isPending, error, data } = useQuery({
+  const consolidatedDataQuery = useQuery({
     queryKey: [
       "logConsolidatedData",
       searchParamName,
@@ -238,10 +238,13 @@ function SelectSearchParamField({
 
   useEffect(() => {
     // on repository change, reset the selected value if it's not in the new data
-    if (data && !data.includes(value)) {
+    if (
+      consolidatedDataQuery.data &&
+      !consolidatedDataQuery.data.includes(value)
+    ) {
       onChange(searchParamName, "");
     }
-  }, [data]);
+  }, [consolidatedDataQuery.data]);
 
   return (
     <SearchParamFieldPopover
@@ -251,12 +254,12 @@ function SelectSearchParamField({
       onChange={toggle}
       removable={!FIXED_SEARCH_PARAM_NAMES.has(searchParamName)}
       onRemove={() => onRemove(searchParamName)}
-      loading={isPending}
+      loading={consolidatedDataQuery.isPending}
     >
       <SelectWithoutDropdown
         data={
-          data
-            ? data.map((item) => ({
+          consolidatedDataQuery.data
+            ? consolidatedDataQuery.data.map((item) => ({
                 label: itemLabel(item),
                 value: item,
               }))
@@ -265,9 +268,10 @@ function SelectSearchParamField({
         value={value}
         onChange={(value) => onChange(searchParamName, value)}
         placeholder={
-          error
+          consolidatedDataQuery.error
             ? t("common.notCurrentlyAvailable")
-            : data && data.length > 0
+            : consolidatedDataQuery.data &&
+                consolidatedDataQuery.data.length > 0
               ? label
               : t("common.notAvailable")
         }
@@ -355,7 +359,7 @@ function NodeSearchParamField({
   onRemove: (name: string) => void;
 }) {
   const { t } = useTranslation();
-  const { isPending } = useQuery({
+  const logNodesQuery = useQuery({
     queryKey: ["logConsolidatedData", "node", searchParams.repoId],
     queryFn: () => getAllLogNodes(searchParams.repoId),
     enabled: !!searchParams.repoId,
@@ -369,7 +373,7 @@ function NodeSearchParamField({
       onChange={toggle}
       removable={!FIXED_SEARCH_PARAM_NAMES.has("node")}
       onRemove={() => onRemove("node")}
-      loading={isPending}
+      loading={logNodesQuery.isPending}
     >
       <NodeSelector
         repoId={searchParams.repoId || null}
