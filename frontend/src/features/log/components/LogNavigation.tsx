@@ -1227,7 +1227,9 @@ export function ExtraActions({
                   {filter.name}
                 </Menu.Item>
               ))}
-              <Menu.Divider />
+              {filterListQuery.data && filterListQuery.data.length > 0 && (
+                <Menu.Divider />
+              )}
               <Menu.Item
                 component="a"
                 onClick={openFilterPopover}
