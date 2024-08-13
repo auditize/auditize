@@ -5,6 +5,7 @@ import {
   Breadcrumbs,
   Button,
   Center,
+  Group,
   Stack,
   Text,
   useCombobox,
@@ -13,6 +14,7 @@ import { IconColumns3 } from "@tabler/icons-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import i18n from "i18next";
 import { DataTable, DataTableColumn } from "mantine-datatable";
+import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
@@ -722,13 +724,20 @@ function fieldToColumn(
   repoId: string,
   onTableSearchParamChange: TableSearchParamChangeHandler,
   logTranslator: (type: string, key: string) => string,
+  columnSelector: React.ReactNode | undefined,
 ) {
   const { t } = i18n;
+  const columnTitle = (name: string) => (
+    <Group justify="space-between">
+      {name}
+      {columnSelector}
+    </Group>
+  );
 
   if (field === "savedAt")
     return {
       accessor: "savedAt",
-      title: t("log.date"),
+      title: columnTitle(t("log.date")),
       render: (log: Log) => <DateField log={log} />,
     };
 
@@ -736,7 +745,9 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `source.${fieldName}`,
-      title: t("log.source") + ": " + logTranslator("source_field", fieldName),
+      title: columnTitle(
+        t("log.source") + ": " + logTranslator("source_field", fieldName),
+      ),
       render: (log: Log) => (
         <SourceField
           log={log}
@@ -751,7 +762,7 @@ function fieldToColumn(
   if (field === "actor")
     return {
       accessor: "actor",
-      title: t("log.actor"),
+      title: columnTitle(t("log.actor")),
       render: (log: Log) => (
         <ActorField
           log={log}
@@ -763,7 +774,7 @@ function fieldToColumn(
   if (field === "actorType")
     return {
       accessor: "actorType",
-      title: t("log.actorType"),
+      title: columnTitle(t("log.actorType")),
       render: (log: Log) => (
         <ActorTypeField
           log={log}
@@ -776,7 +787,7 @@ function fieldToColumn(
   if (field === "actorName")
     return {
       accessor: "actorName",
-      title: t("log.actorName"),
+      title: columnTitle(t("log.actorName")),
       render: (log: Log) => (
         <ActorNameField
           log={log}
@@ -788,7 +799,7 @@ function fieldToColumn(
   if (field === "actorRef")
     return {
       accessor: "actorRef",
-      title: t("log.actorRef"),
+      title: columnTitle(t("log.actorRef")),
       render: (log: Log) => (
         <ActorRefField
           log={log}
@@ -801,8 +812,9 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `actor.${fieldName}`,
-      title:
+      title: columnTitle(
         t("log.actor") + ": " + logTranslator("actor_custom_field", fieldName),
+      ),
       render: (log: Log) => (
         <ActorCustomField
           log={log}
@@ -816,7 +828,7 @@ function fieldToColumn(
   if (field === "action")
     return {
       accessor: "action",
-      title: t("log.action"),
+      title: columnTitle(t("log.action")),
       render: (log: Log) => (
         <ActionField
           log={log}
@@ -829,7 +841,7 @@ function fieldToColumn(
   if (field === "actionType")
     return {
       accessor: "actionType",
-      title: t("log.actionType"),
+      title: columnTitle(t("log.actionType")),
       render: (log: Log) => (
         <ActionTypeField
           log={log}
@@ -842,7 +854,7 @@ function fieldToColumn(
   if (field === "actionCategory")
     return {
       accessor: "actionCategory",
-      title: t("log.actionCategory"),
+      title: columnTitle(t("log.actionCategory")),
       render: (log: Log) => (
         <ActionCategoryField
           log={log}
@@ -855,7 +867,7 @@ function fieldToColumn(
   if (field === "resource")
     return {
       accessor: "resource",
-      title: t("log.resource"),
+      title: columnTitle(t("log.resource")),
       render: (log: Log) => (
         <ResourceField
           log={log}
@@ -868,7 +880,7 @@ function fieldToColumn(
   if (field === "resourceType")
     return {
       accessor: "resourceType",
-      title: t("log.resourceType"),
+      title: columnTitle(t("log.resourceType")),
       render: (log: Log) => (
         <ResourceTypeField
           log={log}
@@ -881,7 +893,7 @@ function fieldToColumn(
   if (field === "resourceName")
     return {
       accessor: "resourceName",
-      title: t("log.resourceName"),
+      title: columnTitle(t("log.resourceName")),
       render: (log: Log) => (
         <ResourceNameField
           log={log}
@@ -893,7 +905,7 @@ function fieldToColumn(
   if (field === "resourceRef")
     return {
       accessor: "resourceRef",
-      title: t("log.resourceRef"),
+      title: columnTitle(t("log.resourceRef")),
       render: (log: Log) => (
         <ResourceRefField
           log={log}
@@ -906,10 +918,11 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `resource.${fieldName}`,
-      title:
+      title: columnTitle(
         t("log.resource") +
-        ": " +
-        logTranslator("resource_custom_field", fieldName),
+          ": " +
+          logTranslator("resource_custom_field", fieldName),
+      ),
       render: (log: Log) => (
         <ResourceCustomField
           log={log}
@@ -924,7 +937,7 @@ function fieldToColumn(
     const fieldName = field.split(".")[1];
     return {
       accessor: `details.${fieldName}`,
-      title: logTranslator("detail_field", fieldName),
+      title: columnTitle(logTranslator("detail_field", fieldName)),
       render: (log: Log) => (
         <DetailField
           log={log}
@@ -938,7 +951,7 @@ function fieldToColumn(
   if (field === "tag")
     return {
       accessor: "tags",
-      title: t("log.tags"),
+      title: columnTitle(t("log.tags")),
       render: (log: Log) => (
         <TagsField
           log={log}
@@ -951,7 +964,7 @@ function fieldToColumn(
   if (field === "tagType")
     return {
       accessor: "tagType",
-      title: t("log.tagTypes"),
+      title: columnTitle(t("log.tagTypes")),
       render: (log: Log) => (
         <TagTypesField
           log={log}
@@ -964,7 +977,7 @@ function fieldToColumn(
   if (field === "tagName")
     return {
       accessor: "tagName",
-      title: t("log.tagNames"),
+      title: columnTitle(t("log.tagNames")),
       render: (log: Log) => (
         <TagNamesField
           log={log}
@@ -976,7 +989,7 @@ function fieldToColumn(
   if (field === "tagRef")
     return {
       accessor: "tagRef",
-      title: t("log.tagRefs"),
+      title: columnTitle(t("log.tagRefs")),
       render: (log: Log) => (
         <TagRefsField
           log={log}
@@ -988,7 +1001,7 @@ function fieldToColumn(
   if (field === "attachment")
     return {
       accessor: "attachment",
-      title: t("log.attachments"),
+      title: columnTitle(t("log.attachments")),
       // NB: display attachments like attachment types for now
       render: (log: Log) => (
         <AttachmentTypesField
@@ -1002,7 +1015,7 @@ function fieldToColumn(
   if (field === "attachmentName")
     return {
       accessor: "attachmentName",
-      title: t("log.attachmentNames"),
+      title: columnTitle(t("log.attachmentNames")),
       render: (log: Log) => (
         <AttachmentNamesField
           log={log}
@@ -1014,7 +1027,7 @@ function fieldToColumn(
   if (field === "attachmentType")
     return {
       accessor: "attachmentType",
-      title: t("log.attachmentTypes"),
+      title: columnTitle(t("log.attachmentTypes")),
       render: (log: Log) => (
         <AttachmentTypesField
           log={log}
@@ -1027,7 +1040,7 @@ function fieldToColumn(
   if (field === "attachmentMimeType")
     return {
       accessor: "attachmentMimeType",
-      title: t("log.attachmentMimeTypes"),
+      title: columnTitle(t("log.attachmentMimeTypes")),
       render: (log: Log) => (
         <AttachmentMimeTypesField
           log={log}
@@ -1039,7 +1052,7 @@ function fieldToColumn(
   if (field === "node")
     return {
       accessor: "node",
-      title: t("log.node"),
+      title: columnTitle(t("log.node")),
       render: (log: Log) => (
         <NodePathField
           log={log}
@@ -1065,33 +1078,35 @@ function buildDataTableColumns({
   onSelectedColumnsChange: (selectedColumns: string[] | null) => void;
   logTranslator: (type: string, key: string) => string;
 }) {
-  return [
-    ...selectedColumns
-      .toSorted(sortFields)
-      .map((column) =>
-        fieldToColumn(column, repoId, onTableSearchParamChange, logTranslator),
-      )
-      .filter((data) => !!data),
-    {
-      accessor: "columns",
-      title: (
-        // Disable the inherited bold font style
-        <span style={{ fontWeight: "normal" }}>
-          <ColumnSelector
-            repoId={repoId}
-            selected={selectedColumns}
-            onColumnAdded={(name: string) =>
-              onSelectedColumnsChange([...selectedColumns, name])
-            }
-            onColumnRemoved={(name: string) =>
-              onSelectedColumnsChange(selectedColumns.filter((n) => n !== name))
-            }
-            onColumnReset={() => onSelectedColumnsChange(null)}
-          />
-        </span>
+  const columnSelector = (
+    // Disable the inherited bold font style
+    <span style={{ fontWeight: "normal" }}>
+      <ColumnSelector
+        repoId={repoId}
+        selected={selectedColumns}
+        onColumnAdded={(name: string) =>
+          onSelectedColumnsChange([...selectedColumns, name])
+        }
+        onColumnRemoved={(name: string) =>
+          onSelectedColumnsChange(selectedColumns.filter((n) => n !== name))
+        }
+        onColumnReset={() => onSelectedColumnsChange(null)}
+      />
+    </span>
+  );
+
+  return selectedColumns
+    .toSorted(sortFields)
+    .map((column, i) =>
+      fieldToColumn(
+        column,
+        repoId,
+        onTableSearchParamChange,
+        logTranslator,
+        i + 1 == selectedColumns.length ? columnSelector : undefined,
       ),
-    },
-  ];
+    )
+    .filter((data) => !!data);
 }
 
 function useLogSearchQuery(searchParams: LogSearchParams) {
