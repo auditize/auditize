@@ -146,7 +146,7 @@ async def get_users(
             if query
             else None
         ),
-        sort=[("last_name", 1)],
+        sort=[("last_name", 1), ("first_name", 1)],
         page=page,
         page_size=page_size,
     )
