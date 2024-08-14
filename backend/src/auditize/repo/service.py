@@ -6,8 +6,8 @@ from auditize.exceptions import UnknownModelException, ValidationError
 from auditize.log.db import LogDatabase, get_log_db_for_config
 from auditize.log_i18n_profile.models import LogTranslation
 from auditize.log_i18n_profile.service import (
-    does_log_i18n_profile_exist,
     get_log_i18n_profile_translation,
+    has_log_i18n_profile,
 )
 from auditize.permissions.assertions import (
     can_read_logs,
@@ -31,7 +31,7 @@ from auditize.user.models import Lang, User
 
 async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
     if repo.log_i18n_profile_id:
-        if not await does_log_i18n_profile_exist(dbm, repo.log_i18n_profile_id):
+        if not await has_log_i18n_profile(dbm, repo.log_i18n_profile_id):
             raise ValidationError(
                 f"Log i18n profile {repo.log_i18n_profile_id!r} does not exist"
             )

@@ -88,5 +88,5 @@ async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: UUID):
     await delete_resource_document(dbm.core_db.logi18nprofiles, profile_id)
 
 
-async def does_log_i18n_profile_exist(dbm: DatabaseManager, profile_id: UUID) -> bool:
+async def has_log_i18n_profile(dbm: DatabaseManager, profile_id: UUID) -> bool:
     return await has_resource_document(dbm.core_db.logi18nprofiles, profile_id)
