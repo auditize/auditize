@@ -38,6 +38,25 @@ def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
         raise PermissionDenied("Cannot alter own user")
 
 
+async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
+    dbm: DatabaseManager,
+    authorized: Authorized,
+    user_id: UUID,
+    update: UserUpdateRequest,
+):
+    if not update.email:
+        return
+
+    user = await service.get_user(dbm, user_id)
+    if update.email != user.email:
+        try:
+            authorize_grant(authorized.permissions, user.permissions)
+        except PermissionDenied:
+            raise PermissionDenied(
+                "Cannot update email of user with non-grantable permission"
+            )
+
+
 @router.post(
     "/users",
     summary="Create user",
@@ -89,14 +108,17 @@ async def update_user(
     dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_write_user()),
     user_id: UUID,
-    user: UserUpdateRequest,
+    update: UserUpdateRequest,
 ):
     _ensure_cannot_alter_own_user(authorized, user_id)
+    await _ensure_cannot_update_email_of_user_with_non_grantable_permission(
+        dbm, authorized, user_id, update
+    )
 
-    user_model = UserUpdate.model_validate(user.model_dump(exclude_unset=True))
-    if user_model.permissions:
-        authorize_grant(authorized.permissions, user_model.permissions)
-    await service.update_user(dbm, user_id, user_model)
+    update_model = UserUpdate.model_validate(update.model_dump(exclude_unset=True))
+    if update_model.permissions:
+        authorize_grant(authorized.permissions, update_model.permissions)
+    await service.update_user(dbm, user_id, update_model)
 
 
 @router.get(

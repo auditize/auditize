@@ -160,8 +160,8 @@ async def test_user_create_forbidden(no_permission_client: HttpTestHelper):
     )
 
 
-async def test_user_update_multiple(
-    user_write_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
+async def test_user_update_multiple_fields(
+    superadmin_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
 ):
     data = {
         "first_name": "John Updated",
@@ -169,14 +169,14 @@ async def test_user_update_multiple(
         "email": "john.doe_updated@example.net",
         "lang": "fr",
     }
-    await user_write_client.assert_patch(
+    await superadmin_client.assert_patch(
         f"/users/{user.id}", json=data, expected_status_code=204
     )
 
     await assert_collection(dbm.core_db.users, [user.expected_document(data)])
 
 
-async def test_user_update_partial(
+async def test_user_update_single_field(
     user_write_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
 ):
     data = {"first_name": "John Updated"}
@@ -195,12 +195,12 @@ async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
 
 
 async def test_user_update_already_used_email(
-    user_write_client: HttpTestHelper, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    user1 = await PreparedUser.create(user_write_client, dbm)
-    user2 = await PreparedUser.create(user_write_client, dbm)
+    user1 = await PreparedUser.create(superadmin_client, dbm)
+    user2 = await PreparedUser.create(superadmin_client, dbm)
 
-    await user_write_client.assert_patch_constraint_violation(
+    await superadmin_client.assert_patch_constraint_violation(
         f"/users/{user1.id}",
         json={"email": user2.data["email"]},
     )
@@ -226,6 +226,58 @@ async def test_user_update_self(user_builder: UserBuilder):
         client: HttpTestHelper  # make pycharm happy
         await client.assert_patch_forbidden(
             f"/users/{user.id}", json={"first_name": "John Updated"}
+        )
+
+
+async def test_user_update_email_with_user_holding_non_grantable_permission(
+    user_builder: UserBuilder,
+):
+    assignee = await user_builder(
+        {
+            "management": {
+                "repos": {"read": True, "write": True},
+            }
+        }
+    )
+    grantor = await user_builder(
+        {
+            "management": {
+                "users": {"read": True, "write": True},
+            }
+        }
+    )
+
+    async with grantor.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_forbidden(
+            f"/users/{assignee.id}",
+            json={"email": "another.email@example.net"},
+        )
+
+
+async def test_user_update_email_with_user_holding_non_grantable_permission_same_email(
+    user_builder: UserBuilder,
+):
+    assignee = await user_builder(
+        {
+            "management": {
+                "repos": {"read": True, "write": True},
+            }
+        }
+    )
+    grantor = await user_builder(
+        {
+            "management": {
+                "users": {"read": True, "write": True},
+            }
+        }
+    )
+
+    async with grantor.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_no_content(
+            f"/users/{assignee.id}",
+            json={"email": assignee.email},
         )
 
 
