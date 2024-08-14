@@ -7,7 +7,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { isNotEmpty, matchesField, useForm } from "@mantine/form";
+import { useForm } from "@mantine/form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import React, { useEffect } from "react";
@@ -16,11 +16,12 @@ import { NavLink, useParams } from "react-router-dom";
 
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import Message from "@/components/Message";
+import { usePasswordValidation } from "@/components/PasswordForm";
 
 import { getPasswordResetInfo, setPassword } from "../api";
 
 function usePasswordSetupForm() {
-  const { t } = useTranslation();
+  const passwordValidators = usePasswordValidation();
   return useForm({
     mode: "uncontrolled",
     initialValues: {
@@ -31,11 +32,7 @@ function usePasswordSetupForm() {
       passwordConfirmation: "",
     },
     validate: {
-      password: isNotEmpty(t("passwordSetup.form.password.required")),
-      passwordConfirmation: matchesField(
-        "password",
-        t("passwordSetup.form.passwordConfirmation.doesNotMatch"),
-      ),
+      ...passwordValidators,
     },
   });
 }
@@ -105,16 +102,16 @@ function PasswordSetup({
             />
             <PasswordInput
               {...form.getInputProps("password")}
-              label={t("passwordSetup.form.password.label")}
-              placeholder={t("passwordSetup.form.password.placeholder")}
+              label={t("common.passwordForm.password.label")}
+              placeholder={t("common.passwordForm.password.placeholder")}
               key={form.key("password")}
               disabled={disabledForm}
             />
             <PasswordInput
               {...form.getInputProps("passwordConfirmation")}
-              label={t("passwordSetup.form.passwordConfirmation.label")}
+              label={t("common.passwordForm.passwordConfirmation.label")}
               placeholder={t(
-                "passwordSetup.form.passwordConfirmation.placeholder",
+                "common.passwordForm.passwordConfirmation.placeholder",
               )}
               key={form.key("passwordConfirmation")}
               disabled={disabledForm}

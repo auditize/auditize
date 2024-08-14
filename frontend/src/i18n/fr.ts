@@ -319,6 +319,19 @@ export default {
     notCurrentlyAvailable: "Actuellement indisponible",
     unexpectedError: "Une erreur est survenue",
     send: "Envoyer",
+    passwordForm: {
+      password: {
+        label: "Mot de passe",
+        placeholder: "Mot de passe",
+        required: "Le mot de passe est requis.",
+        tooShort: "Le mot de passe doit contenir au moins {{min}} caractères.",
+      },
+      passwordConfirmation: {
+        label: "Confirmation du mot de passe",
+        placeholder: "Confirmation du mot de passe",
+        doesNotMatch: "Les mots de passe ne correspondent pas.",
+      },
+    },
   },
   resource: {
     list: {
@@ -346,16 +359,6 @@ export default {
     form: {
       lang: {
         label: "Langue",
-      },
-      password: {
-        label: "Mot de passe",
-        placeholder: "Mot de passe",
-        required: "Le mot de passe est requis.",
-      },
-      passwordConfirmation: {
-        label: "Confirmation du mot de passe",
-        placeholder: "Confirmation du mot de passe",
-        doesNotMatch: "Les mots de passe ne correspondent pas.",
       },
     },
   },
@@ -405,16 +408,6 @@ export default {
       },
       email: {
         label: "Email",
-      },
-      password: {
-        label: "Mot de passe",
-        placeholder: "Mot de passe",
-        required: "Le mot de passe est requis.",
-      },
-      passwordConfirmation: {
-        label: "Confirmation du mot de passe",
-        placeholder: "Confirmation du mot de passe",
-        doesNotMatch: "Les mots de passe ne correspondent pas.",
       },
     },
     accountSetup: {

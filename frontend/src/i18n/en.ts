@@ -316,6 +316,19 @@ export default {
     notCurrentlyAvailable: "Not currently available",
     unexpectedError: "An error occurred",
     send: "Send",
+    passwordForm: {
+      password: {
+        label: "Password",
+        placeholder: "Password",
+        required: "Password is required.",
+        tooShort: "Password must be at least {{min}} characters long.",
+      },
+      passwordConfirmation: {
+        label: "Password confirmation",
+        placeholder: "Password confirmation",
+        doesNotMatch: "Passwords do not match.",
+      },
+    },
   },
   resource: {
     list: {
@@ -343,16 +356,6 @@ export default {
     form: {
       lang: {
         label: "Language",
-      },
-      password: {
-        label: "Password",
-        placeholder: "Password",
-        required: "Password is required.",
-      },
-      passwordConfirmation: {
-        label: "Password confirmation",
-        placeholder: "Password confirmation",
-        doesNotMatch: "Passwords do not match.",
       },
     },
   },
@@ -401,16 +404,6 @@ export default {
       },
       email: {
         label: "Email",
-      },
-      password: {
-        label: "Password",
-        placeholder: "Password",
-        required: "Password is required.",
-      },
-      passwordConfirmation: {
-        label: "Password confirmation",
-        placeholder: "Password confirmation",
-        doesNotMatch: "Passwords do not match.",
       },
     },
     accountSetup: {

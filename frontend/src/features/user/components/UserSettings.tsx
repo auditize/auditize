@@ -7,19 +7,21 @@ import {
   Stack,
   Tabs,
 } from "@mantine/core";
-import { isNotEmpty, matchesField, useForm } from "@mantine/form";
+import { useForm } from "@mantine/form";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { InlineErrorMessage } from "@/components/InlineErrorMessage";
 import { ModalActionButtons } from "@/components/ModalActionButtons";
 import { ModalTitle } from "@/components/ModalTitle";
+import { usePasswordValidation } from "@/components/PasswordForm";
 import { useAuthenticatedUser } from "@/features/auth";
 
 import { updateUserMe } from "../api";
 
 function PasswordChange({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const passwordValidators = usePasswordValidation();
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
@@ -27,11 +29,7 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
       passwordConfirmation: "",
     },
     validate: {
-      password: isNotEmpty(t("accountSettings.form.password.required")),
-      passwordConfirmation: matchesField(
-        "password",
-        t("accountSettings.form.passwordConfirmation.doesNotMatch"),
-      ),
+      ...passwordValidators,
     },
   });
   const mutation = useMutation({
@@ -49,15 +47,15 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
         <Stack>
           <PasswordInput
             {...form.getInputProps("password")}
-            label={t("accountSettings.form.password.label")}
-            placeholder={t("accountSettings.form.password.placeholder")}
+            label={t("common.passwordForm.password.label")}
+            placeholder={t("common.passwordForm.password.placeholder")}
             key={form.key("password")}
           />
           <PasswordInput
             {...form.getInputProps("passwordConfirmation")}
-            label={t("accountSettings.form.passwordConfirmation.label")}
+            label={t("common.passwordForm.passwordConfirmation.label")}
             placeholder={t(
-              "accountSettings.form.passwordConfirmation.placeholder",
+              "common.passwordForm.passwordConfirmation.placeholder",
             )}
             key={form.key("passwordConfirmation")}
           />
