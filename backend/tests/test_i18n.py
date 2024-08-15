@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from auditize.auth.authorizer import get_authenticated
@@ -76,3 +78,16 @@ def test_i18n_translation_variable():
 def test_i18n_translation_variable_missing():
     with pytest.raises(LookupError):
         assert t("test_var")
+
+
+def test_i18n_translations():
+    master_translations = t._translations["en"]
+    for lang in ("fr",):
+        translations = t._translations[lang]
+        # Test that we have the exact same keys in all languages
+        assert set(translations) == set(master_translations)
+        # Test that variables within translations are identical
+        for key in master_translations:
+            assert re.findall(r"\{(.+)\}", translations[key]) == re.findall(
+                r"\{(.+)\}", master_translations[key]
+            ), f"Key {key!r} has different variables in {lang!r}"
