@@ -1,0 +1,4 @@
+{
+  "test": "This is a test",
+  "test_var": "This is a test with a variable {var}"
+}
