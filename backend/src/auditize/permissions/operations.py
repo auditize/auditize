@@ -264,4 +264,4 @@ def is_authorized(perms: Permissions, assertion: PermissionAssertion) -> bool:
 
 def authorize_access(perms: Permissions, assertion: PermissionAssertion) -> None:
     if not is_authorized(perms, assertion):
-        raise PermissionDenied("Access denied")
+        raise PermissionDenied()

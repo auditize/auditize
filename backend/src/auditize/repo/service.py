@@ -2,7 +2,11 @@ from typing import Any, Sequence
 from uuid import UUID, uuid4
 
 from auditize.database import DatabaseManager
-from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.exceptions import (
+    UnknownModelException,
+    ValidationError,
+    enhance_constraint_violation_exception,
+)
 from auditize.log.db import LogDatabase, get_log_db_for_config
 from auditize.log_i18n_profile.models import LogTranslation
 from auditize.log_i18n_profile.service import (
@@ -42,16 +46,17 @@ async def create_repo(
 ) -> UUID:
     await _validate_repo(dbm, repo)
     repo_id = uuid4()
-    await create_resource_document(
-        dbm.core_db.repos,
-        {
-            **repo.model_dump(exclude={"id", "log_db_name"}),
-            "log_db_name": (
-                log_db.name if log_db else f"{dbm.name_prefix}_logs_{repo_id}"
-            ),
-        },
-        resource_id=repo_id,
-    )
+    with enhance_constraint_violation_exception("error.constraint_violation.repo"):
+        await create_resource_document(
+            dbm.core_db.repos,
+            {
+                **repo.model_dump(exclude={"id", "log_db_name"}),
+                "log_db_name": (
+                    log_db.name if log_db else f"{dbm.name_prefix}_logs_{repo_id}"
+                ),
+            },
+            resource_id=repo_id,
+        )
     if not log_db:
         log_db = await get_log_db_for_config(dbm, repo_id)
         await log_db.setup()
@@ -60,7 +65,10 @@ async def create_repo(
 
 async def update_repo(dbm: DatabaseManager, repo_id: UUID, update: RepoUpdate):
     await _validate_repo(dbm, update)
-    await update_resource_document(dbm.core_db.repos, repo_id, update)
+    with enhance_constraint_violation_exception(
+        "error.constraint_violation.log_i18n_profile"
+    ):
+        await update_resource_document(dbm.core_db.repos, repo_id, update)
 
 
 async def get_repo(dbm: DatabaseManager, repo_id: UUID) -> Repo:
@@ -225,7 +233,7 @@ async def ensure_repos_in_permissions_exist(
             await get_repo(dbm, repo_id)
         except UnknownModelException:
             raise ValidationError(
-                f"Repo {repo_id} cannot be assigned in log permissions as it does not exist"
+                f"Repository {repo_id} cannot be assigned in log permissions as it does not exist"
             )
 
 

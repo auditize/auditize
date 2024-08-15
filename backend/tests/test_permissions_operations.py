@@ -801,5 +801,5 @@ def test_authorize_access():
     authorize_access(Permissions(is_superadmin=True), assertion)
 
     # Not OK case
-    with pytest.raises(PermissionDenied, match="Access denied"):
+    with pytest.raises(PermissionDenied):
         authorize_access(Permissions(), assertion)

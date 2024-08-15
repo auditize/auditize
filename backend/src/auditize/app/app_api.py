@@ -37,13 +37,13 @@ customize_openapi(app)
 
 
 @app.exception_handler(AuditizeException)
-def exception_handler(_, exc):
-    return make_response_from_exception(exc)
+def exception_handler(request, exc):
+    return make_response_from_exception(exc, request)
 
 
 @app.exception_handler(RequestValidationError)
-def request_validation_error_handler(_, exc):
-    return make_response_from_exception(exc)
+def request_validation_error_handler(request, exc):
+    return make_response_from_exception(exc, request)
 
 
 ###

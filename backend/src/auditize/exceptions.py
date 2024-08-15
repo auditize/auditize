@@ -1,3 +1,6 @@
+from contextlib import contextmanager
+
+
 class AuditizeException(Exception):
     pass
 
@@ -28,3 +31,11 @@ class ConstraintViolation(AuditizeException):
 
 class PayloadTooLarge(AuditizeException):
     pass
+
+
+@contextmanager
+def enhance_constraint_violation_exception(trans_key):
+    try:
+        yield
+    except ConstraintViolation:
+        raise ConstraintViolation((trans_key,))

@@ -237,7 +237,7 @@ async def test_user_update_email_with_user_holding_non_grantable_permission(
             "management": {
                 "repos": {"read": True, "write": True},
             }
-        }
+        },
     )
     grantor = await user_builder(
         {

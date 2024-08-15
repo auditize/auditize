@@ -22,7 +22,7 @@ class Translator:
     ) -> str:
         try:
             return self._translations[lang][key].format(**(values or {}))
-        except KeyError as excp:
+        except KeyError:
             raise LookupError(
-                f"Missing translation or variable for {key!r} in {lang!r}: {excp}"
+                f"Missing translation or variable for {key!r} in {lang!r}"
             )

@@ -52,9 +52,7 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
         try:
             authorize_grant(authorized.permissions, user.permissions)
         except PermissionDenied:
-            raise PermissionDenied(
-                "Cannot update email of user with non-grantable permission"
-            )
+            raise PermissionDenied(("error.cannot_update_user_email",))
 
 
 @router.post(

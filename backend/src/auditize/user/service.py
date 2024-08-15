@@ -10,6 +10,7 @@ from auditize.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
     UnknownModelException,
+    enhance_constraint_violation_exception,
 )
 from auditize.helpers.datetime import now
 from auditize.helpers.email import send_email
@@ -65,7 +66,8 @@ async def save_user(dbm: DatabaseManager, user: User) -> UUID:
 async def create_user(dbm: DatabaseManager, user: User) -> UUID:
     user = user.model_copy()
     user.password_reset_token = _generate_password_reset_token()
-    user_id = await save_user(dbm, user)
+    with enhance_constraint_violation_exception("error.constraint_violation.user"):
+        user_id = await save_user(dbm, user)
     _send_account_setup_email(user)
     return user_id
 
@@ -82,7 +84,8 @@ async def update_user(dbm: DatabaseManager, user_id: UUID, update: UserUpdate):
     if update.password:
         doc_update["password_hash"] = hash_user_password(update.password)
 
-    await update_resource_document(dbm.core_db.users, user_id, doc_update)
+    with enhance_constraint_violation_exception("error.constraint_violation.user"):
+        await update_resource_document(dbm.core_db.users, user_id, doc_update)
 
 
 async def _get_user(dbm: DatabaseManager, filter: UUID | dict) -> User:
