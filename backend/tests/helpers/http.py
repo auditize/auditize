@@ -177,9 +177,16 @@ def get_cookie_by_name(resp: Response, name) -> Cookie:
 # - https://www.encode.io/articles/working-with-http-requests-in-asgi
 
 
-def make_http_request(*, headers: dict = None) -> Request:
+def make_http_request(*, headers: dict = None, query_params: dict = None) -> Request:
     if headers is None:
         headers = {}
+
+    if query_params:
+        query_string = "&".join(
+            f"{key}={value}" for key, value in query_params.items()
+        ).encode()
+    else:
+        query_string = b""
 
     scope = {
         "type": "http",
@@ -187,6 +194,7 @@ def make_http_request(*, headers: dict = None) -> Request:
         "scheme": "http",
         "server": ("localhost", 8000),
         "path": "/",
+        "query_string": query_string,
         "headers": [
             [key.lower().encode(), value.encode()] for key, value in headers.items()
         ],

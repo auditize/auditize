@@ -137,6 +137,8 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     except UnknownModelException:
         raise AuthenticationFailure("User does no longer exist")
 
+    request.state.auditize_lang = user.lang
+
     return Authenticated.from_user(user)
 
 
