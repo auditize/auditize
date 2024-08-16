@@ -11,14 +11,16 @@ import {
 import { isEmail, useForm } from "@mantine/form";
 import { useDisclosure, useDocumentTitle } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { AxiosError } from "axios";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
-import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import { ApiErrorMessage, ErrorMessage } from "@/components/ErrorMessage";
 import Message from "@/components/Message";
 import { ModalActionButtons } from "@/components/ModalActionButtons";
 import { ModalTitle } from "@/components/ModalTitle";
+import { useI18nContext } from "@/i18n";
 
 import { CurrentUserInfo, forgotPassword, logIn } from "../api";
 import { useCurrentUser } from "../contexts";
@@ -53,6 +55,7 @@ function ForgotPassword({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const { lang } = useI18nContext();
   const form = useForm({
     initialValues: {
       email: "",
@@ -63,7 +66,7 @@ function ForgotPassword({
     },
   });
   const mutation = useMutation({
-    mutationFn: forgotPassword,
+    mutationFn: (email: string) => forgotPassword(email, lang),
   });
 
   useEffect(() => {
@@ -90,9 +93,7 @@ function ForgotPassword({
             disabled={mutation.isSuccess}
             data-autofocus
           />
-          <InlineErrorMessage>
-            {mutation.error ? mutation.error.message : null}
-          </InlineErrorMessage>
+          <ApiErrorMessage error={mutation.error} />
           {mutation.isSuccess && (
             <Message.Success>{t("forgotPassword.emailSent")}</Message.Success>
           )}
@@ -107,12 +108,22 @@ function ForgotPassword({
   );
 }
 
+function LoginErrorMessage({ error }: { error: Error | null }) {
+  const { t } = useTranslation();
+  if (error instanceof AxiosError && error.response?.status === 401) {
+    return <ErrorMessage message={t("login.invalidCredentials")} />;
+  } else {
+    return <ApiErrorMessage error={error} />;
+  }
+}
+
 export function LoginForm({
   onLogin,
 }: {
   onLogin: (user: CurrentUserInfo) => void;
 }) {
   const { t } = useTranslation();
+  const { lang } = useI18nContext();
   const { currentUser } = useCurrentUser();
   const [searchParams] = useSearchParams();
   const form = useForm({
@@ -126,17 +137,13 @@ export function LoginForm({
       email: isEmail(t("login.form.email.invalid")),
     },
   });
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   const mutation = useMutation({
     mutationFn: (values: { email: string; password: string }) =>
-      logIn(values.email, values.password),
+      logIn(values.email, values.password, lang),
     onSuccess: (user) => {
       onLogin(user);
       navigate(getDefaultPageForUser(user, searchParams), { replace: true });
-    },
-    onError: (error) => {
-      setError(error.message);
     },
   });
   const [
@@ -172,8 +179,8 @@ export function LoginForm({
                 type="password"
               />
               <Button type="submit">{t("login.signIn")}</Button>
-              <InlineErrorMessage>{error}</InlineErrorMessage>
             </Stack>
+            <LoginErrorMessage error={mutation.error} />
             <Anchor onClick={openForgotPassword} size="sm">
               {"(" + t("forgotPassword.link") + ")"}
             </Anchor>

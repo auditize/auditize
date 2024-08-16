@@ -1,0 +1,13 @@
+{
+  "test": "This is a test",
+  "test_var": "This is a test with a variable {var}",
+  "error.cannot_update_user_email": "Cannot update email of a user with higher privileges than you",
+  "error.log_i18n_profile_deletion_forbidden": "Cannot delete log i18n profile {profile_id}: the profile is used by one or more repositories",
+  "error.cannot_delete_last_superadmin_user": "Cannot delete the last user with superadmin role",
+  "error.invalid_password_reset_token": "The password reset token is invalid or has expired",
+  "error.constraint_violation.user": "A user with the same email already exists",
+  "error.constraint_violation.apikey": "An API key with the same name already exists",
+  "error.constraint_violation.repo": "A repository with the same name already exists",
+  "error.constraint_violation.log_i18n_profile": "A log i18n profile with the same name already exists",
+  "error.constraint_violation.log_filter": "A log filter with the same name already exists"
+}

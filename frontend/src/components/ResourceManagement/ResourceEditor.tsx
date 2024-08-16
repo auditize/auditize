@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Flex,
   Group,
   LoadingOverlay,
   Modal,
@@ -9,11 +10,11 @@ import {
 } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
-import { FormEventHandler, useEffect, useState } from "react";
+import { FormEventHandler, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { InlineErrorMessage } from "../InlineErrorMessage";
+import { ApiErrorMessage } from "../ErrorMessage";
 import { ModalActionButtons } from "../ModalActionButtons";
 import { ModalTitle } from "../ModalTitle";
 
@@ -54,15 +55,13 @@ function ResourceEditor({
         onClose();
       }
     },
-    onError: (error) => {
-      setError(t("common.error", { error: error.message }));
-    },
   });
-  const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    setError("");
-  }, [opened, disabledSaving]);
+    if (!opened) {
+      mutation.reset();
+    }
+  }, [opened]);
 
   return (
     <Modal
@@ -88,7 +87,9 @@ function ResourceEditor({
               closeOnly={disabledSaving}
             />
           </form>
-          <InlineErrorMessage>{error}</InlineErrorMessage>
+          <Flex justify="center" align="center">
+            <ApiErrorMessage error={mutation.error} />
+          </Flex>
         </Box>
       </div>
     </Modal>

@@ -137,6 +137,7 @@ class BasePermissionTests:
             ),
             expected_json={
                 "message": callee.Contains("cannot be assigned in log permissions"),
+                "localized_message": None,
                 "validation_errors": [],
             },
         )
@@ -253,6 +254,7 @@ class BasePermissionTests:
             },
             expected_json={
                 "message": callee.Contains("cannot be assigned in log permissions"),
+                "localized_message": None,
                 "validation_errors": [],
             },
         )

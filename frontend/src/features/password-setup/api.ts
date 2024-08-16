@@ -9,12 +9,14 @@ type PasswordResetInfo = {
 export async function setPassword(
   token: string,
   password: string,
+  lang?: string,
 ): Promise<void> {
-  await reqPost(`/users/password-reset/${token}`, { password });
+  await reqPost(`/users/password-reset/${token}`, { password }, { lang });
 }
 
 export async function getPasswordResetInfo(
   token: string,
+  lang?: string,
 ): Promise<PasswordResetInfo> {
-  return reqGet(`/users/password-reset/${token}`);
+  return reqGet(`/users/password-reset/${token}`, { lang });
 }

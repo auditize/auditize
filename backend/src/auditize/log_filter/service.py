@@ -1,7 +1,11 @@
 from uuid import UUID
 
 from auditize.database import DatabaseManager
-from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.exceptions import (
+    UnknownModelException,
+    ValidationError,
+    enhance_constraint_violation_exception,
+)
 from auditize.log_filter.models import LogFilter, LogFilterUpdate
 from auditize.repo.service import get_repo
 from auditize.resource.pagination.page.models import PagePaginationInfo
@@ -23,12 +27,15 @@ async def _validate_log_filter(
         try:
             await get_repo(dbm, log_filter.repo_id)
         except UnknownModelException:
-            raise ValidationError(f"Repo {log_filter.repo_id!r} does not exist")
+            raise ValidationError(f"Repository {log_filter.repo_id!r} does not exist")
 
 
 async def create_log_filter(dbm: DatabaseManager, log_filter: LogFilter) -> UUID:
     await _validate_log_filter(dbm, log_filter)
-    return await create_resource_document(dbm.core_db.log_filters, log_filter)
+    with enhance_constraint_violation_exception(
+        "error.constraint_violation.log_filter"
+    ):
+        return await create_resource_document(dbm.core_db.log_filters, log_filter)
 
 
 def _log_filter_discriminator(user_id: UUID, log_filter_id: UUID) -> dict:
@@ -39,11 +46,14 @@ async def update_log_filter(
     dbm: DatabaseManager, user_id: UUID, log_filter_id: UUID, update: LogFilterUpdate
 ):
     await _validate_log_filter(dbm, update)
-    await update_resource_document(
-        dbm.core_db.log_filters,
-        _log_filter_discriminator(user_id, log_filter_id),
-        update,
-    )
+    with enhance_constraint_violation_exception(
+        "error.constraint_violation.log_filter"
+    ):
+        await update_resource_document(
+            dbm.core_db.log_filters,
+            _log_filter_discriminator(user_id, log_filter_id),
+            update,
+        )
 
 
 async def get_log_filter(

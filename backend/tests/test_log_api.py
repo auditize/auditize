@@ -154,6 +154,7 @@ async def test_create_log_invalid_identifiers(
             json=PreparedLog.prepare_data(extra),
             expected_json={
                 "message": "Invalid request",
+                "localized_message": None,
                 "validation_errors": [
                     {
                         "field": callee.IsA(str),

@@ -7,13 +7,11 @@ from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import DatabaseManager
-from auditize.log.db import LogDatabase
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
-from helpers.log_filter import PreparedLogFilter
 from helpers.log_i18n_profile import PreparedLogI18nProfile
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.constants import DEFAULT_PERMISSIONS
@@ -119,6 +117,7 @@ async def test_repo_create_missing_name(
         json={},
         expected_json={
             "message": "Invalid request",
+            "localized_message": None,
             "validation_errors": [
                 {
                     "field": "name",

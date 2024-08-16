@@ -306,7 +306,6 @@ export default {
     enabled: "Activé",
     disabled: "Désactivé",
     readonly: "Lecture seule",
-    error: "Erreur: {{error}}",
     save: "Enregistrer",
     cancel: "Annuler",
     confirm: "Confirmer",
@@ -331,6 +330,13 @@ export default {
         placeholder: "Confirmation du mot de passe",
         doesNotMatch: "Les mots de passe ne correspondent pas.",
       },
+    },
+    error: {
+      error: "Erreur",
+      details: "Erreur: {{error}}",
+      unexpected: "Une erreur inattendue est survenue",
+      401: "Erreur d'authentification",
+      403: "Erreur: Cette opération n'est pas autorisée",
     },
   },
   resource: {
@@ -382,6 +388,7 @@ export default {
       },
     },
     signIn: "Connexion",
+    invalidCredentials: "Email ou mot de passe incorrect. Veuillez réessayer.",
   },
   forgotPassword: {
     link: "Mot de passe oublié ?",

@@ -1,9 +1,9 @@
-import { Box, Button, Group, LoadingOverlay, Modal, Text } from "@mantine/core";
+import { Box, Flex, LoadingOverlay, Modal, Text } from "@mantine/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import React from "react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import { InlineErrorMessage } from "../InlineErrorMessage";
+import { ApiErrorMessage } from "../ErrorMessage";
 import { ModalActionButtons } from "../ModalActionButtons";
 import { ModalTitle } from "../ModalTitle";
 
@@ -32,6 +32,12 @@ export function ResourceDeletion({
     },
   });
 
+  useEffect(() => {
+    if (!opened) {
+      mutation.reset();
+    }
+  }, [opened]);
+
   return (
     <Modal
       title={<ModalTitle>{t("resource.delete.confirm.title")}</ModalTitle>}
@@ -56,10 +62,9 @@ export function ResourceDeletion({
               dangerous
             />
           </form>
-          <InlineErrorMessage>
-            {mutation.error &&
-              t("common.error", { error: mutation.error.message })}
-          </InlineErrorMessage>
+          <Flex justify="center" align="center">
+            <ApiErrorMessage error={mutation.error} />
+          </Flex>
         </Box>
       </div>
     </Modal>

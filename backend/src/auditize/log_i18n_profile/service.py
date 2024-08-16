@@ -1,7 +1,10 @@
 from uuid import UUID
 
 from auditize.database import DatabaseManager
-from auditize.exceptions import ConstraintViolation
+from auditize.exceptions import (
+    ConstraintViolation,
+    enhance_constraint_violation_exception,
+)
 from auditize.log_i18n_profile.models import (
     LogI18nProfile,
     LogI18nProfileUpdate,
@@ -21,7 +24,12 @@ from auditize.resource.service import (
 async def create_log_i18n_profile(
     dbm: DatabaseManager, profile: LogI18nProfile
 ) -> UUID:
-    profile_id = await create_resource_document(dbm.core_db.logi18nprofiles, profile)
+    with enhance_constraint_violation_exception(
+        "error.constraint_violation.log_i18n_profile"
+    ):
+        profile_id = await create_resource_document(
+            dbm.core_db.logi18nprofiles, profile
+        )
     return profile_id
 
 
@@ -39,7 +47,10 @@ async def update_log_i18n_profile(
                 # NB: lang is not necessarily present in existing translations
                 profile.translations.pop(lang, None)
 
-    await update_resource_document(dbm.core_db.logi18nprofiles, profile_id, profile)
+    with enhance_constraint_violation_exception(
+        "error.constraint_violation.log_i18n_profile"
+    ):
+        await update_resource_document(dbm.core_db.logi18nprofiles, profile_id, profile)
 
 
 async def get_log_i18n_profile(
@@ -83,7 +94,7 @@ async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: UUID):
 
     if await is_log_i18n_profile_used_by_repo(dbm, profile_id):
         raise ConstraintViolation(
-            f"Cannot delete log i18n profile {profile_id!r}: profile is used by one or more repositories"
+            ("error.log_i18n_profile_deletion_forbidden", {"profile_id": profile_id}),
         )
     await delete_resource_document(dbm.core_db.logi18nprofiles, profile_id)
 

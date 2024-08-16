@@ -303,7 +303,6 @@ export default {
     enabled: "Enabled",
     disabled: "Disabled",
     readonly: "Read-only",
-    error: "Error: {{error}}",
     save: "Save",
     cancel: "Cancel",
     confirm: "Confirm",
@@ -328,6 +327,13 @@ export default {
         placeholder: "Password confirmation",
         doesNotMatch: "Passwords do not match.",
       },
+    },
+    error: {
+      error: "Error",
+      details: "Error: {{error}}",
+      unexpected: "An unexpected error occurred.",
+      401: "Authentication error",
+      403: "Error: Permission denied",
     },
   },
   resource: {
@@ -379,6 +385,7 @@ export default {
       },
     },
     signIn: "Login",
+    invalidCredentials: "Invalid email or password. Please try again.",
   },
   forgotPassword: {
     link: "I forgot my password",

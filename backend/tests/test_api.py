@@ -17,6 +17,7 @@ async def test_bad_json(superadmin_client: HttpTestHelper):
         json="bad json",
         expected_json={
             "message": callee.StartsWith("Input should be a valid"),
+            "localized_message": None,
             "validation_errors": [],
         },
     )

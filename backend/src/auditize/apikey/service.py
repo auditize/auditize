@@ -5,6 +5,7 @@ from uuid import UUID
 from auditize.apikey.models import Apikey, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import DatabaseManager
+from auditize.exceptions import enhance_constraint_violation_exception
 from auditize.permissions.operations import normalize_permissions, update_permissions
 from auditize.permissions.service import remove_repo_from_permissions
 from auditize.repo.service import ensure_repos_in_permissions_exist
@@ -31,14 +32,15 @@ def _generate_key() -> tuple[str, str]:
 async def create_apikey(dbm: DatabaseManager, apikey: Apikey) -> tuple[UUID, str]:
     await ensure_repos_in_permissions_exist(dbm, apikey.permissions)
     key, key_hash = _generate_key()
-    apikey_id = await create_resource_document(
-        dbm.core_db.apikeys,
-        {
-            **apikey.model_dump(exclude={"id", "key_hash", "permissions"}),
-            "key_hash": key_hash,
-            "permissions": normalize_permissions(apikey.permissions).model_dump(),
-        },
-    )
+    with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
+        apikey_id = await create_resource_document(
+            dbm.core_db.apikeys,
+            {
+                **apikey.model_dump(exclude={"id", "key_hash", "permissions"}),
+                "key_hash": key_hash,
+                "permissions": normalize_permissions(apikey.permissions).model_dump(),
+            },
+        )
     return apikey_id, key
 
 
@@ -50,7 +52,8 @@ async def update_apikey(dbm: DatabaseManager, apikey_id: UUID, update: ApikeyUpd
         await ensure_repos_in_permissions_exist(dbm, apikey_permissions)
         doc_update["permissions"] = apikey_permissions.model_dump()
 
-    await update_resource_document(dbm.core_db.apikeys, apikey_id, doc_update)
+    with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
+        await update_resource_document(dbm.core_db.apikeys, apikey_id, doc_update)
 
 
 async def regenerate_apikey(dbm: DatabaseManager, apikey_id: UUID) -> str:

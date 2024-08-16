@@ -1,4 +1,5 @@
 import {
+  Alert,
   Anchor,
   Button,
   Center,
@@ -8,15 +9,19 @@ import {
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { IconExclamationCircle } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AxiosError } from "axios";
 import React, { useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { NavLink, useParams } from "react-router-dom";
 
-import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import {
+  ApiErrorMessage,
+  useApiErrorMessageBuilder,
+} from "@/components/ErrorMessage";
 import Message from "@/components/Message";
 import { usePasswordValidation } from "@/components/PasswordForm";
+import { useI18nContext } from "@/i18n";
 
 import { getPasswordResetInfo, setPassword } from "../api";
 
@@ -45,14 +50,16 @@ function PasswordSetup({
   successMessage: React.ReactNode;
 }) {
   const { t } = useTranslation();
+  const { lang } = useI18nContext();
+  const apiErrorMessageBuilder = useApiErrorMessageBuilder();
   const { token } = useParams();
   const form = usePasswordSetupForm();
   const query = useQuery({
     queryKey: ["passwordReset", token],
-    queryFn: () => getPasswordResetInfo(token!),
+    queryFn: () => getPasswordResetInfo(token!, lang),
   });
   const mutation = useMutation({
-    mutationFn: (password: string) => setPassword(token!, password),
+    mutationFn: (password: string) => setPassword(token!, password, lang),
   });
 
   useEffect(() => {
@@ -61,10 +68,17 @@ function PasswordSetup({
     }
   }, [query.data]);
 
-  if ((query?.error as AxiosError)?.response?.status === 404) {
+  if (query.error) {
     return (
-      <Center>
-        <h1>Invalid token</h1>
+      <Center pt="4rem">
+        <Alert
+          title={t("common.error.error")}
+          icon={<IconExclamationCircle />}
+          color="red"
+          variant="light"
+        >
+          {apiErrorMessageBuilder(query.error, { raw: true })}
+        </Alert>
       </Center>
     );
   }
@@ -119,7 +133,7 @@ function PasswordSetup({
             <Button type="submit" disabled={disabledForm}>
               {t("common.submit")}
             </Button>
-            <InlineErrorMessage>{mutation.error}</InlineErrorMessage>
+            <ApiErrorMessage error={mutation.error} />
           </Stack>
         </form>
 

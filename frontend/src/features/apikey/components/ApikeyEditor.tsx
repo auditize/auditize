@@ -7,7 +7,7 @@ import { ReactElement, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { CopyIcon } from "@/components/CopyIcon";
-import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import { ApiErrorMessage } from "@/components/ErrorMessage";
 import {
   ResourceCreation,
   ResourceEdition,
@@ -127,11 +127,9 @@ function SecretCreation({ value }: { value: string | null }) {
 function SecretUpdate({ apikeyId }: { apikeyId: string }) {
   const { t } = useTranslation();
   const [secret, setSecret] = useState<string | null>(null);
-  const [error, setError] = useState<string>("");
   const mutation = useMutation({
     mutationFn: () => regenerateApikey(apikeyId),
     onSuccess: (value) => setSecret(value),
-    onError: (error) => setError(error.message),
   });
 
   if (secret) {
@@ -151,7 +149,7 @@ function SecretUpdate({ apikeyId }: { apikeyId: string }) {
             </ActionIcon>
           }
         />
-        <InlineErrorMessage>{error}</InlineErrorMessage>
+        <ApiErrorMessage error={mutation.error} />
       </>
     );
   }
