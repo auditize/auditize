@@ -332,6 +332,7 @@ export default {
       },
     },
     error: {
+      error: "Erreur",
       details: "Erreur: {{error}}",
       unexpected: "Une erreur inattendue est survenue",
       401: "Erreur d'authentification",

@@ -329,6 +329,7 @@ export default {
       },
     },
     error: {
+      error: "Error",
       details: "Error: {{error}}",
       unexpected: "An unexpected error occurred.",
       401: "Authentication error",

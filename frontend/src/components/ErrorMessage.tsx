@@ -17,30 +17,36 @@ export function ErrorMessage({
   );
 }
 
-export function ApiErrorMessage({ error }: { error: Error | null }) {
+export function useApiErrorMessageBuilder(): (
+  error: Error,
+  opts?: { raw: boolean },
+) => string {
   const { t } = useTranslation();
-  let message;
+
+  return (error: Error, { raw = false }: { raw?: boolean } = {}) => {
+    if (error instanceof AxiosError) {
+      const localizedMessage = (error.response?.data as any)?.localized_message;
+      if (localizedMessage) {
+        return raw
+          ? localizedMessage
+          : t("common.error.details", { error: localizedMessage });
+      } else {
+        const statusCode = error.response?.status;
+        if (statusCode === 401 || statusCode === 403) {
+          return t(`common.error.${statusCode}`);
+        }
+      }
+    }
+
+    return t("common.error.unexpected");
+  };
+}
+
+export function ApiErrorMessage({ error }: { error: Error | null }) {
+  const errorMessageBuilder = useApiErrorMessageBuilder();
 
   if (!error) {
     return null;
   }
-
-  if (error instanceof AxiosError) {
-    if ((error.response?.data as any).localized_message) {
-      message = t("common.error.details", {
-        error: (error.response?.data as any).localized_message,
-      });
-    } else {
-      const statusCode = error.response?.status;
-      if (statusCode === 401 || statusCode === 403) {
-        message = t(`common.error.${statusCode}`);
-      }
-    }
-  }
-
-  if (!message) {
-    message = t("common.error.unexpected");
-  }
-
-  return <ErrorMessage message={message} />;
+  return <ErrorMessage message={errorMessageBuilder(error)} />;
 }
