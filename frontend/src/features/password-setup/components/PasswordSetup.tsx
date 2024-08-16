@@ -17,6 +17,7 @@ import { NavLink, useParams } from "react-router-dom";
 import { ApiErrorMessage } from "@/components/ErrorMessage";
 import Message from "@/components/Message";
 import { usePasswordValidation } from "@/components/PasswordForm";
+import { useI18nContext } from "@/i18n";
 
 import { getPasswordResetInfo, setPassword } from "../api";
 
@@ -45,6 +46,7 @@ function PasswordSetup({
   successMessage: React.ReactNode;
 }) {
   const { t } = useTranslation();
+  const { lang } = useI18nContext();
   const { token } = useParams();
   const form = usePasswordSetupForm();
   const query = useQuery({
@@ -52,7 +54,7 @@ function PasswordSetup({
     queryFn: () => getPasswordResetInfo(token!),
   });
   const mutation = useMutation({
-    mutationFn: (password: string) => setPassword(token!, password),
+    mutationFn: (password: string) => setPassword(token!, password, lang),
   });
 
   useEffect(() => {

@@ -37,10 +37,17 @@ export async function getAllPagePaginatedItems<T>(
   return allItems;
 }
 
-export async function reqPost(path: string, data: any): Promise<any> {
+export async function reqPost(
+  path: string,
+  data: any,
+  params = {},
+): Promise<any> {
   const response = await axiosInstance.post(
     path,
     camelCaseToSnakeCaseObjectKeys(data),
+    {
+      params: camelCaseToSnakeCaseObjectKeys(params),
+    },
   );
   return snakeCaseToCamelCaseObjectKeys(response.data);
 }

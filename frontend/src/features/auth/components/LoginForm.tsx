@@ -20,6 +20,7 @@ import { ApiErrorMessage, ErrorMessage } from "@/components/ErrorMessage";
 import Message from "@/components/Message";
 import { ModalActionButtons } from "@/components/ModalActionButtons";
 import { ModalTitle } from "@/components/ModalTitle";
+import { useI18nContext } from "@/i18n";
 
 import { CurrentUserInfo, forgotPassword, logIn } from "../api";
 import { useCurrentUser } from "../contexts";
@@ -54,6 +55,7 @@ function ForgotPassword({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const { lang } = useI18nContext();
   const form = useForm({
     initialValues: {
       email: "",
@@ -64,7 +66,7 @@ function ForgotPassword({
     },
   });
   const mutation = useMutation({
-    mutationFn: forgotPassword,
+    mutationFn: (email: string) => forgotPassword(email, lang),
   });
 
   useEffect(() => {
@@ -121,6 +123,7 @@ export function LoginForm({
   onLogin: (user: CurrentUserInfo) => void;
 }) {
   const { t } = useTranslation();
+  const { lang } = useI18nContext();
   const { currentUser } = useCurrentUser();
   const [searchParams] = useSearchParams();
   const form = useForm({
@@ -137,7 +140,7 @@ export function LoginForm({
   const navigate = useNavigate();
   const mutation = useMutation({
     mutationFn: (values: { email: string; password: string }) =>
-      logIn(values.email, values.password),
+      logIn(values.email, values.password, lang),
     onSuccess: (user) => {
       onLogin(user);
       navigate(getDefaultPageForUser(user, searchParams), { replace: true });
