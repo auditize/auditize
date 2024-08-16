@@ -1,6 +1,6 @@
 from fastapi import Request
 
-from auditize.i18n.support import DEFAULT_LANG, SUPPORTED_LANGUAGES
+from auditize.i18n.constants import DEFAULT_LANG, SUPPORTED_LANGUAGES
 
 
 def _get_request_lang(request: Request) -> str:

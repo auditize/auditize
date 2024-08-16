@@ -1,7 +1,7 @@
 import json
 import os.path as osp
 
-from auditize.i18n.support import DEFAULT_LANG, SUPPORTED_LANGUAGES
+from auditize.i18n.constants import DEFAULT_LANG, SUPPORTED_LANGUAGES
 
 
 class Translator:

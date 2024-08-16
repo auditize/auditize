@@ -4,8 +4,7 @@ import pytest
 
 from auditize.auth.authorizer import get_authenticated
 from auditize.database import DatabaseManager
-from auditize.i18n import t
-from auditize.i18n.detection import get_request_lang
+from auditize.i18n import get_request_lang, t
 from conftest import UserBuilder
 from helpers.http import HttpTestHelper, make_http_request
 

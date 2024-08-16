@@ -14,8 +14,7 @@ from auditize.exceptions import (
     UnknownModelException,
     ValidationError,
 )
-from auditize.i18n import t
-from auditize.i18n.detection import get_request_lang
+from auditize.i18n import get_request_lang, t
 
 
 class ApiErrorResponse(BaseModel):
