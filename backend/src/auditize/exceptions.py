@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from functools import partial
 
 
 class AuditizeException(Exception):
@@ -34,8 +35,14 @@ class PayloadTooLarge(AuditizeException):
 
 
 @contextmanager
-def enhance_constraint_violation_exception(trans_key):
+def _enhance_exception(exc_class, trans_key):
     try:
         yield
-    except ConstraintViolation:
-        raise ConstraintViolation((trans_key,))
+    except exc_class:
+        raise exc_class((trans_key,))
+
+
+enhance_constraint_violation_exception = partial(
+    _enhance_exception, ConstraintViolation
+)
+enhance_unknown_model_exception = partial(_enhance_exception, UnknownModelException)

@@ -11,6 +11,7 @@ from auditize.exceptions import (
     ConstraintViolation,
     UnknownModelException,
     enhance_constraint_violation_exception,
+    enhance_unknown_model_exception,
 )
 from auditize.helpers.datetime import now
 from auditize.helpers.email import send_email
@@ -109,7 +110,8 @@ def _build_password_reset_token_filter(token: str):
 
 
 async def get_user_by_password_reset_token(dbm: DatabaseManager, token: str) -> User:
-    return await _get_user(dbm, _build_password_reset_token_filter(token))
+    with enhance_unknown_model_exception("error.invalid_password_reset_token"):
+        return await _get_user(dbm, _build_password_reset_token_filter(token))
 
 
 # NB: this function is let public to be used in tests and to make sure that passwords
@@ -127,11 +129,12 @@ async def update_user_password_by_password_reset_token(
     dbm: DatabaseManager, token: str, password: str
 ):
     password_hash = hash_user_password(password)
-    await update_resource_document(
-        dbm.core_db.users,
-        _build_password_reset_token_filter(token),
-        {"password_hash": password_hash, "password_reset_token": None},
-    )
+    with enhance_unknown_model_exception("error.invalid_password_reset_token"):
+        await update_resource_document(
+            dbm.core_db.users,
+            _build_password_reset_token_filter(token),
+            {"password_hash": password_hash, "password_reset_token": None},
+        )
 
 
 async def get_users(
