@@ -1,6 +1,5 @@
 from typing import TypeVar
 
-from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,7 +13,7 @@ from auditize.exceptions import (
     UnknownModelException,
     ValidationError,
 )
-from auditize.i18n import get_request_lang, t
+from auditize.i18n import t
 
 
 class ApiErrorResponse(BaseModel):
@@ -34,7 +33,7 @@ class ApiErrorResponse(BaseModel):
         return cls(message=message, localized_message=localized_message)
 
     @classmethod
-    def from_exception(cls, exc: Exception, default_message: str, request: Request):
+    def from_exception(cls, exc: Exception, default_message: str, lang: str):
         if isinstance(exc, AuditizeException):
             if (
                 len(exc.args) == 1
@@ -43,7 +42,7 @@ class ApiErrorResponse(BaseModel):
             ):
                 return cls.build(
                     message=t(*exc.args[0]),
-                    localized_message=t(*exc.args[0], lang=get_request_lang(request)),
+                    localized_message=t(*exc.args[0], lang=lang),
                 )
 
         return cls.build(message=str(exc) or default_message)
@@ -91,7 +90,7 @@ class ApiValidationErrorResponse(ApiErrorResponse):
         )
 
     @classmethod
-    def from_exception(cls, exc: Exception, default_message: str, request: Request):
+    def from_exception(cls, exc: Exception, default_message: str, lang: str):
         if isinstance(exc, RequestValidationError):
             errors = exc.errors()
             if len(errors) == 0:
@@ -107,7 +106,7 @@ class ApiValidationErrorResponse(ApiErrorResponse):
                     map(cls.ValidationErrorDetail.from_dict, exc.errors())
                 ),
             )
-        return super().from_exception(exc, default_message, request)
+        return super().from_exception(exc, default_message, lang)
 
 
 _EXCEPTION_RESPONSES = {
@@ -143,7 +142,7 @@ def error_responses(*status_codes: int):
     }
 
 
-def make_response_from_exception(exc: E, request: Request) -> JSONResponse:
+def make_response_from_exception(exc: E, lang: str) -> JSONResponse:
     if exc.__class__ not in _EXCEPTION_RESPONSES:
         status_code = 500
         error = ApiErrorResponse(message="Internal server error")
@@ -151,6 +150,6 @@ def make_response_from_exception(exc: E, request: Request) -> JSONResponse:
         status_code, default_error_message, error_response_class = _EXCEPTION_RESPONSES[
             exc.__class__
         ]
-        error = error_response_class.from_exception(exc, default_error_message, request)
+        error = error_response_class.from_exception(exc, default_error_message, lang)
 
     return JSONResponse(status_code=status_code, content=error.model_dump())

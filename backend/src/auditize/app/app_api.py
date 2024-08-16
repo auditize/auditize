@@ -11,6 +11,7 @@ from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
     make_response_from_exception,
 )
+from auditize.i18n import get_request_lang
 from auditize.log.api import router as logs_router
 from auditize.log_filter.api import router as log_filters_router
 from auditize.log_i18n_profile.api import router as logi18nprofiles_router
@@ -26,24 +27,15 @@ async def setup_db(_):
     yield
 
 
+def exception_handler(request, exc):
+    return make_response_from_exception(exc, get_request_lang(request))
+
+
 app = FastAPI(lifespan=setup_db)
+app.add_exception_handler(AuditizeException, exception_handler)
+app.add_exception_handler(RequestValidationError, exception_handler)
 setup_cors(app)
 customize_openapi(app)
-
-
-###
-# Exception handlers
-###
-
-
-@app.exception_handler(AuditizeException)
-def exception_handler(request, exc):
-    return make_response_from_exception(exc, request)
-
-
-@app.exception_handler(RequestValidationError)
-def request_validation_error_handler(request, exc):
-    return make_response_from_exception(exc, request)
 
 
 ###
