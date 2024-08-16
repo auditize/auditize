@@ -95,6 +95,7 @@ async def test_user_create_missing_parameter(
             json=data,
             expected_json={
                 "message": "Invalid request",
+                "localized_message": None,
                 "validation_errors": [
                     {
                         "field": key,
@@ -115,6 +116,7 @@ async def test_user_create_invalid_email(user_write_client: HttpTestHelper):
         },
         expected_json={
             "message": "Invalid request",
+            "localized_message": None,
             "validation_errors": [
                 {
                     "field": "email",
@@ -131,6 +133,7 @@ async def test_user_create_unsupported_lang(user_write_client: HttpTestHelper):
         json=PreparedUser.prepare_data({"lang": "de"}),
         expected_json={
             "message": "Invalid request",
+            "localized_message": None,
             "validation_errors": [
                 {
                     "field": "lang",

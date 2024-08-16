@@ -28,6 +28,12 @@ class ApiErrorResponse(BaseModel):
         json_schema_extra={"example": "Une erreur est survenue"},
     )
 
+    # NB: we use a "build" method instead of directly using the Model constructor
+    # to better handle optional fields and subclassing
+    @classmethod
+    def build(cls, message: str, localized_message: str = None):
+        return cls(message=message, localized_message=localized_message)
+
     @classmethod
     def from_exception(cls, exc: Exception, default_message: str, request: Request):
         if isinstance(exc, AuditizeException):
@@ -36,15 +42,15 @@ class ApiErrorResponse(BaseModel):
                 and isinstance(exc.args[0], (list, tuple))
                 and len(exc.args[0]) in (1, 2)
             ):
-                return cls(
-                    localized_message=t(*exc.args[0], lang=get_request_lang(request)),
+                return cls.build(
                     message=t(*exc.args[0]),
+                    localized_message=t(*exc.args[0], lang=get_request_lang(request)),
                 )
 
-        return cls(message=str(exc) or default_message, localized_message=None)
+        return cls.build(message=str(exc) or default_message)
 
 
-class ApiValidationErrorResponse(BaseModel):
+class ApiValidationErrorResponse(ApiErrorResponse):
     class ValidationErrorDetail(BaseModel):
         field: str | None = Field()
         message: str
@@ -58,8 +64,7 @@ class ApiValidationErrorResponse(BaseModel):
             else:
                 return cls(field=None, message=error["msg"])
 
-    message: str
-    validation_errors: list[ValidationErrorDetail] = Field(default_factory=list)
+    validation_errors: list[ValidationErrorDetail] = Field()
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -74,23 +79,36 @@ class ApiValidationErrorResponse(BaseModel):
     )
 
     @classmethod
+    def build(
+        cls,
+        message: str,
+        localized_message: str = None,
+        validation_errors: list[ValidationErrorDetail] = None,
+    ):
+        return cls(
+            message=message,
+            localized_message=localized_message,
+            validation_errors=validation_errors or [],
+        )
+
+    @classmethod
     def from_exception(cls, exc: Exception, default_message: str, request: Request):
         if isinstance(exc, RequestValidationError):
             errors = exc.errors()
             if len(errors) == 0:
                 # This should never happen
-                return cls(message=default_message)
+                return cls.build(message=default_message)
             elif len(errors) == 1 and len(errors[0]["loc"]) == 1:
                 # Make a special case for single top-level errors affecting the whole request
-                return cls(message=errors[0]["msg"])
-            return cls(
+                return cls.build(message=errors[0]["msg"])
+            return cls.build(
                 # Common case
                 message="Invalid request",
                 validation_errors=list(
                     map(cls.ValidationErrorDetail.from_dict, exc.errors())
                 ),
             )
-        return cls(message=str(exc) or default_message)
+        return super().from_exception(exc, default_message, request)
 
 
 _EXCEPTION_RESPONSES = {

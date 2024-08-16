@@ -56,6 +56,7 @@ async def test_apikey_create_missing_parameter(
             json=data,
             expected_json={
                 "message": "Invalid request",
+                "localized_message": None,
                 "validation_errors": [
                     {
                         "field": key,

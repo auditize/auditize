@@ -119,6 +119,7 @@ async def test_repo_create_missing_name(
         json={},
         expected_json={
             "message": "Invalid request",
+            "localized_message": None,
             "validation_errors": [
                 {
                     "field": "name",
