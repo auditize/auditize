@@ -14,7 +14,7 @@ import React, { useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { NavLink, useParams } from "react-router-dom";
 
-import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import { ApiErrorMessage } from "@/components/ErrorMessage";
 import Message from "@/components/Message";
 import { usePasswordValidation } from "@/components/PasswordForm";
 
@@ -119,7 +119,7 @@ function PasswordSetup({
             <Button type="submit" disabled={disabledForm}>
               {t("common.submit")}
             </Button>
-            <InlineErrorMessage>{mutation.error}</InlineErrorMessage>
+            <ApiErrorMessage error={mutation.error} />
           </Stack>
         </form>
 

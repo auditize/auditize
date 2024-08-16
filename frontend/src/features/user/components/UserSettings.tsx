@@ -11,7 +11,7 @@ import { useForm } from "@mantine/form";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
-import { InlineErrorMessage } from "@/components/InlineErrorMessage";
+import { ApiErrorMessage } from "@/components/ErrorMessage";
 import { ModalActionButtons } from "@/components/ModalActionButtons";
 import { ModalTitle } from "@/components/ModalTitle";
 import { usePasswordValidation } from "@/components/PasswordForm";
@@ -63,9 +63,7 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
             validateButtonLabel={t("common.save")}
             onClose={onClose}
           />
-          <InlineErrorMessage>
-            {mutation.error ? mutation.error.message : null}
-          </InlineErrorMessage>
+          <ApiErrorMessage error={mutation.error} />
         </Stack>
       </form>
     </Box>
