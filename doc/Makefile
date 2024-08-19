@@ -1,5 +1,5 @@
 serve:
-	mkdocs serve -a localhost:7000
+	mkdocs serve -a localhost:8600
 
 redoc:
 	python -m auditize openapi > openapi.json
@@ -10,4 +10,4 @@ build: redoc
 	mkdocs build
 
 serve-build:
-	cd site && python -m http.server 7001
+	cd site && python -m http.server 8601
