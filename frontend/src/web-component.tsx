@@ -22,19 +22,54 @@ class LogWebComponent extends HTMLElement {
   }
 
   connectedCallback() {
+    /*
+     * Get the web component configuration from attributes
+     */
     const repoId = this.getAttribute("repo-id");
     if (!repoId) {
-      throw new Error("repo-id attribute is required");
+      throw new Error("repo-id attribute is missing");
     }
+
     const accessToken = this.getAttribute("access-token");
     if (!accessToken) {
-      throw new Error("access-token attribute is required");
+      throw new Error("access-token attribute is missing");
     }
+    const accessTokenRefreshFnName = this.getAttribute("access-token-refresh");
+    if (!accessTokenRefreshFnName) {
+      throw new Error("access-token-refresh attribute is missing");
+    }
+    const accessTokenRefreshFn = window[
+      accessTokenRefreshFnName as any
+    ] as unknown as () => Promise<string>;
+    if (typeof accessTokenRefreshFn !== "function") {
+      throw new Error("access-token-refresh attribute is not a function");
+    }
+
+    let accessTokenRefreshInterval: any = this.getAttribute(
+      "access-token-refresh-interval",
+    );
+    if (accessTokenRefreshInterval) {
+      accessTokenRefreshInterval = parseInt(accessTokenRefreshInterval, 10);
+    } else {
+      accessTokenRefreshInterval = 5 * 60 * 1000;
+    }
+
     const lang = this.getAttribute("lang") || "en";
     const baseURL = this.getAttribute("base-url");
 
+    /*
+     * Set authentication
+     */
     enableAccessTokenAuthentication(accessToken);
+    setInterval(() => {
+      accessTokenRefreshFn().then((newAccessToken) => {
+        enableAccessTokenAuthentication(newAccessToken);
+      });
+    }, accessTokenRefreshInterval);
 
+    /*
+     * Set base URL
+     */
     if (baseURL) {
       setBaseURL(baseURL);
       window.auditizeBaseURL = baseURL;
