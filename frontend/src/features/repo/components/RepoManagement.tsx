@@ -60,7 +60,7 @@ export function RepoManagement() {
       columnBuilders={[
         [t("repo.list.column.name"), (repo: Repo) => repo.name],
         [t("repo.list.column.id"), (repo: Repo) => <RepoId value={repo.id} />],
-        [t("repo.list.column.status"), (repo: Repo) => repo.status],
+        [t("repo.list.column.status"), (repo: Repo) => t("repo.form.status.value." + repo.status)],
         [
           t("repo.list.column.retentionPeriod"),
           (repo: Repo) =>
