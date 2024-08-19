@@ -24,6 +24,7 @@ import { usePasswordValidation } from "@/components/PasswordForm";
 import { useI18nContext } from "@/i18n";
 
 import { getPasswordResetInfo, setPassword } from "../api";
+import { useDocumentTitle } from "@mantine/hooks";
 
 function usePasswordSetupForm() {
   const passwordValidators = usePasswordValidation();
@@ -61,6 +62,7 @@ function PasswordSetup({
   const mutation = useMutation({
     mutationFn: (password: string) => setPassword(token!, password, lang),
   });
+  useDocumentTitle(t("passwordSetup.documentTitle"));
 
   useEffect(() => {
     if (query.data) {

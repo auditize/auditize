@@ -427,5 +427,6 @@ export default {
     },
     loginLink:
       "Vous pouvez maintenant vous connecter en <1>cliquant sur ce lien</1>.",
+    documentTitle: "Changement du mot de passe",
   },
 };

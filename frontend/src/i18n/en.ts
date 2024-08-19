@@ -422,5 +422,6 @@ export default {
       success: "Your password has been successfully updated.",
     },
     loginLink: "You can now log in by <1>clicking on this link</1>.",
+    documentTitle: "Password Change",
   },
 };
