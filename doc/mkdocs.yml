@@ -1,0 +1,23 @@
+site_name: Auditize
+site_url: https://auditize.org
+nav:
+  - Home: index.md
+  - Concepts: overview.md
+  - Log data model: logs.md
+  - Sending logs: sending-logs.md
+  - REST API: rest-api.html
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - toc.integrate
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - admonition
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
