@@ -13,6 +13,7 @@ def test_get_config():
     assert config.base_url == "http://localhost:8000"
     assert config.jwt_signing_key is not None
     assert config.user_session_token_lifetime == 43200  # 12 hours
+    assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 1024
     assert config.csv_max_rows == 10
     assert config.mongodb_uri is None
@@ -44,6 +45,7 @@ def test_config_minimum_viable_config():
     assert config.base_url == "http://localhost:8000"
     assert config.jwt_signing_key == MINIMUM_VIABLE_CONFIG["AUDITIZE_JWT_SIGNING_KEY"]
     assert config.user_session_token_lifetime == 43200  # 12 hours
+    assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 5242880  # 5MB
     assert config.csv_max_rows == 10_000
     assert config.mongodb_uri is None

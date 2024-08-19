@@ -6,6 +6,8 @@ from auditize.exceptions import ConfigError
 
 _DEFAULT_ATTACHMENT_MAX_SIZE = 1024 * 1024 * 5  # 5MB
 _DEFAULT_CSV_MAX_ROWS = 10_000
+_DEFAULT_USER_SESSION_TOKEN_LIFETIME = 60 * 60 * 12  # 12 hours
+_DEFAULT_ACCESS_TOKEN_LIFETIME = 10 * 60  # 10 minutes
 
 
 @dataclasses.dataclass
@@ -77,10 +79,14 @@ class Config:
                 base_url=optional("AUDITIZE_BASE_URL", "http://localhost:8000"),
                 jwt_signing_key=required("AUDITIZE_JWT_SIGNING_KEY"),
                 user_session_token_lifetime=optional(
-                    "AUDITIZE_USER_SESSION_TOKEN_LIFETIME", 60 * 60 * 12, cast=int
+                    "AUDITIZE_USER_SESSION_TOKEN_LIFETIME",
+                    _DEFAULT_USER_SESSION_TOKEN_LIFETIME,
+                    cast=int,
                 ),
                 access_token_lifetime=optional(
-                    "AUDITIZE_ACCESS_TOKEN_LIFETIME", 60 * 60, cast=int
+                    "AUDITIZE_ACCESS_TOKEN_LIFETIME",
+                    _DEFAULT_ACCESS_TOKEN_LIFETIME,
+                    cast=int,
                 ),
                 attachment_max_size=optional(
                     "AUDITIZE_ATTACHMENT_MAX_SIZE",
