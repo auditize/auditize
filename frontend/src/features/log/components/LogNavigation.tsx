@@ -7,6 +7,7 @@ import {
   Group,
   Menu,
   Popover,
+  rem,
   Select,
   Space,
   Stack,
@@ -1322,7 +1323,7 @@ export function LogNavigation({
 
   return (
     <Group justify="space-between" align="start" gap="md" wrap="nowrap">
-      <Group gap="xs">
+      <Group gap={rem(6)}>
         {/* Repository selector */}
         {withRepoSearchParam && (
           <RepoSelector
