@@ -5,7 +5,7 @@ nav:
   - Concepts: overview.md
   - Log data model: logs.md
   - Sending logs: sending-logs.md
-  - REST API: rest-api.html
+  - REST API: api.html
 theme:
   name: material
   features:
