@@ -2,8 +2,8 @@
 
 Once Auditize has been properly installed, you must:
 
-- create a [log repository](../overview#log-repositories)
-- create an [API key](../overview#api-keys) with (at least) the write permission on this repository and get the secret associated with this key (that's what we'll name API key in the rest of this page)
+- create a [log repository](overview.md#log-repositories)
+- create an [API key](overview.md#api-keys) with (at least) the write permission on this repository and get the secret associated with this key (that's what we'll name API key in the rest of this page)
 
 Here is an example of sending a log to Auditize using `curl`:
 

@@ -78,7 +78,7 @@ The structure is also flexible enough to let you add any custom information abou
 ## Details
 
 !!! info
-    Values that must respect the `[a-z0-9-]+` can be translated through [Log i18n Profiles](overview#log-i18n-profiles), they are also used to form a human-friendly name in the log interface when no translation is available.
+    Values that must respect the `[a-z0-9-]+` can be translated through [Log i18n Profiles](overview.md#log-i18n-profiles), they are also used to form a human-friendly name in the log interface when no translation is available.
 
 
 ### `action`
