@@ -3,6 +3,7 @@ import mantineCss from "@mantine/core/styles.layer.css?inline";
 import mantineDateCss from "@mantine/dates/styles.layer.css?inline";
 import { QueryClientProvider } from "@tanstack/react-query";
 import datatableCss from "mantine-datatable/styles.layer.css?inline";
+import React from "react";
 import ReactDOM from "react-dom/client";
 import rsuiteCss from "rsuite/dist/rsuite-no-reset.min.css?inline";
 
@@ -14,6 +15,33 @@ import layersCss from "./layers.css?inline";
 import { enableAccessTokenAuthentication, setBaseURL } from "./utils/axios";
 import { auditizeQueryClient } from "./utils/query";
 import webComponentCss from "./web-component.css?inline";
+
+function AccessTokenAuthProvider({
+  accessTokenProvider,
+  refreshInterval,
+  children,
+}: {
+  accessTokenProvider: () => Promise<string>;
+  refreshInterval: number;
+  children: React.ReactNode;
+}) {
+  const [authenticated, setAuthenticated] = React.useState(false);
+  const authenticate = () =>
+    accessTokenProvider().then((token) =>
+      enableAccessTokenAuthentication(token),
+    );
+
+  React.useEffect(() => {
+    authenticate().then(() => {
+      setAuthenticated(true);
+      setInterval(() => authenticate(), refreshInterval);
+    });
+  }, []);
+
+  if (authenticated) {
+    return children;
+  }
+}
 
 class LogWebComponent extends HTMLElement {
   constructor() {
@@ -30,19 +58,17 @@ class LogWebComponent extends HTMLElement {
       throw new Error("repo-id attribute is missing");
     }
 
-    const accessToken = this.getAttribute("access-token");
-    if (!accessToken) {
-      throw new Error("access-token attribute is missing");
+    const accessTokenProviderFnName = this.getAttribute(
+      "access-token-provider",
+    );
+    if (!accessTokenProviderFnName) {
+      throw new Error("access-token-provider attribute is missing");
     }
-    const accessTokenRefreshFnName = this.getAttribute("access-token-refresh");
-    if (!accessTokenRefreshFnName) {
-      throw new Error("access-token-refresh attribute is missing");
-    }
-    const accessTokenRefreshFn = window[
-      accessTokenRefreshFnName as any
+    const accessTokenProvider = window[
+      accessTokenProviderFnName as any
     ] as unknown as () => Promise<string>;
-    if (typeof accessTokenRefreshFn !== "function") {
-      throw new Error("access-token-refresh attribute is not a function");
+    if (typeof accessTokenProvider !== "function") {
+      throw new Error("access-token-provider attribute is not a function");
     }
 
     let accessTokenRefreshInterval: any = this.getAttribute(
@@ -56,16 +82,6 @@ class LogWebComponent extends HTMLElement {
 
     const lang = this.getAttribute("lang") || "en";
     const baseURL = this.getAttribute("base-url");
-
-    /*
-     * Set authentication
-     */
-    enableAccessTokenAuthentication(accessToken);
-    setInterval(() => {
-      accessTokenRefreshFn().then((newAccessToken) => {
-        enableAccessTokenAuthentication(newAccessToken);
-      });
-    }, accessTokenRefreshInterval);
 
     /*
      * Set base URL
@@ -94,7 +110,12 @@ class LogWebComponent extends HTMLElement {
           >
             <I18nProvider lang={lang}>
               <LogNavigationStateProvider.ForWebComponent repoId={repoId}>
-                <Logs withRepoSearchParam={false} withLogFilters={false} />
+                <AccessTokenAuthProvider
+                  accessTokenProvider={accessTokenProvider}
+                  refreshInterval={accessTokenRefreshInterval}
+                >
+                  <Logs withRepoSearchParam={false} withLogFilters={false} />
+                </AccessTokenAuthProvider>
               </LogNavigationStateProvider.ForWebComponent>
             </I18nProvider>
           </MantineProvider>
