@@ -42,7 +42,7 @@ async def test_auth_access_token(dbm: DatabaseManager, apikey_builder: ApikeyBui
     apikey = await apikey_builder({"is_superadmin": True})
     permissions = Permissions()
     permissions.management.repos.read = True
-    access_token, _ = generate_access_token(UUID(apikey.id), permissions)
+    access_token, _ = await generate_access_token(UUID(apikey.id), permissions)
 
     request = make_http_request(headers={"Authorization": f"Bearer aat-{access_token}"})
     authenticated = await get_authenticated(dbm, request)
@@ -61,7 +61,7 @@ async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
     apikey = await PreparedApikey.inject_into_db(dbm)
 
     # Prepare a valid JWT session token but sign with a different key
-    jwt_payload, _ = generate_access_token_payload(UUID(apikey.id), Permissions())
+    jwt_payload, _ = await generate_access_token_payload(UUID(apikey.id), Permissions())
     jwt_token = jwt.encode({"alg": "HS256"}, jwt_payload, key="agreatsigningkey")
 
     request = make_http_request(headers={"Authorization": f"Bearer aat-{jwt_token}"})
@@ -78,7 +78,7 @@ async def test_auth_access_token_expired(dbm: DatabaseManager):
         "auditize.auth.jwt.now",
         lambda: datetime.fromisoformat("2024-01-01T00:00:00Z"),
     ):
-        jwt_token, _ = generate_access_token(UUID(apikey.id), Permissions())
+        jwt_token, _ = await generate_access_token(UUID(apikey.id), Permissions())
 
     request = make_http_request(headers={"Authorization": f"Bearer aat-{jwt_token}"})
 
@@ -93,7 +93,7 @@ async def test_auth_access_control_downgraded_apikey_permissions(
     apikey = await apikey_builder({"is_superadmin": True})
     permissions = Permissions()
     permissions.management.repos.read = True
-    access_token, _ = generate_access_token(UUID(apikey.id), permissions)
+    access_token, _ = await generate_access_token(UUID(apikey.id), permissions)
     request = make_http_request(headers={"Authorization": f"Bearer aat-{access_token}"})
 
     # second step, make sure the access token actually works
@@ -161,7 +161,7 @@ async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManage
     user = await PreparedUser.inject_into_db(dbm)
 
     # Prepare a valid JWT session token but sign with a different key
-    jwt_payload, _ = generate_session_token_payload(user.data["email"])
+    jwt_payload, _ = await generate_session_token_payload(user.data["email"])
     jwt_token = jwt.encode({"alg": "HS256"}, jwt_payload, key="agreatsigningkey")
 
     request = make_http_request(headers={"Cookie": f"session={jwt_token}"})

@@ -382,7 +382,8 @@ async def get_logs_as_csv(
     search_params: LogSearchParams = None,
     columns: list[str],
 ) -> AsyncGenerator[str, None]:
-    max_rows = get_config().csv_max_rows
+    config = await get_config()
+    max_rows = config.csv_max_rows
     returned_rows = 0
     logs_db = await get_log_db_for_reading(dbm, repo_id)
     cursor = None

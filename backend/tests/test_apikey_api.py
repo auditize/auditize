@@ -270,7 +270,7 @@ class TestPermissions(BasePermissionTests):
     ) -> PreparedUser:
         return await PreparedUser.inject_into_db(
             dbm,
-            user=PreparedUser.prepare_model(
+            user=await PreparedUser.prepare_model(
                 password="dummypassword", permissions=permissions
             ),
             password="dummypassword",

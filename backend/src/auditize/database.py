@@ -100,7 +100,7 @@ async def get_dbm() -> DatabaseManager:
     if _dbm is None:
         async with _dbm_lock:
             if _dbm is None:
-                config = get_config()
+                config = await get_config()
                 client = setup_mongo_client(config.mongodb_uri)
                 _dbm = DatabaseManager.spawn(client)
     return _dbm
