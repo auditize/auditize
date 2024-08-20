@@ -22,7 +22,7 @@ from auditize.user.api import router as users_router
 
 @asynccontextmanager
 async def setup_db(_):
-    dbm = get_dbm()
+    dbm = await get_dbm()
     await dbm.setup()
     yield
 

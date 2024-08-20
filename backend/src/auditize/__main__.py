@@ -58,7 +58,7 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
 
 
 async def bootstrap_default_superadmin():
-    dbm = get_dbm()
+    dbm = await get_dbm()
     users, _ = await get_users(dbm, query=None, page=1, page_size=1)
     if not users:
         await _bootstrap_superadmin(
@@ -67,7 +67,7 @@ async def bootstrap_default_superadmin():
 
 
 async def purge_expired_logs():
-    await apply_log_retention_period(get_dbm())
+    await apply_log_retention_period(await get_dbm())
 
 
 async def dump_config():

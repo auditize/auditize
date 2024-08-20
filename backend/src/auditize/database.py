@@ -1,3 +1,4 @@
+from asyncio import Lock
 from datetime import timezone
 from functools import lru_cache
 
@@ -68,9 +69,6 @@ def setup_mongo_client(uri: str = None) -> AsyncIOMotorClient:
     return AsyncIOMotorClient(uri)
 
 
-_mongo_client = setup_mongo_client(get_config().mongodb_uri)
-
-
 class DatabaseManager:
     def __init__(self, client: AsyncIOMotorClient, name_prefix: str):
         self.client = client
@@ -78,8 +76,8 @@ class DatabaseManager:
         self.core_db = CoreDatabase(self.name_prefix, client)
 
     @classmethod
-    def spawn(cls, client: AsyncIOMotorClient = None, name_prefix="auditize"):
-        return cls(client or _mongo_client, name_prefix)
+    def spawn(cls, client: AsyncIOMotorClient, name_prefix="auditize"):
+        return cls(client, name_prefix)
 
     async def setup(self):
         # avoid circular imports
@@ -92,8 +90,17 @@ class DatabaseManager:
             await log_db.setup()
 
 
-_dbm = DatabaseManager.spawn(_mongo_client)
+_dbm = None
+_dbm_lock = Lock()
 
 
-def get_dbm() -> DatabaseManager:
+async def get_dbm() -> DatabaseManager:
+    global _dbm
+    # we make an initial check outside of lock to avoid unneeded locking when dbm is already loaded
+    if _dbm is None:
+        async with _dbm_lock:
+            if _dbm is None:
+                config = get_config()
+                client = setup_mongo_client(config.mongodb_uri)
+                _dbm = DatabaseManager.spawn(client)
     return _dbm
