@@ -41,9 +41,7 @@ class Config:
             return True
         if value == "false":
             return False
-        raise ValueError(
-            f"Invalid boolean value {value!r} (must be either 'true' or 'false')"
-        )
+        raise ValueError(f"invalid value {value!r} (must be either 'true' or 'false')")
 
     def _validate(self):
         smtp_values_required = (
@@ -71,7 +69,12 @@ class Config:
         def required(key, cast=None):
             value = env[key]
             if cast:
-                value = cast(value)
+                try:
+                    value = cast(value)
+                except ValueError as exc:
+                    raise ConfigError(
+                        f"Could not load configuration, variable {key!r} has an invalid value: {exc}"
+                    )
             return value
 
         def optional(key, default=None, cast=None):

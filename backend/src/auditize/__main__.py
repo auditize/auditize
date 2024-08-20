@@ -7,7 +7,7 @@ import sys
 from auditize.app import api_app
 from auditize.config import Config
 from auditize.database import get_dbm
-from auditize.exceptions import ConstraintViolation
+from auditize.exceptions import ConfigError, ConstraintViolation
 from auditize.log.service import apply_log_retention_period
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
@@ -71,7 +71,10 @@ async def purge_expired_logs():
 
 
 async def dump_config():
-    config = Config.load_from_env()
+    try:
+        config = Config.load_from_env()
+    except ConfigError as exc:
+        sys.exit(str(exc))
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 
 
