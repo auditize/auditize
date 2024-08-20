@@ -172,6 +172,6 @@ def test_config_cors_enabled_bis():
 
 def test_config_cookie_secure_turned_off():
     config = Config.load_from_env(
-        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_COOKIE_SECURE": "false"}
+        {**MINIMUM_VIABLE_CONFIG, "_AUDITIZE_COOKIE_SECURE": "false"}
     )
     assert config.cookie_secure is False

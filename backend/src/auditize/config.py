@@ -121,7 +121,11 @@ class Config:
                     default=[],
                 ),
                 cookie_secure=optional(
-                    "AUDITIZE_COOKIE_SECURE", cast=cls._cast_bool, default=True
+                    # Needed to disable Secure Cookies for Safari on localhost
+                    # (see https://flaviocopes.com/cookie-not-being-set-in-safari/)
+                    "_AUDITIZE_COOKIE_SECURE",
+                    cast=cls._cast_bool,
+                    default=True,
                 ),
                 test_mode=optional(
                     "_AUDITIZE_TEST_MODE", cast=cls._cast_bool, default=False
