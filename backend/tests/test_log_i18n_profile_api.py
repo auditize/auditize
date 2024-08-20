@@ -21,7 +21,9 @@ async def _test_create_log_i18n_profile(
         expected_json={"id": callee.IsA(str)},
     )
     profile = PreparedLogI18nProfile(resp.json()["id"], data)
-    await assert_collection(dbm.core_db.logi18nprofiles, [profile.expected_document()])
+    await assert_collection(
+        dbm.core_db.log_i18n_profiles, [profile.expected_document()]
+    )
 
 
 async def test_log_i18n_profile_create_empty(
@@ -163,7 +165,7 @@ async def test_log_i18n_profile_update_name(
         },
     )
     await assert_collection(
-        dbm.core_db.logi18nprofiles,
+        dbm.core_db.log_i18n_profiles,
         [profile.expected_document({"name": "i18n updated"})],
     )
 
@@ -189,7 +191,7 @@ async def test_log_i18n_profile_update_add_translation(
         },
     )
     await assert_collection(
-        dbm.core_db.logi18nprofiles,
+        dbm.core_db.log_i18n_profiles,
         [
             profile.expected_document(
                 {
@@ -223,7 +225,7 @@ async def test_log_i18n_profile_update_remove_translation(
         },
     )
     await assert_collection(
-        dbm.core_db.logi18nprofiles,
+        dbm.core_db.log_i18n_profiles,
         [
             profile.expected_document(
                 {
@@ -278,7 +280,7 @@ async def test_log_i18n_profile_update_existing_translation(
         },
     )
     await assert_collection(
-        dbm.core_db.logi18nprofiles,
+        dbm.core_db.log_i18n_profiles,
         [
             profile.expected_document(
                 {
@@ -504,7 +506,7 @@ async def test_log_i18n_profile_delete(
         f"/log-i18n-profiles/{log_i18n_profile.id}"
     )
 
-    await assert_collection(dbm.core_db.logi18nprofiles, [])
+    await assert_collection(dbm.core_db.log_i18n_profiles, [])
 
 
 async def test_log_i18n_profile_delete_while_used_by_repo(

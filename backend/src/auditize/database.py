@@ -44,7 +44,7 @@ class CoreDatabase(BaseDatabase):
         await self.repos.create_index("name", unique=True)
         await self.users.create_index("email", unique=True)
         await self.apikeys.create_index("name", unique=True)
-        await self.logi18nprofiles.create_index("name", unique=True)
+        await self.log_i18n_profiles.create_index("name", unique=True)
         await self.log_filters.create_index("name", unique=True)
 
         # Text indexes
@@ -53,13 +53,13 @@ class CoreDatabase(BaseDatabase):
             {"first_name": "text", "last_name": "text", "email": "text"}
         )
         await self.apikeys.create_index({"name": "text"})
-        await self.logi18nprofiles.create_index({"name": "text"})
+        await self.log_i18n_profiles.create_index({"name": "text"})
         await self.log_filters.create_index({"name": "text"})
 
     # Collections
     # FIXME: naming convention (spaces vs underscores)
     repos = Collection("repos")
-    logi18nprofiles = Collection("logi18nprofiles")
+    log_i18n_profiles = Collection("log_i18n_profiles")
     users = Collection("users")
     apikeys = Collection("apikeys")
     log_filters = Collection("log_filters")

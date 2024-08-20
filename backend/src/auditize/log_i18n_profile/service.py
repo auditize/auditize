@@ -28,7 +28,7 @@ async def create_log_i18n_profile(
         "error.constraint_violation.log_i18n_profile"
     ):
         profile_id = await create_resource_document(
-            dbm.core_db.logi18nprofiles, profile
+            dbm.core_db.log_i18n_profiles, profile
         )
     return profile_id
 
@@ -50,13 +50,15 @@ async def update_log_i18n_profile(
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_i18n_profile"
     ):
-        await update_resource_document(dbm.core_db.logi18nprofiles, profile_id, profile)
+        await update_resource_document(
+            dbm.core_db.log_i18n_profiles, profile_id, profile
+        )
 
 
 async def get_log_i18n_profile(
     dbm: DatabaseManager, profile_id: UUID
 ) -> LogI18nProfile:
-    result = await get_resource_document(dbm.core_db.logi18nprofiles, profile_id)
+    result = await get_resource_document(dbm.core_db.log_i18n_profiles, profile_id)
     return LogI18nProfile.model_validate(result)
 
 
@@ -64,7 +66,9 @@ async def get_log_i18n_profile_translation(
     dbm: DatabaseManager, profile_id: UUID, lang: str
 ) -> LogTranslation:
     result = await get_resource_document(
-        dbm.core_db.logi18nprofiles, profile_id, projection={"translations." + lang: 1}
+        dbm.core_db.log_i18n_profiles,
+        profile_id,
+        projection={"translations." + lang: 1},
     )
     if lang in result["translations"]:
         return LogTranslation.model_validate(result["translations"][lang])
@@ -76,7 +80,7 @@ async def get_log_i18n_profiles(
     dbm: DatabaseManager, query: str, page: int, page_size: int
 ) -> tuple[list[LogI18nProfile], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
-        dbm.core_db.logi18nprofiles,
+        dbm.core_db.log_i18n_profiles,
         filter={"$text": {"$search": query}} if query else None,
         sort=[("name", 1)],
         page=page,
@@ -96,8 +100,8 @@ async def delete_log_i18n_profile(dbm: DatabaseManager, profile_id: UUID):
         raise ConstraintViolation(
             ("error.log_i18n_profile_deletion_forbidden", {"profile_id": profile_id}),
         )
-    await delete_resource_document(dbm.core_db.logi18nprofiles, profile_id)
+    await delete_resource_document(dbm.core_db.log_i18n_profiles, profile_id)
 
 
 async def has_log_i18n_profile(dbm: DatabaseManager, profile_id: UUID) -> bool:
-    return await has_resource_document(dbm.core_db.logi18nprofiles, profile_id)
+    return await has_resource_document(dbm.core_db.log_i18n_profiles, profile_id)
