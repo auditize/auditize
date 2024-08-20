@@ -1,4 +1,13 @@
+/* Make font-size a bit smaller than the original 0.8rem */
 .md-typeset {
-  /* Make font-size a bit smaller than the original 0.8rem */
   font-size: 0.75rem;
+}
+
+/*
+ * Avoid environment variable names to be broken into two lines in the Configuration page.
+ * Same thing for table header titles.
+ */
+th,
+td code {
+  white-space: nowrap;
 }
