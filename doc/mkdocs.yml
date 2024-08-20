@@ -5,6 +5,7 @@ nav:
   - Concepts: overview.md
   - Log data model: logs.md
   - Sending logs: sending-logs.md
+  - Web Component: web-component.md
   - REST API: api.html
 theme:
   name: material
@@ -21,3 +22,4 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.superfences
   - pymdownx.details
+  - tables
