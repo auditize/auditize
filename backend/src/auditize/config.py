@@ -37,7 +37,13 @@ class Config:
 
     @staticmethod
     def _cast_bool(value):
-        return value.lower() in ("true", "yes", "1")
+        if value == "true":
+            return True
+        if value == "false":
+            return False
+        raise ValueError(
+            f"Invalid boolean value {value!r} (must be either 'true' or 'false')"
+        )
 
     def _validate(self):
         smtp_values_required = (
