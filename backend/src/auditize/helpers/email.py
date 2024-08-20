@@ -6,8 +6,8 @@ import certifi
 from auditize.config import get_config
 
 
-def send_email(to, subject, body):
-    config = get_config()
+async def send_email(to, subject, body):
+    config = await get_config()
     if not config.is_smtp_enabled():
         print("SMTP is disabled, print email information instead")
         print(to, subject, body)

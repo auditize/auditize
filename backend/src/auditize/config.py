@@ -1,6 +1,6 @@
 import dataclasses
 import os
-from threading import Lock
+from asyncio import Lock
 
 from auditize.exceptions import ConfigError
 
@@ -41,9 +41,7 @@ class Config:
             return True
         if value == "false":
             return False
-        raise ValueError(
-            f"Invalid boolean value {value!r} (must be either 'true' or 'false')"
-        )
+        raise ValueError(f"invalid value {value!r} (must be either 'true' or 'false')")
 
     def _validate(self):
         smtp_values_required = (
@@ -71,7 +69,12 @@ class Config:
         def required(key, cast=None):
             value = env[key]
             if cast:
-                value = cast(value)
+                try:
+                    value = cast(value)
+                except ValueError as exc:
+                    raise ConfigError(
+                        f"Could not load configuration, variable {key!r} has an invalid value: {exc}"
+                    )
             return value
 
         def optional(key, default=None, cast=None):
@@ -165,11 +168,11 @@ _config = None
 _config_lock = Lock()
 
 
-def get_config() -> Config:
+async def get_config() -> Config:
     global _config
     # we make an initial check outside of lock to avoid unneeded locking when config is already loaded
     if _config is None:
-        with _config_lock:
+        async with _config_lock:
             if _config is None:
                 _config = Config.load_from_env()
     return _config

@@ -1,12 +1,8 @@
-from contextlib import asynccontextmanager
-
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 
 from auditize.apikey.api import router as apikeys_router
-from auditize.app.cors import setup_cors
 from auditize.auth.api import router as auth_router
-from auditize.database import get_dbm
 from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
     make_response_from_exception,
@@ -20,21 +16,13 @@ from auditize.repo.api import router as repos_router
 from auditize.user.api import router as users_router
 
 
-@asynccontextmanager
-async def setup_db(_):
-    dbm = get_dbm()
-    await dbm.setup()
-    yield
-
-
 def exception_handler(request, exc):
     return make_response_from_exception(exc, get_request_lang(request))
 
 
-app = FastAPI(lifespan=setup_db)
+app = FastAPI()
 app.add_exception_handler(AuditizeException, exception_handler)
 app.add_exception_handler(RequestValidationError, exception_handler)
-setup_cors(app)
 customize_openapi(app)
 
 

@@ -4,8 +4,8 @@ from starlette.middleware.cors import CORSMiddleware
 from auditize.config import get_config
 
 
-def setup_cors(app: FastAPI):
-    config = get_config()
+async def setup_cors(app: FastAPI):
+    config = await get_config()
     if not config.is_cors_enabled():
         return
 

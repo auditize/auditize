@@ -102,7 +102,7 @@ async def authenticate_access_token(
     dbm: DatabaseManager, access_token: str
 ) -> Authenticated:
     jwt_token = access_token[len(ACCESS_TOKEN_PREFIX) :]
-    apikey_id, permissions = get_access_token_data(jwt_token)
+    apikey_id, permissions = await get_access_token_data(jwt_token)
     try:
         apikey = await get_apikey(dbm, apikey_id)
     except UnknownModelException:
@@ -131,7 +131,7 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     if not session_token:
         raise AuthenticationFailure()
 
-    user_email = get_user_email_from_session_token(session_token)
+    user_email = await get_user_email_from_session_token(session_token)
     try:
         user = await get_user_by_email(dbm, user_email)
     except UnknownModelException:

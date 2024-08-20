@@ -21,15 +21,17 @@ def _generate_jwt_payload(data, lifetime) -> tuple[dict, datetime]:
     return {**data, "exp": expires_at}, expires_at
 
 
-def _sign_jwt_token(payload: dict) -> str:
-    value = jwt.encode({"alg": "HS256"}, payload, key=get_config().jwt_signing_key)
+async def _sign_jwt_token(payload: dict) -> str:
+    config = await get_config()
+    value = jwt.encode({"alg": "HS256"}, payload, key=config.jwt_signing_key)
     return value.decode()
 
 
-def _get_jwt_token_payload(token: str) -> dict:
+async def _get_jwt_token_payload(token: str) -> dict:
+    config = await get_config()
     # Load JWT token
     try:
-        claims = jwt.decode(token, get_config().jwt_signing_key)
+        claims = jwt.decode(token, config.jwt_signing_key)
         claims.validate()
     except ExpiredTokenError:
         raise AuthenticationFailure("JWT token expired")
@@ -44,20 +46,21 @@ def _get_jwt_token_payload(token: str) -> dict:
 
 
 # NB: make this function public so we can test valid JWT tokens but signed with another key
-def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
+async def generate_session_token_payload(user_email: str) -> tuple[dict, datetime]:
+    config = await get_config()
     return _generate_jwt_payload(
         {"sub": f"{_SUB_PREFIX_SESSION_TOKEN}{user_email}"},
-        get_config().user_session_token_lifetime,
+        config.user_session_token_lifetime,
     )
 
 
-def generate_session_token(user_email) -> tuple[str, datetime]:
-    payload, expires_at = generate_session_token_payload(user_email)
-    return _sign_jwt_token(payload), expires_at
+async def generate_session_token(user_email) -> tuple[str, datetime]:
+    payload, expires_at = await generate_session_token_payload(user_email)
+    return await _sign_jwt_token(payload), expires_at
 
 
-def get_user_email_from_session_token(token: str) -> str:
-    payload = _get_jwt_token_payload(token)
+async def get_user_email_from_session_token(token: str) -> str:
+    payload = await _get_jwt_token_payload(token)
     sub = payload["sub"]
 
     if not sub.startswith(_SUB_PREFIX_SESSION_TOKEN):
@@ -67,9 +70,10 @@ def get_user_email_from_session_token(token: str) -> str:
     return email
 
 
-def generate_access_token_payload(
+async def generate_access_token_payload(
     apikey_id: UUID, permissions: Permissions
 ) -> tuple[dict, datetime]:
+    config = await get_config()
     return _generate_jwt_payload(
         {
             "sub": _SUB_PREFIX_ACCESS_TOKEN + str(apikey_id),
@@ -78,19 +82,19 @@ def generate_access_token_payload(
             # have to do this dump->load extra step to get UUID instances turned into strings
             "permissions": json.loads(permissions.model_dump_json()),
         },
-        get_config().access_token_lifetime,
+        config.access_token_lifetime,
     )
 
 
-def generate_access_token(
+async def generate_access_token(
     apikey_id: UUID, permissions: Permissions
 ) -> tuple[str, datetime]:
-    payload, expires_at = generate_access_token_payload(apikey_id, permissions)
-    return _sign_jwt_token(payload), expires_at
+    payload, expires_at = await generate_access_token_payload(apikey_id, permissions)
+    return await _sign_jwt_token(payload), expires_at
 
 
-def get_access_token_data(token: str) -> tuple[UUID, Permissions]:
-    payload = _get_jwt_token_payload(token)
+async def get_access_token_data(token: str) -> tuple[UUID, Permissions]:
+    payload = await _get_jwt_token_payload(token)
     sub = payload["sub"]
 
     if not sub.startswith(_SUB_PREFIX_ACCESS_TOKEN):

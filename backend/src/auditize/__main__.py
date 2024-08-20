@@ -7,7 +7,7 @@ import sys
 from auditize.app import api_app
 from auditize.config import Config
 from auditize.database import get_dbm
-from auditize.exceptions import ConstraintViolation
+from auditize.exceptions import ConfigError, ConstraintViolation
 from auditize.log.service import apply_log_retention_period
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
@@ -40,7 +40,7 @@ async def _bootstrap_superadmin(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            password_hash=hash_user_password(password),
+            password_hash=await hash_user_password(password),
             permissions=Permissions(is_superadmin=True),
         ),
     )
@@ -58,7 +58,7 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
 
 
 async def bootstrap_default_superadmin():
-    dbm = get_dbm()
+    dbm = await get_dbm()
     users, _ = await get_users(dbm, query=None, page=1, page_size=1)
     if not users:
         await _bootstrap_superadmin(
@@ -67,11 +67,14 @@ async def bootstrap_default_superadmin():
 
 
 async def purge_expired_logs():
-    await apply_log_retention_period(get_dbm())
+    await apply_log_retention_period(await get_dbm())
 
 
 async def dump_config():
-    config = Config.load_from_env()
+    try:
+        config = Config.load_from_env()
+    except ConfigError as exc:
+        sys.exit("ERROR: " + str(exc))
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 
 

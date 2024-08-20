@@ -421,7 +421,7 @@ async def add_attachment(
         ),
     ] = None,
 ) -> None:
-    config = get_config()
+    config = await get_config()
     data = await file.read(config.attachment_max_size + 1)
     if len(data) > config.attachment_max_size:
         raise PayloadTooLarge(
