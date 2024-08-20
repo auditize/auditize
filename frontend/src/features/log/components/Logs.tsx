@@ -18,7 +18,7 @@ export function Logs({
   withLogFilters?: boolean;
 }) {
   const { t } = useTranslation();
-  const repoListQuery = useLogRepoListQuery();
+  const repoListQuery = useLogRepoListQuery({ enabled: withRepoSearchParam });
   const { searchParams, setSearchParams, selectedColumns, setSelectedColumns } =
     useLogNavigationState();
   useDocumentTitle(t("log.list.documentTitle"));

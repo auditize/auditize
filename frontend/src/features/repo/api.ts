@@ -103,9 +103,12 @@ export async function deleteRepo(repoId: string): Promise<void> {
   await reqDelete("/repos/" + repoId);
 }
 
-export function useLogRepoListQuery() {
+export function useLogRepoListQuery({
+  enabled = true,
+}: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["repos", "available-for-logs"],
     queryFn: () => getAllMyRepos({ hasReadPermission: true }),
+    enabled,
   });
 }
