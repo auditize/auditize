@@ -3,7 +3,10 @@ import pytest
 from auditize.config import Config, get_config
 from auditize.exceptions import ConfigError
 
-MINIMUM_VIABLE_CONFIG = {"AUDITIZE_JWT_SIGNING_KEY": "DUMMYKEY"}
+MINIMUM_VIABLE_CONFIG = {
+    "AUDITIZE_BASE_URL": "http://localhost:8000",
+    "AUDITIZE_JWT_SIGNING_KEY": "DUMMYKEY",
+}
 
 
 def test_get_config():

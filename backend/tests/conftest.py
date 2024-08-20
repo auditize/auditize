@@ -20,6 +20,7 @@ for key in os.environ:
 os.environ.update(
     # set the environment variables (at least the required ones)
     {
+        "AUDITIZE_BASE_URL": "http://localhost:8000",
         "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
         "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
         "AUDITIZE_CSV_MAX_ROWS": "10",

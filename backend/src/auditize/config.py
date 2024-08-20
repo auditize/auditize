@@ -76,7 +76,7 @@ class Config:
 
         try:
             config = cls(
-                base_url=optional("AUDITIZE_BASE_URL", "http://localhost:8000"),
+                base_url=required("AUDITIZE_BASE_URL"),
                 jwt_signing_key=required("AUDITIZE_JWT_SIGNING_KEY"),
                 user_session_token_lifetime=optional(
                     "AUDITIZE_USER_SESSION_TOKEN_LIFETIME",
