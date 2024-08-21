@@ -30,7 +30,7 @@ class PreparedRepo:
         model_data = data.copy()
         if "log_i18n_profile_id" in model_data:
             model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
-        repo_id = await create_repo(dbm, Repo(**model_data), log_db=log_db)
+        repo_id = await create_repo(Repo(**model_data), log_db=log_db)
         logs_db = await get_log_db_for_config(repo_id)
         return cls(str(repo_id), data, logs_db)
 

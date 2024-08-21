@@ -94,10 +94,8 @@ class LogDatabase(BaseDatabase):
 async def _get_log_db(repo: UUID | Repo, statuses: list[RepoStatus]) -> LogDatabase:
     from auditize.repo.service import get_repo  # avoid circular import
 
-    dbm = get_dbm()
-
     if type(repo) is UUID:
-        repo = await get_repo(dbm, repo)
+        repo = await get_repo(repo)
 
     if statuses:
         if repo.status not in statuses:
@@ -106,7 +104,7 @@ async def _get_log_db(repo: UUID | Repo, statuses: list[RepoStatus]) -> LogDatab
                 "The repository status does not allow the requested operation"
             )
 
-    return LogDatabase(repo.log_db_name, dbm.client)
+    return LogDatabase(repo.log_db_name, get_dbm().client)
 
 
 get_log_db_for_reading = partial(

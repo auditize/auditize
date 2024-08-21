@@ -23,7 +23,7 @@ async def _validate_log_filter(log_filter: LogFilter | LogFilterUpdate):
     # the actual permission check is done when the user actually
     if log_filter.repo_id:
         try:
-            await get_repo(get_dbm(), log_filter.repo_id)
+            await get_repo(log_filter.repo_id)
         except UnknownModelException:
             raise ValidationError(f"Repository {log_filter.repo_id!r} does not exist")
 

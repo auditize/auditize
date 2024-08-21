@@ -30,12 +30,11 @@ def _generate_key() -> tuple[str, str]:
 
 
 async def create_apikey(apikey: Apikey) -> tuple[UUID, str]:
-    dbm = get_dbm()
-    await ensure_repos_in_permissions_exist(dbm, apikey.permissions)
+    await ensure_repos_in_permissions_exist(apikey.permissions)
     key, key_hash = _generate_key()
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
         apikey_id = await create_resource_document(
-            dbm.core_db.apikeys,
+            get_dbm().core_db.apikeys,
             {
                 **apikey.model_dump(exclude={"id", "key_hash", "permissions"}),
                 "key_hash": key_hash,
@@ -46,16 +45,15 @@ async def create_apikey(apikey: Apikey) -> tuple[UUID, str]:
 
 
 async def update_apikey(apikey_id: UUID, update: ApikeyUpdate):
-    dbm = get_dbm()
     doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
     if update.permissions:
         apikey = await get_apikey(apikey_id)
         apikey_permissions = update_permissions(apikey.permissions, update.permissions)
-        await ensure_repos_in_permissions_exist(dbm, apikey_permissions)
+        await ensure_repos_in_permissions_exist(apikey_permissions)
         doc_update["permissions"] = apikey_permissions.model_dump()
 
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
-        await update_resource_document(dbm.core_db.apikeys, apikey_id, doc_update)
+        await update_resource_document(get_dbm().core_db.apikeys, apikey_id, doc_update)
 
 
 async def regenerate_apikey(apikey_id: UUID) -> str:

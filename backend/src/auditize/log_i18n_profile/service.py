@@ -92,7 +92,7 @@ async def delete_log_i18n_profile(profile_id: UUID):
     # NB: workaround circular import
     from auditize.repo.service import is_log_i18n_profile_used_by_repo
 
-    if await is_log_i18n_profile_used_by_repo(get_dbm(), profile_id):
+    if await is_log_i18n_profile_used_by_repo(profile_id):
         raise ConstraintViolation(
             ("error.log_i18n_profile_deletion_forbidden", {"profile_id": profile_id}),
         )

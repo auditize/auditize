@@ -56,11 +56,10 @@ router = APIRouter(responses=error_responses(401, 403))
     responses=error_responses(400, 409),
 )
 async def create_repo(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_write_repo()),
     repo: RepoCreationRequest,
 ) -> RepoCreationResponse:
-    repo_id = await service.create_repo(dbm, Repo.model_validate(repo.model_dump()))
+    repo_id = await service.create_repo(Repo.model_validate(repo.model_dump()))
 
     # Ensure that authorized will have read & write logs permissions on the repo he created
     if not authorized.comply(permissions_and(can_read_logs(), can_write_logs())):
@@ -76,7 +75,7 @@ async def create_repo(
             )
         if authorized.user:
             await update_user(
-                dbm,
+                get_dbm(),
                 authorized.user.id,
                 UserUpdate(permissions=grant_rw_on_repo_logs),
             )
@@ -93,13 +92,12 @@ async def create_repo(
     responses=error_responses(400, 404, 409),
 )
 async def update_repo(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_write_repo()),
     repo_id: UUID,
     update: RepoUpdateRequest,
 ):
     await service.update_repo(
-        dbm, repo_id, RepoUpdate.model_validate(update.model_dump(exclude_unset=True))
+        repo_id, RepoUpdate.model_validate(update.model_dump(exclude_unset=True))
     )
     return None
 
@@ -107,10 +105,9 @@ async def update_repo(
 async def _handle_repo_include_options(
     repo_response: RepoReadingResponse,
     include: list[RepoIncludeOptions],
-    dbm: DatabaseManager,
 ):
     if RepoIncludeOptions.STATS in include:
-        stats = await service.get_repo_stats(dbm, repo_response.id)
+        stats = await service.get_repo_stats(repo_response.id)
         repo_response.stats = RepoStatsData.model_validate(stats.model_dump())
 
 
@@ -122,14 +119,13 @@ async def _handle_repo_include_options(
     responses=error_responses(404),
 )
 async def get_repo(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_read_repo()),
     repo_id: UUID,
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
 ) -> RepoReadingResponse:
-    repo = await service.get_repo(dbm, repo_id)
+    repo = await service.get_repo(repo_id)
     response = RepoReadingResponse.model_validate(repo.model_dump())
-    await _handle_repo_include_options(response, include, dbm)
+    await _handle_repo_include_options(response, include)
     return response
 
 
@@ -142,11 +138,10 @@ async def get_repo(
     responses=error_responses(404),
 )
 async def get_repo_translation_for_user(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedUser(can_read_logs()),
     repo_id: UUID,
 ) -> LogTranslation:
-    translation = await service.get_repo_translation(dbm, repo_id, authorized.user.lang)
+    translation = await service.get_repo_translation(repo_id, authorized.user.lang)
     return LogTranslation.model_validate(translation.model_dump())
 
 
@@ -159,12 +154,11 @@ async def get_repo_translation_for_user(
     responses=error_responses(404),
 )
 async def get_repo_translation(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     lang: Lang,
 ) -> LogTranslation:
-    translation = await service.get_repo_translation(dbm, repo_id, lang)
+    translation = await service.get_repo_translation(repo_id, lang)
     return LogTranslation.model_validate(translation.model_dump())
 
 
@@ -176,14 +170,12 @@ async def get_repo_translation(
     tags=["repo"],
 )
 async def list_repos(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_read_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> RepoListResponse:
     repos, page_info = await service.get_repos(
-        dbm,
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
@@ -191,7 +183,7 @@ async def list_repos(
     response = RepoListResponse.build(repos, page_info)
     if include:
         for repo in response.items:
-            await _handle_repo_include_options(repo, include, dbm)
+            await _handle_repo_include_options(repo, include)
     return response
 
 
@@ -203,7 +195,6 @@ async def list_repos(
     tags=["user", "internal"],
 )
 async def list_user_repos(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedUser(),
     has_read_permission: Annotated[
         bool,
@@ -220,7 +211,6 @@ async def list_user_repos(
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> UserRepoListResponse:
     repos, page_info = await service.get_user_repos(
-        dbm,
         user=authorized.user,
         user_can_read=has_read_permission,
         user_can_write=has_write_permission,
@@ -257,8 +247,7 @@ async def list_user_repos(
     responses=error_responses(404),
 )
 async def delete_repo(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_write_repo()),
     repo_id: UUID,
 ):
-    await service.delete_repo(dbm, repo_id)
+    await service.delete_repo(repo_id)

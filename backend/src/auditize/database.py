@@ -80,7 +80,7 @@ class DatabaseManager:
         from auditize.repo.service import get_all_repos
 
         await self.core_db.setup()
-        for repo in await get_all_repos(get_dbm()):
+        for repo in await get_all_repos():
             log_db = await get_log_db_for_maintenance(repo)
             await log_db.setup()
 

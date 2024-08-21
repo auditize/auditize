@@ -58,7 +58,7 @@ def build_document_from_user(user: User) -> dict:
 
 
 async def save_user(dbm: DatabaseManager, user: User) -> UUID:
-    await ensure_repos_in_permissions_exist(dbm, user.permissions)
+    await ensure_repos_in_permissions_exist(user.permissions)
     return await create_resource_document(
         dbm.core_db.users, build_document_from_user(user)
     )
@@ -80,7 +80,7 @@ async def update_user(dbm: DatabaseManager, user_id: UUID, update: UserUpdate):
     if update.permissions:
         user = await get_user(dbm, user_id)
         user_permissions = update_permissions(user.permissions, update.permissions)
-        await ensure_repos_in_permissions_exist(dbm, user_permissions)
+        await ensure_repos_in_permissions_exist(user_permissions)
         doc_update["permissions"] = user_permissions.model_dump()
     if update.password:
         doc_update["password_hash"] = hash_user_password(update.password)
