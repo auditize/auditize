@@ -14,11 +14,8 @@ pytestmark = pytest.mark.anyio
 
 @pytest.fixture()
 def dbm(dbm_fixt):
-    async def awaitable(value):
-        return value
-
     # Override dbm fixture from conftest to also patch auditize.__main__.get_dbm
-    with patch("auditize.__main__.get_dbm", lambda: awaitable(dbm_fixt)):
+    with patch("auditize.__main__.get_dbm", lambda: dbm_fixt):
         yield dbm_fixt
 
 
