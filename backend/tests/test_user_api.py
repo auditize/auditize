@@ -696,7 +696,6 @@ class TestPermissions(BasePermissionTests):
         self, dbm: DatabaseManager, permissions=None
     ) -> PreparedApikey:
         return await PreparedApikey.inject_into_db(
-            dbm,
             PreparedApikey.prepare_model(permissions=permissions),
         )
 

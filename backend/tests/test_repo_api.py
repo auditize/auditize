@@ -823,7 +823,6 @@ async def test_repo_delete_with_related_resources(
         # Create an API key with permissions on the to_be_deleted_repo + another repo
         apikey = await PreparedApikey.create(
             client,
-            dbm,
             {
                 "name": "apikey",
                 "permissions": {

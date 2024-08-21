@@ -31,7 +31,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper, dbm: DatabaseM
         expected_json={"id": callee.IsA(str), "key": callee.IsA(str)},
     )
 
-    apikey = PreparedApikey(resp.json()["id"], resp.json()["key"], data, dbm)
+    apikey = PreparedApikey(resp.json()["id"], resp.json()["key"], data)
     await assert_collection(dbm.core_db.apikeys, [apikey.expected_document()])
 
     # Test that the key actually works
@@ -106,8 +106,8 @@ async def test_apikey_update_unknown_id(apikey_write_client: HttpTestHelper):
 async def test_apikey_update_name_already_used(
     apikey_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    apikey1 = await PreparedApikey.create(apikey_write_client, dbm)
-    apikey2 = await PreparedApikey.create(apikey_write_client, dbm)
+    apikey1 = await PreparedApikey.create(apikey_write_client)
+    apikey2 = await PreparedApikey.create(apikey_write_client)
 
     await apikey_write_client.assert_patch_constraint_violation(
         f"/apikeys/{apikey1.id}",
@@ -196,7 +196,7 @@ async def test_apikey_list(
     apikey_write_client: HttpTestHelper,
     dbm: DatabaseManager,
 ):
-    apikeys = [await PreparedApikey.create(apikey_write_client, dbm) for _ in range(5)]
+    apikeys = [await PreparedApikey.create(apikey_write_client) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
         apikey_read_client,
@@ -213,7 +213,7 @@ async def test_apikey_list_search(
     dbm: DatabaseManager,
 ):
     apikeys = [
-        await PreparedApikey.create(apikey_rw_client, dbm, {"name": f"apikey_{i}"})
+        await PreparedApikey.create(apikey_rw_client, {"name": f"apikey_{i}"})
         for i in range(2)
     ]
 
@@ -282,9 +282,9 @@ class TestPermissions(BasePermissionTests):
     async def create_assignee(
         self, client: HttpTestHelper, dbm: DatabaseManager, data=None
     ) -> PreparedApikey:
-        return await PreparedApikey.create(client, dbm, data)
+        return await PreparedApikey.create(client, data)
 
     def rebuild_assignee_from_response(
         self, resp: Response, data: dict, dbm: DatabaseManager
     ) -> PreparedApikey:
-        return PreparedApikey(resp.json()["id"], resp.json()["key"], data, dbm)
+        return PreparedApikey(resp.json()["id"], resp.json()["key"], data)

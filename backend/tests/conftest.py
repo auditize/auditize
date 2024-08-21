@@ -1,4 +1,3 @@
-import os
 from typing import Awaitable, Callable, Optional, Protocol
 
 import pytest
@@ -53,7 +52,7 @@ async def _dbm():
 
 @pytest.fixture(scope="function")
 async def apikey_client(dbm: DatabaseManager):
-    apikey = await PreparedApikey.inject_into_db(dbm)
+    apikey = await PreparedApikey.inject_into_db()
     async with apikey.client() as client:
         yield client
 
@@ -90,7 +89,7 @@ async def _log_db_pool(_dbm: DatabaseManager):
     return TestLogDatabasePool(_dbm)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 async def dbm(_dbm):
     yield _dbm
     await cleanup_db(_dbm.core_db.db)
@@ -126,8 +125,8 @@ async def user(superadmin_client, dbm):
 
 
 @pytest.fixture(scope="function")
-async def apikey(dbm):
-    return await PreparedApikey.inject_into_db(dbm)
+async def apikey():
+    return await PreparedApikey.inject_into_db()
 
 
 ApikeyBuilder = Callable[[dict], Awaitable[PreparedApikey]]
@@ -136,7 +135,7 @@ ApikeyBuilder = Callable[[dict], Awaitable[PreparedApikey]]
 @pytest.fixture(scope="function")
 def apikey_builder(dbm) -> ApikeyBuilder:
     async def func(permissions):
-        return await PreparedApikey.inject_into_db_with_permissions(dbm, permissions)
+        return await PreparedApikey.inject_into_db_with_permissions(permissions)
 
     return func
 

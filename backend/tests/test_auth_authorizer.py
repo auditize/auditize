@@ -58,7 +58,7 @@ async def test_auth_access_token_invalid_syntax(dbm: DatabaseManager):
 
 
 async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
-    apikey = await PreparedApikey.inject_into_db(dbm)
+    apikey = await PreparedApikey.inject_into_db()
 
     # Prepare a valid JWT session token but sign with a different key
     jwt_payload, _ = generate_access_token_payload(UUID(apikey.id), Permissions())
@@ -71,7 +71,7 @@ async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
 
 
 async def test_auth_access_token_expired(dbm: DatabaseManager):
-    apikey = await PreparedApikey.inject_into_db(dbm)
+    apikey = await PreparedApikey.inject_into_db()
 
     # Mock the current time to be 2024-01-01 to generate an already expired token
     with patch(

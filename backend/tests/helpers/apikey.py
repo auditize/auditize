@@ -5,7 +5,6 @@ import callee
 
 from auditize.apikey.models import Apikey
 from auditize.apikey.service import create_apikey
-from auditize.database import DatabaseManager
 from auditize.permissions.models import Permissions
 
 from .http import HttpTestHelper
@@ -13,20 +12,17 @@ from .permissions.constants import DEFAULT_PERMISSIONS
 
 
 class PreparedApikey:
-    def __init__(self, id: str, key: str, data: dict, dbm: DatabaseManager):
+    def __init__(self, id: str, key: str, data: dict):
         self.id = id
         self.key = key
         self.data = data
-        self.dbm = dbm
 
     @staticmethod
     def prepare_data(extra=None):
         return {"name": f"Apikey {uuid.uuid4()}", **(extra or {})}
 
     @classmethod
-    async def create(
-        cls, client: HttpTestHelper, dbm: DatabaseManager, data=None
-    ) -> "PreparedApikey":
+    async def create(cls, client: HttpTestHelper, data=None) -> "PreparedApikey":
         if data is None:
             data = cls.prepare_data()
         resp = await client.assert_post(
@@ -34,7 +30,7 @@ class PreparedApikey:
             json=data,
             expected_status_code=201,
         )
-        return cls(resp.json()["id"], resp.json()["key"], data, dbm)
+        return cls(resp.json()["id"], resp.json()["key"], data)
 
     @staticmethod
     def prepare_model(*, permissions=None) -> Apikey:
@@ -44,9 +40,7 @@ class PreparedApikey:
         return model
 
     @classmethod
-    async def inject_into_db(
-        cls, dbm: DatabaseManager, apikey: Apikey = None
-    ) -> "PreparedApikey":
+    async def inject_into_db(cls, apikey: Apikey = None) -> "PreparedApikey":
         if apikey is None:
             apikey = cls.prepare_model()
         apikey_id, key = await create_apikey(apikey)
@@ -56,14 +50,13 @@ class PreparedApikey:
             data={
                 "name": apikey.name,
             },
-            dbm=dbm,
         )
 
     @classmethod
     async def inject_into_db_with_permissions(
-        cls, dbm: DatabaseManager, permissions: dict
+        cls, permissions: dict
     ) -> "PreparedApikey":
-        return await cls.inject_into_db(dbm, cls.prepare_model(permissions=permissions))
+        return await cls.inject_into_db(cls.prepare_model(permissions=permissions))
 
     def expected_document(self, extra=None):
         return {
