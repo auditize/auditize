@@ -124,7 +124,7 @@ async def test_log_i18n_profile_create_missing_name(
 async def test_log_i18n_profile_create_name_already_used(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    await PreparedLogI18nProfile.create(dbm, {"name": "i18n"})
+    await PreparedLogI18nProfile.create({"name": "i18n"})
 
     await repo_write_client.assert_post_constraint_violation(
         "/log-i18n-profiles",
@@ -149,7 +149,6 @@ async def test_log_i18n_profile_update_name(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18n",
             "translations": {
@@ -174,7 +173,6 @@ async def test_log_i18n_profile_update_add_translation(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18n",
             "translations": {
@@ -209,7 +207,6 @@ async def test_log_i18n_profile_update_remove_translation(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18n",
             "translations": {
@@ -242,7 +239,6 @@ async def test_log_i18n_profile_update_existing_translation(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18n",
             "translations": {
@@ -308,9 +304,9 @@ async def test_log_i18n_profile_update_existing_translation(
 
 
 async def test_log_i18n_profile_update_add_invalid_lang(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+    repo_write_client: HttpTestHelper,
 ):
-    profile = await PreparedLogI18nProfile.create(dbm)
+    profile = await PreparedLogI18nProfile.create()
     await repo_write_client.assert_patch_bad_request(
         f"/log-i18n-profiles/{profile.id}",
         json={
@@ -320,10 +316,10 @@ async def test_log_i18n_profile_update_add_invalid_lang(
 
 
 async def test_log_i18n_profile_update_name_already_used(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+    repo_write_client: HttpTestHelper,
 ):
-    profile_1 = await PreparedLogI18nProfile.create(dbm, {"name": "i18n"})
-    profile_2 = await PreparedLogI18nProfile.create(dbm)
+    profile_1 = await PreparedLogI18nProfile.create({"name": "i18n"})
+    profile_2 = await PreparedLogI18nProfile.create()
 
     await repo_write_client.assert_patch_constraint_violation(
         f"/log-i18n-profiles/{profile_2.id}",
@@ -333,10 +329,8 @@ async def test_log_i18n_profile_update_name_already_used(
     )
 
 
-async def test_log_i18n_profile_update_forbidden(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
-):
-    profile = await PreparedLogI18nProfile.create(dbm)
+async def test_log_i18n_profile_update_forbidden(repo_read_client: HttpTestHelper):
+    profile = await PreparedLogI18nProfile.create()
 
     await repo_read_client.assert_patch_forbidden(
         f"/log-i18n-profiles/{profile.id}",
@@ -346,9 +340,7 @@ async def test_log_i18n_profile_update_forbidden(
     )
 
 
-async def test_log_i18n_profile_update_not_found(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_log_i18n_profile_update_not_found(repo_write_client: HttpTestHelper):
     await repo_write_client.assert_patch_not_found(
         f"/log-i18n-profiles/{UNKNOWN_UUID}",
         json={
@@ -360,20 +352,15 @@ async def test_log_i18n_profile_update_not_found(
 async def test_log_i18n_profile_get_empty(
     repo_read_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    profile = await PreparedLogI18nProfile.create(
-        dbm,
-    )
+    profile = await PreparedLogI18nProfile.create()
     await repo_read_client.assert_get_ok(
         f"/log-i18n-profiles/{profile.id}",
         expected_json=profile.expected_api_response(),
     )
 
 
-async def test_log_i18n_profile_get_with_translations(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_log_i18n_profile_get_with_translations(repo_read_client: HttpTestHelper):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18n",
             "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
@@ -396,19 +383,15 @@ async def test_log_i18n_profile_get_not_found(
 async def test_log_i18n_profile_get_forbidden(
     repo_write_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    profile = await PreparedLogI18nProfile.create(dbm)
+    profile = await PreparedLogI18nProfile.create()
 
     await repo_write_client.assert_get_forbidden(
         f"/log-i18n-profiles/{profile.id}",
     )
 
 
-async def test_log_i18n_profile_translation_get_empty(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
-):
-    profile = await PreparedLogI18nProfile.create(
-        dbm,
-    )
+async def test_log_i18n_profile_translation_get_empty(repo_read_client: HttpTestHelper):
+    profile = await PreparedLogI18nProfile.create()
     await repo_read_client.assert_get_ok(
         f"/log-i18n-profiles/{profile.id}/translations/en",
         expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
@@ -416,10 +399,9 @@ async def test_log_i18n_profile_translation_get_empty(
 
 
 async def test_log_i18n_profile_translation_get_with_translation(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
+    repo_read_client: HttpTestHelper,
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18n",
             "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
@@ -440,21 +422,18 @@ async def test_log_i18n_profile_translation_get_not_found(
 
 
 async def test_log_i18n_profile_translation_get_forbidden(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+    repo_write_client: HttpTestHelper,
 ):
-    profile = await PreparedLogI18nProfile.create(dbm)
+    profile = await PreparedLogI18nProfile.create()
 
     await repo_write_client.assert_get_forbidden(
         f"/log-i18n-profiles/{profile.id}/translations/en",
     )
 
 
-async def test_log_i18n_profile_list(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_log_i18n_profile_list(repo_read_client: HttpTestHelper):
     profiles = [
         await PreparedLogI18nProfile.create(
-            dbm,
             PreparedLogI18nProfile.prepare_data(
                 {"translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION}}
             ),
@@ -472,12 +451,9 @@ async def test_log_i18n_profile_list(
     )
 
 
-async def test_log_i18n_profile_list_with_search(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_log_i18n_profile_list_with_search(repo_read_client: HttpTestHelper):
     profiles = [
-        await PreparedLogI18nProfile.create(dbm, {"name": f"profile_{i}"})
-        for i in range(2)
+        await PreparedLogI18nProfile.create({"name": f"profile_{i}"}) for i in range(2)
     ]
 
     await repo_read_client.assert_get_ok(

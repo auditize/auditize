@@ -115,8 +115,8 @@ async def repo(repo_builder):
 
 
 @pytest.fixture(scope="function")
-async def log_i18n_profile(dbm):
-    return await PreparedLogI18nProfile.create(dbm)
+async def log_i18n_profile():
+    return await PreparedLogI18nProfile.create()
 
 
 @pytest.fixture(scope="function")

@@ -366,10 +366,8 @@ async def test_repo_get_translation_for_user_not_configured(
 async def test_repo_get_translation_for_user_not_available_for_user_lang(
     user_builder: UserBuilder,
     repo_builder: RepoBuilder,
-    dbm: DatabaseManager,
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18",
             "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
@@ -387,10 +385,9 @@ async def test_repo_get_translation_for_user_not_available_for_user_lang(
 
 
 async def test_repo_get_translation_for_user_available_for_user_lang(
-    user_builder: UserBuilder, repo_builder: RepoBuilder, dbm: DatabaseManager
+    user_builder: UserBuilder, repo_builder: RepoBuilder
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18",
             "translations": {"fr": PreparedLogI18nProfile.FRENCH_TRANSLATION},
@@ -443,10 +440,9 @@ async def test_repo_get_translation_not_configured(
 
 
 async def test_repo_get_translation_not_available_for_lang(
-    log_read_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
+    log_read_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18",
             "translations": {"en": PreparedLogI18nProfile.ENGLISH_TRANSLATION},
@@ -462,10 +458,8 @@ async def test_repo_get_translation_not_available_for_lang(
 async def test_repo_get_translation_for_user_available_for_lang(
     log_read_client: HttpTestHelper,
     repo_builder: RepoBuilder,
-    dbm: DatabaseManager,
 ):
     profile = await PreparedLogI18nProfile.create(
-        dbm,
         {
             "name": "i18",
             "translations": {"fr": PreparedLogI18nProfile.FRENCH_TRANSLATION},
