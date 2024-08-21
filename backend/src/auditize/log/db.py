@@ -5,7 +5,7 @@ from aiocache import Cache
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 from auditize.config import get_config
-from auditize.database import BaseDatabase, Collection, DatabaseManager
+from auditize.database import BaseDatabase, Collection, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.repo.models import Repo, RepoStatus
 
@@ -37,7 +37,7 @@ class LogDatabase(BaseDatabase):
         await self._cache.set(cache_key, result)
 
     async def setup(self):
-        config = await get_config()
+        config = get_config()
 
         # Log collection indexes
         if not config.test_mode:
@@ -91,13 +91,11 @@ class LogDatabase(BaseDatabase):
     log_nodes = Collection("log_nodes")
 
 
-async def _get_log_db(
-    dbm: DatabaseManager, repo: UUID | Repo, statuses: list[RepoStatus]
-) -> LogDatabase:
+async def _get_log_db(repo: UUID | Repo, statuses: list[RepoStatus]) -> LogDatabase:
     from auditize.repo.service import get_repo  # avoid circular import
 
     if type(repo) is UUID:
-        repo = await get_repo(dbm, repo)
+        repo = await get_repo(repo)
 
     if statuses:
         if repo.status not in statuses:
@@ -106,7 +104,7 @@ async def _get_log_db(
                 "The repository status does not allow the requested operation"
             )
 
-    return LogDatabase(repo.log_db_name, dbm.client)
+    return LogDatabase(repo.log_db_name, get_dbm().client)
 
 
 get_log_db_for_reading = partial(

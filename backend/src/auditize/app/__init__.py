@@ -5,17 +5,19 @@ from fastapi import FastAPI
 from auditize.app.app_api import app as api_app
 from auditize.app.app_static import app as static_app
 from auditize.app.cors import setup_cors
-from auditize.database import get_dbm
+from auditize.config import init_config
+from auditize.database import init_dbm
 
 __all__ = "app", "api_app"
 
 
 @asynccontextmanager
 async def setup_app(_):
-    dbm = await get_dbm()
+    init_config()
+    dbm = init_dbm()
     await dbm.setup()
-    await setup_cors(api_app)
-    await setup_cors(static_app)
+    setup_cors(api_app)
+    setup_cors(static_app)
     yield
 
 

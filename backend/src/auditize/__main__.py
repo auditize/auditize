@@ -5,8 +5,8 @@ import json
 import sys
 
 from auditize.app import api_app
-from auditize.config import Config
-from auditize.database import get_dbm
+from auditize.config import get_config, init_config
+from auditize.database import init_dbm
 from auditize.exceptions import ConfigError, ConstraintViolation
 from auditize.log.service import apply_log_retention_period
 from auditize.openapi import get_customized_openapi_schema
@@ -32,49 +32,43 @@ def _get_password() -> str:
 
 
 async def _bootstrap_superadmin(
-    dbm, email: str, first_name: str, last_name: str, password: str
+    email: str, first_name: str, last_name: str, password: str
 ):
     await save_user(
-        dbm,
         User(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            password_hash=await hash_user_password(password),
+            password_hash=hash_user_password(password),
             permissions=Permissions(is_superadmin=True),
         ),
     )
 
 
 async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
-    dbm = get_dbm()
     password = _get_password()
 
     try:
-        await _bootstrap_superadmin(dbm, email, first_name, last_name, password)
+        await _bootstrap_superadmin(email, first_name, last_name, password)
     except ConstraintViolation:
         sys.exit(f"Error: user with email {email} already exists")
     print(f"User with email {email} has been successfully created")
 
 
 async def bootstrap_default_superadmin():
-    dbm = await get_dbm()
-    users, _ = await get_users(dbm, query=None, page=1, page_size=1)
+    users, _ = await get_users(query=None, page=1, page_size=1)
     if not users:
         await _bootstrap_superadmin(
-            dbm, "super.admin@example.net", "Super", "Admin", "auditize"
+            "super.admin@example.net", "Super", "Admin", "auditize"
         )
 
 
 async def purge_expired_logs():
-    await apply_log_retention_period(await get_dbm())
+    await apply_log_retention_period()
 
 
 async def dump_config():
-    try:
-        config = Config.load_from_env()
-    except ConfigError as exc:
-        sys.exit("ERROR: " + str(exc))
+    config = get_config()
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 
 
@@ -130,4 +124,11 @@ async def main(args):
 
 
 if __name__ == "__main__":
+    try:
+        init_config()
+    except ConfigError as exc:
+        sys.exit("ERROR: " + str(exc))
+
+    init_dbm()
+
     sys.exit(asyncio.run(main(sys.argv[1:])))

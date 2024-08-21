@@ -5,7 +5,6 @@ import callee
 import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import DatabaseManager
 from auditize.log.models import CustomField, Log
 from auditize.log.service import (
     apply_log_retention_period,
@@ -38,9 +37,9 @@ def make_log_data(**extra) -> Log:
     return Log(**kwargs)
 
 
-async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
+async def test_save_log_db_shape(repo: PreparedRepo):
     log = make_log_data()
-    log_id = await save_log(dbm, UUID(repo.id), log)
+    log_id = await save_log(UUID(repo.id), log)
     db_log = await repo.db.logs.find_one({"_id": log_id})
     assert list(db_log.keys()) == [
         "_id",
@@ -72,14 +71,14 @@ async def assert_consolidated_data(
     )
 
 
-async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
+async def test_save_log_lookup_tables(repo: PreparedRepo):
     # first log
     log = make_log_data(source=[{"name": "ip", "value": "127.0.0.1"}])
     log.actor.extra.append(CustomField(name="role", value="admin"))
     log.resource.extra.append(CustomField(name="some_key", value="some_value"))
     log.details.append(CustomField(name="detail_name", value="detail_value"))
     log.tags = [Log.Tag(ref="tag_ref", type="rich_tag", name="rich_tag_name")]
-    await save_log(dbm, UUID(repo.id), log)
+    await save_log(UUID(repo.id), log)
     await assert_consolidated_data(
         repo.db.log_actions, {"category": "authentication", "type": "login"}
     )
@@ -109,9 +108,8 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         Log.Tag(type="simple_tag"),
     ]
     log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
-    log_id = await save_log(dbm, UUID(repo.id), log)
+    log_id = await save_log(UUID(repo.id), log)
     await save_log_attachment(
-        dbm,
         UUID(repo.id),
         log_id,
         name="file.txt",
@@ -171,17 +169,17 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
 
 
 async def test_log_retention_period_disabled(
-    superadmin_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
     await repo.create_log(
         superadmin_client, saved_at=datetime.now() - timedelta(days=3650)
     )
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
     assert await repo.db.logs.count_documents({}) == 1
 
 
 async def test_log_retention_period_enabled(
-    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     # we test with repos:
     # - repo_1 with retention period and 1 log that must be deleted and 1 log that must be kept
@@ -203,7 +201,7 @@ async def test_log_retention_period_enabled(
         superadmin_client, saved_at=datetime.now() - timedelta(days=29)
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     assert await repo_1.db.logs.count_documents({}) == 1
     assert await repo_1.db.logs.find_one({"_id": UUID(repo_1_log_2.id)}) is not None
@@ -212,7 +210,7 @@ async def test_log_retention_period_enabled(
 
 
 async def test_log_retention_period_purge_consolidated_data(
-    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     repo = await repo_builder({"retention_period": 30})
     log_1 = await repo.create_log(
@@ -286,7 +284,7 @@ async def test_log_retention_period_purge_consolidated_data(
         mime_type="mime-type/to-be-purged",
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     await assert_consolidated_data(
         repo.db.log_actions,
@@ -326,7 +324,7 @@ async def test_log_retention_period_purge_consolidated_data(
 
 
 async def test_log_retention_period_purge_log_nodes_1(
-    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     repo = await repo_builder({"retention_period": 30})
     # We have the following log node hierarchy:
@@ -355,7 +353,7 @@ async def test_log_retention_period_purge_log_nodes_1(
         ["A", "AC"],
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     await assert_consolidated_data(
         repo.db.log_nodes,
@@ -370,7 +368,6 @@ async def test_log_retention_period_purge_log_nodes_1(
 async def test_log_retention_period_purge_log_nodes_2(
     superadmin_client: HttpTestHelper,
     repo_builder: RepoBuilder,
-    dbm: DatabaseManager,
 ):
     repo = await repo_builder({"retention_period": 30})
     # We have the following log node hierarchy:
@@ -388,7 +385,7 @@ async def test_log_retention_period_purge_log_nodes_2(
         saved_at=datetime.now() - timedelta(days=40),
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     await assert_consolidated_data(
         repo.db.log_nodes,

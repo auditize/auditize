@@ -4,8 +4,7 @@ from uuid import UUID, uuid4
 
 import callee
 
-from auditize.database import DatabaseManager
-from auditize.log.db import LogDatabase, get_log_db_for_config
+from auditize.log.db import LogDatabase
 from auditize.repo.models import Repo
 from auditize.repo.service import create_repo
 
@@ -24,31 +23,34 @@ class PreparedRepo:
         return {"name": f"Repo {uuid4()}", **(extra or {})}
 
     @classmethod
-    async def create(cls, dbm: DatabaseManager, data=None, log_db: LogDatabase = None):
+    async def create(cls, data, log_db: LogDatabase):
         if not data:
             data: dict[str, Any] = cls.prepare_data()
         model_data = data.copy()
         if "log_i18n_profile_id" in model_data:
             model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
-        repo_id = await create_repo(dbm, Repo(**model_data), log_db=log_db)
-        logs_db = await get_log_db_for_config(dbm, repo_id)
-        return cls(str(repo_id), data, logs_db)
+        repo_id = await create_repo(Repo(**model_data), log_db=log_db)
+        return cls(str(repo_id), data, log_db)
 
-    def expected_document(self, extra=None):
+    @staticmethod
+    def build_expected_document(repo_id, data, extra=None):
         return {
-            "_id": UUID(self.id),
-            "name": self.data["name"],
+            "_id": UUID(repo_id),
+            "name": data["name"],
             "log_db_name": callee.IsA(str),
-            "status": self.data.get("status", "enabled"),
-            "retention_period": self.data.get("retention_period", None),
+            "status": data.get("status", "enabled"),
+            "retention_period": data.get("retention_period", None),
             "log_i18n_profile_id": (
-                UUID(self.data["log_i18n_profile_id"])
-                if "log_i18n_profile_id" in self.data
+                UUID(data["log_i18n_profile_id"])
+                if "log_i18n_profile_id" in data
                 else None
             ),
             "created_at": callee.IsA(datetime),
             **(extra or {}),
         }
+
+    def expected_document(self, extra=None):
+        return self.build_expected_document(self.id, self.data, extra)
 
     def expected_api_response(self, extra=None) -> dict:
         return {

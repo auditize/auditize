@@ -9,7 +9,7 @@ from auditize.apikey.models import Apikey
 from auditize.apikey.service import get_apikey, get_apikey_by_key
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX, APIKEY_SECRET_PREFIX
 from auditize.auth.jwt import get_access_token_data, get_user_email_from_session_token
-from auditize.database import DatabaseManager, get_dbm
+from auditize.database import get_dbm
 from auditize.exceptions import (
     AuthenticationFailure,
     PermissionDenied,
@@ -89,22 +89,20 @@ def _get_authorization_bearer(request: Request) -> str | None:
     return authorization[len(_BEARER_PREFIX) :]
 
 
-async def authenticate_apikey(dbm: DatabaseManager, key: str) -> Authenticated:
+async def authenticate_apikey(key: str) -> Authenticated:
     try:
-        apikey = await get_apikey_by_key(dbm, key)
+        apikey = await get_apikey_by_key(key)
     except UnknownModelException:
         raise AuthenticationFailure("Invalid API key")
 
     return Authenticated.from_apikey(apikey)
 
 
-async def authenticate_access_token(
-    dbm: DatabaseManager, access_token: str
-) -> Authenticated:
+async def authenticate_access_token(access_token: str) -> Authenticated:
     jwt_token = access_token[len(ACCESS_TOKEN_PREFIX) :]
-    apikey_id, permissions = await get_access_token_data(jwt_token)
+    apikey_id, permissions = get_access_token_data(jwt_token)
     try:
-        apikey = await get_apikey(dbm, apikey_id)
+        apikey = await get_apikey(apikey_id)
     except UnknownModelException:
         raise AuthenticationFailure(
             "Invalid API key corresponding to access token is no longer valid"
@@ -123,7 +121,7 @@ async def authenticate_access_token(
     )
 
 
-async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authenticated:
+async def authenticate_user(request: Request) -> Authenticated:
     if not request.cookies:
         raise AuthenticationFailure()
 
@@ -131,9 +129,9 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     if not session_token:
         raise AuthenticationFailure()
 
-    user_email = await get_user_email_from_session_token(session_token)
+    user_email = get_user_email_from_session_token(session_token)
     try:
-        user = await get_user_by_email(dbm, user_email)
+        user = await get_user_by_email(user_email)
     except UnknownModelException:
         raise AuthenticationFailure("User does no longer exist")
 
@@ -143,18 +141,16 @@ async def authenticate_user(dbm: DatabaseManager, request: Request) -> Authentic
     return Authenticated.from_user(user)
 
 
-async def get_authenticated(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)], request: Request
-) -> Authenticated:
+async def get_authenticated(request: Request) -> Authenticated:
     bearer = _get_authorization_bearer(request)
     if bearer:
         if bearer.startswith(APIKEY_SECRET_PREFIX):
-            return await authenticate_apikey(dbm, bearer)
+            return await authenticate_apikey(bearer)
         if bearer.startswith(ACCESS_TOKEN_PREFIX):
-            return await authenticate_access_token(dbm, bearer)
+            return await authenticate_access_token(bearer)
         raise AuthenticationFailure("Invalid bearer token")
 
-    return await authenticate_user(dbm, request)
+    return await authenticate_user(request)
 
 
 class _Authorized:

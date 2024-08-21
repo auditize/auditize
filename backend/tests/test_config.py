@@ -3,17 +3,15 @@ import pytest
 from auditize.config import Config, get_config
 from auditize.exceptions import ConfigError
 
-pytestmark = pytest.mark.anyio
-
 MINIMUM_VIABLE_CONFIG = {
     "AUDITIZE_BASE_URL": "http://localhost:8000",
     "AUDITIZE_JWT_SIGNING_KEY": "DUMMYKEY",
 }
 
 
-async def test_get_config():
+def test_get_config():
     # test get_config assuming environment variables set in conftest.py
-    config = await get_config()
+    config = get_config()
     assert isinstance(config, Config)
     assert config.base_url == "http://localhost:8000"
     assert config.jwt_signing_key is not None

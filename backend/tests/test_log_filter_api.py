@@ -4,7 +4,7 @@ from uuid import UUID
 import callee
 import pytest
 
-from auditize.database import DatabaseManager
+from auditize.database import get_dbm
 from conftest import RepoBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
@@ -17,9 +17,7 @@ from helpers.user import PreparedUser
 pytestmark = pytest.mark.anyio
 
 
-async def _test_log_filter_creation(
-    user: PreparedUser, data: dict, dbm: DatabaseManager
-):
+async def _test_log_filter_creation(user: PreparedUser, data: dict):
     async with user.client() as client:
         client: HttpTestHelper
         resp = await client.assert_post_created(
@@ -31,13 +29,13 @@ async def _test_log_filter_creation(
     log_filter = PreparedLogFilter(resp.json()["id"], data)
 
     await assert_collection(
-        dbm.core_db.log_filters,
+        get_dbm().core_db.log_filters,
         [log_filter.expected_document({"user_id": UUID(user.id)})],
     )
 
 
 async def test_log_filter_create_simple(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo: PreparedRepo
 ):
     await _test_log_filter_creation(
         log_read_user,
@@ -50,12 +48,11 @@ async def test_log_filter_create_simple(
                 "action_type",
             ],
         },
-        dbm,
     )
 
 
 async def test_log_filter_create_all_builtin_field_search_parameters(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo: PreparedRepo
 ):
     params: dict[str, Any] = {k: "some value" for k in DEFAULT_SEARCH_PARAMETERS}
     params["since"] = "2021-01-01T00:00:00Z"
@@ -69,12 +66,11 @@ async def test_log_filter_create_all_builtin_field_search_parameters(
             "search_params": params,
             "columns": [],
         },
-        dbm,
     )
 
 
 async def test_log_filter_create_all_custom_field_search_parameters(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo: PreparedRepo
 ):
     await _test_log_filter_creation(
         log_read_user,
@@ -89,12 +85,11 @@ async def test_log_filter_create_all_custom_field_search_parameters(
             },
             "columns": [],
         },
-        dbm,
     )
 
 
 async def test_log_filter_create_all_builtin_field_columns(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo: PreparedRepo
 ):
     await _test_log_filter_creation(
         log_read_user,
@@ -126,12 +121,11 @@ async def test_log_filter_create_all_builtin_field_columns(
                 "node",
             ],
         },
-        dbm,
     )
 
 
 async def test_log_filter_create_all_custom_field_columns(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo: PreparedRepo
 ):
     await _test_log_filter_creation(
         log_read_user,
@@ -146,7 +140,6 @@ async def test_log_filter_create_all_custom_field_columns(
                 "details.custom_details_field"
             ],
         },
-        dbm,
     )
 
 
@@ -255,9 +248,7 @@ async def test_log_filter_create_invalid_column_duplicated(
     )
 
 
-async def test_log_filter_create_invalid_repo(
-    log_read_user: PreparedUser, dbm: DatabaseManager
-):
+async def test_log_filter_create_invalid_repo(log_read_user: PreparedUser):
     async with log_read_user.client() as client:
         client: HttpTestHelper
         await client.assert_post_bad_request(
@@ -324,7 +315,7 @@ async def test_log_filter_create_forbidden(
 
 
 async def _test_log_filter_update(
-    log_read_user: PreparedUser, data: dict, update: dict, dbm: DatabaseManager
+    log_read_user: PreparedUser, data: dict, update: dict
 ):
     log_filter = await log_read_user.create_log_filter(data)
     async with log_read_user.client() as client:
@@ -334,7 +325,7 @@ async def _test_log_filter_update(
             json=update,
         )
     await assert_collection(
-        dbm.core_db.log_filters,
+        get_dbm().core_db.log_filters,
         [
             log_filter.expected_document({**update, "user_id": UUID(log_read_user.id)}),
         ],
@@ -342,7 +333,7 @@ async def _test_log_filter_update(
 
 
 async def test_log_filter_update_simple(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo: PreparedRepo
 ):
     await _test_log_filter_update(
         log_read_user,
@@ -360,12 +351,11 @@ async def test_log_filter_update_simple(
         {
             "name": "new name",
         },
-        dbm,
     )
 
 
 async def test_log_filter_update_all_params(
-    log_read_user: PreparedUser, repo_builder: RepoBuilder, dbm: DatabaseManager
+    log_read_user: PreparedUser, repo_builder: RepoBuilder
 ):
     repo_1 = await repo_builder({})
     repo_2 = await repo_builder({})
@@ -392,7 +382,6 @@ async def test_log_filter_update_all_params(
                 "action_category",
             ],
         },
-        dbm,
     )
 
 
@@ -658,16 +647,14 @@ async def test_log_filter_list_forbidden(user_builder: UserBuilder):
         await client.assert_get_forbidden("/users/me/logs/filters")
 
 
-async def test_log_filter_delete(
-    log_read_user: PreparedUser, repo: PreparedRepo, dbm: DatabaseManager
-):
+async def test_log_filter_delete(log_read_user: PreparedUser, repo: PreparedRepo):
     log_filter = await log_read_user.create_log_filter(
         PreparedLogFilter.prepare_data({"repo_id": repo.id})
     )
     async with log_read_user.client() as client:
         client: HttpTestHelper
         await client.assert_delete_no_content(f"/users/me/logs/filters/{log_filter.id}")
-    await assert_collection(dbm.core_db.log_filters, [])
+    await assert_collection(get_dbm().core_db.log_filters, [])
 
 
 async def test_log_filter_delete_unknown(log_read_user_client: HttpTestHelper):

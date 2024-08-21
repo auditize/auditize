@@ -4,7 +4,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from auditize.auth.authorizer import AuthorizedUser
-from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.log_filter import service
 from auditize.log_filter.api_models import (
@@ -31,12 +30,10 @@ router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
     responses=error_responses(400, 409),
 )
 async def create_filter(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedUser(can_read_logs()),
     log_filter: LogFilterCreationRequest,
 ) -> LogFilterCreationResponse:
     log_filter_id = await service.create_log_filter(
-        dbm,
         LogFilter.model_validate(
             {
                 **log_filter.model_dump(),
@@ -56,13 +53,11 @@ async def create_filter(
     responses=error_responses(400, 404, 409),
 )
 async def update_filter(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedUser(can_read_logs()),
     update: LogFilterUpdateRequest,
     filter_id: UUID,
 ):
     await service.update_log_filter(
-        dbm,
         authorized.user.id,
         filter_id,
         LogFilterUpdate.model_validate(update.model_dump(exclude_unset=True)),
@@ -78,11 +73,10 @@ async def update_filter(
     responses=error_responses(404),
 )
 async def get_filter(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedUser(can_read_logs()),
     filter_id: UUID,
 ) -> LogFilterReadingResponse:
-    log_filter = await service.get_log_filter(dbm, authorized.user.id, filter_id)
+    log_filter = await service.get_log_filter(authorized.user.id, filter_id)
     return LogFilterReadingResponse.model_validate(log_filter.model_dump())
 
 
@@ -93,13 +87,11 @@ async def get_filter(
     tags=["log-filter"],
 )
 async def list_log_filters(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedUser(can_read_logs()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> LogFilterListResponse:
     log_filters, page_info = await service.get_log_filters(
-        dbm,
         user_id=authorized.user.id,
         query=search_params.query,
         page=page_params.page,
@@ -117,8 +109,7 @@ async def list_log_filters(
     responses=error_responses(404),
 )
 async def delete_filter(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedUser(can_read_logs()),
     filter_id: UUID,
 ):
-    await service.delete_log_filter(dbm, authorized.user.id, filter_id)
+    await service.delete_log_filter(authorized.user.id, filter_id)

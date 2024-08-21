@@ -10,7 +10,6 @@ from uuid import UUID
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.config import get_config
-from auditize.database import DatabaseManager
 from auditize.exceptions import (
     ConstraintViolation,
     UnknownModelException,
@@ -153,8 +152,8 @@ async def _check_log(db: LogDatabase, log: Log):
         parent_node_ref = node.ref
 
 
-async def save_log(dbm: DatabaseManager, repo_id: UUID, log: Log) -> UUID:
-    db = await get_log_db_for_writing(dbm, repo_id)
+async def save_log(repo_id: UUID, log: Log) -> UUID:
+    db = await get_log_db_for_writing(repo_id)
 
     await _check_log(db, log)
     log_id = await create_resource_document(db.logs, log)
@@ -165,7 +164,6 @@ async def save_log(dbm: DatabaseManager, repo_id: UUID, log: Log) -> UUID:
 
 
 async def save_log_attachment(
-    dbm: DatabaseManager,
     repo_id: UUID,
     log_id: UUID,
     *,
@@ -174,7 +172,7 @@ async def save_log_attachment(
     mime_type: str,
     data: bytes,
 ):
-    db = await get_log_db_for_writing(dbm, repo_id)
+    db = await get_log_db_for_writing(repo_id)
     attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
     await update_resource_document(
         db.logs,
@@ -185,10 +183,8 @@ async def save_log_attachment(
     await consolidate_log_attachment(db, attachment)
 
 
-async def get_log(
-    dbm: DatabaseManager, repo_id: UUID, log_id: UUID, authorized_nodes: set[str]
-) -> Log:
-    db = await get_log_db_for_reading(dbm, repo_id)
+async def get_log(repo_id: UUID, log_id: UUID, authorized_nodes: set[str]) -> Log:
+    db = await get_log_db_for_reading(repo_id)
     filter = {"_id": log_id}
     if authorized_nodes:
         filter["node_path.ref"] = {"$in": list(authorized_nodes)}
@@ -201,9 +197,9 @@ async def get_log(
 
 
 async def get_log_attachment(
-    dbm: DatabaseManager, repo_id: UUID, log_id: UUID, attachment_idx: int
+    repo_id: UUID, log_id: UUID, attachment_idx: int
 ) -> Log.Attachment:
-    db = await get_log_db_for_reading(dbm, repo_id)
+    db = await get_log_db_for_reading(repo_id)
     doc = await get_resource_document(
         db.logs, log_id, projection={"attachments": {"$slice": [attachment_idx, 1]}}
     )
@@ -285,7 +281,6 @@ def _get_criteria_from_search_params(
 
 
 async def get_logs(
-    dbm: DatabaseManager,
     repo: UUID | LogDatabase,
     *,
     authorized_nodes: set[str] = None,
@@ -296,7 +291,7 @@ async def get_logs(
     if isinstance(repo, LogDatabase):
         db = repo
     else:
-        db = await get_log_db_for_reading(dbm, repo)
+        db = await get_log_db_for_reading(repo)
 
     criteria: list[dict[str, Any]] = []
     if authorized_nodes:
@@ -375,17 +370,15 @@ def validate_csv_columns(cols: list[str]):
 
 
 async def get_logs_as_csv(
-    dbm: DatabaseManager,
     repo_id: UUID,
     *,
     authorized_nodes: set[str] = None,
     search_params: LogSearchParams = None,
     columns: list[str],
 ) -> AsyncGenerator[str, None]:
-    config = await get_config()
-    max_rows = config.csv_max_rows
+    max_rows = get_config().csv_max_rows
     returned_rows = 0
-    logs_db = await get_log_db_for_reading(dbm, repo_id)
+    logs_db = await get_log_db_for_reading(repo_id)
     cursor = None
     for i in count(0):
         csv_buffer = StringIO()
@@ -395,7 +388,6 @@ async def get_logs_as_csv(
         if i == 0:
             csv_writer.writeheader()
         logs, cursor = await get_logs(
-            dbm,
             logs_db,
             authorized_nodes=authorized_nodes,
             search_params=search_params,
@@ -410,7 +402,6 @@ async def get_logs_as_csv(
 
 
 async def _get_consolidated_data_aggregated_field(
-    dbm: DatabaseManager,
     repo_id: str,
     collection_name: str,
     field_name: str,
@@ -420,7 +411,7 @@ async def _get_consolidated_data_aggregated_field(
     page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
     # Get all unique aggregated data field
-    db = await get_log_db_for_reading(dbm, repo_id)
+    db = await get_log_db_for_reading(repo_id)
     collection = db.get_collection(collection_name)
     results = collection.aggregate(
         ([{"$match": match}] if match else [])
@@ -447,7 +438,6 @@ async def _get_consolidated_data_aggregated_field(
 
 
 async def _get_consolidated_data_field(
-    dbm: DatabaseManager,
     repo_id,
     collection_name,
     field_name: str,
@@ -455,7 +445,7 @@ async def _get_consolidated_data_field(
     page=1,
     page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
-    db = await get_log_db_for_reading(dbm, repo_id)
+    db = await get_log_db_for_reading(repo_id)
     results, pagination = await find_paginated_by_page(
         db.get_collection(collection_name),
         projection=[field_name],
@@ -474,7 +464,6 @@ get_log_action_categories = partial(
 
 
 async def get_log_action_types(
-    dbm: DatabaseManager,
     repo_id: str,
     *,
     action_category: str = None,
@@ -482,7 +471,6 @@ async def get_log_action_types(
     page_size=10,
 ) -> tuple[list[str], PagePaginationInfo]:
     return await _get_consolidated_data_aggregated_field(
-        dbm,
         repo_id,
         collection_name="log_actions",
         field_name="type",
@@ -597,7 +585,6 @@ async def _get_nodes_hierarchy(db: LogDatabase, node_refs: set[str]) -> set[str]
 
 
 async def get_log_nodes(
-    dbm: DatabaseManager,
     repo_id: UUID,
     authorized_nodes: set[str],
     *,
@@ -605,7 +592,7 @@ async def get_log_nodes(
     page=1,
     page_size=10,
 ) -> tuple[list[Log.Node], PagePaginationInfo]:
-    db = await get_log_db_for_reading(dbm, repo_id)
+    db = await get_log_db_for_reading(repo_id)
 
     # please note that we use NotImplemented instead of None because None is a valid value for parent_node_ref
     # (it means filtering on top nodes)
@@ -656,9 +643,9 @@ async def _get_log_node(db: LogDatabase, node_ref: str) -> Log.Node:
 
 
 async def get_log_node(
-    dbm: DatabaseManager, repo_id: UUID, node_ref: str, authorized_nodes: set[str]
+    repo_id: UUID, node_ref: str, authorized_nodes: set[str]
 ) -> Log.Node:
-    db = await get_log_db_for_reading(dbm, repo_id)
+    db = await get_log_db_for_reading(repo_id)
     if authorized_nodes:
         node_ref_hierarchy = await _get_node_hierarchy(db, node_ref)
         authorized_nodes_hierarchy = await _get_nodes_hierarchy(db, authorized_nodes)
@@ -670,11 +657,11 @@ async def get_log_node(
     return await _get_log_node(db, node_ref)
 
 
-async def _apply_log_retention_period(dbm: DatabaseManager, repo: Repo):
+async def _apply_log_retention_period(repo: Repo):
     if not repo.retention_period:
         return
 
-    db = await get_log_db_for_maintenance(dbm, repo.id)
+    db = await get_log_db_for_maintenance(repo.id)
     result = await db.logs.delete_many(
         {"saved_at": {"$lt": now() - timedelta(days=repo.retention_period)}}
     )
@@ -808,8 +795,8 @@ async def _purge_orphan_consolidated_log_nodes(db: LogDatabase):
         await _purge_orphan_consolidated_log_node_if_needed(db, node)
 
 
-async def _purge_orphan_consolidated_log_data(dbm: DatabaseManager, repo: Repo):
-    db = await get_log_db_for_maintenance(dbm, repo.id)
+async def _purge_orphan_consolidated_log_data(repo: Repo):
+    db = await get_log_db_for_maintenance(repo.id)
     await _purge_orphan_consolidated_log_actions(db)
     await _purge_orphan_consolidated_log_source_fields(db)
     await _purge_orphan_consolidated_log_actor_types(db)
@@ -823,7 +810,7 @@ async def _purge_orphan_consolidated_log_data(dbm: DatabaseManager, repo: Repo):
     await _purge_orphan_consolidated_log_nodes(db)
 
 
-async def apply_log_retention_period(dbm: DatabaseManager):
-    for repo in await get_retention_period_enabled_repos(dbm):
-        await _apply_log_retention_period(dbm, repo)
-        await _purge_orphan_consolidated_log_data(dbm, repo)
+async def apply_log_retention_period():
+    for repo in await get_retention_period_enabled_repos():
+        await _apply_log_retention_period(repo)
+        await _purge_orphan_consolidated_log_data(repo)

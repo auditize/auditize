@@ -1,4 +1,3 @@
-from asyncio import Lock
 from datetime import timezone
 from functools import lru_cache
 
@@ -65,10 +64,6 @@ class CoreDatabase(BaseDatabase):
     log_filters = Collection("log_filters")
 
 
-def setup_mongo_client(uri: str = None) -> AsyncIOMotorClient:
-    return AsyncIOMotorClient(uri)
-
-
 class DatabaseManager:
     def __init__(self, client: AsyncIOMotorClient, name_prefix: str):
         self.client = client
@@ -85,22 +80,26 @@ class DatabaseManager:
         from auditize.repo.service import get_all_repos
 
         await self.core_db.setup()
-        for repo in await get_all_repos(self):
-            log_db = await get_log_db_for_maintenance(self, repo)
+        for repo in await get_all_repos():
+            log_db = await get_log_db_for_maintenance(repo)
             await log_db.setup()
 
 
-_dbm = None
-_dbm_lock = Lock()
+_dbm: DatabaseManager | None = None
 
 
-async def get_dbm() -> DatabaseManager:
+def init_dbm(name_prefix="auditize", *, force_init=False) -> DatabaseManager:
     global _dbm
-    # we make an initial check outside of lock to avoid unneeded locking when dbm is already loaded
-    if _dbm is None:
-        async with _dbm_lock:
-            if _dbm is None:
-                config = await get_config()
-                client = setup_mongo_client(config.mongodb_uri)
-                _dbm = DatabaseManager.spawn(client)
+    if not force_init and _dbm:
+        raise Exception("DatabaseManager is already initialized")
+    config = get_config()
+    _dbm = DatabaseManager.spawn(
+        AsyncIOMotorClient(config.mongodb_uri), name_prefix=name_prefix
+    )
+    return _dbm
+
+
+def get_dbm() -> DatabaseManager:
+    if not _dbm:
+        raise Exception("DatabaseManager is not initialized")
     return _dbm

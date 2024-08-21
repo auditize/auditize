@@ -4,7 +4,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from auditize.auth.authorizer import Authorized
-from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.log_i18n_profile import service
 from auditize.log_i18n_profile.api_models import (
@@ -37,12 +36,11 @@ router = APIRouter(responses=error_responses(401, 403))
     responses=error_responses(400, 409),
 )
 async def create_profile(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_write_repo()),
     profile: LogI18nProfileCreationRequest,
 ) -> LogI18nProfileCreationResponse:
     profile_id = await service.create_log_i18n_profile(
-        dbm, LogI18nProfile.model_validate(profile.model_dump())
+        LogI18nProfile.model_validate(profile.model_dump())
     )
 
     return LogI18nProfileCreationResponse(id=profile_id)
@@ -58,13 +56,11 @@ async def create_profile(
     responses=error_responses(400, 409),
 )
 async def update_profile(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_write_repo()),
     profile_id: UUID,
     update: LogI18nProfileUpdateRequest,
 ):
     await service.update_log_i18n_profile(
-        dbm,
         profile_id,
         # we use exclude_none=True instead of exclude_unset=True
         # to keep the potential empty dict fields in LogTranslation sub-model
@@ -81,11 +77,10 @@ async def update_profile(
     responses=error_responses(404),
 )
 async def get_profile(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_read_repo()),
     profile_id: UUID,
 ) -> LogI18nProfileReadingResponse:
-    profile = await service.get_log_i18n_profile(dbm, profile_id)
+    profile = await service.get_log_i18n_profile(profile_id)
     return LogI18nProfileReadingResponse.model_validate(profile.model_dump())
 
 
@@ -98,12 +93,11 @@ async def get_profile(
     responses=error_responses(404),
 )
 async def get_profile_translation(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_read_repo()),
     profile_id: UUID,
     lang: Lang,
 ) -> LogTranslation:
-    translation = await service.get_log_i18n_profile_translation(dbm, profile_id, lang)
+    translation = await service.get_log_i18n_profile_translation(profile_id, lang)
     return LogTranslation.model_validate(translation.model_dump())
 
 
@@ -115,13 +109,11 @@ async def get_profile_translation(
     tags=["log-i18n-profile"],
 )
 async def list_profiles(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_read_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> LogI18nProfileListResponse:
     profiles, page_info = await service.get_log_i18n_profiles(
-        dbm,
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
@@ -139,8 +131,7 @@ async def list_profiles(
     responses=error_responses(404),
 )
 async def delete_profile(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: Authorized(can_write_repo()),
     profile_id: UUID,
 ):
-    await service.delete_log_i18n_profile(dbm, profile_id)
+    await service.delete_log_i18n_profile(profile_id)
