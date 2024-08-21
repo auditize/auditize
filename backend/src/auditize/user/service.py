@@ -38,9 +38,9 @@ def _generate_password_reset_token() -> PasswordResetToken:
     )
 
 
-async def _send_account_setup_email(user: User):
-    config = await get_config()
-    await send_email(
+def _send_account_setup_email(user: User):
+    config = get_config()
+    send_email(
         user.email,
         "Welcome to Auditize",
         f"Welcome, {user.first_name}! Please click the following link to complete your registration: "
@@ -69,7 +69,7 @@ async def create_user(dbm: DatabaseManager, user: User) -> UUID:
     user.password_reset_token = _generate_password_reset_token()
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
         user_id = await save_user(dbm, user)
-    await _send_account_setup_email(user)
+    _send_account_setup_email(user)
     return user_id
 
 
@@ -83,7 +83,7 @@ async def update_user(dbm: DatabaseManager, user_id: UUID, update: UserUpdate):
         await ensure_repos_in_permissions_exist(dbm, user_permissions)
         doc_update["permissions"] = user_permissions.model_dump()
     if update.password:
-        doc_update["password_hash"] = await hash_user_password(update.password)
+        doc_update["password_hash"] = hash_user_password(update.password)
 
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
         await update_resource_document(dbm.core_db.users, user_id, doc_update)
@@ -116,20 +116,19 @@ async def get_user_by_password_reset_token(dbm: DatabaseManager, token: str) -> 
 
 # NB: this function is let public to be used in tests and to make sure that passwords
 # are hashed in a consistent way
-async def hash_user_password(password: str) -> str:
-    config = await get_config()
+def hash_user_password(password: str) -> str:
     # https://github.com/pyca/bcrypt/?tab=readme-ov-file#adjustable-work-factor
     # NB: we use a different number of rounds in test mode to speed up tests
     # With default rounds (12), POST /auth/user/login takes about 0.2s vs 0.001s with 4 rounds
     return bcrypt.hashpw(
-        password.encode(), bcrypt.gensalt(rounds=4 if config.test_mode else None)
+        password.encode(), bcrypt.gensalt(rounds=4 if get_config().test_mode else None)
     ).decode()
 
 
 async def update_user_password_by_password_reset_token(
     dbm: DatabaseManager, token: str, password: str
 ):
-    password_hash = await hash_user_password(password)
+    password_hash = hash_user_password(password)
     with enhance_unknown_model_exception("error.invalid_password_reset_token"):
         await update_resource_document(
             dbm.core_db.users,
@@ -196,9 +195,9 @@ async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> 
     return user
 
 
-async def _send_password_reset_link(user: User):
-    config = await get_config()
-    await send_email(
+def _send_password_reset_link(user: User):
+    config = get_config()
+    send_email(
         user.email,
         "Change your password on Auditize",
         f"Please follow this link to reset your password: "
@@ -220,4 +219,4 @@ async def send_user_password_reset_link(dbm: DatabaseManager, email: str):
             "password_reset_token": user.password_reset_token.model_dump(),
         },
     )
-    await _send_password_reset_link(user)
+    _send_password_reset_link(user)

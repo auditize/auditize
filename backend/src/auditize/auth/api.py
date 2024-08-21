@@ -34,9 +34,9 @@ async def login_user(
     request: UserAuthenticationRequest,
     response: Response,
 ) -> UserMeResponse:
-    config = await get_config()
+    config = get_config()
     user = await service.authenticate_user(dbm, request.email, request.password)
-    token, expires_at = await generate_session_token(user.email)
+    token, expires_at = generate_session_token(user.email)
 
     response.set_cookie(
         "session",
@@ -79,9 +79,7 @@ async def auth_access_token(
 ) -> AccessTokenResponse:
     permissions = Permissions.model_validate(request.permissions.model_dump())
     authorize_grant(authorized.permissions, permissions)
-    access_token, expires_at = await generate_access_token(
-        authorized.apikey.id, permissions
-    )
+    access_token, expires_at = generate_access_token(authorized.apikey.id, permissions)
 
     return AccessTokenResponse(
         access_token=ACCESS_TOKEN_PREFIX + access_token, expires_at=expires_at

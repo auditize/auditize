@@ -37,7 +37,7 @@ class LogDatabase(BaseDatabase):
         await self._cache.set(cache_key, result)
 
     async def setup(self):
-        config = await get_config()
+        config = get_config()
 
         # Log collection indexes
         if not config.test_mode:

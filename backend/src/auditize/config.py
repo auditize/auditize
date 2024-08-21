@@ -1,6 +1,6 @@
 import dataclasses
 import os
-from asyncio import Lock
+from threading import Lock
 
 from auditize.exceptions import ConfigError
 
@@ -168,11 +168,11 @@ _config = None
 _config_lock = Lock()
 
 
-async def get_config() -> Config:
+def get_config() -> Config:
     global _config
     # we make an initial check outside of lock to avoid unneeded locking when config is already loaded
     if _config is None:
-        async with _config_lock:
+        with _config_lock:
             if _config is None:
                 _config = Config.load_from_env()
     return _config

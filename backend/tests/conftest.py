@@ -156,11 +156,11 @@ class UserBuilder(Protocol):
 
 
 @pytest.fixture(scope="function")
-async def user_builder(dbm) -> UserBuilder:
+def user_builder(dbm) -> UserBuilder:
     async def func(permissions, lang=None):
         return await PreparedUser.inject_into_db(
             dbm,
-            user=await PreparedUser.prepare_model(
+            user=PreparedUser.prepare_model(
                 password="dummypassword", permissions=permissions, lang=lang
             ),
             password="dummypassword",

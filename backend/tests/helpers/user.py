@@ -52,15 +52,13 @@ class PreparedUser:
         return cls(resp.json()["id"], data, dbm)
 
     @staticmethod
-    async def prepare_model(
-        *, password="dummypassword", permissions=None, lang=None
-    ) -> User:
+    def prepare_model(*, password="dummypassword", permissions=None, lang=None) -> User:
         rand = str(uuid4())
         model = User(
             first_name=f"John {rand}",
             last_name=f"Doe {rand}",
             email=f"john.doe_{rand}@example.net",
-            password_hash=await hash_user_password(password),
+            password_hash=hash_user_password(password),
             lang=lang or Lang.EN,
         )
         if permissions is not None:
@@ -72,7 +70,7 @@ class PreparedUser:
         cls, dbm: DatabaseManager, user: User = None, password="dummypassword"
     ) -> "PreparedUser":
         if user is None:
-            user = await cls.prepare_model(password=password)
+            user = cls.prepare_model(password=password)
         # FIXME: auditize.users.service.save_user should be used here
         user_id = await create_resource_document(
             dbm.core_db.users, build_document_from_user(user)

@@ -40,7 +40,7 @@ async def _bootstrap_superadmin(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            password_hash=await hash_user_password(password),
+            password_hash=hash_user_password(password),
             permissions=Permissions(is_superadmin=True),
         ),
     )
@@ -74,7 +74,7 @@ async def dump_config():
     try:
         config = Config.load_from_env()
     except ConfigError as exc:
-        sys.exit("ERROR: " + str(exc))
+        sys.exit(str(exc))
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 
 
