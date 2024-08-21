@@ -102,7 +102,7 @@ RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]
 async def repo_builder(dbm, _log_db_pool) -> RepoBuilder:
     async def func(extra):
         return await PreparedRepo.create(
-            dbm, PreparedRepo.prepare_data(extra), log_db=await _log_db_pool.get_db()
+            PreparedRepo.prepare_data(extra), log_db=await _log_db_pool.get_db()
         )
 
     yield func

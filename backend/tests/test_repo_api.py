@@ -33,13 +33,16 @@ async def _test_repo_create(
         expected_status_code=201,
         expected_json={"id": callee.IsA(str)},
     )
-    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
-    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+    repo_id = resp.json()["id"]
+    await assert_collection(
+        dbm.core_db.repos,
+        [PreparedRepo.build_expected_document(repo_id, data)],
+    )
 
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
     assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": UUID(repo.id), "read": True, "write": True, "readable_nodes": []}
+        {"repo_id": UUID(repo_id), "read": True, "write": True, "readable_nodes": []}
     ]
 
 
@@ -71,8 +74,10 @@ async def test_repo_create_with_explicit_status(
         json=data,
         expected_json={"id": callee.IsA(str)},
     )
-    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
-    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+    await assert_collection(
+        dbm.core_db.repos,
+        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+    )
 
 
 async def test_repo_create_with_log_i18n_profile(
@@ -87,8 +92,10 @@ async def test_repo_create_with_log_i18n_profile(
         json=data,
         expected_json={"id": callee.IsA(str)},
     )
-    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
-    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+    await assert_collection(
+        dbm.core_db.repos,
+        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+    )
 
 
 async def test_repo_create_with_retention_period(
@@ -105,8 +112,10 @@ async def test_repo_create_with_retention_period(
         json=data,
         expected_json={"id": callee.IsA(str)},
     )
-    repo = PreparedRepo(resp.json()["id"], data, dbm.core_db.repos)
-    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+    await assert_collection(
+        dbm.core_db.repos,
+        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+    )
 
 
 async def test_repo_create_missing_name(
