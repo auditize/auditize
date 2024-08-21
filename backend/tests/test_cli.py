@@ -5,7 +5,6 @@ import pytest
 
 from auditize.__main__ import main
 from auditize.database import DatabaseManager
-from conftest import dbm as dbm_fixt
 from helpers.http import HttpTestHelper
 from helpers.user import PreparedUser
 
@@ -31,7 +30,7 @@ async def test_not_empty_db(dbm: DatabaseManager, user: PreparedUser):
 async def test_purge_expired_logs(dbm: DatabaseManager):
     with patch("auditize.__main__.apply_log_retention_period") as mock:
         await main(["purge-expired-logs"])
-        mock.assert_called_once()
+        mock.assert_called_once_with()
 
 
 async def test_config(capsys):

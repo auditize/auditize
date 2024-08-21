@@ -131,7 +131,7 @@ async def authenticate_user(request: Request) -> Authenticated:
 
     user_email = get_user_email_from_session_token(session_token)
     try:
-        user = await get_user_by_email(get_dbm(), user_email)
+        user = await get_user_by_email(user_email)
     except UnknownModelException:
         raise AuthenticationFailure("User does no longer exist")
 

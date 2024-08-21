@@ -75,7 +75,6 @@ async def create_repo(
             )
         if authorized.user:
             await update_user(
-                get_dbm(),
                 authorized.user.id,
                 UserUpdate(permissions=grant_rw_on_repo_logs),
             )

@@ -5,7 +5,7 @@ from uuid import UUID
 import bcrypt
 
 from auditize.config import get_config
-from auditize.database import DatabaseManager
+from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
@@ -57,28 +57,28 @@ def build_document_from_user(user: User) -> dict:
     }
 
 
-async def save_user(dbm: DatabaseManager, user: User) -> UUID:
+async def save_user(user: User) -> UUID:
     await ensure_repos_in_permissions_exist(user.permissions)
     return await create_resource_document(
-        dbm.core_db.users, build_document_from_user(user)
+        get_dbm().core_db.users, build_document_from_user(user)
     )
 
 
-async def create_user(dbm: DatabaseManager, user: User) -> UUID:
+async def create_user(user: User) -> UUID:
     user = user.model_copy()
     user.password_reset_token = _generate_password_reset_token()
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        user_id = await save_user(dbm, user)
+        user_id = await save_user(user)
     _send_account_setup_email(user)
     return user_id
 
 
-async def update_user(dbm: DatabaseManager, user_id: UUID, update: UserUpdate):
+async def update_user(user_id: UUID, update: UserUpdate):
     doc_update = update.model_dump(
         exclude_unset=True, exclude={"permissions", "password"}
     )
     if update.permissions:
-        user = await get_user(dbm, user_id)
+        user = await get_user(user_id)
         user_permissions = update_permissions(user.permissions, update.permissions)
         await ensure_repos_in_permissions_exist(user_permissions)
         doc_update["permissions"] = user_permissions.model_dump()
@@ -86,20 +86,20 @@ async def update_user(dbm: DatabaseManager, user_id: UUID, update: UserUpdate):
         doc_update["password_hash"] = hash_user_password(update.password)
 
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        await update_resource_document(dbm.core_db.users, user_id, doc_update)
+        await update_resource_document(get_dbm().core_db.users, user_id, doc_update)
 
 
-async def _get_user(dbm: DatabaseManager, filter: UUID | dict) -> User:
-    result = await get_resource_document(dbm.core_db.users, filter)
+async def _get_user(filter: UUID | dict) -> User:
+    result = await get_resource_document(get_dbm().core_db.users, filter)
     return User.model_validate(result)
 
 
-async def get_user(dbm: DatabaseManager, user_id: UUID) -> User:
-    return await _get_user(dbm, user_id)
+async def get_user(user_id: UUID) -> User:
+    return await _get_user(user_id)
 
 
-async def get_user_by_email(dbm: DatabaseManager, email: str) -> User:
-    return await _get_user(dbm, {"email": email})
+async def get_user_by_email(email: str) -> User:
+    return await _get_user({"email": email})
 
 
 def _build_password_reset_token_filter(token: str):
@@ -109,9 +109,9 @@ def _build_password_reset_token_filter(token: str):
     }
 
 
-async def get_user_by_password_reset_token(dbm: DatabaseManager, token: str) -> User:
+async def get_user_by_password_reset_token(token: str) -> User:
     with enhance_unknown_model_exception("error.invalid_password_reset_token"):
-        return await _get_user(dbm, _build_password_reset_token_filter(token))
+        return await _get_user(_build_password_reset_token_filter(token))
 
 
 # NB: this function is let public to be used in tests and to make sure that passwords
@@ -125,23 +125,21 @@ def hash_user_password(password: str) -> str:
     ).decode()
 
 
-async def update_user_password_by_password_reset_token(
-    dbm: DatabaseManager, token: str, password: str
-):
+async def update_user_password_by_password_reset_token(token: str, password: str):
     password_hash = hash_user_password(password)
     with enhance_unknown_model_exception("error.invalid_password_reset_token"):
         await update_resource_document(
-            dbm.core_db.users,
+            get_dbm().core_db.users,
             _build_password_reset_token_filter(token),
             {"password_hash": password_hash, "password_reset_token": None},
         )
 
 
 async def get_users(
-    dbm: DatabaseManager, query: str | None, page: int, page_size: int
+    query: str | None, page: int, page_size: int
 ) -> tuple[list[User], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
-        dbm.core_db.users,
+        get_dbm().core_db.users,
         # NB: '@' is considered as a separator by mongo default analyzer which means that searching on
         # john.doe@example.net would search on "john" or "doe" or "example" and lead to unexpected
         # results.
@@ -159,10 +157,10 @@ async def get_users(
     return [User.model_validate(result) async for result in results], page_info
 
 
-async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: UUID):
-    user = await get_user(dbm, user_id)
+async def _forbid_last_superadmin_deletion(user_id: UUID):
+    user = await get_user(user_id)
     if user.permissions.is_superadmin:
-        other_superadmin = await dbm.core_db.users.find_one(
+        other_superadmin = await get_dbm().core_db.users.find_one(
             {"_id": {"$ne": user_id}, "permissions.is_superadmin": True}
         )
         if not other_superadmin:
@@ -171,18 +169,18 @@ async def _forbid_last_superadmin_deletion(dbm: DatabaseManager, user_id: UUID):
             )
 
 
-async def delete_user(dbm: DatabaseManager, user_id: UUID):
-    await _forbid_last_superadmin_deletion(dbm, user_id)
-    await delete_resource_document(dbm.core_db.users, user_id)
+async def delete_user(user_id: UUID):
+    await _forbid_last_superadmin_deletion(user_id)
+    await delete_resource_document(get_dbm().core_db.users, user_id)
 
 
-async def remove_repo_from_users_permissions(dbm: DatabaseManager, repo_id: UUID):
-    await remove_repo_from_permissions(dbm.core_db.users, repo_id)
+async def remove_repo_from_users_permissions(repo_id: UUID):
+    await remove_repo_from_permissions(get_dbm().core_db.users, repo_id)
 
 
-async def authenticate_user(dbm: DatabaseManager, email: str, password: str) -> User:
+async def authenticate_user(email: str, password: str) -> User:
     try:
-        user = await get_user_by_email(dbm, email)
+        user = await get_user_by_email(email)
     except UnknownModelException:
         raise AuthenticationFailure()
 
@@ -205,15 +203,15 @@ def _send_password_reset_link(user: User):
     )
 
 
-async def send_user_password_reset_link(dbm: DatabaseManager, email: str):
+async def send_user_password_reset_link(email: str):
     try:
-        user = await get_user_by_email(dbm, email)
+        user = await get_user_by_email(email)
     except UnknownModelException:
         # in case of unknown email, just do nothing to avoid leaking information
         return
     user.password_reset_token = _generate_password_reset_token()
     await update_resource_document(
-        dbm.core_db.users,
+        get_dbm().core_db.users,
         user.id,
         {
             "password_reset_token": user.password_reset_token.model_dump(),

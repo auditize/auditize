@@ -32,7 +32,7 @@ async def login_user(
     response: Response,
 ) -> UserMeResponse:
     config = get_config()
-    user = await service.authenticate_user(get_dbm(), request.email, request.password)
+    user = await service.authenticate_user(request.email, request.password)
     token, expires_at = generate_session_token(user.email)
 
     response.set_cookie(

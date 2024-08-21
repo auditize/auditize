@@ -103,7 +103,7 @@ class PreparedUser:
 
     @property
     async def password_reset_token(self) -> str | None:
-        user_model = await get_user(self.dbm, UUID(self.id))
+        user_model = await get_user(UUID(self.id))
         return (
             user_model.password_reset_token.token
             if user_model.password_reset_token
