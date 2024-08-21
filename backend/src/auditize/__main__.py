@@ -5,7 +5,7 @@ import json
 import sys
 
 from auditize.app import api_app
-from auditize.config import Config
+from auditize.config import get_config, init_config
 from auditize.database import get_dbm, init_dbm
 from auditize.exceptions import ConfigError, ConstraintViolation
 from auditize.log.service import apply_log_retention_period
@@ -71,10 +71,7 @@ async def purge_expired_logs():
 
 
 async def dump_config():
-    try:
-        config = Config.load_from_env()
-    except ConfigError as exc:
-        sys.exit(str(exc))
+    config = get_config()
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 
 
@@ -130,5 +127,11 @@ async def main(args):
 
 
 if __name__ == "__main__":
+    try:
+        init_config()
+    except ConfigError as exc:
+        sys.exit("ERROR: " + str(exc))
+
     init_dbm()
+
     sys.exit(asyncio.run(main(sys.argv[1:])))

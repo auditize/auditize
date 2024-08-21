@@ -4,32 +4,11 @@ from typing import Awaitable, Callable, Optional, Protocol
 import pytest
 from icecream import ic
 
-ic.configureOutput(includeContext=True)
-
-# We must initialize the environment before the auditize modules (and more specifically
-# auditize.config) get loaded.
-# Otherwise, the FastAPI app will be loaded with a configuration based on
-# the system, non-controlled, environment.
-# Unfortunately, we can't use the pytest-env plugin because it does not support clearing
-# environment variables.
-
-for key in os.environ:
-    if key.startswith("AUDITIZE_") or key.startswith("_AUDITIZE_"):
-        del os.environ[key]
-
-os.environ.update(
-    # set the environment variables (at least the required ones)
-    {
-        "AUDITIZE_BASE_URL": "http://localhost:8000",
-        "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
-        "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
-        "AUDITIZE_CSV_MAX_ROWS": "10",
-        "_AUDITIZE_TEST_MODE": "true",
-    }
-)
-
+from auditize.config import init_config
 from auditize.database import DatabaseManager
 from auditize.log.db import LogDatabase
+
+ic.configureOutput(includeContext=True)
 
 pytest.register_assert_rewrite("helpers")
 from helpers.apikey import PreparedApikey
@@ -49,6 +28,27 @@ from helpers.user import PreparedUser
 def anyio_backend():
     # Limit the tests to only run on asyncio:
     return "asyncio"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _config():
+    init_config(
+        {
+            "AUDITIZE_BASE_URL": "http://localhost:8000",
+            "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
+            "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
+            "AUDITIZE_CSV_MAX_ROWS": "10",
+            "_AUDITIZE_TEST_MODE": "true",
+        }
+    )
+
+
+@pytest.fixture(scope="session")
+async def _dbm():
+    test_dbm = setup_test_dbm()
+    await test_dbm.setup()
+    yield test_dbm
+    await teardown_test_dbm(test_dbm)
 
 
 @pytest.fixture(scope="function")
@@ -76,14 +76,6 @@ async def user_client(dbm: DatabaseManager):
 async def anon_client():
     async with HttpTestHelper.spawn() as client:
         yield client
-
-
-@pytest.fixture(scope="session")
-async def _dbm():
-    test_dbm = setup_test_dbm()
-    await test_dbm.setup()
-    yield test_dbm
-    await teardown_test_dbm(test_dbm)
 
 
 @pytest.fixture(scope="session")

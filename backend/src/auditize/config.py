@@ -1,6 +1,5 @@
 import dataclasses
 import os
-from threading import Lock
 
 from auditize.exceptions import ConfigError
 
@@ -164,15 +163,18 @@ class Config:
         return dataclasses.asdict(self)
 
 
-_config = None
-_config_lock = Lock()
+_config: Config | None = None
+
+
+def init_config(env=None) -> Config:
+    global _config
+    if _config:
+        raise Exception("Config is already initialized")
+    _config = Config.load_from_env(env)
+    return _config
 
 
 def get_config() -> Config:
-    global _config
-    # we make an initial check outside of lock to avoid unneeded locking when config is already loaded
-    if _config is None:
-        with _config_lock:
-            if _config is None:
-                _config = Config.load_from_env()
+    if not _config:
+        raise Exception("Config is not initialized")
     return _config
