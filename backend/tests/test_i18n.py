@@ -35,7 +35,7 @@ async def test_i18n_detect_user(
     session_token = await user.get_session_token(client)
 
     request = make_http_request(headers={"Cookie": f"session={session_token}"})
-    await get_authenticated(dbm, request)
+    await get_authenticated(request)
     lang = get_request_lang(request)
     assert type(lang) is str
     assert lang == "fr"
@@ -50,7 +50,7 @@ async def test_i18n_detect_priority(
     request = make_http_request(
         headers={"Cookie": f"session={session_token}"}, query_params={"lang": "en"}
     )
-    await get_authenticated(dbm, request)
+    await get_authenticated(request)
     assert get_request_lang(request) == "en"
 
 

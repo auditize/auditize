@@ -28,12 +28,12 @@ async def test_auth_no_auth(dbm: DatabaseManager, apikey: PreparedApikey):
     request = make_http_request()
 
     with pytest.raises(AuthenticationFailure):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_apikey(dbm: DatabaseManager, apikey: PreparedApikey):
     request = make_http_request(headers={"Authorization": f"Bearer {apikey.key}"})
-    authenticated = await get_authenticated(dbm, request)
+    authenticated = await get_authenticated(request)
     assert authenticated
     assert authenticated.name == apikey.data["name"]
 
@@ -45,7 +45,7 @@ async def test_auth_access_token(dbm: DatabaseManager, apikey_builder: ApikeyBui
     access_token, _ = generate_access_token(UUID(apikey.id), permissions)
 
     request = make_http_request(headers={"Authorization": f"Bearer aat-{access_token}"})
-    authenticated = await get_authenticated(dbm, request)
+    authenticated = await get_authenticated(request)
     assert authenticated
     assert authenticated.name == f"Access token for API key '{apikey.data['name']}'"
     assert authenticated.permissions == permissions
@@ -54,7 +54,7 @@ async def test_auth_access_token(dbm: DatabaseManager, apikey_builder: ApikeyBui
 async def test_auth_access_token_invalid_syntax(dbm: DatabaseManager):
     request = make_http_request(headers={"Authorization": f"Bearer aat-INVALID_TOKEN"})
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
@@ -67,7 +67,7 @@ async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
     request = make_http_request(headers={"Authorization": f"Bearer aat-{jwt_token}"})
 
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_access_token_expired(dbm: DatabaseManager):
@@ -83,7 +83,7 @@ async def test_auth_access_token_expired(dbm: DatabaseManager):
     request = make_http_request(headers={"Authorization": f"Bearer aat-{jwt_token}"})
 
     with pytest.raises(AuthenticationFailure, match="JWT token expired"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_access_control_downgraded_apikey_permissions(
@@ -97,7 +97,7 @@ async def test_auth_access_control_downgraded_apikey_permissions(
     request = make_http_request(headers={"Authorization": f"Bearer aat-{access_token}"})
 
     # second step, make sure the access token actually works
-    await get_authenticated(dbm, request)
+    await get_authenticated(request)
 
     # third step, downgrade the apikey permissions so the API key no longer have
     # any permissions at all
@@ -112,7 +112,7 @@ async def test_auth_access_control_downgraded_apikey_permissions(
         AuthenticationFailure,
         match="The access token has more permissions than the original API key",
     ):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_invalid_authorization_header(
@@ -125,7 +125,7 @@ async def test_auth_invalid_authorization_header(
     )
 
     with pytest.raises(AuthenticationFailure, match="not a Bearer"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_invalid_authorization_bearer(
@@ -138,7 +138,7 @@ async def test_auth_invalid_authorization_bearer(
         }
     )
     with pytest.raises(AuthenticationFailure, match="Invalid bearer token"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_user(dbm: DatabaseManager, client: HttpTestHelper):
@@ -146,7 +146,7 @@ async def test_auth_user(dbm: DatabaseManager, client: HttpTestHelper):
     session_token = await user.get_session_token(client)
 
     request = make_http_request(headers={"Cookie": f"session={session_token}"})
-    authenticated = await get_authenticated(dbm, request)
+    authenticated = await get_authenticated(request)
     assert authenticated
     assert authenticated.name == user.data["email"]
 
@@ -154,7 +154,7 @@ async def test_auth_user(dbm: DatabaseManager, client: HttpTestHelper):
 async def test_auth_user_invalid_session_token_syntax(dbm: DatabaseManager):
     request = make_http_request(headers={"Cookie": f"session=INVALID_TOKEN"})
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManager):
@@ -167,7 +167,7 @@ async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManage
     request = make_http_request(headers={"Cookie": f"session={jwt_token}"})
 
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_user_invalid_session_token_expired(
@@ -190,7 +190,7 @@ async def test_auth_user_invalid_session_token_expired(
     request = make_http_request(headers={"Cookie": f"session={session_token}"})
 
     with pytest.raises(AuthenticationFailure, match="JWT token expired"):
-        await get_authenticated(dbm, request)
+        await get_authenticated(request)
 
 
 async def test_auth_http_request(anon_client: HttpTestHelper):
