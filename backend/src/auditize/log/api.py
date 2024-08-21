@@ -9,7 +9,6 @@ from auditize.auth.authorizer import (
     AuthorizedForLogWrite,
 )
 from auditize.config import get_config
-from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.api.errors import error_responses
 from auditize.helpers.api.validators import (
@@ -38,14 +37,12 @@ router = APIRouter(
 
 
 async def _get_consolidated_data(
-    dbm: DatabaseManager,
     repo_id: UUID,
     get_data_func,
     page_params,
     **kwargs,
 ) -> NameListResponse:
     data, pagination = await get_data_func(
-        dbm,
         repo_id,
         page=page_params.page,
         page_size=page_params.page_size,
@@ -63,14 +60,12 @@ async def _get_consolidated_data(
     tags=["log"],
 )
 async def get_log_action_types(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
     category: str = None,
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_action_types,
         page_params,
@@ -86,13 +81,11 @@ async def get_log_action_types(
     tags=["log"],
 )
 async def get_log_action_categories(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_action_categories,
         page_params,
@@ -107,13 +100,11 @@ async def get_log_action_categories(
     tags=["log"],
 )
 async def get_log_actor_types(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_actor_types,
         page_params,
@@ -129,13 +120,11 @@ async def get_log_actor_types(
     response_model=NameListResponse,
 )
 async def get_log_actor_extras(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_actor_extra_fields,
         page_params,
@@ -150,13 +139,11 @@ async def get_log_actor_extras(
     tags=["log"],
 )
 async def get_log_resource_types(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_resource_types,
         page_params,
@@ -172,13 +159,11 @@ async def get_log_resource_types(
     response_model=NameListResponse,
 )
 async def get_log_resource_extras(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_resource_extra_fields,
         page_params,
@@ -193,13 +178,11 @@ async def get_log_resource_extras(
     tags=["log"],
 )
 async def get_log_tag_types(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_tag_types,
         page_params,
@@ -215,13 +198,11 @@ async def get_log_tag_types(
     response_model=NameListResponse,
 )
 async def get_log_source_fields(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_source_fields,
         page_params,
@@ -237,13 +218,11 @@ async def get_log_source_fields(
     response_model=NameListResponse,
 )
 async def get_log_detail_fields(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_detail_fields,
         page_params,
@@ -259,13 +238,11 @@ async def get_log_detail_fields(
     response_model=NameListResponse,
 )
 async def get_log_attachment_types(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_attachment_types,
         page_params,
@@ -281,13 +258,11 @@ async def get_log_attachment_types(
     response_model=NameListResponse,
 )
 async def get_log_attachment_mime_types(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
-        dbm,
         repo_id,
         service.get_log_attachment_mime_types,
         page_params,
@@ -302,7 +277,6 @@ async def get_log_attachment_mime_types(
     tags=["log"],
 )
 async def get_log_nodes(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     root: bool = False,
@@ -322,7 +296,6 @@ async def get_log_nodes(
         filter_args = {}
 
     nodes, pagination = await service.get_log_nodes(
-        dbm,
         repo_id,
         authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
         page=page_params.page,
@@ -340,13 +313,11 @@ async def get_log_nodes(
     tags=["log"],
 )
 async def get_log_node(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     node_ref: Annotated[str, Path(title="Node ref")],
 ) -> LogNodeResponse:
     node = await service.get_log_node(
-        dbm,
         repo_id,
         node_ref,
         authorized.permissions.logs.get_repo_readable_nodes(repo_id),
@@ -364,14 +335,11 @@ async def get_log_node(
     tags=["log"],
 )
 async def create_log(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogWrite(),
     repo_id: UUID,
     log_req: LogCreationRequest,
 ) -> LogCreationResponse:
-    log_id = await service.save_log(
-        dbm, repo_id, Log.model_validate(log_req.model_dump())
-    )
+    log_id = await service.save_log(repo_id, Log.model_validate(log_req.model_dump()))
     return LogCreationResponse(id=log_id)
 
 
@@ -386,7 +354,6 @@ async def create_log(
     responses=error_responses(400, 413),
 )
 async def add_attachment(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogWrite(),
     repo_id: UUID,
     log_id: Annotated[
@@ -428,7 +395,6 @@ async def add_attachment(
             f"Attachment size exceeds the maximum allowed size ({config.attachment_max_size} bytes)"
         )
     await service.save_log_attachment(
-        dbm,
         repo_id,
         log_id,
         name=name or file.filename,
@@ -476,7 +442,6 @@ _CUSTOM_FIELDS_DESCRIPTION = (
     response_class=_CsvResponse,
 )
 async def get_logs_as_csv(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
@@ -486,7 +451,7 @@ async def get_logs_as_csv(
 ):
     # NB: as we cannot properly handle an error in a StreamingResponse,
     # we perform as much validation as possible before calling get_logs_as_csv
-    await get_log_db_for_reading(dbm, repo_id)
+    await get_log_db_for_reading(repo_id)
     columns = columns.split(",")  # convert columns string to a list
     service.validate_csv_columns(columns)
 
@@ -494,7 +459,6 @@ async def get_logs_as_csv(
 
     return StreamingResponse(
         service.get_logs_as_csv(
-            dbm,
             repo_id,
             authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(
                 repo_id
@@ -516,13 +480,11 @@ async def get_logs_as_csv(
     status_code=200,
 )
 async def get_log(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     log_id: Annotated[UUID, Path(title="Log ID")],
 ) -> LogReadingResponse:
     log = await service.get_log(
-        dbm,
         repo_id,
         log_id,
         authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
@@ -552,7 +514,6 @@ async def get_log(
     },
 )
 async def get_log_attachment(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     log_id: UUID = Path(title="Log ID"),
@@ -561,7 +522,7 @@ async def get_log_attachment(
         description="The index of the attachment in the log's attachments list (starts from 0)",
     ),
 ):
-    attachment = await service.get_log_attachment(dbm, repo_id, log_id, attachment_idx)
+    attachment = await service.get_log_attachment(repo_id, log_id, attachment_idx)
     return Response(
         content=attachment.data,
         media_type=attachment.mime_type,
@@ -577,7 +538,6 @@ async def get_log_attachment(
     tags=["log"],
 )
 async def get_logs(
-    dbm: Annotated[DatabaseManager, Depends(get_dbm)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
@@ -585,7 +545,6 @@ async def get_logs(
 ) -> LogsReadingResponse:
     # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
-        dbm,
         repo_id,
         authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
         search_params=LogSearchParams.model_validate(search_params.model_dump()),

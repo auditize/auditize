@@ -40,7 +40,7 @@ def make_log_data(**extra) -> Log:
 
 async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
     log = make_log_data()
-    log_id = await save_log(dbm, UUID(repo.id), log)
+    log_id = await save_log(UUID(repo.id), log)
     db_log = await repo.db.logs.find_one({"_id": log_id})
     assert list(db_log.keys()) == [
         "_id",
@@ -79,7 +79,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
     log.resource.extra.append(CustomField(name="some_key", value="some_value"))
     log.details.append(CustomField(name="detail_name", value="detail_value"))
     log.tags = [Log.Tag(ref="tag_ref", type="rich_tag", name="rich_tag_name")]
-    await save_log(dbm, UUID(repo.id), log)
+    await save_log(UUID(repo.id), log)
     await assert_consolidated_data(
         repo.db.log_actions, {"category": "authentication", "type": "login"}
     )
@@ -109,9 +109,8 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
         Log.Tag(type="simple_tag"),
     ]
     log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
-    log_id = await save_log(dbm, UUID(repo.id), log)
+    log_id = await save_log(UUID(repo.id), log)
     await save_log_attachment(
-        dbm,
         UUID(repo.id),
         log_id,
         name="file.txt",
@@ -176,7 +175,7 @@ async def test_log_retention_period_disabled(
     await repo.create_log(
         superadmin_client, saved_at=datetime.now() - timedelta(days=3650)
     )
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
     assert await repo.db.logs.count_documents({}) == 1
 
 
@@ -203,7 +202,7 @@ async def test_log_retention_period_enabled(
         superadmin_client, saved_at=datetime.now() - timedelta(days=29)
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     assert await repo_1.db.logs.count_documents({}) == 1
     assert await repo_1.db.logs.find_one({"_id": UUID(repo_1_log_2.id)}) is not None
@@ -286,7 +285,7 @@ async def test_log_retention_period_purge_consolidated_data(
         mime_type="mime-type/to-be-purged",
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     await assert_consolidated_data(
         repo.db.log_actions,
@@ -355,7 +354,7 @@ async def test_log_retention_period_purge_log_nodes_1(
         ["A", "AC"],
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     await assert_consolidated_data(
         repo.db.log_nodes,
@@ -388,7 +387,7 @@ async def test_log_retention_period_purge_log_nodes_2(
         saved_at=datetime.now() - timedelta(days=40),
     )
 
-    await apply_log_retention_period(dbm)
+    await apply_log_retention_period()
 
     await assert_consolidated_data(
         repo.db.log_nodes,

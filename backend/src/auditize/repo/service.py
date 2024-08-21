@@ -1,7 +1,7 @@
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
-from auditize.database import DatabaseManager
+from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import (
     UnknownModelException,
     ValidationError,
@@ -58,7 +58,7 @@ async def create_repo(
             resource_id=repo_id,
         )
     if not log_db:
-        log_db = await get_log_db_for_config(dbm, repo_id)
+        log_db = await get_log_db_for_config(repo_id)
         await log_db.setup()
     return repo_id
 
@@ -77,7 +77,7 @@ async def get_repo(dbm: DatabaseManager, repo_id: UUID) -> Repo:
 
 
 async def get_repo_stats(dbm: DatabaseManager, repo_id: UUID) -> RepoStats:
-    logs_db = await get_log_db_for_config(dbm, repo_id)
+    logs_db = await get_log_db_for_config(repo_id)
     results = await logs_db.logs.aggregate(
         [
             {
@@ -195,7 +195,7 @@ async def delete_repo(dbm: DatabaseManager, repo_id: UUID):
     from auditize.log_filter.service import delete_log_filters_with_repo
     from auditize.user.service import remove_repo_from_users_permissions
 
-    logs_db = await get_log_db_for_config(dbm, repo_id)
+    logs_db = await get_log_db_for_config(repo_id)
     await delete_resource_document(dbm.core_db.repos, repo_id)
     await logs_db.client.drop_database(logs_db.name)
     await remove_repo_from_users_permissions(dbm, repo_id)
@@ -237,6 +237,6 @@ async def ensure_repos_in_permissions_exist(
             )
 
 
-async def get_retention_period_enabled_repos(dbm: DatabaseManager) -> list[Repo]:
-    results = dbm.core_db.repos.find({"retention_period": {"$ne": None}})
+async def get_retention_period_enabled_repos() -> list[Repo]:
+    results = get_dbm().core_db.repos.find({"retention_period": {"$ne": None}})
     return [Repo.model_validate(result) async for result in results]
