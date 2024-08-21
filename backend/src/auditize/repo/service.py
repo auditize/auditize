@@ -35,7 +35,7 @@ from auditize.user.models import Lang, User
 
 async def _validate_repo(dbm: DatabaseManager, repo: Repo | RepoUpdate):
     if repo.log_i18n_profile_id:
-        if not await has_log_i18n_profile(dbm, repo.log_i18n_profile_id):
+        if not await has_log_i18n_profile(repo.log_i18n_profile_id):
             raise ValidationError(
                 f"Log i18n profile {repo.log_i18n_profile_id!r} does not exist"
             )
@@ -218,9 +218,7 @@ async def get_repo_translation(
     if not repo.log_i18n_profile_id:
         return LogTranslation()
     try:
-        return await get_log_i18n_profile_translation(
-            dbm, repo.log_i18n_profile_id, lang
-        )
+        return await get_log_i18n_profile_translation(repo.log_i18n_profile_id, lang)
     except UnknownModelException:  # NB: this should not happen
         return LogTranslation()
 

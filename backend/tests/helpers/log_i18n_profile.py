@@ -98,7 +98,7 @@ class PreparedLogI18nProfile:
     async def create(cls, dbm: DatabaseManager, data=None):
         if not data:
             data = cls.prepare_data()
-        profile_id = await create_log_i18n_profile(dbm, LogI18nProfile(**data))
+        profile_id = await create_log_i18n_profile(LogI18nProfile(**data))
         return cls(str(profile_id), data)
 
     def expected_document(self, extra=None):
