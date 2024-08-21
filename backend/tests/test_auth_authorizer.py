@@ -13,7 +13,6 @@ from auditize.auth.jwt import (
     generate_access_token_payload,
     generate_session_token_payload,
 )
-from auditize.database import DatabaseManager
 from auditize.exceptions import AuthenticationFailure
 from auditize.permissions.models import Permissions
 from conftest import ApikeyBuilder
@@ -24,21 +23,21 @@ from helpers.user import PreparedUser
 pytestmark = pytest.mark.anyio
 
 
-async def test_auth_no_auth(dbm: DatabaseManager, apikey: PreparedApikey):
+async def test_auth_no_auth(apikey: PreparedApikey):
     request = make_http_request()
 
     with pytest.raises(AuthenticationFailure):
         await get_authenticated(request)
 
 
-async def test_auth_apikey(dbm: DatabaseManager, apikey: PreparedApikey):
+async def test_auth_apikey(apikey: PreparedApikey):
     request = make_http_request(headers={"Authorization": f"Bearer {apikey.key}"})
     authenticated = await get_authenticated(request)
     assert authenticated
     assert authenticated.name == apikey.data["name"]
 
 
-async def test_auth_access_token(dbm: DatabaseManager, apikey_builder: ApikeyBuilder):
+async def test_auth_access_token(apikey_builder: ApikeyBuilder):
     apikey = await apikey_builder({"is_superadmin": True})
     permissions = Permissions()
     permissions.management.repos.read = True
@@ -51,13 +50,13 @@ async def test_auth_access_token(dbm: DatabaseManager, apikey_builder: ApikeyBui
     assert authenticated.permissions == permissions
 
 
-async def test_auth_access_token_invalid_syntax(dbm: DatabaseManager):
+async def test_auth_access_token_invalid_syntax():
     request = make_http_request(headers={"Authorization": f"Bearer aat-INVALID_TOKEN"})
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
         await get_authenticated(request)
 
 
-async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
+async def test_auth_access_token_bad_signature():
     apikey = await PreparedApikey.inject_into_db()
 
     # Prepare a valid JWT session token but sign with a different key
@@ -70,7 +69,7 @@ async def test_auth_access_token_bad_signature(dbm: DatabaseManager):
         await get_authenticated(request)
 
 
-async def test_auth_access_token_expired(dbm: DatabaseManager):
+async def test_auth_access_token_expired():
     apikey = await PreparedApikey.inject_into_db()
 
     # Mock the current time to be 2024-01-01 to generate an already expired token
@@ -87,7 +86,7 @@ async def test_auth_access_token_expired(dbm: DatabaseManager):
 
 
 async def test_auth_access_control_downgraded_apikey_permissions(
-    dbm: DatabaseManager, apikey_builder: ApikeyBuilder
+    apikey_builder: ApikeyBuilder,
 ):
     # first step, create a requesting using an access token with repos read permission from a superadmin apikey
     apikey = await apikey_builder({"is_superadmin": True})
@@ -115,9 +114,7 @@ async def test_auth_access_control_downgraded_apikey_permissions(
         await get_authenticated(request)
 
 
-async def test_auth_invalid_authorization_header(
-    dbm: DatabaseManager, apikey: PreparedApikey
-):
+async def test_auth_invalid_authorization_header(apikey: PreparedApikey):
     request = make_http_request(
         headers={
             "Authorization": f"This is not a valid authorization header we recognize"
@@ -128,9 +125,7 @@ async def test_auth_invalid_authorization_header(
         await get_authenticated(request)
 
 
-async def test_auth_invalid_authorization_bearer(
-    dbm: DatabaseManager, apikey: PreparedApikey
-):
+async def test_auth_invalid_authorization_bearer(apikey: PreparedApikey):
     request = make_http_request(
         headers={
             # A syntactically correct Bearer token, but not a valid one:
@@ -151,7 +146,7 @@ async def test_auth_user(client: HttpTestHelper):
     assert authenticated.name == user.data["email"]
 
 
-async def test_auth_user_invalid_session_token_syntax(dbm: DatabaseManager):
+async def test_auth_user_invalid_session_token_syntax():
     request = make_http_request(headers={"Cookie": f"session=INVALID_TOKEN"})
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
         await get_authenticated(request)

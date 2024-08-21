@@ -3,7 +3,6 @@ from uuid import UUID
 import callee
 from httpx import Response
 
-from auditize.database import DatabaseManager
 from conftest import RepoBuilder
 
 from ..apikey import PreparedApikey
@@ -25,34 +24,30 @@ class BasePermissionTests:
     def base_path(self):
         raise NotImplementedError()
 
-    def get_principal_collection(self, dbm: DatabaseManager):
+    def get_principal_collection(self):
         raise NotImplementedError()
 
-    async def inject_grantor(
-        self, dbm: DatabaseManager, permissions=None
-    ) -> PreparedUser | PreparedApikey:
+    async def inject_grantor(self, permissions=None) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
     def prepare_assignee_data(self, permissions=None) -> dict:
         raise NotImplementedError()
 
     async def create_assignee(
-        self, client: HttpTestHelper, dbm: DatabaseManager, data: dict = None
+        self, client: HttpTestHelper, data: dict = None
     ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
     def rebuild_assignee_from_response(
-        self, resp: Response, data: dict, dbm: DatabaseManager
+        self, resp: Response, data: dict
     ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
-    async def test_create_custom_permissions(
-        self, repo_builder: RepoBuilder, dbm: DatabaseManager
-    ):
+    async def test_create_custom_permissions(self, repo_builder: RepoBuilder):
         repo_1 = await repo_builder({})
         repo_2 = await repo_builder({})
 
-        grantor = await self.inject_grantor(dbm, {"is_superadmin": True})
+        grantor = await self.inject_grantor({"is_superadmin": True})
         assignee_data = self.prepare_assignee_data(
             {
                 "permissions": {
@@ -77,9 +72,9 @@ class BasePermissionTests:
                 expected_status_code=201,
             )
 
-        assignee = self.rebuild_assignee_from_response(resp, assignee_data, dbm)
+        assignee = self.rebuild_assignee_from_response(resp, assignee_data)
         await assert_collection(
-            self.get_principal_collection(dbm),
+            self.get_principal_collection(),
             [
                 assignee.expected_document(
                     {
@@ -142,9 +137,8 @@ class BasePermissionTests:
             },
         )
 
-    async def test_create_forbidden_permissions(self, dbm: DatabaseManager):
+    async def test_create_forbidden_permissions(self):
         grantor = await self.inject_grantor(
-            dbm,
             {"management": {"users": {"write": True}, "apikeys": {"write": True}}},
         )
 
@@ -163,13 +157,11 @@ class BasePermissionTests:
     async def test_update_permissions(
         self,
         repo: PreparedRepo,
-        dbm: DatabaseManager,
     ):
-        grantor = await self.inject_grantor(dbm, {"is_superadmin": True})
+        grantor = await self.inject_grantor({"is_superadmin": True})
         async with grantor.client() as client:
             assignee = await self.create_assignee(
                 client,
-                dbm,
                 self.prepare_assignee_data(
                     {
                         "permissions": {
@@ -208,7 +200,7 @@ class BasePermissionTests:
             )
 
         await assert_collection(
-            self.get_principal_collection(dbm),
+            self.get_principal_collection(),
             [
                 assignee.expected_document(
                     {
@@ -238,9 +230,9 @@ class BasePermissionTests:
         )
 
     async def test_update_permissions_unknown_repo(
-        self, superadmin_client: HttpTestHelper, dbm: DatabaseManager
+        self, superadmin_client: HttpTestHelper
     ):
-        assignee = await self.create_assignee(superadmin_client, dbm)
+        assignee = await self.create_assignee(superadmin_client)
         await superadmin_client.assert_patch_bad_request(
             f"{self.base_path}/{assignee.id}",
             json={
@@ -263,11 +255,9 @@ class BasePermissionTests:
         self,
         superadmin_client: HttpTestHelper,
         repo: PreparedRepo,
-        dbm: DatabaseManager,
     ):
         assignee = await self.create_assignee(
             superadmin_client,
-            dbm,
             self.prepare_assignee_data(
                 {
                     "logs": {
@@ -284,14 +274,13 @@ class BasePermissionTests:
             json={"permissions": {"management": {"repos": {"write": True}}}},
         )
 
-    async def test_update_forbidden_permissions(self, dbm: DatabaseManager):
+    async def test_update_forbidden_permissions(self):
         grantor = await self.inject_grantor(
-            dbm,
             {"management": {"users": {"write": True}, "apikeys": {"write": True}}},
         )
 
         async with grantor.client() as client:
-            assignee = await self.create_assignee(client, dbm)
+            assignee = await self.create_assignee(client)
             await client.assert_patch_forbidden(
                 f"{self.base_path}/{assignee.id}",
                 json={

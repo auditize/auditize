@@ -5,7 +5,6 @@ import callee
 import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import DatabaseManager
 from auditize.log.models import CustomField, Log
 from auditize.log.service import (
     apply_log_retention_period,
@@ -38,7 +37,7 @@ def make_log_data(**extra) -> Log:
     return Log(**kwargs)
 
 
-async def test_save_log_db_shape(dbm: DatabaseManager, repo: PreparedRepo):
+async def test_save_log_db_shape(repo: PreparedRepo):
     log = make_log_data()
     log_id = await save_log(UUID(repo.id), log)
     db_log = await repo.db.logs.find_one({"_id": log_id})
@@ -72,7 +71,7 @@ async def assert_consolidated_data(
     )
 
 
-async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
+async def test_save_log_lookup_tables(repo: PreparedRepo):
     # first log
     log = make_log_data(source=[{"name": "ip", "value": "127.0.0.1"}])
     log.actor.extra.append(CustomField(name="role", value="admin"))
@@ -170,7 +169,7 @@ async def test_save_log_lookup_tables(dbm: DatabaseManager, repo: PreparedRepo):
 
 
 async def test_log_retention_period_disabled(
-    superadmin_client: HttpTestHelper, repo: PreparedRepo, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
     await repo.create_log(
         superadmin_client, saved_at=datetime.now() - timedelta(days=3650)
@@ -180,7 +179,7 @@ async def test_log_retention_period_disabled(
 
 
 async def test_log_retention_period_enabled(
-    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     # we test with repos:
     # - repo_1 with retention period and 1 log that must be deleted and 1 log that must be kept
@@ -211,7 +210,7 @@ async def test_log_retention_period_enabled(
 
 
 async def test_log_retention_period_purge_consolidated_data(
-    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     repo = await repo_builder({"retention_period": 30})
     log_1 = await repo.create_log(
@@ -325,7 +324,7 @@ async def test_log_retention_period_purge_consolidated_data(
 
 
 async def test_log_retention_period_purge_log_nodes_1(
-    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     repo = await repo_builder({"retention_period": 30})
     # We have the following log node hierarchy:
@@ -369,7 +368,6 @@ async def test_log_retention_period_purge_log_nodes_1(
 async def test_log_retention_period_purge_log_nodes_2(
     superadmin_client: HttpTestHelper,
     repo_builder: RepoBuilder,
-    dbm: DatabaseManager,
 ):
     repo = await repo_builder({"retention_period": 30})
     # We have the following log node hierarchy:

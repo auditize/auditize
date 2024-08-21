@@ -3,7 +3,6 @@ import re
 import pytest
 
 from auditize.auth.authorizer import get_authenticated
-from auditize.database import DatabaseManager
 from auditize.i18n import get_request_lang, t
 from conftest import UserBuilder
 from helpers.http import HttpTestHelper, make_http_request
@@ -11,26 +10,22 @@ from helpers.http import HttpTestHelper, make_http_request
 pytestmark = pytest.mark.anyio
 
 
-async def test_i18n_detect_default(dbm: DatabaseManager, client: HttpTestHelper):
+async def test_i18n_detect_default(client: HttpTestHelper):
     request = make_http_request()
     assert get_request_lang(request) == "en"
 
 
-async def test_i18n_detect_query_param(dbm: DatabaseManager, client: HttpTestHelper):
+async def test_i18n_detect_query_param(client: HttpTestHelper):
     request = make_http_request(query_params={"lang": "fr"})
     assert get_request_lang(request) == "fr"
 
 
-async def test_i18n_detect_query_param_unsupported(
-    dbm: DatabaseManager, client: HttpTestHelper
-):
+async def test_i18n_detect_query_param_unsupported(client: HttpTestHelper):
     request = make_http_request(query_params={"lang": "it"})
     assert get_request_lang(request) == "en"
 
 
-async def test_i18n_detect_user(
-    user_builder: UserBuilder, client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_i18n_detect_user(user_builder: UserBuilder, client: HttpTestHelper):
     user = await user_builder({}, lang="fr")
     session_token = await user.get_session_token(client)
 
@@ -41,9 +36,7 @@ async def test_i18n_detect_user(
     assert lang == "fr"
 
 
-async def test_i18n_detect_priority(
-    user_builder: UserBuilder, client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_i18n_detect_priority(user_builder: UserBuilder, client: HttpTestHelper):
     user = await user_builder({}, lang="fr")
     session_token = await user.get_session_token(client)
 

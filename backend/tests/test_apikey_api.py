@@ -4,7 +4,7 @@ import callee
 import pytest
 from httpx import Response
 
-from auditize.database import DatabaseManager
+from auditize.database import get_dbm
 from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.anyio
 # when testing apikeys.
 
 
-async def test_apikey_create(apikey_write_client: HttpTestHelper, dbm: DatabaseManager):
+async def test_apikey_create(apikey_write_client: HttpTestHelper):
     data = PreparedApikey.prepare_data()
 
     resp = await apikey_write_client.assert_post(
@@ -32,7 +32,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper, dbm: DatabaseM
     )
 
     apikey = PreparedApikey(resp.json()["id"], resp.json()["key"], data)
-    await assert_collection(dbm.core_db.apikeys, [apikey.expected_document()])
+    await assert_collection(get_dbm().core_db.apikeys, [apikey.expected_document()])
 
     # Test that the key actually works
     apikey_client = HttpTestHelper.spawn()
@@ -43,9 +43,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper, dbm: DatabaseM
     )
 
 
-async def test_apikey_create_missing_parameter(
-    apikey_write_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_apikey_create_missing_parameter(apikey_write_client: HttpTestHelper):
     template = PreparedApikey.prepare_data()
     for key in template:
         data = template.copy()
@@ -86,14 +84,13 @@ async def test_apikey_create_forbidden(no_permission_client: HttpTestHelper):
 async def test_apikey_update(
     apikey_write_client: HttpTestHelper,
     apikey: PreparedApikey,
-    dbm: DatabaseManager,
 ):
     data = {"name": "Apikey Updated"}
     await apikey_write_client.assert_patch(
         f"/apikeys/{apikey.id}", json=data, expected_status_code=204
     )
 
-    await assert_collection(dbm.core_db.apikeys, [apikey.expected_document(data)])
+    await assert_collection(get_dbm().core_db.apikeys, [apikey.expected_document(data)])
 
 
 async def test_apikey_update_unknown_id(apikey_write_client: HttpTestHelper):
@@ -103,9 +100,7 @@ async def test_apikey_update_unknown_id(apikey_write_client: HttpTestHelper):
     )
 
 
-async def test_apikey_update_name_already_used(
-    apikey_write_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_apikey_update_name_already_used(apikey_write_client: HttpTestHelper):
     apikey1 = await PreparedApikey.create(apikey_write_client)
     apikey2 = await PreparedApikey.create(apikey_write_client)
 
@@ -135,8 +130,8 @@ async def test_apikey_update_self(apikey_builder: ApikeyBuilder):
 async def test_apikey_regenerate_key(
     apikey_write_client: HttpTestHelper,
     apikey: PreparedApikey,
-    dbm: DatabaseManager,
 ):
+    dbm = get_dbm()
     mongo_document = await dbm.core_db.apikeys.find_one({"_id": uuid.UUID(apikey.id)})
 
     await apikey_write_client.assert_post(
@@ -194,7 +189,6 @@ async def test_apikey_get_forbidden(
 async def test_apikey_list(
     apikey_read_client: HttpTestHelper,
     apikey_write_client: HttpTestHelper,
-    dbm: DatabaseManager,
 ):
     apikeys = [await PreparedApikey.create(apikey_write_client) for _ in range(5)]
 
@@ -210,7 +204,6 @@ async def test_apikey_list(
 
 async def test_apikey_list_search(
     apikey_rw_client: HttpTestHelper,
-    dbm: DatabaseManager,
 ):
     apikeys = [
         await PreparedApikey.create(apikey_rw_client, {"name": f"apikey_{i}"})
@@ -233,13 +226,12 @@ async def test_apikey_list_forbidden(no_permission_client: HttpTestHelper):
 async def test_apikey_delete(
     apikey_write_client: HttpTestHelper,
     apikey: PreparedApikey,
-    dbm: DatabaseManager,
 ):
     await apikey_write_client.assert_delete(
         f"/apikeys/{apikey.id}", expected_status_code=204
     )
 
-    await assert_collection(dbm.core_db.apikeys, [])
+    await assert_collection(get_dbm().core_db.apikeys, [])
 
 
 async def test_apikey_delete_unknown_id(apikey_write_client: HttpTestHelper):
@@ -262,12 +254,10 @@ class TestPermissions(BasePermissionTests):
     def base_path(self):
         return "/apikeys"
 
-    def get_principal_collection(self, dbm: DatabaseManager):
-        return dbm.core_db.apikeys
+    def get_principal_collection(self):
+        return get_dbm().core_db.apikeys
 
-    async def inject_grantor(
-        self, dbm: DatabaseManager, permissions=None
-    ) -> PreparedUser:
+    async def inject_grantor(self, permissions=None) -> PreparedUser:
         return await PreparedUser.inject_into_db(
             user=PreparedUser.prepare_model(
                 password="dummypassword", permissions=permissions
@@ -279,11 +269,11 @@ class TestPermissions(BasePermissionTests):
         return PreparedApikey.prepare_data(permissions)
 
     async def create_assignee(
-        self, client: HttpTestHelper, dbm: DatabaseManager, data=None
+        self, client: HttpTestHelper, data=None
     ) -> PreparedApikey:
         return await PreparedApikey.create(client, data)
 
     def rebuild_assignee_from_response(
-        self, resp: Response, data: dict, dbm: DatabaseManager
+        self, resp: Response, data: dict
     ) -> PreparedApikey:
         return PreparedApikey(resp.json()["id"], resp.json()["key"], data)

@@ -5,7 +5,7 @@ import callee
 import pytest
 from httpx import Response
 
-from auditize.database import DatabaseManager
+from auditize.database import DatabaseManager, get_dbm
 from conftest import UserBuilder
 from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
@@ -45,7 +45,7 @@ async def _assert_password_reset_token_validity(token: str):
     await client.assert_get_ok(f"/users/password-reset/{token}")
 
 
-async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManager):
+async def test_user_create(user_write_client: HttpTestHelper):
     data = PreparedUser.prepare_data()
     user_id = ""
 
@@ -62,14 +62,12 @@ async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManag
     password_reset_token = await _wrap_password_reset_link_sending(func, data["email"])
 
     user = PreparedUser(user_id, data)
-    await assert_collection(dbm.core_db.users, [user.expected_document()])
+    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
 
     await _assert_password_reset_token_validity(password_reset_token)
 
 
-async def test_user_create_lang_fr(
-    user_write_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_user_create_lang_fr(user_write_client: HttpTestHelper):
     data = PreparedUser.prepare_data({"lang": "fr"})
 
     resp = await user_write_client.assert_post_created(
@@ -79,12 +77,10 @@ async def test_user_create_lang_fr(
     )
 
     user = PreparedUser(resp.json()["id"], data)
-    await assert_collection(dbm.core_db.users, [user.expected_document()])
+    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
 
 
-async def test_user_create_missing_parameter(
-    user_write_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_user_create_missing_parameter(user_write_client: HttpTestHelper):
     template = PreparedUser.prepare_data()
     for key in template:
         data = template.copy()
@@ -164,7 +160,7 @@ async def test_user_create_forbidden(no_permission_client: HttpTestHelper):
 
 
 async def test_user_update_multiple_fields(
-    superadmin_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
+    superadmin_client: HttpTestHelper, user: PreparedUser
 ):
     data = {
         "first_name": "John Updated",
@@ -176,18 +172,18 @@ async def test_user_update_multiple_fields(
         f"/users/{user.id}", json=data, expected_status_code=204
     )
 
-    await assert_collection(dbm.core_db.users, [user.expected_document(data)])
+    await assert_collection(get_dbm().core_db.users, [user.expected_document(data)])
 
 
 async def test_user_update_single_field(
-    user_write_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
+    user_write_client: HttpTestHelper, user: PreparedUser
 ):
     data = {"first_name": "John Updated"}
     await user_write_client.assert_patch(
         f"/users/{user.id}", json=data, expected_status_code=204
     )
 
-    await assert_collection(dbm.core_db.users, [user.expected_document(data)])
+    await assert_collection(get_dbm().core_db.users, [user.expected_document(data)])
 
 
 async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
@@ -197,9 +193,7 @@ async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
     )
 
 
-async def test_user_update_already_used_email(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_user_update_already_used_email(superadmin_client: HttpTestHelper):
     user1 = await PreparedUser.create(superadmin_client)
     user2 = await PreparedUser.create(superadmin_client)
 
@@ -305,7 +299,6 @@ async def test_user_get_forbidden(
 async def test_user_list(
     user_read_client: HttpTestHelper,
     user_write_client: HttpTestHelper,
-    dbm: DatabaseManager,
 ):
     users = [await PreparedUser.create(user_write_client) for _ in range(5)]
 
@@ -322,7 +315,6 @@ async def test_user_list(
 @pytest.mark.parametrize("field", ["first_name", "last_name", "email"])
 async def test_user_list_search(
     user_rw_client: HttpTestHelper,
-    dbm: DatabaseManager,
     field: str,
 ):
     user_1 = await PreparedUser.create(
@@ -358,12 +350,10 @@ async def test_user_list_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_get_forbidden("/users")
 
 
-async def test_user_delete(
-    user_write_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
-):
+async def test_user_delete(user_write_client: HttpTestHelper, user: PreparedUser):
     await user_write_client.assert_delete(f"/users/{user.id}", expected_status_code=204)
 
-    await assert_collection(dbm.core_db.users, [])
+    await assert_collection(get_dbm().core_db.users, [])
 
 
 async def test_user_delete_unknown_id(user_write_client: HttpTestHelper):
@@ -434,7 +424,7 @@ async def _assert_user_password_validity(email: str, password: str):
 
 
 async def test_user_password_reset_set_password_fresh_user(
-    anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
+    anon_client: HttpTestHelper, user: PreparedUser
 ):
     await anon_client.assert_post_no_content(
         f"/users/password-reset/{await user.password_reset_token}",
@@ -442,7 +432,7 @@ async def test_user_password_reset_set_password_fresh_user(
     )
 
     await assert_collection(
-        dbm.core_db.users,
+        get_dbm().core_db.users,
         [
             user.expected_document(
                 {"password_hash": callee.IsA(str), "password_reset_token": None}
@@ -454,7 +444,7 @@ async def test_user_password_reset_set_password_fresh_user(
 
 
 async def test_user_password_reset_set_password_after_forgot_password(
-    user_builder: UserBuilder, dbm: DatabaseManager
+    user_builder: UserBuilder,
 ):
     user = await user_builder({})
 
@@ -472,7 +462,7 @@ async def test_user_password_reset_set_password_after_forgot_password(
     )
 
     await assert_collection(
-        dbm.core_db.users,
+        get_dbm().core_db.users,
         [
             user.expected_document(
                 {"password_hash": callee.IsA(str), "password_reset_token": None}
@@ -484,7 +474,7 @@ async def test_user_password_reset_set_password_after_forgot_password(
 
 
 async def test_user_password_reset_set_password_too_short(
-    anon_client: HttpTestHelper, user: PreparedUser, dbm: DatabaseManager
+    anon_client: HttpTestHelper, user: PreparedUser
 ):
     await anon_client.assert_post_bad_request(
         f"/users/password-reset/{await user.password_reset_token}",
@@ -555,7 +545,7 @@ async def test_get_user_me_as_apikey(apikey_client: HttpTestHelper):
     await apikey_client.assert_get_forbidden("/users/me")
 
 
-async def test_update_user_me_lang(user_builder: UserBuilder, dbm: DatabaseManager):
+async def test_update_user_me_lang(user_builder: UserBuilder):
     user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -574,11 +564,13 @@ async def test_update_user_me_lang(user_builder: UserBuilder, dbm: DatabaseManag
             },
         )
 
-    await assert_collection(dbm.core_db.users, [user.expected_document({"lang": "fr"})])
+    await assert_collection(
+        get_dbm().core_db.users, [user.expected_document({"lang": "fr"})]
+    )
 
 
 async def test_update_user_me_password(
-    user_builder: UserBuilder, anon_client: HttpTestHelper, dbm: DatabaseManager
+    user_builder: UserBuilder, anon_client: HttpTestHelper
 ):
     user = await user_builder({})
     async with user.client() as client:
@@ -591,7 +583,7 @@ async def test_update_user_me_password(
         )
 
     # Make sure we don't have side effects in DB
-    await assert_collection(dbm.core_db.users, [user.expected_document()])
+    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
 
     # Make sure the new password actually works
     await anon_client.assert_post_ok(
@@ -600,9 +592,7 @@ async def test_update_user_me_password(
     )
 
 
-async def test_update_user_me_forbidden_field(
-    user_builder: UserBuilder, dbm: DatabaseManager
-):
+async def test_update_user_me_forbidden_field(user_builder: UserBuilder):
     user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
@@ -612,7 +602,7 @@ async def test_update_user_me_forbidden_field(
         )
 
     # ensure nothing changed
-    await assert_collection(dbm.core_db.users, [user.expected_document()])
+    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
 
 
 async def test_update_user_me_as_unauthorized(anon_client: HttpTestHelper):
@@ -633,9 +623,7 @@ async def test_update_user_me_as_apikey(apikey_client: HttpTestHelper):
     )
 
 
-async def test_user_forgot_password_with_enrolled_user(
-    user_builder: UserBuilder, dbm: DatabaseManager
-):
+async def test_user_forgot_password_with_enrolled_user(user_builder: UserBuilder):
     user = await user_builder({})
 
     async def func():
@@ -649,9 +637,7 @@ async def test_user_forgot_password_with_enrolled_user(
     await _assert_password_reset_token_validity(password_reset_token)
 
 
-async def test_user_forgot_password_with_not_yet_enrolled_user(
-    user: PreparedUser, dbm: DatabaseManager
-):
+async def test_user_forgot_password_with_not_yet_enrolled_user(user: PreparedUser):
     async def func():
         await HttpTestHelper.spawn().assert_post_no_content(
             "/users/forgot-password",
@@ -664,7 +650,7 @@ async def test_user_forgot_password_with_not_yet_enrolled_user(
 
 
 async def test_user_forgot_password_with_enrolled_user_and_pending_forgot_password(
-    user_builder: UserBuilder, dbm: DatabaseManager
+    user_builder: UserBuilder,
 ):
     user = await user_builder({})
 
@@ -687,12 +673,10 @@ class TestPermissions(BasePermissionTests):
     def base_path(self):
         return "/users"
 
-    def get_principal_collection(self, dbm: DatabaseManager):
-        return dbm.core_db.users
+    def get_principal_collection(self):
+        return get_dbm().core_db.users
 
-    async def inject_grantor(
-        self, dbm: DatabaseManager, permissions=None
-    ) -> PreparedApikey:
+    async def inject_grantor(self, permissions=None) -> PreparedApikey:
         return await PreparedApikey.inject_into_db(
             PreparedApikey.prepare_model(permissions=permissions),
         )
@@ -700,12 +684,10 @@ class TestPermissions(BasePermissionTests):
     def prepare_assignee_data(self, permissions=None):
         return PreparedUser.prepare_data(permissions)
 
-    async def create_assignee(
-        self, client: HttpTestHelper, dbm: DatabaseManager, data=None
-    ) -> PreparedUser:
+    async def create_assignee(self, client: HttpTestHelper, data=None) -> PreparedUser:
         return await PreparedUser.create(client, data)
 
     def rebuild_assignee_from_response(
-        self, resp: Response, data: dict, dbm: DatabaseManager
+        self, resp: Response, data: dict
     ) -> PreparedUser:
         return PreparedUser(resp.json()["id"], data)

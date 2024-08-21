@@ -6,7 +6,7 @@ import pytest
 from icecream import ic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import DatabaseManager
+from auditize.database import get_dbm
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
@@ -22,9 +22,7 @@ from helpers.utils import strip_dict_keys
 pytestmark = pytest.mark.anyio
 
 
-async def _test_repo_create(
-    client: HttpTestHelper, dbm: DatabaseManager, collection: AsyncIOMotorCollection
-):
+async def _test_repo_create(client: HttpTestHelper, collection: AsyncIOMotorCollection):
     data = {"name": "myrepo"}
 
     resp = await client.assert_post(
@@ -35,7 +33,7 @@ async def _test_repo_create(
     )
     repo_id = resp.json()["id"]
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [PreparedRepo.build_expected_document(repo_id, data)],
     )
 
@@ -46,26 +44,24 @@ async def _test_repo_create(
     ]
 
 
-async def test_repo_create_as_apikey(
-    apikey_builder: ApikeyBuilder, dbm: DatabaseManager
-):
+async def test_repo_create_as_apikey(apikey_builder: ApikeyBuilder):
     apikey_builder = await apikey_builder({"management": {"repos": {"write": True}}})
 
     async with apikey_builder.client() as client:
-        await _test_repo_create(client, dbm, dbm.core_db.apikeys)
+        await _test_repo_create(client, get_dbm().core_db.apikeys)
 
 
-async def test_repo_create_as_user(user_builder: UserBuilder, dbm: DatabaseManager):
+async def test_repo_create_as_user(user_builder: UserBuilder):
     user_builder = await user_builder({"management": {"repos": {"write": True}}})
 
     async with user_builder.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await _test_repo_create(client, dbm, dbm.core_db.users)
+        await _test_repo_create(client, get_dbm().core_db.users)
 
 
 @pytest.mark.parametrize("status", ["enabled", "readonly", "disabled"])
 async def test_repo_create_with_explicit_status(
-    superadmin_client: HttpTestHelper, dbm: DatabaseManager, status: str
+    superadmin_client: HttpTestHelper, status: str
 ):
     data = {"name": "myrepo", "status": status}
 
@@ -75,14 +71,13 @@ async def test_repo_create_with_explicit_status(
         expected_json={"id": callee.IsA(str)},
     )
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [PreparedRepo.build_expected_document(resp.json()["id"], data)],
     )
 
 
 async def test_repo_create_with_log_i18n_profile(
     superadmin_client: HttpTestHelper,
-    dbm: DatabaseManager,
     log_i18n_profile: PreparedLogI18nProfile,
 ):
     data = {"name": "myrepo", "log_i18n_profile_id": log_i18n_profile.id}
@@ -93,14 +88,13 @@ async def test_repo_create_with_log_i18n_profile(
         expected_json={"id": callee.IsA(str)},
     )
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [PreparedRepo.build_expected_document(resp.json()["id"], data)],
     )
 
 
 async def test_repo_create_with_retention_period(
     superadmin_client: HttpTestHelper,
-    dbm: DatabaseManager,
 ):
     data = {
         "name": "myrepo",
@@ -113,14 +107,12 @@ async def test_repo_create_with_retention_period(
         expected_json={"id": callee.IsA(str)},
     )
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [PreparedRepo.build_expected_document(resp.json()["id"], data)],
     )
 
 
-async def test_repo_create_missing_name(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_repo_create_missing_name(repo_write_client: HttpTestHelper):
     await repo_write_client.assert_post_bad_request(
         "/repos",
         json={},
@@ -146,7 +138,7 @@ async def test_repo_create_already_used_name(
 
 
 async def test_repo_create_unknown_log_i18n_profile_id(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
+    repo_write_client: HttpTestHelper,
 ):
     await repo_write_client.assert_post_bad_request(
         "/repos",
@@ -162,7 +154,6 @@ async def test_repo_create_forbidden(no_permission_client: HttpTestHelper):
 async def test_repo_update(
     repo_write_client: HttpTestHelper,
     repo: PreparedRepo,
-    dbm: DatabaseManager,
     field: str,
     value: str,
 ):
@@ -170,21 +161,22 @@ async def test_repo_update(
         f"/repos/{repo.id}", json={field: value}, expected_status_code=204
     )
 
-    await assert_collection(dbm.core_db.repos, [repo.expected_document({field: value})])
+    await assert_collection(
+        get_dbm().core_db.repos, [repo.expected_document({field: value})]
+    )
 
 
 async def test_repo_update_set_log_i18n_profile_id(
     repo_write_client: HttpTestHelper,
     repo: PreparedRepo,
     log_i18n_profile: PreparedLogI18nProfile,
-    dbm: DatabaseManager,
 ):
     await repo_write_client.assert_patch_no_content(
         f"/repos/{repo.id}",
         json={"log_i18n_profile_id": log_i18n_profile.id},
     )
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [repo.expected_document({"log_i18n_profile_id": UUID(log_i18n_profile.id)})],
     )
 
@@ -193,7 +185,6 @@ async def test_repo_update_unset_log_i18n_profile_id(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
     repo_builder: RepoBuilder,
-    dbm: DatabaseManager,
 ):
     repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
     await repo_write_client.assert_patch_no_content(
@@ -201,7 +192,7 @@ async def test_repo_update_unset_log_i18n_profile_id(
         json={"log_i18n_profile_id": None},
     )
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [repo.expected_document({"log_i18n_profile_id": None})],
     )
 
@@ -209,14 +200,13 @@ async def test_repo_update_unset_log_i18n_profile_id(
 async def test_repo_update_set_retention_period(
     repo_write_client: HttpTestHelper,
     repo: PreparedRepo,
-    dbm: DatabaseManager,
 ):
     await repo_write_client.assert_patch_no_content(
         f"/repos/{repo.id}",
         json={"retention_period": 30},
     )
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [repo.expected_document({"retention_period": 30})],
     )
 
@@ -224,7 +214,6 @@ async def test_repo_update_set_retention_period(
 async def test_repo_update_unset_retention_period(
     repo_write_client: HttpTestHelper,
     repo_builder: RepoBuilder,
-    dbm: DatabaseManager,
 ):
     repo = await repo_builder({"retention_period": 30})
     await repo_write_client.assert_patch_no_content(
@@ -232,7 +221,7 @@ async def test_repo_update_unset_retention_period(
         json={"retention_period": None},
     )
     await assert_collection(
-        dbm.core_db.repos,
+        get_dbm().core_db.repos,
         [repo.expected_document({"retention_period": None})],
     )
 
@@ -241,14 +230,13 @@ async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
     repo_builder: RepoBuilder,
-    dbm: DatabaseManager,
 ):
     repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
     await repo_write_client.assert_patch_no_content(
         f"/repos/{repo.id}",
         json={},
     )
-    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+    await assert_collection(get_dbm().core_db.repos, [repo.expected_document()])
 
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
@@ -351,9 +339,7 @@ async def test_repo_get_with_stats(
     )
 
 
-async def test_repo_get_unknown_id(
-    repo_read_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_repo_get_unknown_id(repo_read_client: HttpTestHelper):
     await repo_read_client.assert_get_not_found(f"/repos/{UNKNOWN_UUID}")
 
 
@@ -414,7 +400,7 @@ async def test_repo_get_translation_for_user_available_for_user_lang(
 
 
 async def test_repo_get_translation_for_user_unknown_id(
-    log_read_user_client: HttpTestHelper, dbm: DatabaseManager
+    log_read_user_client: HttpTestHelper,
 ):
     await log_read_user_client.assert_get_not_found(
         f"/repos/{UNKNOWN_UUID}/translation"
@@ -482,9 +468,7 @@ async def test_repo_get_translation_for_user_available_for_lang(
     )
 
 
-async def test_repo_get_translation_unknown_id(
-    log_read_user_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_repo_get_translation_unknown_id(log_read_user_client: HttpTestHelper):
     await log_read_user_client.assert_get_not_found(
         f"/repos/{UNKNOWN_UUID}/translations/en"
     )
@@ -804,16 +788,16 @@ async def test_repo_list_user_repos_as_apikey(apikey_builder: ApikeyBuilder):
         await client.assert_get_forbidden("/users/me/repos")
 
 
-async def test_repo_delete(repo_write_client: HttpTestHelper, dbm: DatabaseManager):
+async def test_repo_delete(repo_write_client: HttpTestHelper):
     resp = await repo_write_client.assert_post_created("/repos", json={"name": "repo"})
     repo_id = resp.json()["id"]
     await repo_write_client.assert_delete_no_content(f"/repos/{repo_id}")
 
-    await assert_collection(dbm.core_db.repos, [])
+    await assert_collection(get_dbm().core_db.repos, [])
 
 
 async def test_repo_delete_with_related_resources(
-    user_builder: UserBuilder, repo: PreparedRepo, dbm: DatabaseManager
+    user_builder: UserBuilder, repo: PreparedRepo
 ):
     superadmin = await user_builder({"is_superadmin": True})
 
@@ -877,9 +861,9 @@ async def test_repo_delete_with_related_resources(
         await client.assert_delete_no_content(f"/repos/{to_be_deleted_repo_id}")
 
     # Check that the related resources have been deleted
-    await assert_collection(dbm.core_db.repos, [repo.expected_document()])
+    await assert_collection(get_dbm().core_db.repos, [repo.expected_document()])
     await assert_collection(
-        dbm.core_db.apikeys,
+        get_dbm().core_db.apikeys,
         [
             apikey.expected_document(
                 {
@@ -903,7 +887,7 @@ async def test_repo_delete_with_related_resources(
         ],
     )
     await assert_collection(
-        dbm.core_db.users,
+        get_dbm().core_db.users,
         [
             user.expected_document(
                 {
@@ -928,14 +912,12 @@ async def test_repo_delete_with_related_resources(
         filter={"email": user.email},
     )
     await assert_collection(
-        dbm.core_db.log_filters,
+        get_dbm().core_db.log_filters,
         [log_filter.expected_document({"user_id": UUID(superadmin.id)})],
     )
 
 
-async def test_repo_delete_unknown_id(
-    repo_write_client: HttpTestHelper, dbm: DatabaseManager
-):
+async def test_repo_delete_unknown_id(repo_write_client: HttpTestHelper):
     await repo_write_client.assert_delete_not_found(f"/repos/{UNKNOWN_UUID}")
 
 

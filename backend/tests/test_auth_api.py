@@ -5,7 +5,6 @@ import callee
 import pytest
 from icecream import ic
 
-from auditize.database import DatabaseManager
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.permissions.constants import DEFAULT_APPLICABLE_PERMISSIONS
@@ -26,7 +25,7 @@ def _assert_cookie(resp, now, expected_secure=True):
     assert cookie.get_nonstandard_attr("SameSite") == "strict"
 
 
-async def test_user_login(anon_client: HttpTestHelper, dbm: DatabaseManager):
+async def test_user_login(anon_client: HttpTestHelper):
     user = await PreparedUser.inject_into_db()
     now = int(time.time())
     resp = await anon_client.assert_post_ok(
