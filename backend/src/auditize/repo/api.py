@@ -71,7 +71,6 @@ async def create_repo(
         )
         if authorized.apikey:
             await update_apikey(
-                dbm,
                 authorized.apikey.id,
                 ApikeyUpdate(permissions=grant_rw_on_repo_logs),
             )

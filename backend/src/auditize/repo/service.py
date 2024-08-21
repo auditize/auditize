@@ -199,7 +199,7 @@ async def delete_repo(dbm: DatabaseManager, repo_id: UUID):
     await delete_resource_document(dbm.core_db.repos, repo_id)
     await logs_db.client.drop_database(logs_db.name)
     await remove_repo_from_users_permissions(dbm, repo_id)
-    await remove_repo_from_apikeys_permissions(dbm, repo_id)
+    await remove_repo_from_apikeys_permissions(repo_id)
     await delete_log_filters_with_repo(dbm, repo_id)
 
 

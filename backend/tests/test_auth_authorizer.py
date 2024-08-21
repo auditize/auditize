@@ -104,7 +104,7 @@ async def test_auth_access_control_downgraded_apikey_permissions(
     apikey_update = ApikeyUpdate()
     apikey_update.permissions = Permissions()
     apikey_update.permissions.is_superadmin = False
-    await update_apikey(dbm, UUID(apikey.id), apikey_update)
+    await update_apikey(UUID(apikey.id), apikey_update)
 
     # fourth step, try to authenticate with the access token
     # it must fail because the access token has now more permissions than the original API key

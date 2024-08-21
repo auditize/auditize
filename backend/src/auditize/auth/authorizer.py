@@ -91,7 +91,7 @@ def _get_authorization_bearer(request: Request) -> str | None:
 
 async def authenticate_apikey(dbm: DatabaseManager, key: str) -> Authenticated:
     try:
-        apikey = await get_apikey_by_key(dbm, key)
+        apikey = await get_apikey_by_key(key)
     except UnknownModelException:
         raise AuthenticationFailure("Invalid API key")
 
@@ -104,7 +104,7 @@ async def authenticate_access_token(
     jwt_token = access_token[len(ACCESS_TOKEN_PREFIX) :]
     apikey_id, permissions = get_access_token_data(jwt_token)
     try:
-        apikey = await get_apikey(dbm, apikey_id)
+        apikey = await get_apikey(apikey_id)
     except UnknownModelException:
         raise AuthenticationFailure(
             "Invalid API key corresponding to access token is no longer valid"

@@ -49,7 +49,7 @@ class PreparedApikey:
     ) -> "PreparedApikey":
         if apikey is None:
             apikey = cls.prepare_model()
-        apikey_id, key = await create_apikey(dbm, apikey)
+        apikey_id, key = await create_apikey(apikey)
         return cls(
             id=str(apikey_id),
             key=key,
