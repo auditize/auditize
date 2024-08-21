@@ -3,26 +3,20 @@ import random
 
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
-from auditize.app import api_app
-from auditize.database import DatabaseManager, get_dbm, setup_mongo_client
+from auditize.database import DatabaseManager, init_dbm
 from auditize.log.db import LogDatabase
 
 
 def setup_test_dbm():
-    mongo_client = setup_mongo_client()
     name_prefix = "test_%04d" % int(random.random() * 10000)
     try:
         name_prefix += "_" + os.environ["PYTEST_XDIST_WORKER"]
     except KeyError:
         pass
-    test_dbm = DatabaseManager.spawn(client=mongo_client, name_prefix=name_prefix)
-    api_app.dependency_overrides[get_dbm] = lambda: test_dbm
-    return test_dbm
+    return init_dbm(name_prefix, force_init=True)
 
 
 async def teardown_test_dbm(test_dbm):
-    api_app.dependency_overrides[get_dbm] = get_dbm
-
     for db_name in await test_dbm.client.list_database_names():
         if db_name.startswith(test_dbm.name_prefix):
             await test_dbm.client.drop_database(db_name)

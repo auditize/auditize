@@ -64,13 +64,6 @@ class CoreDatabase(BaseDatabase):
     log_filters = Collection("log_filters")
 
 
-def setup_mongo_client(uri: str = None) -> AsyncIOMotorClient:
-    return AsyncIOMotorClient(uri)
-
-
-_mongo_client = setup_mongo_client(get_config().mongodb_uri)
-
-
 class DatabaseManager:
     def __init__(self, client: AsyncIOMotorClient, name_prefix: str):
         self.client = client
@@ -78,8 +71,8 @@ class DatabaseManager:
         self.core_db = CoreDatabase(self.name_prefix, client)
 
     @classmethod
-    def spawn(cls, client: AsyncIOMotorClient = None, name_prefix="auditize"):
-        return cls(client or _mongo_client, name_prefix)
+    def spawn(cls, client: AsyncIOMotorClient, name_prefix="auditize"):
+        return cls(client, name_prefix)
 
     async def setup(self):
         # avoid circular imports
@@ -92,8 +85,21 @@ class DatabaseManager:
             await log_db.setup()
 
 
-_dbm = DatabaseManager.spawn(_mongo_client)
+_dbm: DatabaseManager | None = None
+
+
+def init_dbm(name_prefix="auditize", *, force_init=False) -> DatabaseManager:
+    global _dbm
+    if not force_init and _dbm:
+        raise Exception("DatabaseManager is already initialized")
+    config = get_config()
+    _dbm = DatabaseManager.spawn(
+        AsyncIOMotorClient(config.mongodb_uri), name_prefix=name_prefix
+    )
+    return _dbm
 
 
 def get_dbm() -> DatabaseManager:
+    if not _dbm:
+        raise Exception("DatabaseManager is not initialized")
     return _dbm

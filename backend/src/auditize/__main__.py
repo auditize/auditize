@@ -6,7 +6,7 @@ import sys
 
 from auditize.app import api_app
 from auditize.config import Config
-from auditize.database import get_dbm
+from auditize.database import get_dbm, init_dbm
 from auditize.exceptions import ConfigError, ConstraintViolation
 from auditize.log.service import apply_log_retention_period
 from auditize.openapi import get_customized_openapi_schema
@@ -130,4 +130,5 @@ async def main(args):
 
 
 if __name__ == "__main__":
+    init_dbm()
     sys.exit(asyncio.run(main(sys.argv[1:])))

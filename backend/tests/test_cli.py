@@ -12,13 +12,6 @@ from helpers.user import PreparedUser
 pytestmark = pytest.mark.anyio
 
 
-@pytest.fixture()
-def dbm(dbm_fixt):
-    # Override dbm fixture from conftest to also patch auditize.__main__.get_dbm
-    with patch("auditize.__main__.get_dbm", lambda: dbm_fixt):
-        yield dbm_fixt
-
-
 async def test_empty_db(dbm: DatabaseManager):
     await main(["bootstrap-default-superadmin"])
     client = HttpTestHelper.spawn()
