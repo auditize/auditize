@@ -27,10 +27,6 @@ def test_get_config():
     assert config.smtp_sender is None
     assert config.is_smtp_enabled() is False
     assert config.cors_allow_origins == []
-    assert config.cors_allow_credentials is False
-    assert config.cors_allow_methods == []
-    assert config.cors_allow_headers == []
-    assert config.is_cors_enabled() is False
     assert config.cookie_secure is True
     assert config.test_mode is True
 
@@ -58,10 +54,7 @@ def test_config_minimum_viable_config():
     assert config.smtp_password is None
     assert config.smtp_sender is None
     assert config.is_smtp_enabled() is False
-    assert config.cors_allow_credentials is False
-    assert config.cors_allow_methods == []
-    assert config.cors_allow_headers == []
-    assert config.is_cors_enabled() is False
+    assert config.cors_allow_origins == []
     assert config.cookie_secure is True
     assert config.test_mode is False
 
@@ -142,32 +135,9 @@ def test_config_cors_enabled():
         {
             **MINIMUM_VIABLE_CONFIG,
             "AUDITIZE_CORS_ALLOW_ORIGINS": "http://localhost:5173",
-            "AUDITIZE_CORS_ALLOW_CREDENTIALS": "true",
-            "AUDITIZE_CORS_ALLOW_METHODS": "GET,POST,PATCH,DELETE",
-            "AUDITIZE_CORS_ALLOW_HEADERS": "*",
         }
     )
-    assert config.is_cors_enabled() is True
     assert config.cors_allow_origins == ["http://localhost:5173"]
-    assert config.cors_allow_credentials is True
-    assert config.cors_allow_methods == ["GET", "POST", "PATCH", "DELETE"]
-    assert config.cors_allow_headers == ["*"]
-
-
-def test_config_cors_enabled_bis():
-    config = Config.load_from_env(
-        {
-            **MINIMUM_VIABLE_CONFIG,
-            "AUDITIZE_CORS_ALLOW_ORIGINS": "http://localhost:5173",
-            "AUDITIZE_CORS_ALLOW_CREDENTIALS": "false",
-            "AUDITIZE_CORS_ALLOW_METHODS": "*",
-        }
-    )
-    assert config.is_cors_enabled() is True
-    assert config.cors_allow_origins == ["http://localhost:5173"]
-    assert config.cors_allow_credentials is False
-    assert config.cors_allow_methods == ["*"]
-    assert config.cors_allow_headers == []
 
 
 def test_config_cookie_secure_turned_off():

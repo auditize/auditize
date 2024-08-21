@@ -24,9 +24,6 @@ class Config:
     smtp_password: str
     _smtp_sender: str
     cors_allow_origins: list[str]
-    cors_allow_credentials: bool
-    cors_allow_methods: list[str]
-    cors_allow_headers: list[str]
     cookie_secure: bool
     test_mode: bool
 
@@ -113,21 +110,6 @@ class Config:
                 cors_allow_origins=optional(
                     "AUDITIZE_CORS_ALLOW_ORIGINS", cast=cls._cast_list, default=[]
                 ),
-                cors_allow_credentials=optional(
-                    "AUDITIZE_CORS_ALLOW_CREDENTIALS",
-                    cast=cls._cast_bool,
-                    default=False,
-                ),
-                cors_allow_methods=optional(
-                    "AUDITIZE_CORS_ALLOW_METHODS",
-                    cast=cls._cast_list,
-                    default=[],
-                ),
-                cors_allow_headers=optional(
-                    "AUDITIZE_CORS_ALLOW_HEADERS",
-                    cast=cls._cast_list,
-                    default=[],
-                ),
                 cookie_secure=optional(
                     # Needed to disable Secure Cookies for Safari on localhost
                     # (see https://flaviocopes.com/cookie-not-being-set-in-safari/)
@@ -155,9 +137,6 @@ class Config:
 
     def is_smtp_enabled(self):
         return self.smtp_sender is not None
-
-    def is_cors_enabled(self):
-        return bool(self.cors_allow_origins)
 
     def to_dict(self):
         return dataclasses.asdict(self)

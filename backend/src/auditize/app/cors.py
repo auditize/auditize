@@ -6,7 +6,7 @@ from auditize.config import get_config
 
 def setup_cors(app: FastAPI):
     config = get_config()
-    if not config.is_cors_enabled():
+    if not config.cors_allow_origins:
         return
 
     # FIXME: CORS is currently untested as the app is loaded once the module is imported
@@ -15,7 +15,7 @@ def setup_cors(app: FastAPI):
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.cors_allow_origins,
-        allow_credentials=config.cors_allow_credentials,
-        allow_methods=config.cors_allow_methods,
-        allow_headers=config.cors_allow_headers,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
