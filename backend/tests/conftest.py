@@ -65,7 +65,7 @@ async def client(apikey_client):
 
 @pytest.fixture(scope="function")
 async def user_client(dbm: DatabaseManager):
-    user = await PreparedUser.inject_into_db(dbm)
+    user = await PreparedUser.inject_into_db()
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         yield client
@@ -120,8 +120,8 @@ async def log_i18n_profile():
 
 
 @pytest.fixture(scope="function")
-async def user(superadmin_client, dbm):
-    return await PreparedUser.create(superadmin_client, dbm)
+async def user(superadmin_client):
+    return await PreparedUser.create(superadmin_client)
 
 
 @pytest.fixture(scope="function")
@@ -150,7 +150,6 @@ class UserBuilder(Protocol):
 def user_builder(dbm) -> UserBuilder:
     async def func(permissions, lang=None):
         return await PreparedUser.inject_into_db(
-            dbm,
             user=PreparedUser.prepare_model(
                 password="dummypassword", permissions=permissions, lang=lang
             ),

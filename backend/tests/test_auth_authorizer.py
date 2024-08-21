@@ -141,8 +141,8 @@ async def test_auth_invalid_authorization_bearer(
         await get_authenticated(request)
 
 
-async def test_auth_user(dbm: DatabaseManager, client: HttpTestHelper):
-    user = await PreparedUser.inject_into_db(dbm)
+async def test_auth_user(client: HttpTestHelper):
+    user = await PreparedUser.inject_into_db()
     session_token = await user.get_session_token(client)
 
     request = make_http_request(headers={"Cookie": f"session={session_token}"})
@@ -157,8 +157,8 @@ async def test_auth_user_invalid_session_token_syntax(dbm: DatabaseManager):
         await get_authenticated(request)
 
 
-async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManager):
-    user = await PreparedUser.inject_into_db(dbm)
+async def test_auth_user_invalid_session_token_bad_signature():
+    user = await PreparedUser.inject_into_db()
 
     # Prepare a valid JWT session token but sign with a different key
     jwt_payload, _ = generate_session_token_payload(user.data["email"])
@@ -170,10 +170,8 @@ async def test_auth_user_invalid_session_token_bad_signature(dbm: DatabaseManage
         await get_authenticated(request)
 
 
-async def test_auth_user_invalid_session_token_expired(
-    dbm: DatabaseManager, client: HttpTestHelper
-):
-    user = await PreparedUser.inject_into_db(dbm)
+async def test_auth_user_invalid_session_token_expired(client: HttpTestHelper):
+    user = await PreparedUser.inject_into_db()
 
     # Mock the current time to be 2024-01-01 to generate an already expired token
     with patch(

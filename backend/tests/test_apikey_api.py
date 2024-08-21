@@ -269,7 +269,6 @@ class TestPermissions(BasePermissionTests):
         self, dbm: DatabaseManager, permissions=None
     ) -> PreparedUser:
         return await PreparedUser.inject_into_db(
-            dbm,
             user=PreparedUser.prepare_model(
                 password="dummypassword", permissions=permissions
             ),

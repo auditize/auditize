@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 import callee
 from httpx import Response
 
-from auditize.database import DatabaseManager
+from auditize.database import get_dbm
 from auditize.permissions.models import Permissions
 from auditize.resource.service import create_resource_document
 from auditize.user.models import Lang, User
@@ -22,10 +22,9 @@ from .permissions.constants import DEFAULT_PERMISSIONS
 
 
 class PreparedUser:
-    def __init__(self, id: str, data: dict, dbm: DatabaseManager, password=None):
+    def __init__(self, id: str, data: dict, password=None):
         self.id = id
         self.data = data
-        self.dbm = dbm
         self.password = password
 
     @staticmethod
@@ -39,9 +38,7 @@ class PreparedUser:
         }
 
     @classmethod
-    async def create(
-        cls, client: HttpTestHelper, dbm: DatabaseManager, data=None
-    ) -> "PreparedUser":
+    async def create(cls, client: HttpTestHelper, data=None) -> "PreparedUser":
         if data is None:
             data = cls.prepare_data()
         resp = await client.assert_post(
@@ -49,7 +46,7 @@ class PreparedUser:
             json=data,
             expected_status_code=201,
         )
-        return cls(resp.json()["id"], data, dbm)
+        return cls(resp.json()["id"], data)
 
     @staticmethod
     def prepare_model(*, password="dummypassword", permissions=None, lang=None) -> User:
@@ -67,13 +64,13 @@ class PreparedUser:
 
     @classmethod
     async def inject_into_db(
-        cls, dbm: DatabaseManager, user: User = None, password="dummypassword"
+        cls, user: User = None, password="dummypassword"
     ) -> "PreparedUser":
         if user is None:
             user = cls.prepare_model(password=password)
         # FIXME: auditize.users.service.save_user should be used here
         user_id = await create_resource_document(
-            dbm.core_db.users, build_document_from_user(user)
+            get_dbm().core_db.users, build_document_from_user(user)
         )
         return cls(
             id=str(user_id),
@@ -83,11 +80,10 @@ class PreparedUser:
                 "email": user.email,
             },
             password=password,
-            dbm=dbm,
         )
 
     async def expire_password_reset_token(self):
-        await self.dbm.core_db.users.update_one(
+        await get_dbm().core_db.users.update_one(
             {"_id": UUID(self.id)},
             {
                 "$set": {

@@ -61,7 +61,7 @@ async def test_user_create(user_write_client: HttpTestHelper, dbm: DatabaseManag
 
     password_reset_token = await _wrap_password_reset_link_sending(func, data["email"])
 
-    user = PreparedUser(user_id, data, dbm)
+    user = PreparedUser(user_id, data)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
 
     await _assert_password_reset_token_validity(password_reset_token)
@@ -78,7 +78,7 @@ async def test_user_create_lang_fr(
         expected_json={"id": callee.IsA(str)},
     )
 
-    user = PreparedUser(resp.json()["id"], data, dbm)
+    user = PreparedUser(resp.json()["id"], data)
     await assert_collection(dbm.core_db.users, [user.expected_document()])
 
 
@@ -200,8 +200,8 @@ async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
 async def test_user_update_already_used_email(
     superadmin_client: HttpTestHelper, dbm: DatabaseManager
 ):
-    user1 = await PreparedUser.create(superadmin_client, dbm)
-    user2 = await PreparedUser.create(superadmin_client, dbm)
+    user1 = await PreparedUser.create(superadmin_client)
+    user2 = await PreparedUser.create(superadmin_client)
 
     await superadmin_client.assert_patch_constraint_violation(
         f"/users/{user1.id}",
@@ -307,7 +307,7 @@ async def test_user_list(
     user_write_client: HttpTestHelper,
     dbm: DatabaseManager,
 ):
-    users = [await PreparedUser.create(user_write_client, dbm) for _ in range(5)]
+    users = [await PreparedUser.create(user_write_client) for _ in range(5)]
 
     await do_test_page_pagination_common_scenarios(
         user_read_client,
@@ -327,7 +327,6 @@ async def test_user_list_search(
 ):
     user_1 = await PreparedUser.create(
         user_rw_client,
-        dbm,
         {
             "first_name": "Walter",
             "last_name": "White",
@@ -337,7 +336,6 @@ async def test_user_list_search(
 
     user_2 = await PreparedUser.create(
         user_rw_client,
-        dbm,
         {
             "first_name": "Jesse",
             "last_name": "Pinkman",
@@ -705,9 +703,9 @@ class TestPermissions(BasePermissionTests):
     async def create_assignee(
         self, client: HttpTestHelper, dbm: DatabaseManager, data=None
     ) -> PreparedUser:
-        return await PreparedUser.create(client, dbm, data)
+        return await PreparedUser.create(client, data)
 
     def rebuild_assignee_from_response(
         self, resp: Response, data: dict, dbm: DatabaseManager
     ) -> PreparedUser:
-        return PreparedUser(resp.json()["id"], data, dbm)
+        return PreparedUser(resp.json()["id"], data)

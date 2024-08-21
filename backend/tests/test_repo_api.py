@@ -833,7 +833,6 @@ async def test_repo_delete_with_related_resources(
         # Create a user with permissions on the to_be_deleted_repo + another repo
         user = await PreparedUser.create(
             client,
-            dbm,
             PreparedUser.prepare_data(
                 {
                     "permissions": {
