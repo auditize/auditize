@@ -51,7 +51,7 @@ async def _dbm():
 
 
 @pytest.fixture(scope="function")
-async def apikey_client(dbm: DatabaseManager):
+async def apikey_client():
     apikey = await PreparedApikey.inject_into_db()
     async with apikey.client() as client:
         yield client
@@ -64,7 +64,7 @@ async def client(apikey_client):
 
 
 @pytest.fixture(scope="function")
-async def user_client(dbm: DatabaseManager):
+async def user_client():
     user = await PreparedUser.inject_into_db()
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
