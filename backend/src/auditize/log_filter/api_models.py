@@ -39,7 +39,7 @@ _BUILTIN_FILTER_COLUMNS = (
     "attachment_name",
     "attachment_type",
     "attachment_mime_type",
-    "node",
+    "entity",
 )
 _CUSTOM_FIELD_GROUPS = (
     "actor",

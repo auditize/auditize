@@ -93,8 +93,8 @@ class RepoLogPermissionsData(BaseModel):
     write: bool = Field(
         description="Whether authenticated can write logs into the repository"
     )
-    readable_nodes: list[str] = Field(
-        description="The nodes the authenticated can access on read. Empty list means all nodes.",
+    readable_entities: list[str] = Field(
+        description="The entities the authenticated can access on read. Empty list means all entities.",
     )
 
 
@@ -120,7 +120,7 @@ class UserRepoReadingResponse(_BaseRepoReadingResponse):
         # NB: we have to use a default value here because the permissions field will be
         # set after the model initialization
         default_factory=lambda: RepoLogPermissionsData(
-            read=False, write=False, readable_nodes=[]
+            read=False, write=False, readable_entities=[]
         ),
     )
 

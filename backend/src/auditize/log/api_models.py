@@ -245,12 +245,12 @@ class _TagOutputData(BaseModel):
     }
 
 
-class _NodeData(BaseModel):
-    ref: str = Field(title="Node ref")
-    name: str = Field(title="Node name")
+class _EntityData(BaseModel):
+    ref: str = Field(title="Entity ref")
+    name: str = Field(title="Entity name")
 
 
-def _NodePathField():  # noqa
+def _EntityPathField():  # noqa
     return Field(
         description="Represents the complete path of the entity that the log is associated with."
         "This array must at least contain one item.",
@@ -272,7 +272,7 @@ class LogCreationRequest(BaseModel):
     )
     details: list[_CustomFieldData] = _DetailsField(default_factory=list)
     tags: list[_TagInputData] = Field(default_factory=list)
-    node_path: list[_NodeData] = _NodePathField()
+    entity_path: list[_EntityData] = _EntityPathField()
 
     @model_validator(mode="after")
     def validate_tags(self):
@@ -282,9 +282,9 @@ class LogCreationRequest(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_node_path(self):
-        if len(self.node_path) == 0:
-            raise ValueError("Node path must be at least one node deep")
+    def validate_entity_path(self):
+        if len(self.entity_path) == 0:
+            raise ValueError("Entity path must be at least one entity deep")
         return self
 
 
@@ -307,7 +307,7 @@ class LogReadingResponse(BaseModel, HasDatetimeSerialization):
     resource: Optional[_ResourceOutputData] = _ResourceField()
     details: list[_CustomFieldData] = _DetailsField()
     tags: list[_TagOutputData] = Field()
-    node_path: list[_NodeData] = _NodePathField()
+    entity_path: list[_EntityData] = _EntityPathField()
     attachments: list[_AttachmentData] = Field()
     saved_at: datetime
 
@@ -342,12 +342,12 @@ class NameListResponse(PagePaginatedResponse[str, NameData]):
     )
 
 
-class NodeItemData(_NodeData):
-    parent_node_ref: str | None = Field(
-        description="The ID of the parent node. It is null for top-level nodes.",
+class EntityItemData(_EntityData):
+    parent_entity_ref: str | None = Field(
+        description="The ID of the parent entity. It is null for top-level entities.",
     )
     has_children: bool = Field(
-        description="Indicates whether the node has children or not",
+        description="Indicates whether the entity has children or not",
     )
 
     model_config = ConfigDict(
@@ -355,21 +355,21 @@ class NodeItemData(_NodeData):
             "example": {
                 "ref": "entity:1",
                 "name": "Entity 1",
-                "parent_node_ref": "customer:1",
+                "parent_entity_ref": "customer:1",
                 "has_children": True,
             }
         }
     )
 
 
-class LogNodeResponse(NodeItemData):
+class LogEntityResponse(EntityItemData):
     pass
 
 
-class LogNodeListResponse(PagePaginatedResponse[Log.Node, NodeItemData]):
+class LogEntityListResponse(PagePaginatedResponse[Log.Entity, EntityItemData]):
     @classmethod
-    def build_item(cls, node: Log.Node) -> NodeItemData:
-        return NodeItemData.model_validate(node.model_dump())
+    def build_item(cls, entity: Log.Entity) -> EntityItemData:
+        return EntityItemData.model_validate(entity.model_dump())
 
 
 class BaseLogSearchParams(BaseModel):
@@ -393,7 +393,7 @@ class BaseLogSearchParams(BaseModel):
     attachment_name: Optional[str] = Field(default=None)
     attachment_type: Optional[str] = Field(default=None)
     attachment_mime_type: Optional[str] = Field(default=None)
-    node_ref: Optional[str] = Field(default=None)
+    entity_ref: Optional[str] = Field(default=None)
     since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
         default=None
     )

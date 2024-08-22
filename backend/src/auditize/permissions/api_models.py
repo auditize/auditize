@@ -47,12 +47,12 @@ class ManagementPermissionsOutputData(BaseModel):
 
 class RepoLogPermissionsInputData(ReadWritePermissionsInputData):
     repo_id: UUID
-    readable_nodes: list[str] | None = Field(default=None)
+    readable_entities: list[str] | None = Field(default=None)
 
 
 class RepoLogPermissionsOutputData(ReadWritePermissionsOutputData):
     repo_id: UUID
-    readable_nodes: list[str]
+    readable_entities: list[str]
 
 
 class LogPermissionsInputData(ReadWritePermissionsInputData):

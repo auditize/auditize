@@ -19,8 +19,8 @@ from auditize.log import service
 from auditize.log.api_models import (
     LogCreationRequest,
     LogCreationResponse,
-    LogNodeListResponse,
-    LogNodeResponse,
+    LogEntityListResponse,
+    LogEntityResponse,
     LogReadingResponse,
     LogSearchQueryParams,
     LogsReadingResponse,
@@ -270,59 +270,59 @@ async def get_log_attachment_mime_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/nodes",
-    summary="List log nodes",
+    "/repos/{repo_id}/logs/entities",
+    summary="List log entities",
     description="Requires `log:read` permission.",
-    operation_id="list_log_nodes",
+    operation_id="list_log_entities",
     tags=["log"],
 )
-async def get_log_nodes(
+async def get_log_entities(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     root: bool = False,
-    parent_node_ref: str = None,
+    parent_entity_ref: str = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
-) -> LogNodeListResponse:
-    if not (root ^ (parent_node_ref is not None)):
+) -> LogEntityListResponse:
+    if not (root ^ (parent_entity_ref is not None)):
         raise ValidationError(
-            "Parameters 'root' and 'parent_node_ref' are mutually exclusive and one of them must be provided"
+            "Parameters 'root' and 'parent_entity_ref' are mutually exclusive and one of them must be provided"
         )
 
     if root:
-        filter_args = {"parent_node_ref": None}
-    elif parent_node_ref:
-        filter_args = {"parent_node_ref": parent_node_ref}
+        filter_args = {"parent_entity_ref": None}
+    elif parent_entity_ref:
+        filter_args = {"parent_entity_ref": parent_entity_ref}
     else:
         filter_args = {}
 
-    nodes, pagination = await service.get_log_nodes(
+    entities, pagination = await service.get_log_entities(
         repo_id,
-        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
+        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(repo_id),
         page=page_params.page,
         page_size=page_params.page_size,
         **filter_args,
     )
-    return LogNodeListResponse.build(nodes, pagination)
+    return LogEntityListResponse.build(entities, pagination)
 
 
 @router.get(
-    "/repos/{repo_id}/logs/nodes/ref:{node_ref}",
-    summary="Get log node",
+    "/repos/{repo_id}/logs/entities/ref:{entity_ref}",
+    summary="Get log entity",
     description="Requires `log:read` permission.",
-    operation_id="get_log_node",
+    operation_id="get_log_entity",
     tags=["log"],
 )
-async def get_log_node(
+async def get_log_entity(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    node_ref: Annotated[str, Path(title="Node ref")],
-) -> LogNodeResponse:
-    node = await service.get_log_node(
+    entity_ref: Annotated[str, Path(title="Entity ref")],
+) -> LogEntityResponse:
+    entity = await service.get_log_entity(
         repo_id,
-        node_ref,
-        authorized.permissions.logs.get_repo_readable_nodes(repo_id),
+        entity_ref,
+        authorized.permissions.logs.get_repo_readable_entities(repo_id),
     )
-    return LogNodeResponse.model_validate(node.model_dump())
+    return LogEntityResponse.model_validate(entity.model_dump())
 
 
 @router.post(
@@ -460,7 +460,7 @@ async def get_logs_as_csv(
     return StreamingResponse(
         service.get_logs_as_csv(
             repo_id,
-            authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(
+            authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
                 repo_id
             ),
             search_params=LogSearchParams.model_validate(search_params.model_dump()),
@@ -487,7 +487,7 @@ async def get_log(
     log = await service.get_log(
         repo_id,
         log_id,
-        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
+        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(repo_id),
     )
     return LogReadingResponse.model_validate(log.model_dump())
 
@@ -546,7 +546,7 @@ async def get_logs(
     # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
         repo_id,
-        authorized_nodes=authorized.permissions.logs.get_repo_readable_nodes(repo_id),
+        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(repo_id),
         search_params=LogSearchParams.model_validate(search_params.model_dump()),
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,

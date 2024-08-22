@@ -86,12 +86,12 @@ class PreparedRepo:
             client, PreparedLog.prepare_data(extra), saved_at=saved_at
         )
 
-    async def create_log_with_node_path(
-        self, client: HttpTestHelper, node_path: list[str], *, saved_at: datetime = None
+    async def create_log_with_entity_path(
+        self, client: HttpTestHelper, entity_path: list[str], *, saved_at: datetime = None
     ):
         return await self.create_log_with(
             client,
-            {"node_path": [{"name": node, "ref": node} for node in node_path]},
+            {"entity_path": [{"name": entity, "ref": entity} for entity in entity_path]},
             saved_at=saved_at,
         )
 

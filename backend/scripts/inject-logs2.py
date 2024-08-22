@@ -392,7 +392,7 @@ def generate_applicant_actors(count: int):
         }
 
 
-def generate_node_paths(count: int):
+def generate_entity_paths(count: int):
     # Assign a unique ref to each item level
     # two level dict:
     # - first level is the depth of the item
@@ -423,19 +423,19 @@ def generate_node_paths(count: int):
 class LogProvider:
     registered_actors: list[dict]
     applicant_actors: list[dict]
-    node_paths: list[list[dict]]
+    entity_paths: list[list[dict]]
 
     @classmethod
     def prepare(cls):
         return cls(
             registered_actors=list(generate_registered_actors(1000)),
             applicant_actors=list(generate_applicant_actors(5000)),
-            node_paths=list(generate_node_paths(len(cities))),
+            entity_paths=list(generate_entity_paths(len(cities))),
         )
 
     def _build_job_offer_creation_log(self):
         job_title = random.choice(job_titles)
-        node_path = random.choice(self.node_paths)
+        entity_path = random.choice(self.entity_paths)
         return {
             "action": {
                 "category": "job-offers",
@@ -455,7 +455,7 @@ class LogProvider:
             "resource": {
                 "ref": str(uuid.uuid4()),
                 "type": "job-offer",
-                "name": job_title + " in " + node_path[-1]["name"],
+                "name": job_title + " in " + entity_path[-1]["name"],
             },
             "details": [
                 {
@@ -463,7 +463,7 @@ class LogProvider:
                     "value": job_title,
                 }
             ],
-            "node_path": node_path,
+            "entity_path": entity_path,
         }
 
     def _build_job_offer_close_log(self, job_offer_log, reason):
@@ -490,7 +490,7 @@ class LogProvider:
                     "value": reason,
                 }
             ],
-            "node_path": job_offer_log["node_path"],
+            "entity_path": job_offer_log["entity_path"],
         }
 
     def _build_job_application_creation_log(self, job_offer_log):
@@ -521,7 +521,7 @@ class LogProvider:
                     "value": "I'm very interested in this job",
                 }
             ],
-            "node_path": job_offer_log["node_path"],
+            "entity_path": job_offer_log["entity_path"],
             "tags": [
                 {
                     "type": "applicant",
@@ -557,7 +557,7 @@ class LogProvider:
                     "value": status,
                 }
             ],
-            "node_path": job_application_log["node_path"],
+            "entity_path": job_application_log["entity_path"],
             "tags": job_application_log["tags"],
         }
 
@@ -607,7 +607,7 @@ class LogProvider:
                     "value": "Administrator",
                 }
             ],
-            "node_path": random.choice(self.node_paths),
+            "entity_path": random.choice(self.entity_paths),
             "tags": [
                 {
                     "type": "security",

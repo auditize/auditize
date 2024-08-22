@@ -64,7 +64,7 @@ def create_log(counter: int):
                 "name": create_value("rich_tag_name", counter, 1000),
             },
         ],
-        "node_path": [
+        "entity_path": [
             {
                 "ref": create_value("customer", counter, 10),
                 "name": create_value("Customer", counter, 10),

@@ -59,7 +59,7 @@ class LogDatabase(BaseDatabase):
             await self.logs.create_index({"details.name": 1, "details.value": 1})
             await self.logs.create_index("tags.type")
             await self.logs.create_index("tags.ref")
-            await self.logs.create_index("node_path.ref")
+            await self.logs.create_index("entity_path.ref")
 
         # Consolidated data indexes
         if not config.test_mode:
@@ -74,7 +74,7 @@ class LogDatabase(BaseDatabase):
         await self.log_tag_types.create_index("type", unique=True)
         await self.log_attachment_types.create_index("type", unique=True)
         await self.log_attachment_mime_types.create_index("mime_type", unique=True)
-        await self.log_nodes.create_index("ref", unique=True)
+        await self.log_entities.create_index("ref", unique=True)
 
     # Collections
     logs = Collection("logs")
@@ -88,7 +88,7 @@ class LogDatabase(BaseDatabase):
     log_tag_types = Collection("log_tag_types")
     log_attachment_types = Collection("log_attachment_types")
     log_attachment_mime_types = Collection("log_attachment_mime_types")
-    log_nodes = Collection("log_nodes")
+    log_entities = Collection("log_entities")
 
 
 async def _get_log_db(repo: UUID | Repo, statuses: list[RepoStatus]) -> LogDatabase:

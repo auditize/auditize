@@ -10,7 +10,7 @@ resp = requests.post(
     json={
         "action": {"type": "user-login", "category": "authentication"},
         "actor": {"name": "John Doe", "ref": "john.doe@example.net", "type": "user"},
-        "node_path": [{"ref": "1", "name": "Customer A"}],
+        "entity_path": [{"ref": "1", "name": "Customer A"}],
     },
 )
 resp.raise_for_status()

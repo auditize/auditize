@@ -30,7 +30,7 @@ def make_log_data(**extra) -> Log:
         "actor": Log.Actor(type="user", ref="user:123", name="User 123"),
         "resource": Log.Resource(ref="core", type="module", name="Core Module"),
         "tags": [Log.Tag(type="simple_tag")],
-        "node_path": [Log.Node(ref="1", name="Customer 1")],
+        "entity_path": [Log.Entity(ref="1", name="Customer 1")],
         **extra,
     }
 
@@ -51,13 +51,13 @@ async def test_save_log_db_shape(repo: PreparedRepo):
         "details",
         "tags",
         "attachments",
-        "node_path",
+        "entity_path",
     ]
     assert list(db_log["action"].keys()) == ["type", "category"]
     assert list(db_log["actor"].keys()) == ["ref", "type", "name", "extra"]
     assert list(db_log["resource"].keys()) == ["ref", "type", "name", "extra"]
     assert list(db_log["tags"][0].keys()) == ["ref", "type", "name"]
-    assert list(db_log["node_path"][0].keys()) == ["ref", "name"]
+    assert list(db_log["entity_path"][0].keys()) == ["ref", "name"]
 
 
 async def assert_consolidated_data(
@@ -92,7 +92,7 @@ async def test_save_log_lookup_tables(repo: PreparedRepo):
     await assert_consolidated_data(repo.db.log_detail_fields, {"name": "detail_name"})
     await assert_consolidated_data(repo.db.log_tag_types, {"type": "rich_tag"})
     await assert_consolidated_data(
-        repo.db.log_nodes, {"parent_node_ref": None, "ref": "1", "name": "Customer 1"}
+        repo.db.log_entities, {"parent_entity_ref": None, "ref": "1", "name": "Customer 1"}
     )
 
     # second log
@@ -107,7 +107,7 @@ async def test_save_log_lookup_tables(repo: PreparedRepo):
         Log.Tag(ref="tag_ref", type="rich_tag_bis", name="rich_tag_name"),
         Log.Tag(type="simple_tag"),
     ]
-    log.node_path.append(Log.Node(ref="1:1", name="Entity A"))
+    log.entity_path.append(Log.Entity(ref="1:1", name="Entity A"))
     log_id = await save_log(UUID(repo.id), log)
     await save_log_attachment(
         UUID(repo.id),
@@ -160,10 +160,10 @@ async def test_save_log_lookup_tables(repo: PreparedRepo):
         [{"mime_type": "text/plain"}],
     )
     await assert_consolidated_data(
-        repo.db.log_nodes,
+        repo.db.log_entities,
         [
-            {"parent_node_ref": None, "ref": "1", "name": "Customer 1"},
-            {"parent_node_ref": "1", "ref": "1:1", "name": "Entity A"},
+            {"parent_entity_ref": None, "ref": "1", "name": "Customer 1"},
+            {"parent_entity_ref": "1", "ref": "1:1", "name": "Entity A"},
         ],
     )
 
@@ -323,32 +323,32 @@ async def test_log_retention_period_purge_consolidated_data(
     )
 
 
-async def test_log_retention_period_purge_log_nodes_1(
+async def test_log_retention_period_purge_log_entities_1(
     superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     repo = await repo_builder({"retention_period": 30})
-    # We have the following log node hierarchy:
+    # We have the following log entity hierarchy:
     # - A
     #   - AA
     #     - AAA
     #   - AB
     #     - ABA
     #   - AC
-    await repo.create_log_with_node_path(
+    await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AA", "AAA"],
         saved_at=datetime.now() - timedelta(days=40),
     )
-    await repo.create_log_with_node_path(
+    await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AB", "ABA"],
         saved_at=datetime.now() - timedelta(days=40),
     )
-    await repo.create_log_with_node_path(
+    await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AB"],
     )
-    await repo.create_log_with_node_path(
+    await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AC"],
     )
@@ -356,30 +356,30 @@ async def test_log_retention_period_purge_log_nodes_1(
     await apply_log_retention_period()
 
     await assert_consolidated_data(
-        repo.db.log_nodes,
+        repo.db.log_entities,
         [
-            {"_id": callee.Any(), "parent_node_ref": None, "ref": "A", "name": "A"},
-            {"_id": callee.Any(), "parent_node_ref": "A", "ref": "AB", "name": "AB"},
-            {"_id": callee.Any(), "parent_node_ref": "A", "ref": "AC", "name": "AC"},
+            {"_id": callee.Any(), "parent_entity_ref": None, "ref": "A", "name": "A"},
+            {"_id": callee.Any(), "parent_entity_ref": "A", "ref": "AB", "name": "AB"},
+            {"_id": callee.Any(), "parent_entity_ref": "A", "ref": "AC", "name": "AC"},
         ],
     )
 
 
-async def test_log_retention_period_purge_log_nodes_2(
+async def test_log_retention_period_purge_log_entities_2(
     superadmin_client: HttpTestHelper,
     repo_builder: RepoBuilder,
 ):
     repo = await repo_builder({"retention_period": 30})
-    # We have the following log node hierarchy:
+    # We have the following log entity hierarchy:
     # - A
     #   - AA
     #   - AB
-    await repo.create_log_with_node_path(
+    await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AA"],
         saved_at=datetime.now() - timedelta(days=40),
     )
-    await repo.create_log_with_node_path(
+    await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AB"],
         saved_at=datetime.now() - timedelta(days=40),
@@ -388,6 +388,6 @@ async def test_log_retention_period_purge_log_nodes_2(
     await apply_log_retention_period()
 
     await assert_consolidated_data(
-        repo.db.log_nodes,
+        repo.db.log_entities,
         [],
     )
