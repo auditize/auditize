@@ -1321,7 +1321,7 @@ export function LogNavigation({
   }, [availableSearchParamFieldNames]);
 
   return (
-    <Flex justify="space-between" align="center">
+    <Group justify="space-between" align="start" gap="md" wrap="nowrap">
       <Group gap="xs">
         {/* Repository selector */}
         {withRepoSearchParam && (
@@ -1335,30 +1335,31 @@ export function LogNavigation({
         )}
 
         {/* Search parameters */}
-        <SearchParamFields
-          names={searchParamNames}
-          added={addedSearchParamName}
-          searchParams={editedParams}
-          onChange={(name, value) => {
-            dispatch({ type: "setParam", name, value });
-            setIsDirty(true);
-          }}
-          onRemove={removeSearchParamField}
-        />
-        <SearchParamFieldSelector
-          repoId={editedParams.repoId}
-          selected={searchParamNames}
-          onSearchParamAdded={(name) => {
-            setSearchParamNames(new Set([...searchParamNames, name]));
-            setAddedSearchParamName(name);
-          }}
-          onSearchParamRemoved={removeSearchParamField}
-        />
+        <Group gap="xs">
+          <SearchParamFields
+            names={searchParamNames}
+            added={addedSearchParamName}
+            searchParams={editedParams}
+            onChange={(name, value) => {
+              dispatch({ type: "setParam", name, value });
+              setIsDirty(true);
+            }}
+            onRemove={removeSearchParamField}
+          />
+          <SearchParamFieldSelector
+            repoId={editedParams.repoId}
+            selected={searchParamNames}
+            onSearchParamAdded={(name) => {
+              setSearchParamNames(new Set([...searchParamNames, name]));
+              setAddedSearchParamName(name);
+            }}
+            onSearchParamRemoved={removeSearchParamField}
+          />
+        </Group>
       </Group>
 
       {/* Apply & clear buttons */}
-      <Space w="l" />
-      <Group>
+      <Group gap="xs" wrap="nowrap">
         <Button onClick={() => onChange(editedParams)} disabled={!isDirty}>
           {t("log.list.searchParams.apply")}
         </Button>
@@ -1385,6 +1386,6 @@ export function LogNavigation({
           withLogFilters={withLogFilters}
         />
       </Group>
-    </Flex>
+    </Group>
   );
 }
