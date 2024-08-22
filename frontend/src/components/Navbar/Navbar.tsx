@@ -60,10 +60,11 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
             className={
               isActive ? `${classes.link} ${classes.active}` : classes.link
             }
+            style={{ paddingRight: "0.375rem" }}
           >
             {label}
           </span>
-          <IconChevronDown size="0.9rem" stroke={1.5} />
+          <IconChevronDown size="1rem" />
         </Center>
       </Menu.Target>
       <Menu.Dropdown>
@@ -74,11 +75,13 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
               <Menu.Item
                 component={NavLink}
                 to={child.props.url}
-                className={
-                  location.pathname === child.props.url
-                    ? `${classes.link} ${classes.active}`
-                    : classes.link
-                }
+                style={{
+                  textDecoration:
+                    location.pathname === child.props.url
+                      ? "underline"
+                      : "none",
+                  fontSize: "var(--mantine-font-size-md)",
+                }}
               >
                 {child.props.label}
               </Menu.Item>
@@ -88,6 +91,8 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
     </Menu>
   );
 }
+
+NavbarItemGroup.Entry = NavbarItem;
 
 export function Navbar({
   children,
