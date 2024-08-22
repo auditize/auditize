@@ -149,22 +149,22 @@ function Main() {
               condition={currentUser.permissions.logs.read != "none"}
             />
             <NavbarItemGroup label={t("navigation.management")}>
-              <NavbarItem
+              <NavbarItemGroup.Entry
                 label={t("navigation.repositories")}
                 url="/repos"
                 condition={currentUser.permissions.management.repos.read}
               />
-              <NavbarItem
+              <NavbarItemGroup.Entry
                 label={t("navigation.logi18nprofiles")}
                 url="/log-i18n-profiles"
                 condition={currentUser.permissions.management.repos.read}
               />
-              <NavbarItem
+              <NavbarItemGroup.Entry
                 label={t("navigation.users")}
                 url="/users"
                 condition={currentUser.permissions.management.users.read}
               />
-              <NavbarItem
+              <NavbarItemGroup.Entry
                 label={t("navigation.apikeys")}
                 url="/apikeys"
                 condition={currentUser.permissions.management.apikeys.read}

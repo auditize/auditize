@@ -89,6 +89,8 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
   );
 }
 
+NavbarItemGroup.Entry = NavbarItem;
+
 export function Navbar({
   children,
 }: {
