@@ -137,7 +137,7 @@ def index():
     )
 ```
 
-In order your browser can properly interpret request's responses coming from the Auditize API, you must allow CORS requests from your Auditize instance, please check CORS options in the [Configuration](configuration.md) section (TODO).
+In order your browser can properly interpret request's responses coming from the Auditize API, you must allow CORS requests from your Auditize instance, please check CORS options in the [Configuration](config.md) section.
 
 The Github repository containing this example is available [here](https://github.com/auditize/auditize-webcomponent-demo).
 
