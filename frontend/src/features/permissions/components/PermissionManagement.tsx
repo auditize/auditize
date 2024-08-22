@@ -83,7 +83,9 @@ function LogRepoPermissionManagement({
       <MultiEntitySelectorPicker
         repoId={perms.repoId}
         entityRefs={perms.readableEntities}
-        onChange={(entities) => onChange({ ...perms, readableEntities: entities })}
+        onChange={(entities) =>
+          onChange({ ...perms, readableEntities: entities })
+        }
         disabled={readOnly || !assignablePerms.read || !perms.read}
       />
     </Group>
@@ -227,8 +229,8 @@ function LogsPermissionManagement({
                         ? false
                         : assignablePerms.read === "all" ||
                           (assignableRepo.permissions.read &&
-                            assignableRepo.permissions.readableEntities.length ===
-                              0),
+                            assignableRepo.permissions.readableEntities
+                              .length === 0),
                       write: perms.write
                         ? false
                         : assignablePerms.write === "all" ||

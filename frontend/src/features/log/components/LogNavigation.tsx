@@ -55,11 +55,11 @@ import {
   getAllLogTagTypes,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
+import { EntitySelector } from "./EntitySelector";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
 import { useLogTranslator } from "./LogTranslation";
-import { EntitySelector } from "./EntitySelector";
 
 const FIXED_SEARCH_PARAM_NAMES = new Set([
   "savedAt",

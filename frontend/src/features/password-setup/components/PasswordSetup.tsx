@@ -9,6 +9,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { useDocumentTitle } from "@mantine/hooks";
 import { IconExclamationCircle } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import React, { useEffect } from "react";
@@ -24,7 +25,6 @@ import { usePasswordValidation } from "@/components/PasswordForm";
 import { useI18nContext } from "@/i18n";
 
 import { getPasswordResetInfo, setPassword } from "../api";
-import { useDocumentTitle } from "@mantine/hooks";
 
 function usePasswordSetupForm() {
   const passwordValidators = usePasswordValidation();
