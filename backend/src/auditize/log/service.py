@@ -22,7 +22,7 @@ from auditize.log.db import (
     get_log_db_for_reading,
     get_log_db_for_writing,
 )
-from auditize.log.models import CustomField, Log, LogSearchParams, Entity
+from auditize.log.models import CustomField, Entity, Log, LogSearchParams
 from auditize.repo.models import Repo
 from auditize.repo.service import get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
@@ -355,6 +355,9 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
 
 
 def validate_csv_columns(cols: list[str]):
+    if len(cols) != len(set(cols)):
+        raise ValidationError("Duplicated column names are forbidden")
+
     for col in cols:
         if col in CSV_BUILTIN_COLUMNS:
             continue
@@ -364,9 +367,6 @@ def validate_csv_columns(cols: list[str]):
             continue
 
         raise ValidationError(f"Invalid column name: {col!r}")
-
-    if len(cols) != len(set(cols)):
-        raise ValidationError("Duplicated column names are forbidden")
 
 
 async def get_logs_as_csv(
