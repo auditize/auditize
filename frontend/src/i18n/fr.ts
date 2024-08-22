@@ -318,6 +318,7 @@ export default {
     notCurrentlyAvailable: "Actuellement indisponible",
     unexpectedError: "Une erreur est survenue",
     send: "Envoyer",
+    scrollToTop: "Revenir en haut",
     passwordForm: {
       password: {
         label: "Mot de passe",

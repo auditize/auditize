@@ -3,6 +3,7 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { useTranslation } from "react-i18next";
 
 import Message from "@/components/Message";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { useLogRepoListQuery } from "@/features/repo";
 
 import { LogSearchParams } from "../LogSearchParams";
@@ -58,6 +59,7 @@ export function Logs({
           selectedColumns={selectedColumns}
           onSelectedColumnsChange={setSelectedColumns}
         />
+        <ScrollToTop />
       </Stack>
     );
   }

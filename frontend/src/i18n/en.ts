@@ -315,6 +315,7 @@ export default {
     notCurrentlyAvailable: "Not currently available",
     unexpectedError: "An error occurred",
     send: "Send",
+    scrollToTop: "Scroll to top",
     passwordForm: {
       password: {
         label: "Password",
