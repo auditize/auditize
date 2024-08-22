@@ -42,7 +42,7 @@ class Log(BaseModel, HasId):
     class Attachment(AttachmentMetadata):
         data: bytes
 
-    class Node(BaseModel):
+    class Entity(BaseModel):
         ref: str
         name: str
 
@@ -54,13 +54,13 @@ class Log(BaseModel, HasId):
     details: list[CustomField] = Field(default_factory=list)
     tags: list[Tag] = Field(default_factory=list)
     attachments: list[AttachmentMetadata] = Field(default_factory=list)
-    node_path: list[Node] = Field(default_factory=list)
+    entity_path: list[Entity] = Field(default_factory=list)
 
 
-class Node(BaseModel, HasId):
+class Entity(BaseModel, HasId):
     ref: str
     name: str
-    parent_node_ref: str | None
+    parent_entity_ref: str | None
     has_children: bool
 
 
@@ -80,7 +80,7 @@ class BaseLogSearchParams(BaseModel):
     attachment_name: Optional[str] = Field(default=None)
     attachment_type: Optional[str] = Field(default=None)
     attachment_mime_type: Optional[str] = Field(default=None)
-    node_ref: Optional[str] = Field(default=None)
+    entity_ref: Optional[str] = Field(default=None)
     since: Optional[datetime] = Field(default=None)
     until: Optional[datetime] = Field(default=None)
 

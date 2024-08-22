@@ -40,7 +40,7 @@ async def _test_repo_create(client: HttpTestHelper, collection: AsyncIOMotorColl
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
     assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": UUID(repo_id), "read": True, "write": True, "readable_nodes": []}
+        {"repo_id": UUID(repo_id), "read": True, "write": True, "readable_entities": []}
     ]
 
 
@@ -585,7 +585,7 @@ async def test_repo_list_user_repos_simple(
                                 "permissions": {
                                     "read": True,
                                     "write": True,
-                                    "readable_nodes": [],
+                                    "readable_entities": [],
                                 }
                             }
                         ),
@@ -643,22 +643,22 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_1.id: {
                     "read": True,
                     "write": True,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
                 repo_2.id: {
                     "read": True,
                     "write": True,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
                 repo_3.id: {
                     "read": True,
                     "write": True,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
                 repo_readonly.id: {
                     "read": True,
                     "write": False,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
             },
         )
@@ -674,7 +674,7 @@ async def test_repo_list_user_repos_with_permissions(
                         "repo_id": repo_3.id,
                         "read": True,
                         "write": True,
-                        "readable_nodes": ["node1"],
+                        "readable_entities": ["entity1"],
                     },
                     {"repo_id": repo_readonly.id, "read": True, "write": True},
                     {"repo_id": repo_disabled.id, "read": True, "write": True},
@@ -691,22 +691,22 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_1.id: {
                     "read": True,
                     "write": False,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
                 repo_2.id: {
                     "read": False,
                     "write": True,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
                 repo_3.id: {
                     "read": True,
                     "write": True,
-                    "readable_nodes": ["node1"],
+                    "readable_entities": ["entity1"],
                 },
                 repo_readonly.id: {
                     "read": True,
                     "write": False,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
             },
         )
@@ -717,17 +717,17 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_1.id: {
                     "read": True,
                     "write": False,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
                 repo_3.id: {
                     "read": True,
                     "write": True,
-                    "readable_nodes": ["node1"],
+                    "readable_entities": ["entity1"],
                 },
                 repo_readonly.id: {
                     "read": True,
                     "write": False,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
             },
         )
@@ -738,12 +738,12 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_2.id: {
                     "read": False,
                     "write": True,
-                    "readable_nodes": [],
+                    "readable_entities": [],
                 },
                 repo_3.id: {
                     "read": True,
                     "write": True,
-                    "readable_nodes": ["node1"],
+                    "readable_entities": ["entity1"],
                 },
             },
         )
@@ -754,7 +754,7 @@ async def test_repo_list_user_repos_with_permissions(
                 repo_3.id: {
                     "read": True,
                     "write": True,
-                    "readable_nodes": ["node1"],
+                    "readable_entities": ["entity1"],
                 }
             },
         )
@@ -877,7 +877,7 @@ async def test_repo_delete_with_related_resources(
                                     "repo_id": UUID(repo.id),
                                     "read": True,
                                     "write": False,
-                                    "readable_nodes": [],
+                                    "readable_entities": [],
                                 }
                             ],
                         },
@@ -901,7 +901,7 @@ async def test_repo_delete_with_related_resources(
                                     "repo_id": UUID(repo.id),
                                     "read": True,
                                     "write": False,
-                                    "readable_nodes": [],
+                                    "readable_entities": [],
                                 }
                             ],
                         },

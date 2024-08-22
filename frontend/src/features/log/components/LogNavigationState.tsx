@@ -33,7 +33,7 @@ const DEFAULT_SELECTED_COLUMNS = [
   "actor",
   "action",
   "resource",
-  "node",
+  "entity",
   "tag",
 ];
 

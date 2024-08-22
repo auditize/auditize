@@ -17,6 +17,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { ApiErrorMessage } from "../ErrorMessage";
 import { useResourceManagementState } from "./ResourceManagementState";
 
 type ResourceCreationComponentBuilder = (
@@ -169,7 +170,7 @@ export function ResourceManagement({
   });
 
   if (resourcesQuery.error) {
-    return <div>Error: {resourcesQuery.error.message}</div>;
+    return <ApiErrorMessage error={resourcesQuery.error} />;
   }
 
   let rows;

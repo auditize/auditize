@@ -58,7 +58,7 @@ class BasePermissionTests:
                             {
                                 "repo_id": repo_2.id,
                                 "read": True,
-                                "readable_nodes": ["customer:1"],
+                                "readable_entities": ["customer:1"],
                             },
                         ],
                     },
@@ -88,13 +88,13 @@ class BasePermissionTests:
                                         "repo_id": UUID(repo_1.id),
                                         "read": True,
                                         "write": True,
-                                        "readable_nodes": [],
+                                        "readable_entities": [],
                                     },
                                     {
                                         "repo_id": UUID(repo_2.id),
                                         "read": True,
                                         "write": False,
-                                        "readable_nodes": ["customer:1"],
+                                        "readable_entities": ["customer:1"],
                                     },
                                 ],
                             },
@@ -186,7 +186,7 @@ class BasePermissionTests:
                                     "repo_id": repo.id,
                                     "read": True,
                                     "write": True,
-                                    "readable_nodes": ["node1"],
+                                    "readable_entities": ["entity1"],
                                 }
                             ],
                         },
@@ -214,7 +214,7 @@ class BasePermissionTests:
                                         "repo_id": UUID(repo.id),
                                         "read": True,
                                         "write": True,
-                                        "readable_nodes": ["node1"],
+                                        "readable_entities": ["entity1"],
                                     }
                                 ],
                             },

@@ -11,7 +11,7 @@ An example of sending a log to Auditize using `curl`:
 curl \
   ${AUDITIZE_URL}/api/repos/${AUDITIZE_REPO}/logs \
   -H "Authorization: Bearer ${AUDITIZE_APIKEY}" \
-  --json '{"action": {"type": "user-login", "category": "authentication"}, "actor": {"name": "John Doe", "ref": "john.doe@example.net", "type": "user"}, "node_path": [{"ref": "1", "name": "Customer A"}]}'
+  --json '{"action": {"type": "user-login", "category": "authentication"}, "actor": {"name": "John Doe", "ref": "john.doe@example.net", "type": "user"}, "entity_path": [{"ref": "1", "name": "Customer A"}]}'
 ```
 
 Another example using Python and [requests](https://docs.python-requests.org/en/master/):
@@ -29,7 +29,7 @@ resp = requests.post(
     json={
         "action": {"type": "user-login", "category": "authentication"},
         "actor": {"name": "John Doe", "ref": "john.doe@example.net", "type": "user"},
-        "node_path": [{"ref": "1", "name": "Customer A"}],
+        "entity_path": [{"ref": "1", "name": "Customer A"}],
     },
 )
 resp.raise_for_status()

@@ -15,7 +15,7 @@ DEFAULT_SEARCH_PARAMETERS = {
     "attachment_mime_type": None,
     "attachment_name": None,
     "attachment_type": None,
-    "node_ref": None,
+    "entity_ref": None,
     "resource_name": None,
     "resource_ref": None,
     "resource_type": None,

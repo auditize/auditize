@@ -50,22 +50,22 @@ import {
   getAllLogActionCategories,
   getAllLogActionTypes,
   getAllLogActorTypes,
-  getAllLogNodes,
+  getAllLogEntities,
   getAllLogResourceTypes,
   getAllLogTagTypes,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
+import { EntitySelector } from "./EntitySelector";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
 import { useLogTranslator } from "./LogTranslation";
-import { NodeSelector } from "./NodeSelector";
 
 const FIXED_SEARCH_PARAM_NAMES = new Set([
   "savedAt",
   "actionCategory",
   "actionType",
-  "node",
+  "entity",
 ]);
 
 function SearchParamFieldPopover({
@@ -182,9 +182,9 @@ function useLogConsolidatedDataPrefetch(repoId: string) {
     queryFn: () => getAllAttachmentMimeTypes(repoId),
     enabled: !!repoId,
   });
-  const logNodesQuery = useQuery({
-    queryKey: ["logConsolidatedData", "node", repoId],
-    queryFn: () => getAllLogNodes(repoId),
+  const logEntitiesQuery = useQuery({
+    queryKey: ["logConsolidatedData", "entity", repoId],
+    queryFn: () => getAllLogEntities(repoId),
     enabled: !!repoId,
   });
   return (
@@ -195,7 +195,7 @@ function useLogConsolidatedDataPrefetch(repoId: string) {
     tagTypesQuery.isPending ||
     attachmentTypesQuery.isPending ||
     attachmentMimeTypesQuery.isPending ||
-    logNodesQuery.isPending
+    logEntitiesQuery.isPending
   );
 }
 
@@ -347,7 +347,7 @@ function TextInputSearchParamField({
   );
 }
 
-function NodeSearchParamField({
+function EntitySearchParamField({
   searchParams,
   openedByDefault,
   onChange,
@@ -359,26 +359,26 @@ function NodeSearchParamField({
   onRemove: (name: string) => void;
 }) {
   const { t } = useTranslation();
-  const logNodesQuery = useQuery({
-    queryKey: ["logConsolidatedData", "node", searchParams.repoId],
-    queryFn: () => getAllLogNodes(searchParams.repoId),
+  const logEntitiesQuery = useQuery({
+    queryKey: ["logConsolidatedData", "entity", searchParams.repoId],
+    queryFn: () => getAllLogEntities(searchParams.repoId),
     enabled: !!searchParams.repoId,
   });
   const [opened, { toggle }] = useDisclosure(openedByDefault);
   return (
     <SearchParamFieldPopover
-      title={t("log.node")}
+      title={t("log.entity")}
       opened={opened}
-      isSet={!!searchParams.nodeRef}
+      isSet={!!searchParams.entityRef}
       onChange={toggle}
-      removable={!FIXED_SEARCH_PARAM_NAMES.has("node")}
-      onRemove={() => onRemove("node")}
-      loading={logNodesQuery.isPending}
+      removable={!FIXED_SEARCH_PARAM_NAMES.has("entity")}
+      onRemove={() => onRemove("entity")}
+      loading={logEntitiesQuery.isPending}
     >
-      <NodeSelector
+      <EntitySelector
         repoId={searchParams.repoId || null}
-        nodeRef={searchParams.nodeRef || null}
-        onChange={(value) => onChange("nodeRef", value)}
+        entityRef={searchParams.entityRef || null}
+        onChange={(value) => onChange("entityRef", value)}
       />
     </SearchParamFieldPopover>
   );
@@ -794,9 +794,9 @@ function SearchParamField({
     );
   }
 
-  if (name === "node") {
+  if (name === "entity") {
     return (
-      <NodeSearchParamField
+      <EntitySearchParamField
         searchParams={searchParams}
         openedByDefault={openedByDefault}
         onChange={onChange}
@@ -985,9 +985,9 @@ function searchParamsToSearchParamNames(
     names.add("attachmentMimeType");
   }
 
-  // Node
-  if (searchParams.nodeRef) {
-    names.add("node");
+  // Entity
+  if (searchParams.entityRef) {
+    names.add("entity");
   }
 
   return names;
@@ -1015,7 +1015,7 @@ function removeSearchParam(
     "attachmentName",
     "attachmentType",
     "attachmentMimeType",
-    "nodeRef",
+    "entityRef",
   ];
   if (equivalentSearchParams.includes(paramName)) {
     setSearchParam(paramName, "");
@@ -1073,9 +1073,9 @@ function removeSearchParam(
     return;
   }
 
-  // Handle node
-  if (paramName === "node") {
-    setSearchParam("nodeRef", "");
+  // Handle entity
+  if (paramName === "entity") {
+    setSearchParam("entityRef", "");
     return;
   }
 
@@ -1099,8 +1099,8 @@ function columnsToCsvColumns(columns: string[]): string[] {
           if (column === "resource") {
             return ["resource_type", "resource_name"];
           }
-          if (column === "node") {
-            return ["node_path:name"];
+          if (column === "entity") {
+            return ["entity_path:name"];
           }
           if (column === "tag") {
             return ["tag_type"];

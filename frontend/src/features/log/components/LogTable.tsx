@@ -615,20 +615,20 @@ function AttachmentMimeTypesField({
   );
 }
 
-function NodePathField({
+function EntityPathField({
   log,
   onTableSearchParamChange,
 }: {
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
-  return log.nodePath
-    .map<React.ReactNode>((node) => (
+  return log.entityPath
+    .map<React.ReactNode>((entity) => (
       <InlineSearchParamLink
-        key={node.ref}
-        onClick={() => onTableSearchParamChange("nodeRef", node.ref)}
+        key={entity.ref}
+        onClick={() => onTableSearchParamChange("entityRef", entity.ref)}
       >
-        {node.name}
+        {entity.name}
       </InlineSearchParamLink>
     ))
     .reduce((prev, curr) => [prev, " > ", curr]);
@@ -698,7 +698,7 @@ export function sortFields(a: string, b: string) {
     atachmentName: 17,
     attachmentType: 18,
     attachmentMimeType: 19,
-    node: 20,
+    entity: 20,
     tag: 21,
     tagType: 22,
     tagName: 23,
@@ -1049,12 +1049,12 @@ function fieldToColumn(
       ),
     };
 
-  if (field === "node")
+  if (field === "entity")
     return {
-      accessor: "node",
-      title: columnTitle(t("log.node")),
+      accessor: "entity",
+      title: columnTitle(t("log.entity")),
       render: (log: Log) => (
-        <NodePathField
+        <EntityPathField
           log={log}
           onTableSearchParamChange={onTableSearchParamChange}
         />

@@ -118,7 +118,7 @@ async def test_log_filter_create_all_builtin_field_columns(
                 "attachment_name",
                 "attachment_type",
                 "attachment_mime_type",
-                "node",
+                "entity",
             ],
         },
     )

@@ -48,7 +48,7 @@ Here is an example of log such as it is accepted by `POST /api/repos/{id}/logs`:
       "type": "important"
     }
   ],
-  "node_path": [
+  "entity_path": [
     {
       "ref": "860cb19d-4660-4ec6-b596-c9dcefc293e5",
       "name": "South"
@@ -71,7 +71,7 @@ This structure let's you represent :
 - who is performing the action (`actor`),
 - the target of the action (`resource`),
 - the details of the action (`details`),
-- the entity to which the log is related (`node_path`).
+- the entity to which the log is related (`entity_path`).
 
 The structure is also flexible enough to let you add any custom information about the actor, the source, the resource, the details and through a tag system.
 
@@ -140,9 +140,9 @@ The `details` object holds information about the action. It follows the same str
     - `ref` (a value that uniquely identifies a resource, whatever its type)
     - and `name` (can be any string)
 
-### `node_path`
+### `entity_path`
 
-Auditize supports a hierarchical tree structure to represent the entities of your application. Entities can be anything: a customer, an organizational unit, a geographical location, etc. Each log must contain the full path to the actual entity which is the subject of the log. Example: if the log is about a job offer in Arlington, Texas, the `node_path` would be:
+Auditize supports a hierarchical tree structure to represent the entities of your application. Entities can be anything: a customer, an organizational unit, a geographical location, etc. Each log must contain the full path to the actual entity which is the subject of the log. Example: if the log is about a job offer in Arlington, Texas, the `entity_path` would be:
 
 ```json
 [
@@ -166,7 +166,7 @@ Where:
 - `ref` is the unique identifier of the entity
 - `name` is the name of the entity
 
-`node_path` is required and must contain at least one element, the `ref` and `name` fields are mandatory for each element of the list.
+`entity_path` is required and must contain at least one element, the `ref` and `name` fields are mandatory for each element of the list.
 
 With each log containing the full path to the entity, Auditize is able to build a tree structure of your entities and display it in the log interface. This will allow you to filter logs by entity and navigate through the tree to see logs related to a specific entity. While it is not relevant in this example, Auditize is also able to update its internal tree structure at log expiration and when entities are renamed or moved. The original path of the log is left untouched.
 

@@ -134,7 +134,7 @@ Log permissions control the access to logs. Permissions can be set either global
 - the "Read" permission allows the user to view logs
 - the "Write" permission allows the user to send logs to the Auditize API
 
-When log permissions are set per repository, you can also restrict the read permission to certain log nodes. When no log node is selected, the permission applies to all logs independently of their associated node. If log nodes are selected, the user / API key will only be able to view logs associated with the selected nodes.
+When log permissions are set per repository, you can also restrict the read permission to certain log entities. When no log entity is selected, the permission applies to all logs independently of their associated entity. If log entities are selected, the user / API key will only be able to view logs associated with the selected entities.
 
 
 ### Superadmin role
@@ -149,13 +149,13 @@ When a user is granted the Superadmin role, he has all permissions on all resour
 
 When a user has the permission to manage Users or API keys ("write" permission), the permissions he is allowed to grant are the ones he has himself. For example, if a user has the "read" permission on the logs of a given repository, he can only grant the "read" permission to other users on the same repository.
 
-Please note that you'll need a "read" permission on a repository's logs without node restrictions to grant the "read" permission (with or without node restrictions) to other users to this repository's logs.
+Please note that you'll need a "read" permission on a repository's logs without entity restrictions to grant the "read" permission (with or without entity restrictions) to other users to this repository's logs.
 
 
 ### Permissions normalization
 
 When saving permissions, they are normalized to ensure consistency and avoid possible side effects in future permissions updates. The normalization process is as follows:
 
-- if a user has the "read" log permission globally (on all repositories), any "read" permission granted on a specific repository and any log node restrictions are removed
+- if a user has the "read" log permission globally (on all repositories), any "read" permission granted on a specific repository and any log entity restrictions are removed
 - if a user has the "write" log permission globally (on all repositories), any "write" permission granted on a specific repository is removed
 - if a user has the superadmin role, all other permissions are removed

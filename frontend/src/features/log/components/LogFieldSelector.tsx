@@ -145,8 +145,8 @@ export function useLogFields(
         ],
       },
       {
-        group: t("log.node"),
-        items: [_({ value: "node", label: t("log.node") })],
+        group: t("log.entity"),
+        items: [_({ value: "entity", label: t("log.entity") })],
       },
     ],
     loading:

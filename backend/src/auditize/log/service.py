@@ -22,7 +22,7 @@ from auditize.log.db import (
     get_log_db_for_reading,
     get_log_db_for_writing,
 )
-from auditize.log.models import CustomField, Log, LogSearchParams, Node
+from auditize.log.models import CustomField, Log, LogSearchParams, Entity
 from auditize.repo.models import Repo
 from auditize.repo.service import get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
@@ -56,8 +56,8 @@ CSV_BUILTIN_COLUMNS = (
     "attachment_name",
     "attachment_type",
     "attachment_mime_type",
-    "node_path:ref",
-    "node_path:name",
+    "entity_path:ref",
+    "entity_path:name",
 )
 
 
@@ -94,15 +94,15 @@ async def consolidate_log_details(db: LogDatabase, details: list[CustomField]):
         await db.consolidate_data(db.log_detail_fields, {"name": field.name})
 
 
-async def consolidate_log_node_path(db: LogDatabase, node_path: list[Log.Node]):
-    parent_node_ref = None
-    for node in node_path:
+async def consolidate_log_entity_path(db: LogDatabase, entity_path: list[Log.Entity]):
+    parent_entity_ref = None
+    for entity in entity_path:
         await db.consolidate_data(
-            db.log_nodes,
-            {"ref": node.ref},
-            {"parent_node_ref": parent_node_ref, "name": node.name},
+            db.log_entities,
+            {"ref": entity.ref},
+            {"parent_entity_ref": parent_entity_ref, "name": entity.name},
         )
-        parent_node_ref = node.ref
+        parent_entity_ref = entity.ref
 
 
 async def consolidate_log_attachment(
@@ -131,25 +131,25 @@ async def _consolidate_log(db: LogDatabase, log: Log):
         await consolidate_log_resource(db, log.resource)
     await consolidate_log_details(db, log.details)
     await consolidate_log_tags(db, log.tags)
-    await consolidate_log_node_path(db, log.node_path)
+    await consolidate_log_entity_path(db, log.entity_path)
 
 
 async def _check_log(db: LogDatabase, log: Log):
-    parent_node_ref = None
-    for node in log.node_path:
+    parent_entity_ref = None
+    for entity in log.entity_path:
         if await has_resource_document(
-            db.log_nodes,
+            db.log_entities,
             {
-                "parent_node_ref": parent_node_ref,
-                "name": node.name,
-                "ref": {"$ne": node.ref},
+                "parent_entity_ref": parent_entity_ref,
+                "name": entity.name,
+                "ref": {"$ne": entity.ref},
             },
         ):
             raise ConstraintViolation(
-                f"Node {node.ref!r} is invalid, there are other logs with "
-                f"the same node name at the same level (same parent)"
+                f"Entity {entity.ref!r} is invalid, there are other logs with "
+                f"the same entity name at the same level (same parent)"
             )
-        parent_node_ref = node.ref
+        parent_entity_ref = entity.ref
 
 
 async def save_log(repo_id: UUID, log: Log) -> UUID:
@@ -183,11 +183,11 @@ async def save_log_attachment(
     await consolidate_log_attachment(db, attachment)
 
 
-async def get_log(repo_id: UUID, log_id: UUID, authorized_nodes: set[str]) -> Log:
+async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:
     db = await get_log_db_for_reading(repo_id)
     filter = {"_id": log_id}
-    if authorized_nodes:
-        filter["node_path.ref"] = {"$in": list(authorized_nodes)}
+    if authorized_entities:
+        filter["entity_path.ref"] = {"$in": list(authorized_entities)}
     document = await get_resource_document(
         db.logs,
         filter=filter,
@@ -269,8 +269,8 @@ def _get_criteria_from_search_params(
         criteria.append({"attachments.type": sp.attachment_type})
     if sp.attachment_mime_type:
         criteria.append({"attachments.mime_type": sp.attachment_mime_type})
-    if sp.node_ref:
-        criteria.append({"node_path.ref": sp.node_ref})
+    if sp.entity_ref:
+        criteria.append({"entity_path.ref": sp.entity_ref})
     if sp.since:
         criteria.append({"saved_at": {"$gte": sp.since}})
     if sp.until:
@@ -283,7 +283,7 @@ def _get_criteria_from_search_params(
 async def get_logs(
     repo: UUID | LogDatabase,
     *,
-    authorized_nodes: set[str] = None,
+    authorized_entities: set[str] = None,
     search_params: LogSearchParams = None,
     limit: int = 10,
     pagination_cursor: str = None,
@@ -294,8 +294,8 @@ async def get_logs(
         db = await get_log_db_for_reading(repo)
 
     criteria: list[dict[str, Any]] = []
-    if authorized_nodes:
-        criteria.append({"node_path.ref": {"$in": list(authorized_nodes)}})
+    if authorized_entities:
+        criteria.append({"entity_path.ref": {"$in": list(authorized_entities)}})
     if search_params:
         criteria.extend(_get_criteria_from_search_params(search_params))
 
@@ -347,8 +347,8 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
     data["attachment_mime_type"] = "|".join(
         attachment.mime_type for attachment in log.attachments
     )
-    data["node_path:ref"] = " > ".join(node.ref for node in log.node_path)
-    data["node_path:name"] = " > ".join(node.name for node in log.node_path)
+    data["entity_path:ref"] = " > ".join(entity.ref for entity in log.entity_path)
+    data["entity_path:name"] = " > ".join(entity.name for entity in log.entity_path)
     data["saved_at"] = serialize_datetime(log.saved_at)
 
     return data
@@ -372,7 +372,7 @@ def validate_csv_columns(cols: list[str]):
 async def get_logs_as_csv(
     repo_id: UUID,
     *,
-    authorized_nodes: set[str] = None,
+    authorized_entities: set[str] = None,
     search_params: LogSearchParams = None,
     columns: list[str],
 ) -> AsyncGenerator[str, None]:
@@ -389,7 +389,7 @@ async def get_logs_as_csv(
             csv_writer.writeheader()
         logs, cursor = await get_logs(
             logs_db,
-            authorized_nodes=authorized_nodes,
+            authorized_entities=authorized_entities,
             search_params=search_params,
             pagination_cursor=cursor,
             limit=min(100, max_rows - returned_rows) if max_rows > 0 else 100,
@@ -535,16 +535,16 @@ get_log_attachment_mime_types = partial(
 )
 
 
-async def _get_log_nodes(db: LogDatabase, *, match, pipeline_extra=None):
-    return db.log_nodes.aggregate(
+async def _get_log_entities(db: LogDatabase, *, match, pipeline_extra=None):
+    return db.log_entities.aggregate(
         [
             {"$match": match},
             {
                 "$lookup": {
-                    "from": "log_nodes",
+                    "from": "log_entities",
                     "let": {"ref": "$ref"},
                     "pipeline": [
-                        {"$match": {"$expr": {"$eq": ["$parent_node_ref", "$$ref"]}}},
+                        {"$match": {"$expr": {"$eq": ["$parent_entity_ref", "$$ref"]}}},
                         {"$limit": 1},
                     ],
                     "as": "first_child_if_any",
@@ -560,61 +560,63 @@ async def _get_log_nodes(db: LogDatabase, *, match, pipeline_extra=None):
     )
 
 
-async def _get_node_hierarchy(db: LogDatabase, node_ref: str) -> set[str]:
-    node = await _get_log_node(db, node_ref)
-    hierarchy = {node.ref}
-    while node.parent_node_ref:
-        node = await _get_log_node(db, node.parent_node_ref)
-        hierarchy.add(node.ref)
+async def _get_entity_hierarchy(db: LogDatabase, entity_ref: str) -> set[str]:
+    entity = await _get_log_entity(db, entity_ref)
+    hierarchy = {entity.ref}
+    while entity.parent_entity_ref:
+        entity = await _get_log_entity(db, entity.parent_entity_ref)
+        hierarchy.add(entity.ref)
     return hierarchy
 
 
-async def _get_nodes_hierarchy(db: LogDatabase, node_refs: set[str]) -> set[str]:
-    parent_nodes: dict[str, str] = {}
-    for node_ref in node_refs:
-        node = await _get_log_node(db, node_ref)
+async def _get_entities_hierarchy(db: LogDatabase, entity_refs: set[str]) -> set[str]:
+    parent_entities: dict[str, str] = {}
+    for entity_ref in entity_refs:
+        entity = await _get_log_entity(db, entity_ref)
         while True:
-            if node.ref in parent_nodes:
+            if entity.ref in parent_entities:
                 break
-            parent_nodes[node.ref] = node.parent_node_ref
-            if not node.parent_node_ref:
+            parent_entities[entity.ref] = entity.parent_entity_ref
+            if not entity.parent_entity_ref:
                 break
-            node = await _get_log_node(db, node.parent_node_ref)
+            entity = await _get_log_entity(db, entity.parent_entity_ref)
 
-    return node_refs | parent_nodes.keys()
+    return entity_refs | parent_entities.keys()
 
 
-async def get_log_nodes(
+async def get_log_entities(
     repo_id: UUID,
-    authorized_nodes: set[str],
+    authorized_entities: set[str],
     *,
-    parent_node_ref=NotImplemented,
+    parent_entity_ref=NotImplemented,
     page=1,
     page_size=10,
-) -> tuple[list[Log.Node], PagePaginationInfo]:
+) -> tuple[list[Log.Entity], PagePaginationInfo]:
     db = await get_log_db_for_reading(repo_id)
 
-    # please note that we use NotImplemented instead of None because None is a valid value for parent_node_ref
-    # (it means filtering on top nodes)
-    if parent_node_ref is NotImplemented:
+    # please note that we use NotImplemented instead of None because None is a valid value for parent_entity_ref
+    # (it means filtering on top entities)
+    if parent_entity_ref is NotImplemented:
         filter = {}
     else:
-        filter = {"parent_node_ref": parent_node_ref}
+        filter = {"parent_entity_ref": parent_entity_ref}
 
-    if authorized_nodes:
-        # get the complete hierarchy of the node from the node itself to the top node
-        parent_node_ref_hierarchy = (
-            await _get_node_hierarchy(db, parent_node_ref) if parent_node_ref else set()
+    if authorized_entities:
+        # get the complete hierarchy of the entity from the entity itself to the top entity
+        parent_entity_ref_hierarchy = (
+            await _get_entity_hierarchy(db, parent_entity_ref)
+            if parent_entity_ref
+            else set()
         )
-        # we check if we have permission on parent_node_ref or any of its parent nodes
-        # if not, we have to manually filter the nodes we'll have a direct or indirect visibility
-        if not parent_node_ref_hierarchy or not (
-            authorized_nodes & parent_node_ref_hierarchy
+        # we check if we have permission on parent_entity_ref or any of its parent entities
+        # if not, we have to manually filter the entities we'll have a direct or indirect visibility
+        if not parent_entity_ref_hierarchy or not (
+            authorized_entities & parent_entity_ref_hierarchy
         ):
-            visible_nodes = await _get_nodes_hierarchy(db, authorized_nodes)
-            filter["ref"] = {"$in": list(visible_nodes)}
+            visible_entities = await _get_entities_hierarchy(db, authorized_entities)
+            filter["ref"] = {"$in": list(visible_entities)}
 
-    results = await _get_log_nodes(
+    results = await _get_log_entities(
         db,
         match=filter,
         pipeline_extra=[
@@ -624,37 +626,41 @@ async def get_log_nodes(
         ],
     )
 
-    total = await db.log_nodes.count_documents(filter or {})
+    total = await db.log_entities.count_documents(filter or {})
 
     return (
-        [Node(**result) async for result in results],
+        [Entity(**result) async for result in results],
         PagePaginationInfo.build(page=page, page_size=page_size, total=total),
     )
 
 
-async def _get_log_node(db: LogDatabase, node_ref: str) -> Log.Node:
-    results = await (await _get_log_nodes(db, match={"ref": node_ref})).to_list(None)
+async def _get_log_entity(db: LogDatabase, entity_ref: str) -> Log.Entity:
+    results = await (await _get_log_entities(db, match={"ref": entity_ref})).to_list(
+        None
+    )
     try:
         result = results[0]
     except IndexError:
-        raise UnknownModelException(node_ref)
+        raise UnknownModelException(entity_ref)
 
-    return Node(**result)
+    return Entity(**result)
 
 
-async def get_log_node(
-    repo_id: UUID, node_ref: str, authorized_nodes: set[str]
-) -> Log.Node:
+async def get_log_entity(
+    repo_id: UUID, entity_ref: str, authorized_entities: set[str]
+) -> Log.Entity:
     db = await get_log_db_for_reading(repo_id)
-    if authorized_nodes:
-        node_ref_hierarchy = await _get_node_hierarchy(db, node_ref)
-        authorized_nodes_hierarchy = await _get_nodes_hierarchy(db, authorized_nodes)
+    if authorized_entities:
+        entity_ref_hierarchy = await _get_entity_hierarchy(db, entity_ref)
+        authorized_entities_hierarchy = await _get_entities_hierarchy(
+            db, authorized_entities
+        )
         if not (
-            node_ref_hierarchy & authorized_nodes
-            or node_ref in authorized_nodes_hierarchy
+            entity_ref_hierarchy & authorized_entities
+            or entity_ref in authorized_entities_hierarchy
         ):
             raise UnknownModelException()
-    return await _get_log_node(db, node_ref)
+    return await _get_log_entity(db, entity_ref)
 
 
 async def _apply_log_retention_period(repo: Repo):
@@ -769,30 +775,32 @@ async def _purge_orphan_consolidated_log_attachment_mime_types(db: LogDatabase):
     )
 
 
-async def _purge_orphan_consolidated_log_node_if_needed(db: LogDatabase, node: Node):
+async def _purge_orphan_consolidated_log_entity_if_needed(
+    db: LogDatabase, entity: Entity
+):
     """
-    This function assumes that the node has no children and delete it if it has no associated logs.
+    This function assumes that the entity has no children and delete it if it has no associated logs.
     It performs the same operation recursively on its ancestors.
     """
     has_associated_logs = await has_resource_document(
-        db.logs, {"node_path.ref": node.ref}
+        db.logs, {"entity_path.ref": entity.ref}
     )
     if not has_associated_logs:
-        await delete_resource_document(db.log_nodes, node.id)
-        print(f"Deleted orphan log node {node!r} from log repository {db.name!r}")
-        if node.parent_node_ref:
-            parent_node = await _get_log_node(db, node.parent_node_ref)
-            if not parent_node.has_children:
-                await _purge_orphan_consolidated_log_node_if_needed(db, parent_node)
+        await delete_resource_document(db.log_entities, entity.id)
+        print(f"Deleted orphan log entity {entity!r} from log repository {db.name!r}")
+        if entity.parent_entity_ref:
+            parent_entity = await _get_log_entity(db, entity.parent_entity_ref)
+            if not parent_entity.has_children:
+                await _purge_orphan_consolidated_log_entity_if_needed(db, parent_entity)
 
 
-async def _purge_orphan_consolidated_log_nodes(db: LogDatabase):
-    docs = await _get_log_nodes(
+async def _purge_orphan_consolidated_log_entities(db: LogDatabase):
+    docs = await _get_log_entities(
         db, match={}, pipeline_extra=[{"$match": {"has_children": False}}]
     )
     async for doc in docs:
-        node = Node.model_validate(doc)
-        await _purge_orphan_consolidated_log_node_if_needed(db, node)
+        entity = Entity.model_validate(doc)
+        await _purge_orphan_consolidated_log_entity_if_needed(db, entity)
 
 
 async def _purge_orphan_consolidated_log_data(repo: Repo):
@@ -807,7 +815,7 @@ async def _purge_orphan_consolidated_log_data(repo: Repo):
     await _purge_orphan_consolidated_log_detail_fields(db)
     await _purge_orphan_consolidated_log_attachment_types(db)
     await _purge_orphan_consolidated_log_attachment_mime_types(db)
-    await _purge_orphan_consolidated_log_nodes(db)
+    await _purge_orphan_consolidated_log_entities(db)
 
 
 async def apply_log_retention_period():

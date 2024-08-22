@@ -228,7 +228,7 @@ async def list_user_repos(
                 repo.status == RepoStatus.enabled
                 and authorized.comply(can_write_logs(repo_response.id))
             ),
-            readable_nodes=authorized.permissions.logs.get_repo_readable_nodes(
+            readable_entities=authorized.permissions.logs.get_repo_readable_entities(
                 repo_response.id
             ),
         )

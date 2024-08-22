@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Section } from "@/components/Section";
 import { useAuthenticatedUser } from "@/features/auth";
-import { MultiNodeSelectorPicker } from "@/features/log";
+import { MultiEntitySelectorPicker } from "@/features/log";
 import { getAllMyRepos } from "@/features/repo";
 
 import {
@@ -80,10 +80,12 @@ function LogRepoPermissionManagement({
         assignablePerms={assignablePerms}
         readOnly={readOnly}
       />
-      <MultiNodeSelectorPicker
+      <MultiEntitySelectorPicker
         repoId={perms.repoId}
-        nodeRefs={perms.readableNodes}
-        onChange={(nodes) => onChange({ ...perms, readableNodes: nodes })}
+        entityRefs={perms.readableEntities}
+        onChange={(entities) =>
+          onChange({ ...perms, readableEntities: entities })
+        }
         disabled={readOnly || !assignablePerms.read || !perms.read}
       />
     </Group>
@@ -219,7 +221,7 @@ function LogsPermissionManagement({
                         repoId: assignableRepo.id,
                         read: false,
                         write: false,
-                        readableNodes: [],
+                        readableEntities: [],
                       }
                     }
                     assignablePerms={{
@@ -227,8 +229,8 @@ function LogsPermissionManagement({
                         ? false
                         : assignablePerms.read === "all" ||
                           (assignableRepo.permissions.read &&
-                            assignableRepo.permissions.readableNodes.length ===
-                              0),
+                            assignableRepo.permissions.readableEntities
+                              .length === 0),
                       write: perms.write
                         ? false
                         : assignablePerms.write === "all" ||

@@ -117,13 +117,13 @@ function Tag({
   }
 }
 
-function NodePath({ value }: { value: { ref: string; name: string }[] }) {
+function EntityPath({ value }: { value: { ref: string; name: string }[] }) {
   return (
     <Breadcrumbs separator=">">
-      {value.map((node) => (
-        <HoverRef value={node.ref} key={node.ref}>
+      {value.map((entity) => (
+        <HoverRef value={entity.ref} key={entity.ref}>
           <Breadcrumb.Item>
-            <Anchor underline="never">{node.name}</Anchor>
+            <Anchor underline="never">{entity.name}</Anchor>
           </Breadcrumb.Item>
         </HoverRef>
       ))}
@@ -271,11 +271,11 @@ export function LogDetails({ repoId }: { repoId?: string }) {
           />
 
           <Section
-            title={t("log.node")}
+            title={t("log.entity")}
             icon={<IconHierarchy style={iconSize("1.15rem")} />}
           >
             <Box p="xs">
-              <NodePath value={log.nodePath} />
+              <EntityPath value={log.entityPath} />
             </Box>
           </Section>
         </Modal.Body>
