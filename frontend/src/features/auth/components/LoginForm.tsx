@@ -30,7 +30,10 @@ function getDefaultPageForUser(
   searchParams: URLSearchParams,
 ): string {
   if (searchParams.get("redirect")) {
-    return decodeURIComponent(searchParams.get("redirect")!);
+    const redirect = decodeURIComponent(searchParams.get("redirect")!);
+    if (redirect && redirect !== "/") {
+      return redirect;
+    }
   }
   if (user.permissions.logs.read !== "none") {
     return "/logs";
