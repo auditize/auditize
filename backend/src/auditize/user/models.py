@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -13,7 +13,7 @@ class PasswordResetToken(BaseModel):
     expires_at: datetime
 
 
-class Lang(str, Enum):
+class Lang(StrEnum):
     EN = "en"
     FR = "fr"
 
