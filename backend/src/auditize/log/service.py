@@ -604,7 +604,9 @@ async def get_log_entities(
     if authorized_entities:
         # get the complete hierarchy of the entity from the entity itself to the top entity
         parent_entity_ref_hierarchy = (
-            await _get_entity_hierarchy(db, parent_entity_ref) if parent_entity_ref else set()
+            await _get_entity_hierarchy(db, parent_entity_ref)
+            if parent_entity_ref
+            else set()
         )
         # we check if we have permission on parent_entity_ref or any of its parent entities
         # if not, we have to manually filter the entities we'll have a direct or indirect visibility
@@ -633,7 +635,9 @@ async def get_log_entities(
 
 
 async def _get_log_entity(db: LogDatabase, entity_ref: str) -> Log.Entity:
-    results = await (await _get_log_entities(db, match={"ref": entity_ref})).to_list(None)
+    results = await (await _get_log_entities(db, match={"ref": entity_ref})).to_list(
+        None
+    )
     try:
         result = results[0]
     except IndexError:
@@ -648,7 +652,9 @@ async def get_log_entity(
     db = await get_log_db_for_reading(repo_id)
     if authorized_entities:
         entity_ref_hierarchy = await _get_entity_hierarchy(db, entity_ref)
-        authorized_entities_hierarchy = await _get_entities_hierarchy(db, authorized_entities)
+        authorized_entities_hierarchy = await _get_entities_hierarchy(
+            db, authorized_entities
+        )
         if not (
             entity_ref_hierarchy & authorized_entities
             or entity_ref in authorized_entities_hierarchy
@@ -769,7 +775,9 @@ async def _purge_orphan_consolidated_log_attachment_mime_types(db: LogDatabase):
     )
 
 
-async def _purge_orphan_consolidated_log_entity_if_needed(db: LogDatabase, entity: Entity):
+async def _purge_orphan_consolidated_log_entity_if_needed(
+    db: LogDatabase, entity: Entity
+):
     """
     This function assumes that the entity has no children and delete it if it has no associated logs.
     It performs the same operation recursively on its ancestors.

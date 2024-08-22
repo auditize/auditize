@@ -42,7 +42,9 @@ def _normalize_repo_permissions(
             repo_id=single_repo_perms.repo_id,
             read=read,
             write=write,
-            readable_entities=(single_repo_perms.readable_entities or []) if read else [],
+            readable_entities=(single_repo_perms.readable_entities or [])
+            if read
+            else [],
         )
 
     return [perms for perms in normalized.values() if perms.read or perms.write]

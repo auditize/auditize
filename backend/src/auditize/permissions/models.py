@@ -66,7 +66,9 @@ class LogPermissions(ReadWritePermissions):
 
     def get_repo_readable_entities(self, repo_id: UUID) -> set[str]:
         perms = self.get_repo_permissions(repo_id)
-        return set(perms.readable_entities) if perms and perms.readable_entities else set()
+        return (
+            set(perms.readable_entities) if perms and perms.readable_entities else set()
+        )
 
 
 class Permissions(BaseModel):

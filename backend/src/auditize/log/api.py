@@ -297,7 +297,9 @@ async def get_log_entities(
 
     entities, pagination = await service.get_log_entities(
         repo_id,
-        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(repo_id),
+        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
+            repo_id
+        ),
         page=page_params.page,
         page_size=page_params.page_size,
         **filter_args,
@@ -487,7 +489,9 @@ async def get_log(
     log = await service.get_log(
         repo_id,
         log_id,
-        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(repo_id),
+        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
+            repo_id
+        ),
     )
     return LogReadingResponse.model_validate(log.model_dump())
 
@@ -546,7 +550,9 @@ async def get_logs(
     # FIXME: we must check that "until" is greater than "since"
     logs, next_cursor = await service.get_logs(
         repo_id,
-        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(repo_id),
+        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
+            repo_id
+        ),
         search_params=LogSearchParams.model_validate(search_params.model_dump()),
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,
