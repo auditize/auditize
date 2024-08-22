@@ -1,13 +1,17 @@
 {
   "test": "Ceci est un test",
   "test_var": "Ceci est un test avec une variable {var}",
-  "error.cannot_update_user_email": "Impossible de mettre à jour l'email d'un utilisateur ayant des privilèges supérieurs aux vôtres",
-  "error.log_i18n_profile_deletion_forbidden": "Impossible de supprimer le profil de traduction de journaux {profile_id} : le profil est utilisé par un ou plusieurs dépôts",
-  "error.cannot_delete_last_superadmin_user": "Impossible de supprimer le dernier utilisateur ayant le rôle superadmin",
-  "error.invalid_password_reset_token": "Le jeton de réinitialisation du mot de passe est invalide ou a expiré",
-  "error.constraint_violation.user": "Un utilisateur avec le même email existe déjà",
-  "error.constraint_violation.apikey": "Une clé d'API avec le même nom existe déjà",
-  "error.constraint_violation.repo": "Un dépôt avec le même nom existe déjà",
-  "error.constraint_violation.log_i18n_profile": "Un profil de traduction de journaux avec le même nom existe déjà",
-  "error.constraint_violation.log_filter": "Un filtre de journaux avec le même nom existe déjà"
+  "error": {
+    "cannot_update_user_email": "Impossible de mettre à jour l'email d'un utilisateur ayant des privilèges supérieurs aux vôtres",
+    "log_i18n_profile_deletion_forbidden": "Impossible de supprimer le profil de traduction de journaux {profile_id} : le profil est utilisé par un ou plusieurs dépôts",
+    "cannot_delete_last_superadmin_user": "Impossible de supprimer le dernier utilisateur ayant le rôle superadmin",
+    "invalid_password_reset_token": "Le jeton de réinitialisation du mot de passe est invalide ou a expiré",
+    "constraint_violation": {
+        "user": "Un utilisateur avec le même email existe déjà",
+        "apikey": "Une clé d'API avec le même nom existe déjà",
+        "repo": "Un dépôt avec le même nom existe déjà",
+        "log_i18n_profile": "Un profil de traduction de journaux avec le même nom existe déjà",
+        "log_filter": "Un filtre de journaux avec le même nom existe déjà"
+    }
+  }
 }
