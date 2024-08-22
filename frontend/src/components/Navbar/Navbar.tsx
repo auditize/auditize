@@ -74,11 +74,12 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
               <Menu.Item
                 component={NavLink}
                 to={child.props.url}
-                className={
-                  location.pathname === child.props.url
-                    ? `${classes.link} ${classes.active}`
-                    : classes.link
-                }
+                style={{
+                  textDecoration:
+                    location.pathname === child.props.url
+                      ? "underline"
+                      : "none",
+                }}
               >
                 {child.props.label}
               </Menu.Item>
