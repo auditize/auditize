@@ -142,7 +142,7 @@ The `details` object holds information about the action. It follows the same str
 
 ### `node_path`
 
-Auditize supports a hierarchical tree structure to represent the entities of your application. Entities can be anything: a customer, an organizational unit, a geographical location, etc. Each log must contain the full path to the entity that is the subject of the log. Example: if the log is about a job offer in Arlington, Texas, the `node_path` would be:
+Auditize supports a hierarchical tree structure to represent the entities of your application. Entities can be anything: a customer, an organizational unit, a geographical location, etc. Each log must contain the full path to the actual entity which is the subject of the log. Example: if the log is about a job offer in Arlington, Texas, the `node_path` would be:
 
 ```json
 [
