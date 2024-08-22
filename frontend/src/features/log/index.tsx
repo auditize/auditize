@@ -1,5 +1,5 @@
 export { Logs } from "./components/Logs";
-export { MultiNodeSelectorPicker } from "./components/NodeSelector";
+export { MultiEntitySelectorPicker } from "./components/EntitySelector";
 export {
   LogNavigationStateProvider,
   useLogNavigationState,

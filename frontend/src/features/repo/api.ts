@@ -36,7 +36,7 @@ export interface UserRepo {
   permissions: {
     read: boolean;
     write: boolean;
-    readableNodes: string[];
+    readableEntities: string[];
   };
 }
 

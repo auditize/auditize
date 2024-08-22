@@ -212,7 +212,7 @@ export default {
     attachmentNames: "Attachment names",
     attachmentRef: "Attachment ref.",
     attachmentRefs: "Attachment refs.",
-    node: "Node",
+    entity: "Entity",
     list: {
       columnSelector: {
         reset: "Reset columns",

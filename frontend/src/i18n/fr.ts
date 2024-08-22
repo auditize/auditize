@@ -215,7 +215,7 @@ export default {
     attachmentNames: "Noms des pièces jointes",
     attachmentRef: "Référence de la pièce jointe",
     attachmentRefs: "Références des pièces jointes",
-    node: "Arborescence",
+    entity: "Entité",
     list: {
       columnSelector: {
         reset: "Réinitialiser les colonnes",

@@ -49,7 +49,7 @@ export type Log = {
     extra: CustomField[];
   };
   details: CustomField[];
-  nodePath: {
+  entityPath: {
     ref: string;
     name: string;
   }[];
@@ -57,10 +57,10 @@ export type Log = {
   attachments: Attachment[];
 };
 
-export type LogNode = {
+export type LogEntity = {
   ref: string;
   name: string;
-  parentNodeRef: string | null;
+  parentEntityRef: string | null;
   hasChildren: boolean;
 };
 
@@ -185,19 +185,19 @@ export async function getAllAttachmentMimeTypes(
   );
 }
 
-export async function getAllLogNodes(
+export async function getAllLogEntities(
   repoId: string,
-  parentNodeRef?: string | null,
-): Promise<LogNode[]> {
-  return getAllPagePaginatedItems<LogNode>(
-    `/repos/${repoId}/logs/nodes`,
-    parentNodeRef ? { parentNodeRef: parentNodeRef } : { root: true },
+  parentEntityRef?: string | null,
+): Promise<LogEntity[]> {
+  return getAllPagePaginatedItems<LogEntity>(
+    `/repos/${repoId}/logs/entities`,
+    parentEntityRef ? { parentEntityRef: parentEntityRef } : { root: true },
   );
 }
 
-export async function getLogNode(
+export async function getLogEntity(
   repoId: string,
-  nodeRef: string,
-): Promise<LogNode> {
-  return await reqGet(`/repos/${repoId}/logs/nodes/ref:${nodeRef}`);
+  entityRef: string,
+): Promise<LogEntity> {
+  return await reqGet(`/repos/${repoId}/logs/entities/ref:${entityRef}`);
 }

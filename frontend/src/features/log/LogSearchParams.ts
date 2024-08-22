@@ -22,7 +22,7 @@ export class LogSearchParams {
   attachmentName: string = "";
   attachmentType: string = "";
   attachmentMimeType: string = "";
-  nodeRef: string = "";
+  entityRef: string = "";
   since: Date | null = null;
   until: Date | null = null;
 
@@ -49,7 +49,7 @@ export class LogSearchParams {
       this.attachmentName,
       this.attachmentType,
       this.attachmentMimeType,
-      this.nodeRef,
+      this.entityRef,
       this.since,
       this.until,
     ].every((value) => !value);
@@ -118,8 +118,8 @@ export class LogSearchParams {
       attachmentType: this.attachmentType,
       attachmentMimeType: this.attachmentMimeType,
 
-      // Node
-      nodeRef: this.nodeRef,
+      // Entity
+      entityRef: this.entityRef,
     };
 
     // Remove null and empty strings
@@ -183,7 +183,7 @@ export class LogSearchParams {
     params.attachmentName = obj.attachmentName ?? "";
     params.attachmentType = obj.attachmentType ?? "";
     params.attachmentMimeType = obj.attachmentMimeType ?? "";
-    params.nodeRef = obj.nodeRef ?? "";
+    params.entityRef = obj.entityRef ?? "";
     return params;
   }
 }
