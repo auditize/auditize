@@ -354,6 +354,10 @@ def _log_to_dict(log: Log) -> dict[str, Any]:
     return data
 
 
+def _log_dict_to_csv_row(log: dict[str, Any], columns: list[str]) -> list[str]:
+    return [log.get(col, "") for col in columns]
+
+
 def validate_csv_columns(cols: list[str]):
     if len(cols) != len(set(cols)):
         raise ValidationError("Duplicated column names are forbidden")
@@ -382,11 +386,9 @@ async def get_logs_as_csv(
     cursor = None
     for i in count(0):
         csv_buffer = StringIO()
-        csv_writer = csv.DictWriter(
-            csv_buffer, fieldnames=columns, extrasaction="ignore"
-        )
+        csv_writer = csv.writer(csv_buffer)
         if i == 0:
-            csv_writer.writeheader()
+            csv_writer.writerow(columns)
         logs, cursor = await get_logs(
             logs_db,
             authorized_entities=authorized_entities,
@@ -395,7 +397,9 @@ async def get_logs_as_csv(
             limit=min(100, max_rows - returned_rows) if max_rows > 0 else 100,
         )
         returned_rows += len(logs)
-        csv_writer.writerows(map(_log_to_dict, logs))
+        csv_writer.writerows(
+            _log_dict_to_csv_row(_log_to_dict(log), columns) for log in logs
+        )
         yield csv_buffer.getvalue()
         if not cursor or (max_rows > 0 and returned_rows >= max_rows):
             break
