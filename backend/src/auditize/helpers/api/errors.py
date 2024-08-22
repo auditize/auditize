@@ -13,7 +13,7 @@ from auditize.exceptions import (
     UnknownModelException,
     ValidationError,
 )
-from auditize.i18n import t
+from auditize.i18n import Lang, t
 
 
 class ApiErrorResponse(BaseModel):
@@ -33,7 +33,7 @@ class ApiErrorResponse(BaseModel):
         return cls(message=message, localized_message=localized_message)
 
     @classmethod
-    def from_exception(cls, exc: Exception, default_message: str, lang: str):
+    def from_exception(cls, exc: Exception, default_message: str, lang: Lang):
         if isinstance(exc, AuditizeException):
             if (
                 len(exc.args) == 1
@@ -90,7 +90,7 @@ class ApiValidationErrorResponse(ApiErrorResponse):
         )
 
     @classmethod
-    def from_exception(cls, exc: Exception, default_message: str, lang: str):
+    def from_exception(cls, exc: Exception, default_message: str, lang: Lang):
         if isinstance(exc, RequestValidationError):
             errors = exc.errors()
             if len(errors) == 0:
@@ -142,7 +142,7 @@ def error_responses(*status_codes: int):
     }
 
 
-def make_response_from_exception(exc: E, lang: str) -> JSONResponse:
+def make_response_from_exception(exc: E, lang: Lang) -> JSONResponse:
     if exc.__class__ not in _EXCEPTION_RESPONSES:
         status_code = 500
         error = ApiErrorResponse(message="Internal server error")

@@ -1,11 +1,11 @@
 import json
 import os.path as osp
 
-from auditize.i18n.constants import DEFAULT_LANG, SUPPORTED_LANGUAGES
+from auditize.i18n.lang import DEFAULT_LANG, Lang
 
 
 class Translator:
-    def __init__(self, translations: dict[str, dict[str, str]]):
+    def __init__(self, translations: dict[Lang, dict[str, str]]):
         self._translations = translations
 
     @staticmethod
@@ -21,13 +21,14 @@ class Translator:
     def load(cls):
         translations_dir = osp.join(osp.dirname(__file__), "translations")
         translations = {}
-        for lang in SUPPORTED_LANGUAGES:
+        for lang in Lang:
+            lang: Lang
             with open(osp.join(translations_dir, f"{lang}.json")) as fh:
                 translations[lang] = dict(cls._get_dict_items(json.load(fh)))
         return cls(translations)
 
     def __call__(
-        self, key: str, values: dict = None, *, lang: str = DEFAULT_LANG
+        self, key: str, values: dict = None, *, lang: Lang = DEFAULT_LANG
     ) -> str:
         try:
             return self._translations[lang][key].format(**(values or {}))
