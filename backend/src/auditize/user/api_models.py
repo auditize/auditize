@@ -2,6 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
 
+from auditize.i18n.lang import Lang
 from auditize.permissions.api_models import (
     ApplicablePermissionsData,
     PermissionsInputData,
@@ -10,7 +11,7 @@ from auditize.permissions.api_models import (
 from auditize.permissions.operations import compute_applicable_permissions
 from auditize.resource.api_models import IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
-from auditize.user.models import Lang, User
+from auditize.user.models import User
 
 
 def _UserFirstNameField(**kwargs):  # noqa

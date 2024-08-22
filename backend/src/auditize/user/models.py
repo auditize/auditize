@@ -1,9 +1,9 @@
 from datetime import datetime
-from enum import StrEnum
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from auditize.i18n.lang import Lang
 from auditize.permissions.models import Permissions
 from auditize.resource.models import HasCreatedAt, HasId
 
@@ -11,11 +11,6 @@ from auditize.resource.models import HasCreatedAt, HasId
 class PasswordResetToken(BaseModel):
     token: str
     expires_at: datetime
-
-
-class Lang(StrEnum):
-    EN = "en"
-    FR = "fr"
 
 
 class User(BaseModel, HasId, HasCreatedAt):
