@@ -320,31 +320,34 @@ def _custom_fields_to_dict(custom_fields: list[CustomField], prefix: str) -> dic
     return {f"{prefix}.{field.name}": field.value for field in custom_fields}
 
 
-def _log_to_dict(log: Log) -> dict[str, Any]:
+def _log_to_dict(
+    log: Log, log_i18n_profile: LogI18nProfile | None, lang: Lang
+) -> dict[str, Any]:
+    translator = partial(get_log_value_translation, log_i18n_profile, lang)
     data = dict()
     data["log_id"] = str(log.id)
-    data["action_category"] = log.action.category
-    data["action_type"] = log.action.type
+    data["action_category"] = translator("action_category", log.action.category)
+    data["action_type"] = translator("action_type", log.action.type)
     data.update(_custom_fields_to_dict(log.source, "source"))
     if log.actor:
-        data["actor_type"] = log.actor.type
+        data["actor_type"] = translator("actor_type", log.actor.type)
         data["actor_name"] = log.actor.name
         data["actor_ref"] = log.actor.ref
         data.update(_custom_fields_to_dict(log.actor.extra, "actor"))
     if log.resource:
-        data["resource_type"] = log.resource.type
+        data["resource_type"] = translator("resource_type", log.resource.type)
         data["resource_name"] = log.resource.name
         data["resource_ref"] = log.resource.ref
         data.update(_custom_fields_to_dict(log.resource.extra, "resource"))
     data.update(_custom_fields_to_dict(log.details, "details"))
     data["tag_ref"] = "|".join(tag.ref or "" for tag in log.tags)
-    data["tag_type"] = "|".join(tag.type for tag in log.tags)
+    data["tag_type"] = "|".join(translator("tag_type", tag.type) for tag in log.tags)
     data["tag_name"] = "|".join(tag.name or "" for tag in log.tags)
     data["attachment_name"] = "|".join(
         attachment.name for attachment in log.attachments
     )
     data["attachment_type"] = "|".join(
-        attachment.type for attachment in log.attachments
+        translator("attachment_type", attachment.type) for attachment in log.attachments
     )
     data["attachment_mime_type"] = "|".join(
         attachment.mime_type for attachment in log.attachments
@@ -427,7 +430,8 @@ async def get_logs_as_csv(
         )
         returned_rows += len(logs)
         csv_writer.writerows(
-            _log_dict_to_csv_row(_log_to_dict(log), columns) for log in logs
+            _log_dict_to_csv_row(_log_to_dict(log, log_i18n_profile, lang), columns)
+            for log in logs
         )
         yield csv_buffer.getvalue()
         if not cursor or (max_rows > 0 and returned_rows >= max_rows):
