@@ -16,6 +16,7 @@ from auditize.exceptions import (
     ValidationError,
 )
 from auditize.helpers.datetime import now, serialize_datetime
+from auditize.i18n import Lang, t
 from auditize.log.db import (
     LogDatabase,
     get_log_db_for_maintenance,
@@ -23,8 +24,9 @@ from auditize.log.db import (
     get_log_db_for_writing,
 )
 from auditize.log.models import CustomField, Entity, Log, LogSearchParams
+from auditize.log_i18n_profile.models import LogI18nProfile, get_log_i18n_translation
 from auditize.repo.models import Repo
-from auditize.repo.service import get_retention_period_enabled_repos
+from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
@@ -358,19 +360,41 @@ def _log_dict_to_csv_row(log: dict[str, Any], columns: list[str]) -> list[str]:
     return [log.get(col, "") for col in columns]
 
 
+def _translate_csv_column(
+    col: str, log_i18n_profile: LogI18nProfile | None, lang: Lang
+) -> str:
+    normalized_col = _parse_csv_column(col)
+
+    if len(normalized_col) == 1:  # builtin log field
+        return t("log.csv.column." + normalized_col[0], lang=lang)
+
+    # otherwise, it's a custom field
+
+    return "%s: %s" % (
+        t("log.csv.column." + normalized_col[0], lang=lang),
+        get_log_i18n_translation(
+            log_i18n_profile, lang, normalized_col[0], normalized_col[1]
+        ),
+    )
+
+
+def _parse_csv_column(col: str) -> tuple[str, ...]:
+    if col in CSV_BUILTIN_COLUMNS:
+        return (col,)
+
+    parts = col.split(".")
+    if len(parts) == 2 and parts[0] in ("source", "actor", "resource", "details"):
+        return tuple(parts)
+
+    raise ValidationError(f"Invalid column name: {col!r}")
+
+
 def validate_csv_columns(cols: list[str]):
     if len(cols) != len(set(cols)):
         raise ValidationError("Duplicated column names are forbidden")
 
     for col in cols:
-        if col in CSV_BUILTIN_COLUMNS:
-            continue
-
-        parts = col.split(".")
-        if len(parts) == 2 and parts[0] in ("source", "actor", "resource", "details"):
-            continue
-
-        raise ValidationError(f"Invalid column name: {col!r}")
+        _parse_csv_column(col)
 
 
 async def get_logs_as_csv(
@@ -379,16 +403,21 @@ async def get_logs_as_csv(
     authorized_entities: set[str] = None,
     search_params: LogSearchParams = None,
     columns: list[str],
+    lang: Lang,
 ) -> AsyncGenerator[str, None]:
     max_rows = get_config().csv_max_rows
     returned_rows = 0
-    logs_db = await get_log_db_for_reading(repo_id)
+    repo = await get_repo(repo_id)
+    log_i18n_profile = await repo.get_log_i18n_profile()
+    logs_db = await get_log_db_for_reading(repo)
     cursor = None
     for i in count(0):
         csv_buffer = StringIO()
         csv_writer = csv.writer(csv_buffer)
         if i == 0:
-            csv_writer.writerow(columns)
+            csv_writer.writerow(
+                _translate_csv_column(col, log_i18n_profile, lang) for col in columns
+            )
         logs, cursor = await get_logs(
             logs_db,
             authorized_entities=authorized_entities,

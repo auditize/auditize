@@ -2153,7 +2153,9 @@ async def test_get_log_entities_with_filters(
     )
 
 
-async def test_get_log_entities_empty(log_read_client: HttpTestHelper, repo: PreparedRepo):
+async def test_get_log_entities_empty(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
     await do_test_page_pagination_empty_data(
         log_read_client, f"/repos/{repo.id}/logs/entities?root=true"
     )
@@ -2261,12 +2263,10 @@ async def test_get_logs_as_csv_minimal_log(
         saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
     )
 
-    resp = await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/csv",
-    )
+    resp = await log_read_client.assert_get(f"/repos/{repo.id}/logs/csv")
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,entity_path:ref,entity_path:name\r\n"
+        == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
         f"{log.id},2024-01-01T00:00:00Z,user-login,authentication,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
@@ -2309,12 +2309,10 @@ async def test_get_logs_as_csv_log_with_all_fields(
         type="attachment-type",
     )
 
-    resp = await log_rw_client.assert_get_ok(
-        f"/repos/{repo.id}/logs/csv",
-    )
+    resp = await log_rw_client.assert_get_ok(f"/repos/{repo.id}/logs/csv")
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,entity_path:ref,entity_path:name\r\n"
+        == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
         f"{log.id},2024-01-01T00:00:00Z,user-login,authentication,user:123,user,User 123,core,module,Core Module,|rich_tag:1,simple-tag|rich-tag,|Rich tag,attachment.txt,attachment-type,text/plain,entity,Entity\r\n"
     )
 
@@ -2334,7 +2332,7 @@ async def test_get_logs_as_csv_with_columns_param(
         params={"columns": "saved_at,action_type,action_category"},
     )
     assert (
-        resp.text == "saved_at,action_type,action_category\r\n"
+        resp.text == "Date,Action Type,Action Category\r\n"
         f"2024-01-01T00:00:00Z,user-login,authentication\r\n"
     )
 
@@ -2374,7 +2372,7 @@ async def test_get_logs_as_csv_with_filter(
     )
     assert (
         resp.text
-        == "log_id,saved_at,action_type,action_category,actor_ref,actor_type,actor_name,resource_ref,resource_type,resource_name,tag_ref,tag_type,tag_name,attachment_name,attachment_type,attachment_mime_type,entity_path:ref,entity_path:name\r\n"
+        == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
         f"{log1.id},2024-01-01T00:00:00Z,action-type-1,action-category-1,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
@@ -2414,7 +2412,7 @@ async def test_get_logs_as_csv_custom_fields(
     )
     assert (
         resp.text
-        == "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field\r\n"
+        == "Log ID,Source: Source Field,Actor: Actor Field,Resource: Resource Field,Details: Detail Field\r\n"
         f"{log.id},source_value,actor_value,resource_value,detail_value\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
