@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 
 from auditize.auth.authorizer import Authorized
 from auditize.helpers.api.errors import error_responses
+from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile import service
 from auditize.log_i18n_profile.api_models import (
     LogI18nProfileCreationRequest,
@@ -21,7 +22,6 @@ from auditize.permissions.assertions import (
 )
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
-from auditize.user.models import Lang
 
 router = APIRouter(responses=error_responses(401, 403))
 

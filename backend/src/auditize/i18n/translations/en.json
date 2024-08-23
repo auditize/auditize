@@ -7,11 +7,39 @@
     "cannot_delete_last_superadmin_user": "Cannot delete the last user with superadmin role",
     "invalid_password_reset_token": "The password reset token is invalid or has expired",
     "constraint_violation": {
-        "user": "A user with the same email already exists",
-        "apikey": "An API key with the same name already exists",
-        "repo": "A repository with the same name already exists",
-        "log_i18n_profile": "A log i18n profile with the same name already exists",
-        "log_filter": "A log filter with the same name already exists"
+      "user": "A user with the same email already exists",
+      "apikey": "An API key with the same name already exists",
+      "repo": "A repository with the same name already exists",
+      "log_i18n_profile": "A log i18n profile with the same name already exists",
+      "log_filter": "A log filter with the same name already exists"
+    }
+  },
+  "log": {
+    "csv": {
+      "column": {
+        "log_id": "Log ID",
+        "action_category": "Action Category",
+        "action_type": "Action Type",
+        "source": "Source",
+        "actor_type": "Actor Type",
+        "actor_name": "Actor Name",
+        "actor_ref": "Actor Ref",
+        "actor": "Actor",
+        "resource_type": "Resource Type",
+        "resource_name": "Resource Name",
+        "resource_ref": "Resource Ref",
+        "resource": "Resource",
+        "details": "Details",
+        "tag_type": "Tag Type",
+        "tag_name": "Tag Name",
+        "tag_ref": "Tag Ref",
+        "attachment_name": "Attachment Name",
+        "attachment_type": "Attachment Type",
+        "attachment_mime_type": "Attachment MIME Type",
+        "entity_path:ref": "Entity Refs",
+        "entity_path:name": "Entity Names",
+        "saved_at": "Date"
+      }
     }
   }
 }

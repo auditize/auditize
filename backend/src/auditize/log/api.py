@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, Path, Query, Response, UploadFile
+from fastapi import APIRouter, Depends, Form, Path, Query, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 
 from auditize.auth.authorizer import (
@@ -15,6 +15,7 @@ from auditize.helpers.api.validators import (
     IDENTIFIER_PATTERN_STRING,
 )
 from auditize.helpers.datetime import now
+from auditize.i18n import get_request_lang
 from auditize.log import service
 from auditize.log.api_models import (
     LogCreationRequest,
@@ -444,6 +445,7 @@ _CUSTOM_FIELDS_DESCRIPTION = (
     response_class=_CsvResponse,
 )
 async def get_logs_as_csv(
+    request: Request,
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
@@ -467,6 +469,7 @@ async def get_logs_as_csv(
             ),
             search_params=LogSearchParams.model_validate(search_params.model_dump()),
             columns=columns,
+            lang=get_request_lang(request),
         ),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},

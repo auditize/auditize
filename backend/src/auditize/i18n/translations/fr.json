@@ -13,5 +13,33 @@
         "log_i18n_profile": "Un profil de traduction de journaux avec le même nom existe déjà",
         "log_filter": "Un filtre de journaux avec le même nom existe déjà"
     }
+  },
+  "log": {
+    "csv": {
+      "column": {
+        "log_id": "ID du journal",
+        "action_category": "Catégorie de l'action",
+        "action_type": "Type de l'action",
+        "source": "Source",
+        "actor_type": "Type de l'acteur",
+        "actor_name": "Nom de l'acteur",
+        "actor_ref": "Référence de l'acteur",
+        "actor": "Acteur",
+        "resource_type": "Type de la ressource",
+        "resource_name": "Nom de la ressource",
+        "resource_ref": "Référence de la ressource",
+        "resource": "Ressource",
+        "details": "Détails",
+        "tag_type": "Type de l'étiquette",
+        "tag_name": "Nom de l'étiquette",
+        "tag_ref": "Référence de l'étiquette",
+        "attachment_name": "Nom de la pièce jointe",
+        "attachment_type": "Type de la pièce jointe",
+        "attachment_mime_type": "Type MIME de la pièce jointe",
+        "entity_path:ref": "Références d'entités",
+        "entity_path:name": "Noms d'entités",
+        "saved_at": "Date"
+      }
+    }
   }
 }

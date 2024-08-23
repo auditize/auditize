@@ -5,6 +5,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from auditize.exceptions import UnknownModelException
+from auditize.log_i18n_profile.models import LogI18nProfile
+from auditize.log_i18n_profile.service import get_log_i18n_profile
 from auditize.resource.models import HasCreatedAt, HasId
 
 
@@ -20,6 +23,12 @@ class Repo(BaseModel, HasId, HasCreatedAt):
     status: RepoStatus = Field(default=RepoStatus.enabled)
     retention_period: int | None = Field(default=None)
     log_i18n_profile_id: Optional[UUID] = Field(default=None)
+
+    async def get_log_i18n_profile(self) -> LogI18nProfile | None:
+        try:
+            return await get_log_i18n_profile(self.log_i18n_profile_id)
+        except UnknownModelException:
+            return None
 
 
 class RepoUpdate(BaseModel):

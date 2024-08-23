@@ -1,9 +1,9 @@
 from fastapi import Request
 
-from auditize.i18n.constants import DEFAULT_LANG, SUPPORTED_LANGUAGES
+from auditize.i18n.lang import Lang
 
 
-def _get_request_lang(request: Request) -> str:
+def _get_request_lang(request: Request) -> str | None:
     try:
         return request.query_params["lang"]
     except KeyError:
@@ -14,11 +14,11 @@ def _get_request_lang(request: Request) -> str:
     except AttributeError:
         pass
 
-    return DEFAULT_LANG
+    return None
 
 
-def get_request_lang(request: Request) -> str:
-    lang = _get_request_lang(request)
-    if lang not in SUPPORTED_LANGUAGES:
-        lang = DEFAULT_LANG
-    return lang
+def get_request_lang(request: Request) -> Lang:
+    try:
+        return Lang(_get_request_lang(request))
+    except ValueError:
+        return Lang.EN

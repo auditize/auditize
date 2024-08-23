@@ -30,7 +30,7 @@ def anyio_backend():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _config():
+def _config(anyio_backend):
     init_config(
         {
             "AUDITIZE_BASE_URL": "http://localhost:8000",
@@ -90,7 +90,7 @@ async def _log_db_pool(_dbm: DatabaseManager):
 
 
 @pytest.fixture(scope="function", autouse=True)
-async def dbm(_dbm):
+async def dbm(_dbm, anyio_backend):
     yield _dbm
     await cleanup_db(_dbm.core_db.db)
 

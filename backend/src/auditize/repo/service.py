@@ -7,6 +7,7 @@ from auditize.exceptions import (
     ValidationError,
     enhance_constraint_violation_exception,
 )
+from auditize.i18n.lang import Lang
 from auditize.log.db import LogDatabase, get_log_db_for_config
 from auditize.log_i18n_profile.models import LogTranslation
 from auditize.log_i18n_profile.service import (
@@ -30,7 +31,7 @@ from auditize.resource.service import (
     has_resource_document,
     update_resource_document,
 )
-from auditize.user.models import Lang, User
+from auditize.user.models import User
 
 
 async def _validate_repo(repo: Repo | RepoUpdate):
