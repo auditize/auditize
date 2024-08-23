@@ -24,7 +24,7 @@ from auditize.log.db import (
     get_log_db_for_writing,
 )
 from auditize.log.models import CustomField, Entity, Log, LogSearchParams
-from auditize.log_i18n_profile.models import LogI18nProfile, get_log_i18n_translation
+from auditize.log_i18n_profile.models import LogI18nProfile, get_log_value_translation
 from auditize.repo.models import Repo
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
@@ -372,7 +372,7 @@ def _translate_csv_column(
 
     return "%s: %s" % (
         t("log.csv.column." + normalized_col[0], lang=lang),
-        get_log_i18n_translation(
+        get_log_value_translation(
             log_i18n_profile, lang, normalized_col[0], normalized_col[1]
         ),
     )

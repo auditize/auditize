@@ -1,5 +1,3 @@
-import re
-
 from pydantic import BaseModel, Field
 
 from auditize.i18n.lang import DEFAULT_LANG, Lang
@@ -55,7 +53,7 @@ class LogI18nProfile(BaseModel, HasId, HasCreatedAt):
         elif DEFAULT_LANG in self.translations:
             actual_lang = DEFAULT_LANG
         if actual_lang:
-            return self.translations[lang].get_translation(key_type, key)
+            return self.translations[actual_lang].get_translation(key_type, key)
 
 
 class LogI18nProfileUpdate(BaseModel):
@@ -64,10 +62,10 @@ class LogI18nProfileUpdate(BaseModel):
 
 
 def _build_default_translation(value: str) -> str:
-    return " ".join(s.capitalize() for s in re.split(r"[-_]", value))
+    return " ".join(s.capitalize() for s in value.split("-"))
 
 
-def get_log_i18n_translation(
+def get_log_value_translation(
     profile: LogI18nProfile | None, lang: Lang, key_type: str, key: str
 ) -> str:
     translation = None
