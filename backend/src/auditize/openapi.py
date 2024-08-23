@@ -83,6 +83,13 @@ def _fix_422(schema):
                 del responses["422"]
 
 
+def _remove_title(schema):
+    for field in _iter_property_fields(schema):
+        field.pop("title", None)
+    for field in _iter_parameter_fields(schema):
+        field.pop("title", None)
+
+
 def _add_security_scheme(schema):
     schema["components"]["securitySchemes"] = {
         "apikeyAuth": {
@@ -128,6 +135,7 @@ def get_customized_openapi_schema(app, include_internal_routes=True):
 
     _fix_nullable(schema)
     _fix_422(schema)
+    _remove_title(schema)
     _add_security_scheme(schema)
 
     return schema
