@@ -318,7 +318,7 @@ async def get_log_entities(
 async def get_log_entity(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    entity_ref: Annotated[str, Path(title="Entity ref")],
+    entity_ref: Annotated[str, Path(description="Entity ref")],
 ) -> LogEntityResponse:
     entity = await service.get_log_entity(
         repo_id,
@@ -361,13 +361,12 @@ async def add_attachment(
     repo_id: UUID,
     log_id: Annotated[
         UUID,
-        Path(title="Log ID", description="The ID of the log to attach the file to"),
+        Path(description="The ID of the log to attach the file to"),
     ],
     file: UploadFile,
     type: Annotated[
         str,
         Form(
-            title="Attachment type",
             description="The 'functional' type of the attachment",
             json_schema_extra={"example": "Configuration file"},
             pattern=IDENTIFIER_PATTERN_STRING,
@@ -376,7 +375,6 @@ async def add_attachment(
     name: Annotated[
         str,
         Form(
-            title="Attachment name",
             description="The name of the attachment. If not provided, the name of the uploaded file will be used.",
             json_schema_extra={"example": "config.json"},
         ),
@@ -384,7 +382,6 @@ async def add_attachment(
     mime_type: Annotated[
         str,
         Form(
-            title="Attachment MIME type",
             description="The MIME type of the attachment. If not provided, the MIME type of the uploaded "
             "file will be used.",
             json_schema_extra={"example": "application/json"},
@@ -487,7 +484,7 @@ async def get_logs_as_csv(
 async def get_log(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    log_id: Annotated[UUID, Path(title="Log ID")],
+    log_id: Annotated[UUID, Path(description="Log ID")],
 ) -> LogReadingResponse:
     log = await service.get_log(
         repo_id,
@@ -523,9 +520,8 @@ async def get_log(
 async def get_log_attachment(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    log_id: UUID = Path(title="Log ID"),
+    log_id: UUID = Path(description="Log ID"),
     attachment_idx: int = Path(
-        title="Attachment index",
         description="The index of the attachment in the log's attachments list (starts from 0)",
     ),
 ):
