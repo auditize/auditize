@@ -7,9 +7,7 @@ from auditize.helpers.datetime import serialize_datetime
 
 
 class ResourceSearchParams(BaseModel):
-    query: Optional[str] = Field(
-        alias="q", title="Query", description="Search query", default=None
-    )
+    query: Optional[str] = Field(alias="q", description="Search query", default=None)
 
 
 class HasDatetimeSerialization:

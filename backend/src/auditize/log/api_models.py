@@ -21,8 +21,8 @@ from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 class _CustomFieldData(BaseModel):
-    name: str = Field(title="Field name", pattern=IDENTIFIER_PATTERN)
-    value: str = Field(title="Field value")
+    name: str = Field(description="Field name", pattern=IDENTIFIER_PATTERN)
+    value: str = Field(description="Field value")
 
 
 def _LogIdField(**kwargs):  # noqa
@@ -31,7 +31,7 @@ def _LogIdField(**kwargs):  # noqa
 
 def _ActionTypeField():  # noqa
     return Field(
-        title="Action type",
+        description="Action type",
         json_schema_extra={"example": "create_configuration_profile"},
         pattern=IDENTIFIER_PATTERN,
     )
@@ -39,7 +39,7 @@ def _ActionTypeField():  # noqa
 
 def _ActionCategoryField():  # noqa
     return Field(
-        title="Action category",
+        description="Action category",
         json_schema_extra={"example": "configuration"},
         pattern=IDENTIFIER_PATTERN,
     )
@@ -69,7 +69,6 @@ def _SourceField(**kwargs):  # noqa
 
 def _ActorRefField():  # noqa
     return Field(
-        title="Actor ref",
         description="Actor ref must be unique for a given actor",
         json_schema_extra={"example": "user:123"},
     )
@@ -77,14 +76,14 @@ def _ActorRefField():  # noqa
 
 def _ActorTypeField():  # noqa
     return Field(
-        title="Actor type",
+        description="Actor type",
         json_schema_extra={"example": "user"},
         pattern=IDENTIFIER_PATTERN,
     )
 
 
 def _ActorNameField():  # noqa
-    return Field(title="Actor name", json_schema_extra={"example": "John Doe"})
+    return Field(description="Actor name", json_schema_extra={"example": "John Doe"})
 
 
 def _ActorExtraField(**kwargs):  # noqa
@@ -117,7 +116,6 @@ def _ActorField(**kwargs):  # noqa
 
 def _ResourceRefField():  # noqa
     return Field(
-        title="Resource ref",
         description="Resource ref must be unique for a given resource",
         json_schema_extra={"example": "config-profile:123"},
     )
@@ -125,7 +123,7 @@ def _ResourceRefField():  # noqa
 
 def _ResourceTypeField():  # noqa
     return Field(
-        title="Resource type",
+        description="Resource type",
         json_schema_extra={"example": "config-profile"},
         pattern=IDENTIFIER_PATTERN,
     )
@@ -133,7 +131,7 @@ def _ResourceTypeField():  # noqa
 
 def _ResourceNameField():  # noqa
     return Field(
-        title="Resource name", json_schema_extra={"example": "Config Profile 123"}
+        description="Resource name", json_schema_extra={"example": "Config Profile 123"}
     )
 
 
@@ -185,7 +183,6 @@ def _DetailsField(**kwargs):  # noqa
 
 def _TagRefField(**kwargs):  # noqa
     return Field(
-        title="Tag ref",
         description="Tag ref is required for 'rich' tags",
         **kwargs,
     )
@@ -193,7 +190,6 @@ def _TagRefField(**kwargs):  # noqa
 
 def _TagTypeField():  # noqa
     return Field(
-        title="Tag type",
         description="If only type is set then it represents a 'simple' tag",
         pattern=IDENTIFIER_PATTERN,
     )
@@ -201,7 +197,6 @@ def _TagTypeField():  # noqa
 
 def _TagNameField(**kwargs):  # noqa
     return Field(
-        title="Tag name",
         description="Tag name is required for 'rich' tags",
         **kwargs,
     )
@@ -246,8 +241,8 @@ class _TagOutputData(BaseModel):
 
 
 class _EntityData(BaseModel):
-    ref: str = Field(title="Entity ref")
-    name: str = Field(title="Entity name")
+    ref: str = Field(description="Entity ref")
+    name: str = Field(description="Entity name")
 
 
 def _EntityPathField():  # noqa
