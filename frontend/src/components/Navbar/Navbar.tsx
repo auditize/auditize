@@ -53,7 +53,12 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
   );
 
   return (
-    <Menu trigger="hover" transitionProps={{ exitDuration: 0 }} withinPortal>
+    <Menu
+      trigger="hover"
+      position="bottom-start"
+      transitionProps={{ exitDuration: 0 }}
+      withinPortal
+    >
       <Menu.Target>
         <Center>
           <span
@@ -80,7 +85,6 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
                     location.pathname === child.props.url
                       ? "underline"
                       : "none",
-                  fontSize: "var(--mantine-font-size-md)",
                 }}
               >
                 {child.props.label}

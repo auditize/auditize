@@ -1,5 +1,5 @@
 .link {
-  font-size: var(--mantine-font-size-lg);
+  font-size: var(--mantine-font-size-md);
   font-weight: 550;
   color: var(--mantine-color-gray-8);
   text-decoration: none;
