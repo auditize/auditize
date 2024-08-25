@@ -17,6 +17,8 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { iconSize } from "@/utils/ui";
+
 import { ApiErrorMessage } from "../ErrorMessage";
 import { useResourceManagementState } from "./ResourceManagementState";
 
@@ -120,7 +122,7 @@ function Search({
               style={{ display: search ? undefined : "none" }}
             />
           ) : (
-            <IconSearch />
+            <IconSearch style={iconSize(22)} />
           )
         }
       />
