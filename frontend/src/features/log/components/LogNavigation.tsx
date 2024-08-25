@@ -1336,7 +1336,7 @@ export function LogNavigation({
         )}
 
         {/* Search parameters */}
-        <Group gap="xs">
+        <Group gap={rem(6)}>
           <SearchParamFields
             names={searchParamNames}
             added={addedSearchParamName}
@@ -1360,7 +1360,7 @@ export function LogNavigation({
       </Group>
 
       {/* Apply & clear buttons */}
-      <Group gap="xs" wrap="nowrap">
+      <Group gap={rem(6)} wrap="nowrap">
         <Button onClick={() => onChange(editedParams)} disabled={!isDirty}>
           {t("log.list.searchParams.apply")}
         </Button>
