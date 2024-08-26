@@ -104,16 +104,13 @@ function Tag({
   if (value.name && value.ref) {
     return (
       <HoverRef value={value.ref}>
-        <Badge
-          color="blue"
-          rightSection={<IconAsterisk style={iconSize(12)} />}
-        >
+        <Badge rightSection={<IconAsterisk style={iconSize(12)} />}>
           {logTranslator("tag_type", value.type)}: {value.name}
         </Badge>
       </HoverRef>
     );
   } else {
-    return <Badge color="blue">{logTranslator("tag_type", value.type)}</Badge>;
+    return <Badge>{logTranslator("tag_type", value.type)}</Badge>;
   }
 }
 

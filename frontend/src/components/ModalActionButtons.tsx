@@ -23,7 +23,7 @@ export function ModalActionButtons({
           <Button onClick={onClose} variant="default">
             {t("common.cancel")}
           </Button>
-          <Button type="submit" color={dangerous ? "red" : "blue"}>
+          <Button type="submit" color={dangerous ? "red" : undefined}>
             {validateButtonLabel}
           </Button>
         </>

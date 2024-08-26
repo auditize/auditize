@@ -19,7 +19,7 @@ export function Message({
   textProps,
   children,
 }: {
-  color: string;
+  color?: string;
   icon: React.ReactNode;
   title?: string;
   textProps?: TextProps;
@@ -53,7 +53,7 @@ Message.Success = MessageSuccess;
 function MessageInfo({ title, textProps, children }: MessageProps) {
   return (
     <Message
-      color="blue"
+      // Primary color
       icon={<IconInfoSquare />}
       title={title}
       textProps={textProps}
