@@ -7,6 +7,7 @@ import {
   Group,
   Menu,
   Popover,
+  rem,
   Select,
   Space,
   Stack,
@@ -1322,7 +1323,7 @@ export function LogNavigation({
 
   return (
     <Group justify="space-between" align="start" gap="md" wrap="nowrap">
-      <Group gap="xs">
+      <Group gap={rem(6)}>
         {/* Repository selector */}
         {withRepoSearchParam && (
           <RepoSelector
@@ -1335,7 +1336,7 @@ export function LogNavigation({
         )}
 
         {/* Search parameters */}
-        <Group gap="xs">
+        <Group gap={rem(6)}>
           <SearchParamFields
             names={searchParamNames}
             added={addedSearchParamName}
@@ -1359,7 +1360,7 @@ export function LogNavigation({
       </Group>
 
       {/* Apply & clear buttons */}
-      <Group gap="xs" wrap="nowrap">
+      <Group gap={rem(6)} wrap="nowrap">
         <Button onClick={() => onChange(editedParams)} disabled={!isDirty}>
           {t("log.list.searchParams.apply")}
         </Button>
