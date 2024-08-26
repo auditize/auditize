@@ -3,6 +3,7 @@ import {
   Avatar,
   Button,
   Flex,
+  Group,
   MantineProvider,
   Menu,
   Space,
@@ -141,39 +142,42 @@ function Main() {
   return (
     <AppShell header={{ height: 55 }} padding="lg">
       <AppShell.Header bg="#fbfbfb">
-        <Flex h="100%" px="lg" justify="space-between" align="center">
-          <Navbar>
-            <NavbarItem
-              label={t("navigation.logs")}
-              url="/logs"
-              condition={currentUser.permissions.logs.read != "none"}
-            />
-            <NavbarItemGroup label={t("navigation.management")}>
-              <NavbarItemGroup.Entry
-                label={t("navigation.repositories")}
-                url="/repos"
-                condition={currentUser.permissions.management.repos.read}
+        <Group h="100%" px="lg" justify="space-between" align="center">
+          <Group>
+            <img src="/src/assets/logo.svg" alt="Auditize" height={25} />
+            <Navbar>
+              <NavbarItem
+                label={t("navigation.logs")}
+                url="/logs"
+                condition={currentUser.permissions.logs.read != "none"}
               />
-              <NavbarItemGroup.Entry
-                label={t("navigation.logi18nprofiles")}
-                url="/log-i18n-profiles"
-                condition={currentUser.permissions.management.repos.read}
-              />
-              <NavbarItemGroup.Entry
-                label={t("navigation.users")}
-                url="/users"
-                condition={currentUser.permissions.management.users.read}
-              />
-              <NavbarItemGroup.Entry
-                label={t("navigation.apikeys")}
-                url="/apikeys"
-                condition={currentUser.permissions.management.apikeys.read}
-              />
-            </NavbarItemGroup>
-          </Navbar>
+              <NavbarItemGroup label={t("navigation.management")}>
+                <NavbarItemGroup.Entry
+                  label={t("navigation.repositories")}
+                  url="/repos"
+                  condition={currentUser.permissions.management.repos.read}
+                />
+                <NavbarItemGroup.Entry
+                  label={t("navigation.logi18nprofiles")}
+                  url="/log-i18n-profiles"
+                  condition={currentUser.permissions.management.repos.read}
+                />
+                <NavbarItemGroup.Entry
+                  label={t("navigation.users")}
+                  url="/users"
+                  condition={currentUser.permissions.management.users.read}
+                />
+                <NavbarItemGroup.Entry
+                  label={t("navigation.apikeys")}
+                  url="/apikeys"
+                  condition={currentUser.permissions.management.apikeys.read}
+                />
+              </NavbarItemGroup>
+            </Navbar>
+          </Group>
           <Space w="6rem" />
           <UserMenu />
-        </Flex>
+        </Group>
       </AppShell.Header>
       <AppShell.Main>
         <Outlet />
