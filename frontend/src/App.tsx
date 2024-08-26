@@ -42,6 +42,7 @@ import { RepoManagement } from "@/features/repo";
 import { UsersManagement } from "@/features/user";
 import { theme } from "@/theme";
 
+import logoPath from "./assets/logo.svg";
 import { ModalTitle } from "./components/ModalTitle";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikey";
@@ -127,7 +128,7 @@ function Logo({}) {
   return (
     <NavLink to={getUserHomeRoute(currentUser)}>
       <img
-        src="/src/assets/logo.svg"
+        src={logoPath}
         alt="Auditize"
         height={25}
         style={{ display: "block" }} // for image vertical alignment
