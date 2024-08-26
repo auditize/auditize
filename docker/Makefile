@@ -28,11 +28,11 @@ shell: shell-web
 ps:
 	docker compose -p $(NAME) ps
 
-log-web:
+logs-web:
 	docker compose -p $(NAME) logs -f web
 
-log-tasks:
+logs-tasks:
 	docker compose -p $(NAME) logs -f tasks
 
-log:
+logs:
 	docker compose -p $(NAME) logs -f web tasks
