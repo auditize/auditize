@@ -2,7 +2,6 @@ import {
   AppShell,
   Avatar,
   Button,
-  Flex,
   Group,
   MantineProvider,
   Menu,
@@ -24,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import {
   createBrowserRouter,
   Navigate,
+  NavLink,
   Outlet,
   RouterProvider,
   useLocation,
@@ -31,6 +31,7 @@ import {
 
 import {
   AuthProvider,
+  getUserHomeRoute,
   LoginForm,
   useAuthenticatedUser,
   useCurrentUser,
@@ -120,6 +121,21 @@ function UserMenu() {
   );
 }
 
+function Logo({}) {
+  const { currentUser } = useAuthenticatedUser();
+
+  return (
+    <NavLink to={getUserHomeRoute(currentUser)}>
+      <img
+        src="/src/assets/logo.svg"
+        alt="Auditize"
+        height={25}
+        style={{ display: "block" }} // for image vertical alignment
+      />
+    </NavLink>
+  );
+}
+
 function Main() {
   const { currentUser, declareLogout } = useAuthenticatedUser();
   const { t } = useTranslation();
@@ -144,7 +160,7 @@ function Main() {
       <AppShell.Header bg="#fbfbfb">
         <Group h="100%" px="lg" justify="space-between" align="center">
           <Group>
-            <img src="/src/assets/logo.svg" alt="Auditize" height={25} />
+            <Logo />
             <Navbar>
               <NavbarItem
                 label={t("navigation.logs")}
