@@ -7,27 +7,28 @@ import {
   rem,
 } from "@mantine/core";
 
-// blue used as primary color is #228be6 or HSL 208, 80%, 52%
-// Auditize blue is HSL 210, 80%, 52%
+// Default Mantine blue used as a primary color is #228be6 or HSL 208, 80%, 52%.
+// Blue defined by Auditize (blue Crayola) is HSL 214, 80%, 52%.
+// Palette generated with https://mantine.dev/colors-generator/?color=2378E7
 
-const blue210: MantineColorsTuple = [
-  "#e5f6ff",
-  "#d1e7fe",
-  "#a4cdf6",
-  "#74b2f0",
-  "#4c9aea",
-  "#338be7",
-  "#2184e7",
-  "#0f71ce",
-  "#0065ba",
-  "#0057a4",
+const blue214: MantineColorsTuple = [
+  "#e6f5ff",
+  "#d1e5fe",
+  "#a4c8f6",
+  "#74aaf0",
+  "#4b90ea",
+  "#327fe7",
+  "#2177e7",
+  "#1065ce",
+  "#005aba",
+  "#004da4",
 ];
 
 export const theme = createTheme({
   colors: {
-    blue210,
+    blue214,
   },
-  primaryColor: "blue210",
+  primaryColor: "blue214",
   components: {
     Button: Button.extend({
       vars: (_, props) => {
