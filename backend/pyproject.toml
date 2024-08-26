@@ -13,7 +13,7 @@ dependencies = { file = ["requirements.txt"] }
 optional-dependencies.dev = { file = ["requirements-dev.txt"] }
 
 [tool.setuptools.package-data]
-"auditize" = ["data/**"]
+"auditize" = ["data/**", "i18n/translations/*.json"]
 
 [tool.ruff]
 src = ["src", "tests", "scripts"]
