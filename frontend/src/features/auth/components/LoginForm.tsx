@@ -24,8 +24,9 @@ import { useI18nContext } from "@/i18n";
 
 import { CurrentUserInfo, forgotPassword, logIn } from "../api";
 import { useCurrentUser } from "../contexts";
+import { getUserHomeRoute } from "../utils";
 
-function getDefaultPageForUser(
+function getPostLoginRoute(
   user: CurrentUserInfo,
   searchParams: URLSearchParams,
 ): string {
@@ -35,19 +36,7 @@ function getDefaultPageForUser(
       return redirect;
     }
   }
-  if (user.permissions.logs.read !== "none") {
-    return "/logs";
-  }
-  if (user.permissions.management.users.read) {
-    return "/users";
-  }
-  if (user.permissions.management.apikeys.read) {
-    return "/apikeys";
-  }
-  if (user.permissions.management.repos.read) {
-    return "/repos";
-  }
-  return "/";
+  return getUserHomeRoute(user);
 }
 
 function ForgotPassword({
@@ -146,7 +135,7 @@ export function LoginForm({
       logIn(values.email, values.password, lang),
     onSuccess: (user) => {
       onLogin(user);
-      navigate(getDefaultPageForUser(user, searchParams), { replace: true });
+      navigate(getPostLoginRoute(user, searchParams), { replace: true });
     },
   });
   const [
@@ -157,7 +146,7 @@ export function LoginForm({
 
   if (currentUser) {
     return (
-      <Navigate to={getDefaultPageForUser(currentUser, searchParams)} replace />
+      <Navigate to={getPostLoginRoute(currentUser, searchParams)} replace />
     );
   }
 
