@@ -1,6 +1,11 @@
+/* Change primary color to match the product's one */
+:root {
+  --md-primary-fg-color: #1065ce;
+}
+
 /* Make font-size a bit smaller than the original 0.8rem */
 .md-typeset {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 /*
@@ -10,4 +15,14 @@
 th,
 td code {
   white-space: nowrap;
+}
+
+/*
+ * This is ugly hack to avoid displaying both the logo (that includes "Auditize")
+ * and the topic (which is also "Auditize") when the screen reach a given breakpoint
+ */
+@media screen and (min-width: 76.234375em) {
+  .md-header__topic {
+    display: none;
+  }
 }
