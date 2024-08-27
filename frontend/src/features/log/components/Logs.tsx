@@ -14,9 +14,11 @@ import { LogTable } from "./LogTable";
 export function Logs({
   withRepoSearchParam = true,
   withLogFilters = true,
+  withScrollToTop = true,
 }: {
   withRepoSearchParam?: boolean;
   withLogFilters?: boolean;
+  withScrollToTop?: boolean;
 }) {
   const { t } = useTranslation();
   const repoListQuery = useLogRepoListQuery({ enabled: withRepoSearchParam });
@@ -59,7 +61,7 @@ export function Logs({
           selectedColumns={selectedColumns}
           onSelectedColumnsChange={setSelectedColumns}
         />
-        <ScrollToTop />
+        {withScrollToTop && <ScrollToTop />}
       </Stack>
     );
   }

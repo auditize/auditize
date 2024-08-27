@@ -114,7 +114,11 @@ class LogWebComponent extends HTMLElement {
                   accessTokenProvider={accessTokenProvider}
                   refreshInterval={accessTokenRefreshInterval}
                 >
-                  <Logs withRepoSearchParam={false} withLogFilters={false} />
+                  <Logs
+                    withRepoSearchParam={false}
+                    withLogFilters={false}
+                    withScrollToTop={false}
+                  />
                 </AccessTokenAuthProvider>
               </LogNavigationStateProvider.ForWebComponent>
             </I18nProvider>

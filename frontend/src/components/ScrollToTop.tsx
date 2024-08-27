@@ -12,13 +12,14 @@ export function ScrollToTop() {
   const { t } = useTranslation();
 
   return (
-    <Affix position={{ bottom: 20, right: 20 }}>
+    <Affix position={{ bottom: 15, right: 20 }}>
       <Transition transition="slide-up" mounted={scroll.y > viewportHeight}>
         {(transitionStyles) => (
           <Button
             onClick={() => scrollTo({ y: 0 })}
             leftSection={<IconArrowUp style={iconSize(16)} />}
             style={transitionStyles}
+            variant="default"
             size="xs"
           >
             {t("common.scrollToTop")}
