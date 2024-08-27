@@ -149,7 +149,7 @@ async def _check_log(db: LogDatabase, log: Log):
         ):
             raise ConstraintViolation(
                 f"Entity {entity.ref!r} is invalid, there are other logs with "
-                f"the same entity name at the same level (same parent)"
+                f"the same entity name but with another ref at the same level (same parent)"
             )
         parent_entity_ref = entity.ref
 
