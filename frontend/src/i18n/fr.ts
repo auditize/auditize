@@ -67,7 +67,7 @@ export default {
     },
   },
   logi18nprofile: {
-    logi18nprofile: "Profil de traduction des journaux",
+    logi18nprofile: "Profil de traduction",
     logi18nprofiles: "Profils de traduction des journaux",
     form: {
       name: {
@@ -238,8 +238,8 @@ export default {
     },
     csv: {
       csv: "CSV",
-      csvExportDefault: "Exporter en CSV (toutes les colonnes natives)",
-      csvExportCurrent: "Exporter en CSV (colonnes sélectionnées)",
+      csvExportDefault: "Exporter en CSV (colonnes par défaut)",
+      csvExportCurrent: "Exporter en CSV (colonnes affichées)",
     },
     filter: {
       filter: "Filtre",

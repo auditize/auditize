@@ -67,7 +67,7 @@ export default {
     },
   },
   logi18nprofile: {
-    logi18nprofile: "Log translation profile",
+    logi18nprofile: "Translation profile",
     logi18nprofiles: "Log translation profiles",
     form: {
       name: {
@@ -235,7 +235,7 @@ export default {
     },
     csv: {
       csv: "CSV",
-      csvExportDefault: "Export as CSV (all builtin columns)",
+      csvExportDefault: "Export as CSV (default columns)",
       csvExportCurrent: "Export as CSV (selected columns)",
     },
     filter: {
