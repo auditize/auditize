@@ -4,7 +4,7 @@ import getpass
 import json
 import sys
 
-from auditize.app import api_app
+from auditize.app import build_api_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
 from auditize.exceptions import ConfigError, ConstraintViolation
@@ -75,7 +75,9 @@ async def dump_config():
 async def dump_openapi():
     print(
         json.dumps(
-            get_customized_openapi_schema(api_app, include_internal_routes=False),
+            get_customized_openapi_schema(
+                build_api_app(), include_internal_routes=False
+            ),
             ensure_ascii=False,
             indent=4,
         )

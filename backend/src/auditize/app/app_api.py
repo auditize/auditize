@@ -2,6 +2,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 
 from auditize.apikey.api import router as apikey_api_router
+from auditize.app.cors import setup_cors
 from auditize.auth.api import router as auth_api_router
 from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
@@ -16,27 +17,23 @@ from auditize.repo.api import router as repo_api_router
 from auditize.user.api import router as user_api_router
 
 
-def exception_handler(request, exc):
+def _exception_handler(request, exc):
     return make_response_from_exception(exc, get_request_lang(request))
 
 
-app = FastAPI()
-app.add_exception_handler(AuditizeException, exception_handler)
-app.add_exception_handler(RequestValidationError, exception_handler)
-customize_openapi(app)
-
-
-###
-# Router
-###
-
-router = APIRouter()
-router.include_router(auth_api_router)
-router.include_router(log_api_router)
-router.include_router(repo_api_router)
-router.include_router(user_api_router)
-router.include_router(apikey_api_router)
-router.include_router(log_i18n_profile_api_router)
-router.include_router(log_filter_api_router)
-
-app.include_router(router)
+def build_app():
+    app = FastAPI()
+    app.add_exception_handler(AuditizeException, _exception_handler)
+    app.add_exception_handler(RequestValidationError, _exception_handler)
+    customize_openapi(app)
+    router = APIRouter()
+    router.include_router(auth_api_router)
+    router.include_router(log_api_router)
+    router.include_router(repo_api_router)
+    router.include_router(user_api_router)
+    router.include_router(apikey_api_router)
+    router.include_router(log_i18n_profile_api_router)
+    router.include_router(log_filter_api_router)
+    app.include_router(router)
+    setup_cors(app)
+    return app

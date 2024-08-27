@@ -5,10 +5,12 @@ from httpx import ASGITransport, AsyncClient, Response
 from icecream import ic
 from starlette.requests import Request
 
-from auditize.app import app
+from auditize.app import build_app
 
 
 class HttpTestHelper(AsyncClient):
+    _app = None
+
     async def assert_request(
         self,
         method: str,
@@ -162,7 +164,11 @@ class HttpTestHelper(AsyncClient):
 
     @classmethod
     def spawn(cls) -> "HttpTestHelper":
-        return cls(transport=ASGITransport(app=app), base_url="https://localhost")
+        # Load the app only once as it's slow (it multiplies the test time by 3x)
+        if not cls._app:
+            cls._app = build_app(skip_config_init=True)
+
+        return cls(transport=ASGITransport(app=cls._app), base_url="https://localhost")
 
 
 def get_cookie_by_name(resp: Response, name) -> Cookie:
