@@ -26,3 +26,48 @@ td code {
     display: none;
   }
 }
+
+/*
+ * Intro styling
+ */
+
+.adz-intro {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  padding-top: 4rem;
+}
+
+.adz-intro-text {
+  flex-shrink: 1;
+}
+
+.adz-intro-text h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.adz-intro-image {
+  flex-shrink: 0;
+}
+
+.adz-intro-image img {
+  box-shadow: var(--md-shadow-z2);
+}
+
+.adz-intros > .adz-intro:nth-child(even) {
+  .adz-intro-image {
+    order: 1;
+  }
+
+  .adz-intro-text {
+    order: 2;
+  }
+}
+
+.adz-intro a {
+  color: var(--md-typeset-color);
+  display: inline-block;
+}

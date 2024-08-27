@@ -1,0 +1,40 @@
+{
+  "action": { "type": "job-offer-creation", "category": "job-offers" },
+  "source": [{ "name": "source-ip", "value": "192.168.12.34" }],
+  "actor": {
+    "name": "John Doe",
+    "ref": "john.doe@example.net",
+    "type": "user",
+    "extra": [{ "name": "role", "value": "recruiter" }]
+  },
+  "resource": {
+    "type": "job-offer",
+    "name": "Social Media Manager in Henderson",
+    "ref": "77c48e18-984b-4919-a961-9eda7041ca43",
+    "extra": [
+      {
+        "name": "expiration-in-days",
+        "value": "30"
+      }
+    ]
+  },
+  "details": [
+    {
+      "name": "category",
+      "value": "Marketing"
+    },
+    {
+      "name": "experience",
+      "value": "3-5 years"
+    },
+    {
+      "name": "salary",
+      "value": "$50,000 - $60,000"
+    }
+  ],
+  "entity_path": [
+    { "name": "West", "ref": "0ab7094b-db42-4714-afc0-b6cce5b996bf" },
+    { "name": "Nevada", "ref": "3c7faf2b-26a2-4bfe-9a48-1ea6bf942e20" },
+    { "name": "Henderson", "ref": "0e7c2742-0897-4111-8cce-fe72886db4ef" }
+  ]
+}
