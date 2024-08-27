@@ -4,6 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from auditize.apikey.api import router as apikey_api_router
 from auditize.app.cors import setup_cors
 from auditize.auth.api import router as auth_api_router
+from auditize.config import get_config
 from auditize.exceptions import AuditizeException
 from auditize.helpers.api.errors import (
     make_response_from_exception,
@@ -22,7 +23,11 @@ def _exception_handler(request, exc):
 
 
 def build_app():
-    app = FastAPI()
+    config = get_config()
+    if config.online_doc:
+        app = FastAPI()
+    else:
+        app = FastAPI(openapi_url=None)
     app.add_exception_handler(AuditizeException, _exception_handler)
     app.add_exception_handler(RequestValidationError, _exception_handler)
     customize_openapi(app)

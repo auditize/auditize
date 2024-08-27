@@ -26,6 +26,7 @@ class Config:
     cors_allow_origins: list[str]
     cookie_secure: bool
     test_mode: bool
+    online_doc: bool
 
     @staticmethod
     def _cast_list(value):
@@ -119,6 +120,9 @@ class Config:
                 ),
                 test_mode=optional(
                     "_AUDITIZE_TEST_MODE", cast=cls._cast_bool, default=False
+                ),
+                online_doc=optional(
+                    "_AUDITIZE_ONLINE_DOC", cast=cls._cast_bool, default=False
                 ),
             )
         except KeyError as e:

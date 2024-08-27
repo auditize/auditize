@@ -29,6 +29,7 @@ def test_get_config():
     assert config.cors_allow_origins == []
     assert config.cookie_secure is True
     assert config.test_mode is True
+    assert config.online_doc is False
 
 
 def test_config_without_mandatory_variable():
@@ -57,6 +58,7 @@ def test_config_minimum_viable_config():
     assert config.cors_allow_origins == []
     assert config.cookie_secure is True
     assert config.test_mode is False
+    assert config.online_doc is False
 
 
 def test_config_var_mongodb_uri():
