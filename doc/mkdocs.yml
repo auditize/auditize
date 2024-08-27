@@ -29,3 +29,7 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.details
   - tables
+plugins:
+  - glightbox:
+      touchNavigation: false
+      zoomable: false
