@@ -25,6 +25,10 @@ COPY --from=build /src/backend/dist /dist
 
 RUN pip install /dist/*.whl
 
-EXPOSE 80
+EXPOSE 8000
+
+RUN groupadd -r auditize-group && useradd -r -m -g auditize-group auditize-user
+
+USER auditize-user
 
 ENTRYPOINT ["python", "-m", "auditize"]
