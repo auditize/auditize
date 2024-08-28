@@ -65,9 +65,9 @@ async def bootstrap_default_superadmin():
         )
 
 
-async def serve():
+async def serve(host: str, port: int):
     app = build_app()
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000)
+    config = uvicorn.Config(app, host=host, port=port)
     server = uvicorn.Server(config)
     await server.serve()
 
@@ -126,10 +126,10 @@ async def main(args):
     )
 
     # CMD serve
-    serve_parser = sub_parsers.add_parser(
-        "serve", help="Serve the application on 0.0.0.0:8000"
-    )
-    serve_parser.set_defaults(func=lambda _: serve())
+    serve_parser = sub_parsers.add_parser("serve", help="Serve the application")
+    serve_parser.add_argument("--host", default="127.0.0.1")
+    serve_parser.add_argument("--port", default=8000, type=int)
+    serve_parser.set_defaults(func=lambda cmd_args: serve(cmd_args.host, cmd_args.port))
 
     # CMD schedule
     schedule_parser = sub_parsers.add_parser(
