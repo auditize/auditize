@@ -28,5 +28,7 @@ services:
     env_file: ".env"
     environment:
       - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
+      # we set PYTHONUNBUFFERED, otherwise the print() from "schedule" are not shown
+      - PYTHONUNBUFFERED=1
 volumes:
   mongo-data:
