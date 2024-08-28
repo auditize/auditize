@@ -4,6 +4,9 @@ import getpass
 import json
 import sys
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+
 from auditize.app import build_api_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
@@ -63,8 +66,19 @@ async def bootstrap_default_superadmin():
         )
 
 
-async def purge_expired_logs():
-    await apply_log_retention_period()
+async def schedule():
+    config = get_config()
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        apply_log_retention_period,
+        CronTrigger.from_crontab(config.log_expiration_schedule),
+    )
+    scheduler.start()
+    try:
+        while True:
+            await asyncio.sleep(10)
+    except asyncio.CancelledError:
+        scheduler.shutdown()
 
 
 async def dump_config():
@@ -107,9 +121,9 @@ async def main(args):
         )
     )
 
-    # CMD purge-expired
-    purge_expired_logs_parser = sub_parsers.add_parser("purge-expired-logs")
-    purge_expired_logs_parser.set_defaults(func=lambda _: purge_expired_logs())
+    # CMD schedule
+    schedule_parser = sub_parsers.add_parser("schedule")
+    schedule_parser.set_defaults(func=lambda _: schedule())
 
     # CMD config
     config_parser = sub_parsers.add_parser("config")

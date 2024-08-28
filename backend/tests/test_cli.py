@@ -27,12 +27,6 @@ async def test_not_empty_db(user: PreparedUser):
     assert await get_dbm().core_db.users.count_documents({}) == 1
 
 
-async def test_purge_expired_logs():
-    with patch("auditize.__main__.apply_log_retention_period") as mock:
-        await main(["purge-expired-logs"])
-        mock.assert_called_once_with()
-
-
 async def test_config(capsys):
     await main(["config"])
     # simply check that the output is valid JSON

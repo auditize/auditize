@@ -1,12 +1,15 @@
 import dataclasses
 import os
 
+from apscheduler.triggers.cron import CronTrigger
+
 from auditize.exceptions import ConfigError
 
 _DEFAULT_ATTACHMENT_MAX_SIZE = 1024 * 1024 * 5  # 5MB
 _DEFAULT_CSV_MAX_ROWS = 10_000
 _DEFAULT_USER_SESSION_TOKEN_LIFETIME = 60 * 60 * 12  # 12 hours
 _DEFAULT_ACCESS_TOKEN_LIFETIME = 10 * 60  # 10 minutes
+_DEFAULT_LOG_EXPIRATION_SCHEDULE = "0 1 * * *"
 
 
 @dataclasses.dataclass
@@ -27,6 +30,7 @@ class Config:
     cookie_secure: bool
     test_mode: bool
     online_doc: bool
+    log_expiration_schedule: str
 
     @staticmethod
     def _cast_list(value):
@@ -39,6 +43,14 @@ class Config:
         if value == "false":
             return False
         raise ValueError(f"invalid value {value!r} (must be either 'true' or 'false')")
+
+    @staticmethod
+    def _cast_cron_expr(value):
+        try:
+            CronTrigger.from_crontab(value)
+        except ValueError as exc:
+            raise ValueError(f"invalid cron expression {value!r} ({exc})")
+        return value
 
     def _validate(self):
         smtp_values_required = (
@@ -111,6 +123,14 @@ class Config:
                 cors_allow_origins=optional(
                     "AUDITIZE_CORS_ALLOW_ORIGINS", cast=cls._cast_list, default=[]
                 ),
+                log_expiration_schedule=optional(
+                    "AUDITIZE_LOG_EXPIRATION_SCHEDULE",
+                    cast=cls._cast_cron_expr,
+                    default=_DEFAULT_LOG_EXPIRATION_SCHEDULE,
+                ),
+                ###
+                # "Private" configuration
+                ###
                 cookie_secure=optional(
                     # Needed to disable Secure Cookies for Safari on localhost
                     # (see https://flaviocopes.com/cookie-not-being-set-in-safari/)

@@ -7,3 +7,5 @@ aiocache
 certifi
 bcrypt
 Authlib
+apscheduler
+

@@ -27,6 +27,7 @@ def test_get_config():
     assert config.smtp_sender is None
     assert config.is_smtp_enabled() is False
     assert config.cors_allow_origins == []
+    assert config.log_expiration_schedule == "0 1 * * *"
     assert config.cookie_secure is True
     assert config.test_mode is True
     assert config.online_doc is False
@@ -56,6 +57,7 @@ def test_config_minimum_viable_config():
     assert config.smtp_sender is None
     assert config.is_smtp_enabled() is False
     assert config.cors_allow_origins == []
+    assert config.log_expiration_schedule == "0 1 * * *"
     assert config.cookie_secure is True
     assert config.test_mode is False
     assert config.online_doc is False
@@ -80,6 +82,23 @@ def test_config_var_attachment_max_size():
         {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_ATTACHMENT_MAX_SIZE": "1048576"}
     )
     assert config.attachment_max_size == 1048576
+
+
+def test_config_var_log_expiration_schedule():
+    config = Config.load_from_env(
+        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_LOG_EXPIRATION_SCHEDULE": "0 0 * * *"}
+    )
+    assert config.log_expiration_schedule == "0 0 * * *"
+
+
+def test_config_var_log_expiration_schedule_invalid():
+    with pytest.raises(ConfigError):
+        Config.load_from_env(
+            {
+                **MINIMUM_VIABLE_CONFIG,
+                "AUDITIZE_LOG_EXPIRATION_SCHEDULE": "not a valid cron expression",
+            }
+        )
 
 
 def test_config_smtp_enabled():
