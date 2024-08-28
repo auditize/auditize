@@ -75,6 +75,7 @@ async def serve(host: str, port: int):
 async def schedule():
     scheduler = build_scheduler()
     scheduler.start()
+    print("Scheduler started")
     try:
         while True:
             await asyncio.sleep(10)
