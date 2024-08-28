@@ -4,7 +4,9 @@ import getpass
 import json
 import sys
 
-from auditize.app import build_api_app
+import uvicorn
+
+from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
 from auditize.exceptions import ConfigError, ConstraintViolation
@@ -63,6 +65,13 @@ async def bootstrap_default_superadmin():
         )
 
 
+async def serve():
+    app = build_app()
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000)
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
 async def schedule():
     scheduler = build_scheduler()
     scheduler.start()
@@ -96,14 +105,17 @@ async def main(args):
 
     # CMD bootstrap-default-superadmin
     bootstrap_default_superadmin_parser = sub_parsers.add_parser(
-        "bootstrap-default-superadmin"
+        "bootstrap-default-superadmin",
+        help="Bootstrap a default superadmin user if no users exist",
     )
     bootstrap_default_superadmin_parser.set_defaults(
         func=lambda _: bootstrap_default_superadmin()
     )
 
     # CMD bootstrap-superadmin
-    bootstrap_superadmin_parser = sub_parsers.add_parser("bootstrap-superadmin")
+    bootstrap_superadmin_parser = sub_parsers.add_parser(
+        "bootstrap-superadmin", help="Create a superadmin user"
+    )
     bootstrap_superadmin_parser.add_argument("email")
     bootstrap_superadmin_parser.add_argument("first_name")
     bootstrap_superadmin_parser.add_argument("last_name")
@@ -113,16 +125,26 @@ async def main(args):
         )
     )
 
+    # CMD serve
+    serve_parser = sub_parsers.add_parser(
+        "serve", help="Serve the application on 0.0.0.0:8000"
+    )
+    serve_parser.set_defaults(func=lambda _: serve())
+
     # CMD schedule
-    schedule_parser = sub_parsers.add_parser("schedule")
+    schedule_parser = sub_parsers.add_parser(
+        "schedule", help="Schedule Auditize periodic tasks"
+    )
     schedule_parser.set_defaults(func=lambda _: schedule())
 
     # CMD config
-    config_parser = sub_parsers.add_parser("config")
+    config_parser = sub_parsers.add_parser(
+        "config", help="Dump the Auditize configuration as JSON"
+    )
     config_parser.set_defaults(func=lambda _: dump_config())
 
     # CMD openapi
-    openapi_parser = sub_parsers.add_parser("openapi")
+    openapi_parser = sub_parsers.add_parser("openapi", help="Dump the OpenAPI schema")
     openapi_parser.set_defaults(func=lambda _: dump_openapi())
 
     parsed_args = parser.parse_args(args)
