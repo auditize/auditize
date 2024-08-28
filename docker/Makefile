@@ -1,15 +1,7 @@
 NAME=auditize
 
-build-base:
-	cd .. && docker build . -f docker/Dockerfile.base -t $(NAME)/base
-
-build-web:
-	cd .. && docker build . -f docker/Dockerfile.web -t $(NAME)/web
-
-build-tasks:
-	cd .. && docker build . -f docker/Dockerfile.cron -t $(NAME)/tasks
-
-build: build-base build-web build-tasks
+build:
+	cd .. && docker build . -f docker/Dockerfile -t $(NAME)
 
 up:
 	docker compose -p $(NAME) up -d
@@ -20,8 +12,8 @@ down:
 shell-web:
 	docker exec -it $(NAME)-web-1 /bin/bash
 
-shell-tasks:
-	docker exec -it $(NAME)-tasks-1 /bin/bash
+shell-scheduler:
+	docker exec -it $(NAME)-scheduler-1 /bin/bash
 
 shell: shell-web
 
@@ -31,8 +23,8 @@ ps:
 logs-web:
 	docker compose -p $(NAME) logs -f web
 
-logs-tasks:
-	docker compose -p $(NAME) logs -f tasks
+logs-scheduler:
+	docker compose -p $(NAME) logs -f scheduler
 
 logs:
-	docker compose -p $(NAME) logs -f web tasks
+	docker compose -p $(NAME) logs -f web scheduler

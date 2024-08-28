@@ -24,3 +24,7 @@ RUN apt-get update
 COPY --from=build /src/backend/dist /dist
 
 RUN pip install /dist/*.whl
+
+EXPOSE 80
+
+ENTRYPOINT ["python", "-m", "auditize"]
