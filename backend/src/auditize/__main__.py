@@ -4,16 +4,13 @@ import getpass
 import json
 import sys
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
-
 from auditize.app import build_api_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
 from auditize.exceptions import ConfigError, ConstraintViolation
-from auditize.log.service import apply_log_retention_period
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
+from auditize.scheduler import build_scheduler
 from auditize.user.models import User
 from auditize.user.service import (
     get_users,
@@ -67,12 +64,7 @@ async def bootstrap_default_superadmin():
 
 
 async def schedule():
-    config = get_config()
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        apply_log_retention_period,
-        CronTrigger.from_crontab(config.log_expiration_schedule),
-    )
+    scheduler = build_scheduler()
     scheduler.start()
     try:
         while True:
