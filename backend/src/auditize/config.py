@@ -33,11 +33,11 @@ class Config:
     log_expiration_schedule: str
 
     @staticmethod
-    def _cast_list(value):
+    def _validate_list(value):
         return value.split(",")
 
     @staticmethod
-    def _cast_bool(value):
+    def _validate_bool(value):
         if value == "true":
             return True
         if value == "false":
@@ -45,7 +45,7 @@ class Config:
         raise ValueError(f"invalid value {value!r} (must be either 'true' or 'false')")
 
     @staticmethod
-    def _cast_cron_expr(value):
+    def _validate_cron_expr(value):
         try:
             CronTrigger.from_crontab(value)
         except ValueError as exc:
@@ -75,20 +75,20 @@ class Config:
         if env is None:
             env = os.environ
 
-        def required(key, cast=None):
+        def required(key, validator=None):
             value = env[key]
-            if cast:
+            if validator:
                 try:
-                    value = cast(value)
+                    value = validator(value)
                 except ValueError as exc:
                     raise ConfigError(
                         f"Could not load configuration, variable {key!r} has an invalid value: {exc}"
                     )
             return value
 
-        def optional(key, default=None, cast=None):
+        def optional(key, default=None, validator=None):
             try:
-                return required(key, cast)
+                return required(key, validator)
             except KeyError:
                 return default
 
@@ -99,33 +99,37 @@ class Config:
                 user_session_token_lifetime=optional(
                     "AUDITIZE_USER_SESSION_TOKEN_LIFETIME",
                     _DEFAULT_USER_SESSION_TOKEN_LIFETIME,
-                    cast=int,
+                    validator=int,
                 ),
                 access_token_lifetime=optional(
                     "AUDITIZE_ACCESS_TOKEN_LIFETIME",
                     _DEFAULT_ACCESS_TOKEN_LIFETIME,
-                    cast=int,
+                    validator=int,
                 ),
                 attachment_max_size=optional(
                     "AUDITIZE_ATTACHMENT_MAX_SIZE",
                     default=_DEFAULT_ATTACHMENT_MAX_SIZE,
-                    cast=int,
+                    validator=int,
                 ),
                 csv_max_rows=optional(
-                    "AUDITIZE_CSV_MAX_ROWS", default=_DEFAULT_CSV_MAX_ROWS, cast=int
+                    "AUDITIZE_CSV_MAX_ROWS",
+                    default=_DEFAULT_CSV_MAX_ROWS,
+                    validator=int,
                 ),
                 mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
-                smtp_port=optional("AUDITIZE_SMTP_PORT", cast=int),
+                smtp_port=optional("AUDITIZE_SMTP_PORT", validator=int),
                 smtp_username=optional("AUDITIZE_SMTP_USERNAME"),
                 smtp_password=optional("AUDITIZE_SMTP_PASSWORD"),
                 _smtp_sender=optional("AUDITIZE_SMTP_SENDER"),
                 cors_allow_origins=optional(
-                    "AUDITIZE_CORS_ALLOW_ORIGINS", cast=cls._cast_list, default=[]
+                    "AUDITIZE_CORS_ALLOW_ORIGINS",
+                    validator=cls._validate_list,
+                    default=[],
                 ),
                 log_expiration_schedule=optional(
                     "AUDITIZE_LOG_EXPIRATION_SCHEDULE",
-                    cast=cls._cast_cron_expr,
+                    validator=cls._validate_cron_expr,
                     default=_DEFAULT_LOG_EXPIRATION_SCHEDULE,
                 ),
                 ###
@@ -135,14 +139,14 @@ class Config:
                     # Needed to disable Secure Cookies for Safari on localhost
                     # (see https://flaviocopes.com/cookie-not-being-set-in-safari/)
                     "_AUDITIZE_COOKIE_SECURE",
-                    cast=cls._cast_bool,
+                    validator=cls._validate_bool,
                     default=True,
                 ),
                 test_mode=optional(
-                    "_AUDITIZE_TEST_MODE", cast=cls._cast_bool, default=False
+                    "_AUDITIZE_TEST_MODE", validator=cls._validate_bool, default=False
                 ),
                 online_doc=optional(
-                    "_AUDITIZE_ONLINE_DOC", cast=cls._cast_bool, default=False
+                    "_AUDITIZE_ONLINE_DOC", validator=cls._validate_bool, default=False
                 ),
             )
         except KeyError as e:
