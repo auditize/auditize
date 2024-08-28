@@ -4,13 +4,15 @@ import getpass
 import json
 import sys
 
-from auditize.app import build_api_app
+import uvicorn
+
+from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
 from auditize.exceptions import ConfigError, ConstraintViolation
-from auditize.log.service import apply_log_retention_period
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
+from auditize.scheduler import build_scheduler
 from auditize.user.models import User
 from auditize.user.service import (
     get_users,
@@ -63,8 +65,22 @@ async def bootstrap_default_superadmin():
         )
 
 
-async def purge_expired_logs():
-    await apply_log_retention_period()
+async def serve(host: str, port: int):
+    app = build_app()
+    config = uvicorn.Config(app, host=host, port=port)
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
+async def schedule():
+    scheduler = build_scheduler()
+    scheduler.start()
+    print("Scheduler started")
+    try:
+        while True:
+            await asyncio.sleep(10)
+    except asyncio.CancelledError:
+        scheduler.shutdown()
 
 
 async def dump_config():
@@ -90,14 +106,17 @@ async def main(args):
 
     # CMD bootstrap-default-superadmin
     bootstrap_default_superadmin_parser = sub_parsers.add_parser(
-        "bootstrap-default-superadmin"
+        "bootstrap-default-superadmin",
+        help="Bootstrap a default superadmin user if no users exist",
     )
     bootstrap_default_superadmin_parser.set_defaults(
         func=lambda _: bootstrap_default_superadmin()
     )
 
     # CMD bootstrap-superadmin
-    bootstrap_superadmin_parser = sub_parsers.add_parser("bootstrap-superadmin")
+    bootstrap_superadmin_parser = sub_parsers.add_parser(
+        "bootstrap-superadmin", help="Create a superadmin user"
+    )
     bootstrap_superadmin_parser.add_argument("email")
     bootstrap_superadmin_parser.add_argument("first_name")
     bootstrap_superadmin_parser.add_argument("last_name")
@@ -107,16 +126,26 @@ async def main(args):
         )
     )
 
-    # CMD purge-expired
-    purge_expired_logs_parser = sub_parsers.add_parser("purge-expired-logs")
-    purge_expired_logs_parser.set_defaults(func=lambda _: purge_expired_logs())
+    # CMD serve
+    serve_parser = sub_parsers.add_parser("serve", help="Serve the application")
+    serve_parser.add_argument("--host", default="127.0.0.1")
+    serve_parser.add_argument("--port", default=8000, type=int)
+    serve_parser.set_defaults(func=lambda cmd_args: serve(cmd_args.host, cmd_args.port))
+
+    # CMD schedule
+    schedule_parser = sub_parsers.add_parser(
+        "schedule", help="Schedule Auditize periodic tasks"
+    )
+    schedule_parser.set_defaults(func=lambda _: schedule())
 
     # CMD config
-    config_parser = sub_parsers.add_parser("config")
+    config_parser = sub_parsers.add_parser(
+        "config", help="Dump the Auditize configuration as JSON"
+    )
     config_parser.set_defaults(func=lambda _: dump_config())
 
     # CMD openapi
-    openapi_parser = sub_parsers.add_parser("openapi")
+    openapi_parser = sub_parsers.add_parser("openapi", help="Dump the OpenAPI schema")
     openapi_parser.set_defaults(func=lambda _: dump_openapi())
 
     parsed_args = parser.parse_args(args)

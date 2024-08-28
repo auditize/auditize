@@ -1,5 +1,0 @@
-FROM auditize/base
-
-EXPOSE 80
-
-ENTRYPOINT ["sh", "-c", "python -m auditize bootstrap-default-superadmin && uvicorn auditize.app:build_app --factory --host 0.0.0.0 --port 80"]

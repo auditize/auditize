@@ -1,7 +1,0 @@
-FROM auditize/base
-
-RUN apt install -y cron
-
-COPY docker/cron.sh /
-
-ENTRYPOINT ["./cron.sh"]

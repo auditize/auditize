@@ -166,7 +166,7 @@ class HttpTestHelper(AsyncClient):
     def spawn(cls) -> "HttpTestHelper":
         # Load the app only once as it's slow (it multiplies the test time by 3x)
         if not cls._app:
-            cls._app = build_app(skip_config_init=True)
+            cls._app = build_app()
 
         return cls(transport=ASGITransport(app=cls._app), base_url="https://localhost")
 

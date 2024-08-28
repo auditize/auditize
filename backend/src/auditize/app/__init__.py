@@ -18,12 +18,19 @@ async def _setup_app(_):
     yield
 
 
-def build_app(*, skip_config_init=False):
-    # The skip_config_init parameter is used to prevent build_app to
-    # initialize the configuration while it has already
-    # been initialized in test context.
-    if not skip_config_init:
-        init_config()
+def build_app():
+    # This function is intended to be used in a context where
+    # config and dbm have already been initialized
+    app = FastAPI()
+    app.mount("/api", build_api_app())
+    app.mount("/", build_static_app())
+    return app
+
+
+def app_factory():
+    # This function is intended to be used with
+    # uvicorn auditize.app:app_factory --factory
+    init_config()
     app = FastAPI(lifespan=_setup_app)
     app.mount("/api", build_api_app())
     app.mount("/", build_static_app())
