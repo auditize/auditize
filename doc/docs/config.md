@@ -14,7 +14,7 @@ The base Auditize configuration is done through environment variables. The follo
 | `AUDITIZE_SMTP_SENDER` | Defaults to `$AUDITIZE_SMTP_USERNAME` | The email address used to send emails. |
 | `AUDITIZE_LOG_EXPIRATION_SCHEDULE` | `0 1 * * *` (every day at 1AM) | The schedule at which expired logs are deleted. |
 | `AUDITIZE_CORS_ALLOW_ORIGINS` | | A comma-separated list of origins allowed to make HTTP requests to Auditize. |
-| `AUDITIZE_USER_SESSION_TOKEN_LIFETIME` | `43200` (12 hours) | The lifetime of the user session token in seconds. |
-| `AUDITIZE_ACCESS_TOKEN_LIFETIME` | `600` (10 minutes) | The lifetime of the access token in seconds. |
-| `AUDITIZE_ATTACHMENT_MAX_SIZE`| `5242880` (5MB) | The maximum size of a file attachment in bytes. |
-| `AUDITIZE_CSV_MAX_ROWS` | `10000` | The maximum number of rows in a CSV export (`0` means no limit). |
+| `AUDITIZE_USER_SESSION_TOKEN_LIFETIME` | `43200` (12 hours) | The lifetime of user session tokens in seconds. |
+| `AUDITIZE_ACCESS_TOKEN_LIFETIME` | `600` (10 minutes) | The lifetime of access tokens in seconds. |
+| `AUDITIZE_ATTACHMENT_MAX_SIZE`| `5242880` (5MB) | The maximum file size of attachments in bytes. |
+| `AUDITIZE_CSV_MAX_ROWS` | `10000` | The maximum number of rows in CSV exports (`0` means no limit). |
