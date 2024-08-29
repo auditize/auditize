@@ -2,22 +2,22 @@
 
 ## Log Repositories
 
-Log Repositories (also named "Repositories" or "Repos") are log containers. Each Log Repository is associated to a dedicated MongoDB database providing strong isolation between logs. Log Repositories allow you to set up specific permissions and settings (such as a retention period or status).
+Log Repositories (also referred to as "Repositories" or "Repos") serve as containers for logs. Each Log Repository is associated with a dedicated MongoDB database, ensuring strong isolation between logs. They allow you to set up specific permissions and settings, such as a retention periods or statuses.
 
-You can setup one or more repositories, depending on your needs. Multiple repositories can be useful to partition logs by application, environment, customer, etc. For consistency, it is highly recommended to **not mix logs from different sources or different kind of applications** in the same repository, it would lead to unexpected behavior in the log UI, especially when dealing with aggregated data.
+You can set up one or more repositories based on your needs. However, to ensure logs consistency you should make sure that a given log repository only contains logs from the same application running in the same environment. You should for instance avoid mixing logs from a pre-production and production environment or logs from different unrelated applications in the same repository.
 
-The following settings can be set on a repository:
+The following settings can be configured for a repository:
 
 - Retention period: the time after which logs are automatically deleted
 - Status:
-    - Enabled: logs can be send and viewed
-    - Read-only: logs can only be viewed
-    - Disabled: logs cannot be viewed nor sent
+    - Enabled: logs can be written and read
+    - Read-only: logs can only be read
+    - Disabled: logs cannot be read nor written
 - Log i18n Profile: the profile used to translate logs in the web interface
 
 ## Log i18n Profiles
 
-Auditize supports internationalization of the web interface but also of the logs themselves. The internationalization of logs is done through Log i18n Profiles. Log i18n Profiles let you upload translation files for the languages you want to support (and are supported by Auditize).
+Auditize supports the internationalization of both the web interface and the logs themselves. Log internationalization is managed through Log i18n Profiles. Log i18n Profiles let you upload translation files for the languages you want to support (and are supported by Auditize).
 The log translation applies to log fields whose value is considered to be a key. Here are the log field type that can be translated:
 
 - `action_type`
@@ -88,7 +88,7 @@ Example of a translation file:
 ## Users
 
 Users are meant to access Auditize through the web interface. See [API keys](#api-keys) if you want to access the REST API programmatically.
-When a user is created, he'll receive an email with a link to set his password (make sure that [SMTP settings](config.md) are properly set). Once the password has been chosen, he will be able to log in to the web interface. Please refer to the [Permissions](#permissions) section for permissions details.
+When a user is created, they will receive an email with a link to set their password (make sure that [SMTP settings](config.md) are properly set). Once the password it set, the user will be able to log in to the web interface. Please refer to the [Permissions](#permissions) section for permissions details.
 
 !!! note
     You'll notice that certain permissions or combination of permissions do not seem to make sense for a user. For instance:
@@ -101,7 +101,8 @@ When a user is created, he'll receive an email with a link to set his password (
 
 ## API keys
 
-API keys are used to access Auditize programmatically through the REST API. Like [Users](#users), API keys have a set of [Permissions](#permissions). When a new API key is created, a secret is generated and only shown once. If you lose the secret or want to generate a new one, you can generate a new secret for an existing API key. In that case, the former secret will no longer be valid.
+API keys are used to access Auditize programmatically through the REST API. Like [Users](#users), API keys have a set of [Permissions](#permissions). When a new API key is created, a secret is generated and only shown once. A new secret can be generated for an existing API key (if you lose the secret for instance). In this case, the former secret will no longer be valid.
+
 
 ## Permissions
 
