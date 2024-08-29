@@ -57,6 +57,14 @@ td code {
   box-shadow: var(--md-shadow-z2);
 }
 
+.adz-intro-image a img {
+  transition: transform 0.15s ease-in-out;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+}
+
 .adz-intros > .adz-intro:nth-child(even) {
   .adz-intro-image {
     order: 1;
@@ -65,9 +73,4 @@ td code {
   .adz-intro-text {
     order: 2;
   }
-}
-
-.adz-intro a {
-  color: var(--md-typeset-color);
-  display: inline-block;
 }
