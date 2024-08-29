@@ -4,7 +4,9 @@
 
 Log Repositories (also named "Repositories" or "Repos") are log containers. Each Log Repository is associated to a dedicated MongoDB database providing strong isolation between logs. Log Repositories allow you to set up specific permissions and settings (such as a retention period or status).
 
-You can configure:
+You can setup one or more repositories, depending on your needs. Multiple repositories can be useful to partition logs by application, environment, customer, etc. For consistency, it is highly recommended to **not mix logs from different sources or different kind of applications** in the same repository, it would lead to unexpected behavior in the log UI, especially when dealing with aggregated data.
+
+The following settings can be set on a repository:
 
 - Retention period: the time after which logs are automatically deleted
 - Status:
@@ -16,7 +18,7 @@ You can configure:
 ## Log i18n Profiles
 
 Auditize supports internationalization of the web interface but also of the logs themselves. The internationalization of logs is done through Log i18n Profiles. Log i18n Profiles let you upload translation files for the languages you want to support (and are supported by Auditize).
-The log translation applies to log fields whose value is considered to be a key. Here are the log fields that can be translated:
+The log translation applies to log fields whose value is considered to be a key. Here are the log field type that can be translated:
 
 - `action_type`
 - `action_category`
@@ -85,17 +87,16 @@ Example of a translation file:
 
 ## Users
 
-Users access Auditize through the web interface. If you want to use the REST API, you can use [API keys](#api-keys).
-When a user is created, he'll receive an email with a link to set his password. Once the password has been chosen, he will be able to log in to the web interface. Permissions can be set on a user, please refer to the [Permissions](#permissions) section.
+Users are meant to access Auditize through the web interface. See [API keys](#api-keys) if you want to access the REST API programmatically.
+When a user is created, he'll receive an email with a link to set his password (make sure that [SMTP settings](config.md) are properly set). Once the password has been chosen, he will be able to log in to the web interface. Please refer to the [Permissions](#permissions) section for permissions details.
 
 !!! note
-    You'll notice that the certain permissions or combination of permissions does not seem to make sense for a user. For instance:
+    You'll notice that certain permissions or combination of permissions do not seem to make sense for a user. For instance:
     
-    - a user with the "write" permission on the logs of a repository (while it's not possible to "push" logs through the web interface)
-    - a user with the "write" permission on the ressource management without the corresponding "read" permission
+    - a user with the "write" permission on the logs of a repository (while it's not possible to send logs through the web interface)
+    - a user with only the "write" permission on resource management without the corresponding "read" permission
 
-    This is because the permissions are also used for API keys and also because these permissions also used to 
-    determine what permissions a [user can grant to other users](#granting-permissions).
+    This is because the permissions are used for API keys and are also employed to determine what permissions a [user can grant to other users](#granting-permissions).
 
 
 ## API keys
@@ -121,15 +122,18 @@ Management permissions allow you to administrate the various core resources of A
 - Users
 - API keys
 
-To each of these resources, you can set the following permissions:
+On each of these resources, you can set the following permissions:
 
 - Read: it allows the user to view the resource
 - Write: it allows the user to alter or delete the resource
 
+!!! info
+    Setting a read permission to a user without the write permission is like giving an audit access to the resource.
+
 
 ### Log permissions
 
-Log permissions control the access to logs. Permissions can be set either globally or per repository.
+Log permissions control the access to logs. Permissions can be set either globally or on an per repository basis.
 
 - the "Read" permission allows the user to view logs
 - the "Write" permission allows the user to send logs to the Auditize API
@@ -147,15 +151,15 @@ When a user is granted the Superadmin role, he has all permissions on all resour
 
 ### Granting permissions
 
-When a user has the permission to manage Users or API keys ("write" permission), the permissions he is allowed to grant are the ones he has himself. For example, if a user has the "read" permission on the logs of a given repository, he can only grant the "read" permission to other users on the same repository.
+When a user has the permission to manage Users or API keys ("write" permission), the permissions he is allowed to grant are the ones he has himself. For example, if a user has the "read" permission on a given repository logs, he is only able to grant the "read" permission on this repository to other users.
 
-Please note that you'll need a "read" permission on a repository's logs without entity restrictions to grant the "read" permission (with or without entity restrictions) to other users to this repository's logs.
+Please note that you need a "read" permission on a repository's logs without entity restrictions to grant the "read" permission (with or without entity restrictions) to this repository's logs to other users.
 
 
 ### Permissions normalization
 
 When saving permissions, they are normalized to ensure consistency and avoid possible side effects in future permissions updates. The normalization process is as follows:
 
-- if a user has the "read" log permission globally (on all repositories), any "read" permission granted on a specific repository and any log entity restrictions are removed
-- if a user has the "write" log permission globally (on all repositories), any "write" permission granted on a specific repository is removed
-- if a user has the superadmin role, all other permissions are removed
+- if a user has a global "read" log permission (on all repositories), any "read" permission explicitly granted on a specific repository (with/without log entity restrictions) is removed
+- if a user has a global "write" log permission (on all repositories), any "write" permission explicitly granted on a specific repository is removed
+- if a user has the superadmin role, every explicitly granted management/logs permission is removed
