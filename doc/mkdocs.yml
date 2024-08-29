@@ -3,6 +3,7 @@ site_url: https://auditize.org
 nav:
   - Home: index.md
   - Concepts: overview.md
+  - Installation: install.md
   - Configuration: config.md
   - Log data model: logs.md
   - Sending logs: sending-logs.md
