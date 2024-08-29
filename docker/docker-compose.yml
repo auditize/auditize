@@ -11,6 +11,8 @@ services:
       - "27018:27017" # for debugging purposes
   web:
     image: auditize
+    depends_on:
+      - mongo
     entrypoint:
       [
         "sh",
@@ -24,6 +26,8 @@ services:
       - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
   scheduler:
     image: auditize
+    depends_on:
+      - mongo
     command: ["schedule"]
     env_file: ".env"
     environment:
