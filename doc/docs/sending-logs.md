@@ -1,11 +1,11 @@
 # Sending logs
 
-Once Auditize has been properly installed, two steps are required to send logs:
+After Auditize is successfully installed, two steps are still necessary to send logs:
 
-- creating a [log repository](overview.md#log-repositories)
-- creating an [API key](overview.md#api-keys) with (at least) the write permission on this repository and getting the secret associated to this key (that's what we'll name API key in the rest of this page)
+- Create a [log repository](overview.md#log-repositories).
+- Create an [API key](overview.md#api-keys) with at least write permission for this repository and obtain the associated secret (referred to as the API key throughout the rest of this page).
 
-An example of sending a log to Auditize using `curl`:
+Here is an example of sending a log to Auditize using `curl`:
 
 ```bash
 curl \
