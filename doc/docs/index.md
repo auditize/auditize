@@ -1,6 +1,6 @@
 # Auditize
 
-Auditize is a comprehensive audit log solution designed to seamlessly integrate auditability into your software. It combines powerful features with ease of integration to enhance your application’s tracability.
+Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
 
 <div class="adz-intros">
   <div class="adz-intro">
