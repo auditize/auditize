@@ -28,10 +28,10 @@ td code {
 }
 
 /*
- * Intro styling
+ * Landing page "features" styling
  */
 
-.adz-intro {
+.adz-feature {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -40,27 +40,27 @@ td code {
   padding-top: 4rem;
 }
 
-.adz-intro-text {
+.adz-feature-text {
   font-size: 0.8rem;
   flex-grow: 1;
 }
 
-.adz-intro-text h2 {
+.adz-feature-text h2 {
   font-size: 1.25rem;
   font-weight: 700;
   margin-top: 1rem;
 }
 
-.adz-intro-image {
+.adz-feature-image {
   flex-shrink: 1;
   flex-grow: 0;
 }
 
-.adz-intro-image img {
+.adz-feature-image img {
   box-shadow: var(--md-shadow-z2);
 }
 
-.adz-intro-image a img {
+.adz-feature-image a img {
   transition: transform 0.15s ease-in-out;
 
   &:hover {
@@ -69,23 +69,23 @@ td code {
 }
 
 @media screen and (min-width: 60em) {
-  .adz-intros > .adz-intro:nth-child(odd) {
+  .adz-features > .adz-feature:nth-child(odd) {
     flex-direction: row-reverse;
   }
-  .adz-intro-text {
+  .adz-feature-text {
     flex-basis: 300px;
   }
 }
 
 @media screen and (max-width: 59.9844em) {
-  .adz-intro {
+  .adz-feature {
     flex-direction: column;
   }
-  .adz-intro-image {
+  .adz-feature-image {
     margin-left: auto;
     margin-right: auto;
   }
-  .adz-intro-text h2 {
+  .adz-feature-text h2 {
     margin-top: 0px;
   }
 }
