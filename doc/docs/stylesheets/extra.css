@@ -33,16 +33,15 @@ td code {
 
 .adz-intro {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 1rem;
   padding-top: 4rem;
 }
 
 .adz-intro-text {
-  flex-shrink: 2;
   flex-grow: 1;
-  flex-basis: 300px;
 }
 
 .adz-intro-text h2 {
@@ -68,12 +67,24 @@ td code {
   }
 }
 
-.adz-intros > .adz-intro:nth-child(even) {
-  .adz-intro-image {
-    order: 1;
+@media screen and (min-width: 60em) {
+  .adz-intros > .adz-intro:nth-child(odd) {
+    flex-direction: row-reverse;
   }
-
   .adz-intro-text {
-    order: 2;
+    flex-basis: 300px;
+  }
+}
+
+@media screen and (max-width: 59.9844em) {
+  .adz-intro {
+    flex-direction: column;
+  }
+  .adz-intro-image {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .adz-intro-text h2 {
+    margin-top: 0px;
   }
 }
