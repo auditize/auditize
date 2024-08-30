@@ -1,3 +1,9 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 # Auditize
 
 Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
