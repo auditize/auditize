@@ -46,15 +46,15 @@ make build
 
 ### Setup the `.env` file
 
-Auditize base configuration is 100% environment variables based. It makes it easy and flexible to configure Auditize, especially in a Docker environment.
+The Auditize base configuration is 100% environment variables based. It makes it easy and flexible to configure Auditize, especially in a Docker environment.
 
-In the `docker` directory, you'll find a `.env.example` file which is a template for the environment variables. You can copy this file to `.env` and edit it to your needs. The configuration is documented in details [here](config.md).
+In the `docker` directory, you'll find a `.env.example` file which serve as a template for the environment variables. You can copy this file to `.env` and modify it as needed. The configuration is documented in details [here](config.md).
 
 Make sure that the `.env` file contains at least the **required environment variables**.
 
 ### Run docker compose
 
-Run docker compose:
+Start the Docker containers:
 
 ```bash
 make up
@@ -67,7 +67,7 @@ When Auditize is run for the first time on an empty database, it will create a d
 - email: `super.admin@example.net`
 - password: `auditize`
 
-You can now access the Auditize web interface at [http://localhost:8080](http://localhost:8080) with the credentials above. For security concerns, it is of course recommended to create a brand a new superadmin user to your own identity and then **delete the default one**.
+You can now access the Auditize web interface at [http://localhost:8080](http://localhost:8080) with the credentials above. For security concerns, it is of course recommended to create a brand new superadmin user to your own identity and then **delete the default one**.
 
 ### Other useful make commands
 
