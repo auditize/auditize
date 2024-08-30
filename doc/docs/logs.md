@@ -2,7 +2,7 @@
 
 ## Overview
 
-Here is an example of log such as it is accepted by `POST /api/repos/{id}/logs`:
+Here is an example of a full-featured log such as it is accepted by the `POST /api/repos/{id}/logs` API endpoint:
 
 ```json
 {
@@ -69,70 +69,73 @@ This structure let's you represent :
 
 - the action being performed (`action`),
 - who is performing the action (`actor`),
-- the target of the action (`resource`),
+- what the action is about (`resource`),
 - the details of the action (`details`),
 - the entity to which the log is related (`entity_path`).
 
-The structure is also flexible enough to let you add any custom information about the actor, the source, the resource, the details and through a tag system.
+The structure is also flexible enough to let you add custom information about the actor, the source, the resource, the details and through the tag system.
 
-## Details
+## Anatomy of a log
 
 !!! info
-    Values that must respect the `[a-z0-9-]+` can be translated through [Log i18n Profiles](overview.md#log-i18n-profiles), they are also used to form a human-friendly name in the log interface when no translation is available.
+    Values that must respect the `[a-z0-9-]+` format are used as translation keys that 
+    can be translated through [Log i18n Profiles](overview.md#log-i18n-profiles).
+    When no translation is available for a given key, a default translation is inferred
+    from the key itself by the UI.
 
 
 ### `action`
 
-The `action` object describes the action that was performed. It contains the following fields:
+The `action` object specifies the action being performed. It includes the following fields:
 
-- `type`: The type of the action. It should describe the action in a non-ambiguous way. For instance, if you want to describe the creation of a user, you could use `user-creation` over `create`. It must respect the `[a-z0-9-]+` format.
-- `category`: The category of the action is used to group actions of the same nature. For instance, you could use `user-management` for actions whose `type` is `user-creation`, `user-deletion`, etc. It must respect the `[a-z0-9-]+` format.
+- `type`: It should describe the action in a non-ambiguous way, independent of its associated `category`. For example, if you want to describe the creation of a user, `user-creation` is preferable to `create`. This field is required and must respect the `[a-z0-9-]+` format.
+- `category`: It is used to group related types of actions. For example, you could use `user-management` for actions whose `type` is `user-creation`, `user-deletion`, etc. This field is required and must respect the `[a-z0-9-]+` format.
 
-The `action` object is mandatory as its `type` and `category` fields.
-
+The `action` object is mandatory.
 
 ### `source`
 
-The `source` object holds information about the source of the action. It is normalized as a list of name-value objects (also named "custom fields") and can be used to express any information: the application that triggered the action, the version of the application, a IP address, etc.
+The `source` object holds information about the source of the action. It is normalized as a list of custom fields and can be used to express any information: the application that triggered the action, the version of the application, an IP address, etc.
 
-- `name`: The name of the source field. It must respect the `[a-z0-9-]+` format.
-- `value`: The value of the source field. It can be any string.
+A custom field must include the following fields:
 
-The `source` field list is optional but for a given field object, both `name` and `value` are mandatory.
+- `name`: The source field name. It must respect the `[a-z0-9-]+` format.
+- `value`: The source field value. It can be any string.
 
+The `source` field is optional.
 
 ### `actor`
 
-The `actor` object describes the actor that performed the action. It contains the following fields:
+The `actor` object identifies the actor behind the action. It includes the following fields:
 
-- `ref`: The unique identifier of the actor, it must be unique across all actors, whatever their type. It can be a UUID or any other unique identifier as long as it is expressed as a string.
-- `type`: The type of the actor. It must respect the `[a-z0-9-]+` format.
-- `name`: The name of the actor. It can be any string.
-- `extra`: A list of custom fields that can be used to express any extra custom information about the actor such as an email, a role, etc. The `name` must respect the `[a-z0-9-]+` format while the `value` can be any string.
+- `ref`: A value that uniquely identifies an actor, regardless of its `type`. This field is required and can be any string.
+- `type`: The type of the actor. This field is required and must respect the `[a-z0-9-]+` format.
+- `name`: The name of the actor. This field is required and can be any string.
+- `extra`: An optional list of custom fields that can be used to express any extra custom information about the actor such as an email, a role, etc.
 
-The `actor` object is optional but if it is present, the `ref`, `type`, and `name` fields are mandatory.
+The `actor` object is optional.
 
 
 ### `resource`
 
-The `resource` object describes the resource that was the target of the action. It contains the following fields:
+The `resource` object identifies the resource being the target of the action. It includes the following fields:
 
-- `ref`: A value that uniquely identifies a resource, whatever its type. It can be a UUID or any other unique identifier as long as it is expressed as a string.
-- `type`: The type of the resource. It must respect the `[a-z0-9-]+` format.
-- `name`: The name of the resource. It can be any string.
+- `ref`: A value that uniquely identifies a resource, regardless of its `type`. This field is required and can be any string.
+- `type`: The type of the resource. This field is required and must respect the `[a-z0-9-]+` format.
+- `name`: The name of the resource. This field is required and can be any string.
 - `extra`: A list of custom fields that can be used to express any extra custom information about the resource. The `name` must respect the `[a-z0-9-]+` format while the `value` can be any string.
 
-The `resource` object is optional but if it is present, the `ref`, `type`, and `name` fields are mandatory.
+The `resource` object is optional.
 
 
 ### `details`
 
-The `details` object holds information about the action. It follows the same structure as the `source` object but is used to express details about the action itself.
+The `details` object holds information about the action. It follows the same structure as the `source` object but is used to proovide details about the action itself.
 
 
 ### `tags`
 
-`tags` is a list of elements that can be used to follow / group logs on an arbitrary basis. There are two types of tags:
+`tags` is a list of elements that can be used to track logs on an arbitrary basis. There are two types of tags:
 
 - "simple" tags: they are represented by an object with only a `type` field. The `type` must respect the `[a-z0-9-]+` format.
 - "rich" tags: they are represented by an object with the three required fields: 
@@ -142,7 +145,7 @@ The `details` object holds information about the action. It follows the same str
 
 ### `entity_path`
 
-Auditize supports a hierarchical tree structure to represent the entities of your application. Entities can be anything: a customer, an organizational unit, a geographical location, etc. Each log must contain the full path to the actual entity which is the subject of the log. Example: if the log is about a job offer in Arlington, Texas, the `entity_path` would be:
+Auditize represents the entities of your application as a hierarchical tree structure. Entities can be anything: a customer company, an organizational unit, a geographical location, etc. Each log must include the full path to the specific entity it is associated with. Example: if your application's organization is divided into regions, states, and cities, and a log is about a job offer in Arlington, Texas, its `entity_path` could be:
 
 ```json
 [
@@ -166,14 +169,14 @@ Where:
 - `ref` is the unique identifier of the entity
 - `name` is the name of the entity
 
-`entity_path` is required and must contain at least one element, the `ref` and `name` fields are mandatory for each element of the list.
+`entity_path` is required and must include at least one element, the `ref` and `name` fields are mandatory for each element of the list.
 
-With each log containing the full path to the entity, Auditize is able to build a tree structure of your entities and display it in the log interface. This will allow you to filter logs by entity and navigate through the tree to see logs related to a specific entity. While it is not relevant in this example, Auditize is also able to update its internal tree structure at log expiration and when entities are renamed or moved. The original path of the log is left untouched.
+By including the full path to each entity, Auditize can construct a tree structure of your entities and display it within the log interface. This allows you to filter logs by entity and navigate through the tree to view logs associated with a specific entity. Although this feature may not be relevant to the previous example, Auditize is also capable of updating its internal tree structure when logs expire or when entities are renamed or moved. The original log path remains unchanged.
 
 ## Attachments
 
-Auditize supports file attachements to logs. When you want to upload one or more files to a log, you must first create the log and then attach the file to the log through the `POST /api/repos/{repo_id}/logs/{log_id}/attachments` endpoint. Beside the file content itself, you can provide:
+Auditize supports file attachements to logs. To upload one or more files to a log, you must first create the log and then attach the file(s) using the `POST /api/repos/{repo_id}/logs/{log_id}/attachments` endpoint. In addition to the file content itself, you can specify the following:
 
-- `type`: The type of the attachment. It must respect the `[a-z0-9-]+` format, this field is required
-- `name`: The name of the attachment. It defaults to the uploaded file name if not provided
-- `mime_type`: The MIME type of the attachment. It defaults to the MIME type of the uploaded file if not provided
+- `type`: The type of the attachment. This field is required and must follow the `[a-z0-9-]+` format.
+- `name`: The name of the attachment. f not provided, it defaults to the uploaded file's name.
+- `mime_type`: The MIME type of the attachment. If not provided, it defaults to the MIME type of the uploaded file.
