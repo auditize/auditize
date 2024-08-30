@@ -26,13 +26,13 @@ The tag supports the following attributes:
 
 | Attribute | Required | Description |
 | --- | --- | --- |
-| `base-url` | **yes** | The URL of your Auditize instance |
-| `repo-id` | **yes** | The ID of the repository you want to display logs from |
-| `access-token-provider` | **yes** | The name of a javascript function returning the access token (as a `Promise<string>`) used to authenticate your user to Auditize |
+| `base-url` | **yes** | The URL of your Auditize instance. |
+| `repo-id` | **yes** | The repository ID you want to display the logs from. |
+| `access-token-provider` | **yes** | The name of a javascript function that retrieves an Auditize access token (and return it as a `Promise<string>`) from your own backend. |
 | `access-token-refresh-interval` | no | The interval in milliseconds at which the access token is refreshed. Default is 300000 (5 minutes). |
-| `lang` | no | The language to use for the web component (UI & log translatable content). Default is `en`. |
+| `lang` | no | The language to use in the Web Component (UI & log translatable content). Default is `en`. |
 
-An access token is obtained by calling the [`/api/auth/access-token` endpoint](api.html#tag/auth/operation/generate_access_token) using an API key. This endpoint is used to generate a short-lived access token (10 minutes by default) that can be used to delegate a sub-scope of permissions to a third-party application (in that case, the Web Component). The permissions can be any Auditize permission that the API key is allowed to use/grant. In the context of the Web Component, it will be typically the `read` permission on the repository you want your own users to consult logs from.
+An access token is obtained by calling the [`/api/auth/access-token` endpoint](api.html#tag/auth/operation/generate_access_token) with an API key. This endpoint generates a short-lived access token (10 minutes by default) which can be used to delegate a sub-scope of permissions to a third-party application (such as the Web Component). The permissions can be any Auditize permission that the API key is allowed to use/grant. In the context of the Web Component, this typically involves granting read permission on the repository from which you want your users to view logs.
 
 The request parameters passed to the `/api/auth/access-token` endpoint will look like this:
 
@@ -54,11 +54,13 @@ Where `${REPO_ID}` is the same ID you passed to the `repo-id` attribute of the `
 !!! warning
     As the access token is visible to your end-user, it should be scoped to the minimum required permissions, like in this example.
 
-The call to the `/api/auth/access-token` Auditize endpoint **must** be done server-side (your backend) to keep the API key secret. A typical implementation of the `access-token-provider` function would be a call to your backend to get the access token.
+The call to the `/api/auth/access-token` Auditize endpoint must be done **from your backend** to keep the API key secret. The `access-token-provider` attribute of the `<auditize-logs>` tag is a JavaScript function that you must implement in your frontend to get the access token from your backend.
+
+The [`AUDITIZE_ACCESS_TOKEN_LIFETIME` environment variable](config.md) defines the lifetime of the access token. Make sure that this value and the value of the `access-token-refresh-interval` attribute are consistent, meaning that the access token lifetime must be greater than the refresh interval.
 
 ## Example
 
-Here is an example of a very basic web application yet functionnal written in Python using the [FastAPI](https://fastapi.tiangolo.com/) framework.
+Here is an example of a very basic web application, yet functionnal, written in Python using the [FastAPI](https://fastapi.tiangolo.com/) framework, which integrates the Auditize Web Component.
 
 1. it serves an HTML page that includes the Auditize Web Component and a JavaScript function named `getAccessToken`
 1. the web component calls the `getAccessToken` function
@@ -137,14 +139,14 @@ def index():
     )
 ```
 
-In order your browser can properly interpret request's responses coming from the Auditize API, you must allow CORS requests from your Auditize instance, please check CORS options in the [Configuration](config.md) section.
+To ensure your browser can properly interpret responses from the Auditize API, you must enable CORS requests for your Auditize instance. Please refer to the CORS options in the [Configuration](config.md) section.
 
 The Github repository containing this example is available [here](https://github.com/auditize/auditize-webcomponent-demo).
 
-## Restrictions
+## Limitations
 
-The Auditize Web Component does not intend to provide all the features of the standard log interface but rather to offer a simplified view over a specific log scope, that's why it comes with some restrictions.
+The Auditize Web Component is designed to offer a simplified view of a specific log scope, rather than providing all the features of the standard log interface. As a result, it has some limitations.
 
-As you've seen previously, the repository selection is enforced by the `repo-id` attribute of the `<auditize-logs>` tag. This means that as opposed to the standard log interface, the Web Component can **only display logs from a single repository**.
+As previously mentioned, the repository selection is controlled by the `repo-id` attribute of the `<auditize-logs>` tag. Therefore, unlike the standard log interface, the Web Component can **only display logs from a single repository**.
 
-**Log filters are also not available** in the Web Component.
+Additionally, **Log filters are not available** in the Web Component.
