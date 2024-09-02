@@ -19,6 +19,9 @@ hide:
   <div class='adz-hero-subtitle'>
     Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
   </div>
+  <a href='install' class='md-button'>
+    Get started
+  </a>
 </div>
 
 <div class="adz-features">
