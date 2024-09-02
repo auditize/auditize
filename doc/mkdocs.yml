@@ -2,7 +2,7 @@ site_name: Auditize
 site_url: https://auditize.org
 nav:
   - Home: index.md
-  - Concepts: overview.md
+  - Overview: overview.md
   - Installation: install.md
   - Configuration: config.md
   - Log data model: logs.md

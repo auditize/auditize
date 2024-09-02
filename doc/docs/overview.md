@@ -1,8 +1,12 @@
-# Concepts
+# Overview
+
+Auditize is a log management system written in Python that provides a REST API written in [FastAPI](https://fastapi.tiangolo.com/) and a web interface written in [React](https://react.dev/). It is designed to be easy to integrate and to take advantage of your logs data.
+
+Here are the core concepts of Auditize.
 
 ## Log Repositories
 
-Log Repositories (also referred to as "Repositories" or "Repos") serve as containers for logs. Each Log Repository is associated with a dedicated MongoDB database, ensuring strong isolation between logs. They allow you to set up specific permissions and settings, such as a retention periods or statuses.
+Log Repositories (also referred to as "Repositories" or "Repos") serve as containers for logs. Each Log Repository is associated with a **dedicated MongoDB database**, ensuring strong isolation between logs. They allow you to set up specific permissions and settings, such as a retention periods or statuses.
 
 You can set up one or more repositories based on your needs. However, to ensure logs consistency you should make sure that a given log repository only contains logs from the same application running in the same environment. You should for instance avoid mixing logs from a pre-production and production environment or logs from different unrelated applications in the same repository.
 
@@ -13,76 +17,7 @@ The following settings can be configured for a repository:
     - Enabled: logs can be written and read
     - Read-only: logs can only be read
     - Disabled: logs cannot be read nor written
-- Log i18n Profile: the profile used to translate logs in the web interface
-
-## Log i18n Profiles
-
-Auditize supports the internationalization of both the web interface and the logs themselves. Log internationalization is managed through Log i18n Profiles. Log i18n Profiles let you upload translation files for the languages you want to support (and are supported by Auditize).
-The log translation applies to log fields whose value is considered to be a key. Here are the log field type that can be translated:
-
-- `action_type`
-- `action_category`
-- `actor_type`
-- `actor_custom_field` (custom field names of the actor)
-- `source_field` (field names within the source)
-- `detail_field` (field names within the details)
-- `resource_type`
-- `resource_custom_field` (custom field names of the resource)
-- `tag_type`
-- `attachment_type`
-
-Example of a translation file:
-
-```json
-{
-  "action_type": {
-    "job-offer-creation": "New job offer",
-    "job-offer-close": "Job offer closed",
-    "job-application": "Job application",
-    "job-application-status-change": "Job application status change",
-    "user-creation": "User creation",
-  },
-  "action_category": {
-    "job-offers": "Job offers",
-    "job-applications": "Job applications",
-    "users": "Users"
-  },
-  "detail_field": {
-    "granted-role": "Granted role",
-    "job-title": "Job title",
-    "reason": "Reason",
-    "comment": "Comment",
-    "status": "Status",
-  },
-  "source_field": {
-    "application": "Application",
-    "application-version": "Application version",
-    "job-board": "Job board",
-  },
-  "resource_type": {
-    "user": "User",
-    "job-offer": "Job offer",
-    "applicant": "Candidate"
-  },
-  "resource_custom_field": {},
-  "actor_type": {
-    "applicant": "Candidate",
-    "user": "User"
-  },
-  "actor_custom_field": {
-    "email": "Email"
-  },
-  "attachment_type": {
-    "resume": "Resume"
-  },
-  "tag_type": {
-    "applicant": "Candidate"
-  }
-}
-```
-
-!!! note
-    Auditize currently supports English and French.
+- [Log i18n Profile](#log-i18n-profiles): the profile used to translate logs in the web interface
 
 
 ## Users
@@ -164,3 +99,73 @@ When saving permissions, they are normalized to ensure consistency and avoid pos
 - if a user has a global "read" log permission (on all repositories), any "read" permission explicitly granted on a specific repository (with/without log entity restrictions) is removed
 - if a user has a global "write" log permission (on all repositories), any "write" permission explicitly granted on a specific repository is removed
 - if a user has the superadmin role, every explicitly granted management/logs permission is removed
+
+
+## Log i18n Profiles
+
+Auditize supports the internationalization of both the web interface and the logs themselves. Log internationalization is managed through Log i18n Profiles. Log i18n Profiles let you upload translation files for the languages you want to support (and are supported by Auditize).
+The log translation applies to log fields whose value is considered to be a key. Here are the log field type that can be translated:
+
+- `action_type`
+- `action_category`
+- `actor_type`
+- `actor_custom_field` (custom field names of the actor)
+- `source_field` (field names within the source)
+- `detail_field` (field names within the details)
+- `resource_type`
+- `resource_custom_field` (custom field names of the resource)
+- `tag_type`
+- `attachment_type`
+
+Example of a translation file:
+
+```json
+{
+  "action_type": {
+    "job-offer-creation": "New job offer",
+    "job-offer-close": "Job offer closed",
+    "job-application": "Job application",
+    "job-application-status-change": "Job application status change",
+    "user-creation": "User creation",
+  },
+  "action_category": {
+    "job-offers": "Job offers",
+    "job-applications": "Job applications",
+    "users": "Users"
+  },
+  "detail_field": {
+    "granted-role": "Granted role",
+    "job-title": "Job title",
+    "reason": "Reason",
+    "comment": "Comment",
+    "status": "Status",
+  },
+  "source_field": {
+    "application": "Application",
+    "application-version": "Application version",
+    "job-board": "Job board",
+  },
+  "resource_type": {
+    "user": "User",
+    "job-offer": "Job offer",
+    "applicant": "Candidate"
+  },
+  "resource_custom_field": {},
+  "actor_type": {
+    "applicant": "Candidate",
+    "user": "User"
+  },
+  "actor_custom_field": {
+    "email": "Email"
+  },
+  "attachment_type": {
+    "resume": "Resume"
+  },
+  "tag_type": {
+    "applicant": "Candidate"
+  }
+}
+```
+
+!!! note
+    Auditize currently supports English and French.
