@@ -1,6 +1,7 @@
 /* Change primary color to match the product's one */
 :root {
   --md-primary-fg-color: #1065ce;
+  --md-accent-fg-color: #046ef0;
 }
 
 /* Make font-size a bit smaller than the original 0.8rem */
@@ -118,11 +119,15 @@ td code {
 }
 
 .adz-hero-text-blue {
-  color: #046ef0;
+  color: var(--md-accent-fg-color);
 }
 
 .adz-hero-text-black {
   color: #041120;
+}
+
+.adz-hero .md-button {
+  color: var(--md-accent-fg-color);
 }
 
 @media screen and (max-width: 768px) {
