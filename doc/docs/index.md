@@ -76,7 +76,7 @@ hide:
 
   <div class="adz-feature">
     <div class="adz-feature-image">
-      <a href="logs#entity_path">
+      <a href="log-data-model#entity_path">
         <img src='/images/feature-log-entities.png' width="536" height="340"/>
       </a>
     </div>
@@ -88,7 +88,7 @@ hide:
 
   <div class="adz-feature">
     <div class="adz-feature-image">
-      <a href="logs">
+      <a href="log-data-model">
         <img src='/images/feature-log-data-model.png' width="368" height="486"/>
       </a>
     </div>
