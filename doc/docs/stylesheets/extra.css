@@ -89,3 +89,54 @@ td code {
     margin-top: 0px;
   }
 }
+
+/*
+  * Landing page "hero" styling
+  */
+
+.adz-hero {
+  font-family: "Roboto", sans-serif;
+  text-align: center;
+  margin: auto;
+}
+
+.adz-hero-title {
+  text-transform: uppercase;
+  font-size: 3rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.adz-hero-subtitle {
+  padding-top: 1rem;
+  font-size: 0.9rem;
+  color: #7d8b9b;
+  text-align: center;
+  max-width: 50%;
+  margin: auto;
+}
+
+.adz-hero-text-blue {
+  color: #046ef0;
+}
+
+.adz-hero-text-black {
+  color: #041120;
+}
+
+@media screen and (max-width: 768px) {
+  .adz-hero-title {
+    font-size: 2rem;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .adz-hero-title {
+    font-size: 1.5rem;
+  }
+
+  .adz-hero-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+}

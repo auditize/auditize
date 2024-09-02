@@ -4,9 +4,22 @@ hide:
   - toc
 ---
 
-# Auditize
+<!-- Hide page title -->
+<style>
+.md-content .md-typeset h1 {
+  display: none;
+}
+</style>
 
-Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
+<div class="adz-hero">
+  <div class='adz-hero-title'>
+    <span class='adz-hero-text-black'>Empower your</span><br/>
+    <span class='adz-hero-text-blue'>functional logs</span><br/>
+  </div>
+  <div class='adz-hero-subtitle'>
+    Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
+  </div>
+</div>
 
 <div class="adz-features">
   <div class="adz-feature">
