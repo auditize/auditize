@@ -21,7 +21,7 @@ async def _setup_app(_):
 def build_app():
     # This function is intended to be used in a context where
     # config and dbm have already been initialized
-    app = FastAPI()
+    app = FastAPI(openapi_url=None)
     app.mount("/api", build_api_app())
     app.mount("/", build_static_app())
     return app
@@ -31,7 +31,7 @@ def app_factory():
     # This function is intended to be used with
     # uvicorn auditize.app:app_factory --factory
     init_config()
-    app = FastAPI(lifespan=_setup_app)
+    app = FastAPI(lifespan=_setup_app, openapi_url=None)
     app.mount("/api", build_api_app())
     app.mount("/", build_static_app())
     return app

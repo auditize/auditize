@@ -18,7 +18,7 @@ async def _index_html_redirection(request, call_next):
 
 
 def build_app():
-    app = FastAPI()
+    app = FastAPI(openapi_url=None)
     app.mount("", StaticFiles(directory=_STATIC_DIR))
     app.add_middleware(BaseHTTPMiddleware, dispatch=_index_html_redirection)
     setup_cors(app)

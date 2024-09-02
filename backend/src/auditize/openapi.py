@@ -118,6 +118,12 @@ def _filter_out_empty_tags(tags: list[dict], routes):
             yield tag
 
 
+def _add_slash_api_prefix(schema):
+    for path, content in list(schema["paths"].items()):
+        schema["paths"]["/api" + path] = content
+        del schema["paths"][path]
+
+
 def get_customized_openapi_schema(app, include_internal_routes=True):
     routes = (
         app.routes
@@ -130,13 +136,13 @@ def get_customized_openapi_schema(app, include_internal_routes=True):
         description="Auditize API",
         routes=routes,
         tags=list(_filter_out_empty_tags(_TAGS, routes)),
-        servers=[{"url": "/api"}],
     )
 
     _fix_nullable(schema)
     _fix_422(schema)
     _remove_title(schema)
     _add_security_scheme(schema)
+    _add_slash_api_prefix(schema)
 
     return schema
 
