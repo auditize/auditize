@@ -9,5 +9,5 @@ redoc:
 build: redoc
 	mkdocs build
 
-serve-build:
+serve-build: build
 	cd site && python -m http.server 8601
