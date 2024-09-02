@@ -37,5 +37,6 @@ print(resp.text)
 ```
 
 !!! info "See also"
-    - [the endpoint detailed documentation](api.html#tag/log/operation/create_log)
-    - [how to attach a file to a log](api.html#tag/log/operation/add_log_attachment)
+    - [Log data model](log-data-model.md)
+    - [POST /api/repos/{repo_id}/logs API documentation](api.html#tag/log/operation/create_log)
+    - [POST /api/repos/{repo_id}/logs/{log_id}/attachments API documentation](api.html#tag/log/operation/add_log_attachment)

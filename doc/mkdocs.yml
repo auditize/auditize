@@ -5,8 +5,8 @@ nav:
   - Overview: overview.md
   - Installation: install.md
   - Configuration: config.md
-  - Log data model: log-data-model.md
   - Sending logs: sending-logs.md
+  - Log data model: log-data-model.md
   - Web Component: web-component.md
   - REST API: api.html
 theme:
