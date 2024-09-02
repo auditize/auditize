@@ -1,0 +1,3 @@
+-c ../backend/requirements.txt
+-c ../backend/requirements-dev.txt
+mkdocs-material
