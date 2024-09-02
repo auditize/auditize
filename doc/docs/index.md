@@ -9,6 +9,9 @@ hide:
 .md-content .md-typeset h1 {
   display: none;
 }
+[data-md-component="header-topic"] {
+  display: none;
+}
 </style>
 
 <div class="adz-hero">
