@@ -11,8 +11,8 @@ nav:
   - REST API: api.html
 theme:
   name: material
-  logo: assets/logo.svg
-  favicon: assets/favicon.png
+  logo: images/logo.svg
+  favicon: images/favicon.png
   features:
     - content.code.copy
     - toc.integrate

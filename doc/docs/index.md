@@ -31,7 +31,7 @@ hide:
   <div class="adz-feature">
     <div class="adz-feature-image">
       <a href="sending-logs">
-        <img src='/assets/intro-send-log-curl.png' width="649" height="154"/>
+        <img src='/images/feature-send-log-curl.png' width="649" height="154"/>
       </a>
     </div>
     <div class="adz-feature-text">
@@ -43,7 +43,7 @@ hide:
   <div class="adz-feature">
     <div class="adz-feature-image">
       <a href="overview#log-repositories">
-        <img src='/assets/repositories.png' width="532" height="296"/>
+        <img src='/images/feature-repositories.png' width="532" height="296"/>
       </a>
     </div>
     <div class="adz-feature-text">
@@ -54,7 +54,7 @@ hide:
 
   <div class="adz-feature">
     <div class="adz-feature-image">
-      <img src='/assets/intro-log-ui.png' width="598" height="238"/>
+      <img src='/images/feature-log-ui.png' width="598" height="238"/>
     </div>
     <div class="adz-feature-text">
       <h2>Log UI</h2>
@@ -65,7 +65,7 @@ hide:
   <div class="adz-feature">
     <div class="adz-feature-image">
       <a href="overview#log-i18n-profiles">
-        <img src='/assets/intro-log-ui-fr.png' width="599" height="381"/>
+        <img src='/images/feature-log-ui-fr.png' width="599" height="381"/>
       </a>
     </div>
     <div class="adz-feature-text">
@@ -77,7 +77,7 @@ hide:
   <div class="adz-feature">
     <div class="adz-feature-image">
       <a href="logs#entity_path">
-        <img src='/assets/intro-log-entities.png' width="536" height="340"/>
+        <img src='/images/feature-log-entities.png' width="536" height="340"/>
       </a>
     </div>
     <div class="adz-feature-text">
@@ -89,7 +89,7 @@ hide:
   <div class="adz-feature">
     <div class="adz-feature-image">
       <a href="logs">
-        <img src='/assets/intro-log-data-model.png' width="368" height="486"/>
+        <img src='/images/feature-log-data-model.png' width="368" height="486"/>
       </a>
     </div>
     <div class="adz-feature-text">
@@ -102,7 +102,7 @@ hide:
   <div class="adz-feature">
     <div class="adz-feature-image">
       <a href="web-component">
-        <img src='/assets/intro-web-component-integration.png' width="528" height="284"/>
+        <img src='/images/feature-web-component-integration.png' width="528" height="284"/>
       </a>
     </div>
     <div class="adz-feature-text">
@@ -114,7 +114,7 @@ hide:
   <div class="adz-feature">
     <div class="adz-feature-image">
       <a href="api.html">
-        <img src='/assets/intro-openapi.png' width="543" height="409"/>
+        <img src='/images/feature-openapi.png' width="543" height="409"/>
       </a>
     </div>
     <div class="adz-feature-text">
