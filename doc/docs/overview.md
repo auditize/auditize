@@ -1,8 +1,10 @@
 # Overview
 
-Auditize is a log management system written in Python that provides a REST API written in [FastAPI](https://fastapi.tiangolo.com/) and a web interface written in [React](https://react.dev/). It is designed to be easy to integrate and to take advantage of your logs data.
+Auditize aims to deliver powerful audit log management capabilities to your software without the burden of developing an in-house solution.
 
-Here are the core concepts of Auditize.
+It is written in Python, it provides a REST API written in [FastAPI](https://fastapi.tiangolo.com/) and a web interface written in [React](https://react.dev/). It uses [MongoDB](https://www.mongodb.com/) as a database.
+
+Here are the core concepts of Auditize:
 
 ## Log Repositories
 
