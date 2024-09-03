@@ -7,3 +7,5 @@ Auditize aims to deliver powerful audit log management capabilities to your soft
 It is a backend & frontend solution based on [Python](https://www.python.org/), [FastAPI](https://fastapi.tiangolo.com/), [React](https://react.dev/), and [MongoDB](https://www.mongodb.com/).
 
 Please check the [documentation](https://auditize.org) for more information about features, installation, and usage.
+
+Auditize is licensed under the [Apache License](LICENSE.txt).
