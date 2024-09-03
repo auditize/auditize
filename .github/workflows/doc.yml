@@ -1,0 +1,33 @@
+name: doc
+
+on:
+  push:
+    branches:
+      - master
+      - github-pages
+
+# The Auditize environment variables are necessary to run the
+# "python -m auditize openapi" command but they are not actually used.
+env:
+  AUDITIZE_BASE_URL: http://localhost:8000
+  AUDITIZE_JWT_SIGNING_KEY: dummykeynotactuallyusedontworry
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: doc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - run: |
+          pip install ../backend/
+          pip install -r requirements.txt
+          python -m auditize openapi > docs/openapi.json
+          mkdocs gh-deploy --force
