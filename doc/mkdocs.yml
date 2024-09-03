@@ -1,5 +1,7 @@
 site_name: Auditize
 site_url: https://auditize.org
+repo_url: https://github.com/auditize/auditize
+repo_name: auditize/auditize
 nav:
   - Home: index.md
   - Overview: overview.md
@@ -13,6 +15,8 @@ theme:
   name: material
   logo: images/logo.svg
   favicon: images/favicon.png
+  icon:
+    repo: fontawesome/brands/github
   features:
     - content.code.copy
     - toc.integrate
