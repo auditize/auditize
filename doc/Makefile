@@ -1,12 +1,10 @@
 serve:
 	mkdocs serve -a localhost:8600
 
-redoc:
-	python -m auditize openapi > openapi.json
-	npx @redocly/cli build-docs openapi.json --output docs/api.html
-	rm openapi.json
+openapi:
+	python -m auditize openapi > docs/openapi.json
 
-build: redoc
+build: openapi
 	mkdocs build
 
 serve-build: build
