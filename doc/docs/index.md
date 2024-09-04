@@ -4,8 +4,8 @@ hide:
   - toc
 ---
 
-<!-- Hide page title -->
 <style>
+/* Hide page title */
 .md-content .md-typeset h1 {
   display: none;
 }
