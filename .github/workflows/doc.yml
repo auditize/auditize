@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - github-pages
 
 # The Auditize environment variables are necessary to run the
 # "python -m auditize openapi" command but they are not actually used.
