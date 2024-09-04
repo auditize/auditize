@@ -37,3 +37,7 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.details
   - tables
+extra:
+  analytics:
+    provider: google
+    property: G-L8HV7645W1
