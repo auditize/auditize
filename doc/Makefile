@@ -8,4 +8,4 @@ build: openapi
 	mkdocs build
 
 serve-build: build
-	cd site && python -m http.server 8601
+	cd site && python -m http.server -b 0.0.0.0 8601
