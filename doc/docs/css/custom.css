@@ -54,7 +54,7 @@ td code {
 .adz-feature-text h2 {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-top: 1rem;
+  margin-top: 0px;
 }
 
 .adz-feature-image {
@@ -91,9 +91,6 @@ td code {
   .adz-feature-image {
     margin-left: auto;
     margin-right: auto;
-  }
-  .adz-feature-text h2 {
-    margin-top: 0px;
   }
 }
 
