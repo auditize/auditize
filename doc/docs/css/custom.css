@@ -42,8 +42,8 @@ td code {
   flex-direction: row;
   justify-content: space-between;
   flex-wrap: nowrap;
-  gap: 1rem;
-  padding-top: 4rem;
+  gap: 2rem;
+  padding-bottom: 6rem;
 }
 
 .adz-feature-text {
@@ -85,6 +85,7 @@ td code {
 
 @media screen and (max-width: 59.9844em) {
   .adz-feature {
+    gap: 0.5rem;
     flex-direction: column;
   }
   .adz-feature-image {
@@ -104,6 +105,7 @@ td code {
   font-family: "Roboto", sans-serif;
   text-align: center;
   margin: auto;
+  padding-bottom: 6rem;
 }
 
 .adz-hero-title {
