@@ -9,3 +9,8 @@ build:
 	# Build the backend
 	cd backend && rm -rf build && python3 -m build --wheel
 	ls -lh ${PWD}/backend/dist/*.whl
+
+upgrade-backend-deps:
+	cd backend && pip-compile -U requirements.in && pip-compile -U requirements-dev.in
+	# do not upgrade doc dependencies, just apply constraints
+	cd doc && pip-compile requirements.in
