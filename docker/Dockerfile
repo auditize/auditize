@@ -15,7 +15,7 @@ RUN . "/root/.nvm/nvm.sh" && nvm install 20
 
 # Build the project (front & back)
 COPY . /src
-RUN cd /src && . "/root/.nvm/nvm.sh" && ./build.sh
+RUN cd /src && . "/root/.nvm/nvm.sh" && make build
 
 FROM python:3.12 AS base
 
