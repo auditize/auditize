@@ -1,7 +1,7 @@
 {
-  "name": "mantine-vite-template",
+  "name": "auditize",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "scripts": {
     "dev": "vite -c app.vite.config.mjs --mode dev",
     "build:app": "vite build -c app.vite.config.mjs",
