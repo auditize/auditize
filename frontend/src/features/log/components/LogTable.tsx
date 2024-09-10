@@ -1165,6 +1165,7 @@ export function LogTable({
           fetching={query.isFetching || query.isFetchingNextPage}
           minHeight={150}
           noRecordsText={t("log.list.noResults")}
+          highlightOnHover
         />
         {logs && logs.length > 0 && (
           <Center>
