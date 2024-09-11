@@ -26,6 +26,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
+import { DateTime } from "@/components/DateTime";
 import { humanizeDate } from "@/utils/date";
 import { iconSize } from "@/utils/ui";
 
@@ -80,11 +81,7 @@ function getCustomFieldValue(
 }
 
 function DateField({ log }: { log: Log }) {
-  return (
-    <Text component="span" size="sm">
-      {humanizeDate(log.savedAt)}
-    </Text>
-  );
+  return <DateTime value={log.savedAt} />;
 }
 
 function SourceField({
