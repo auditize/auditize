@@ -9,6 +9,7 @@ import {
   Stack,
   Table,
   TextInput,
+  Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconSearch } from "@tabler/icons-react";
@@ -206,7 +207,9 @@ export function ResourceManagement({
 
   return (
     <div>
-      <h1>{title}</h1>
+      <Title order={1} pb="xl">
+        {title}
+      </Title>
       <Group justify="space-between" pb="md">
         <Search value={search} onChange={setSearch} />
         {resourceCreationComponentBuilder && (
