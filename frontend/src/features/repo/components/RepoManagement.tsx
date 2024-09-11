@@ -79,7 +79,7 @@ export function RepoManagement() {
         ],
         [
           t("repo.list.column.storage"),
-          (repo: Repo) => filesize(repo.stats!.storageSize),
+          (repo: Repo) => filesize(repo.stats!.storageSize, { round: 0 }),
         ],
         [
           t("repo.list.column.createdAt"),
