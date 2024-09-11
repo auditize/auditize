@@ -11,7 +11,7 @@ import {
 // Blue defined by Auditize (blue Crayola) is HSL 214, 80%, 52%.
 // Palette generated with https://mantine.dev/colors-generator/?color=2378E7
 
-const blue214: MantineColorsTuple = [
+const BLUE_214: MantineColorsTuple = [
   "#e6f5ff",
   "#d1e5fe",
   "#a4c8f6",
@@ -24,9 +24,11 @@ const blue214: MantineColorsTuple = [
   "#004da4",
 ];
 
+const INPUT_HEIGHT = rem(32);
+
 export const theme = createTheme({
   colors: {
-    blue214,
+    blue214: BLUE_214,
   },
   primaryColor: "blue214",
   components: {
@@ -35,7 +37,7 @@ export const theme = createTheme({
         if (props.size === "sm" || !props.size) {
           return {
             root: {
-              "--button-height": rem(32),
+              "--button-height": INPUT_HEIGHT,
               "--button-padding-x": rem(14),
             },
           };
@@ -48,7 +50,7 @@ export const theme = createTheme({
         if (props.size === "input-sm") {
           return {
             root: {
-              "--ai-size": rem(32),
+              "--ai-size": INPUT_HEIGHT,
             },
           };
         }
@@ -59,7 +61,7 @@ export const theme = createTheme({
       vars: (_, props) => {
         if (props.size === "sm" || !props.size) {
           return {
-            wrapper: { "--input-height": rem(32) },
+            wrapper: { "--input-height": INPUT_HEIGHT },
           };
         }
         return { wrapper: {} };

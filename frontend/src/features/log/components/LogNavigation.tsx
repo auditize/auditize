@@ -1321,9 +1321,11 @@ export function LogNavigation({
     }
   }, [availableSearchParamFieldNames]);
 
+  const gap = rem(6);
+
   return (
     <Group justify="space-between" align="start" gap="md" wrap="nowrap">
-      <Group gap={rem(6)}>
+      <Group gap={gap}>
         {/* Repository selector */}
         {withRepoSearchParam && (
           <RepoSelector
@@ -1336,7 +1338,7 @@ export function LogNavigation({
         )}
 
         {/* Search parameters */}
-        <Group gap={rem(6)}>
+        <Group gap={gap}>
           <SearchParamFields
             names={searchParamNames}
             added={addedSearchParamName}
@@ -1360,7 +1362,7 @@ export function LogNavigation({
       </Group>
 
       {/* Apply & clear buttons */}
-      <Group gap={rem(6)} wrap="nowrap">
+      <Group gap={gap} wrap="nowrap">
         <Button onClick={() => onChange(editedParams)} disabled={!isDirty}>
           {t("log.list.searchParams.apply")}
         </Button>
