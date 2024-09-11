@@ -4,9 +4,9 @@ import { IconArchive } from "@tabler/icons-react";
 import { filesize } from "filesize";
 import { useTranslation } from "react-i18next";
 
+import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
-import { humanizeDate } from "@/utils/date";
 
 import { getRepos, Repo } from "../api";
 import { RepoDeletion } from "./RepoDeletion";
@@ -83,14 +83,16 @@ export function RepoManagement() {
         ],
         [
           t("repo.list.column.createdAt"),
-          (repo: Repo) => humanizeDate(repo.createdAt),
+          (repo: Repo) => <DateTime value={repo.createdAt} tooltip={false} />,
         ],
         [
           t("repo.list.column.lastLog"),
           (repo: Repo) =>
-            repo.stats!.lastLogDate
-              ? humanizeDate(repo.stats!.lastLogDate)
-              : "n/a",
+            repo.stats!.lastLogDate ? (
+              <DateTime value={repo.stats!.lastLogDate} tooltip={false} />
+            ) : (
+              "n/a"
+            ),
         ],
       ]}
       resourceCreationComponentBuilder={

@@ -81,7 +81,7 @@ function getCustomFieldValue(
 }
 
 function DateField({ log }: { log: Log }) {
-  return <DateTime value={log.savedAt} />;
+  return <DateTime value={log.savedAt} size="xs" />;
 }
 
 function SourceField({

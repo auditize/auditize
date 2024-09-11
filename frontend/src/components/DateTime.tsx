@@ -7,8 +7,26 @@ import { useI18nContext } from "@/i18n";
 
 dayjs.extend(localizedFormat);
 
-export function DateTime({ value }: { value: string }) {
+export function DateTime({
+  value,
+  size,
+  tooltip = true,
+}: {
+  value: string;
+  size?: string;
+  tooltip?: boolean;
+}) {
   const { lang } = useI18nContext();
+  const date = (
+    <Text size={size || "sm"} span>
+      {dayjs(value).format("YYYY-MM-DD HH:mm")}
+    </Text>
+  );
+
+  if (!tooltip) {
+    return date;
+  }
+
   const format =
     lang === "en"
       ? "dddd, MMMM D, YYYY h:mm:ss A"
@@ -16,10 +34,6 @@ export function DateTime({ value }: { value: string }) {
         ? "dddd D MMMM YYYY, HH:mm:ss"
         : "LLLL";
   return (
-    <Tooltip label={dayjs(value).locale(lang).format(format)}>
-      <Text size="xs" span truncate="start">
-        {dayjs(value).format("YYYY-MM-DD HH:mm")}
-      </Text>
-    </Tooltip>
+    <Tooltip label={dayjs(value).locale(lang).format(format)}>{date}</Tooltip>
   );
 }
