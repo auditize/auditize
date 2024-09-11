@@ -52,10 +52,12 @@ function InlineSearchParamLink({
         onClick();
       }}
       underline="hover"
+      component="span"
+      size={fontSize}
+      fw={fontWeight}
+      c={color}
     >
-      <Text component="span" size={fontSize} fw={fontWeight} c={color}>
-        {children}
-      </Text>
+      {children}
     </Anchor>
   );
 }
@@ -69,7 +71,11 @@ function getCustomFieldValue(
 }
 
 function DateField({ log }: { log: Log }) {
-  return <Text size="sm">{humanizeDate(log.savedAt)}</Text>;
+  return (
+    <Text component="span" size="sm">
+      {humanizeDate(log.savedAt)}
+    </Text>
+  );
 }
 
 function SourceField({
@@ -733,13 +739,19 @@ function fieldToColumn(
       {columnSelector}
     </Group>
   );
+  const column = (props: any) => ({
+    ...props,
+    titleStyle: {
+      background: "var(--auditize-header-color)",
+    },
+  });
 
   if (field === "savedAt")
-    return {
+    return column({
       accessor: "savedAt",
       title: columnTitle(t("log.date")),
       render: (log: Log) => <DateField log={log} />,
-    };
+    });
 
   if (field.startsWith("source.")) {
     const fieldName = field.split(".")[1];
@@ -760,7 +772,7 @@ function fieldToColumn(
   }
 
   if (field === "actor")
-    return {
+    return column({
       accessor: "actor",
       title: columnTitle(t("log.actor")),
       render: (log: Log) => (
@@ -769,10 +781,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "actorType")
-    return {
+    return column({
       accessor: "actorType",
       title: columnTitle(t("log.actorType")),
       render: (log: Log) => (
@@ -782,10 +794,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "actorName")
-    return {
+    return column({
       accessor: "actorName",
       title: columnTitle(t("log.actorName")),
       render: (log: Log) => (
@@ -794,10 +806,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "actorRef")
-    return {
+    return column({
       accessor: "actorRef",
       title: columnTitle(t("log.actorRef")),
       render: (log: Log) => (
@@ -806,11 +818,11 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field.startsWith("actor.")) {
     const fieldName = field.split(".")[1];
-    return {
+    return column({
       accessor: `actor.${fieldName}`,
       title: columnTitle(
         t("log.actor") + ": " + logTranslator("actor_custom_field", fieldName),
@@ -822,11 +834,11 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
   }
 
   if (field === "action")
-    return {
+    return column({
       accessor: "action",
       title: columnTitle(t("log.action")),
       render: (log: Log) => (
@@ -836,10 +848,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "actionType")
-    return {
+    return column({
       accessor: "actionType",
       title: columnTitle(t("log.actionType")),
       render: (log: Log) => (
@@ -849,10 +861,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "actionCategory")
-    return {
+    return column({
       accessor: "actionCategory",
       title: columnTitle(t("log.actionCategory")),
       render: (log: Log) => (
@@ -862,10 +874,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "resource")
-    return {
+    return column({
       accessor: "resource",
       title: columnTitle(t("log.resource")),
       render: (log: Log) => (
@@ -875,10 +887,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "resourceType")
-    return {
+    return column({
       accessor: "resourceType",
       title: columnTitle(t("log.resourceType")),
       render: (log: Log) => (
@@ -888,10 +900,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "resourceName")
-    return {
+    return column({
       accessor: "resourceName",
       title: columnTitle(t("log.resourceName")),
       render: (log: Log) => (
@@ -900,10 +912,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "resourceRef")
-    return {
+    return column({
       accessor: "resourceRef",
       title: columnTitle(t("log.resourceRef")),
       render: (log: Log) => (
@@ -912,11 +924,11 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field.startsWith("resource.")) {
     const fieldName = field.split(".")[1];
-    return {
+    return column({
       accessor: `resource.${fieldName}`,
       title: columnTitle(
         t("log.resource") +
@@ -930,12 +942,12 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
   }
 
   if (field.startsWith("details.")) {
     const fieldName = field.split(".")[1];
-    return {
+    return column({
       accessor: `details.${fieldName}`,
       title: columnTitle(logTranslator("detail_field", fieldName)),
       render: (log: Log) => (
@@ -945,11 +957,11 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
   }
 
   if (field === "tag")
-    return {
+    return column({
       accessor: "tags",
       title: columnTitle(t("log.tags")),
       render: (log: Log) => (
@@ -959,10 +971,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "tagType")
-    return {
+    return column({
       accessor: "tagType",
       title: columnTitle(t("log.tagTypes")),
       render: (log: Log) => (
@@ -972,10 +984,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "tagName")
-    return {
+    return column({
       accessor: "tagName",
       title: columnTitle(t("log.tagNames")),
       render: (log: Log) => (
@@ -984,10 +996,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "tagRef")
-    return {
+    return column({
       accessor: "tagRef",
       title: columnTitle(t("log.tagRefs")),
       render: (log: Log) => (
@@ -996,10 +1008,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "attachment")
-    return {
+    return column({
       accessor: "attachment",
       title: columnTitle(t("log.attachments")),
       // NB: display attachments like attachment types for now
@@ -1010,10 +1022,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "attachmentName")
-    return {
+    return column({
       accessor: "attachmentName",
       title: columnTitle(t("log.attachmentNames")),
       render: (log: Log) => (
@@ -1022,10 +1034,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "attachmentType")
-    return {
+    return column({
       accessor: "attachmentType",
       title: columnTitle(t("log.attachmentTypes")),
       render: (log: Log) => (
@@ -1035,10 +1047,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "attachmentMimeType")
-    return {
+    return column({
       accessor: "attachmentMimeType",
       title: columnTitle(t("log.attachmentMimeTypes")),
       render: (log: Log) => (
@@ -1047,10 +1059,10 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   if (field === "entity")
-    return {
+    return column({
       accessor: "entity",
       title: columnTitle(t("log.entity")),
       render: (log: Log) => (
@@ -1059,7 +1071,7 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
 
   console.error(`Unknown field: ${field}`);
 }
@@ -1166,6 +1178,9 @@ export function LogTable({
           minHeight={150}
           noRecordsText={t("log.list.noResults")}
           highlightOnHover
+          withTableBorder
+          verticalAlign="top"
+          verticalSpacing="md"
         />
         {logs && logs.length > 0 && (
           <Center>

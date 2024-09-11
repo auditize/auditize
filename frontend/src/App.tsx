@@ -42,6 +42,7 @@ import { RepoManagement } from "@/features/repo";
 import { UsersManagement } from "@/features/user";
 import { theme } from "@/theme";
 
+import "./App.css";
 import logoPath from "./assets/logo.svg";
 import { ModalTitle } from "./components/ModalTitle";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
@@ -158,7 +159,7 @@ function Main() {
 
   return (
     <AppShell header={{ height: 55 }} padding="lg">
-      <AppShell.Header bg="#fbfbfb">
+      <AppShell.Header bg="var(--auditize-header-color)">
         <Group h="100%" px="lg" justify="space-between" align="center">
           <Group>
             <Logo />
