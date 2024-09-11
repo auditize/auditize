@@ -10,7 +10,15 @@ import {
   Text,
   useCombobox,
 } from "@mantine/core";
-import { IconColumns3 } from "@tabler/icons-react";
+import {
+  IconCalendarClock,
+  IconColumns3,
+  IconCornerDownRight,
+  IconCylinder,
+  IconHierarchy,
+  IconTags,
+  IconUser,
+} from "@tabler/icons-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import i18n from "i18next";
 import { DataTable, DataTableColumn } from "mantine-datatable";
@@ -19,6 +27,7 @@ import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { humanizeDate } from "@/utils/date";
+import { iconSize } from "@/utils/ui";
 
 import { CustomField, getLogs, Log } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
@@ -733,9 +742,21 @@ function fieldToColumn(
   columnSelector: React.ReactNode | undefined,
 ) {
   const { t } = i18n;
-  const columnTitle = (name: string) => (
+  const columnTitle = (name: string, icon?: any, iconStyle?: any) => (
     <Group justify="space-between">
-      {name}
+      <span>
+        {icon &&
+          React.createElement(icon, {
+            style: {
+              ...iconSize(16),
+              position: "relative",
+              top: "2px",
+              marginRight: "0.25rem",
+              ...(iconStyle || {}),
+            },
+          })}
+        {name}
+      </span>
       {columnSelector}
     </Group>
   );
@@ -749,7 +770,7 @@ function fieldToColumn(
   if (field === "savedAt")
     return column({
       accessor: "savedAt",
-      title: columnTitle(t("log.date")),
+      title: columnTitle(t("log.date"), IconCalendarClock),
       render: (log: Log) => <DateField log={log} />,
     });
 
@@ -774,7 +795,7 @@ function fieldToColumn(
   if (field === "actor")
     return column({
       accessor: "actor",
-      title: columnTitle(t("log.actor")),
+      title: columnTitle(t("log.actor"), IconUser),
       render: (log: Log) => (
         <ActorField
           log={log}
@@ -840,7 +861,7 @@ function fieldToColumn(
   if (field === "action")
     return column({
       accessor: "action",
-      title: columnTitle(t("log.action")),
+      title: columnTitle(t("log.action"), IconCornerDownRight),
       render: (log: Log) => (
         <ActionField
           log={log}
@@ -879,7 +900,7 @@ function fieldToColumn(
   if (field === "resource")
     return column({
       accessor: "resource",
-      title: columnTitle(t("log.resource")),
+      title: columnTitle(t("log.resource"), IconCylinder),
       render: (log: Log) => (
         <ResourceField
           log={log}
@@ -963,7 +984,7 @@ function fieldToColumn(
   if (field === "tag")
     return column({
       accessor: "tags",
-      title: columnTitle(t("log.tags")),
+      title: columnTitle(t("log.tags"), IconTags, { top: "3px" }),
       render: (log: Log) => (
         <TagsField
           log={log}
@@ -1064,7 +1085,7 @@ function fieldToColumn(
   if (field === "entity")
     return column({
       accessor: "entity",
-      title: columnTitle(t("log.entity")),
+      title: columnTitle(t("log.entity"), IconHierarchy),
       render: (log: Log) => (
         <EntityPathField
           log={log}
