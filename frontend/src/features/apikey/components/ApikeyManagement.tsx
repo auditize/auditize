@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { PermissionSummary } from "@/features/permissions";
+import { iconBesideText } from "@/utils/ui";
 
 import { Apikey, getApikeys } from "../api";
 import { ApikeyDeletion } from "./ApikeyDeletion";
@@ -20,7 +21,13 @@ export function ApikeysManagement() {
     <ResourceManagement
       title={
         <>
-          <IconKey />
+          <IconKey
+            style={iconBesideText({
+              size: "34",
+              top: "5px",
+              marginRight: "0.25rem",
+            })}
+          />
           {t("apikey.list.title")}
         </>
       }

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { PermissionSummary } from "@/features/permissions";
+import { iconBesideText } from "@/utils/ui";
 
 import { getUsers, User } from "../api";
 import { UserDeletion } from "./UserDeletion";
@@ -20,7 +21,13 @@ export function UsersManagement() {
     <ResourceManagement
       title={
         <>
-          <IconUsers /> {t("user.list.title")}
+          <IconUsers
+            style={iconBesideText({
+              size: "34",
+              top: "4px",
+            })}
+          />{" "}
+          {t("user.list.title")}
         </>
       }
       name={t("user.user")}

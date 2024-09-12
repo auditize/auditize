@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
+import { iconBesideText, iconSize } from "@/utils/ui";
 
 import { getRepos, Repo } from "../api";
 import { RepoDeletion } from "./RepoDeletion";
@@ -42,7 +43,13 @@ export function RepoManagement() {
     <ResourceManagement
       title={
         <>
-          <IconArchive />
+          <IconArchive
+            style={iconBesideText({
+              size: "34",
+              top: "5px",
+              marginRight: "0.25rem",
+            })}
+          />
           {t("repo.list.title")}
         </>
       }

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { humanizeDate } from "@/utils/date";
+import { iconBesideText } from "@/utils/ui";
 
 import { getLogI18nProfiles, LogI18nProfile } from "../api";
 import { LogI18nProfileDeletion } from "./LogI18nProfileDeletion";
@@ -23,7 +24,13 @@ export function LogI18nProfileManagement() {
     <ResourceManagement
       title={
         <>
-          <IconLanguage />
+          <IconLanguage
+            style={iconBesideText({
+              size: "34",
+              top: "5px",
+              marginRight: "0.25rem",
+            })}
+          />
           {t("logi18nprofile.list.title")}
         </>
       }
