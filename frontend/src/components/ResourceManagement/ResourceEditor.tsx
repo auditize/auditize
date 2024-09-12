@@ -80,16 +80,19 @@ function ResourceEditor({
           />
           <form onSubmit={onSubmit(() => mutation.mutate())}>
             {children}
-            <Space h="md" />
+            <Space h="xl" />
+            <Flex justify="center" align="center">
+              <ApiErrorMessage
+                error={mutation.error}
+                textProps={{ pt: "0", size: "sm" }}
+              />
+            </Flex>
             <ModalActionButtons
               validateButtonLabel={t("common.save")}
               onClose={onClose}
               closeOnly={disabledSaving}
             />
           </form>
-          <Flex justify="center" align="center">
-            <ApiErrorMessage error={mutation.error} />
-          </Flex>
         </Box>
       </div>
     </Modal>

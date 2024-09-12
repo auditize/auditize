@@ -1,17 +1,19 @@
-import { Text } from "@mantine/core";
+import { Text, TextProps } from "@mantine/core";
 import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 
 export function ErrorMessage({
   message,
+  textProps,
 }: {
   message: string | null | undefined;
+  textProps?: TextProps;
 }) {
   if (!message) {
     return null;
   }
   return (
-    <Text c="red" p="xs">
+    <Text c="red" p="xs" {...textProps}>
       {message}
     </Text>
   );
@@ -42,11 +44,19 @@ export function useApiErrorMessageBuilder(): (
   };
 }
 
-export function ApiErrorMessage({ error }: { error: Error | null }) {
+export function ApiErrorMessage({
+  error,
+  textProps,
+}: {
+  error: Error | null;
+  textProps?: TextProps;
+}) {
   const errorMessageBuilder = useApiErrorMessageBuilder();
 
   if (!error) {
     return null;
   }
-  return <ErrorMessage message={errorMessageBuilder(error)} />;
+  return (
+    <ErrorMessage message={errorMessageBuilder(error)} textProps={textProps} />
+  );
 }

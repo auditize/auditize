@@ -1,9 +1,11 @@
 import {
   Box,
+  Flex,
   LoadingOverlay,
   Modal,
   PasswordInput,
   Select,
+  Space,
   Stack,
   Tabs,
 } from "@mantine/core";
@@ -44,7 +46,7 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
     <Box px="lg">
       <LoadingOverlay visible={mutation.isPending} />
       <form onSubmit={form.onSubmit(() => mutation.mutate())}>
-        <Stack>
+        <Stack gap="sm">
           <PasswordInput
             {...form.getInputProps("password")}
             label={t("common.passwordForm.password.label")}
@@ -59,12 +61,18 @@ function PasswordChange({ onClose }: { onClose: () => void }) {
             )}
             key={form.key("passwordConfirmation")}
           />
-          <ModalActionButtons
-            validateButtonLabel={t("common.save")}
-            onClose={onClose}
-          />
-          <ApiErrorMessage error={mutation.error} />
         </Stack>
+        <Space h="xl" />
+        <Flex justify="center" align="center">
+          <ApiErrorMessage
+            error={mutation.error}
+            textProps={{ pt: "0", size: "sm" }}
+          />
+        </Flex>
+        <ModalActionButtons
+          validateButtonLabel={t("common.save")}
+          onClose={onClose}
+        />
       </form>
     </Box>
   );
@@ -91,7 +99,7 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
     <Box px="lg">
       <LoadingOverlay visible={mutation.isPending} />
       <form onSubmit={form.onSubmit(() => mutation.mutate())}>
-        <Stack>
+        <Stack gap="sm">
           <Select
             label={t("user.form.language.label")}
             data={[
@@ -101,11 +109,18 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
             allowDeselect={false}
             {...form.getInputProps("lang")}
           />
-          <ModalActionButtons
-            validateButtonLabel={t("common.save")}
-            onClose={onClose}
-          />
         </Stack>
+        <Space h="xl" />
+        <Flex justify="center" align="center">
+          <ApiErrorMessage
+            error={mutation.error}
+            textProps={{ pt: "0", size: "sm" }}
+          />
+        </Flex>
+        <ModalActionButtons
+          validateButtonLabel={t("common.save")}
+          onClose={onClose}
+        />
       </form>
     </Box>
   );
