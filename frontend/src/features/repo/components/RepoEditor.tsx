@@ -107,7 +107,7 @@ function RepoForm({
         label={t("repo.form.status.label")}
         {...form.getInputProps("status")}
       >
-        <Group mt="xs">
+        <Group>
           <Radio
             value="enabled"
             label={t("repo.form.status.value.enabled")}
