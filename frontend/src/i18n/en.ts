@@ -289,7 +289,6 @@ export default {
       write: "write",
       readwrite: "rw",
       partial: "partial",
-      none: "None",
       superadmin: "Superadmin",
     },
   },

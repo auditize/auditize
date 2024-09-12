@@ -78,7 +78,7 @@ export function RepoManagement() {
               ? t("repo.list.column.retentionPeriodValue", {
                   days: repo.retentionPeriod,
                 })
-              : "n/a",
+              : undefined,
           { textAlign: "right" },
         ],
         [
@@ -100,9 +100,7 @@ export function RepoManagement() {
           (repo: Repo) =>
             repo.stats!.lastLogDate ? (
               <DateTime value={repo.stats!.lastLogDate} tooltip={false} />
-            ) : (
-              "n/a"
-            ),
+            ) : undefined,
         ],
       ]}
       resourceCreationComponentBuilder={

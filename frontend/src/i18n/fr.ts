@@ -292,7 +292,6 @@ export default {
       write: "écriture",
       readwrite: "lecture/écriture",
       partial: "partiel",
-      none: "Aucune",
       superadmin: "Super administrateur",
     },
   },
