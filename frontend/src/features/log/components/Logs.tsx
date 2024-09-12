@@ -36,7 +36,7 @@ export function Logs({
     );
   } else {
     return (
-      <Stack gap="xl" pt="xs">
+      <Stack gap="md" pt="xs">
         <LogNavigation
           params={searchParams}
           onChange={(newSearchParams) => {
