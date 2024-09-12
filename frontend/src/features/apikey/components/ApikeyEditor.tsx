@@ -14,6 +14,7 @@ import {
 } from "@/components/ResourceManagement";
 import {
   emptyPermissions,
+  PermissionManagementTab,
   usePermissionsNormalizer,
   WithPermissionManagement,
 } from "@/features/permissions";
@@ -77,12 +78,16 @@ function BaseApikeyForm({
 
 function ApikeyEditor({
   form,
+  selectedTab,
+  onTabChange,
   permissions,
   onChange,
   children,
   readOnly = false,
 }: {
   form: UseFormReturnType<any>;
+  selectedTab: PermissionManagementTab;
+  onTabChange: (tab: PermissionManagementTab) => void;
   permissions: Permissions;
   onChange: (permissions: Permissions) => void;
   children: React.ReactNode;
@@ -90,6 +95,8 @@ function ApikeyEditor({
 }) {
   return (
     <WithPermissionManagement
+      selectedTab={selectedTab}
+      onTabChange={onTabChange}
       permissions={permissions}
       onChange={onChange}
       readOnly={readOnly}
@@ -102,7 +109,15 @@ function ApikeyEditor({
   );
 }
 
-function Secret({ value, button }: { value: string; button?: ReactElement }) {
+function Secret({
+  value,
+  button,
+  highlighted = false,
+}: {
+  value: string;
+  button?: ReactElement;
+  highlighted?: boolean;
+}) {
   const { t } = useTranslation();
   return (
     <TextInput
@@ -110,6 +125,16 @@ function Secret({ value, button }: { value: string; button?: ReactElement }) {
       disabled
       value={value}
       rightSection={button}
+      styles={
+        highlighted
+          ? {
+              input: {
+                borderColor: "var(--mantine-color-green-6)",
+                borderWidth: "2px",
+              },
+            }
+          : undefined
+      }
     />
   );
 }
@@ -120,6 +145,7 @@ function SecretCreation({ value }: { value: string | null }) {
     <Secret
       value={value || t("apikey.form.key.placeholder.create")}
       button={value ? <CopyIcon value={value} /> : undefined}
+      highlighted={!!value}
     />
   );
 }
@@ -168,9 +194,13 @@ export function ApikeyCreation({
 
   const [secret, setSecret] = useState<string | null>(null);
 
+  const [selectedTab, setSelectedTab] =
+    useState<PermissionManagementTab>("general");
+
   useEffect(() => {
     if (!opened) {
       setSecret(null);
+      setSelectedTab("general");
     }
   }, [opened]);
 
@@ -188,6 +218,7 @@ export function ApikeyCreation({
       }
       onSaveSuccess={(data) => {
         const [_, key] = data as [string, string];
+        setSelectedTab("general");
         setSecret(key);
       }}
       queryKeyForInvalidation={["apikeys"]}
@@ -195,6 +226,8 @@ export function ApikeyCreation({
     >
       <ApikeyEditor
         form={form}
+        selectedTab={selectedTab}
+        onTabChange={setSelectedTab}
         permissions={permissions}
         onChange={(perms) => setPermissions(perms)}
         readOnly={!!secret}
@@ -217,6 +250,8 @@ export function ApikeyEdition({
   const { form, permissions, setPermissions } =
     useApiKeyEditorState(!!apikeyId);
   const normalizePermissions = usePermissionsNormalizer();
+  const [selectedTab, setSelectedTab] =
+    useState<PermissionManagementTab>("general");
 
   return (
     <ResourceEdition
@@ -242,6 +277,8 @@ export function ApikeyEdition({
     >
       <ApikeyEditor
         form={form}
+        selectedTab={selectedTab}
+        onTabChange={setSelectedTab}
         permissions={permissions}
         onChange={(perms) => {
           setPermissions(perms);

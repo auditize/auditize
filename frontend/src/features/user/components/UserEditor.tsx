@@ -9,6 +9,7 @@ import {
 } from "@/components/ResourceManagement";
 import {
   emptyPermissions,
+  PermissionManagementTab,
   Permissions,
   usePermissionsNormalizer,
   WithPermissionManagement,
@@ -62,8 +63,13 @@ function UserEditor({
   readOnly?: boolean;
 }) {
   const { t } = useTranslation();
+  const [selectedTab, setSelectedTab] =
+    useState<PermissionManagementTab>("general");
+
   return (
     <WithPermissionManagement
+      selectedTab={selectedTab}
+      onTabChange={setSelectedTab}
       permissions={permissions}
       onChange={onChange}
       readOnly={readOnly}

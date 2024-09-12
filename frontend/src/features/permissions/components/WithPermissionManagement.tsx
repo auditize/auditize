@@ -4,12 +4,18 @@ import { useTranslation } from "react-i18next";
 import { Permissions } from "../types";
 import { PermissionManagement } from "./PermissionManagement";
 
+export type PermissionManagementTab = "general" | "permissions" | null;
+
 export function WithPermissionManagement({
+  selectedTab,
+  onTabChange,
   permissions,
   onChange,
   children,
   readOnly = false,
 }: {
+  selectedTab: PermissionManagementTab;
+  onTabChange: (tab: PermissionManagementTab) => void;
   permissions: Permissions;
   onChange: (permissions: Permissions) => void;
   children: React.ReactNode;
@@ -17,7 +23,10 @@ export function WithPermissionManagement({
 }) {
   const { t } = useTranslation();
   return (
-    <Tabs defaultValue="general">
+    <Tabs
+      value={selectedTab}
+      onChange={onTabChange as (tab: string | null) => void}
+    >
       <Tabs.List>
         <Tabs.Tab value="general">{t("permission.tab.general")}</Tabs.Tab>
         <Tabs.Tab value="permissions">
