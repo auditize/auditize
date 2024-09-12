@@ -226,15 +226,15 @@ export function ResourceManagement({
         )}
       </Group>
       <Stack align="center">
-        <Table highlightOnHover>
-          <Table.Thead>
+        <Table highlightOnHover withTableBorder verticalSpacing="sm">
+          <Table.Thead
+            style={{ backgroundColor: "var(--auditize-header-color)" }}
+          >
             <Table.Tr>
               {columnDefinitions.map(([name, _], i) => (
                 <Table.Th key={i}>{name}</Table.Th>
               ))}
-              <Table.Th style={{ textAlign: "right" }}>
-                {t("resource.list.actions")}
-              </Table.Th>
+              <Table.Th></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>

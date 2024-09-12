@@ -342,7 +342,6 @@ export default {
       search: "Search",
       edit: "Edit",
       delete: "Delete",
-      actions: "Actions",
     },
     edit: {
       save: "Save",

@@ -345,7 +345,6 @@ export default {
       search: "Rechercher",
       edit: "Mod.",
       delete: "Suppr.",
-      actions: "Actions",
     },
     edit: {
       save: "Enregistrer",
