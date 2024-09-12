@@ -30,7 +30,7 @@ export function LogI18nProfileManagement() {
       name={t("logi18nprofile.logi18nprofile")}
       queryKey={(search, page) => ["logi18nprofiles", "list", search, page]}
       queryFn={(search, page) => () => getLogI18nProfiles(search, page)}
-      columnBuilders={[
+      columnDefinitions={[
         [
           t("logi18nprofile.list.column.name"),
           (profile: LogI18nProfile) => profile.name,

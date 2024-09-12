@@ -26,7 +26,7 @@ export function UsersManagement() {
       name={t("user.user")}
       queryKey={(search, page) => ["users", "list", search, page]}
       queryFn={(search, page) => () => getUsers(search, page)}
-      columnBuilders={[
+      columnDefinitions={[
         [
           t("user.list.column.name"),
           (user: User) => (

@@ -27,7 +27,7 @@ export function ApikeysManagement() {
       name={t("apikey.apikey")}
       queryKey={(search, page) => ["apikeys", "list", search, page]}
       queryFn={(search, page) => () => getApikeys(search, page)}
-      columnBuilders={[
+      columnDefinitions={[
         [t("apikey.list.column.name"), (apikey: Apikey) => apikey.name],
         [
           t("apikey.list.column.permissions"),

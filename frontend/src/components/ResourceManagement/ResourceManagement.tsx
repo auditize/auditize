@@ -41,13 +41,13 @@ function ResourceTableRow({
   resource,
   onClick,
   link,
-  rowValueBuilders,
+  columnDefinitions,
   resourceDeletionComponentBuilder,
 }: {
   resource: any;
   onClick: () => void;
   link?: string;
-  rowValueBuilders: ((resource: any) => React.ReactNode)[];
+  columnDefinitions: ColumnDefinition[];
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
   const { t } = useTranslation();
@@ -61,8 +61,10 @@ function ResourceTableRow({
 
   return (
     <Table.Tr>
-      {rowValueBuilders.map((builder, i) => (
-        <Table.Td key={i}>{builder(resource)}</Table.Td>
+      {columnDefinitions.map(([_, builder, style], i) => (
+        <Table.Td key={i} style={style}>
+          {builder(resource)}
+        </Table.Td>
       ))}
       <Table.Td style={{ textAlign: "right" }}>
         <Group justify="flex-end" gap={"md"}>
@@ -134,13 +136,17 @@ function Search({
   );
 }
 
+type ColumnDefinition =
+  | [string, (resource: any) => React.ReactNode]
+  | [string, (resource: any) => React.ReactNode, React.CSSProperties];
+
 export function ResourceManagement({
   title,
   name,
   stateMode = "url",
   queryKey,
   queryFn,
-  columnBuilders,
+  columnDefinitions,
   resourceCreationComponentBuilder,
   resourceEditionComponentBuilder,
   resourceDeletionComponentBuilder,
@@ -150,7 +156,7 @@ export function ResourceManagement({
   stateMode?: "url" | "useState";
   queryKey: (search: string | null, page: number) => any[];
   queryFn: (search: string | null, page: number) => () => Promise<any>;
-  columnBuilders: [string, (resource: any) => React.ReactNode][];
+  columnDefinitions: ColumnDefinition[];
   resourceCreationComponentBuilder?: ResourceCreationComponentBuilder;
   resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
@@ -181,7 +187,7 @@ export function ResourceManagement({
   if (resourcesQuery.isPending) {
     rows = Array.from({ length: 10 }).map((_, rowIndex) => (
       <Table.Tr key={rowIndex} style={{ height: "2rem" }}>
-        {Array.from({ length: columnBuilders.length + 1 }, (_, colIndex) => (
+        {Array.from({ length: columnDefinitions.length + 1 }, (_, colIndex) => (
           <Table.Td key={colIndex}>
             <Skeleton height={8} />
           </Table.Td>
@@ -197,9 +203,7 @@ export function ResourceManagement({
         onClick={() => setResourceId(resource.id)}
         link={resourceLink ? resourceLink(resource.id) : undefined}
         resource={resource}
-        rowValueBuilders={columnBuilders.map(
-          ([_, valueBuilder]) => valueBuilder,
-        )}
+        columnDefinitions={columnDefinitions}
         resourceDeletionComponentBuilder={resourceDeletionComponentBuilder}
       />
     ));
@@ -225,7 +229,7 @@ export function ResourceManagement({
         <Table highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              {columnBuilders.map(([name, _], i) => (
+              {columnDefinitions.map(([name, _], i) => (
                 <Table.Th key={i}>{name}</Table.Th>
               ))}
               <Table.Th style={{ textAlign: "right" }}>

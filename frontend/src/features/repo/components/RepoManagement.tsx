@@ -57,7 +57,7 @@ export function RepoManagement() {
       queryFn={(search, page) => () =>
         getRepos(search, page, { includeStats: true })
       }
-      columnBuilders={[
+      columnDefinitions={[
         [t("repo.list.column.name"), (repo: Repo) => repo.name],
         [t("repo.list.column.id"), (repo: Repo) => <RepoId value={repo.id} />],
         [
@@ -72,14 +72,17 @@ export function RepoManagement() {
                   days: repo.retentionPeriod,
                 })
               : "n/a",
+          { textAlign: "right" },
         ],
         [
           t("repo.list.column.logs"),
           (repo: Repo) => repo.stats!.logCount.toLocaleString(),
+          { textAlign: "right" },
         ],
         [
           t("repo.list.column.storage"),
           (repo: Repo) => filesize(repo.stats!.storageSize, { round: 0 }),
+          { textAlign: "right" },
         ],
         [
           t("repo.list.column.createdAt"),
