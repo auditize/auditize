@@ -23,8 +23,8 @@ export function UsersManagement() {
         <>
           <IconUsers
             style={iconBesideText({
-              size: "34",
-              top: "4px",
+              size: "26",
+              top: "3px",
             })}
           />{" "}
           {t("user.list.title")}

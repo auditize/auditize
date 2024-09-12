@@ -45,8 +45,8 @@ export function RepoManagement() {
         <>
           <IconArchive
             style={iconBesideText({
-              size: "34",
-              top: "5px",
+              size: "26",
+              top: "4px",
               marginRight: "0.25rem",
             })}
           />

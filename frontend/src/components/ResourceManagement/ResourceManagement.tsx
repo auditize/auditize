@@ -211,7 +211,7 @@ export function ResourceManagement({
 
   return (
     <div>
-      <Title order={1} pb="xl">
+      <Title order={1} pb="xl" fw={550} size="26">
         {title}
       </Title>
       <Group justify="space-between" pb="md">

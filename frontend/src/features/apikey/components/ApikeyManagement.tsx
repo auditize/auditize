@@ -23,8 +23,8 @@ export function ApikeysManagement() {
         <>
           <IconKey
             style={iconBesideText({
-              size: "34",
-              top: "5px",
+              size: "26",
+              top: "3px",
               marginRight: "0.25rem",
             })}
           />
