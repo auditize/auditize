@@ -4,6 +4,7 @@ import {
   LoadingOverlay,
   Modal,
   PasswordInput,
+  rem,
   Select,
   Space,
   Stack,
@@ -139,6 +140,8 @@ export function UserSettings({
       title={<ModalTitle>{t("accountSettings.title")}</ModalTitle>}
       opened={opened}
       onClose={onClose}
+      size={rem("500px")}
+      padding="lg"
     >
       <Tabs defaultValue="general" orientation="vertical">
         <Tabs.List>
