@@ -830,7 +830,7 @@ function fieldToColumn(
 ) {
   const { t } = i18n;
   const columnTitle = (name: string, icon?: any, iconStyle?: any) => (
-    <Group justify="space-between">
+    <Group justify="space-between" wrap="nowrap">
       <span>
         {icon &&
           React.createElement(icon, {
