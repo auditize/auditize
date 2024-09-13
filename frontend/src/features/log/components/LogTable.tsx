@@ -863,7 +863,7 @@ function fieldToColumn(
 
   if (field.startsWith("source.")) {
     const fieldName = field.split(".")[1];
-    return {
+    return column({
       accessor: `source.${fieldName}`,
       title: columnTitle(
         t("log.source") + ": " + logTranslator("source_field", fieldName),
@@ -876,7 +876,7 @@ function fieldToColumn(
           onTableSearchParamChange={onTableSearchParamChange}
         />
       ),
-    };
+    });
   }
 
   if (field === "actor")
