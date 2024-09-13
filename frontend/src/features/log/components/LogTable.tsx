@@ -797,7 +797,7 @@ export function sortFields(a: string, b: string) {
     "resource.": 14,
     "details.": 15,
     attachment: 16,
-    atachmentName: 17,
+    attachmentName: 17,
     attachmentType: 18,
     attachmentMimeType: 19,
     entity: 20,
