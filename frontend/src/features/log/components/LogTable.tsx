@@ -8,6 +8,7 @@ import {
   Group,
   Stack,
   Text,
+  Tooltip,
   useCombobox,
 } from "@mantine/core";
 import {
@@ -43,32 +44,42 @@ export type TableSearchParamChangeHandler = (
 ) => void;
 
 function InlineSearchParamLink({
+  fieldLabel,
   onClick,
   fontSize = "sm",
   fontWeight,
   color,
   children,
 }: {
+  fieldLabel?: string;
   onClick: () => void;
   fontSize?: string;
   fontWeight?: string | number;
   color?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
+
   return (
-    <Anchor
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      underline="hover"
-      component="span"
-      size={fontSize}
-      fw={fontWeight}
-      c={color}
+    <Tooltip
+      label={t("log.inlineFilter.filterOn", { field: fieldLabel })}
+      disabled={!fieldLabel}
+      withArrow
     >
-      {children}
-    </Anchor>
+      <Anchor
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick();
+        }}
+        underline="hover"
+        component="span"
+        size={fontSize}
+        fw={fontWeight}
+        c={color}
+      >
+        {children}
+      </Anchor>
+    </Tooltip>
   );
 }
 
@@ -95,6 +106,9 @@ function SourceField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+
   if (!log.source) {
     return null;
   }
@@ -105,6 +119,9 @@ function SourceField({
 
   return (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.sourceField", {
+        field: logTranslator("source_field", fieldName).toLowerCase(),
+      })}
       onClick={() =>
         onTableSearchParamChange("source", new Map([[fieldName, fieldValue]]))
       }
@@ -121,9 +138,12 @@ function ActorField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return (
     log.actor && (
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.actor")}
         onClick={() => onTableSearchParamChange("actorRef", log.actor!.ref)}
       >
         {log.actor.name}
@@ -141,11 +161,13 @@ function ActorTypeField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return (
     log.actor && (
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.actorType")}
         onClick={() => onTableSearchParamChange("actorType", log.actor!.type)}
       >
         {logTranslator("actor_type", log.actor.type)}
@@ -161,9 +183,12 @@ function ActorNameField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return (
     log.actor && (
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.actorName")}
         onClick={() => onTableSearchParamChange("actorName", log.actor!.name)}
       >
         {log.actor.name}
@@ -179,9 +204,12 @@ function ActorRefField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return (
     log.actor && (
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.actorRef")}
         onClick={() => onTableSearchParamChange("actorRef", log.actor!.ref)}
       >
         {log.actor.ref}
@@ -192,13 +220,18 @@ function ActorRefField({
 
 function ActorCustomField({
   log,
+  repoId,
   fieldName,
   onTableSearchParamChange,
 }: {
   log: Log;
+  repoId: string;
   fieldName: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+
   if (!log.actor) {
     return null;
   }
@@ -209,6 +242,9 @@ function ActorCustomField({
 
   return (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.actorCustomField", {
+        field: logTranslator("actor_custom_field", fieldName).toLowerCase(),
+      })}
       onClick={() =>
         onTableSearchParamChange(
           "actorExtra",
@@ -230,17 +266,20 @@ function ActionField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <>
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.actionType")}
         onClick={() => onTableSearchParamChange("actionType", log.action.type)}
       >
         {logTranslator("action_type", log.action.type)}
       </InlineSearchParamLink>
       <br />
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.actionCategory")}
         onClick={() =>
           onTableSearchParamChange("actionCategory", log.action.category)
         }
@@ -262,10 +301,12 @@ function ActionTypeField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.actionType")}
       onClick={() => onTableSearchParamChange("actionType", log.action.type)}
     >
       {logTranslator("action_type", log.action.type)}
@@ -282,10 +323,12 @@ function ActionCategoryField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.actionCategory")}
       onClick={() =>
         onTableSearchParamChange("actionCategory", log.action.category)
       }
@@ -304,11 +347,13 @@ function ResourceField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return log.resource ? (
     <>
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.resourceType")}
         onClick={() =>
           onTableSearchParamChange("resourceType", log.resource!.type)
         }
@@ -317,6 +362,7 @@ function ResourceField({
       </InlineSearchParamLink>
       {": "}
       <InlineSearchParamLink
+        fieldLabel={t("log.inlineFilter.field.resource")}
         onClick={() =>
           onTableSearchParamChange("resourceRef", log.resource!.ref)
         }
@@ -337,10 +383,12 @@ function ResourceTypeField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return log.resource ? (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.resourceType")}
       onClick={() =>
         onTableSearchParamChange("resourceType", log.resource!.type)
       }
@@ -357,8 +405,11 @@ function ResourceNameField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return log.resource ? (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.resourceName")}
       onClick={() =>
         onTableSearchParamChange("resourceName", log.resource!.name)
       }
@@ -375,8 +426,11 @@ function ResourceRefField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return log.resource ? (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.resourceRef")}
       onClick={() => onTableSearchParamChange("resourceRef", log.resource!.ref)}
     >
       {log.resource.ref}
@@ -386,13 +440,18 @@ function ResourceRefField({
 
 function ResourceCustomField({
   log,
+  repoId,
   fieldName,
   onTableSearchParamChange,
 }: {
   log: Log;
+  repoId: string;
   fieldName: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+
   if (!log.resource) {
     return null;
   }
@@ -403,6 +462,9 @@ function ResourceCustomField({
 
   return (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.resourceCustomField", {
+        field: logTranslator("resource_custom_field", fieldName).toLowerCase(),
+      })}
       onClick={() =>
         onTableSearchParamChange(
           "resourceExtra",
@@ -417,13 +479,18 @@ function ResourceCustomField({
 
 function DetailField({
   log,
+  repoId,
   fieldName,
   onTableSearchParamChange,
 }: {
   log: Log;
+  repoId: string;
   fieldName: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+
   if (!log.details) {
     return null;
   }
@@ -434,6 +501,9 @@ function DetailField({
 
   return (
     <InlineSearchParamLink
+      fieldLabel={t("log.inlineFilter.field.detailField", {
+        field: logTranslator("detail_field", fieldName).toLowerCase(),
+      })}
       onClick={() =>
         onTableSearchParamChange("details", new Map([[fieldName, fieldValue]]))
       }
@@ -452,6 +522,7 @@ function TagsField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return (
@@ -459,8 +530,9 @@ function TagsField({
       {log.tags.map((tag, i) =>
         tag.ref ? (
           <InlineSearchParamLink
-            key={i}
+            fieldLabel={t("log.inlineFilter.field.tag")}
             onClick={() => onTableSearchParamChange("tagRef", tag.ref!)}
+            key={i}
           >
             <Badge size="sm" variant="outline">
               {logTranslator("tag_type", tag.type) + ": " + tag.name}
@@ -468,8 +540,9 @@ function TagsField({
           </InlineSearchParamLink>
         ) : (
           <InlineSearchParamLink
-            key={i}
+            fieldLabel={t("log.inlineFilter.field.tag")}
             onClick={() => onTableSearchParamChange("tagType", tag.type)}
+            key={i}
           >
             <Badge size="sm" variant="outline">
               {logTranslator("tag_type", tag.type)}
@@ -490,14 +563,16 @@ function TagTypesField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <Breadcrumbs separator=", ">
       {log.tags.map((tag, i) => (
         <InlineSearchParamLink
-          key={i}
+          fieldLabel={t("log.inlineFilter.field.tagType")}
           onClick={() => onTableSearchParamChange("tagType", tag.type)}
+          key={i}
         >
           {logTranslator("tag_type", tag.type)}
         </InlineSearchParamLink>
@@ -513,14 +588,17 @@ function TagNamesField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Breadcrumbs separator=", ">
       {log.tags.map(
         (tag, i) =>
           tag.name && (
             <InlineSearchParamLink
-              key={i}
+              fieldLabel={t("log.inlineFilter.field.tagName")}
               onClick={() => onTableSearchParamChange("tagName", tag.name!)}
+              key={i}
             >
               {tag.name}
             </InlineSearchParamLink>
@@ -537,14 +615,17 @@ function TagRefsField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Breadcrumbs separator=", ">
       {log.tags.map(
         (tag, i) =>
           tag.ref && (
             <InlineSearchParamLink
-              key={i}
+              fieldLabel={t("log.inlineFilter.field.tagRef")}
               onClick={() => onTableSearchParamChange("tagRef", tag.ref!)}
+              key={i}
             >
               {tag.ref}
             </InlineSearchParamLink>
@@ -561,14 +642,16 @@ function AttachmentNamesField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
         <InlineSearchParamLink
-          key={i}
+          fieldLabel={t("log.inlineFilter.field.attachmentName")}
           onClick={() =>
             onTableSearchParamChange("attachmentName", attachment.name)
           }
+          key={i}
         >
           {attachment.name}
         </InlineSearchParamLink>
@@ -586,16 +669,18 @@ function AttachmentTypesField({
   repoId: string;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
         <InlineSearchParamLink
-          key={i}
+          fieldLabel={t("log.inlineFilter.field.attachmentType")}
           onClick={() =>
             onTableSearchParamChange("attachmentType", attachment.type)
           }
+          key={i}
         >
           {logTranslator("attachment_type", attachment.type)}
         </InlineSearchParamLink>
@@ -611,14 +696,16 @@ function AttachmentMimeTypesField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
   return (
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
         <InlineSearchParamLink
-          key={i}
+          fieldLabel={t("log.inlineFilter.field.attachmentMimeType")}
           onClick={() =>
             onTableSearchParamChange("attachmentMimeType", attachment.mimeType)
           }
+          key={i}
         >
           {attachment.mimeType}
         </InlineSearchParamLink>
@@ -634,11 +721,14 @@ function EntityPathField({
   log: Log;
   onTableSearchParamChange: TableSearchParamChangeHandler;
 }) {
+  const { t } = useTranslation();
+
   return log.entityPath
     .map<React.ReactNode>((entity) => (
       <InlineSearchParamLink
-        key={entity.ref}
+        fieldLabel={t("log.inlineFilter.field.entity")}
         onClick={() => onTableSearchParamChange("entityRef", entity.ref)}
+        key={entity.ref}
       >
         {entity.name}
       </InlineSearchParamLink>
@@ -848,6 +938,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <ActorCustomField
           log={log}
+          repoId={repoId}
           fieldName={fieldName}
           onTableSearchParamChange={onTableSearchParamChange}
         />
@@ -956,6 +1047,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <ResourceCustomField
           log={log}
+          repoId={repoId}
           fieldName={fieldName}
           onTableSearchParamChange={onTableSearchParamChange}
         />
@@ -971,6 +1063,7 @@ function fieldToColumn(
       render: (log: Log) => (
         <DetailField
           log={log}
+          repoId={repoId}
           fieldName={fieldName}
           onTableSearchParamChange={onTableSearchParamChange}
         />
