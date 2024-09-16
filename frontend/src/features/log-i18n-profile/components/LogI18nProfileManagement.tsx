@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
-import { humanizeDate } from "@/utils/date";
 import { iconBesideText } from "@/utils/ui";
 
 import { getLogI18nProfiles, LogI18nProfile } from "../api";
@@ -48,10 +47,6 @@ export function LogI18nProfileManagement() {
             Object.entries(profile.translations)
               .map(([lang, _]) => t("language." + lang))
               .join(", "),
-        ],
-        [
-          t("logi18nprofile.list.column.createdAt"),
-          (profile: LogI18nProfile) => humanizeDate(profile.createdAt),
         ],
       ]}
       resourceCreationComponentBuilder={
