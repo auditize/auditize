@@ -16,7 +16,6 @@ import { IconPlus, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
 import { iconSize } from "@/utils/ui";
 
@@ -40,13 +39,11 @@ type ResourceDeletionComponentBuilder = (
 function ResourceTableRow({
   resource,
   onClick,
-  link,
   columnDefinitions,
   resourceDeletionComponentBuilder,
 }: {
   resource: any;
   onClick: () => void;
-  link?: string;
   columnDefinitions: ColumnDefinition[];
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
@@ -68,15 +65,9 @@ function ResourceTableRow({
       ))}
       <Table.Td style={{ textAlign: "right" }}>
         <Group justify="flex-end" gap={"md"}>
-          {link ? (
-            <Anchor component={Link} to={link}>
-              {t("resource.list.edit")}
-            </Anchor>
-          ) : (
-            <Anchor component="a" onClick={onClick}>
-              {t("resource.list.edit")}
-            </Anchor>
-          )}
+          <Anchor component="a" onClick={onClick}>
+            {t("resource.list.edit")}
+          </Anchor>
           {deletionConfirmModal && (
             <>
               <Divider orientation="vertical" />
@@ -161,7 +152,6 @@ export function ResourceManagement({
   resourceEditionComponentBuilder: ResourceEditionComponentBuilder;
   resourceDeletionComponentBuilder: ResourceDeletionComponentBuilder;
 }) {
-  const { t } = useTranslation();
   const {
     page,
     setPage,
@@ -169,7 +159,6 @@ export function ResourceManagement({
     setIsNew,
     resourceId,
     setResourceId,
-    resourceLink,
     search,
     setSearch,
   } = useResourceManagementState(stateMode);
@@ -201,7 +190,6 @@ export function ResourceManagement({
       <ResourceTableRow
         key={resource.id}
         onClick={() => setResourceId(resource.id)}
-        link={resourceLink ? resourceLink(resource.id) : undefined}
         resource={resource}
         columnDefinitions={columnDefinitions}
         resourceDeletionComponentBuilder={resourceDeletionComponentBuilder}

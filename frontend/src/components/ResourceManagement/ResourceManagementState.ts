@@ -15,7 +15,6 @@ interface ResourceManagementState {
   // Existing resource edition
   resourceId: string | null;
   setResourceId: (id: string | null) => void;
-  resourceLink?: (id: string) => string;
 
   // Search
   search: string;
@@ -46,13 +45,11 @@ function useResourceManagementStateWithURL(): ResourceManagementState {
   const resourceId = params.get("id");
   const setResourceId = (id: string | null) => {
     if (id) {
-      throw new Error("Operation not supported, use resourceLink instead");
+      navigate(addQueryParamToLocation(location, "id", id));
     } else {
       navigate(-1);
     }
   };
-  const resourceLink = (id: string) =>
-    addQueryParamToLocation(location, "id", id);
 
   // Search
   const search = params.get("q") || "";
@@ -65,7 +62,6 @@ function useResourceManagementStateWithURL(): ResourceManagementState {
     setIsNew,
     resourceId,
     setResourceId,
-    resourceLink,
     search,
     setSearch,
   };
@@ -80,7 +76,6 @@ function useResourceManagementStateWithUseState(): ResourceManagementState {
 
   // Existing resource edition
   const [resourceId, setResourceId] = useState<string | null>(null);
-  const resourceLink = undefined;
 
   // Search
   const [search, setSearch] = useState("");
@@ -92,7 +87,6 @@ function useResourceManagementStateWithUseState(): ResourceManagementState {
     setIsNew,
     resourceId,
     setResourceId,
-    resourceLink,
     search,
     setSearch,
   };
