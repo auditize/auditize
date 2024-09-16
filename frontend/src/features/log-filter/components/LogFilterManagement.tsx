@@ -1,10 +1,11 @@
 import { Anchor, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
-import { IconArchive } from "@tabler/icons-react";
+import { IconFilter } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
+import { iconBesideText } from "@/utils/ui";
 
 import { getLogFilters, LogFilter } from "../api";
 import { LogFilterDeletion } from "./LogFilterDeletion";
@@ -18,7 +19,13 @@ export function LogFilterManagement() {
     <ResourceManagement
       title={
         <>
-          <IconArchive />
+          <IconFilter
+            style={iconBesideText({
+              size: "26",
+              top: "4px",
+              marginRight: "0.25rem",
+            })}
+          />
           {t("log.filter.list.title")}
         </>
       }

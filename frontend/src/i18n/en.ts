@@ -263,7 +263,7 @@ export default {
         confirm: "Do you confirm the deletion of filter <1>{{name}}</1>?",
       },
       list: {
-        title: "My Filters",
+        title: "Log Filters",
         column: {
           name: "Name",
         },

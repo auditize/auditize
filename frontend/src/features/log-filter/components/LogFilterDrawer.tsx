@@ -16,6 +16,7 @@ export function LogFilterDrawer({
       radius="md"
       opened={opened}
       onClose={onClose}
+      withCloseButton={false}
     >
       <LogFilterManagement />
     </Drawer>
