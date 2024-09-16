@@ -4,6 +4,7 @@ import {
   createTheme,
   Input,
   MantineColorsTuple,
+  Pagination,
   rem,
 } from "@mantine/core";
 
@@ -51,6 +52,19 @@ export const theme = createTheme({
           return {
             root: {
               "--ai-size": INPUT_HEIGHT,
+            },
+          };
+        }
+        return { root: {} };
+      },
+    }),
+    Pagination: Pagination.extend({
+      vars: (_, props) => {
+        if (props.size === "sm" || !props.size) {
+          return {
+            root: {
+              "--pagination-control-size": rem(28),
+              "--pagination-control-fz": rem(14),
             },
           };
         }
