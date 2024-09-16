@@ -94,6 +94,7 @@ export function RepoManagement() {
         [
           t("repo.list.column.createdAt"),
           (repo: Repo) => <DateTime value={repo.createdAt} tooltip={false} />,
+          { textAlign: "right" },
         ],
         [
           t("repo.list.column.lastLog"),
@@ -101,6 +102,7 @@ export function RepoManagement() {
             repo.stats!.lastLogDate ? (
               <DateTime value={repo.stats!.lastLogDate} tooltip={false} />
             ) : undefined,
+          { textAlign: "right" },
         ],
       ]}
       resourceCreationComponentBuilder={

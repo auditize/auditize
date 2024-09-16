@@ -28,7 +28,6 @@ import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { DateTime } from "@/components/DateTime";
-import { humanizeDate } from "@/utils/date";
 import { iconSize } from "@/utils/ui";
 
 import { CustomField, getLogs, Log } from "../api";
@@ -92,7 +91,15 @@ function getCustomFieldValue(
 }
 
 function DateField({ log }: { log: Log }) {
-  return <DateTime value={log.savedAt} size="xs" />;
+  return (
+    <DateTime
+      value={log.savedAt}
+      textProps={{
+        size: "xs",
+        style: { display: "inline-block", textAlign: "right" },
+      }}
+    />
+  );
 }
 
 function SourceField({
@@ -847,7 +854,7 @@ function fieldToColumn(
       {columnSelector}
     </Group>
   );
-  const column = (props: any) => ({
+  const column = (props: DataTableColumn<Log>) => ({
     ...props,
     titleStyle: {
       background: "var(--auditize-header-color)",

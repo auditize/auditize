@@ -1,4 +1,4 @@
-import { Text, Tooltip } from "@mantine/core";
+import { Text, TextProps, Tooltip } from "@mantine/core";
 import dayjs from "dayjs";
 import "dayjs/locale/fr";
 import localizedFormat from "dayjs/plugin/localizedFormat";
@@ -9,16 +9,16 @@ dayjs.extend(localizedFormat);
 
 export function DateTime({
   value,
-  size,
+  textProps,
   tooltip = true,
 }: {
   value: string;
-  size?: string;
+  textProps?: TextProps;
   tooltip?: boolean;
 }) {
   const { lang } = useI18nContext();
   const date = (
-    <Text size={size || "sm"} span>
+    <Text span size="sm" {...textProps}>
       {dayjs(value).format("YYYY-MM-DD HH:mm")}
     </Text>
   );
