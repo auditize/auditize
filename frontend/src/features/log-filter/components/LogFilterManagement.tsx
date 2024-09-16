@@ -1,4 +1,4 @@
-import { Anchor } from "@mantine/core";
+import { Anchor, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconArchive } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
@@ -30,9 +30,15 @@ export function LogFilterManagement() {
         [
           t("log.filter.list.column.name"),
           (filter: LogFilter) => (
-            <Anchor component={NavLink} to={`/logs?filterId=${filter.id}`}>
-              {filter.name}
-            </Anchor>
+            <Tooltip label={t("log.filter.list.apply")} withArrow>
+              <Anchor
+                component={NavLink}
+                to={`/logs?filterId=${filter.id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {filter.name}
+              </Anchor>
+            </Tooltip>
           ),
         ],
       ]}

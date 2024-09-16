@@ -270,6 +270,7 @@ export default {
         column: {
           name: "Nom",
         },
+        apply: "Appliquer le filtre",
       },
     },
     inlineFilter: {
@@ -369,8 +370,7 @@ export default {
   resource: {
     list: {
       search: "Rechercher",
-      edit: "Mod.",
-      delete: "Suppr.",
+      delete: "Supprimer",
     },
     edit: {
       save: "Enregistrer",

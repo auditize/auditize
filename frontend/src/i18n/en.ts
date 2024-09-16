@@ -267,6 +267,7 @@ export default {
         column: {
           name: "Name",
         },
+        apply: "Apply filter",
       },
     },
     inlineFilter: {
@@ -366,7 +367,6 @@ export default {
   resource: {
     list: {
       search: "Search",
-      edit: "Edit",
       delete: "Delete",
     },
     edit: {

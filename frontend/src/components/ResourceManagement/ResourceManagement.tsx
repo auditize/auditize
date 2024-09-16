@@ -1,8 +1,7 @@
 import {
-  Anchor,
+  ActionIcon,
   Button,
   CloseButton,
-  Divider,
   Group,
   Pagination,
   Skeleton,
@@ -10,9 +9,10 @@ import {
   Table,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconPlus, IconSearch } from "@tabler/icons-react";
+import { IconPlus, IconSearch, IconTrash } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -57,29 +57,37 @@ function ResourceTableRow({
   );
 
   return (
-    <Table.Tr>
-      {columnDefinitions.map(([_, builder, style], i) => (
-        <Table.Td key={i} style={style}>
-          {builder(resource)}
-        </Table.Td>
-      ))}
-      <Table.Td style={{ textAlign: "right" }}>
-        <Group justify="flex-end" gap={"md"}>
-          <Anchor component="a" onClick={onClick}>
-            {t("resource.list.edit")}
-          </Anchor>
+    <>
+      <Table.Tr onClick={onClick} style={{ cursor: "pointer" }}>
+        {columnDefinitions.map(([_, builder, style], i) => (
+          <Table.Td key={i} style={style}>
+            {builder(resource)}
+          </Table.Td>
+        ))}
+        <Table.Td style={{ textAlign: "right" }}>
           {deletionConfirmModal && (
-            <>
-              <Divider orientation="vertical" />
-              <Anchor onClick={() => open()}>
-                {t("resource.list.delete")}
-              </Anchor>
-              {deletionConfirmModal}
-            </>
+            <Tooltip label={t("resource.list.delete")} withArrow>
+              <ActionIcon
+                onClick={(event) => {
+                  open();
+                  event.stopPropagation();
+                }}
+                variant="transparent"
+                color="red"
+              >
+                <IconTrash
+                  style={{
+                    position: "relative",
+                    top: "1px",
+                  }}
+                />
+              </ActionIcon>
+            </Tooltip>
           )}
-        </Group>
-      </Table.Td>
-    </Table.Tr>
+        </Table.Td>
+      </Table.Tr>
+      {deletionConfirmModal}
+    </>
   );
 }
 

@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
-import { iconBesideText, iconSize } from "@/utils/ui";
+import { iconBesideText } from "@/utils/ui";
 
 import { getRepos, Repo } from "../api";
 import { RepoDeletion } from "./RepoDeletion";
@@ -24,7 +24,12 @@ function RepoId({ value }: { value: string }) {
           withArrow
           position="bottom"
         >
-          <UnstyledButton onClick={copy}>
+          <UnstyledButton
+            onClick={(event) => {
+              copy();
+              event.stopPropagation();
+            }}
+          >
             <Code>{value}</Code>
           </UnstyledButton>
         </Tooltip>
