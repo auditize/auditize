@@ -4,9 +4,9 @@ import {
   Center,
   LoadingOverlay,
   Modal,
+  Space,
   Stack,
   TextInput,
-  Title,
 } from "@mantine/core";
 import { isEmail, useForm } from "@mantine/form";
 import { useDisclosure, useDocumentTitle } from "@mantine/hooks";
@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
+import logoPath from "@/assets/logo.svg";
 import { ApiErrorMessage, ErrorMessage } from "@/components/ErrorMessage";
 import Message from "@/components/Message";
 import { ModalActionButtons } from "@/components/ModalActionButtons";
@@ -154,9 +155,14 @@ export function LoginForm({
     <>
       <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
         <Center pt="4rem">
-          <Stack align="center">
-            <Title order={1}>{t("login.welcome")}</Title>
-            <Stack pt="1rem" gap="1.25rem">
+          <Stack align="center" gap="3rem">
+            <img
+              src={logoPath}
+              alt="Auditize"
+              height={100}
+              style={{ display: "block" }} // for image vertical alignment
+            />
+            <Stack gap="0.25rem" w="280px">
               <TextInput
                 {...form.getInputProps("email")}
                 key={form.key("email")}
@@ -170,12 +176,17 @@ export function LoginForm({
                 placeholder={t("login.form.password.placeholder")}
                 type="password"
               />
+              <Anchor
+                onClick={openForgotPassword}
+                size="xs"
+                style={{ textAlign: "right" }}
+              >
+                {t("forgotPassword.link")}
+              </Anchor>
+              <Space h="lg" />
               <Button type="submit">{t("login.signIn")}</Button>
             </Stack>
             <LoginErrorMessage error={mutation.error} />
-            <Anchor onClick={openForgotPassword} size="sm">
-              {"(" + t("forgotPassword.link") + ")"}
-            </Anchor>
           </Stack>
         </Center>
       </form>
