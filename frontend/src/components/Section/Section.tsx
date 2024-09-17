@@ -1,31 +1,62 @@
-import { Box, Group, Text } from "@mantine/core";
+import { ActionIcon, Box, Flex, Group, Text } from "@mantine/core";
+import {
+  IconLayoutNavbarCollapse,
+  IconLayoutNavbarExpand,
+} from "@tabler/icons-react";
 import React from "react";
+
+import { iconBesideText } from "@/utils/ui";
 
 export function Section({
   title,
   icon,
   children,
+  rightSection,
 }: {
   title: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
+  rightSection?: React.ReactNode;
 }) {
   return (
     <Box mb="md">
       <Group
-        gap="0px"
         style={{
           borderWidth: "0px 0px 1px 0px",
           borderStyle: "solid",
           borderColor: "var(--mantine-primary-color-filled)",
         }}
+        mb="0.25rem"
       >
-        {icon}
-        <Text size="1rem" fw={600} p="0.5rem">
-          {title}
-        </Text>
+        <Flex w="100%" justify="space-between" align="center">
+          <Group gap="0px">
+            {icon}
+            <Text size="1rem" fw={600} p="0.5rem" pl="0.25rem">
+              {title}
+            </Text>
+          </Group>
+          {rightSection}
+        </Flex>
       </Group>
       {children}
     </Box>
+  );
+}
+
+export function SectionExpand({
+  expanded,
+  toggle,
+}: {
+  expanded: boolean;
+  toggle: () => void;
+}) {
+  return (
+    <ActionIcon variant="transparent" onClick={toggle}>
+      {expanded ? (
+        <IconLayoutNavbarExpand style={iconBesideText({ size: "22px" })} />
+      ) : (
+        <IconLayoutNavbarCollapse style={iconBesideText({ size: "22px" })} />
+      )}
+    </ActionIcon>
   );
 }

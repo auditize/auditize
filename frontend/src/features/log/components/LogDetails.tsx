@@ -1,25 +1,26 @@
 import {
   Anchor,
   Badge,
-  Box,
   Breadcrumbs,
   Code,
+  Flex,
   Group,
-  HoverCard,
   Modal,
+  ScrollArea,
   Stack,
   Table,
   Text,
   Title,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import {
-  IconAsterisk,
   IconCalendarClock,
   IconCylinder,
   IconHierarchy,
   IconListDetails,
   IconPaperclip,
   IconRoute,
+  IconTags,
   IconUser,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
@@ -27,10 +28,11 @@ import { useTranslation } from "react-i18next";
 import { Breadcrumb } from "rsuite";
 
 import { Section } from "@/components/Section";
+import { SectionExpand } from "@/components/Section/Section";
 import { humanizeDate } from "@/utils/date";
-import { iconSize } from "@/utils/ui";
+import { iconBesideText } from "@/utils/ui";
 
-import { getLog } from "../api";
+import { getLog, Log } from "../api";
 import { useLogNavigationState } from "./LogNavigationState";
 import { useLogTranslator } from "./LogTranslation";
 
@@ -44,7 +46,9 @@ function KeyValueTable({
       <Table.Tbody>
         {data.map(([name, value], index) => (
           <Table.Tr key={index}>
-            <Table.Td width="30%">{name}</Table.Td>
+            <Table.Td width="35%" pl="1.25rem">
+              {name}
+            </Table.Td>
             <Table.Td>{value}</Table.Td>
           </Table.Tr>
         ))}
@@ -72,26 +76,6 @@ function KeyValueSection({
   );
 }
 
-function HoverRef({
-  value,
-  children,
-}: {
-  value: string;
-  children: React.ReactNode;
-}) {
-  const { t } = useTranslation();
-  return (
-    <HoverCard width={280} shadow="md" openDelay={150} closeDelay={150}>
-      <HoverCard.Target>{children}</HoverCard.Target>
-      <HoverCard.Dropdown>
-        <Text size="sm">
-          {t("log.view.ref")}: <Code>{value}</Code>
-        </Text>
-      </HoverCard.Dropdown>
-    </HoverCard>
-  );
-}
-
 function Tag({
   value,
   repoId,
@@ -103,28 +87,97 @@ function Tag({
 
   if (value.name && value.ref) {
     return (
-      <HoverRef value={value.ref}>
-        <Badge rightSection={<IconAsterisk style={iconSize(12)} />}>
-          {logTranslator("tag_type", value.type)}: {value.name}
-        </Badge>
-      </HoverRef>
+      <Badge>
+        {logTranslator("tag_type", value.type)}: {value.name}
+      </Badge>
     );
   } else {
     return <Badge>{logTranslator("tag_type", value.type)}</Badge>;
   }
 }
 
-function EntityPath({ value }: { value: { ref: string; name: string }[] }) {
+function LogEntitySection({ log }: { log: Log }) {
+  const { t } = useTranslation();
+  const [expanded, { toggle }] = useDisclosure(false);
+
   return (
-    <Breadcrumbs separator=">">
-      {value.map((entity) => (
-        <HoverRef value={entity.ref} key={entity.ref}>
-          <Breadcrumb.Item>
-            <Anchor underline="never">{entity.name}</Anchor>
-          </Breadcrumb.Item>
-        </HoverRef>
-      ))}
-    </Breadcrumbs>
+    <Section
+      title={t("log.entity")}
+      icon={
+        <IconHierarchy style={iconBesideText({ size: "18px", top: "0px" })} />
+      }
+      rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
+    >
+      {expanded ? (
+        <KeyValueTable
+          data={log.entityPath.map((entity) => [
+            entity.name,
+            <Code>{entity.ref}</Code>,
+          ])}
+        />
+      ) : (
+        <Breadcrumbs separator=">" p="0px" pl="1.25rem" pt="0.5rem">
+          {log.entityPath.map((entity) => (
+            <Breadcrumb.Item>
+              <Text size="sm">{entity.name}</Text>
+            </Breadcrumb.Item>
+          ))}
+        </Breadcrumbs>
+      )}
+    </Section>
+  );
+}
+
+function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+  const [expanded, { toggle }] = useDisclosure(false);
+
+  return (
+    <Section
+      title={"Tags"}
+      icon={<IconTags style={iconBesideText({ size: "18px", top: "0px" })} />}
+      rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
+    >
+      {expanded ? (
+        <KeyValueTable
+          data={log.tags.map((tag) =>
+            tag.name && tag.ref
+              ? [
+                  <Text size="sm">
+                    {logTranslator("tag_type", tag.type)}: {tag.name}
+                  </Text>,
+                  <Code>{tag.ref}</Code>,
+                ]
+              : [
+                  <Text size="sm">{logTranslator("tag_type", tag.type)}</Text>,
+                  null,
+                ],
+          )}
+        />
+      ) : (
+        <Group pl="0.5rem" pt="0.5rem">
+          {log.tags.map((tag, index) => (
+            <Tag key={index} value={tag} repoId={repoId!} />
+          ))}
+        </Group>
+      )}
+    </Section>
+  );
+}
+
+function LogDate({ log }: { log: Log }) {
+  return (
+    <Group mb="lg" gap="0">
+      <IconCalendarClock
+        style={iconBesideText({
+          size: "18px",
+          top: "-1px",
+          marginRight: "0.25rem",
+        })}
+      />
+      {humanizeDate(log.savedAt)}
+    </Group>
   );
 }
 
@@ -158,123 +211,136 @@ export function LogDetails({ repoId }: { repoId?: string }) {
       opened={displayedLogId !== null}
       onClose={() => setDisplayedLogId(null)}
       withinPortal={false}
+      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Modal.Overlay />
       <Modal.Content>
         <Modal.Header>
-          <Stack>
-            <Title order={2}>
-              {logTranslator("action_type", log.action.type)}{" "}
-              <Text c="dimmed">
-                {logTranslator("action_category", log.action.category)}
-              </Text>
-            </Title>
-          </Stack>
-          <Modal.CloseButton />
+          <Flex justify="space-between" w="100%">
+            <Stack>
+              <Title order={2}>
+                {logTranslator("action_type", log.action.type)}{" "}
+                <Text c="dimmed">
+                  {logTranslator("action_category", log.action.category)}
+                </Text>
+              </Title>
+            </Stack>
+            <Modal.CloseButton />
+          </Flex>
         </Modal.Header>
         <Modal.Body>
-          <Group mb="lg">
-            <IconCalendarClock />
-            {humanizeDate(log.savedAt)}
-          </Group>
-          <Group mb="lg">
-            {log.tags.map((tag, index) => (
-              <Tag key={index} value={tag} repoId={repoId!} />
-            ))}
-          </Group>
+          <LogDate log={log} />
 
-          <KeyValueSection
-            title={t("log.source")}
-            icon={<IconRoute style={iconSize("1.15rem")} />}
-            data={log.source.map(
-              (field) =>
-                [logTranslator("source_field", field.name), field.value] as [
-                  React.ReactNode,
-                  React.ReactNode,
-                ],
-            )}
-          />
+          <Stack gap="1rem">
+            <LogTagSection log={log} repoId={repoId!} />
 
-          <KeyValueSection
-            title={t("log.actor")}
-            icon={<IconUser style={iconSize("1.15rem")} />}
-            data={
-              log.actor && [
-                [t("log.view.name"), <b>{log.actor.name}</b>],
-                [
-                  t("log.view.type"),
-                  logTranslator("actor_type", log.actor.type),
-                ],
-                [t("log.view.ref"), <Code>{log.actor.ref}</Code>],
-                ...log.actor.extra.map(
-                  (field) =>
-                    [
-                      logTranslator("actor_custom_field", field.name),
-                      field.value,
-                    ] as [React.ReactNode, React.ReactNode],
-                ),
-              ]
-            }
-          />
+            <KeyValueSection
+              title={t("log.source")}
+              icon={
+                <IconRoute
+                  style={iconBesideText({ size: "18px", top: "0px" })}
+                />
+              }
+              data={log.source.map(
+                (field) =>
+                  [logTranslator("source_field", field.name), field.value] as [
+                    React.ReactNode,
+                    React.ReactNode,
+                  ],
+              )}
+            />
 
-          <KeyValueSection
-            title={t("log.resource")}
-            icon={<IconCylinder style={iconSize("1.15rem")} />}
-            data={
-              log.resource && [
-                [t("log.view.name"), <b>{log.resource.name}</b>],
-                [
-                  t("log.view.type"),
-                  logTranslator("resource_type", log.resource.type),
-                ],
-                [t("log.view.ref"), <Code>{log.resource.ref}</Code>],
-                ...log.resource.extra.map(
-                  (field) =>
-                    [
-                      logTranslator("resource_custom_field", field.name),
-                      field.value,
-                    ] as [React.ReactNode, React.ReactNode],
-                ),
-              ]
-            }
-          />
+            <KeyValueSection
+              title={t("log.actor")}
+              icon={
+                <IconUser
+                  style={iconBesideText({ size: "18px", top: "-1px" })}
+                />
+              }
+              data={
+                log.actor && [
+                  [t("log.view.name"), <b>{log.actor.name}</b>],
+                  [
+                    t("log.view.type"),
+                    logTranslator("actor_type", log.actor.type),
+                  ],
+                  [t("log.view.ref"), <Code>{log.actor.ref}</Code>],
+                  ...log.actor.extra.map(
+                    (field) =>
+                      [
+                        logTranslator("actor_custom_field", field.name),
+                        field.value,
+                      ] as [React.ReactNode, React.ReactNode],
+                  ),
+                ]
+              }
+            />
 
-          <KeyValueSection
-            title={t("log.details")}
-            icon={<IconListDetails style={iconSize("1.15rem")} />}
-            data={log.details.map(
-              (field) =>
-                [logTranslator("detail_field", field.name), field.value] as [
-                  React.ReactNode,
-                  React.ReactNode,
-                ],
-            )}
-          />
+            <KeyValueSection
+              title={t("log.resource")}
+              icon={
+                <IconCylinder
+                  style={iconBesideText({ size: "18px", top: "0px" })}
+                />
+              }
+              data={
+                log.resource && [
+                  [t("log.view.name"), <b>{log.resource.name}</b>],
+                  [
+                    t("log.view.type"),
+                    logTranslator("resource_type", log.resource.type),
+                  ],
+                  [t("log.view.ref"), <Code>{log.resource.ref}</Code>],
+                  ...log.resource.extra.map(
+                    (field) =>
+                      [
+                        logTranslator("resource_custom_field", field.name),
+                        field.value,
+                      ] as [React.ReactNode, React.ReactNode],
+                  ),
+                ]
+              }
+            />
 
-          <KeyValueSection
-            title={t("log.attachment")}
-            icon={<IconPaperclip style={iconSize("1.15rem")} />}
-            data={log.attachments.map(
-              (field, index) =>
-                [
-                  logTranslator("attachment_type", field.type),
-                  <Anchor
-                    href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
-                  >
-                    {field.name}
-                  </Anchor>,
-                ] as [React.ReactNode, React.ReactNode],
-            )}
-          />
+            <KeyValueSection
+              title={t("log.details")}
+              icon={
+                <IconListDetails
+                  style={iconBesideText({ size: "18px", top: "0px" })}
+                />
+              }
+              data={log.details.map(
+                (field) =>
+                  [logTranslator("detail_field", field.name), field.value] as [
+                    React.ReactNode,
+                    React.ReactNode,
+                  ],
+              )}
+            />
 
-          <Section
-            title={t("log.entity")}
-            icon={<IconHierarchy style={iconSize("1.15rem")} />}
-          >
-            <Box p="xs">
-              <EntityPath value={log.entityPath} />
-            </Box>
-          </Section>
+            <KeyValueSection
+              title={t("log.attachment")}
+              icon={
+                <IconPaperclip
+                  style={iconBesideText({ size: "18px", top: "0px" })}
+                />
+              }
+              data={log.attachments.map(
+                (field, index) =>
+                  [
+                    logTranslator("attachment_type", field.type),
+                    <Anchor
+                      href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
+                      size="sm"
+                    >
+                      {field.name}
+                    </Anchor>,
+                  ] as [React.ReactNode, React.ReactNode],
+              )}
+            />
+
+            <LogEntitySection log={log} />
+          </Stack>
         </Modal.Body>
       </Modal.Content>
     </Modal.Root>
