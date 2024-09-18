@@ -11,6 +11,7 @@ import {
   Table,
   Text,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -304,6 +305,7 @@ function LogDate({ log }: { log: Log }) {
 }
 
 export function LogDetails({ repoId }: { repoId?: string }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
   const { displayedLogId, setDisplayedLogId } = useLogNavigationState();
   const logQuery = useQuery({
@@ -337,12 +339,18 @@ export function LogDetails({ repoId }: { repoId?: string }) {
         <Modal.Header>
           <Flex justify="space-between" w="100%">
             <Stack gap="0.5rem">
-              <Title order={2}>
-                {logTranslator("action_type", log.action.type)}{" "}
-                <Text c="dimmed">
-                  {logTranslator("action_category", log.action.category)}
-                </Text>
-              </Title>
+              <div>
+                <Tooltip label={t("log.actionType")}>
+                  <Title order={2}>
+                    {logTranslator("action_type", log.action.type)}
+                  </Title>
+                </Tooltip>
+                <Tooltip label={t("log.actionCategory")}>
+                  <Text c="dimmed" style={{ display: "inline-block" }}>
+                    {logTranslator("action_category", log.action.category)}
+                  </Text>
+                </Tooltip>
+              </div>
               <LogDate log={log} />
             </Stack>
             <Modal.CloseButton />
