@@ -146,7 +146,7 @@ function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
             tag.name && tag.ref
               ? [
                   <Text size="sm">
-                    {logTranslator("tag_type", tag.type)}: {tag.name}
+                    {logTranslator("tag_type", tag.type)}: <b>{tag.name}</b>
                   </Text>,
                   <Code>{tag.ref}</Code>,
                 ]
