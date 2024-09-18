@@ -1,9 +1,10 @@
-import { ActionIcon, Box, Flex, Group, Text } from "@mantine/core";
+import { ActionIcon, Box, Flex, Group, Text, Tooltip } from "@mantine/core";
 import {
   IconLayoutNavbarCollapse,
   IconLayoutNavbarExpand,
 } from "@tabler/icons-react";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 import { iconBesideText } from "@/utils/ui";
 
@@ -50,12 +51,17 @@ export function SectionExpand({
   expanded: boolean;
   toggle: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <ActionIcon variant="transparent" onClick={toggle}>
       {expanded ? (
-        <IconLayoutNavbarExpand style={iconBesideText({ size: "22px" })} />
+        <Tooltip label={t("common.lessDetails")} withArrow>
+          <IconLayoutNavbarExpand style={iconBesideText({ size: "22px" })} />
+        </Tooltip>
       ) : (
-        <IconLayoutNavbarCollapse style={iconBesideText({ size: "22px" })} />
+        <Tooltip label={t("common.moreDetails")} withArrow>
+          <IconLayoutNavbarCollapse style={iconBesideText({ size: "22px" })} />
+        </Tooltip>
       )}
     </ActionIcon>
   );

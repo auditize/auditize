@@ -343,6 +343,8 @@ export default {
     unexpectedError: "An error occurred",
     send: "Send",
     scrollToTop: "Scroll to top",
+    moreDetails: "More details",
+    lessDetails: "Less details",
     passwordForm: {
       password: {
         label: "Password",
