@@ -47,10 +47,10 @@ function KeyValueTable({
       <Table.Tbody>
         {data.map(([name, value], index) => (
           <Table.Tr key={index}>
-            <Table.Td width="35%" pl="1.25rem">
+            <Table.Td width="35%" pl="1.25rem" style={{ verticalAlign: "top" }}>
               {name}
             </Table.Td>
-            <Table.Td>{value}</Table.Td>
+            <Table.Td style={{ verticalAlign: "top" }}>{value}</Table.Td>
           </Table.Tr>
         ))}
       </Table.Tbody>
@@ -157,7 +157,7 @@ function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
           )}
         />
       ) : (
-        <Group pl="0.5rem" pt="0.5rem">
+        <Group pl="1.25rem" pt="0.5rem">
           {log.tags.map((tag, index) => (
             <Tag key={index} value={tag} repoId={repoId!} />
           ))}
