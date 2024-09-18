@@ -96,7 +96,6 @@ function DateField({ log }: { log: Log }) {
       value={log.savedAt}
       textProps={{
         size: "xs",
-        style: { display: "inline-block", textAlign: "right" },
       }}
     />
   );
