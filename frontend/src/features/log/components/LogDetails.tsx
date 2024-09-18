@@ -166,6 +166,129 @@ function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
   );
 }
 
+function LogSourceSection({ log, repoId }: { log: Log; repoId: string }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+  return (
+    <KeyValueSection
+      title={t("log.source")}
+      icon={<IconRoute style={iconBesideText({ size: "18px", top: "0px" })} />}
+      data={log.source.map(
+        (field) =>
+          [logTranslator("source_field", field.name), field.value] as [
+            React.ReactNode,
+            React.ReactNode,
+          ],
+      )}
+    />
+  );
+}
+
+function LogActorSection({ log, repoId }: { log: Log; repoId: string }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+
+  return (
+    <KeyValueSection
+      title={t("log.actor")}
+      icon={<IconUser style={iconBesideText({ size: "18px", top: "-1px" })} />}
+      data={
+        log.actor && [
+          [t("log.view.name"), <b>{log.actor.name}</b>],
+          [t("log.view.type"), logTranslator("actor_type", log.actor.type)],
+          [t("log.view.ref"), <Code>{log.actor.ref}</Code>],
+          ...log.actor.extra.map(
+            (field) =>
+              [
+                logTranslator("actor_custom_field", field.name),
+                field.value,
+              ] as [React.ReactNode, React.ReactNode],
+          ),
+        ]
+      }
+    />
+  );
+}
+
+function LogResourceSection({ log, repoId }: { log: Log; repoId: string }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+
+  return (
+    <KeyValueSection
+      title={t("log.resource")}
+      icon={
+        <IconCylinder style={iconBesideText({ size: "18px", top: "0px" })} />
+      }
+      data={
+        log.resource && [
+          [t("log.view.name"), <b>{log.resource.name}</b>],
+          [
+            t("log.view.type"),
+            logTranslator("resource_type", log.resource.type),
+          ],
+          [t("log.view.ref"), <Code>{log.resource.ref}</Code>],
+          ...log.resource.extra.map(
+            (field) =>
+              [
+                logTranslator("resource_custom_field", field.name),
+                field.value,
+              ] as [React.ReactNode, React.ReactNode],
+          ),
+        ]
+      }
+    />
+  );
+}
+
+function LogDetailsSection({ log, repoId }: { log: Log; repoId: string }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator();
+
+  return (
+    <KeyValueSection
+      title={t("log.details")}
+      icon={
+        <IconListDetails style={iconBesideText({ size: "18px", top: "0px" })} />
+      }
+      data={log.details.map(
+        (field) =>
+          [logTranslator("detail_field", field.name), field.value] as [
+            React.ReactNode,
+            React.ReactNode,
+          ],
+      )}
+    />
+  );
+}
+
+function LogAttachmentSection({ log, repoId }: { log: Log; repoId: string }) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+  const baseURL = window.auditizeBaseURL ?? "";
+
+  return (
+    <KeyValueSection
+      title={t("log.attachment")}
+      icon={
+        <IconPaperclip style={iconBesideText({ size: "18px", top: "0px" })} />
+      }
+      data={log.attachments.map(
+        (field, index) =>
+          [
+            logTranslator("attachment_type", field.type),
+            <Anchor
+              href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
+              size="sm"
+            >
+              {field.name}
+            </Anchor>,
+          ] as [React.ReactNode, React.ReactNode],
+      )}
+    />
+  );
+}
+
 function LogDate({ log }: { log: Log }) {
   return (
     <Group mb="lg" gap="0">
@@ -181,7 +304,6 @@ function LogDate({ log }: { log: Log }) {
 }
 
 export function LogDetails({ repoId }: { repoId?: string }) {
-  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
   const { displayedLogId, setDisplayedLogId } = useLogNavigationState();
   const logQuery = useQuery({
@@ -189,6 +311,7 @@ export function LogDetails({ repoId }: { repoId?: string }) {
     queryFn: () => getLog(repoId!, displayedLogId!),
     enabled: displayedLogId !== null,
   });
+  const log = logQuery.data!;
 
   // FIXME: improve loading and error handling
 
@@ -199,9 +322,6 @@ export function LogDetails({ repoId }: { repoId?: string }) {
   if (logQuery.error) {
     return <div>{logQuery.error.message}</div>;
   }
-
-  const baseURL = window.auditizeBaseURL ?? "";
-  const log = logQuery.data;
 
   return (
     <Modal.Root
@@ -231,112 +351,11 @@ export function LogDetails({ repoId }: { repoId?: string }) {
         <Modal.Body>
           <Stack gap="1rem">
             <LogTagSection log={log} repoId={repoId!} />
-
-            <KeyValueSection
-              title={t("log.source")}
-              icon={
-                <IconRoute
-                  style={iconBesideText({ size: "18px", top: "0px" })}
-                />
-              }
-              data={log.source.map(
-                (field) =>
-                  [logTranslator("source_field", field.name), field.value] as [
-                    React.ReactNode,
-                    React.ReactNode,
-                  ],
-              )}
-            />
-
-            <KeyValueSection
-              title={t("log.actor")}
-              icon={
-                <IconUser
-                  style={iconBesideText({ size: "18px", top: "-1px" })}
-                />
-              }
-              data={
-                log.actor && [
-                  [t("log.view.name"), <b>{log.actor.name}</b>],
-                  [
-                    t("log.view.type"),
-                    logTranslator("actor_type", log.actor.type),
-                  ],
-                  [t("log.view.ref"), <Code>{log.actor.ref}</Code>],
-                  ...log.actor.extra.map(
-                    (field) =>
-                      [
-                        logTranslator("actor_custom_field", field.name),
-                        field.value,
-                      ] as [React.ReactNode, React.ReactNode],
-                  ),
-                ]
-              }
-            />
-
-            <KeyValueSection
-              title={t("log.resource")}
-              icon={
-                <IconCylinder
-                  style={iconBesideText({ size: "18px", top: "0px" })}
-                />
-              }
-              data={
-                log.resource && [
-                  [t("log.view.name"), <b>{log.resource.name}</b>],
-                  [
-                    t("log.view.type"),
-                    logTranslator("resource_type", log.resource.type),
-                  ],
-                  [t("log.view.ref"), <Code>{log.resource.ref}</Code>],
-                  ...log.resource.extra.map(
-                    (field) =>
-                      [
-                        logTranslator("resource_custom_field", field.name),
-                        field.value,
-                      ] as [React.ReactNode, React.ReactNode],
-                  ),
-                ]
-              }
-            />
-
-            <KeyValueSection
-              title={t("log.details")}
-              icon={
-                <IconListDetails
-                  style={iconBesideText({ size: "18px", top: "0px" })}
-                />
-              }
-              data={log.details.map(
-                (field) =>
-                  [logTranslator("detail_field", field.name), field.value] as [
-                    React.ReactNode,
-                    React.ReactNode,
-                  ],
-              )}
-            />
-
-            <KeyValueSection
-              title={t("log.attachment")}
-              icon={
-                <IconPaperclip
-                  style={iconBesideText({ size: "18px", top: "0px" })}
-                />
-              }
-              data={log.attachments.map(
-                (field, index) =>
-                  [
-                    logTranslator("attachment_type", field.type),
-                    <Anchor
-                      href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
-                      size="sm"
-                    >
-                      {field.name}
-                    </Anchor>,
-                  ] as [React.ReactNode, React.ReactNode],
-              )}
-            />
-
+            <LogSourceSection log={log} repoId={repoId!} />
+            <LogActorSection log={log} repoId={repoId!} />
+            <LogResourceSection log={log} repoId={repoId!} />
+            <LogDetailsSection log={log} repoId={repoId!} />
+            <LogAttachmentSection log={log} repoId={repoId!} />
             <LogEntitySection log={log} />
           </Stack>
         </Modal.Body>
