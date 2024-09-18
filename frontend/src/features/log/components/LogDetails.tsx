@@ -216,20 +216,19 @@ export function LogDetails({ repoId }: { repoId?: string }) {
       <Modal.Content>
         <Modal.Header>
           <Flex justify="space-between" w="100%">
-            <Stack>
+            <Stack gap="0.5rem">
               <Title order={2}>
                 {logTranslator("action_type", log.action.type)}{" "}
                 <Text c="dimmed">
                   {logTranslator("action_category", log.action.category)}
                 </Text>
               </Title>
+              <LogDate log={log} />
             </Stack>
             <Modal.CloseButton />
           </Flex>
         </Modal.Header>
         <Modal.Body>
-          <LogDate log={log} />
-
           <Stack gap="1rem">
             <LogTagSection log={log} repoId={repoId!} />
 
