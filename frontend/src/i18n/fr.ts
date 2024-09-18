@@ -215,6 +215,7 @@ export default {
     attachmentNames: "Noms des pièces jointes",
     attachmentRef: "Référence de la pièce jointe",
     attachmentRefs: "Références des pièces jointes",
+    downloadAttachment: "Télécharger la pièce jointe",
     entity: "Entité",
     list: {
       columnSelector: {

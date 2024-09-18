@@ -278,12 +278,14 @@ function LogAttachmentSection({ log, repoId }: { log: Log; repoId: string }) {
         (field, index) =>
           [
             logTranslator("attachment_type", field.type),
-            <Anchor
-              href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
-              size="sm"
-            >
-              {field.name}
-            </Anchor>,
+            <Tooltip label={t("log.downloadAttachment")} withArrow>
+              <Anchor
+                href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
+                size="sm"
+              >
+                {field.name}
+              </Anchor>
+            </Tooltip>,
           ] as [React.ReactNode, React.ReactNode],
       )}
     />
