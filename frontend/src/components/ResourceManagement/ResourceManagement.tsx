@@ -227,8 +227,10 @@ export function ResourceManagement({
             style={{ backgroundColor: "var(--auditize-header-color)" }}
           >
             <Table.Tr>
-              {columnDefinitions.map(([name, _], i) => (
-                <Table.Th key={i}>{name}</Table.Th>
+              {columnDefinitions.map(([name, _, style], i) => (
+                <Table.Th style={style} key={i}>
+                  {name}
+                </Table.Th>
               ))}
               <Table.Th></Table.Th>
             </Table.Tr>
