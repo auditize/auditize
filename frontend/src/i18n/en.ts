@@ -212,6 +212,7 @@ export default {
     attachmentNames: "Attachment names",
     attachmentRef: "Attachment ref.",
     attachmentRefs: "Attachment refs.",
+    downloadAttachment: "Download attachment",
     entity: "Entity",
     list: {
       columnSelector: {
@@ -343,6 +344,8 @@ export default {
     unexpectedError: "An error occurred",
     send: "Send",
     scrollToTop: "Scroll to top",
+    moreDetails: "More details",
+    lessDetails: "Less details",
     passwordForm: {
       password: {
         label: "Password",

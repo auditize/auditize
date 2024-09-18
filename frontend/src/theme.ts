@@ -6,6 +6,7 @@ import {
   MantineColorsTuple,
   Pagination,
   rem,
+  ScrollArea,
 } from "@mantine/core";
 
 // Default Mantine blue used as a primary color is #228be6 or HSL 208, 80%, 52%.
@@ -79,6 +80,15 @@ export const theme = createTheme({
           };
         }
         return { wrapper: {} };
+      },
+    }),
+    ScrollArea: ScrollArea.extend({
+      vars: () => {
+        return {
+          root: {
+            "--scrollarea-scrollbar-size": rem(6),
+          },
+        };
       },
     }),
   },
