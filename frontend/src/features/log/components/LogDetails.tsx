@@ -136,7 +136,7 @@ function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
 
   return (
     <Section
-      title={"Tags"}
+      title={t("log.tags")}
       icon={<IconTags style={iconBesideText({ size: "18px", top: "0px" })} />}
       rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
     >
