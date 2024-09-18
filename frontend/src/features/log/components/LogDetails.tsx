@@ -171,12 +171,11 @@ function LogDate({ log }: { log: Log }) {
     <Group mb="lg" gap="0">
       <IconCalendarClock
         style={iconBesideText({
-          size: "18px",
-          top: "-1px",
+          size: "16px",
           marginRight: "0.25rem",
         })}
       />
-      {humanizeDate(log.savedAt)}
+      <Text size="sm">{humanizeDate(log.savedAt)}</Text>
     </Group>
   );
 }
