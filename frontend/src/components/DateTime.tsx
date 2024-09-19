@@ -34,6 +34,11 @@ export function DateTime({
         ? "dddd D MMMM YYYY, HH:mm:ss"
         : "LLLL";
   return (
-    <Tooltip label={dayjs(value).locale(lang).format(format)}>{date}</Tooltip>
+    <Tooltip
+      label={dayjs(value).locale(lang).format(format)}
+      withinPortal={false}
+    >
+      {date}
+    </Tooltip>
   );
 }

@@ -52,17 +52,32 @@ export function SectionExpand({
   toggle: () => void;
 }) {
   const { t } = useTranslation();
-  return (
-    <ActionIcon variant="transparent" onClick={toggle}>
-      {expanded ? (
-        <Tooltip label={t("common.lessDetails")} withArrow>
+
+  if (expanded) {
+    return (
+      <Tooltip
+        label={t("common.lessDetails")}
+        withArrow
+        withinPortal={false}
+        position="bottom"
+      >
+        <ActionIcon variant="transparent" onClick={toggle}>
           <IconLayoutNavbarExpand style={iconBesideText({ size: "22px" })} />
-        </Tooltip>
-      ) : (
-        <Tooltip label={t("common.moreDetails")} withArrow>
+        </ActionIcon>
+      </Tooltip>
+    );
+  } else {
+    return (
+      <Tooltip
+        label={t("common.moreDetails")}
+        withArrow
+        withinPortal={false}
+        position="bottom"
+      >
+        <ActionIcon variant="transparent" onClick={toggle}>
           <IconLayoutNavbarCollapse style={iconBesideText({ size: "22px" })} />
-        </Tooltip>
-      )}
-    </ActionIcon>
-  );
+        </ActionIcon>
+      </Tooltip>
+    );
+  }
 }

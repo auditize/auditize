@@ -278,7 +278,11 @@ function LogAttachmentSection({ log, repoId }: { log: Log; repoId: string }) {
         (field, index) =>
           [
             logTranslator("attachment_type", field.type),
-            <Tooltip label={t("log.downloadAttachment")} withArrow>
+            <Tooltip
+              label={t("log.downloadAttachment")}
+              withArrow
+              withinPortal={false}
+            >
               <Anchor
                 href={`${baseURL}/api/repos/${repoId}/logs/${log.id}/attachments/${index}`}
                 size="sm"
@@ -342,12 +346,12 @@ export function LogDetails({ repoId }: { repoId?: string }) {
           <Flex justify="space-between" w="100%">
             <Stack gap="0.5rem">
               <div>
-                <Tooltip label={t("log.actionType")}>
+                <Tooltip label={t("log.actionType")} withinPortal={false}>
                   <Title order={2}>
                     {logTranslator("action_type", log.action.type)}
                   </Title>
                 </Tooltip>
-                <Tooltip label={t("log.actionCategory")}>
+                <Tooltip label={t("log.actionCategory")} withinPortal={false}>
                   <Text c="dimmed" style={{ display: "inline-block" }}>
                     {logTranslator("action_category", log.action.category)}
                   </Text>

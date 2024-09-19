@@ -64,6 +64,7 @@ function InlineSearchParamLink({
       label={t("log.inlineFilter.filterOn", { field: fieldLabel })}
       disabled={!fieldLabel}
       withArrow
+      withinPortal={false}
     >
       <Anchor
         onClick={(event) => {
