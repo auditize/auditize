@@ -9,6 +9,7 @@ import rsuiteCss from "rsuite/dist/rsuite-no-reset.min.css?inline";
 
 import { theme } from "@/theme";
 
+import appCss from "./App.css?inline";
 import { LogNavigationStateProvider, Logs } from "./features/log";
 import { I18nProvider } from "./i18n";
 import layersCss from "./layers.css?inline";
@@ -99,6 +100,7 @@ class LogWebComponent extends HTMLElement {
         <style>{datatableCss}</style>
         <style>{layersCss}</style>
         <style>{webComponentCss}</style>
+        <style>{appCss}</style>
         <style>{rsuiteCss}</style>
         <QueryClientProvider client={auditizeQueryClient()}>
           <MantineProvider
