@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@mantine/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -11,6 +11,7 @@ import {
   unnormalizeFilterColumnsFromApi,
   useLogFilterMutation,
 } from "@/features/log-filter";
+import { LogFilter } from "@/features/log-filter/api";
 import { useLogRepoListQuery } from "@/features/repo";
 import { addQueryParamToLocation } from "@/utils/router";
 
@@ -58,6 +59,27 @@ function useLogSelectedColumns(
 
 const UrlLogContext = createContext<LogContextProps | null>(null);
 
+// Build log search parameters from URL search parameters or log filter (if provided).
+// In case both are provided, the URL search parameters have precedence.
+function useLogSearchParams(
+  urlSearchParams: URLSearchParams,
+  logFilter: LogFilter | undefined,
+): LogSearchParams {
+  // Use "useMemo" to avoid re-creating a new LogSearchParams object on every render
+  return useMemo(
+    () =>
+      !urlSearchParams.has("repoId") && logFilter
+        ? LogSearchParams.deserialize({
+            ...logFilter.searchParams,
+            repoId: logFilter.repoId,
+          })
+        : LogSearchParams.deserialize(
+            Object.fromEntries(urlSearchParams.entries()),
+          ),
+    [urlSearchParams, logFilter],
+  );
+}
+
 export function LogNavigationStateProvider({
   children,
 }: {
@@ -84,6 +106,7 @@ export function LogNavigationStateProvider({
   const filterMutation = useLogFilterMutation(filterId!, {
     onError: () => notifyError(t("log.filter.updateError")),
   });
+  const logSearchParams = useLogSearchParams(urlSearchParams, filterQuery.data);
 
   const setDisplayedLogId = (logId: string | null) => {
     if (logId === null) {
@@ -94,20 +117,6 @@ export function LogNavigationStateProvider({
   };
 
   const displayedLogId = urlSearchParams.get("log") || null;
-
-  // Build log search parameters from URL search parameters or filterId (if provided)
-  // In case both are provided, the URL search parameters have precedence
-  let logSearchParams: LogSearchParams;
-  if (!urlSearchParams.has("repoId") && filterId && filterQuery.data) {
-    logSearchParams = LogSearchParams.deserialize({
-      ...filterQuery.data.searchParams,
-      repoId: filterQuery.data.repoId,
-    });
-  } else {
-    logSearchParams = LogSearchParams.deserialize(
-      Object.fromEntries(urlSearchParams.entries()),
-    );
-  }
 
   const setLogSearchParams = (newLogSearchParams: LogSearchParams) => {
     // Do not keep the "repo auto-select redirect" in the history,
