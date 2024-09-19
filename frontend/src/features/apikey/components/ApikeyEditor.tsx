@@ -15,6 +15,7 @@ import {
 import {
   emptyPermissions,
   PermissionManagementTab,
+  usePermissionManagementTabState,
   usePermissionsNormalizer,
   WithPermissionManagement,
 } from "@/features/permissions";
@@ -191,16 +192,13 @@ export function ApikeyCreation({
   const { t } = useTranslation();
   const { form, permissions, setPermissions } = useApiKeyEditorState(!!opened);
   const normalizePermissions = usePermissionsNormalizer();
-
   const [secret, setSecret] = useState<string | null>(null);
-
   const [selectedTab, setSelectedTab] =
-    useState<PermissionManagementTab>("general");
+    usePermissionManagementTabState(!!opened);
 
   useEffect(() => {
     if (!opened) {
       setSecret(null);
-      setSelectedTab("general");
     }
   }, [opened]);
 
@@ -209,7 +207,9 @@ export function ApikeyCreation({
       title={t("apikey.create.title")}
       opened={!!opened}
       onClose={onClose}
-      onSubmit={form.onSubmit}
+      onSubmit={(handleSubmit) =>
+        form.onSubmit(handleSubmit, () => setSelectedTab("general"))
+      }
       onSave={() =>
         createApikey({
           ...form.values,
@@ -251,7 +251,7 @@ export function ApikeyEdition({
     useApiKeyEditorState(!!apikeyId);
   const normalizePermissions = usePermissionsNormalizer();
   const [selectedTab, setSelectedTab] =
-    useState<PermissionManagementTab>("general");
+    usePermissionManagementTabState(!!apikeyId);
 
   return (
     <ResourceEdition
@@ -265,7 +265,9 @@ export function ApikeyEdition({
         setPermissions(data.permissions);
       }}
       title={t("apikey.edit.title")}
-      onSubmit={form.onSubmit}
+      onSubmit={(handleSubmit) =>
+        form.onSubmit(handleSubmit, () => setSelectedTab("general"))
+      }
       onSave={() =>
         updateApikey(apikeyId!, {
           ...form.values,

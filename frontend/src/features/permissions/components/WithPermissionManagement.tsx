@@ -1,4 +1,5 @@
 import { Tabs } from "@mantine/core";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Permissions } from "../types";
@@ -46,4 +47,19 @@ export function WithPermissionManagement({
       </Tabs.Panel>
     </Tabs>
   );
+}
+
+export function usePermissionManagementTabState(
+  enabled: boolean,
+): [PermissionManagementTab, (tab: PermissionManagementTab) => void] {
+  const [selectedTab, setSelectedTab] =
+    useState<PermissionManagementTab>("general");
+
+  useEffect(() => {
+    if (enabled) {
+      setSelectedTab("general");
+    }
+  }, [enabled]);
+
+  return [selectedTab, setSelectedTab];
 }

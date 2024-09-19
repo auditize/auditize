@@ -11,6 +11,7 @@ import {
   emptyPermissions,
   PermissionManagementTab,
   Permissions,
+  usePermissionManagementTabState,
   usePermissionsNormalizer,
   WithPermissionManagement,
 } from "@/features/permissions";
@@ -53,23 +54,25 @@ function useUserEditorState(opened: boolean) {
 
 function UserEditor({
   form,
+  selectedTab,
+  onTabChange,
   permissions,
   onChange,
   readOnly = false,
 }: {
   form: UseFormReturnType<any>;
+  selectedTab: PermissionManagementTab;
+  onTabChange: (tab: PermissionManagementTab) => void;
   permissions: Permissions;
   onChange: (permissions: Permissions) => void;
   readOnly?: boolean;
 }) {
   const { t } = useTranslation();
-  const [selectedTab, setSelectedTab] =
-    useState<PermissionManagementTab>("general");
 
   return (
     <WithPermissionManagement
       selectedTab={selectedTab}
-      onTabChange={setSelectedTab}
+      onTabChange={onTabChange}
       permissions={permissions}
       onChange={onChange}
       readOnly={readOnly}
@@ -121,13 +124,17 @@ export function UserCreation({
   const { t } = useTranslation();
   const { form, permissions, setPermissions } = useUserEditorState(!!opened);
   const normalizePermissions = usePermissionsNormalizer();
+  const [selectedTab, setSelectedTab] =
+    usePermissionManagementTabState(!!opened);
 
   return (
     <ResourceCreation
       title={t("user.create.title")}
       opened={!!opened}
       onClose={onClose}
-      onSubmit={form.onSubmit}
+      onSubmit={(handleSubmit) =>
+        form.onSubmit(handleSubmit, () => setSelectedTab("general"))
+      }
       onSave={() =>
         createUser({
           ...form.values,
@@ -138,6 +145,8 @@ export function UserCreation({
     >
       <UserEditor
         form={form}
+        selectedTab={selectedTab}
+        onTabChange={setSelectedTab}
         permissions={permissions}
         onChange={(perms) => setPermissions(perms)}
       />
@@ -157,6 +166,8 @@ export function UserEdition({
   const { t } = useTranslation();
   const { form, permissions, setPermissions } = useUserEditorState(!!userId);
   const normalizePermissions = usePermissionsNormalizer();
+  const [selectedTab, setSelectedTab] =
+    usePermissionManagementTabState(!!userId);
 
   return (
     <ResourceEdition
@@ -170,7 +181,9 @@ export function UserEdition({
         setPermissions(data.permissions);
       }}
       title={t("user.edit.title")}
-      onSubmit={form.onSubmit}
+      onSubmit={(handleSubmit) =>
+        form.onSubmit(handleSubmit, () => setSelectedTab("general"))
+      }
       onSave={() =>
         updateUser(userId!, {
           ...form.values,
@@ -182,6 +195,8 @@ export function UserEdition({
     >
       <UserEditor
         form={form}
+        selectedTab={selectedTab}
+        onTabChange={setSelectedTab}
         permissions={permissions}
         onChange={(perms) => {
           setPermissions(perms);

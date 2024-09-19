@@ -1,4 +1,7 @@
-export { WithPermissionManagement } from "./components/WithPermissionManagement";
+export {
+  WithPermissionManagement,
+  usePermissionManagementTabState,
+} from "./components/WithPermissionManagement";
 export type { PermissionManagementTab } from "./components/WithPermissionManagement";
 export { PermissionSummary } from "./components/PermissionSummary";
 
