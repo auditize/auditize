@@ -241,6 +241,7 @@ function SelectSearchParamField({
     // on repository change, reset the selected value if it's not in the new data
     if (
       consolidatedDataQuery.data &&
+      value &&
       !consolidatedDataQuery.data.includes(value)
     ) {
       onChange(searchParamName, "");
