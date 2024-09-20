@@ -2,14 +2,12 @@ import {
   ActionIcon,
   Button,
   CloseButton,
-  Flex,
   FocusTrap,
   Group,
   Menu,
   Popover,
   rem,
   Select,
-  Space,
   Stack,
   Switch,
   TextInput,
@@ -56,7 +54,7 @@ import {
   getAllLogTagTypes,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
-import { EntitySelector } from "./EntitySelector";
+import { EntitySelector } from "./EntitySelector2";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
@@ -89,7 +87,12 @@ function SearchParamFieldPopover({
   children: React.ReactNode;
 }) {
   return (
-    <Popover opened={opened} onChange={onChange} withinPortal={false}>
+    <Popover
+      opened={opened}
+      onChange={onChange}
+      keepMounted
+      withinPortal={false}
+    >
       <Popover.Target>
         <Button
           onClick={() => onChange(!opened)}
