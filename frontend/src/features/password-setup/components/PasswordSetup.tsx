@@ -4,6 +4,7 @@ import {
   Button,
   Center,
   PasswordInput,
+  Space,
   Stack,
   TextInput,
   Title,
@@ -16,6 +17,7 @@ import React, { useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { NavLink, useParams } from "react-router-dom";
 
+import logoPath from "@/assets/logo.svg";
 import {
   ApiErrorMessage,
   useApiErrorMessageBuilder,
@@ -89,15 +91,26 @@ function PasswordSetup({
     query.isLoading || mutation.isPending || mutation.isSuccess;
 
   return (
-    <Center>
+    <Center pt="4rem">
       <Stack align="center">
-        <Title order={1} pt="xl">
-          {title}
-        </Title>
+        <img
+          src={logoPath}
+          alt="Auditize"
+          height={90}
+          style={{ display: "block" }} // for image vertical alignment
+        />
         <form
           onSubmit={form.onSubmit((values) => mutation.mutate(values.password))}
         >
-          <Stack w="25rem" p="1rem">
+          <Stack w="22.5rem" p="1rem" gap="0.5rem">
+            <Title
+              order={1}
+              pt="xl"
+              fz="1.25rem"
+              c="var(--auditize-logo-black-color)"
+            >
+              {title}
+            </Title>
             <TextInput
               {...form.getInputProps("firstName")}
               label={t("passwordSetup.form.firstName.label")}
@@ -132,13 +145,13 @@ function PasswordSetup({
               key={form.key("passwordConfirmation")}
               disabled={disabledForm}
             />
+            <Space h="lg" />
             <Button type="submit" disabled={disabledForm}>
               {t("common.submit")}
             </Button>
             <ApiErrorMessage error={mutation.error} />
           </Stack>
         </form>
-
         {mutation.isSuccess && (
           <Message.Success>
             <>

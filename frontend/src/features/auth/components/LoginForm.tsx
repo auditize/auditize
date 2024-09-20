@@ -159,7 +159,7 @@ export function LoginForm({
             <img
               src={logoPath}
               alt="Auditize"
-              height={100}
+              height={90}
               style={{ display: "block" }} // for image vertical alignment
             />
             <Stack gap="0.25rem" w="280px">

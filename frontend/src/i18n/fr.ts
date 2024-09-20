@@ -447,7 +447,7 @@ export default {
       },
     },
     accountSetup: {
-      title: "Finalisez la création de votre compte Auditize",
+      title: "Finalisez la création de votre compte",
       success: "La création de votre compte a été finalisée avec succès.",
     },
     passwordReset: {

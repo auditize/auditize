@@ -443,7 +443,7 @@ export default {
       },
     },
     accountSetup: {
-      title: "Set up your Auditize account",
+      title: "Set up your account",
       success: "The setup of your user account is now complete.",
     },
     passwordReset: {
