@@ -119,7 +119,7 @@ function LogEntitySection({ log }: { log: Log }) {
       ) : (
         <Breadcrumbs separator=">" p="0px" pl="1.25rem" pt="0.5rem">
           {log.entityPath.map((entity) => (
-            <Breadcrumb.Item>
+            <Breadcrumb.Item key={entity.ref}>
               <Text size="sm">{entity.name}</Text>
             </Breadcrumb.Item>
           ))}
