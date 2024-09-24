@@ -109,7 +109,7 @@ function SearchParamFieldPopover({
           {title}
         </Button>
       </Popover.Target>
-      <Popover.Dropdown>{children}</Popover.Dropdown>
+      <Popover.Dropdown p="0">{children}</Popover.Dropdown>
     </Popover>
   );
 }
@@ -313,6 +313,7 @@ function BaseTextInputSearchParamField({
           value={value}
           onChange={(event) => onChange(event.currentTarget.value)}
           data-autofocus
+          p="sm"
         />
       </FocusTrap>
     </SearchParamFieldPopover>
@@ -412,7 +413,7 @@ function DateInterval({
       opened={opened}
       onChange={toggle}
     >
-      <Stack>
+      <Stack p="sm" gap="sm">
         <CustomDateTimePicker
           placeholder={t("log.dateFrom")}
           value={searchParams.since}
@@ -478,6 +479,7 @@ function HasAttachmentSearchParamField({
           )
         }
         label={t("log.hasAttachment")}
+        p="sm"
       />
     </SearchParamFieldPopover>
   );
