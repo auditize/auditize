@@ -316,6 +316,7 @@ export default {
     apikeys: "Clés d'API",
     logs: "Journaux",
     allRepos: "Tous les dépôts",
+    entities: "Entités",
     summary: {
       read: "lecture",
       write: "écriture",

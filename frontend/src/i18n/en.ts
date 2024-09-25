@@ -313,6 +313,7 @@ export default {
     apikeys: "API Keys",
     logs: "Logs",
     allRepos: "All repositories",
+    entities: "Entities",
     summary: {
       read: "read",
       write: "write",

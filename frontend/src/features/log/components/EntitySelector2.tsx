@@ -2,11 +2,13 @@ import {
   ActionIcon,
   Box,
   Button,
+  Checkbox,
   Group,
   Loader,
   RenderTreeNodePayload,
   ScrollArea,
   Space,
+  Text,
   Tree,
   TreeNodeData,
   useTree,
@@ -15,7 +17,9 @@ import {
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
+import { PopoverForm } from "@/components/PopoverForm";
 import { iconSize } from "@/utils/ui";
 
 import { getAllLogEntities, getLogEntity, LogEntity } from "../api";
@@ -82,13 +86,13 @@ async function completeTreeData(
   }
 }
 
-function hasAnyChildNodeChecked(node: TreeNodeData, checkedNode: string) {
-  if (node.value === checkedNode) {
+function hasAnyChildNodeChecked(node: TreeNodeData, checkNodeValues: string[]) {
+  if (checkNodeValues.includes(node.value)) {
     return true;
   }
   if (node.children) {
     for (const child of node.children) {
-      if (hasAnyChildNodeChecked(child, checkedNode)) {
+      if (hasAnyChildNodeChecked(child, checkNodeValues)) {
         return true;
       }
     }
@@ -131,7 +135,9 @@ function TreeNode({
 
   const checked = node.value === selectedNodeValue;
   const indeterminate =
-    !checked && hasAnyChildNodeChecked(node, selectedNodeValue!);
+    !checked &&
+    selectedNodeValue &&
+    hasAnyChildNodeChecked(node, [selectedNodeValue]);
 
   return (
     <Group {...elementProps}>
@@ -162,6 +168,7 @@ function TreeNode({
           onClick={() => (!checked ? onChange(node.value) : onChange(""))}
           variant={checked ? "light" : "transparent"}
           size="sm"
+          h="1.75rem"
           color={
             checked || indeterminate
               ? "var(--mantine-color-blue214-6)"
@@ -257,5 +264,193 @@ export function EntitySelector({
         />
       </Box>
     </ScrollArea.Autosize>
+  );
+}
+
+function CheckTreeNode({
+  repoId,
+  entityRefs,
+  onChange,
+  node,
+  expanded,
+  elementProps,
+  tree,
+}: {
+  repoId: string;
+  entityRefs: string[];
+  onChange: (value: string[]) => void;
+  node: TreeNodeData;
+  expanded: boolean;
+  elementProps: any;
+  tree: UseTreeReturnType;
+}) {
+  const query = useQuery({
+    queryKey: ["logConsolidatedData", "entity", repoId, node.value],
+    queryFn: () => getAllLogEntities(repoId!, node.value),
+    enabled: expanded && node.children?.length === 0,
+  });
+
+  useEffect(() => {
+    if (query.data) {
+      node.children = query.data.map(logEntityToTreeNodeData);
+      // force tree to re-render
+      if (expanded) {
+        tree.expand(node.value);
+      }
+    }
+  }, [query.data]);
+
+  const checked = entityRefs.includes(node.value);
+  const indeterminate = !checked && hasAnyChildNodeChecked(node, entityRefs);
+
+  const handleCheck = () => {
+    if (!checked) {
+      onChange([...entityRefs, node.value]);
+    } else {
+      onChange(entityRefs.filter((ref) => ref !== node.value));
+    }
+  };
+
+  return (
+    <Group {...elementProps} style={{ cursor: "default" }}>
+      <Group gap="0px" p="4px">
+        {node.children ? (
+          <ActionIcon
+            onClick={() =>
+              expanded ? tree.collapse(node.value) : tree.expand(node.value)
+            }
+            variant="transparent"
+            p="0px"
+            size="20"
+          >
+            {expanded ? (
+              query.isLoading ? (
+                <Loader size={16} />
+              ) : (
+                <IconChevronDown style={iconSize(20)} />
+              )
+            ) : (
+              <IconChevronRight style={iconSize(20)} />
+            )}
+          </ActionIcon>
+        ) : (
+          <Space w="20px" />
+        )}
+        <Space w="8px" />
+        <Checkbox.Indicator
+          checked={checked}
+          indeterminate={indeterminate}
+          onClick={handleCheck}
+          size="xs"
+        />
+        <Space w="6px" />
+        <Text onClick={handleCheck} size="sm" style={{ cursor: "default" }}>
+          {node.label}
+        </Text>
+      </Group>
+    </Group>
+  );
+}
+
+function makeCheckTreeNodeRenderer(
+  repoId: string,
+  entityRefs: string[],
+  onChange: (entityRefs: string[]) => void,
+) {
+  function renderCheckTreeNode({
+    node,
+    expanded,
+    elementProps,
+    tree,
+  }: RenderTreeNodePayload) {
+    return (
+      <CheckTreeNode
+        repoId={repoId}
+        entityRefs={entityRefs}
+        onChange={onChange}
+        node={node}
+        expanded={expanded}
+        elementProps={elementProps}
+        tree={tree}
+      />
+    );
+  }
+
+  return renderCheckTreeNode;
+}
+
+interface MultiEntitySelectorProps {
+  repoId: string;
+  entityRefs: string[];
+  onChange: (entityRefs: string[]) => void;
+}
+
+export function MultiEntitySelector({
+  repoId,
+  entityRefs,
+  onChange,
+}: MultiEntitySelectorProps) {
+  const query = useQuery({
+    queryKey: ["logEntities", repoId],
+    queryFn: () => getAllLogEntities(repoId!),
+    enabled: !!repoId,
+  });
+  const [data, setData] = useState<TreeNodeData[]>([]);
+  const tree = useTree({});
+
+  useEffect(() => {
+    if (!query.data) {
+      return;
+    }
+    if (data.length === 0) {
+      setData(query.data.map(logEntityToTreeNodeData));
+    } else if (
+      entityRefs.length > 0 &&
+      entityRefs.some((entityRef) => !findNode(data, entityRef))
+    ) {
+      completeTreeData(repoId!, data, entityRefs).then(() =>
+        setData((data) => data),
+      );
+    }
+  }, [query.data, data, entityRefs]);
+
+  return (
+    <ScrollArea.Autosize type="hover" mah={200}>
+      <Box px="8px" py="6px" w="250px">
+        <Tree
+          data={data}
+          tree={tree}
+          levelOffset={18}
+          expandOnClick={false}
+          renderNode={makeCheckTreeNodeRenderer(repoId!, entityRefs, onChange)}
+        />
+      </Box>
+    </ScrollArea.Autosize>
+  );
+}
+
+interface MultiEntitySelectorPickerProps extends MultiEntitySelectorProps {
+  disabled?: boolean;
+}
+
+export function MultiEntitySelectorPicker({
+  repoId,
+  entityRefs,
+  onChange,
+  disabled,
+}: MultiEntitySelectorPickerProps) {
+  const { t } = useTranslation();
+  return (
+    <PopoverForm
+      title={t("permission.entities")}
+      isFilled={entityRefs.length > 0}
+      disabled={disabled}
+    >
+      <MultiEntitySelector
+        repoId={repoId}
+        entityRefs={entityRefs}
+        onChange={onChange}
+      />
+    </PopoverForm>
   );
 }

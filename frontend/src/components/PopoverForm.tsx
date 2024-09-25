@@ -43,9 +43,7 @@ export function PopoverForm({
           {title}
         </Button>
       </Popover.Target>
-      <Popover.Dropdown>
-        <Stack>{children}</Stack>
-      </Popover.Dropdown>
+      <Popover.Dropdown p="0">{children}</Popover.Dropdown>
     </Popover>
   );
 }
