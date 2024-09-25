@@ -135,6 +135,36 @@ function TreeNodeExpander({
   );
 }
 
+function useLogEntityChildrenFetcher({
+  repoId,
+  tree,
+  node,
+  expanded,
+}: {
+  repoId: string;
+  tree: UseTreeReturnType;
+  node: TreeNodeData;
+  expanded: boolean;
+}): boolean {
+  const query = useQuery({
+    queryKey: ["logConsolidatedData", "entity", repoId, node.value],
+    queryFn: () => getAllLogEntities(repoId!, node.value),
+    enabled: expanded && node.children?.length === 0,
+  });
+
+  useEffect(() => {
+    if (query.data) {
+      node.children = query.data.map(logEntityToTreeNodeData);
+      // force tree to re-render
+      if (expanded) {
+        tree.expand(node.value);
+      }
+    }
+  }, [query.data]);
+
+  return query.isLoading;
+}
+
 function TreeNode({
   repoId,
   selectedNodeValue,
@@ -152,22 +182,12 @@ function TreeNode({
   elementProps: any;
   tree: UseTreeReturnType;
 }) {
-  const query = useQuery({
-    queryKey: ["logConsolidatedData", "entity", repoId, node.value],
-    queryFn: () => getAllLogEntities(repoId!, node.value),
-    enabled: expanded && node.children?.length === 0,
+  const loading = useLogEntityChildrenFetcher({
+    repoId,
+    tree,
+    node,
+    expanded,
   });
-
-  useEffect(() => {
-    if (query.data) {
-      node.children = query.data.map(logEntityToTreeNodeData);
-      // force tree to re-render
-      if (expanded) {
-        tree.expand(node.value);
-      }
-    }
-  }, [query.data]);
-
   const checked = node.value === selectedNodeValue;
   const indeterminate =
     !checked &&
@@ -181,7 +201,7 @@ function TreeNode({
           tree={tree}
           node={node}
           expanded={expanded}
-          loading={query.isLoading}
+          loading={loading}
         />
         <Button
           onClick={() => (!checked ? onChange(node.value) : onChange(""))}
@@ -303,22 +323,12 @@ function CheckTreeNode({
   elementProps: any;
   tree: UseTreeReturnType;
 }) {
-  const query = useQuery({
-    queryKey: ["logConsolidatedData", "entity", repoId, node.value],
-    queryFn: () => getAllLogEntities(repoId!, node.value),
-    enabled: expanded && node.children?.length === 0,
+  const loading = useLogEntityChildrenFetcher({
+    repoId,
+    tree,
+    node,
+    expanded,
   });
-
-  useEffect(() => {
-    if (query.data) {
-      node.children = query.data.map(logEntityToTreeNodeData);
-      // force tree to re-render
-      if (expanded) {
-        tree.expand(node.value);
-      }
-    }
-  }, [query.data]);
-
   const checked = entityRefs.includes(node.value);
   const indeterminate = !checked && hasAnyChildNodeChecked(node, entityRefs);
 
@@ -337,7 +347,7 @@ function CheckTreeNode({
           tree={tree}
           node={node}
           expanded={expanded}
-          loading={query.isLoading}
+          loading={loading}
         />
         <Space w="8px" />
         <Checkbox.Indicator
