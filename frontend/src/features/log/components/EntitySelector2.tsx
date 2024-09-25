@@ -100,6 +100,41 @@ function hasAnyChildNodeChecked(node: TreeNodeData, checkNodeValues: string[]) {
   return false;
 }
 
+function TreeNodeExpander({
+  tree,
+  node,
+  expanded,
+  loading,
+}: {
+  tree: UseTreeReturnType;
+  node: TreeNodeData;
+  expanded: boolean;
+  loading: boolean;
+}) {
+  return node.children ? (
+    <ActionIcon
+      onClick={() =>
+        expanded ? tree.collapse(node.value) : tree.expand(node.value)
+      }
+      variant="transparent"
+      p="0"
+      size="20px"
+    >
+      {expanded ? (
+        loading ? (
+          <Loader size={16} />
+        ) : (
+          <IconChevronDown style={iconSize(20)} />
+        )
+      ) : (
+        <IconChevronRight style={iconSize(20)} />
+      )}
+    </ActionIcon>
+  ) : (
+    <Space w="20px" />
+  );
+}
+
 function TreeNode({
   repoId,
   selectedNodeValue,
@@ -142,28 +177,12 @@ function TreeNode({
   return (
     <Group {...elementProps}>
       <Group gap={0}>
-        {node.children ? (
-          <ActionIcon
-            onClick={() =>
-              expanded ? tree.collapse(node.value) : tree.expand(node.value)
-            }
-            variant="transparent"
-            p="0px"
-            size="20"
-          >
-            {expanded ? (
-              query.isLoading ? (
-                <Loader size={16} />
-              ) : (
-                <IconChevronDown style={iconSize(20)} />
-              )
-            ) : (
-              <IconChevronRight style={iconSize(20)} />
-            )}
-          </ActionIcon>
-        ) : (
-          <Space w="20px" />
-        )}
+        <TreeNodeExpander
+          tree={tree}
+          node={node}
+          expanded={expanded}
+          loading={query.isLoading}
+        />
         <Button
           onClick={() => (!checked ? onChange(node.value) : onChange(""))}
           variant={checked ? "light" : "transparent"}
@@ -314,28 +333,12 @@ function CheckTreeNode({
   return (
     <Group {...elementProps} style={{ cursor: "default" }}>
       <Group gap="0px" p="4px">
-        {node.children ? (
-          <ActionIcon
-            onClick={() =>
-              expanded ? tree.collapse(node.value) : tree.expand(node.value)
-            }
-            variant="transparent"
-            p="0px"
-            size="20"
-          >
-            {expanded ? (
-              query.isLoading ? (
-                <Loader size={16} />
-              ) : (
-                <IconChevronDown style={iconSize(20)} />
-              )
-            ) : (
-              <IconChevronRight style={iconSize(20)} />
-            )}
-          </ActionIcon>
-        ) : (
-          <Space w="20px" />
-        )}
+        <TreeNodeExpander
+          tree={tree}
+          node={node}
+          expanded={expanded}
+          loading={query.isLoading}
+        />
         <Space w="8px" />
         <Checkbox.Indicator
           checked={checked}
