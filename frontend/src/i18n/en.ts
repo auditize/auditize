@@ -341,7 +341,7 @@ export default {
     clear: "Clear",
     ok: "Ok",
     loading: "Loading...",
-    notAvailable: "Not available",
+    noData: "No data",
     notCurrentlyAvailable: "Not currently available",
     unexpectedError: "An error occurred",
     send: "Send",

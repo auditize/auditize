@@ -278,7 +278,7 @@ function SelectSearchParamField({
             : consolidatedDataQuery.data &&
                 consolidatedDataQuery.data.length > 0
               ? label
-              : t("common.notAvailable")
+              : t("common.noData")
         }
       />
     </SearchParamFieldPopover>

@@ -344,7 +344,7 @@ export default {
     clear: "Effacer",
     ok: "Ok",
     loading: "Chargement...",
-    notAvailable: "Non disponible",
+    noData: "Aucune donnée",
     notCurrentlyAvailable: "Actuellement indisponible",
     unexpectedError: "Une erreur est survenue",
     send: "Envoyer",
