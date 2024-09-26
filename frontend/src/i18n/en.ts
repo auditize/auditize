@@ -338,6 +338,7 @@ export default {
     submit: "Submit",
     delete: "Delete",
     close: "Close",
+    clear: "Clear",
     ok: "Ok",
     loading: "Loading...",
     notAvailable: "Not available",

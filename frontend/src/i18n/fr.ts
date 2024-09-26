@@ -341,6 +341,7 @@ export default {
     submit: "Valider",
     delete: "Supprimer",
     close: "Fermer",
+    clear: "Effacer",
     ok: "Ok",
     loading: "Chargement...",
     notAvailable: "Non disponible",

@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Anchor,
   Box,
   Button,
   Checkbox,
@@ -8,6 +9,7 @@ import {
   RenderTreeNodePayload,
   ScrollArea,
   Space,
+  Stack,
   Text,
   Tree,
   TreeNodeData,
@@ -229,23 +231,41 @@ function ScrollableTree({
   data,
   tree,
   renderNode,
+  onClear,
 }: {
   data: TreeNodeData[];
   tree: UseTreeReturnType;
   renderNode: (payload: RenderTreeNodePayload) => React.ReactNode;
+  onClear: () => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <ScrollArea.Autosize type="hover" mah={200}>
-      <Box px="8px" py="6px" w="250px">
-        <Tree
-          data={data}
-          tree={tree}
-          levelOffset={18}
-          expandOnClick={false}
-          renderNode={renderNode}
-        />
+    <Stack gap="0" p="0">
+      <ScrollArea.Autosize type="hover" mah={200} p="8px" pr="0">
+        <Box w="250px">
+          <Tree
+            data={data}
+            tree={tree}
+            levelOffset={18}
+            expandOnClick={false}
+            renderNode={renderNode}
+          />
+        </Box>
+      </ScrollArea.Autosize>
+      <Box
+        style={{
+          borderTopStyle: "solid",
+          borderTopWidth: "1px",
+          borderColor: "var(--mantine-color-gray-2)",
+        }}
+      >
+        <Anchor onClick={onClear}>
+          <Text size="xs" px="sm" py="6px">
+            {t("common.clear")}
+          </Text>
+        </Anchor>
       </Box>
-    </ScrollArea.Autosize>
+    </Stack>
   );
 }
 
@@ -286,6 +306,7 @@ export function EntitySelector({
           tree={tree}
         />
       )}
+      onClear={() => onChange("")}
     />
   );
 }
@@ -405,6 +426,7 @@ export function MultiEntitySelector({
           tree={tree}
         />
       )}
+      onClear={() => onChange([])}
     />
   );
 }
