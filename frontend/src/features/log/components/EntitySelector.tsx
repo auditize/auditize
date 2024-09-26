@@ -225,7 +225,7 @@ function ScrollableTree({
   onClear: () => void;
 }) {
   const { t } = useTranslation();
-  return (
+  return data.length > 0 ? (
     <Stack gap="0" p="0">
       <ScrollArea.Autosize type="hover" mah={200} p="8px" pr="0">
         <Box w="250px">
@@ -252,6 +252,10 @@ function ScrollableTree({
         </Anchor>
       </Box>
     </Stack>
+  ) : (
+    <Text c="var(--mantine-color-gray-6)" p="sm" size="sm">
+      {t("common.noData")}
+    </Text>
   );
 }
 
