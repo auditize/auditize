@@ -225,33 +225,6 @@ function TreeNode({
   );
 }
 
-function makeTreeNodeRenderer(
-  repoId: string,
-  entityRef: string | null,
-  onChange: (value: string) => void,
-) {
-  function renderTreeNode({
-    node,
-    expanded,
-    elementProps,
-    tree,
-  }: RenderTreeNodePayload) {
-    return (
-      <TreeNode
-        repoId={repoId}
-        selectedNodeValue={entityRef}
-        onChange={onChange}
-        node={node}
-        expanded={expanded}
-        elementProps={elementProps}
-        tree={tree}
-      />
-    );
-  }
-
-  return renderTreeNode;
-}
-
 function logEntityToTreeNodeData(entity: LogEntity): TreeNodeData {
   return {
     value: entity.ref,
@@ -282,7 +255,22 @@ export function EntitySelector({
           tree={tree}
           levelOffset={18}
           expandOnClick={false}
-          renderNode={makeTreeNodeRenderer(repoId!, entityRef, onChange)}
+          renderNode={({
+            node,
+            expanded,
+            elementProps,
+            tree,
+          }: RenderTreeNodePayload) => (
+            <TreeNode
+              repoId={repoId!}
+              selectedNodeValue={entityRef}
+              onChange={onChange}
+              node={node}
+              expanded={expanded}
+              elementProps={elementProps}
+              tree={tree}
+            />
+          )}
         />
       </Box>
     </ScrollArea.Autosize>
@@ -348,33 +336,6 @@ function CheckTreeNode({
   );
 }
 
-function makeCheckTreeNodeRenderer(
-  repoId: string,
-  entityRefs: string[],
-  onChange: (entityRefs: string[]) => void,
-) {
-  function renderCheckTreeNode({
-    node,
-    expanded,
-    elementProps,
-    tree,
-  }: RenderTreeNodePayload) {
-    return (
-      <CheckTreeNode
-        repoId={repoId}
-        entityRefs={entityRefs}
-        onChange={onChange}
-        node={node}
-        expanded={expanded}
-        elementProps={elementProps}
-        tree={tree}
-      />
-    );
-  }
-
-  return renderCheckTreeNode;
-}
-
 interface MultiEntitySelectorProps {
   repoId: string;
   entityRefs: string[];
@@ -424,7 +385,22 @@ export function MultiEntitySelector({
           tree={tree}
           levelOffset={18}
           expandOnClick={false}
-          renderNode={makeCheckTreeNodeRenderer(repoId!, entityRefs, onChange)}
+          renderNode={({
+            node,
+            expanded,
+            elementProps,
+            tree,
+          }: RenderTreeNodePayload) => (
+            <CheckTreeNode
+              repoId={repoId}
+              entityRefs={entityRefs}
+              onChange={onChange}
+              node={node}
+              expanded={expanded}
+              elementProps={elementProps}
+              tree={tree}
+            />
+          )}
         />
       </Box>
     </ScrollArea.Autosize>
