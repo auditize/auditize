@@ -35,6 +35,7 @@ export function CustomDateTimePicker({
       onChange={onChange}
       clearable
       w="14rem"
+      highlightToday
       popoverProps={{ withinPortal: false }}
       submitButtonProps={{ variant: "filled" }}
       {...dateTimePickerProps}
