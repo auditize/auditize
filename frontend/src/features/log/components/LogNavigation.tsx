@@ -187,7 +187,7 @@ function useLogConsolidatedDataPrefetch(repoId: string) {
     enabled: !!repoId,
   });
   const logEntitiesQuery = useQuery({
-    queryKey: ["logConsolidatedData", "entity", repoId],
+    queryKey: ["logEntities", repoId],
     queryFn: () => getAllLogEntities(repoId),
     enabled: !!repoId,
   });
@@ -366,7 +366,7 @@ function EntitySearchParamField({
 }) {
   const { t } = useTranslation();
   const logEntitiesQuery = useQuery({
-    queryKey: ["logConsolidatedData", "entity", searchParams.repoId],
+    queryKey: ["logEntities", searchParams.repoId],
     queryFn: () => getAllLogEntities(searchParams.repoId),
     enabled: !!searchParams.repoId,
   });

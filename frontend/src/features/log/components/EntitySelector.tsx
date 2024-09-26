@@ -123,7 +123,7 @@ function useLogEntityChildrenFetcher({
   expanded: boolean;
 }): boolean {
   const query = useQuery({
-    queryKey: ["logConsolidatedData", "entity", repoId, node.value],
+    queryKey: ["logEntities", repoId, node.value],
     queryFn: () => getAllLogEntities(repoId!, node.value),
     enabled: expanded && node.children?.length === 0,
   });
