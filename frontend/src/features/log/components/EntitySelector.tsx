@@ -461,6 +461,7 @@ export function MultiEntitySelectorPicker({
       title={t("permission.entities")}
       isFilled={entityRefs.length > 0}
       disabled={disabled}
+      popoverProps={{ shadow: "md" }}
     >
       <MultiEntitySelector
         repoId={repoId}

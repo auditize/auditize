@@ -80,6 +80,7 @@ function LogI18nProfileSelector({
       }))}
       clearable
       disabled={readOnly}
+      comboboxProps={{ shadow: "md" }}
       {...form.getInputProps("logI18nProfileId")}
     />
   );

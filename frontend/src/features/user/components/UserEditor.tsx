@@ -108,6 +108,7 @@ function UserEditor({
           allowDeselect={false}
           {...form.getInputProps("lang")}
           disabled={readOnly}
+          comboboxProps={{ shadow: "md" }}
         />
       </Stack>
     </WithPermissionManagement>

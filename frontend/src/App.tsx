@@ -103,7 +103,7 @@ function UserMenu() {
 
   return (
     <>
-      <Menu>
+      <Menu shadow="md">
         <Menu.Target>
           <UnstyledButton>
             <Avatar>{initials}</Avatar>

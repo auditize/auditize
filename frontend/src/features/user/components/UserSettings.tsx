@@ -109,6 +109,7 @@ function GeneralSettings({ onClose }: { onClose: () => void }) {
             ]}
             allowDeselect={false}
             {...form.getInputProps("lang")}
+            comboboxProps={{ shadow: "md" }}
           />
         </Stack>
         <Space h="xl" />

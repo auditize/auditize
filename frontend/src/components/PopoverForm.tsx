@@ -1,4 +1,4 @@
-import { Button, Popover, Stack } from "@mantine/core";
+import { Button, Popover, PopoverProps, Stack } from "@mantine/core";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -9,11 +9,13 @@ export function PopoverForm({
   children,
   isFilled,
   disabled,
+  popoverProps,
 }: {
   title: string;
   children: React.ReactNode;
   isFilled: boolean;
   disabled?: boolean;
+  popoverProps?: PopoverProps;
 }) {
   const [opened, setOpened] = useState(false);
 
@@ -26,6 +28,7 @@ export function PopoverForm({
       keepMounted={true}
       width="20rem"
       disabled={disabled}
+      {...popoverProps}
     >
       <Popover.Target>
         <Button

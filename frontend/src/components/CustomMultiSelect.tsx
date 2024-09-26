@@ -72,6 +72,7 @@ export function CustomMultiSelect({
       onOptionSubmit={handleOnOptionSubmit}
       withinPortal={false}
       width="max-content"
+      shadow="md"
     >
       <Combobox.DropdownTarget>{children}</Combobox.DropdownTarget>
 

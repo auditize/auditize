@@ -92,6 +92,7 @@ function SearchParamFieldPopover({
       onChange={onChange}
       keepMounted
       withinPortal={false}
+      shadow="md"
     >
       <Popover.Target>
         <Button
@@ -145,7 +146,7 @@ function RepoSelector({
       disabled={query.isPending}
       clearable={false}
       display="flex"
-      comboboxProps={{ withinPortal: false }}
+      comboboxProps={{ withinPortal: false, shadow: "md" }}
     />
   );
 }

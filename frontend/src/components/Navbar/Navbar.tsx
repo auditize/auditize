@@ -57,6 +57,7 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
       trigger="hover"
       position="bottom-start"
       transitionProps={{ exitDuration: 0 }}
+      shadow="md"
       withinPortal
     >
       <Menu.Target>
