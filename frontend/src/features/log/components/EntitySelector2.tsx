@@ -225,6 +225,30 @@ function TreeNode({
   );
 }
 
+function ScrollableTree({
+  data,
+  tree,
+  renderNode,
+}: {
+  data: TreeNodeData[];
+  tree: UseTreeReturnType;
+  renderNode: (payload: RenderTreeNodePayload) => React.ReactNode;
+}) {
+  return (
+    <ScrollArea.Autosize type="hover" mah={200}>
+      <Box px="8px" py="6px" w="250px">
+        <Tree
+          data={data}
+          tree={tree}
+          levelOffset={18}
+          expandOnClick={false}
+          renderNode={renderNode}
+        />
+      </Box>
+    </ScrollArea.Autosize>
+  );
+}
+
 function logEntityToTreeNodeData(entity: LogEntity): TreeNodeData {
   return {
     value: entity.ref,
@@ -248,32 +272,21 @@ export function EntitySelector({
   const tree = useTree({});
 
   return (
-    <ScrollArea.Autosize type="hover" mah={200}>
-      <Box px="8px" py="6px" w="250px">
-        <Tree
-          data={data}
+    <ScrollableTree
+      data={data}
+      tree={tree}
+      renderNode={({ node, expanded, elementProps, tree }) => (
+        <TreeNode
+          repoId={repoId!}
+          selectedNodeValue={entityRef}
+          onChange={onChange}
+          node={node}
+          expanded={expanded}
+          elementProps={elementProps}
           tree={tree}
-          levelOffset={18}
-          expandOnClick={false}
-          renderNode={({
-            node,
-            expanded,
-            elementProps,
-            tree,
-          }: RenderTreeNodePayload) => (
-            <TreeNode
-              repoId={repoId!}
-              selectedNodeValue={entityRef}
-              onChange={onChange}
-              node={node}
-              expanded={expanded}
-              elementProps={elementProps}
-              tree={tree}
-            />
-          )}
         />
-      </Box>
-    </ScrollArea.Autosize>
+      )}
+    />
   );
 }
 
@@ -378,32 +391,21 @@ export function MultiEntitySelector({
   const tree = useTree({});
 
   return (
-    <ScrollArea.Autosize type="hover" mah={200}>
-      <Box px="8px" py="6px" w="250px">
-        <Tree
-          data={data}
+    <ScrollableTree
+      data={data}
+      tree={tree}
+      renderNode={({ node, expanded, elementProps, tree }) => (
+        <CheckTreeNode
+          repoId={repoId}
+          entityRefs={entityRefs}
+          onChange={onChange}
+          node={node}
+          expanded={expanded}
+          elementProps={elementProps}
           tree={tree}
-          levelOffset={18}
-          expandOnClick={false}
-          renderNode={({
-            node,
-            expanded,
-            elementProps,
-            tree,
-          }: RenderTreeNodePayload) => (
-            <CheckTreeNode
-              repoId={repoId}
-              entityRefs={entityRefs}
-              onChange={onChange}
-              node={node}
-              expanded={expanded}
-              elementProps={elementProps}
-              tree={tree}
-            />
-          )}
         />
-      </Box>
-    </ScrollArea.Autosize>
+      )}
+    />
   );
 }
 
