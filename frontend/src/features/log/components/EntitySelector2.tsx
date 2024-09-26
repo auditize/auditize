@@ -16,7 +16,7 @@ import {
 } from "@mantine/core";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { PopoverForm } from "@/components/PopoverForm";
@@ -270,26 +270,9 @@ export function EntitySelector({
   entityRef: string | null;
   onChange: (value: string) => void;
 }) {
-  const query = useQuery({
-    queryKey: ["logEntities", repoId],
-    queryFn: () => getAllLogEntities(repoId!),
-    enabled: !!repoId,
-  });
-  const [data, setData] = useState<TreeNodeData[]>([]);
+  const entityRefs = useMemo(() => (entityRef ? [entityRef] : []), [entityRef]);
+  const data = useLogEntitiesTreeData(repoId!, entityRefs);
   const tree = useTree({});
-
-  useEffect(() => {
-    if (!query.data) {
-      return;
-    }
-    if (data.length === 0) {
-      setData(query.data.map(logEntityToTreeNodeData));
-    } else if (entityRef && !findNode(data, entityRef)) {
-      completeTreeData(repoId!, data, [entityRef]).then(() =>
-        setData((data) => data),
-      );
-    }
-  }, [query.data, data, entityRef]);
 
   return (
     <ScrollArea.Autosize type="hover" mah={200}>
@@ -398,18 +381,13 @@ interface MultiEntitySelectorProps {
   onChange: (entityRefs: string[]) => void;
 }
 
-export function MultiEntitySelector({
-  repoId,
-  entityRefs,
-  onChange,
-}: MultiEntitySelectorProps) {
+function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
   const query = useQuery({
     queryKey: ["logEntities", repoId],
-    queryFn: () => getAllLogEntities(repoId!),
+    queryFn: () => getAllLogEntities(repoId),
     enabled: !!repoId,
   });
   const [data, setData] = useState<TreeNodeData[]>([]);
-  const tree = useTree({});
 
   useEffect(() => {
     if (!query.data) {
@@ -426,6 +404,17 @@ export function MultiEntitySelector({
       );
     }
   }, [query.data, data, entityRefs]);
+
+  return data;
+}
+
+export function MultiEntitySelector({
+  repoId,
+  entityRefs,
+  onChange,
+}: MultiEntitySelectorProps) {
+  const data = useLogEntitiesTreeData(repoId, entityRefs);
+  const tree = useTree({});
 
   return (
     <ScrollArea.Autosize type="hover" mah={200}>
