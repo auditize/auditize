@@ -2,14 +2,12 @@ import {
   ActionIcon,
   Button,
   CloseButton,
-  Flex,
   FocusTrap,
   Group,
   Menu,
   Popover,
   rem,
   Select,
-  Space,
   Stack,
   Switch,
   TextInput,
@@ -89,7 +87,12 @@ function SearchParamFieldPopover({
   children: React.ReactNode;
 }) {
   return (
-    <Popover opened={opened} onChange={onChange} withinPortal={false}>
+    <Popover
+      opened={opened}
+      onChange={onChange}
+      keepMounted
+      withinPortal={false}
+    >
       <Popover.Target>
         <Button
           onClick={() => onChange(!opened)}
@@ -184,7 +187,7 @@ function useLogConsolidatedDataPrefetch(repoId: string) {
     enabled: !!repoId,
   });
   const logEntitiesQuery = useQuery({
-    queryKey: ["logConsolidatedData", "entity", repoId],
+    queryKey: ["logEntities", repoId],
     queryFn: () => getAllLogEntities(repoId),
     enabled: !!repoId,
   });
@@ -275,7 +278,7 @@ function SelectSearchParamField({
             : consolidatedDataQuery.data &&
                 consolidatedDataQuery.data.length > 0
               ? label
-              : t("common.notAvailable")
+              : t("common.noData")
         }
       />
     </SearchParamFieldPopover>
@@ -363,7 +366,7 @@ function EntitySearchParamField({
 }) {
   const { t } = useTranslation();
   const logEntitiesQuery = useQuery({
-    queryKey: ["logConsolidatedData", "entity", searchParams.repoId],
+    queryKey: ["logEntities", searchParams.repoId],
     queryFn: () => getAllLogEntities(searchParams.repoId),
     enabled: !!searchParams.repoId,
   });
@@ -380,7 +383,7 @@ function EntitySearchParamField({
     >
       <EntitySelector
         repoId={searchParams.repoId || null}
-        entityRef={searchParams.entityRef || null}
+        entityRef={searchParams.entityRef}
         onChange={(value) => onChange("entityRef", value)}
       />
     </SearchParamFieldPopover>

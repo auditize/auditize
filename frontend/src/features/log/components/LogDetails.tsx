@@ -26,7 +26,6 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Breadcrumb } from "rsuite";
 
 import { Section } from "@/components/Section";
 import { SectionExpand } from "@/components/Section/Section";
@@ -119,9 +118,9 @@ function LogEntitySection({ log }: { log: Log }) {
       ) : (
         <Breadcrumbs separator=">" p="0px" pl="1.25rem" pt="0.5rem">
           {log.entityPath.map((entity) => (
-            <Breadcrumb.Item key={entity.ref}>
-              <Text size="sm">{entity.name}</Text>
-            </Breadcrumb.Item>
+            <Text size="sm" key={entity.ref}>
+              {entity.name}
+            </Text>
           ))}
         </Breadcrumbs>
       )}

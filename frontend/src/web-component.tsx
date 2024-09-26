@@ -5,7 +5,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import datatableCss from "mantine-datatable/styles.layer.css?inline";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import rsuiteCss from "rsuite/dist/rsuite-no-reset.min.css?inline";
 
 import { theme } from "@/theme";
 
@@ -101,7 +100,6 @@ class LogWebComponent extends HTMLElement {
         <style>{layersCss}</style>
         <style>{webComponentCss}</style>
         <style>{appCss}</style>
-        <style>{rsuiteCss}</style>
         <QueryClientProvider client={auditizeQueryClient()}>
           <MantineProvider
             theme={theme}
