@@ -3,6 +3,7 @@ import {
   CloseButton,
   Combobox,
   Group,
+  rem,
   ScrollArea,
   Stack,
   TextInput,
@@ -40,7 +41,7 @@ export function SelectWithoutDropdown({
             readOnly
           />
         </Combobox.EventsTarget>
-        <Combobox.Options mt="sm">
+        <Combobox.Options mt={rem(10)}>
           <ScrollArea.Autosize type="hover" mah={200} scrollbarSize={4}>
             {data.map((option) => (
               <Combobox.Option

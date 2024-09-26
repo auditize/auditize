@@ -348,6 +348,7 @@ export default {
     scrollToTop: "Scroll to top",
     moreDetails: "More details",
     lessDetails: "Less details",
+    chooseAValue: "Choose a value",
     passwordForm: {
       password: {
         label: "Password",

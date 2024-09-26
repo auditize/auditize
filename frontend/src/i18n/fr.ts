@@ -351,6 +351,7 @@ export default {
     scrollToTop: "Revenir en haut",
     moreDetails: "Plus de détails",
     lessDetails: "Moins de détails",
+    chooseAValue: "Choisissez une valeur",
     passwordForm: {
       password: {
         label: "Mot de passe",

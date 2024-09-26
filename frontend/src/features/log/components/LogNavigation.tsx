@@ -278,7 +278,7 @@ function SelectSearchParamField({
             ? t("common.notCurrentlyAvailable")
             : consolidatedDataQuery.data &&
                 consolidatedDataQuery.data.length > 0
-              ? label
+              ? t("common.chooseAValue")
               : t("common.noData")
         }
       />
