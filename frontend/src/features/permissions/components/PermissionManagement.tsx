@@ -4,8 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Section } from "@/components/Section";
 import { useAuthenticatedUser } from "@/features/auth";
-import { MultiEntitySelectorPicker } from "@/features/log/components/EntitySelector2";
-// import { MultiEntitySelectorPicker } from "@/features/log";
+import { MultiEntitySelectorPicker } from "@/features/log";
 import { getAllMyRepos } from "@/features/repo";
 
 import {
