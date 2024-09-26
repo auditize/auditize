@@ -44,12 +44,35 @@ function findNode(
   return null;
 }
 
+function hasAnyChildNodeChecked(node: TreeNodeData, checkNodeValues: string[]) {
+  if (checkNodeValues.includes(node.value)) {
+    return true;
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      if (hasAnyChildNodeChecked(child, checkNodeValues)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 async function getLogEntitySiblings(
   repoId: string,
   entityRef: string,
 ): Promise<LogEntity[]> {
   const entity = await getLogEntity(repoId, entityRef);
   return getAllLogEntities(repoId, entity.parentEntityRef);
+}
+
+function logEntityToTreeNodeData(entity: LogEntity): TreeNodeData {
+  return {
+    value: entity.ref,
+    label: entity.name,
+    // An empty array means that the node has children, but they have not been loaded yet
+    children: entity.hasChildren ? [] : undefined,
+  };
 }
 
 async function completeTreeData(
@@ -88,18 +111,61 @@ async function completeTreeData(
   }
 }
 
-function hasAnyChildNodeChecked(node: TreeNodeData, checkNodeValues: string[]) {
-  if (checkNodeValues.includes(node.value)) {
-    return true;
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      if (hasAnyChildNodeChecked(child, checkNodeValues)) {
-        return true;
+function useLogEntityChildrenFetcher({
+  repoId,
+  tree,
+  node,
+  expanded,
+}: {
+  repoId: string;
+  tree: UseTreeReturnType;
+  node: TreeNodeData;
+  expanded: boolean;
+}): boolean {
+  const query = useQuery({
+    queryKey: ["logConsolidatedData", "entity", repoId, node.value],
+    queryFn: () => getAllLogEntities(repoId!, node.value),
+    enabled: expanded && node.children?.length === 0,
+  });
+
+  useEffect(() => {
+    if (query.data) {
+      node.children = query.data.map(logEntityToTreeNodeData);
+      // force tree to re-render
+      if (expanded) {
+        tree.expand(node.value);
       }
     }
-  }
-  return false;
+  }, [query.data]);
+
+  return query.isLoading;
+}
+
+function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
+  const query = useQuery({
+    queryKey: ["logEntities", repoId],
+    queryFn: () => getAllLogEntities(repoId),
+    enabled: !!repoId,
+  });
+  const [data, setData] = useState<TreeNodeData[]>([]);
+
+  useEffect(() => {
+    if (!query.data) {
+      return;
+    }
+    if (data.length === 0) {
+      setData(query.data.map(logEntityToTreeNodeData));
+    } else if (
+      entityRefs.length > 0 &&
+      entityRefs.some((entityRef) => !findNode(data, entityRef))
+    ) {
+      completeTreeData(repoId!, data, entityRefs).then(() =>
+        setData((data) => data),
+      );
+    }
+  }, [query.data, data, entityRefs]);
+
+  return data;
 }
 
 function TreeNodeExpander({
@@ -137,34 +203,46 @@ function TreeNodeExpander({
   );
 }
 
-function useLogEntityChildrenFetcher({
-  repoId,
+function ScrollableTree({
+  data,
   tree,
-  node,
-  expanded,
+  renderNode,
+  onClear,
 }: {
-  repoId: string;
+  data: TreeNodeData[];
   tree: UseTreeReturnType;
-  node: TreeNodeData;
-  expanded: boolean;
-}): boolean {
-  const query = useQuery({
-    queryKey: ["logConsolidatedData", "entity", repoId, node.value],
-    queryFn: () => getAllLogEntities(repoId!, node.value),
-    enabled: expanded && node.children?.length === 0,
-  });
-
-  useEffect(() => {
-    if (query.data) {
-      node.children = query.data.map(logEntityToTreeNodeData);
-      // force tree to re-render
-      if (expanded) {
-        tree.expand(node.value);
-      }
-    }
-  }, [query.data]);
-
-  return query.isLoading;
+  renderNode: (payload: RenderTreeNodePayload) => React.ReactNode;
+  onClear: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Stack gap="0" p="0">
+      <ScrollArea.Autosize type="hover" mah={200} p="8px" pr="0">
+        <Box w="250px">
+          <Tree
+            data={data}
+            tree={tree}
+            levelOffset={18}
+            expandOnClick={false}
+            renderNode={renderNode}
+          />
+        </Box>
+      </ScrollArea.Autosize>
+      <Box
+        style={{
+          borderTopStyle: "solid",
+          borderTopWidth: "1px",
+          borderColor: "var(--mantine-color-gray-2)",
+        }}
+      >
+        <Anchor onClick={onClear}>
+          <Text size="xs" px="sm" py="6px">
+            {t("common.clear")}
+          </Text>
+        </Anchor>
+      </Box>
+    </Stack>
+  );
 }
 
 function TreeNode({
@@ -227,90 +305,6 @@ function TreeNode({
   );
 }
 
-function ScrollableTree({
-  data,
-  tree,
-  renderNode,
-  onClear,
-}: {
-  data: TreeNodeData[];
-  tree: UseTreeReturnType;
-  renderNode: (payload: RenderTreeNodePayload) => React.ReactNode;
-  onClear: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Stack gap="0" p="0">
-      <ScrollArea.Autosize type="hover" mah={200} p="8px" pr="0">
-        <Box w="250px">
-          <Tree
-            data={data}
-            tree={tree}
-            levelOffset={18}
-            expandOnClick={false}
-            renderNode={renderNode}
-          />
-        </Box>
-      </ScrollArea.Autosize>
-      <Box
-        style={{
-          borderTopStyle: "solid",
-          borderTopWidth: "1px",
-          borderColor: "var(--mantine-color-gray-2)",
-        }}
-      >
-        <Anchor onClick={onClear}>
-          <Text size="xs" px="sm" py="6px">
-            {t("common.clear")}
-          </Text>
-        </Anchor>
-      </Box>
-    </Stack>
-  );
-}
-
-function logEntityToTreeNodeData(entity: LogEntity): TreeNodeData {
-  return {
-    value: entity.ref,
-    label: entity.name,
-    // An empty array means that the node has children, but they have not been loaded yet
-    children: entity.hasChildren ? [] : undefined,
-  };
-}
-
-export function EntitySelector({
-  repoId,
-  entityRef,
-  onChange,
-}: {
-  repoId: string | null;
-  entityRef: string | null;
-  onChange: (value: string) => void;
-}) {
-  const entityRefs = useMemo(() => (entityRef ? [entityRef] : []), [entityRef]);
-  const data = useLogEntitiesTreeData(repoId!, entityRefs);
-  const tree = useTree({});
-
-  return (
-    <ScrollableTree
-      data={data}
-      tree={tree}
-      renderNode={({ node, expanded, elementProps, tree }) => (
-        <TreeNode
-          repoId={repoId!}
-          selectedNodeValue={entityRef}
-          onChange={onChange}
-          node={node}
-          expanded={expanded}
-          elementProps={elementProps}
-          tree={tree}
-        />
-      )}
-      onClear={() => onChange("")}
-    />
-  );
-}
-
 function CheckTreeNode({
   repoId,
   entityRefs,
@@ -370,37 +364,43 @@ function CheckTreeNode({
   );
 }
 
+export function EntitySelector({
+  repoId,
+  entityRef,
+  onChange,
+}: {
+  repoId: string | null;
+  entityRef: string | null;
+  onChange: (value: string) => void;
+}) {
+  const entityRefs = useMemo(() => (entityRef ? [entityRef] : []), [entityRef]);
+  const data = useLogEntitiesTreeData(repoId!, entityRefs);
+  const tree = useTree({});
+
+  return (
+    <ScrollableTree
+      data={data}
+      tree={tree}
+      renderNode={({ node, expanded, elementProps, tree }) => (
+        <TreeNode
+          repoId={repoId!}
+          selectedNodeValue={entityRef}
+          onChange={onChange}
+          node={node}
+          expanded={expanded}
+          elementProps={elementProps}
+          tree={tree}
+        />
+      )}
+      onClear={() => onChange("")}
+    />
+  );
+}
+
 interface MultiEntitySelectorProps {
   repoId: string;
   entityRefs: string[];
   onChange: (entityRefs: string[]) => void;
-}
-
-function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
-  const query = useQuery({
-    queryKey: ["logEntities", repoId],
-    queryFn: () => getAllLogEntities(repoId),
-    enabled: !!repoId,
-  });
-  const [data, setData] = useState<TreeNodeData[]>([]);
-
-  useEffect(() => {
-    if (!query.data) {
-      return;
-    }
-    if (data.length === 0) {
-      setData(query.data.map(logEntityToTreeNodeData));
-    } else if (
-      entityRefs.length > 0 &&
-      entityRefs.some((entityRef) => !findNode(data, entityRef))
-    ) {
-      completeTreeData(repoId!, data, entityRefs).then(() =>
-        setData((data) => data),
-      );
-    }
-  }, [query.data, data, entityRefs]);
-
-  return data;
 }
 
 export function MultiEntitySelector({
