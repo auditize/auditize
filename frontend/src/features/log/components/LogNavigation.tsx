@@ -54,7 +54,7 @@ import {
   getAllLogTagTypes,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
-import { EntitySelector } from "./EntitySelector2";
+import { EntitySelector } from "./EntitySelector";
 import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
