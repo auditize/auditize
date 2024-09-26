@@ -76,6 +76,30 @@ function KeyValueSection({
   );
 }
 
+function ExpandableSection({
+  title,
+  renderNotExpanded,
+  renderExpanded,
+}: {
+  title: string;
+  renderNotExpanded: () => React.ReactNode;
+  renderExpanded: () => React.ReactNode;
+}) {
+  const [expanded, { toggle }] = useDisclosure(false);
+
+  return (
+    <Section
+      title={title}
+      icon={
+        <IconHierarchy style={iconBesideText({ size: "18px", top: "0px" })} />
+      }
+      rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
+    >
+      {expanded ? renderExpanded() : renderNotExpanded()}
+    </Section>
+  );
+}
+
 function Tag({
   value,
   repoId,
@@ -98,24 +122,11 @@ function Tag({
 
 function LogEntitySection({ log }: { log: Log }) {
   const { t } = useTranslation();
-  const [expanded, { toggle }] = useDisclosure(false);
 
   return (
-    <Section
+    <ExpandableSection
       title={t("log.entity")}
-      icon={
-        <IconHierarchy style={iconBesideText({ size: "18px", top: "0px" })} />
-      }
-      rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
-    >
-      {expanded ? (
-        <KeyValueTable
-          data={log.entityPath.map((entity) => [
-            entity.name,
-            <Code>{entity.ref}</Code>,
-          ])}
-        />
-      ) : (
+      renderNotExpanded={() => (
         <Breadcrumbs separator=">" p="0px" pl="1.25rem" pt="0.5rem">
           {log.entityPath.map((entity) => (
             <Text size="sm" key={entity.ref}>
@@ -124,45 +135,54 @@ function LogEntitySection({ log }: { log: Log }) {
           ))}
         </Breadcrumbs>
       )}
-    </Section>
+      renderExpanded={() => (
+        <KeyValueTable
+          data={log.entityPath.map((entity) => [
+            entity.name,
+            <Code>{entity.ref}</Code>,
+          ])}
+        />
+      )}
+    />
   );
 }
 
 function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const [expanded, { toggle }] = useDisclosure(false);
 
   return (
-    <Section
-      title={t("log.tags")}
-      icon={<IconTags style={iconBesideText({ size: "18px", top: "0px" })} />}
-      rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
-    >
-      {expanded ? (
-        <KeyValueTable
-          data={log.tags.map((tag) =>
-            tag.name && tag.ref
-              ? [
-                  <Text size="sm">
-                    {logTranslator("tag_type", tag.type)}: <b>{tag.name}</b>
-                  </Text>,
-                  <Code>{tag.ref}</Code>,
-                ]
-              : [
-                  <Text size="sm">{logTranslator("tag_type", tag.type)}</Text>,
-                  null,
-                ],
-          )}
-        />
-      ) : (
-        <Group pl="1.25rem" pt="0.5rem">
-          {log.tags.map((tag, index) => (
-            <Tag key={index} value={tag} repoId={repoId!} />
-          ))}
-        </Group>
-      )}
-    </Section>
+    log.tags.length > 0 && (
+      <ExpandableSection
+        title={t("log.tags")}
+        renderNotExpanded={() => (
+          <Group pl="1.25rem" pt="0.5rem">
+            {log.tags.map((tag, index) => (
+              <Tag key={index} value={tag} repoId={repoId} />
+            ))}
+          </Group>
+        )}
+        renderExpanded={() => (
+          <KeyValueTable
+            data={log.tags.map((tag) =>
+              tag.name && tag.ref
+                ? [
+                    <Text size="sm">
+                      {logTranslator("tag_type", tag.type)}: <b>{tag.name}</b>
+                    </Text>,
+                    <Code>{tag.ref}</Code>,
+                  ]
+                : [
+                    <Text size="sm">
+                      {logTranslator("tag_type", tag.type)}
+                    </Text>,
+                    null,
+                  ],
+            )}
+          />
+        )}
+      />
+    )
   );
 }
 
