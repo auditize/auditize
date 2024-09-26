@@ -141,7 +141,11 @@ function useLogEntityChildrenFetcher({
   return query.isLoading;
 }
 
-function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
+function useLogEntitiesTreeData(
+  repoId: string,
+  entityRefs: string[],
+  onReset?: () => void,
+) {
   const query = useQuery({
     queryKey: ["logEntities", repoId],
     queryFn: () => getAllLogEntities(repoId),
@@ -152,6 +156,10 @@ function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
   useEffect(() => {
     if (query.data) {
       setData(query.data.map(logEntityToTreeNodeData));
+      // clear existing selected entities on new data/repo because they don't apply anymore
+      if (onReset && data.length !== 0 && entityRefs.length !== 0) {
+        onReset();
+      }
     }
   }, [query.data]);
 
@@ -376,7 +384,7 @@ export function EntitySelector({
   onChange: (value: string) => void;
 }) {
   const entityRefs = useMemo(() => (entityRef ? [entityRef] : []), [entityRef]);
-  const data = useLogEntitiesTreeData(repoId!, entityRefs);
+  const data = useLogEntitiesTreeData(repoId!, entityRefs, () => onChange(""));
   const tree = useTree({});
 
   return (
