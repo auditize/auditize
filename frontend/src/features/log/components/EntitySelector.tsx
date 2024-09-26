@@ -150,12 +150,14 @@ function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
   const [data, setData] = useState<TreeNodeData[]>([]);
 
   useEffect(() => {
-    if (!query.data) {
-      return;
-    }
-    if (data.length === 0) {
+    if (query.data) {
       setData(query.data.map(logEntityToTreeNodeData));
-    } else if (
+    }
+  }, [query.data]);
+
+  useEffect(() => {
+    if (
+      data.length > 0 &&
       entityRefs.length > 0 &&
       entityRefs.some((entityRef) => !findNode(data, entityRef))
     ) {
@@ -163,7 +165,7 @@ function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
         setData((data) => data),
       );
     }
-  }, [query.data, data, entityRefs]);
+  }, [data, entityRefs]);
 
   return data;
 }
