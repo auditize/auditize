@@ -370,7 +370,7 @@ export function EntitySelector({
   onChange,
 }: {
   repoId: string | null;
-  entityRef: string | null;
+  entityRef: string;
   onChange: (value: string) => void;
 }) {
   const entityRefs = useMemo(() => (entityRef ? [entityRef] : []), [entityRef]);
@@ -392,7 +392,7 @@ export function EntitySelector({
           tree={tree}
         />
       )}
-      onClear={() => onChange("")}
+      onClear={() => entityRef !== "" && onChange("")}
     />
   );
 }

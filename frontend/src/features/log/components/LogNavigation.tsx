@@ -383,7 +383,7 @@ function EntitySearchParamField({
     >
       <EntitySelector
         repoId={searchParams.repoId || null}
-        entityRef={searchParams.entityRef || null}
+        entityRef={searchParams.entityRef}
         onChange={(value) => onChange("entityRef", value)}
       />
     </SearchParamFieldPopover>
