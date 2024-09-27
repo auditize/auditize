@@ -1,6 +1,6 @@
-import { Button, Popover, PopoverProps, Stack } from "@mantine/core";
+import { Button, Popover } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
-import { useState } from "react";
 
 import { iconSize } from "@/utils/ui";
 
@@ -9,26 +9,23 @@ export function PopoverForm({
   children,
   isFilled,
   disabled,
-  popoverProps,
 }: {
   title: string;
   children: React.ReactNode;
   isFilled: boolean;
   disabled?: boolean;
-  popoverProps?: PopoverProps;
 }) {
-  const [opened, setOpened] = useState(false);
+  const [opened, { close, toggle }] = useDisclosure();
 
   return (
     <Popover
       opened={opened}
-      onClose={() => setOpened(false)} // close on click outside
+      onClose={close}
       position="bottom"
       withArrow
-      keepMounted={true}
-      width="20rem"
+      keepMounted
       disabled={disabled}
-      {...popoverProps}
+      shadow="md"
     >
       <Popover.Target>
         <Button
@@ -39,7 +36,7 @@ export function PopoverForm({
               <IconChevronDown style={iconSize("1.15rem")} />
             )
           }
-          onClick={() => setOpened((opened_) => !opened_)}
+          onClick={toggle}
           variant={isFilled ? "light" : "outline"}
           disabled={disabled}
         >
