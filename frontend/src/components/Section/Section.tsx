@@ -20,7 +20,7 @@ export function Section({
   rightSection?: React.ReactNode;
 }) {
   return (
-    <Box mb="md">
+    <Box>
       <Group
         style={{
           borderWidth: "0px 0px 1px 0px",

@@ -1,4 +1,4 @@
-import { Checkbox, Group, Stack, Table } from "@mantine/core";
+import { Chip, Divider, Group, rem, Stack, Switch, Table } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -30,22 +30,24 @@ function BaseReadWritePermissionManagement({
   const { t } = useTranslation();
   return (
     <>
-      <Checkbox
-        label={t("permission.read")}
+      <Chip
         checked={perms.read}
-        onChange={(event) =>
-          onChange({ ...perms, read: event.currentTarget.checked })
-        }
+        onChange={() => onChange({ ...perms, read: !perms.read })}
         disabled={readOnly || !assignablePerms.read}
-      />
-      <Checkbox
-        label={t("permission.write")}
+        variant={perms.read ? "filled" : "outline"}
+        size="xs"
+      >
+        {t("permission.read")}
+      </Chip>
+      <Chip
         checked={perms.write}
-        onChange={(event) =>
-          onChange({ ...perms, write: event.currentTarget.checked })
-        }
+        onChange={() => onChange({ ...perms, write: !perms.write })}
         disabled={readOnly || !assignablePerms.write}
-      />
+        variant={perms.write ? "filled" : "outline"}
+        size="xs"
+      >
+        {t("permission.write")}
+      </Chip>
     </>
   );
 }
@@ -53,9 +55,8 @@ function BaseReadWritePermissionManagement({
 function ReadWritePermissionManagement(
   props: ReadWritePermissionManagementProps,
 ) {
-  const { t } = useTranslation();
   return (
-    <Group>
+    <Group gap="md">
       <BaseReadWritePermissionManagement {...props} />
     </Group>
   );
@@ -73,13 +74,14 @@ function LogRepoPermissionManagement({
   readOnly?: boolean;
 }) {
   return (
-    <Group>
+    <Group gap="md">
       <BaseReadWritePermissionManagement
         perms={perms}
         onChange={(values) => onChange({ ...perms, ...values })}
         assignablePerms={assignablePerms}
         readOnly={readOnly}
       />
+      <Divider orientation="vertical" />
       <MultiEntitySelectorPicker
         repoId={perms.repoId}
         entityRefs={perms.readableEntities}
@@ -87,6 +89,8 @@ function LogRepoPermissionManagement({
           onChange({ ...perms, readableEntities: entities })
         }
         disabled={readOnly || !assignablePerms.read || !perms.read}
+        buttonProps={{ size: "xs" }}
+        popoverProps={{ position: "left" }}
       />
     </Group>
   );
@@ -134,7 +138,7 @@ function ManagementPermissionManagement({
   const { t } = useTranslation();
   return (
     <Section title={t("permission.management")}>
-      <Table withRowBorders={false}>
+      <Table withRowBorders={false} verticalSpacing={rem(6)}>
         <Table.Tbody>
           <EntityPermissionManagement
             name={t("permission.repositories")}
@@ -193,7 +197,7 @@ function LogsPermissionManagement({
   return (
     <>
       <Section title={t("permission.logs")}>
-        <Table withRowBorders={false}>
+        <Table withRowBorders={false} verticalSpacing={rem(6)}>
           <Table.Tbody>
             <Table.Tr>
               <Table.Td width="35%">
@@ -271,9 +275,10 @@ export function PermissionManagement({
   const assignablePerms = currentUser.permissions;
 
   return (
-    <Stack pt="xs">
-      <Checkbox
+    <Stack>
+      <Switch
         label={t("permission.superadmin")}
+        labelPosition="left"
         checked={perms.isSuperadmin}
         onChange={(event) =>
           onChange({
@@ -282,7 +287,7 @@ export function PermissionManagement({
           })
         }
         disabled={readOnly || !assignablePerms.isSuperadmin}
-        pl="xs"
+        p="xs"
       />
       <ManagementPermissionManagement
         perms={perms.management}

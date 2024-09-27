@@ -3,9 +3,11 @@ import {
   Anchor,
   Box,
   Button,
+  ButtonProps,
   Checkbox,
   Group,
   Loader,
+  PopoverProps,
   RenderTreeNodePayload,
   ScrollArea,
   Space,
@@ -447,6 +449,8 @@ export function MultiEntitySelector({
 
 interface MultiEntitySelectorPickerProps extends MultiEntitySelectorProps {
   disabled?: boolean;
+  buttonProps?: ButtonProps;
+  popoverProps?: PopoverProps;
 }
 
 export function MultiEntitySelectorPicker({
@@ -454,6 +458,8 @@ export function MultiEntitySelectorPicker({
   entityRefs,
   onChange,
   disabled,
+  buttonProps,
+  popoverProps,
 }: MultiEntitySelectorPickerProps) {
   const { t } = useTranslation();
   return (
@@ -461,6 +467,8 @@ export function MultiEntitySelectorPicker({
       title={t("permission.entities")}
       isFilled={entityRefs.length > 0}
       disabled={disabled}
+      buttonProps={buttonProps}
+      popoverProps={popoverProps}
     >
       <MultiEntitySelector
         repoId={repoId}
