@@ -73,28 +73,24 @@ function ResourceEditor({
       // if onClose has been set to navigate(-1), it triggers an undesired navigation
       onClose={() => opened && onClose()}
     >
-      <div>
-        <Box px={"lg"}>
-          <LoadingOverlay
-            visible={opened && (isLoading || mutation.isPending)}
-          />
-          <form onSubmit={onSubmit(() => mutation.mutate())}>
-            {children}
-            <Space h="xl" />
-            <Flex justify="center" align="center">
-              <ApiErrorMessage
-                error={mutation.error}
-                textProps={{ pt: "0", size: "sm" }}
-              />
-            </Flex>
-            <ModalActionButtons
-              validateButtonLabel={t("common.save")}
-              onClose={onClose}
-              closeOnly={disabledSaving}
+      <Box px={"lg"}>
+        <LoadingOverlay visible={opened && (isLoading || mutation.isPending)} />
+        <form onSubmit={onSubmit(() => mutation.mutate())}>
+          {children}
+          <Space h="xl" />
+          <Flex justify="center" align="center">
+            <ApiErrorMessage
+              error={mutation.error}
+              textProps={{ pt: "0", size: "sm" }}
             />
-          </form>
-        </Box>
-      </div>
+          </Flex>
+          <ModalActionButtons
+            validateButtonLabel={t("common.save")}
+            onClose={onClose}
+            closeOnly={disabledSaving}
+          />
+        </form>
+      </Box>
     </Modal>
   );
 }
