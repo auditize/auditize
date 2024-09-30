@@ -154,14 +154,22 @@ function useLogEntitiesTreeData(
     enabled: !!repoId,
   });
   const [data, setData] = useState<TreeNodeData[]>([]);
+  const [currentRepoId, setCurrentRepoId] = useState<string | null>(null);
 
   useEffect(() => {
     if (query.data) {
-      setData(query.data.map(logEntityToTreeNodeData));
-      // clear existing selected entities on new data/repo because they don't apply anymore
-      if (onReset && data.length !== 0 && entityRefs.length !== 0) {
+      setData(() => query.data.map(logEntityToTreeNodeData));
+      // clear existing selected entities when a new repository is chosen
+      // because the selected entities may not exist in the new repository
+      if (
+        onReset &&
+        entityRefs.length !== 0 &&
+        currentRepoId &&
+        repoId !== currentRepoId
+      ) {
         onReset();
       }
+      setCurrentRepoId(repoId);
     }
   }, [query.data]);
 
