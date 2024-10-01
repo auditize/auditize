@@ -1,12 +1,14 @@
 import {
   Anchor,
   Badge,
+  Box,
   Breadcrumbs,
   Code,
   Flex,
   Group,
   Modal,
   ScrollArea,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -329,6 +331,43 @@ function LogDate({ log }: { log: Log }) {
   );
 }
 
+function LogDetailsHeaderSkeleton() {
+  return (
+    <Stack w="500px" gap="xs">
+      <Skeleton height={16} width="100%" />
+      <Skeleton height={10} width="80%" />
+      <Skeleton height={10} width="40%" />
+    </Stack>
+  );
+}
+
+function LogDetailsBodySkeleton() {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Box key={i} p="xs">
+          <Skeleton height={12} width="30%" />
+          <Skeleton height={1} width="100%" my="xs" />
+          <Table withRowBorders={false}>
+            <Table.Tbody>
+              {Array.from({ length: 3 }).map((_, j) => (
+                <Table.Tr key={j}>
+                  <Table.Td width="35%">
+                    <Skeleton height={10} width="100%" />
+                  </Table.Td>
+                  <Table.Td>
+                    <Skeleton height={10} width="100%" />
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Box>
+      ))}
+    </>
+  );
+}
+
 export function LogDetails({ repoId }: { repoId?: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
@@ -338,14 +377,9 @@ export function LogDetails({ repoId }: { repoId?: string }) {
     queryFn: () => getLog(repoId!, displayedLogId!),
     enabled: displayedLogId !== null,
   });
-  const log = logQuery.data!;
+  const log = logQuery.data;
 
-  // FIXME: improve loading and error handling
-
-  if (logQuery.isPending) {
-    return null;
-  }
-
+  // FIXME: improve error handling
   if (logQuery.error) {
     return <div>{logQuery.error.message}</div>;
   }
@@ -364,32 +398,47 @@ export function LogDetails({ repoId }: { repoId?: string }) {
         <Modal.Header>
           <Flex justify="space-between" w="100%">
             <Stack gap="0.5rem">
-              <div>
-                <Tooltip label={t("log.actionType")} withinPortal={false}>
-                  <Title order={2}>
-                    {logTranslator("action_type", log.action.type)}
-                  </Title>
-                </Tooltip>
-                <Tooltip label={t("log.actionCategory")} withinPortal={false}>
-                  <Text c="dimmed" style={{ display: "inline-block" }}>
-                    {logTranslator("action_category", log.action.category)}
-                  </Text>
-                </Tooltip>
-              </div>
-              <LogDate log={log} />
+              {log ? (
+                <>
+                  <div>
+                    <Tooltip label={t("log.actionType")} withinPortal={false}>
+                      <Title order={2}>
+                        {logTranslator("action_type", log.action.type)}
+                      </Title>
+                    </Tooltip>
+                    <Tooltip
+                      label={t("log.actionCategory")}
+                      withinPortal={false}
+                    >
+                      <Text c="dimmed" style={{ display: "inline-block" }}>
+                        {logTranslator("action_category", log.action.category)}
+                      </Text>
+                    </Tooltip>
+                  </div>
+                  <LogDate log={log} />
+                </>
+              ) : (
+                <LogDetailsHeaderSkeleton />
+              )}
             </Stack>
             <Modal.CloseButton />
           </Flex>
         </Modal.Header>
         <Modal.Body>
           <Stack gap="1rem">
-            <LogTagSection log={log} repoId={repoId!} />
-            <LogSourceSection log={log} repoId={repoId!} />
-            <LogActorSection log={log} repoId={repoId!} />
-            <LogResourceSection log={log} repoId={repoId!} />
-            <LogDetailsSection log={log} repoId={repoId!} />
-            <LogAttachmentSection log={log} repoId={repoId!} />
-            <LogEntitySection log={log} />
+            {log ? (
+              <>
+                <LogTagSection log={log} repoId={repoId!} />
+                <LogSourceSection log={log} repoId={repoId!} />
+                <LogActorSection log={log} repoId={repoId!} />
+                <LogResourceSection log={log} repoId={repoId!} />
+                <LogDetailsSection log={log} repoId={repoId!} />
+                <LogAttachmentSection log={log} repoId={repoId!} />
+                <LogEntitySection log={log} />
+              </>
+            ) : (
+              <LogDetailsBodySkeleton />
+            )}
           </Stack>
         </Modal.Body>
       </Modal.Content>
