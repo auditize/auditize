@@ -80,10 +80,12 @@ function KeyValueSection({
 
 function ExpandableSection({
   title,
+  icon,
   renderNotExpanded,
   renderExpanded,
 }: {
   title: string;
+  icon: React.ReactNode;
   renderNotExpanded: () => React.ReactNode;
   renderExpanded: () => React.ReactNode;
 }) {
@@ -92,9 +94,7 @@ function ExpandableSection({
   return (
     <Section
       title={title}
-      icon={
-        <IconHierarchy style={iconBesideText({ size: "18px", top: "0px" })} />
-      }
+      icon={icon}
       rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
     >
       {expanded ? renderExpanded() : renderNotExpanded()}
@@ -128,6 +128,9 @@ function LogEntitySection({ log }: { log: Log }) {
   return (
     <ExpandableSection
       title={t("log.entity")}
+      icon={
+        <IconHierarchy style={iconBesideText({ size: "18px", top: "0px" })} />
+      }
       renderNotExpanded={() => (
         <Breadcrumbs separator=">" p="0px" pl="1.25rem" pt="0.5rem">
           {log.entityPath.map((entity) => (
@@ -157,6 +160,7 @@ function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
     log.tags.length > 0 && (
       <ExpandableSection
         title={t("log.tags")}
+        icon={<IconTags style={iconBesideText({ size: "18px", top: "0px" })} />}
         renderNotExpanded={() => (
           <Group pl="1.25rem" pt="0.5rem">
             {log.tags.map((tag, index) => (
