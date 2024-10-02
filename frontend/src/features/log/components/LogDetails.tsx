@@ -395,7 +395,6 @@ export function LogDetails({ repoId }: { repoId?: string }) {
       opened={displayedLogId !== null}
       onClose={() => setDisplayedLogId(null)}
       withinPortal={false}
-      scrollAreaComponent={ScrollArea.Autosize}
     >
       <Modal.Overlay />
       <Modal.Content>
