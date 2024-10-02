@@ -395,6 +395,7 @@ export function LogDetails({ repoId }: { repoId?: string }) {
       opened={displayedLogId !== null}
       onClose={() => setDisplayedLogId(null)}
       withinPortal={false}
+      trapFocus={false}
     >
       <Modal.Overlay />
       <Modal.Content>
