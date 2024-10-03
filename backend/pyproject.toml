@@ -1,8 +1,28 @@
 [project]
-name = "Auditize"
-version="0.1.0-dev"
-description = "Audit logs management system"
-dynamic = ["dependencies", "optional-dependencies"]
+name = "auditize"
+description = "Empower your functional logs"
+readme = "README.md"
+authors = [
+    { name = "Nicolas Delon", email = "nicolas.delon@gmail.com" }
+]
+classifiers=[
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.12"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+
+[project.urls]
+Homepage = "https://www.auditize.org"
+Documentation = "https://www.auditize.org"
+Repository = "https://github.com/auditize/auditize"
+Issues = "https://github.com/auditize/auditize/issues"
+Changelog = "https://github.com/auditize/auditize/blob/master/CHANGELOG.md"
 
 [build-system]
 requires = ["setuptools >= 61.0"]
@@ -11,6 +31,7 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 optional-dependencies.dev = { file = ["requirements-dev.txt"] }
+version = {attr = "auditize.__version__"}
 
 [tool.setuptools.package-data]
 "auditize" = ["data/**", "i18n/translations/*.json"]
