@@ -1,5 +1,5 @@
 [project]
-name = "Auditize"
+name = "auditize"
 description = "Audit logs management system"
 dynamic = ["version", "dependencies", "optional-dependencies"]
 
