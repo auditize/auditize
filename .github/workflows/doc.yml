@@ -5,12 +5,6 @@ on:
     branches:
       - master
 
-# The Auditize environment variables are necessary to run the
-# "python -m auditize openapi" command but they are not actually used.
-env:
-  AUDITIZE_BASE_URL: http://localhost:8000
-  AUDITIZE_JWT_SIGNING_KEY: dummykeynotactuallyusedontworry
-
 permissions:
   contents: write
 
