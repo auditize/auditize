@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from auditize import __version__
 from auditize.__main__ import main
 from auditize.database import get_dbm
 from helpers.http import HttpTestHelper
@@ -36,3 +37,8 @@ async def test_openapi(capsys):
     await main(["openapi"])
     # simply check that the output is valid JSON
     json.loads(capsys.readouterr().out)
+
+
+async def test_version(capsys):
+    await main(["version"])
+    assert __version__ in capsys.readouterr().out

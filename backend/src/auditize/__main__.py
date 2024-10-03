@@ -2,10 +2,12 @@ import argparse
 import asyncio
 import getpass
 import json
+import platform
 import sys
 
 import uvicorn
 
+from auditize import __version__
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
@@ -125,9 +127,19 @@ async def dump_openapi():
     )
 
 
+async def version():
+    print(
+        "auditize version %s (using Python %s - %s)"
+        % (__version__, platform.python_version(), sys.executable)
+    )
+
+
 async def main(args):
     parser = argparse.ArgumentParser()
-    sub_parsers = parser.add_subparsers(required=True)
+    parser.add_argument(
+        "--version", action="store_true", help="Print version information"
+    )
+    sub_parsers = parser.add_subparsers()
 
     # CMD bootstrap-default-superadmin
     bootstrap_default_superadmin_parser = sub_parsers.add_parser(
@@ -173,7 +185,20 @@ async def main(args):
     openapi_parser = sub_parsers.add_parser("openapi", help="Dump the OpenAPI schema")
     openapi_parser.set_defaults(func=lambda _: dump_openapi())
 
+    # CMD version
+    version_parser = sub_parsers.add_parser("version", help="Print version information")
+    version_parser.set_defaults(func=lambda _: version())
+
     parsed_args = parser.parse_args(args)
+
+    if parsed_args.version:
+        await version()
+        return 0
+
+    if not hasattr(parsed_args, "func"):
+        parser.print_help()
+        return 1
+
     await parsed_args.func(parsed_args)
 
     return 0
