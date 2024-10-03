@@ -92,7 +92,8 @@ async def dump_openapi():
     print(
         json.dumps(
             get_customized_openapi_schema(
-                build_api_app(), include_internal_routes=False
+                build_api_app(cors_allow_origins=[], online_doc=False),
+                include_internal_routes=False,
             ),
             ensure_ascii=False,
             indent=4,
