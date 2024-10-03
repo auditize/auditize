@@ -1,5 +1,4 @@
 import json
-from unittest.mock import patch
 
 import pytest
 
@@ -11,7 +10,7 @@ from helpers.user import PreparedUser
 pytestmark = pytest.mark.anyio
 
 
-async def test_empty_db():
+async def test_bootstrap_default_superadmin_empty_db():
     await main(["bootstrap-default-superadmin"])
     client = HttpTestHelper.spawn()
     resp = await client.assert_post_ok(
@@ -21,7 +20,7 @@ async def test_empty_db():
     assert resp.json()["permissions"]["is_superadmin"] is True
 
 
-async def test_not_empty_db(user: PreparedUser):
+async def test_bootstrap_default_superadmin_not_empty_db(user: PreparedUser):
     assert await get_dbm().core_db.users.count_documents({}) == 1
     await main(["bootstrap-default-superadmin"])
     assert await get_dbm().core_db.users.count_documents({}) == 1
