@@ -8,7 +8,7 @@ from auditize.app.cors import setup_cors
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
 
-__all__ = ("build_app", "build_api_app")
+__all__ = ("build_app", "build_api_app", "app_factory")
 
 
 @asynccontextmanager
