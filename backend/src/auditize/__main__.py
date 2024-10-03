@@ -9,7 +9,11 @@ import uvicorn
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
-from auditize.exceptions import ConfigError, ConstraintViolation
+from auditize.exceptions import (
+    ConfigAlreadyInitialized,
+    ConfigError,
+    ConstraintViolation,
+)
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
 from auditize.scheduler import build_scheduler
@@ -19,6 +23,19 @@ from auditize.user.service import (
     hash_user_password,
     save_user,
 )
+
+
+def _lazy_init(*, skip_dbm_init=False):
+    try:
+        init_config()
+    except ConfigAlreadyInitialized:
+        # this case corresponds to tests where config and dbm are already initialized
+        return
+    except ConfigError as exc:
+        sys.exit("ERROR: " + str(exc))
+
+    if not skip_dbm_init:
+        init_dbm()
 
 
 def _get_password() -> str:
@@ -48,6 +65,8 @@ async def _bootstrap_superadmin(
 
 
 async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
+    _lazy_init()
+
     password = _get_password()
 
     try:
@@ -58,6 +77,8 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
 
 
 async def bootstrap_default_superadmin():
+    _lazy_init()
+
     users, _ = await get_users(query=None, page=1, page_size=1)
     if not users:
         await _bootstrap_superadmin(
@@ -66,6 +87,7 @@ async def bootstrap_default_superadmin():
 
 
 async def serve(host: str, port: int):
+    _lazy_init()
     app = build_app()
     config = uvicorn.Config(app, host=host, port=port)
     server = uvicorn.Server(config)
@@ -73,6 +95,7 @@ async def serve(host: str, port: int):
 
 
 async def schedule():
+    _lazy_init()
     scheduler = build_scheduler()
     scheduler.start()
     print("Scheduler started")
@@ -84,6 +107,7 @@ async def schedule():
 
 
 async def dump_config():
+    _lazy_init(skip_dbm_init=True)
     config = get_config()
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 
@@ -156,11 +180,4 @@ async def main(args):
 
 
 if __name__ == "__main__":
-    try:
-        init_config()
-    except ConfigError as exc:
-        sys.exit("ERROR: " + str(exc))
-
-    init_dbm()
-
     sys.exit(asyncio.run(main(sys.argv[1:])))
