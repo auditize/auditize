@@ -10,6 +10,14 @@ class ConfigError(AuditizeException):
     pass
 
 
+class ConfigNotInitialized(ConfigError):
+    pass
+
+
+class ConfigAlreadyInitialized(ConfigError):
+    pass
+
+
 class UnknownModelException(AuditizeException):
     pass
 

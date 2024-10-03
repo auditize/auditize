@@ -3,7 +3,11 @@ import os
 
 from apscheduler.triggers.cron import CronTrigger
 
-from auditize.exceptions import ConfigError
+from auditize.exceptions import (
+    ConfigAlreadyInitialized,
+    ConfigError,
+    ConfigNotInitialized,
+)
 
 _DEFAULT_ATTACHMENT_MAX_SIZE = 1024 * 1024 * 5  # 5MB
 _DEFAULT_CSV_MAX_ROWS = 10_000
@@ -176,12 +180,12 @@ _config: Config | None = None
 def init_config(env=None) -> Config:
     global _config
     if _config:
-        raise Exception("Config is already initialized")
+        raise ConfigAlreadyInitialized()
     _config = Config.load_from_env(env)
     return _config
 
 
 def get_config() -> Config:
     if not _config:
-        raise Exception("Config is not initialized")
+        raise ConfigNotInitialized()
     return _config
