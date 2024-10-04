@@ -125,6 +125,8 @@ def _add_slash_api_prefix(schema):
 
 
 def get_customized_openapi_schema(app, include_internal_routes=True):
+    from auditize import __version__  # workaround for circular import
+
     routes = (
         app.routes
         if include_internal_routes
@@ -132,7 +134,7 @@ def get_customized_openapi_schema(app, include_internal_routes=True):
     )
     schema = get_openapi(
         title="Auditize",
-        version="0.1.0",
+        version=__version__,
         description="Auditize API",
         routes=routes,
         tags=list(_filter_out_empty_tags(_TAGS, routes)),
