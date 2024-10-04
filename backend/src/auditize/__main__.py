@@ -134,10 +134,10 @@ async def version():
     )
 
 
-async def main(args):
+async def async_main(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--version", action="store_true", help="Print version information"
+        "--version", "-v", action="store_true", help="Print version information"
     )
     sub_parsers = parser.add_subparsers()
 
@@ -204,5 +204,9 @@ async def main(args):
     return 0
 
 
+def main(args=None):
+    return asyncio.run(async_main(args))
+
+
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main(sys.argv[1:])))
+    sys.exit(main(sys.argv[1:]))
