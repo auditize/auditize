@@ -2,6 +2,7 @@ import dataclasses
 import os
 
 from apscheduler.triggers.cron import CronTrigger
+from dotenv import dotenv_values
 
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
@@ -75,10 +76,7 @@ class Config:
             )
 
     @classmethod
-    def load_from_env(cls, env=None):
-        if env is None:
-            env = os.environ
-
+    def _load_from_env(cls, env):
         def required(key, validator=None):
             value = env[key]
             if validator:
@@ -162,6 +160,22 @@ class Config:
         config._validate()
 
         return config
+
+    @classmethod
+    def load_from_env(cls, env=None):
+        if env is None:
+            env = os.environ
+
+        if "AUDITIZE_CONFIG" in env:
+            try:
+                with open(env["AUDITIZE_CONFIG"]) as fh:
+                    env = dotenv_values(stream=fh)
+            except IOError as exc:
+                raise ConfigError(
+                    f"Could not load configuration from {env['AUDITIZE_CONFIG']!r}: {exc}"
+                )
+
+        return cls._load_from_env(env)
 
     @property
     def smtp_sender(self):

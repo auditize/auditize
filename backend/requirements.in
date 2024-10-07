@@ -8,4 +8,4 @@ certifi
 bcrypt
 Authlib
 apscheduler
-
+python-dotenv

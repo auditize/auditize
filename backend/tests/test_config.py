@@ -166,3 +166,30 @@ def test_config_cookie_secure_turned_off():
         {**MINIMUM_VIABLE_CONFIG, "_AUDITIZE_COOKIE_SECURE": "false"}
     )
     assert config.cookie_secure is False
+
+
+def test_config_from_file(tmp_path):
+    env_file = tmp_path / "env"
+    with env_file.open("w") as fh:
+        fh.write(
+            """
+            AUDITIZE_BASE_URL=http://localhost:8000
+            AUDITIZE_JWT_SIGNING_KEY=SECRET
+            """
+        )
+    config = Config.load_from_env(
+        {
+            "AUDITIZE_CONFIG": str(env_file),
+            "AUDITIZE_CORS_ALLOW_ORIGINS": "http://localhost:5173",
+        }
+    )
+    assert config.base_url == "http://localhost:8000"
+    assert config.jwt_signing_key == "SECRET"
+    assert (
+        config.cors_allow_origins == []
+    )  # make sure that AUDITIZE_CONFIG content has precedence over env variables
+
+
+def test_config_from_unknown_file():
+    with pytest.raises(ConfigError, match="/this/file/does/not/exist"):
+        Config.load_from_env({"AUDITIZE_CONFIG": "/this/file/does/not/exist"})

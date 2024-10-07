@@ -55,7 +55,9 @@ pydantic-core==2.23.3
 pymongo==4.8.0
     # via motor
 python-dotenv==1.0.1
-    # via uvicorn
+    # via
+    #   -r requirements.in
+    #   uvicorn
 python-multipart==0.0.9
     # via -r requirements.in
 pytz==2024.1
