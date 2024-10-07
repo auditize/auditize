@@ -168,3 +168,150 @@ The Docker Compose environment described here is a good starting point to run Au
 - etc.
 
 When deploying Auditize in a Kubernetes cluster, you have the flexibility to scale it by choosing between multiple pods running directly with Uvicorn and a single worker (through `auditize serve`) or using Gunicorn with multiple workers. Using Uvicorn directly in each pod can be simpler and more lightweight, making it easier to manage and scale horizontally. The FastAPI documentation provides [more information](https://fastapi.tiangolo.com/deployment/docker/) on how to deploy a FastAPI application in Kubernetes.
+
+
+## Standalone
+
+### Introduction
+
+Auditize supports **Python 3.12+**. This version of Python is available on Ubuntu 24.04+ and RHEL 9.4+ (among others) as time of writing.
+
+In this section, we will build a standalone Auditize environment using:
+- Auditize installed in a Python virtual environment
+- Gunicorn with ASGI workers
+- Nginx as a reverse proxy
+
+We assume that a working MongoDB instance is available and that you have a MongoDB URI to connect to it.
+
+Here, we take Ubuntu 24.04 as an example, but the steps should be similar for other Linux distributions (especially Debian-based ones and distros using `systemd`).
+
+### Install and configure Auditize
+
+First, install the `virtualenv` package and create a Python virtual environment with Auditize and Gunicorn:
+```bash
+
+sudo apt install python3-virtualenv
+sudo virtualenv /opt/auditize
+sudo /opt/auditize/bin/pip install auditize gunicorn
+```
+
+Create a `/opt/auditize/env` file containing your [Auditize configuration](config.md). It should contain at least the required fields `AUDITIZE_BASE_URL`, `AUDITIZE_JWT_SIGNING_KEY`, and `AUDITIZE_MONGODB_URI` if your MongoDB server is not running locally:
+```bash
+AUDITIZE_BASE_URL=...
+AUDITIZE_JWT_SIGNING_KEY=...
+AUDITIZE_MONGODB_URI=...
+```
+
+Then, ensure appropriate permissions and ownership on this file:
+```bash
+sudo chown www-data:www-data /opt/auditize/env
+sudo chmod 660 /opt/auditize/env
+```
+
+Bootstrap the superadmin user:
+
+```bash
+sudo AUDITIZE_CONFIG=/opt/auditize/env /opt/auditize/bin/auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME
+```
+
+The `auditize bootstrap-superadmin` command will prompt you for a password and then create the superadmin user.
+
+### Run Gunicorn through systemd
+
+We are going to use `systemd` to create a UNIX socket for Gunicorn. Nginx will forward requests to this socket and `systemd` will start the Gunicorn service when needed.
+
+Create a `/etc/systemd/system/auditize-gunicorn.socket` file with this content:
+
+```ini
+[Unit]
+Description=Unix socket for Auditize Gunicorn
+
+[Socket]
+ListenStream=/run/gunicorn.sock
+SocketUser=www-data
+SocketGroup=www-data
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target
+```
+
+Create a `/etc/systemd/system/auditize-gunicorn.service`:
+
+```ini
+[Unit]
+Description=Run Auditize using Gunicorn
+Requires=auditize-gunicorn.socket
+After=network.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/auditize
+EnvironmentFile=/opt/auditize/env
+ExecStart=/opt/auditize/bin/gunicorn 'auditize:asgi()' -k uvicorn.workers.UvicornWorker -w 4 # (1)!
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+1. The `-w 4` option tells Gunicorn to run 4 workers. You can adjust this number according to your needs / host resources.
+
+Enable and start the `auditize-gunicorn.socket` (`systemd` will start the `auditize-gunicorn.service` when needed): :
+
+```bash
+sudo systemctl enable auditize-gunicorn.socket
+```
+
+### Setup Nginx
+
+Install Nginx:
+
+```bash
+sudo apt install nginx
+```
+
+Add this Nginx configuration file at `/etc/nginx/sites-available/auditize`:
+
+```nginx
+server {
+  listen 80;
+
+  location / {
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_redirect off;
+    proxy_buffering off;
+    proxy_pass http://gunicorn;
+  }
+}
+
+upstream gunicorn {
+  server unix:/run/gunicorn.sock;
+}
+```
+
+Remove the default Nginx configuration if any:
+
+```bash
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+Enable the Auditize configuration for Nginx:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/auditize /etc/nginx/sites-enabled/auditize
+```
+
+Restart Nginx:
+
+```bash
+sudo systemctl restart nginx
+```
