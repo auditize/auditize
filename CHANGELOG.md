@@ -1,3 +1,7 @@
+# 0.2.2 (2024-10-07)
+
+- Add a `AUDITIZE_CONFIG` environment variable to load the configuration from an environment file
+
 # 0.2.1 (2024-10-04)
 
 - First release on PyPI
