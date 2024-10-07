@@ -166,3 +166,5 @@ The Docker Compose environment described here is a good starting point to run Au
 - deploying Auditize in a Kubernetes cluster with a proper ingress controller,
 - build a custom Docker image with security and optimization measures,
 - etc.
+
+When deploying Auditize in a Kubernetes cluster, you have the flexibility to scale it by choosing between multiple pods running directly with Uvicorn and a single worker (through `auditize serve`) or using Gunicorn with multiple workers. Using Uvicorn directly in each pod can be simpler and more lightweight, making it easier to manage and scale horizontally. The FastAPI documentation provides [more information](https://fastapi.tiangolo.com/deployment/docker/) on how to deploy a FastAPI application in Kubernetes.
