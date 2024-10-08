@@ -216,11 +216,47 @@ sudo AUDITIZE_CONFIG=/opt/auditize/env /opt/auditize/bin/auditize bootstrap-supe
 
 The `auditize bootstrap-superadmin` command will prompt you for a password and then create the superadmin user.
 
-### Run Gunicorn through systemd
+### Run Auditize's scheduler with systemd
 
-We are going to use `systemd` to create a UNIX socket for Gunicorn. Nginx will forward requests to this socket and `systemd` will start the Gunicorn service when needed.
+First, create a `/opt/auditize/log` directory to store the logs:
 
-Create a `/etc/systemd/system/auditize-gunicorn.socket` file with this content:
+```bash
+sudo mkdir /opt/auditize/log
+```
+
+Then, create a `/etc/systemd/system/auditize-scheduler.service` file with :
+
+```ini
+[Unit]
+Description=Auditize Scheduler
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/opt/auditize
+EnvironmentFile=/opt/auditize/env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/auditize/bin/auditize schedule
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:/opt/auditize/log/scheduler.log
+StandardError=append:/opt/auditize/log/scheduler-error.log
+
+[Install]
+WantedBy=multi-user.target
+```
+
+And activate the service:
+
+```bash
+sudo systemctl enable --now auditize-scheduler
+```
+
+### Run Gunicorn with systemd
+
+We are going to use `systemd` to create a UNIX socket for Gunicorn. Nginx will forward requests to this socket and `systemd` will start the Gunicorn service when the first request is received.
+
+Create a `/etc/systemd/system/auditize-gunicorn.socket` file with:
 
 ```ini
 [Unit]
@@ -266,7 +302,7 @@ WantedBy=multi-user.target
 Enable and start the `auditize-gunicorn.socket` (`systemd` will start the `auditize-gunicorn.service` when needed): :
 
 ```bash
-sudo systemctl enable auditize-gunicorn.socket
+sudo systemctl enable --now auditize-gunicorn.socket
 ```
 
 ### Setup Nginx
@@ -320,7 +356,7 @@ You can now access Auditize at `http://YOUR_SERVER_HOSTNAME`.
 
 #### TLS
 
-It is of course highly recommended to use TLS for your Auditize instance. Here is an example of an Nginx configuration with TLS, it has been generated using the [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/) and it assumes that you have a valid certificate, key, and DH parameters file in `/opt/auditize/ssl/` (make sure that these files have proper permissions):
+It is of course highly recommended to use TLS for your Auditize instance. Here is an example of an Nginx configuration with TLS, it has been generated using the [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/) and it assumes that you have a valid certificate, key, and DH parameters files in `/opt/auditize/ssl/` (make sure that these files have proper permissions):
 
 ```nginx
 # generated 2024-10-08, Mozilla Guideline v5.7, nginx 1.17.7, OpenSSL 1.1.1k, intermediate configuration
