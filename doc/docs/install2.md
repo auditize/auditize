@@ -281,20 +281,20 @@ Add this Nginx configuration file at `/etc/nginx/sites-available/auditize`:
 
 ```nginx
 server {
-  listen 80;
+    listen 80;
 
-  location / {
-    proxy_set_header Host $http_host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_redirect off;
-    proxy_buffering off;
-    proxy_pass http://gunicorn;
-  }
+    location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_pass http://gunicorn;
+    }
 }
 
 upstream gunicorn {
-  server unix:/run/gunicorn.sock;
+    server unix:/run/gunicorn.sock;
 }
 ```
 
@@ -314,4 +314,68 @@ Restart Nginx:
 
 ```bash
 sudo systemctl restart nginx
+```
+
+You can now access Auditize at `http://YOUR_SERVER_HOSTNAME`.
+
+#### TLS
+
+It is of course highly recommended to use TLS for your Auditize instance. Here is an example of an Nginx configuration with TLS, it has been generated using the [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/) and it assumes that you have a valid certificate, key, and DH parameters file in `/opt/auditize/ssl/` (make sure that these files have proper permissions):
+
+```nginx
+# generated 2024-10-08, Mozilla Guideline v5.7, nginx 1.17.7, OpenSSL 1.1.1k, intermediate configuration
+# https://ssl-config.mozilla.org/#server=nginx&version=1.17.7&config=intermediate&openssl=1.1.1k&guideline=5.7
+
+# adapted for Auditize
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    ssl_certificate /opt/auditize/ssl/cert.pem;
+    ssl_certificate_key /opt/auditize/ssl/key.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+    ssl_session_tickets off;
+
+    # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam
+    ssl_dhparam /opt/auditize/ssl/dhparam;
+
+    # intermediate configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # replace with the IP address of your resolver
+    resolver 127.0.0.1;
+
+    location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_pass http://gunicorn;
+    }
+}
+
+upstream gunicorn {
+    server unix:/run/gunicorn.sock;
+}
 ```
