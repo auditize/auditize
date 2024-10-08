@@ -222,6 +222,7 @@ First, create a `/opt/auditize/log` directory to store the logs:
 
 ```bash
 sudo mkdir /opt/auditize/log
+sudo chown www-data:www-data /opt/auditize/log
 ```
 
 Then, create a `/etc/systemd/system/auditize-scheduler.service` file with :
@@ -287,7 +288,10 @@ User=www-data
 Group=www-data
 WorkingDirectory=/opt/auditize
 EnvironmentFile=/opt/auditize/env
-ExecStart=/opt/auditize/bin/gunicorn 'auditize:asgi()' -k uvicorn.workers.UvicornWorker -w 4 # (1)!
+ExecStart=/opt/auditize/bin/gunicorn 'auditize:asgi()' \
+  --access-logfile /opt/auditize/log/gunicorn-access.log \
+  --error-logfile /opt/auditize/log/gunicorn-error.log \
+  -k uvicorn.workers.UvicornWorker -w 4
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
 TimeoutStopSec=5
@@ -297,9 +301,10 @@ PrivateTmp=true
 WantedBy=multi-user.target
 ```
 
-1. The `-w 4` option tells Gunicorn to run 4 workers. You can adjust this number according to your needs / host resources.
+!!! info
+    The `-w 4` option tells Gunicorn to run 4 workers. You can adjust this number according to your needs / host resources.
 
-Enable and start the `auditize-gunicorn.socket` (`systemd` will start the `auditize-gunicorn.service` when needed): :
+Enable and start the `auditize-gunicorn.socket` (`systemd` will start the `auditize-gunicorn.service` when needed) :
 
 ```bash
 sudo systemctl enable --now auditize-gunicorn.socket
