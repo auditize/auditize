@@ -1,75 +1,440 @@
 # Installation
 
-This installation documentation is voluntarily limited to a Docker & Docker Compose environment installation and does not cover :
+Auditize is a Python 3.12+ application that uses MongoDB as a database and do not use the filesystem to persist data. It's base configuration is 100% environment variables based, making it easy and flexible to configure, especially in a Docker environment.
 
-- the deployment of a production-grade HTTP Reverse Proxy such as Nginx or Apache,
-- nor the setup of a TLS termination.
+Auditize is composed of two distinct services:
 
-This documentation must be considered as a starting point to get a local Auditize instance up and running, understand how it works and how you could deploy it in a production environment.
+- an [ASGI](https://en.wikipedia.org/wiki/Asynchronous_Server_Gateway_Interface) web application that serves both the API and the frontend
+- a scheduler that runs period tasks
 
-This page will guide you through the installation of a Docker Compose environment built from the Auditize source repository. This environment will include the following services:
+It is delivered as a [Python package on PyPI](https://pypi.org/project/auditize/) that can be installed with `pip` (the package installer for Python). Please note that the Auditize package dependencies are pinned to ensure a stable and reproducible installation.
 
-- mongodb
-- auditize-web (API & frontend)
-- auditize-scheduler (period tasks scheduler)
+The following sections will guide you through the installation of Auditize in two different contexts:
 
-Auditize uses MongoDB as a database and do not use the filesystem to persist data. The MongoDB data is stored in a Docker volume named `auditize_mongo-data` (as it is should be seen by the `docker volume ls` command).
+- a [Docker Compose environment](#docker-compose)
+- a [standalone environment](#standalone)
 
-## Requirements
+!!! info "MongoDB"
 
-- Linux or macOS (Windows & WSL2 not tested)
-- Docker & Docker Compose (or Docker Desktop)
-- Git (optional but recommended, you can still download the git repository as a zip file from GitHub)
-- GNU Make (optional but widely available and recommended, you can run still the underlying `Makefile` commands manually)
+    Auditize requires MongoDB 7.0+ to run.
 
-## Build and run the Docker environment
+    Auditize creates a main database named `auditize` in charge of storing the configuration data. For each new log repository, a dedicated database will be created with a name prefixed by `auditize_logs_`.
 
-### Clone the repository
+## Docker Compose
 
-```bash
-git clone git@github.com:auditize/auditize.git
-```
+The Docker Compose environment described here provides a complete Auditize setup including MongoDB.
 
-
-### Go to the Auditize's Docker directory
+First, create an `auditize-docker` directory where you will store the various files related to your Auditize's Docker setup, and go to this directory:
 
 ```bash
-cd auditize/docker
+mkdir auditize-docker
+cd auditize-docker
 ```
 
+Then, create a `Dockerfile` file with the following content:
 
-### Build the Auditize Docker image
+```Dockerfile
+FROM python:3.12
+
+RUN pip install auditize
+
+EXPOSE 80
+
+ENTRYPOINT ["auditize"]
+```
+
+!!! warning
+
+    This is a minimal Dockerfile that installs the `auditize` package and exposes the port 80. In a real-world / production setup, you would typically implement security and optimization measures such as:
+    
+    - running the application as a non-root user,
+    - using a non-privileged port,
+    - making the Docker image as small as possible by using an optimized base image,
+    - pin the version of the `auditize` package to a specific version,
+    - etc.
+
+This image will be used to run both the web application and the scheduler Docker Compose services.
+
+Now, build a Docker image from this Dockerfile:
+
+```bash
+docker build -t auditize .
+```
+
+Next, create a `docker-compose.yml` file in the same directory with the following content:
   
-```bash
-make build
+```yaml
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    volumes:
+      - mongo-data:/data/db
+  web:
+    image: auditize
+    depends_on:
+      - mongo
+    command: ["serve", "--host", "0.0.0.0", "--port", "80"]
+    ports:
+      - "8000:80"
+    env_file: ".env"
+    environment:
+      - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
+  scheduler:
+    image: auditize
+    depends_on:
+      - mongo
+    command: ["schedule"]
+    env_file: ".env"
+    environment:
+      - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
+      # we set PYTHONUNBUFFERED, otherwise the print() from "schedule" are not shown
+      - PYTHONUNBUFFERED=1
+volumes:
+  mongo-data:
 ```
 
-### Setup the `.env` file
-
-The Auditize base configuration is 100% environment variables based. It makes it easy and flexible to configure Auditize, especially in a Docker environment.
-
-In the `docker` directory, you'll find a `.env.example` file which serve as a template for the environment variables. You can copy this file to `.env` and modify it as needed. The configuration is documented in details [here](config.md).
-
-Make sure that the `.env` file contains at least the **required environment variables**.
-
-### Run docker compose
-
-Start the Docker containers:
+This `docker-compose.yml` uses a `.env` file for the Auditize base-configuration, so let's create a `.env` file in the same directory with at least the following configuration elements:
 
 ```bash
-make up
+AUDITIZE_BASE_URL=http://localhost:8000
+AUDITIZE_JWT_SIGNING_KEY=YOUR_AUDITIZE_JWT_SIGNING_KEY
 ```
 
-### Access Auditize
+- `AUDITIZE_BASE_URL` is the public URL of your Auditize instance from which the web application will be accessed by your users or API clients (e.g. `https://auditize.example.com`). It is used to generate URLs in the emails sent by Auditize.
+- `AUDITIZE_JWT_SIGNING_KEY` is the key used to sign the JWT tokens generated by Auditize (e.g. user sessions).
 
-When Auditize is run for the first time on an empty database, it will create a default superadmin user with:
+Please refer to the [configuration documentation](config.md) for more details.
 
-- email: `super.admin@example.net`
-- password: `auditize`
+Finally, start the Docker containers:
 
-You can now access the Auditize web interface at [http://localhost:8080](http://localhost:8080) with the credentials above. For security concerns, it is of course recommended to create a brand new superadmin user to your own identity and then **delete the default one**.
+```bash
+docker compose up -d
+```
 
-### Other useful make commands
+Before you can use Auditize, you need to create a superadmin user. You can do this by running the following command:
 
-- `make down` to stop the Auditize services
-- `make logs` to display the logs of the Auditize services (excluding MongoDB)
+```bash
+docker exec -it auditize-docker-web-1 auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME 
+```
+
+Where:
+
+- `auditize-docker-web-1` is the name of the web container to run the command from
+- `YOUR_EMAIL`, `YOUR_FIRST_NAME`, and `YOUR_LAST_NAME` must be replaced by your actual user information
+
+The command will prompt you for a password and then create the superadmin user.
+
+You can now access Auditize at `http://localhost:8000` and log in with the superadmin user you just created.
+
+### Using Gunicorn
+
+The previous setup uses `auditize serve` to run the web application. What this command does under the hood is to run the [Uvicorn](https://www.uvicorn.org/) ASGI server with one worker. You may want to use [Gunicorn](https://gunicorn.org/) with multiple workers for better performance as recommended in the [Uvicorn documentation](https://www.uvicorn.org/#running-with-gunicorn).
+
+In this case, you can follow the same steps as above but make the following change in `Dockerfile`:
+
+```Dockerfile
+# RUN pip install auditize
+RUN pip install auditize gunicorn
+```
+
+And this change in the `docker-compose.yml` file:
+
+```yaml
+# command: ["serve", "--host", "0.0.0.0", "--port", "80"]
+entrypoint:
+  [
+    "gunicorn",
+    "auditize:asgi()",
+    "-k",
+    "uvicorn.workers.UvicornWorker",
+    "-w",
+    "4",
+    "-b",
+    "0.0.0.0:80",
+  ]
+```
+
+In this example, Gunicorn is configured to run 4 workers with the Uvicorn worker class. You can adjust the number of workers according to your needs / host resources.
+
+!!! note
+
+    Since Auditize is an ASGI application, you can use any other ASGI server to run it instead of Uvicorn or Uvicorn+Gunicorn.
+
+### Ngnix, TLS, Kubernetes and beyond
+
+The Docker Compose environment described above is a good starting point to run Auditize in a development/test environment. For a production deployment, you may consider:
+
+- using a reverse proxy such as Nginx to serve the web application and handle TLS termination,
+- deploying Auditize in a Kubernetes cluster with a proper ingress controller,
+- build a custom Docker image with security and optimization measures,
+- etc.
+
+When deploying Auditize in a Kubernetes cluster, you have the flexibility to scale it by choosing between multiple pods running directly with Uvicorn and a single worker (through `auditize serve`) or using Gunicorn with multiple workers. Using Uvicorn directly in each pod can be simpler and more lightweight, making it easier to manage and scale horizontally. The FastAPI documentation provides [more information](https://fastapi.tiangolo.com/deployment/docker/) on how to deploy a FastAPI application in Kubernetes.
+
+
+## Standalone
+
+### Introduction
+
+Auditize supports **Python 3.12+**. This version of Python is available on Ubuntu 24.04+ and RHEL 9.4+ (among others) as time of writing.
+
+In this section, we will build a standalone Auditize environment using:
+
+- Auditize installed in a Python virtual environment
+- Gunicorn with ASGI workers
+- Nginx as a reverse proxy
+
+**We assume that you have a working MongoDB instance available and the corresponding MongoDB URI to connect to it.**
+
+Here, we take Ubuntu 24.04 as an example, but the steps should be similar for other Linux distributions (especially Debian-based ones and distros using `systemd`).
+
+### Install and configure Auditize
+
+First, install the `virtualenv` package and create a Python virtual environment with Auditize and Gunicorn:
+```bash
+
+sudo apt install -y python3-virtualenv
+sudo virtualenv /opt/auditize
+sudo /opt/auditize/bin/pip install auditize gunicorn
+```
+
+Create a `/opt/auditize/env` file containing your [Auditize configuration](config.md). It should contain at least the required fields `AUDITIZE_BASE_URL`, `AUDITIZE_JWT_SIGNING_KEY`, and `AUDITIZE_MONGODB_URI` if your MongoDB server is not running locally:
+```bash
+AUDITIZE_BASE_URL=...
+AUDITIZE_JWT_SIGNING_KEY=...
+AUDITIZE_MONGODB_URI=...
+```
+
+Then, ensure appropriate permissions and ownership on this file:
+```bash
+sudo chown www-data:www-data /opt/auditize/env
+sudo chmod 660 /opt/auditize/env
+```
+
+Bootstrap the superadmin user:
+
+```bash
+sudo AUDITIZE_CONFIG=/opt/auditize/env /opt/auditize/bin/auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME
+```
+
+The `auditize bootstrap-superadmin` command will prompt you for a password and then create the superadmin user.
+
+!!! info
+
+    The install path `/opt/auditize` can be changed to any other path you prefer (when doing so, make sure to adjust the paths in the following steps accordingly). We use the `www-data` user to run the services for simplicity, but you can choose to create a dedicated user for Auditize (you will have to ensure that the `/run/gunicorn.sock` socket file is still accessible by Nginx that runs as `www-data`).
+
+### Run Auditize's scheduler with systemd
+
+First, create a `/opt/auditize/log` directory to store the logs:
+
+```bash
+sudo mkdir /opt/auditize/log
+sudo chown www-data:www-data /opt/auditize/log
+```
+
+Then, create a `/etc/systemd/system/auditize-scheduler.service` file with :
+
+```ini
+[Unit]
+Description=Auditize Scheduler
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/opt/auditize
+EnvironmentFile=/opt/auditize/env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/auditize/bin/auditize schedule
+Restart=always
+RestartSec=3
+StandardOutput=append:/opt/auditize/log/scheduler.log
+StandardError=append:/opt/auditize/log/scheduler-error.log
+
+[Install]
+WantedBy=multi-user.target
+```
+
+And activate the service:
+
+```bash
+sudo systemctl enable --now auditize-scheduler
+```
+
+### Run Gunicorn with systemd
+
+We are going to use `systemd` to create a UNIX socket for Gunicorn. Nginx will forward requests to this socket and `systemd` will start the Gunicorn service when the first request is received.
+
+Create a `/etc/systemd/system/auditize-gunicorn.socket` file with:
+
+```ini
+[Unit]
+Description=Unix socket for Auditize Gunicorn
+
+[Socket]
+ListenStream=/run/gunicorn.sock
+SocketUser=www-data
+SocketGroup=www-data
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target
+```
+
+Create a `/etc/systemd/system/auditize-gunicorn.service`:
+
+```ini
+[Unit]
+Description=Run Auditize using Gunicorn
+Requires=auditize-gunicorn.socket
+After=network.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/auditize
+EnvironmentFile=/opt/auditize/env
+ExecStart=/opt/auditize/bin/gunicorn 'auditize:asgi()' \
+  --error-logfile /opt/auditize/log/gunicorn.log \
+  -k uvicorn.workers.UvicornWorker -w 4
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The `-w 4` option tells Gunicorn to run 4 workers. You can adjust this number according to your needs / host resources.
+
+Enable and start the `auditize-gunicorn.socket` (`systemd` will start the `auditize-gunicorn.service` when needed) :
+
+```bash
+sudo systemctl enable --now auditize-gunicorn.socket
+```
+
+### Setup Nginx
+
+Install Nginx:
+
+```bash
+sudo apt install nginx
+```
+
+Add this Nginx configuration file at `/etc/nginx/sites-available/auditize`:
+
+```nginx
+server {
+    listen 80;
+
+    location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_pass http://gunicorn;
+    }
+}
+
+upstream gunicorn {
+    server unix:/run/gunicorn.sock;
+}
+```
+
+Remove the default Nginx configuration if any:
+
+```bash
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+Enable the Auditize configuration for Nginx:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/auditize /etc/nginx/sites-enabled/auditize
+```
+
+Restart Nginx:
+
+```bash
+sudo systemctl restart nginx
+```
+
+You can now access Auditize at `http://YOUR_SERVER_HOSTNAME` and log in with the superadmin user you created earlier.
+
+#### TLS
+
+It is of course highly recommended to use TLS for your Auditize instance. Here is an example of an Nginx configuration with TLS, it has been generated using the [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/) and it assumes that you have a valid certificate, private key, and DH parameter files in `/opt/auditize/ssl/`:
+
+```nginx
+# generated 2024-10-08, Mozilla Guideline v5.7, nginx 1.17.7, OpenSSL 1.1.1k, intermediate configuration
+# https://ssl-config.mozilla.org/#server=nginx&version=1.17.7&config=intermediate&openssl=1.1.1k&guideline=5.7
+
+# adapted for Auditize
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    ssl_certificate /opt/auditize/ssl/cert.pem;
+    ssl_certificate_key /opt/auditize/ssl/key.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+    ssl_session_tickets off;
+
+    # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam
+    ssl_dhparam /opt/auditize/ssl/dhparam;
+
+    # intermediate configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # replace with the IP address of your resolver
+    resolver 127.0.0.1;
+
+    location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_pass http://gunicorn;
+    }
+}
+
+upstream gunicorn {
+    server unix:/run/gunicorn.sock;
+}
+```
+
+
+!!! warning
+
+    Make sure that the files under `/opt/auditize/ssl/` have proper permissions:
+
+    ```bash
+    sudo chmod o-rwx /opt/auditize/ssl/*
+    ```
