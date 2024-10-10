@@ -7,6 +7,8 @@ from auditize.i18n.lang import Lang
 from auditize.permissions.models import Permissions
 from auditize.resource.models import HasCreatedAt, HasId
 
+USER_PASSWORD_MIN_LENGTH = 8
+
 
 class PasswordResetToken(BaseModel):
     token: str

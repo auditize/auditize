@@ -87,3 +87,26 @@ async def test_bootstrap_superadmin_password_mismatch_retry_ok(capsys):
         )
 
     await _assert_user_ok("john.doe@example.net", "John", "Doe", "somegreatpassword")
+
+
+async def test_bootstrap_superadmin_password_too_short(capsys):
+    with _mock_getpass("short"):
+        try:
+            await async_main(
+                ["bootstrap-superadmin", "john.doe@example.net", "John", "Doe"],
+            )
+        except EOFError:
+            pass
+    assert (
+        "Password too short, it must be at least 8 characters long."
+        in capsys.readouterr().err
+    )
+
+
+async def test_bootstrap_superadmin_password_too_short_retry_ok(capsys):
+    with _mock_getpass("short", "longpassword", "longpassword"):
+        await async_main(
+            ["bootstrap-superadmin", "john.doe@example.net", "John", "Doe"],
+        )
+
+    await _assert_user_ok("john.doe@example.net", "John", "Doe", "longpassword")

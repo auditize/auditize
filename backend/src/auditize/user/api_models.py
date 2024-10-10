@@ -11,7 +11,7 @@ from auditize.permissions.api_models import (
 from auditize.permissions.operations import compute_applicable_permissions
 from auditize.resource.api_models import IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
-from auditize.user.models import User
+from auditize.user.models import USER_PASSWORD_MIN_LENGTH, User
 
 
 def _UserFirstNameField(**kwargs):  # noqa
@@ -52,7 +52,7 @@ def _UserLangField(default: Lang | None = Lang.EN, **kwargs):  # noqa
 
 
 def _UserPasswordField(**kwargs):  # noqa
-    min_length = kwargs.pop("min_length", 8)
+    min_length = kwargs.pop("min_length", USER_PASSWORD_MIN_LENGTH)
     return Field(
         description="The user password",
         min_length=min_length,

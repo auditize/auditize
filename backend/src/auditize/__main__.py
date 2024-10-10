@@ -19,7 +19,7 @@ from auditize.exceptions import (
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
 from auditize.scheduler import build_scheduler
-from auditize.user.models import User
+from auditize.user.models import USER_PASSWORD_MIN_LENGTH, User
 from auditize.user.service import (
     hash_user_password,
     save_user,
@@ -41,8 +41,15 @@ def _lazy_init(*, skip_dbm_init=False):
 
 def _get_password() -> str:
     password = getpass.getpass("Password: ")
-    confirm = getpass.getpass("Confirm password: ")
+    if len(password) < USER_PASSWORD_MIN_LENGTH:
+        print(
+            f"Password too short, it must be at least {USER_PASSWORD_MIN_LENGTH} characters long.",
+            file=sys.stderr,
+        )
+        print("", file=sys.stderr)
+        return _get_password()
 
+    confirm = getpass.getpass("Confirm password: ")
     if password != confirm:
         print("Passwords do not match, please try again.", file=sys.stderr)
         print("", file=sys.stderr)
