@@ -84,6 +84,9 @@ class DatabaseManager:
             log_db = await get_log_db_for_maintenance(repo)
             await log_db.setup()
 
+    async def ping(self):
+        await self.client.server_info()
+
 
 _dbm: DatabaseManager | None = None
 

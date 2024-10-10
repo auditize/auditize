@@ -6,11 +6,12 @@ import platform
 import sys
 
 import uvicorn
+from pymongo.errors import PyMongoError
 
 from auditize import __version__
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import init_dbm
+from auditize.database import get_dbm, init_dbm
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -60,6 +61,13 @@ def _get_password() -> str:
 
 async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
     _lazy_init()
+
+    # Make sure we can connect to the database before asking for the password
+    dbm = get_dbm()
+    try:
+        await dbm.ping()
+    except PyMongoError as exc:
+        sys.exit(f"Error: could not connect to MongoDB: {exc}")
 
     password = _get_password()
 
