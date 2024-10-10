@@ -21,7 +21,6 @@ from auditize.permissions.models import Permissions
 from auditize.scheduler import build_scheduler
 from auditize.user.models import User
 from auditize.user.service import (
-    get_users,
     hash_user_password,
     save_user,
 )
@@ -52,40 +51,24 @@ def _get_password() -> str:
     return password
 
 
-async def _bootstrap_superadmin(
-    email: str, first_name: str, last_name: str, password: str
-):
-    await save_user(
-        User(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            password_hash=hash_user_password(password),
-            permissions=Permissions(is_superadmin=True),
-        ),
-    )
-
-
 async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
     _lazy_init()
 
     password = _get_password()
 
     try:
-        await _bootstrap_superadmin(email, first_name, last_name, password)
+        await save_user(
+            User(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                password_hash=hash_user_password(password),
+                permissions=Permissions(is_superadmin=True),
+            )
+        )
     except ConstraintViolation:
         sys.exit(f"Error: user with email {email} already exists")
     print(f"User with email {email} has been successfully created")
-
-
-async def bootstrap_default_superadmin():
-    _lazy_init()
-
-    users, _ = await get_users(query=None, page=1, page_size=1)
-    if not users:
-        await _bootstrap_superadmin(
-            "super.admin@example.net", "Super", "Admin", "auditize"
-        )
 
 
 async def serve(host: str, port: int):
@@ -140,15 +123,6 @@ async def async_main(args=None):
         "--version", "-v", action="store_true", help="Print version information"
     )
     sub_parsers = parser.add_subparsers()
-
-    # CMD bootstrap-default-superadmin
-    bootstrap_default_superadmin_parser = sub_parsers.add_parser(
-        "bootstrap-default-superadmin",
-        help="Bootstrap a default superadmin user if no users exist",
-    )
-    bootstrap_default_superadmin_parser.set_defaults(
-        func=lambda _: bootstrap_default_superadmin()
-    )
 
     # CMD bootstrap-superadmin
     bootstrap_superadmin_parser = sub_parsers.add_parser(
