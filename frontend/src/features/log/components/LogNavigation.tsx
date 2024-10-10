@@ -899,7 +899,7 @@ function searchParamsReducer(
   state: LogSearchParams,
   action: SetParamAction | ResetParamsAction,
 ): LogSearchParams {
-  console.log("searchParamsReducer", action);
+  console.debug("searchParamsReducer", action);
   switch (action.type) {
     case "setParam":
       const update = { [action.name]: action.value };
