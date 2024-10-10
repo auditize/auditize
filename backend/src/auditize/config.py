@@ -134,16 +134,14 @@ class Config:
                     validator=cls._validate_cron_expr,
                     default=_DEFAULT_LOG_EXPIRATION_SCHEDULE,
                 ),
+                cookie_secure=optional(
+                    "AUDITIZE_COOKIE_SECURE",
+                    validator=cls._validate_bool,
+                    default=False,
+                ),
                 ###
                 # "Private" configuration
                 ###
-                cookie_secure=optional(
-                    # Needed to disable Secure Cookies for Safari on localhost
-                    # (see https://flaviocopes.com/cookie-not-being-set-in-safari/)
-                    "_AUDITIZE_COOKIE_SECURE",
-                    validator=cls._validate_bool,
-                    default=True,
-                ),
                 test_mode=optional(
                     "_AUDITIZE_TEST_MODE", validator=cls._validate_bool, default=False
                 ),

@@ -14,6 +14,7 @@ The base Auditize configuration is done through environment variables. The follo
 | `AUDITIZE_SMTP_PASSWORD` |  | The SMTP account password. |
 | `AUDITIZE_SMTP_SENDER` | Defaults to `$AUDITIZE_SMTP_USERNAME` | The email address used to send emails. |
 | `AUDITIZE_LOG_EXPIRATION_SCHEDULE` | `0 1 * * *` (every day at 1AM) | The schedule at which expired logs are deleted. |
+| `AUDITIZE_COOKIE_SECURE` | `false` | Whether the user session cookie should be [secure](https://en.wikipedia.org/wiki/Secure_cookie) (only sent over HTTPS). It is recommended to set this to `true` in production. |
 | `AUDITIZE_CORS_ALLOW_ORIGINS` | | A comma-separated list of origins allowed to make HTTP requests to Auditize. |
 | `AUDITIZE_USER_SESSION_TOKEN_LIFETIME` | `43200` (12 hours) | The lifetime of user session tokens in seconds. |
 | `AUDITIZE_ACCESS_TOKEN_LIFETIME` | `600` (10 minutes) | The lifetime of access tokens in seconds. |

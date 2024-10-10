@@ -14,7 +14,7 @@ from helpers.utils import DATETIME_FORMAT
 pytestmark = pytest.mark.anyio
 
 
-def _assert_cookie(resp, now, expected_secure=True):
+def _assert_cookie(resp, now, expected_secure=False):
     cookie = get_cookie_by_name(resp, "session")
     assert cookie.name == "session"
     assert cookie.expires > now
@@ -47,17 +47,17 @@ async def test_user_login(anon_client: HttpTestHelper):
     await anon_client.assert_get_ok("/users/me")
 
 
-async def test_user_login_cookie_non_secure(anon_client: HttpTestHelper):
+async def test_user_login_cookie_secure(anon_client: HttpTestHelper):
     user = await PreparedUser.inject_into_db()
     now = int(time.time())
     with patch("auditize.auth.api.get_config") as mock:
-        mock.return_value.cookie_secure = False
+        mock.return_value.cookie_secure = True
         resp = await anon_client.assert_post_ok(
             "/auth/user/login",
             json={"email": user.email, "password": user.password},
         )
     ic(resp.cookies)
-    _assert_cookie(resp, now, expected_secure=False)
+    _assert_cookie(resp, now, expected_secure=True)
 
     # test that the cookie auth actually works
     await anon_client.assert_get_ok("/users/me")

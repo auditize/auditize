@@ -28,7 +28,7 @@ def test_get_config():
     assert config.is_smtp_enabled() is False
     assert config.cors_allow_origins == []
     assert config.log_expiration_schedule == "0 1 * * *"
-    assert config.cookie_secure is True
+    assert config.cookie_secure is False
     assert config.test_mode is True
     assert config.online_doc is False
 
@@ -58,7 +58,7 @@ def test_config_minimum_viable_config():
     assert config.is_smtp_enabled() is False
     assert config.cors_allow_origins == []
     assert config.log_expiration_schedule == "0 1 * * *"
-    assert config.cookie_secure is True
+    assert config.cookie_secure is False
     assert config.test_mode is False
     assert config.online_doc is False
 
@@ -161,11 +161,11 @@ def test_config_cors_enabled():
     assert config.cors_allow_origins == ["http://localhost:5173"]
 
 
-def test_config_cookie_secure_turned_off():
+def test_config_cookie_secure_turned_on():
     config = Config.load_from_env(
-        {**MINIMUM_VIABLE_CONFIG, "_AUDITIZE_COOKIE_SECURE": "false"}
+        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_COOKIE_SECURE": "true"}
     )
-    assert config.cookie_secure is False
+    assert config.cookie_secure is True
 
 
 def test_config_from_file(tmp_path):
