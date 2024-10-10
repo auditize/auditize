@@ -2,7 +2,6 @@ import {
   ActionIcon,
   Button,
   CloseButton,
-  FocusTrap,
   Group,
   Menu,
   Popover,
@@ -91,6 +90,7 @@ function SearchParamFieldPopover({
       opened={opened}
       onChange={onChange}
       keepMounted
+      trapFocus
       withinPortal={false}
       shadow="md"
     >
@@ -301,25 +301,22 @@ function BaseTextInputSearchParamField({
   onChange: (value: any) => void;
   onRemove: (name: string) => void;
 }) {
-  const [opened, { toggle }] = useDisclosure(openedByDefault);
+  const [opened, setOpened] = useState(openedByDefault);
   return (
     <SearchParamFieldPopover
       title={label}
       opened={opened}
       isSet={!!value}
-      onChange={toggle}
+      onChange={setOpened}
       removable={!FIXED_SEARCH_PARAM_NAMES.has(name)}
       onRemove={() => onRemove(name)}
     >
-      <FocusTrap active>
-        <TextInput
-          placeholder={label}
-          value={value}
-          onChange={(event) => onChange(event.currentTarget.value)}
-          data-autofocus
-          p="sm"
-        />
-      </FocusTrap>
+      <TextInput
+        placeholder={label}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+        p="sm"
+      />
     </SearchParamFieldPopover>
   );
 }
@@ -1304,6 +1301,7 @@ export function LogNavigation({
     setSearchParamNames(
       new Set([...searchParamNames].filter((n) => n !== name)),
     );
+    setAddedSearchParamName(null);
     removeSearchParam(editedParams, name, (name, value) =>
       dispatch({ type: "setParam", name, value }),
     );
@@ -1315,6 +1313,7 @@ export function LogNavigation({
     dispatch({ type: "resetParams", params });
     setIsDirty(false);
     setSearchParamNames(searchParamsToSearchParamNames(params));
+    setAddedSearchParamName(null);
   }, [params]);
 
   // Remove search params that are not available in the selected repository
