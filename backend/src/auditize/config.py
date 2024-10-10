@@ -19,7 +19,7 @@ _DEFAULT_LOG_EXPIRATION_SCHEDULE = "0 1 * * *"
 
 @dataclasses.dataclass
 class Config:
-    base_url: str
+    public_url: str
     jwt_signing_key: str
     user_session_token_lifetime: int
     access_token_lifetime: int
@@ -96,7 +96,7 @@ class Config:
 
         try:
             config = cls(
-                base_url=required("AUDITIZE_BASE_URL"),
+                public_url=required("AUDITIZE_PUBLIC_URL"),
                 jwt_signing_key=required("AUDITIZE_JWT_SIGNING_KEY"),
                 user_session_token_lifetime=optional(
                     "AUDITIZE_USER_SESSION_TOKEN_LIFETIME",

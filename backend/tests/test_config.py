@@ -4,7 +4,7 @@ from auditize.config import Config, get_config
 from auditize.exceptions import ConfigError
 
 MINIMUM_VIABLE_CONFIG = {
-    "AUDITIZE_BASE_URL": "http://localhost:8000",
+    "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
     "AUDITIZE_JWT_SIGNING_KEY": "DUMMYKEY",
 }
 
@@ -13,7 +13,7 @@ def test_get_config():
     # test get_config assuming environment variables set in conftest.py
     config = get_config()
     assert isinstance(config, Config)
-    assert config.base_url == "http://localhost:8000"
+    assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key is not None
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.access_token_lifetime == 600  # 10 minutes
@@ -43,7 +43,7 @@ def test_config_without_mandatory_variable():
 
 def test_config_minimum_viable_config():
     config = Config.load_from_env(MINIMUM_VIABLE_CONFIG)
-    assert config.base_url == "http://localhost:8000"
+    assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key == MINIMUM_VIABLE_CONFIG["AUDITIZE_JWT_SIGNING_KEY"]
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.access_token_lifetime == 600  # 10 minutes
@@ -173,7 +173,7 @@ def test_config_from_file(tmp_path):
     with env_file.open("w") as fh:
         fh.write(
             """
-            AUDITIZE_BASE_URL=http://localhost:8000
+            AUDITIZE_PUBLIC_URL=http://localhost:8000
             AUDITIZE_JWT_SIGNING_KEY=SECRET
             """
         )
@@ -183,7 +183,7 @@ def test_config_from_file(tmp_path):
             "AUDITIZE_CORS_ALLOW_ORIGINS": "http://localhost:5173",
         }
     )
-    assert config.base_url == "http://localhost:8000"
+    assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key == "SECRET"
     assert (
         config.cors_allow_origins == []

@@ -44,7 +44,7 @@ def _send_account_setup_email(user: User):
         user.email,
         "Welcome to Auditize",
         f"Welcome, {user.first_name}! Please click the following link to complete your registration: "
-        f"{config.base_url}/account-setup/{user.password_reset_token.token}",
+        f"{config.public_url}/account-setup/{user.password_reset_token.token}",
     )
 
 
@@ -199,7 +199,7 @@ def _send_password_reset_link(user: User):
         user.email,
         "Change your password on Auditize",
         f"Please follow this link to reset your password: "
-        f"{config.base_url}/password-reset/{user.password_reset_token.token}",
+        f"{config.public_url}/password-reset/{user.password_reset_token.token}",
     )
 
 
