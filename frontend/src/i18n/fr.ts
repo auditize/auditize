@@ -331,7 +331,7 @@ export default {
     status: "Statut",
     createdAt: "Date de création",
     copy: "Copier",
-    copied: "Copié",
+    copied: "Copié !",
     enabled: "Activé",
     disabled: "Désactivé",
     readonly: "Lecture seule",

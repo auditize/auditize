@@ -328,7 +328,7 @@ export default {
     status: "Status",
     createdAt: "Created at",
     copy: "Copy",
-    copied: "Copied",
+    copied: "Copied !",
     enabled: "Enabled",
     disabled: "Disabled",
     readonly: "Read-only",
