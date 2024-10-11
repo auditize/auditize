@@ -1,3 +1,12 @@
+# 0.2.3 (2024-10-11)
+
+- New environment variable `AUDITIZE_COOKIE_SECURE` to set the `Secure` flag on the
+  user session cookies (`false` by default)
+- Minor improvements in the `auditize bootstrap-superadmin` command
+- Minor UI bug fixes and improvements
+- Rename the `AUDITIZE_BASE_URL` environment variable to `AUDITIZE_PUBLIC_URL`
+- Remove the `auditize bootstrap-default-superadmin` command
+
 # 0.2.2 (2024-10-07)
 
 - Add a `AUDITIZE_CONFIG` environment variable to load the configuration from an environment file
