@@ -19,7 +19,7 @@ async def _index_html_redirection(request, call_next):
 
 def build_app(*, cors_allow_origins: list[str]):
     app = FastAPI(openapi_url=None)
-    app.mount("", StaticFiles(directory=_STATIC_DIR))
+    app.mount("", StaticFiles(directory=_STATIC_DIR, check_dir=False))
     app.add_middleware(BaseHTTPMiddleware, dispatch=_index_html_redirection)
     setup_cors(app, cors_allow_origins=cors_allow_origins)
     return app
