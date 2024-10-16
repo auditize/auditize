@@ -46,7 +46,7 @@ ENTRYPOINT ["auditize"]
 !!! warning
 
     This is a minimal Dockerfile that installs the `auditize` package and exposes the port 80. In a real-world / production setup, you would typically implement security and optimization measures such as:
-    
+
     - running the application as a non-root user,
     - using a non-privileged port,
     - making the Docker image as small as possible by using an optimized base image,
@@ -62,7 +62,7 @@ docker build -t auditize .
 ```
 
 Next, create a `docker-compose.yml` file in the same directory with the following content:
-  
+
 ```yaml
 services:
   mongo:
@@ -118,7 +118,7 @@ docker compose up -d
 Before you can use Auditize, you need to create a superadmin user. You can do this by running the following command:
 
 ```bash
-docker exec -it auditize-docker-web-1 auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME 
+docker exec -it auditize-docker-web-1 auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME
 ```
 
 Where:
@@ -175,6 +175,9 @@ The Docker Compose environment described above is a good starting point to run A
 
 When deploying Auditize in a Kubernetes cluster, you have the flexibility to scale it by choosing between multiple pods running directly with Uvicorn and a single worker (through `auditize serve`) or using Gunicorn with multiple workers. Using Uvicorn directly in each pod can be simpler and more lightweight, making it easier to manage and scale horizontally. The FastAPI documentation provides [more information](https://fastapi.tiangolo.com/deployment/docker/) on how to deploy a FastAPI application in Kubernetes.
 
+!!! info
+
+    You can also take a look at the [auditize-docker](https://github.com/auditize/auditize-docker) repository which provides an exemple of Docker Compose environment with Nginx proxying and automatic SSL certificate generation using Let's Encrypt.
 
 ## Standalone
 
@@ -195,6 +198,7 @@ Here, we take Ubuntu 24.04 as an example, but the steps should be similar for ot
 ### Install and configure Auditize
 
 First, install the `virtualenv` package and create a Python virtual environment with Auditize and Gunicorn:
+
 ```bash
 
 sudo apt install -y python3-virtualenv
@@ -203,6 +207,7 @@ sudo /opt/auditize/bin/pip install auditize gunicorn
 ```
 
 Create a `/opt/auditize/env` file containing your [Auditize configuration](config.md). It should contain at least the required fields `AUDITIZE_PUBLIC_URL`, `AUDITIZE_JWT_SIGNING_KEY`, and `AUDITIZE_MONGODB_URI` if your MongoDB server is not running locally:
+
 ```bash
 AUDITIZE_PUBLIC_URL=...
 AUDITIZE_JWT_SIGNING_KEY=...
@@ -210,6 +215,7 @@ AUDITIZE_MONGODB_URI=...
 ```
 
 Then, ensure appropriate permissions and ownership on this file:
+
 ```bash
 sudo chown www-data:www-data /opt/auditize/env
 sudo chmod 660 /opt/auditize/env
@@ -429,7 +435,6 @@ upstream gunicorn {
     server unix:/run/gunicorn.sock;
 }
 ```
-
 
 !!! warning
 
