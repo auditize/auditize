@@ -23,7 +23,7 @@ RUN apt-get update
 
 COPY --from=build /src/backend/dist /dist
 
-RUN pip install /dist/*.whl
+RUN pip install `ls -t /dist/*.whl | head -n 1`
 
 EXPOSE 8000
 

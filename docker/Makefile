@@ -4,6 +4,9 @@ build:
 	cd .. && docker build . -f docker/Dockerfile -t $(NAME)
 
 up:
+	docker compose -p $(NAME) up
+
+upd:
 	docker compose -p $(NAME) up -d
 
 down:
