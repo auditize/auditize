@@ -1,3 +1,7 @@
+# 0.2.4 (2024-10-16)
+
+- Disable Search indexing (Google, Bing, etc...) with noindex
+
 # 0.2.3 (2024-10-11)
 
 - New environment variable `AUDITIZE_COOKIE_SECURE` to set the `Secure` flag on the
