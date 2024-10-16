@@ -1,0 +1,27 @@
+# See https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-python#running-tests-with-tox
+
+name: Python backend tests
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: ./backend
+    strategy:
+      matrix:
+        python: ["3.12"]
+        mongodb: ["7.0"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: supercharge/mongodb-github-action@1.11.0
+        with:
+          mongodb-version: ${{ matrix.mongodb }}
+      - run: pip install tox
+      - run: tox -e py # Run tox using the version of Python in `PATH`
