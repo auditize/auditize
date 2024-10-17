@@ -62,11 +62,13 @@ async def get_log_filter(user_id: UUID, log_filter_id: UUID) -> LogFilter:
 
 
 async def get_log_filters(
-    user_id: UUID, query: str, page: int, page_size: int
+    user_id: UUID, *, query: str, is_favorite: bool | None, page: int, page_size: int
 ) -> tuple[list[LogFilter], PagePaginationInfo]:
     doc_filter = {"user_id": user_id}
     if query:
         doc_filter["$text"] = {"$search": query}
+    if is_favorite is not None:
+        doc_filter["is_favorite"] = is_favorite
     results, page_info = await find_paginated_by_page(
         get_dbm().core_db.log_filters,
         filter=doc_filter,
