@@ -250,6 +250,7 @@ export default {
       dirty: "Filter has unsaved changes",
       setFavorite: "Mark filter as favorite",
       unsetFavorite: "Unmark filter as favorite",
+      clear: "Clear filter",
       form: {
         name: {
           label: "Name",

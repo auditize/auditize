@@ -253,6 +253,7 @@ export default {
       dirty: "Filtre modifié",
       setFavorite: "Marquer le filtre comme favori",
       unsetFavorite: "Retirer le filtre des favoris",
+      clear: "Effacer le filtre",
       form: {
         name: {
           label: "Nom",
