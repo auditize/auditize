@@ -250,6 +250,7 @@ export default {
       updateError: "Impossible de mettre à jour le filtre",
       updateSuccess: "Le filtre a été mis à jour",
       manage: "Gérer les filtres",
+      dirty: "Filtre modifié",
       form: {
         name: {
           label: "Nom",

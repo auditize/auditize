@@ -1,4 +1,4 @@
-import { Flex, Stack, Title } from "@mantine/core";
+import { Flex, Stack, Title, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconLogs } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
@@ -71,7 +71,7 @@ export function BaseLogs({
 
 export function Logs() {
   const { t } = useTranslation();
-  const { filterName } = useLogNavigationState();
+  const { filterName, isFilterDirty } = useLogNavigationState();
 
   return (
     <div>
@@ -84,6 +84,13 @@ export function Logs() {
           })}
         />
         {filterName ? filterName : t("log.logs")}
+        {isFilterDirty ? (
+          <Tooltip label={t("log.filter.dirty")} position="bottom">
+            <span style={{ color: "var(--mantine-color-blue214-6)" }}>
+              {" *"}
+            </span>
+          </Tooltip>
+        ) : undefined}
       </Title>
       <BaseLogs />
     </div>

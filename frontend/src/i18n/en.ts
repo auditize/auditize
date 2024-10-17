@@ -247,6 +247,7 @@ export default {
       updateError: "Unable to update filter",
       updateSuccess: "The filter has been updated",
       manage: "Manage filters",
+      dirty: "Filter has unsaved changes",
       form: {
         name: {
           label: "Name",

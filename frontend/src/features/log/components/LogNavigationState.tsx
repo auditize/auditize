@@ -26,6 +26,7 @@ type LogContextProps = {
   setSelectedColumns: (columns: string[] | null) => void;
   filterId?: string;
   filterName?: string;
+  isFilterDirty?: boolean;
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
@@ -200,6 +201,9 @@ export function LogNavigationStateProvider({
         setSelectedColumns,
         filterId: filterId ?? undefined,
         filterName: filterQuery.data?.name,
+        isFilterDirty: filterQuery.data
+          ? urlSearchParams.has("repoId")
+          : undefined,
       }}
     >
       {children}
