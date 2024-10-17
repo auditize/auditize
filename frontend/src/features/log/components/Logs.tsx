@@ -71,6 +71,7 @@ export function BaseLogs({
 
 export function Logs() {
   const { t } = useTranslation();
+  const { filterName } = useLogNavigationState();
 
   return (
     <div>
@@ -82,7 +83,7 @@ export function Logs() {
             marginRight: "0.25rem",
           })}
         />
-        {t("log.logs")}
+        {filterName ? filterName : t("log.logs")}
       </Title>
       <BaseLogs />
     </div>
