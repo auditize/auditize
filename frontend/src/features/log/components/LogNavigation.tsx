@@ -72,6 +72,7 @@ function SearchParamFieldPopover({
   isSet,
   removable = true,
   loading = false,
+  focusTrap = false,
   onChange,
   onRemove,
   children,
@@ -81,6 +82,7 @@ function SearchParamFieldPopover({
   isSet: boolean;
   removable?: boolean;
   loading?: boolean;
+  focusTrap?: boolean;
   onChange: (opened: boolean) => void;
   onRemove: () => void;
   children: React.ReactNode;
@@ -90,7 +92,7 @@ function SearchParamFieldPopover({
       opened={opened}
       onChange={onChange}
       keepMounted
-      trapFocus
+      trapFocus={focusTrap}
       withinPortal={false}
       shadow="md"
     >
@@ -310,6 +312,7 @@ function BaseTextInputSearchParamField({
       onChange={setOpened}
       removable={!FIXED_SEARCH_PARAM_NAMES.has(name)}
       onRemove={() => onRemove(name)}
+      focusTrap={true}
     >
       <TextInput
         placeholder={label}
