@@ -130,6 +130,18 @@ function LogFilterClearAction() {
   );
 }
 
+function LogTitleIcon() {
+  return (
+    <IconLogs
+      style={iconBesideText({
+        size: "26",
+        top: "4px",
+        marginRight: "0.25rem",
+      })}
+    />
+  );
+}
+
 function LogFilterTitle({
   filter,
   isDirty,
@@ -140,12 +152,9 @@ function LogFilterTitle({
   const { t } = useTranslation();
 
   return (
-    <Group gap="xs">
-      <ActionIcon.Group style={{ position: "relative", top: rem(2) }}>
-        <LogFilterFavoriteAction filter={filter} />
-        <LogFilterClearAction />
-      </ActionIcon.Group>
+    <Group gap="lg">
       <span>
+        <LogTitleIcon />
         {filter.name}
         {isDirty ? (
           <Tooltip label={t("log.filter.dirty")} position="bottom">
@@ -155,6 +164,10 @@ function LogFilterTitle({
           </Tooltip>
         ) : undefined}
       </span>
+      <ActionIcon.Group style={{ position: "relative", top: rem(2) }}>
+        <LogFilterFavoriteAction filter={filter} />
+        <LogFilterClearAction />
+      </ActionIcon.Group>
     </Group>
   );
 }
@@ -170,13 +183,7 @@ export function Logs() {
           <LogFilterTitle filter={filter} isDirty={isFilterDirty!} />
         ) : (
           <>
-            <IconLogs
-              style={iconBesideText({
-                size: "26",
-                top: "4px",
-                marginRight: "0.25rem",
-              })}
-            />
+            <LogTitleIcon />
             {t("log.logs")}
           </>
         )}
