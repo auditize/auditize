@@ -1147,7 +1147,7 @@ export function ExtraActions({
   withLogFilters: boolean;
 }) {
   const { t } = useTranslation();
-  const { filterId } = useLogNavigationState();
+  const { filter } = useLogNavigationState();
   const redirectToFilter = useRedirectToFilter(withLogFilters);
   const [
     filterPopoverOpened,
@@ -1162,10 +1162,10 @@ export function ExtraActions({
     queryFn: () => getLogFilters().then(([filters]) => filters),
     enabled: withLogFilters,
   });
-  const filterMutation = useLogFilterMutation(filterId!, {
+  const filterMutation = useLogFilterMutation(filter?.id!, {
     onSuccess: () => {
       notifySuccess(t("log.filter.updateSuccess"));
-      redirectToFilter(filterId!);
+      redirectToFilter(filter?.id!);
     },
     onError: () => {
       notifyError(t("log.filter.updateError"));
@@ -1245,7 +1245,7 @@ export function ExtraActions({
               >
                 {t("log.filter.save")}
               </Menu.Item>
-              {filterId && (
+              {filter && (
                 <Menu.Item
                   component="a"
                   onClick={() =>

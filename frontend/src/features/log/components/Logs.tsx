@@ -71,7 +71,7 @@ export function BaseLogs({
 
 export function Logs() {
   const { t } = useTranslation();
-  const { filterName, isFilterDirty } = useLogNavigationState();
+  const { filter, isFilterDirty } = useLogNavigationState();
 
   return (
     <div>
@@ -83,7 +83,7 @@ export function Logs() {
             marginRight: "0.25rem",
           })}
         />
-        {filterName ? filterName : t("log.logs")}
+        {filter ? filter.name : t("log.logs")}
         {isFilterDirty ? (
           <Tooltip label={t("log.filter.dirty")} position="bottom">
             <span style={{ color: "var(--mantine-color-blue214-6)" }}>
