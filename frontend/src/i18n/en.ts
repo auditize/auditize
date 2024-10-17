@@ -254,6 +254,10 @@ export default {
           placeholder: "Filter name",
           required: "Filter name is required.",
         },
+        isFavorite: {
+          label: "Favorite",
+          placeholder: "Mark filter as favorite",
+        },
       },
       create: {
         title: "Save log filter",

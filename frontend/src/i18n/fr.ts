@@ -257,6 +257,10 @@ export default {
           placeholder: "Nom du filtre",
           required: "Le nom du filtre est requis.",
         },
+        isFavorite: {
+          label: "Favori",
+          placeholder: "Marquer le filtre comme favori",
+        },
       },
       create: {
         title: "Sauvegarder le filtre",

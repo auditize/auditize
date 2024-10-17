@@ -1,4 +1,4 @@
-import { Stack, TextInput } from "@mantine/core";
+import { Stack, Switch, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,7 @@ function useLogFilterForm(values: { name?: string }) {
   return useForm({
     initialValues: {
       name: "",
+      isFavorite: false,
     },
     validate: {
       name: isNotEmpty(t("log.filter.form.name.required")),
@@ -34,6 +35,18 @@ function LogFilterForm({ form }: { form: UseFormReturnType<any> }) {
         data-autofocus
         {...form.getInputProps("name")}
       />
+      <Switch.Group
+        label={t("log.filter.form.isFavorite.label")}
+        value={form.values.isFavorite ? ["isFavorite"] : []}
+        onChange={(values) => {
+          form.setFieldValue("isFavorite", values.includes("isFavorite"));
+        }}
+      >
+        <Switch
+          label={t("log.filter.form.isFavorite.placeholder")}
+          value="isFavorite"
+        />
+      </Switch.Group>
     </Stack>
   );
 }
@@ -101,8 +114,8 @@ export function LogFilterEdition({
       queryKeyForLoad={["logFilter", filterId]}
       queryFnForLoad={() => getLogFilter(filterId!)}
       onDataLoaded={(data) => {
-        const { name } = data;
-        form.setValues({ name });
+        const { name, isFavorite } = data;
+        form.setValues({ name, isFavorite });
       }}
       title={t("log.filter.edit.title")}
       onSubmit={form.onSubmit}

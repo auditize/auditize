@@ -14,6 +14,7 @@ export interface LogFilterCreation {
   repoId: string;
   searchParams: Record<string, string>;
   columns: string[];
+  isFavorite: boolean;
 }
 
 export interface LogFilter extends LogFilterCreation {
@@ -26,6 +27,7 @@ export interface LogFilterUpdate {
   repoId?: string;
   searchParams?: Record<string, string>;
   columns?: string[];
+  isFavorite?: boolean;
 }
 
 export async function createLogFilter(
