@@ -1,6 +1,11 @@
-import { Anchor, rem, Tooltip } from "@mantine/core";
+import { Anchor, rem, Text, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
-import { IconFilter, IconStar, IconStarFilled } from "@tabler/icons-react";
+import {
+  IconCornerDownLeft,
+  IconFilter,
+  IconStar,
+  IconStarFilled,
+} from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
@@ -60,13 +65,21 @@ export function LogFilterManagement() {
                   marginRight: rem(8),
                 })}
               />
+              <Text span>{filter.name}</Text>
               <Tooltip label={t("log.filter.list.apply")} withArrow>
                 <Anchor
                   component={NavLink}
                   to={`/logs?filterId=${filter.id}`}
                   onClick={(e) => e.stopPropagation()}
+                  pl={rem(10)}
                 >
-                  {filter.name}
+                  <IconCornerDownLeft
+                    style={iconBesideText({
+                      size: "18",
+                      top: "3px",
+                      marginRight: rem(8),
+                    })}
+                  />
                 </Anchor>
               </Tooltip>
             </>
