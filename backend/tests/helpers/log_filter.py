@@ -65,6 +65,7 @@ class PreparedLogFilter:
                 ),
             },
             "columns": self.data["columns"],
+            "is_favorite": self.data.get("is_favorite", False),
             **(extra or {}),
             "repo_id": uuid.UUID(repo_id),
         }
@@ -80,5 +81,6 @@ class PreparedLogFilter:
                 **self.data["search_params"],
             },
             "columns": self.data["columns"],
+            "is_favorite": self.data.get("is_favorite", False),
             **(extra or {}),
         }

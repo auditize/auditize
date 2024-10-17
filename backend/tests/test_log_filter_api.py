@@ -143,6 +143,21 @@ async def test_log_filter_create_all_custom_field_columns(
     )
 
 
+async def test_log_filter_create_favorite(
+    log_read_user: PreparedUser, repo: PreparedRepo
+):
+    await _test_log_filter_creation(
+        log_read_user,
+        {
+            "name": "my filter",
+            "repo_id": repo.id,
+            "search_params": {},
+            "columns": [],
+            "is_favorite": True,
+        },
+    )
+
+
 async def test_log_filter_create_missing_param(
     log_read_user: PreparedUser, repo: PreparedRepo
 ):
@@ -381,6 +396,7 @@ async def test_log_filter_update_all_params(
                 "action_type",
                 "action_category",
             ],
+            "is_favorite": True,
         },
     )
 
@@ -489,6 +505,7 @@ async def test_log_filter_get_all_fields_set(
                 "source.custom_source_field",
                 "details.custom_details_field",
             ],
+            "is_favorite": True,
         }
     )
     async with log_read_user.client() as client:
