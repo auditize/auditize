@@ -1,10 +1,20 @@
-import { Flex, Stack, Title, Tooltip } from "@mantine/core";
+import {
+  ActionIcon,
+  Flex,
+  Group,
+  rem,
+  Stack,
+  Title,
+  Tooltip,
+} from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconLogs } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
 import Message from "@/components/Message";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { LogFilterFavoriteIcon } from "@/features/log-filter";
+import { LogFilter, useLogFilterMutation } from "@/features/log-filter/api";
 import { useLogRepoListQuery } from "@/features/repo";
 import { iconBesideText } from "@/utils/ui";
 
@@ -69,6 +79,66 @@ export function BaseLogs({
   }
 }
 
+function LogFilterFavoriteAction({ filter }: { filter: LogFilter }) {
+  const { t } = useTranslation();
+  const filterMutation = useLogFilterMutation(filter.id);
+
+  return (
+    <Tooltip
+      label={
+        filter.isFavorite
+          ? t("log.filter.unsetFavorite")
+          : t("log.filter.setFavorite")
+      }
+      position="bottom"
+      withArrow
+    >
+      <ActionIcon
+        onClick={() =>
+          filterMutation.mutate({ isFavorite: !filter.isFavorite })
+        }
+        loading={filterMutation.isPending}
+        loaderProps={{ type: "dots" }}
+        variant="default"
+        size="md"
+      >
+        <LogFilterFavoriteIcon
+          value={filter.isFavorite}
+          style={{ width: rem(20) }}
+        />
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+function LogFilterTitle({
+  filter,
+  isDirty,
+}: {
+  filter: LogFilter;
+  isDirty: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Group gap="xs">
+      <ActionIcon.Group style={{ position: "relative", top: rem(2) }}>
+        <LogFilterFavoriteAction filter={filter} />
+      </ActionIcon.Group>
+      <span>
+        {filter.name}
+        {isDirty ? (
+          <Tooltip label={t("log.filter.dirty")} position="bottom">
+            <span style={{ color: "var(--mantine-color-blue214-6)" }}>
+              {" *"}
+            </span>
+          </Tooltip>
+        ) : undefined}
+      </span>
+    </Group>
+  );
+}
+
 export function Logs() {
   const { t } = useTranslation();
   const { filter, isFilterDirty } = useLogNavigationState();
@@ -76,21 +146,20 @@ export function Logs() {
   return (
     <div>
       <Title order={1} pb="xl" fw={550} size="26">
-        <IconLogs
-          style={iconBesideText({
-            size: "26",
-            top: "4px",
-            marginRight: "0.25rem",
-          })}
-        />
-        {filter ? filter.name : t("log.logs")}
-        {isFilterDirty ? (
-          <Tooltip label={t("log.filter.dirty")} position="bottom">
-            <span style={{ color: "var(--mantine-color-blue214-6)" }}>
-              {" *"}
-            </span>
-          </Tooltip>
-        ) : undefined}
+        {filter ? (
+          <LogFilterTitle filter={filter} isDirty={isFilterDirty!} />
+        ) : (
+          <>
+            <IconLogs
+              style={iconBesideText({
+                size: "26",
+                top: "4px",
+                marginRight: "0.25rem",
+              })}
+            />
+            {t("log.logs")}
+          </>
+        )}
       </Title>
       <BaseLogs />
     </div>

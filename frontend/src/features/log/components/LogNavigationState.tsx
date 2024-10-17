@@ -100,7 +100,7 @@ export function LogNavigationStateProvider({
     urlSearchParams.get("repoId") || "",
   );
   const filterQuery = useQuery({
-    queryKey: ["logFilter", filterId],
+    queryKey: ["logFilters", filterId],
     queryFn: () => getLogFilter(filterId!),
     enabled: !!filterId,
   });

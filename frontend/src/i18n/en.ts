@@ -248,6 +248,8 @@ export default {
       updateSuccess: "The filter has been updated",
       manage: "Manage filters",
       dirty: "Filter has unsaved changes",
+      setFavorite: "Mark filter as favorite",
+      unsetFavorite: "Unmark filter as favorite",
       form: {
         name: {
           label: "Name",

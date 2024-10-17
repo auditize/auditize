@@ -1,11 +1,6 @@
 import { Anchor, rem, Text, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
-import {
-  IconCornerDownLeft,
-  IconFilter,
-  IconStar,
-  IconStarFilled,
-} from "@tabler/icons-react";
+import { IconCornerDownLeft, IconFilter } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
@@ -15,20 +10,7 @@ import { iconBesideText } from "@/utils/ui";
 import { getLogFilters, LogFilter } from "../api";
 import { LogFilterDeletion } from "./LogFilterDeletion";
 import { LogFilterEdition } from "./LogFilterEditor";
-
-function FavoriteIcon({
-  value,
-  style,
-}: {
-  value: boolean;
-  style?: React.CSSProperties;
-}) {
-  return value ? (
-    <IconStarFilled style={style} color="var(--mantine-color-yellow-3)" />
-  ) : (
-    <IconStar style={style} color="var(--mantine-color-gray-3)" />
-  );
-}
+import { LogFilterFavoriteIcon } from "./LogFilterFavoriteIcon";
 
 export function LogFilterManagement() {
   const { t } = useTranslation();
@@ -57,7 +39,7 @@ export function LogFilterManagement() {
           t("log.filter.list.column.name"),
           (filter: LogFilter) => (
             <>
-              <FavoriteIcon
+              <LogFilterFavoriteIcon
                 value={filter.isFavorite}
                 style={iconBesideText({
                   size: "18",

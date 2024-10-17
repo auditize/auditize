@@ -251,6 +251,8 @@ export default {
       updateSuccess: "Le filtre a été mis à jour",
       manage: "Gérer les filtres",
       dirty: "Filtre modifié",
+      setFavorite: "Marquer le filtre comme favori",
+      unsetFavorite: "Retirer le filtre des favoris",
       form: {
         name: {
           label: "Nom",

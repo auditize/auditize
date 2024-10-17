@@ -67,7 +67,7 @@ export function useLogFilterMutation(
     mutationFn: (params: LogFilterUpdate) => updateLogFilter(id, params),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["logFilter", id],
+        queryKey: ["logFilters"],
       });
       if (onSuccess) {
         onSuccess();

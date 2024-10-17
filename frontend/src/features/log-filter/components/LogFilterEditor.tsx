@@ -111,7 +111,7 @@ export function LogFilterEdition({
     <ResourceEdition
       resourceId={filterId}
       onClose={onClose}
-      queryKeyForLoad={["logFilter", filterId]}
+      queryKeyForLoad={["logFilters", filterId]}
       queryFnForLoad={() => getLogFilter(filterId!)}
       onDataLoaded={(data) => {
         const { name, isFavorite } = data;
