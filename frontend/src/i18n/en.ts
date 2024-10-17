@@ -248,8 +248,8 @@ export default {
       updateSuccess: "The filter has been updated",
       manage: "Manage filters",
       dirty: "Filter has unsaved changes",
-      setFavorite: "Mark filter as favorite",
-      unsetFavorite: "Unmark filter as favorite",
+      setFavorite: "Add filter to favorites",
+      unsetFavorite: "Remove filter from favorites",
       clear: "Clear filter",
       form: {
         name: {
@@ -259,7 +259,7 @@ export default {
         },
         isFavorite: {
           label: "Favorite",
-          placeholder: "Mark filter as favorite",
+          placeholder: "Include filter in favorites",
         },
       },
       create: {

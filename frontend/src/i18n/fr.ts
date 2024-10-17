@@ -251,7 +251,7 @@ export default {
       updateSuccess: "Le filtre a été mis à jour",
       manage: "Gérer les filtres",
       dirty: "Filtre modifié",
-      setFavorite: "Marquer le filtre comme favori",
+      setFavorite: "Ajouter le filtre aux favoris",
       unsetFavorite: "Retirer le filtre des favoris",
       clear: "Effacer le filtre",
       form: {
@@ -262,7 +262,7 @@ export default {
         },
         isFavorite: {
           label: "Favori",
-          placeholder: "Marquer le filtre comme favori",
+          placeholder: "Inclure ce filtre dans les favoris",
         },
       },
       create: {
