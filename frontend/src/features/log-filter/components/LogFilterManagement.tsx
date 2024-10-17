@@ -1,6 +1,6 @@
-import { Anchor, Tooltip } from "@mantine/core";
+import { Anchor, rem, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
-import { IconFilter } from "@tabler/icons-react";
+import { IconFilter, IconStar, IconStarFilled } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
@@ -10,6 +10,20 @@ import { iconBesideText } from "@/utils/ui";
 import { getLogFilters, LogFilter } from "../api";
 import { LogFilterDeletion } from "./LogFilterDeletion";
 import { LogFilterEdition } from "./LogFilterEditor";
+
+function FavoriteIcon({
+  value,
+  style,
+}: {
+  value: boolean;
+  style?: React.CSSProperties;
+}) {
+  return value ? (
+    <IconStarFilled style={style} color="var(--mantine-color-yellow-3)" />
+  ) : (
+    <IconStar style={style} color="var(--mantine-color-gray-3)" />
+  );
+}
 
 export function LogFilterManagement() {
   const { t } = useTranslation();
@@ -37,15 +51,25 @@ export function LogFilterManagement() {
         [
           t("log.filter.list.column.name"),
           (filter: LogFilter) => (
-            <Tooltip label={t("log.filter.list.apply")} withArrow>
-              <Anchor
-                component={NavLink}
-                to={`/logs?filterId=${filter.id}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {filter.name}
-              </Anchor>
-            </Tooltip>
+            <>
+              <FavoriteIcon
+                value={filter.isFavorite}
+                style={iconBesideText({
+                  size: "18",
+                  top: "3px",
+                  marginRight: rem(8),
+                })}
+              />
+              <Tooltip label={t("log.filter.list.apply")} withArrow>
+                <Anchor
+                  component={NavLink}
+                  to={`/logs?filterId=${filter.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {filter.name}
+                </Anchor>
+              </Tooltip>
+            </>
           ),
         ],
       ]}
