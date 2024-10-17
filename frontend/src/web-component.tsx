@@ -9,7 +9,7 @@ import ReactDOM from "react-dom/client";
 import { theme } from "@/theme";
 
 import appCss from "./App.css?inline";
-import { LogNavigationStateProvider, Logs } from "./features/log";
+import { BaseLogs, LogNavigationStateProvider } from "./features/log";
 import { I18nProvider } from "./i18n";
 import layersCss from "./layers.css?inline";
 import { enableAccessTokenAuthentication, setBaseURL } from "./utils/axios";
@@ -114,7 +114,7 @@ class LogWebComponent extends HTMLElement {
                   accessTokenProvider={accessTokenProvider}
                   refreshInterval={accessTokenRefreshInterval}
                 >
-                  <Logs
+                  <BaseLogs
                     withRepoSearchParam={false}
                     withLogFilters={false}
                     withScrollToTop={false}

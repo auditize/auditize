@@ -1,17 +1,19 @@
-import { Flex, Stack } from "@mantine/core";
+import { Flex, Stack, Title } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
+import { IconLogs } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
 import Message from "@/components/Message";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { useLogRepoListQuery } from "@/features/repo";
+import { iconBesideText } from "@/utils/ui";
 
 import { LogSearchParams } from "../LogSearchParams";
 import { LogNavigation } from "./LogNavigation";
 import { useLogNavigationState } from "./LogNavigationState";
 import { LogTable } from "./LogTable";
 
-export function Logs({
+export function BaseLogs({
   withRepoSearchParam = true,
   withLogFilters = true,
   withScrollToTop = true,
@@ -36,7 +38,7 @@ export function Logs({
     );
   } else {
     return (
-      <Stack gap="md" pt="xs">
+      <Stack gap="md">
         <LogNavigation
           params={searchParams}
           onChange={(newSearchParams) => {
@@ -65,4 +67,24 @@ export function Logs({
       </Stack>
     );
   }
+}
+
+export function Logs() {
+  const { t } = useTranslation();
+
+  return (
+    <div>
+      <Title order={1} pb="xl" fw={550} size="26">
+        <IconLogs
+          style={iconBesideText({
+            size: "26",
+            top: "4px",
+            marginRight: "0.25rem",
+          })}
+        />
+        {t("log.logs")}
+      </Title>
+      <BaseLogs />
+    </div>
+  );
 }
