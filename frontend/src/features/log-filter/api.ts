@@ -37,11 +37,23 @@ export async function createLogFilter(
   return data.id;
 }
 
-export async function getLogFilters(
-  search: string | null = null,
+export async function getLogFilters({
+  search = null,
+  isFavorite,
   page = 1,
-): Promise<[LogFilter[], PagePaginationInfo]> {
-  return await reqGetPaginated("/users/me/logs/filters", { q: search, page });
+  pageSize = 10,
+}: {
+  search?: string | null;
+  isFavorite?: boolean;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<[LogFilter[], PagePaginationInfo]> {
+  return await reqGetPaginated("/users/me/logs/filters", {
+    q: search,
+    isFavorite,
+    page,
+    pageSize,
+  });
 }
 
 export async function getLogFilter(logFilterId: string): Promise<LogFilter> {

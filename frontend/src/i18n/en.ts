@@ -242,6 +242,7 @@ export default {
     filter: {
       filter: "Filter",
       filters: "Filters",
+      favoriteFilters: "Favorite filters",
       save: "Save filter",
       update: "Update current filter",
       updateError: "Unable to update filter",

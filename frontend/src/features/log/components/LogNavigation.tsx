@@ -1158,8 +1158,11 @@ export function ExtraActions({
     { open: openFilterDrawer, close: closeFilterDrawer },
   ] = useDisclosure(false);
   const filterListQuery = useQuery({
-    queryKey: ["logFilters"],
-    queryFn: () => getLogFilters().then(([filters]) => filters),
+    queryKey: ["logFilters", { isFavorite: true }],
+    queryFn: () =>
+      getLogFilters({ isFavorite: true, pageSize: 10 }).then(
+        ([filters]) => filters,
+      ),
     enabled: withLogFilters,
   });
   const filterMutation = useLogFilterMutation(filter?.id!, {
@@ -1223,21 +1226,24 @@ export function ExtraActions({
           </Menu.Item>
           {withLogFilters && (
             <>
+              {filterListQuery.data && filterListQuery.data.length > 0 && (
+                <>
+                  <Menu.Divider />
+                  <Menu.Label>{t("log.filter.favoriteFilters")}</Menu.Label>
+                  {filterListQuery.data.map((filter) => (
+                    <Menu.Item
+                      key={filter.id}
+                      component={NavLink}
+                      to={`/logs?filterId=${filter.id}`}
+                      leftSection={<IconFilter style={iconSize(14)} />}
+                    >
+                      {filter.name}
+                    </Menu.Item>
+                  ))}
+                </>
+              )}
               <Menu.Divider />
               <Menu.Label>{t("log.filter.filters")}</Menu.Label>
-              {filterListQuery.data?.map((filter) => (
-                <Menu.Item
-                  key={filter.id}
-                  component={NavLink}
-                  to={`/logs?filterId=${filter.id}`}
-                  leftSection={<IconFilter style={iconSize(14)} />}
-                >
-                  {filter.name}
-                </Menu.Item>
-              ))}
-              {filterListQuery.data && filterListQuery.data.length > 0 && (
-                <Menu.Divider />
-              )}
               <Menu.Item
                 component="a"
                 onClick={openFilterPopover}

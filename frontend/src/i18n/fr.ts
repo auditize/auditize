@@ -245,6 +245,7 @@ export default {
     filter: {
       filter: "Filtre",
       filters: "Filtres",
+      favoriteFilters: "Filtres favoris",
       save: "Sauvegarder le filtre",
       update: "Mettre à jour le filtre actif",
       updateError: "Impossible de mettre à jour le filtre",

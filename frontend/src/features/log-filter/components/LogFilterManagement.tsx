@@ -33,7 +33,7 @@ export function LogFilterManagement() {
       name={t("log.filter.filter")}
       stateMode="useState"
       queryKey={(search, page) => ["logFilters", search, page]}
-      queryFn={(search, page) => () => getLogFilters(search, page)}
+      queryFn={(search, page) => () => getLogFilters({ search, page })}
       columnDefinitions={[
         [
           t("log.filter.list.column.name"),
