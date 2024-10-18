@@ -1,8 +1,8 @@
-import { Anchor, rem, Text, Tooltip } from "@mantine/core";
+import { ActionIcon, rem, Text, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconCornerDownLeft, IconFilter } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { iconBesideText } from "@/utils/ui";
@@ -14,6 +14,7 @@ import { LogFilterFavoriteIcon } from "./LogFilterFavoriteIcon";
 
 function LogFilterNameColumn({ filter }: { filter: LogFilter }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <>
@@ -27,20 +28,22 @@ function LogFilterNameColumn({ filter }: { filter: LogFilter }) {
       />
       <Text span>{filter.name}</Text>
       <Tooltip label={t("log.filter.list.apply")} withArrow>
-        <Anchor
-          component={NavLink}
-          to={`/logs?filterId=${filter.id}`}
-          onClick={(e) => e.stopPropagation()}
-          pl={rem(10)}
+        <ActionIcon
+          onClick={(e) => {
+            navigate(`/logs?filterId=${filter.id}`);
+            e.stopPropagation();
+          }}
+          variant="transparent"
+          ml={rem(10)}
         >
           <IconCornerDownLeft
             style={iconBesideText({
               size: "18",
-              top: "3px",
+              top: "5px",
               marginRight: rem(8),
             })}
           />
-        </Anchor>
+        </ActionIcon>
       </Tooltip>
     </>
   );
