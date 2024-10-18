@@ -253,6 +253,7 @@ export default {
       setFavorite: "Add filter to favorites",
       unsetFavorite: "Remove filter from favorites",
       clear: "Clear filter",
+      restore: "Restore filter",
       form: {
         name: {
           label: "Name",

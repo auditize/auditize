@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
-import { IconLogs, IconX } from "@tabler/icons-react";
+import { IconLogs, IconRestore, IconX } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -112,6 +112,23 @@ function LogFilterFavoriteAction({ filter }: { filter: LogFilter }) {
   );
 }
 
+function LogFilterRestoreAction({ filter }: { filter: LogFilter }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  return (
+    <Tooltip label={t("log.filter.restore")} position="bottom">
+      <ActionIcon
+        onClick={() => navigate(`/logs?filterId=${filter.id}`)}
+        variant="default"
+        size="md"
+      >
+        <IconRestore style={{ width: rem(20) }} />
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
 function LogFilterClearAction() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -166,6 +183,7 @@ function LogFilterTitle({
       </span>
       <ActionIcon.Group style={{ position: "relative", top: rem(2) }}>
         <LogFilterFavoriteAction filter={filter} />
+        {isDirty && <LogFilterRestoreAction filter={filter} />}
         <LogFilterClearAction />
       </ActionIcon.Group>
     </Group>
