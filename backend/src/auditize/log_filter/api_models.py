@@ -140,6 +140,14 @@ def _ColumnsField(**kwargs):  # noqa
     )
 
 
+def _IsFavoriteField(**kwargs):  # noqa
+    return Field(
+        description="Whether the filter is marked as favorite",
+        json_schema_extra={"example": True},
+        **kwargs,
+    )
+
+
 class _ValidateColumnsMixin:
     @field_validator("columns")
     def validate_columns(cls, columns: list[str]) -> list[str]:
@@ -159,6 +167,7 @@ class LogFilterCreationRequest(BaseModel, _ValidateColumnsMixin):
     repo_id: UUID = _RepoIdField()
     search_params: LogFilterSearchParamsData = _SearchParamsField()
     columns: list[str] = _ColumnsField()
+    is_favorite: bool = _IsFavoriteField(default=False)
 
 
 class LogFilterCreationResponse(BaseModel):
@@ -170,6 +179,7 @@ class LogFilterUpdateRequest(BaseModel, _ValidateColumnsMixin):
     repo_id: UUID = _RepoIdField(default=None)
     search_params: LogFilterSearchParamsData = _SearchParamsField(default=None)
     columns: list[str] = _ColumnsField(default=None)
+    is_favorite: bool = _IsFavoriteField(default=None)
 
 
 class LogFilterReadingResponse(BaseModel, HasDatetimeSerialization):
@@ -179,6 +189,7 @@ class LogFilterReadingResponse(BaseModel, HasDatetimeSerialization):
     repo_id: UUID = _RepoIdField()
     search_params: LogFilterSearchParamsData = _SearchParamsField()
     columns: list[str] = _ColumnsField()
+    is_favorite: bool = _IsFavoriteField()
 
 
 class LogFilterListResponse(PagePaginatedResponse[LogFilter, LogFilterReadingResponse]):

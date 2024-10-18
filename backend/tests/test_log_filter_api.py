@@ -143,6 +143,21 @@ async def test_log_filter_create_all_custom_field_columns(
     )
 
 
+async def test_log_filter_create_favorite(
+    log_read_user: PreparedUser, repo: PreparedRepo
+):
+    await _test_log_filter_creation(
+        log_read_user,
+        {
+            "name": "my filter",
+            "repo_id": repo.id,
+            "search_params": {},
+            "columns": [],
+            "is_favorite": True,
+        },
+    )
+
+
 async def test_log_filter_create_missing_param(
     log_read_user: PreparedUser, repo: PreparedRepo
 ):
@@ -381,6 +396,7 @@ async def test_log_filter_update_all_params(
                 "action_type",
                 "action_category",
             ],
+            "is_favorite": True,
         },
     )
 
@@ -489,6 +505,7 @@ async def test_log_filter_get_all_fields_set(
                 "source.custom_source_field",
                 "details.custom_details_field",
             ],
+            "is_favorite": True,
         }
     )
     async with log_read_user.client() as client:
@@ -569,6 +586,76 @@ async def test_log_filter_list_search(log_read_user: PreparedUser, repo: Prepare
             "/users/me/logs/filters?q=filter_1",
             expected_json={
                 "items": [log_filters[1].expected_api_response()],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
+        )
+
+
+async def test_log_filter_list_search_is_favorite(
+    log_read_user: PreparedUser, repo: PreparedRepo
+):
+    favorite_filter = await log_read_user.create_log_filter(
+        {
+            "name": "favorite filter",
+            "repo_id": repo.id,
+            "search_params": {},
+            "columns": [],
+            "is_favorite": True,
+        }
+    )
+    non_favorite_filter = await log_read_user.create_log_filter(
+        {
+            "name": "non favorite filter",
+            "repo_id": repo.id,
+            "search_params": {},
+            "columns": [],
+        }
+    )
+
+    async with log_read_user.client() as client:
+        client: HttpTestHelper
+
+        # Test without is_favorite
+        await client.assert_get_ok(
+            "/users/me/logs/filters",
+            expected_json={
+                "items": [
+                    favorite_filter.expected_api_response(),
+                    non_favorite_filter.expected_api_response(),
+                ],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 2,
+                    "total_pages": 1,
+                },
+            },
+        )
+
+        # Test with is_favorite=true
+        await client.assert_get_ok(
+            "/users/me/logs/filters?is_favorite=true",
+            expected_json={
+                "items": [favorite_filter.expected_api_response()],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
+        )
+
+        # Test with is_favorite=false
+        await client.assert_get_ok(
+            "/users/me/logs/filters?is_favorite=false",
+            expected_json={
+                "items": [non_favorite_filter.expected_api_response()],
                 "pagination": {
                     "page": 1,
                     "page_size": 10,

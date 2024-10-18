@@ -24,7 +24,8 @@ type LogContextProps = {
   setSearchParams: (params: LogSearchParams) => void;
   selectedColumns: string[];
   setSelectedColumns: (columns: string[] | null) => void;
-  filterId?: string;
+  filter?: LogFilter;
+  isFilterDirty?: boolean;
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
@@ -99,7 +100,7 @@ export function LogNavigationStateProvider({
     urlSearchParams.get("repoId") || "",
   );
   const filterQuery = useQuery({
-    queryKey: ["logFilter", filterId],
+    queryKey: ["logFilters", filterId],
     queryFn: () => getLogFilter(filterId!),
     enabled: !!filterId,
   });
@@ -197,7 +198,10 @@ export function LogNavigationStateProvider({
         setSearchParams: setLogSearchParams,
         selectedColumns,
         setSelectedColumns,
-        filterId: filterId ?? undefined,
+        filter: filterQuery.data,
+        isFilterDirty: filterQuery.data
+          ? urlSearchParams.has("repoId")
+          : undefined,
       }}
     >
       {children}

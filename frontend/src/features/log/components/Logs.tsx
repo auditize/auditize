@@ -1,17 +1,30 @@
-import { Flex, Stack } from "@mantine/core";
+import {
+  ActionIcon,
+  Flex,
+  Group,
+  rem,
+  Stack,
+  Title,
+  Tooltip,
+} from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
+import { IconLogs, IconRestore, IconX } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import Message from "@/components/Message";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { LogFilterFavoriteIcon } from "@/features/log-filter";
+import { LogFilter, useLogFilterMutation } from "@/features/log-filter/api";
 import { useLogRepoListQuery } from "@/features/repo";
+import { iconBesideText } from "@/utils/ui";
 
 import { LogSearchParams } from "../LogSearchParams";
 import { LogNavigation } from "./LogNavigation";
 import { useLogNavigationState } from "./LogNavigationState";
 import { LogTable } from "./LogTable";
 
-export function Logs({
+export function BaseLogs({
   withRepoSearchParam = true,
   withLogFilters = true,
   withScrollToTop = true,
@@ -36,7 +49,7 @@ export function Logs({
     );
   } else {
     return (
-      <Stack gap="md" pt="xs">
+      <Stack gap="md">
         <LogNavigation
           params={searchParams}
           onChange={(newSearchParams) => {
@@ -65,4 +78,135 @@ export function Logs({
       </Stack>
     );
   }
+}
+
+function LogFilterFavoriteAction({ filter }: { filter: LogFilter }) {
+  const { t } = useTranslation();
+  const filterMutation = useLogFilterMutation(filter.id);
+
+  return (
+    <Tooltip
+      label={
+        filter.isFavorite
+          ? t("log.filter.unsetFavorite")
+          : t("log.filter.setFavorite")
+      }
+      position="bottom"
+      withArrow
+    >
+      <ActionIcon
+        onClick={() =>
+          filterMutation.mutate({ isFavorite: !filter.isFavorite })
+        }
+        loading={filterMutation.isPending}
+        loaderProps={{ type: "dots" }}
+        variant="default"
+        size="md"
+      >
+        <LogFilterFavoriteIcon
+          value={filter.isFavorite}
+          style={{ width: rem(20) }}
+        />
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+function LogFilterRestoreAction({ filter }: { filter: LogFilter }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  return (
+    <Tooltip label={t("log.filter.restore")} position="bottom">
+      <ActionIcon
+        onClick={() => navigate(`/logs?filterId=${filter.id}`)}
+        variant="default"
+        size="md"
+      >
+        <IconRestore style={{ width: rem(20) }} />
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+function LogFilterClearAction() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { searchParams } = useLogNavigationState();
+
+  return (
+    <Tooltip label={t("log.filter.clear")} position="bottom">
+      <ActionIcon
+        onClick={() => navigate(`/logs?repoId=${searchParams.repoId}`)}
+        variant="default"
+        size="md"
+      >
+        <IconX style={{ width: rem(20) }} />
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+function LogTitleIcon() {
+  return (
+    <IconLogs
+      style={iconBesideText({
+        size: "26",
+        top: "4px",
+        marginRight: "0.25rem",
+      })}
+    />
+  );
+}
+
+function LogFilterTitle({
+  filter,
+  isDirty,
+}: {
+  filter: LogFilter;
+  isDirty: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Group gap="lg">
+      <span>
+        <LogTitleIcon />
+        {filter.name}
+        {isDirty ? (
+          <Tooltip label={t("log.filter.dirty")} position="bottom">
+            <span style={{ color: "var(--mantine-color-blue214-6)" }}>
+              {" *"}
+            </span>
+          </Tooltip>
+        ) : undefined}
+      </span>
+      <ActionIcon.Group style={{ position: "relative", top: rem(1) }}>
+        <LogFilterFavoriteAction filter={filter} />
+        {isDirty && <LogFilterRestoreAction filter={filter} />}
+        <LogFilterClearAction />
+      </ActionIcon.Group>
+    </Group>
+  );
+}
+
+export function Logs() {
+  const { t } = useTranslation();
+  const { filter, isFilterDirty } = useLogNavigationState();
+
+  return (
+    <div>
+      <Title order={1} pb="xl" fw={550} size="26">
+        {filter ? (
+          <LogFilterTitle filter={filter} isDirty={isFilterDirty!} />
+        ) : (
+          <>
+            <LogTitleIcon />
+            {t("log.logs")}
+          </>
+        )}
+      </Title>
+      <BaseLogs />
+    </div>
+  );
 }

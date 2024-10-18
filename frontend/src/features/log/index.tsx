@@ -1,4 +1,4 @@
-export { Logs } from "./components/Logs";
+export { BaseLogs, Logs } from "./components/Logs";
 export { MultiEntitySelectorPicker } from "./components/EntitySelector";
 export {
   LogNavigationStateProvider,

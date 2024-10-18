@@ -1147,7 +1147,7 @@ export function ExtraActions({
   withLogFilters: boolean;
 }) {
   const { t } = useTranslation();
-  const { filterId } = useLogNavigationState();
+  const { filter, isFilterDirty } = useLogNavigationState();
   const redirectToFilter = useRedirectToFilter(withLogFilters);
   const [
     filterPopoverOpened,
@@ -1158,14 +1158,17 @@ export function ExtraActions({
     { open: openFilterDrawer, close: closeFilterDrawer },
   ] = useDisclosure(false);
   const filterListQuery = useQuery({
-    queryKey: ["logFilters"],
-    queryFn: () => getLogFilters().then(([filters]) => filters),
+    queryKey: ["logFilters", { isFavorite: true }],
+    queryFn: () =>
+      getLogFilters({ isFavorite: true, pageSize: 10 }).then(
+        ([filters]) => filters,
+      ),
     enabled: withLogFilters,
   });
-  const filterMutation = useLogFilterMutation(filterId!, {
+  const filterMutation = useLogFilterMutation(filter?.id!, {
     onSuccess: () => {
       notifySuccess(t("log.filter.updateSuccess"));
-      redirectToFilter(filterId!);
+      redirectToFilter(filter?.id!);
     },
     onError: () => {
       notifyError(t("log.filter.updateError"));
@@ -1223,29 +1226,25 @@ export function ExtraActions({
           </Menu.Item>
           {withLogFilters && (
             <>
+              {filterListQuery.data && filterListQuery.data.length > 0 && (
+                <>
+                  <Menu.Divider />
+                  <Menu.Label>{t("log.filter.favoriteFilters")}</Menu.Label>
+                  {filterListQuery.data.map((filter) => (
+                    <Menu.Item
+                      key={filter.id}
+                      component={NavLink}
+                      to={`/logs?filterId=${filter.id}`}
+                      leftSection={<IconFilter style={iconSize(14)} />}
+                    >
+                      {filter.name}
+                    </Menu.Item>
+                  ))}
+                </>
+              )}
               <Menu.Divider />
               <Menu.Label>{t("log.filter.filters")}</Menu.Label>
-              {filterListQuery.data?.map((filter) => (
-                <Menu.Item
-                  key={filter.id}
-                  component={NavLink}
-                  to={`/logs?filterId=${filter.id}`}
-                  leftSection={<IconFilter style={iconSize(14)} />}
-                >
-                  {filter.name}
-                </Menu.Item>
-              ))}
-              {filterListQuery.data && filterListQuery.data.length > 0 && (
-                <Menu.Divider />
-              )}
-              <Menu.Item
-                component="a"
-                onClick={openFilterPopover}
-                leftSection={<IconDeviceFloppy style={iconSize(14)} />}
-              >
-                {t("log.filter.save")}
-              </Menu.Item>
-              {filterId && (
+              {filter && isFilterDirty && (
                 <Menu.Item
                   component="a"
                   onClick={() =>
@@ -1255,9 +1254,16 @@ export function ExtraActions({
                   }
                   leftSection={<IconDeviceFloppy style={iconSize(14)} />}
                 >
-                  {t("log.filter.update")}
+                  {t("log.filter.saveChanges")}
                 </Menu.Item>
               )}
+              <Menu.Item
+                component="a"
+                onClick={openFilterPopover}
+                leftSection={<IconDeviceFloppy style={iconSize(14)} />}
+              >
+                {t(filter ? "log.filter.saveAsNew" : "log.filter.save")}
+              </Menu.Item>
               <Menu.Item
                 component="a"
                 onClick={openFilterDrawer}

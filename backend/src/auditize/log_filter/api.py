@@ -89,11 +89,13 @@ async def get_filter(
 async def list_log_filters(
     authorized: AuthorizedUser(can_read_logs()),
     search_params: Annotated[ResourceSearchParams, Depends()],
-    page_params: Annotated[PagePaginationParams, Depends()],
+    is_favorite: bool = None,
+    page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> LogFilterListResponse:
     log_filters, page_info = await service.get_log_filters(
         user_id=authorized.user.id,
         query=search_params.query,
+        is_favorite=is_favorite,
         page=page_params.page,
         page_size=page_params.page_size,
     )

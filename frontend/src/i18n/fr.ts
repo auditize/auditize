@@ -245,16 +245,27 @@ export default {
     filter: {
       filter: "Filtre",
       filters: "Filtres",
+      favoriteFilters: "Filtres favoris",
       save: "Sauvegarder le filtre",
-      update: "Mettre à jour le filtre actif",
+      saveChanges: "Sauvegarder les modifications",
+      saveAsNew: "Sauvegarder comme nouveau",
       updateError: "Impossible de mettre à jour le filtre",
       updateSuccess: "Le filtre a été mis à jour",
       manage: "Gérer les filtres",
+      dirty: "Filtre modifié",
+      setFavorite: "Ajouter le filtre aux favoris",
+      unsetFavorite: "Retirer le filtre des favoris",
+      clear: "Effacer le filtre",
+      restore: "Restaurer le filtre",
       form: {
         name: {
           label: "Nom",
           placeholder: "Nom du filtre",
           required: "Le nom du filtre est requis.",
+        },
+        isFavorite: {
+          label: "Favori",
+          placeholder: "Inclure ce filtre dans les favoris",
         },
       },
       create: {

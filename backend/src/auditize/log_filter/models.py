@@ -19,6 +19,7 @@ class LogFilter(BaseModel, HasId, HasCreatedAt):
     user_id: UUID
     search_params: LogFilterSearchParams
     columns: list[str]
+    is_favorite: bool = Field(default=False)  # Added in 0.3.0
 
 
 class LogFilterUpdate(BaseModel):
@@ -26,3 +27,4 @@ class LogFilterUpdate(BaseModel):
     repo_id: UUID = Field(default=None)
     search_params: LogFilterSearchParams = Field(default=None)
     columns: list[str] = Field(default=None)
+    is_favorite: bool = Field(default=None)
