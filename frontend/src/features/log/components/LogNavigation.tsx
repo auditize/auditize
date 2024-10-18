@@ -1147,7 +1147,7 @@ export function ExtraActions({
   withLogFilters: boolean;
 }) {
   const { t } = useTranslation();
-  const { filter } = useLogNavigationState();
+  const { filter, isFilterDirty } = useLogNavigationState();
   const redirectToFilter = useRedirectToFilter(withLogFilters);
   const [
     filterPopoverOpened,
@@ -1244,14 +1244,7 @@ export function ExtraActions({
               )}
               <Menu.Divider />
               <Menu.Label>{t("log.filter.filters")}</Menu.Label>
-              <Menu.Item
-                component="a"
-                onClick={openFilterPopover}
-                leftSection={<IconDeviceFloppy style={iconSize(14)} />}
-              >
-                {t("log.filter.save")}
-              </Menu.Item>
-              {filter && (
+              {filter && isFilterDirty && (
                 <Menu.Item
                   component="a"
                   onClick={() =>
@@ -1261,9 +1254,16 @@ export function ExtraActions({
                   }
                   leftSection={<IconDeviceFloppy style={iconSize(14)} />}
                 >
-                  {t("log.filter.update")}
+                  {t("log.filter.saveChanges")}
                 </Menu.Item>
               )}
+              <Menu.Item
+                component="a"
+                onClick={openFilterPopover}
+                leftSection={<IconDeviceFloppy style={iconSize(14)} />}
+              >
+                {t(filter ? "log.filter.saveAsNew" : "log.filter.save")}
+              </Menu.Item>
               <Menu.Item
                 component="a"
                 onClick={openFilterDrawer}
