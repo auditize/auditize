@@ -12,6 +12,40 @@ import { LogFilterDeletion } from "./LogFilterDeletion";
 import { LogFilterEdition } from "./LogFilterEditor";
 import { LogFilterFavoriteIcon } from "./LogFilterFavoriteIcon";
 
+function LogFilterNameColumn({ filter }: { filter: LogFilter }) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      <LogFilterFavoriteIcon
+        value={filter.isFavorite}
+        style={iconBesideText({
+          size: "18",
+          top: "3px",
+          marginRight: rem(8),
+        })}
+      />
+      <Text span>{filter.name}</Text>
+      <Tooltip label={t("log.filter.list.apply")} withArrow>
+        <Anchor
+          component={NavLink}
+          to={`/logs?filterId=${filter.id}`}
+          onClick={(e) => e.stopPropagation()}
+          pl={rem(10)}
+        >
+          <IconCornerDownLeft
+            style={iconBesideText({
+              size: "18",
+              top: "3px",
+              marginRight: rem(8),
+            })}
+          />
+        </Anchor>
+      </Tooltip>
+    </>
+  );
+}
+
 export function LogFilterManagement() {
   const { t } = useTranslation();
   useDocumentTitle(t("log.filter.filters"));
@@ -37,35 +71,7 @@ export function LogFilterManagement() {
       columnDefinitions={[
         [
           t("log.filter.list.column.name"),
-          (filter: LogFilter) => (
-            <>
-              <LogFilterFavoriteIcon
-                value={filter.isFavorite}
-                style={iconBesideText({
-                  size: "18",
-                  top: "3px",
-                  marginRight: rem(8),
-                })}
-              />
-              <Text span>{filter.name}</Text>
-              <Tooltip label={t("log.filter.list.apply")} withArrow>
-                <Anchor
-                  component={NavLink}
-                  to={`/logs?filterId=${filter.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  pl={rem(10)}
-                >
-                  <IconCornerDownLeft
-                    style={iconBesideText({
-                      size: "18",
-                      top: "3px",
-                      marginRight: rem(8),
-                    })}
-                  />
-                </Anchor>
-              </Tooltip>
-            </>
-          ),
+          (filter: LogFilter) => <LogFilterNameColumn filter={filter} />,
         ],
       ]}
       resourceEditionComponentBuilder={(resourceId, onClose) => (
