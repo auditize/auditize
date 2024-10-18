@@ -219,11 +219,13 @@ export default {
     entity: "Entité",
     list: {
       columnSelector: {
+        tooltip: "Sélectionner les colonnes",
         reset: "Réinitialiser les colonnes",
       },
       searchParams: {
         apply: "Appliquer",
         clear: "Effacer",
+        more: "Plus de paramètres",
       },
       documentTitle: "Journaux",
       noRepos: "Aucun dépôt de journaux n'a encore été créé",
@@ -232,6 +234,7 @@ export default {
       untilMustBeGreaterThanSince:
         "La date de fin doit être postérieure à celle de début",
     },
+    moreActions: "Plus d'actions",
     view: {
       name: "Nom",
       type: "Type",

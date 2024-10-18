@@ -773,14 +773,22 @@ function ColumnSelector({
         </Anchor>
       }
     >
-      <ActionIcon
-        onClick={() => comboboxStore.toggleDropdown()}
-        loading={fieldsLoading}
-        loaderProps={{ type: "dots" }}
-        variant="transparent"
+      <Tooltip
+        label={t("log.list.columnSelector.tooltip")}
+        disabled={comboboxStore.dropdownOpened}
+        position="bottom-end"
+        withArrow
+        withinPortal={false}
       >
-        <IconColumns3 />
-      </ActionIcon>
+        <ActionIcon
+          onClick={() => comboboxStore.toggleDropdown()}
+          loading={fieldsLoading}
+          loaderProps={{ type: "dots" }}
+          variant="transparent"
+        >
+          <IconColumns3 />
+        </ActionIcon>
+      </Tooltip>
     </CustomMultiSelect>
   );
 }

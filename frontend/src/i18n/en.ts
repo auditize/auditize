@@ -216,11 +216,13 @@ export default {
     entity: "Entity",
     list: {
       columnSelector: {
+        tooltip: "Select columns",
         reset: "Reset columns",
       },
       searchParams: {
         apply: "Apply",
         clear: "Clear",
+        more: "More parameters",
       },
       documentTitle: "Logs",
       noResults: "No results",
@@ -229,6 +231,7 @@ export default {
       untilMustBeGreaterThanSince:
         "The end date must be greater than the start date",
     },
+    moreActions: "More actions",
     view: {
       name: "Name",
       type: "Type",

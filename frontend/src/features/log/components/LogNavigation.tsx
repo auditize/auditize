@@ -10,6 +10,7 @@ import {
   Stack,
   Switch,
   TextInput,
+  Tooltip,
   useCombobox,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -863,6 +864,7 @@ function SearchParamFieldSelector({
   );
   const logConsolidatedDataLoading = useLogConsolidatedDataPrefetch(repoId);
   const comboboxStore = useCombobox();
+  const { t } = useTranslation();
 
   return (
     <CustomMultiSelect
@@ -872,14 +874,22 @@ function SearchParamFieldSelector({
       onOptionSubmit={onSearchParamAdded}
       onRemove={onSearchParamRemoved}
     >
-      <ActionIcon
-        onClick={() => comboboxStore.toggleDropdown()}
-        loading={logFieldsLoading || logConsolidatedDataLoading}
-        loaderProps={{ type: "dots" }}
-        size="input-sm"
+      <Tooltip
+        label={t("log.list.searchParams.more")}
+        disabled={comboboxStore.dropdownOpened}
+        position="bottom"
+        withArrow
+        withinPortal={false}
       >
-        <IconPlus />
-      </ActionIcon>
+        <ActionIcon
+          onClick={() => comboboxStore.toggleDropdown()}
+          loading={logFieldsLoading || logConsolidatedDataLoading}
+          loaderProps={{ type: "dots" }}
+          size="input-sm"
+        >
+          <IconPlus />
+        </ActionIcon>
+      </Tooltip>
     </CustomMultiSelect>
   );
 }
@@ -1147,6 +1157,7 @@ export function ExtraActions({
   withLogFilters: boolean;
 }) {
   const { t } = useTranslation();
+  const [menuOpened, setMenuOpened] = useState(false);
   const { filter, isFilterDirty } = useLogNavigationState();
   const redirectToFilter = useRedirectToFilter(withLogFilters);
   const [
@@ -1202,11 +1213,24 @@ export function ExtraActions({
           />
         </>
       )}
-      <Menu shadow="md" withinPortal={false}>
+      <Menu
+        opened={menuOpened}
+        onChange={setMenuOpened}
+        shadow="md"
+        withinPortal={false}
+      >
         <Menu.Target>
-          <ActionIcon size="input-sm">
-            <IconDots />
-          </ActionIcon>
+          <Tooltip
+            label={t("log.moreActions")}
+            disabled={menuOpened}
+            position="bottom-end"
+            withArrow
+            withinPortal={false}
+          >
+            <ActionIcon size="input-sm">
+              <IconDots />
+            </ActionIcon>
+          </Tooltip>
         </Menu.Target>
         <Menu.Dropdown>
           <Menu.Label>{t("log.csv.csv")}</Menu.Label>
