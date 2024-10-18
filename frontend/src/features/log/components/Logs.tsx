@@ -35,8 +35,13 @@ export function BaseLogs({
 }) {
   const { t } = useTranslation();
   const repoListQuery = useLogRepoListQuery({ enabled: withRepoSearchParam });
-  const { searchParams, setSearchParams, selectedColumns, setSelectedColumns } =
-    useLogNavigationState();
+  const {
+    searchParams,
+    setSearchParams,
+    selectedColumns,
+    setSelectedColumns,
+    logComponentRef,
+  } = useLogNavigationState();
   useDocumentTitle(t("log.list.documentTitle"));
 
   if (repoListQuery.data && repoListQuery.data.length === 0) {
@@ -49,7 +54,7 @@ export function BaseLogs({
     );
   } else {
     return (
-      <Stack gap="md">
+      <Stack ref={logComponentRef} gap="md">
         <LogNavigation
           params={searchParams}
           onChange={(newSearchParams) => {

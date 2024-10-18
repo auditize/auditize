@@ -3,6 +3,7 @@ import {
   Combobox,
   ComboboxItem,
   ComboboxItemGroup,
+  ComboboxProps,
   Group,
   ScrollArea,
   useCombobox,
@@ -48,6 +49,7 @@ export function CustomMultiSelect({
   onRemove,
   children,
   footer,
+  comboboxProps,
 }: {
   data: ComboboxItemGroup<ComboboxItem>[];
   value: string[];
@@ -56,6 +58,7 @@ export function CustomMultiSelect({
   onRemove: (value: string) => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  comboboxProps?: ComboboxProps;
 }) {
   const handleOnOptionSubmit = (changed: string) => {
     if (value.includes(changed)) {
@@ -73,6 +76,7 @@ export function CustomMultiSelect({
       withinPortal={false}
       width="max-content"
       shadow="md"
+      {...comboboxProps}
     >
       <Combobox.DropdownTarget>{children}</Combobox.DropdownTarget>
 

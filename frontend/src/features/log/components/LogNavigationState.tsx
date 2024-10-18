@@ -1,6 +1,13 @@
 import { useLocalStorage } from "@mantine/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -26,6 +33,7 @@ type LogContextProps = {
   setSelectedColumns: (columns: string[] | null) => void;
   filter?: LogFilter;
   isFilterDirty?: boolean;
+  logComponentRef: React.RefObject<HTMLDivElement>;
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);
@@ -87,6 +95,7 @@ export function LogNavigationStateProvider({
   children: React.ReactNode;
 }) {
   const { t } = useTranslation();
+  const logComponentRef = useRef<HTMLDivElement>(null);
   const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   const filterId = urlSearchParams.get("filterId");
   const location = useLocation();
@@ -202,6 +211,7 @@ export function LogNavigationStateProvider({
         isFilterDirty: filterQuery.data
           ? urlSearchParams.has("repoId")
           : undefined,
+        logComponentRef,
       }}
     >
       {children}
@@ -216,6 +226,7 @@ function LogNavigationForWebComponentStateProvider({
   repoId: string;
   children: React.ReactNode;
 }) {
+  const logComponentRef = useRef<HTMLDivElement>(null);
   const [displayedLogId, setDisplayedLogId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState<LogSearchParams>(
     LogSearchParams.fromProperties({ repoId }),
@@ -231,6 +242,7 @@ function LogNavigationForWebComponentStateProvider({
         setSearchParams,
         selectedColumns,
         setSelectedColumns,
+        logComponentRef,
       }}
     >
       {children}

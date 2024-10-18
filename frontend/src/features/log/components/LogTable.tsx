@@ -759,6 +759,7 @@ function ColumnSelector({
   const { t } = useTranslation();
   const { fields, loading: fieldsLoading } = useLogFields(repoId, "columns");
   const comboboxStore = useCombobox();
+  const { logComponentRef } = useLogNavigationState();
 
   return (
     <CustomMultiSelect
@@ -772,6 +773,11 @@ function ColumnSelector({
           <Text size="xs">{t("log.list.columnSelector.reset")}</Text>
         </Anchor>
       }
+      comboboxProps={{
+        withinPortal: true,
+        portalProps: { target: logComponentRef.current! },
+        position: "bottom-end",
+      }}
     >
       <Tooltip
         label={t("log.list.columnSelector.tooltip")}
