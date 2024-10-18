@@ -181,7 +181,7 @@ function LogFilterTitle({
           </Tooltip>
         ) : undefined}
       </span>
-      <ActionIcon.Group style={{ position: "relative", top: rem(2) }}>
+      <ActionIcon.Group style={{ position: "relative", top: rem(1) }}>
         <LogFilterFavoriteAction filter={filter} />
         {isDirty && <LogFilterRestoreAction filter={filter} />}
         <LogFilterClearAction />
