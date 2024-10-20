@@ -363,6 +363,7 @@ export default {
     moreDetails: "More details",
     lessDetails: "Less details",
     chooseAValue: "Choose a value",
+    noResults: "No results",
     passwordForm: {
       password: {
         label: "Password",
@@ -375,6 +376,9 @@ export default {
         placeholder: "Password confirmation",
         doesNotMatch: "Passwords do not match.",
       },
+    },
+    CustomMultiSelect: {
+      filterFields: "Search",
     },
     error: {
       error: "Error",

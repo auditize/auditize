@@ -366,6 +366,7 @@ export default {
     moreDetails: "Plus de détails",
     lessDetails: "Moins de détails",
     chooseAValue: "Choisissez une valeur",
+    noResults: "Pas de résultats",
     passwordForm: {
       password: {
         label: "Mot de passe",
@@ -386,6 +387,9 @@ export default {
       401: "Erreur d'authentification",
       403: "Erreur: Cette opération n'est pas autorisée",
     },
+  },
+  CustomMultiSelect: {
+    filterFields: "Filtrer",
   },
   resource: {
     list: {

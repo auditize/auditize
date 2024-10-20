@@ -8,39 +8,64 @@ import {
   ScrollArea,
   useCombobox,
 } from "@mantine/core";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
+function wordMatches(value: string, search: string) {
+  return search
+    .split(" ")
+    .every((word) =>
+      word.trim()
+        ? value.toLowerCase().includes(word.trim().toLowerCase())
+        : true,
+    );
+}
 
 function buildComboboxOptions(
   data: ComboboxItemGroup<ComboboxItem>[],
   selected: string[],
+  search: string,
 ) {
+  const { t } = useTranslation();
+  const isVisible = (item: ComboboxItem) =>
+    !item.disabled ? (search ? wordMatches(item.label, search) : true) : false;
+
+  const optionGroups = data
+    .filter((group) => group.items.some(isVisible))
+    .map((group) => (
+      <Combobox.Group key={group.group} label={group.group}>
+        {group.items.filter(isVisible).map((item) => (
+          <Combobox.Option
+            key={item.value}
+            value={item.value}
+            disabled={item.disabled}
+          >
+            <Group gap="sm">
+              {selected.includes(item.value) ? <CheckIcon size={12} /> : null}
+              <span>{item.label}</span>
+            </Group>
+          </Combobox.Option>
+        ))}
+      </Combobox.Group>
+    ));
+
   return (
     <>
-      {data.map((group) => (
-        <Combobox.Group key={group.group} label={group.group}>
-          {group.items.map((item) => (
-            <Combobox.Option
-              key={item.value}
-              value={item.value}
-              disabled={item.disabled}
-            >
-              <Group gap="sm">
-                {selected.includes(item.value) ? <CheckIcon size={12} /> : null}
-                <span>{item.label}</span>
-              </Group>
-            </Combobox.Option>
-          ))}
-        </Combobox.Group>
-      ))}
+      {optionGroups.length > 0 ? (
+        optionGroups
+      ) : (
+        <Combobox.Empty>{t("common.noResults")}</Combobox.Empty>
+      )}
     </>
   );
 }
 
-// This component is a replacement for `MultiSelect` because it enforce a textinput
-// with a summary of the selected values which is in our case:
+// This component is a replacement for `MultiSelect` because `MultiSelect` enforces
+// a textinput with a summary of the selected values which is in our case:
 // - not useful
-// - be problematic in term of UI once two or more values are selected
+// - problematic in terms of UI once two or more values have been selected
 //
-// keep the function signature as close as possible to `MultiSelect`
+// Keep the function signature as close as possible to `MultiSelect`.
 export function CustomMultiSelect({
   data,
   value,
@@ -60,6 +85,8 @@ export function CustomMultiSelect({
   footer?: React.ReactNode;
   comboboxProps?: ComboboxProps;
 }) {
+  const { t } = useTranslation();
+  const [search, setSearch] = useState("");
   const handleOnOptionSubmit = (changed: string) => {
     if (value.includes(changed)) {
       onRemove(changed);
@@ -73,17 +100,24 @@ export function CustomMultiSelect({
     <Combobox
       store={comboboxStore}
       onOptionSubmit={handleOnOptionSubmit}
+      onOpen={() => comboboxStore.focusSearchInput()}
+      onClose={() => setSearch("")}
       withinPortal={false}
-      width="max-content"
+      width={250}
       shadow="md"
       {...comboboxProps}
     >
       <Combobox.DropdownTarget>{children}</Combobox.DropdownTarget>
 
       <Combobox.Dropdown>
+        <Combobox.Search
+          value={search}
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          placeholder={t("common.CustomMultiSelect.filterFields")}
+        />
         <Combobox.Options>
           <ScrollArea.Autosize type="hover" mah={200}>
-            {buildComboboxOptions(data, value)}
+            {buildComboboxOptions(data, value, search)}
           </ScrollArea.Autosize>
         </Combobox.Options>
         {footer && <Combobox.Footer>{footer}</Combobox.Footer>}
