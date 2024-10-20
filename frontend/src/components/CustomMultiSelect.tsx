@@ -89,24 +89,23 @@ export function CustomMultiSelect({
   const { t } = useTranslation();
   const viewportRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
-  const handleOnOptionSubmit = (changed: string) => {
-    if (value.includes(changed)) {
-      onRemove(changed);
-    } else {
-      onOptionSubmit(changed);
-    }
-    comboboxStore.closeDropdown();
-  };
 
   return (
     <Combobox
       store={comboboxStore}
-      onOptionSubmit={handleOnOptionSubmit}
       onOpen={() => {
         comboboxStore.focusSearchInput();
         viewportRef.current?.scrollTo({ top: 0 });
       }}
       onClose={() => setSearch("")}
+      onOptionSubmit={(changed: string) => {
+        if (value.includes(changed)) {
+          onRemove(changed);
+        } else {
+          onOptionSubmit(changed);
+        }
+        comboboxStore.closeDropdown();
+      }}
       withinPortal={false}
       width={250}
       shadow="md"
