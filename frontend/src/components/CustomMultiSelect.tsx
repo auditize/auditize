@@ -8,6 +8,7 @@ import {
   ScrollArea,
   useCombobox,
 } from "@mantine/core";
+import React, { useRef } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -86,6 +87,7 @@ export function CustomMultiSelect({
   comboboxProps?: ComboboxProps;
 }) {
   const { t } = useTranslation();
+  const viewportRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const handleOnOptionSubmit = (changed: string) => {
     if (value.includes(changed)) {
@@ -100,7 +102,10 @@ export function CustomMultiSelect({
     <Combobox
       store={comboboxStore}
       onOptionSubmit={handleOnOptionSubmit}
-      onOpen={() => comboboxStore.focusSearchInput()}
+      onOpen={() => {
+        comboboxStore.focusSearchInput();
+        viewportRef.current?.scrollTo({ top: 0 });
+      }}
       onClose={() => setSearch("")}
       withinPortal={false}
       width={250}
@@ -116,7 +121,7 @@ export function CustomMultiSelect({
           placeholder={t("common.CustomMultiSelect.filterFields")}
         />
         <Combobox.Options>
-          <ScrollArea.Autosize type="hover" mah={200}>
+          <ScrollArea.Autosize viewportRef={viewportRef} type="hover" mah={200}>
             {buildComboboxOptions(data, value, search)}
           </ScrollArea.Autosize>
         </Combobox.Options>
