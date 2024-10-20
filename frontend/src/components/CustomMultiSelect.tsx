@@ -73,6 +73,7 @@ export function CustomMultiSelect({
   comboboxStore,
   onOptionSubmit,
   onRemove,
+  closeOnSelect = false,
   children,
   footer,
   comboboxProps,
@@ -82,6 +83,7 @@ export function CustomMultiSelect({
   comboboxStore: ReturnType<typeof useCombobox>;
   onOptionSubmit: (value: string) => void;
   onRemove: (value: string) => void;
+  closeOnSelect?: boolean;
   children: React.ReactNode;
   footer?: React.ReactNode;
   comboboxProps?: ComboboxProps;
@@ -104,7 +106,9 @@ export function CustomMultiSelect({
         } else {
           onOptionSubmit(changed);
         }
-        comboboxStore.closeDropdown();
+        if (closeOnSelect) {
+          comboboxStore.closeDropdown();
+        }
       }}
       withinPortal={false}
       width={250}

@@ -873,6 +873,7 @@ function SearchParamFieldSelector({
       value={Array.from(selected)}
       onOptionSubmit={onSearchParamAdded}
       onRemove={onSearchParamRemoved}
+      closeOnSelect
     >
       <Tooltip
         label={t("log.list.searchParams.more")}
