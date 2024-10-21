@@ -5,7 +5,7 @@ export default {
     users: "Users",
     apikeys: "API Keys",
     logs: "Logs",
-    logi18nprofiles: "Log translations",
+    logi18nprofiles: "Log Translations",
     preferences: "Preferences",
     logout: "Logout",
   },
@@ -88,7 +88,7 @@ export default {
       title: "Edit log translation profile",
     },
     list: {
-      title: "Log translations",
+      title: "Log Translations",
       column: {
         name: "Name",
         createdAt: "Created at",
