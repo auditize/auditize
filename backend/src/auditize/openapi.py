@@ -33,6 +33,10 @@ _TAGS = [
         "description": "Log API",
     },
     {
+        "name": "info",
+        "description": "Information API",
+    },
+    {
         "name": "internal",
         "description": "Internal endpoints (for internal use only)",
     },

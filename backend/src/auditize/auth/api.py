@@ -9,7 +9,6 @@ from auditize.auth.authorizer import (
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
-from auditize.database import get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import authorize_grant
