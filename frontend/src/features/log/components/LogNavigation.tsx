@@ -320,6 +320,15 @@ function BaseTextInputSearchParamField({
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
         p="sm"
+        // If the label (and then the placeholder) contains the word "email" for instance,
+        // a password manager will try to fill the input with an email address, which is not what we want.
+        // Make a best effort to avoid this behavior
+        // (see https://www.stefanjudis.com/snippets/turn-off-password-managers/).
+        autoComplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        data-form-type="other"
+        data-bwignore
       />
     </SearchParamFieldPopover>
   );
