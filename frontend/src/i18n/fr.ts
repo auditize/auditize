@@ -276,6 +276,7 @@ export default {
       },
       edit: {
         title: "Modifier le filtre",
+        tooltip: "Modifier le filtre",
       },
       delete: {
         confirm: "Confirmez-vous la suppression du filtre <1>{{name}}</1> ?",

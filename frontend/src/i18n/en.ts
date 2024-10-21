@@ -273,6 +273,7 @@ export default {
       },
       edit: {
         title: "Edit log filter",
+        tooltip: "Edit filter",
       },
       delete: {
         confirm: "Do you confirm the deletion of filter <1>{{name}}</1>?",

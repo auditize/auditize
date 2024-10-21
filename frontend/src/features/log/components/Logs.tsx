@@ -8,13 +8,14 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
-import { IconLogs, IconRestore, IconX } from "@tabler/icons-react";
+import { IconEdit, IconLogs, IconRestore, IconX } from "@tabler/icons-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import Message from "@/components/Message";
 import { ScrollToTop } from "@/components/ScrollToTop";
-import { LogFilterFavoriteIcon } from "@/features/log-filter";
+import { LogFilterEdition, LogFilterFavoriteIcon } from "@/features/log-filter";
 import { LogFilter, useLogFilterMutation } from "@/features/log-filter/api";
 import { useLogRepoListQuery } from "@/features/repo";
 import { iconBesideText } from "@/utils/ui";
@@ -116,6 +117,25 @@ function LogFilterFavoriteAction({ filter }: { filter: LogFilter }) {
   );
 }
 
+function LogFilterEditAction({ filter }: { filter: LogFilter }) {
+  const { t } = useTranslation();
+  const [opened, setOpened] = useState(false);
+
+  return (
+    <>
+      <Tooltip label={t("log.filter.edit.tooltip")} position="bottom" withArrow>
+        <ActionIcon onClick={() => setOpened(true)} variant="default" size="md">
+          <IconEdit style={{ width: rem(20) }} />
+        </ActionIcon>
+      </Tooltip>
+      <LogFilterEdition
+        filterId={opened ? filter.id : null}
+        onClose={() => setOpened(false)}
+      />
+    </>
+  );
+}
+
 function LogFilterRestoreAction({ filter }: { filter: LogFilter }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -179,16 +199,17 @@ function LogFilterTitle({
       <span>
         <LogTitleIcon />
         {filter.name}
-        {isDirty ? (
+        {isDirty && (
           <Tooltip label={t("log.filter.dirty")} position="bottom">
             <span style={{ color: "var(--mantine-color-blue214-6)" }}>
               {" *"}
             </span>
           </Tooltip>
-        ) : undefined}
+        )}
       </span>
       <ActionIcon.Group style={{ position: "relative", top: rem(1) }}>
         <LogFilterFavoriteAction filter={filter} />
+        <LogFilterEditAction filter={filter} />
         {isDirty && <LogFilterRestoreAction filter={filter} />}
         <LogFilterClearAction />
       </ActionIcon.Group>
