@@ -42,7 +42,6 @@ export function BaseLogs({
     setSelectedColumns,
     logComponentRef,
   } = useLogNavigationState();
-  useDocumentTitle(t("log.list.documentTitle"));
 
   if (repoListQuery.data && repoListQuery.data.length === 0) {
     return (
@@ -173,6 +172,8 @@ function LogFilterTitle({
 }) {
   const { t } = useTranslation();
 
+  useDocumentTitle(filter.name);
+
   return (
     <Group gap="lg">
       <span>
@@ -195,8 +196,20 @@ function LogFilterTitle({
   );
 }
 
-export function Logs() {
+function LogTitle() {
   const { t } = useTranslation();
+
+  useDocumentTitle(t("log.list.documentTitle"));
+
+  return (
+    <>
+      <LogTitleIcon />
+      {t("log.logs")}
+    </>
+  );
+}
+
+export function Logs() {
   const { filter, isFilterDirty } = useLogNavigationState();
 
   return (
@@ -205,10 +218,7 @@ export function Logs() {
         {filter ? (
           <LogFilterTitle filter={filter} isDirty={isFilterDirty!} />
         ) : (
-          <>
-            <LogTitleIcon />
-            {t("log.logs")}
-          </>
+          <LogTitle />
         )}
       </Title>
       <BaseLogs />
