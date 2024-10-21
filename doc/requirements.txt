@@ -24,7 +24,7 @@ colorama==0.4.6
     #   mkdocs-material
 ghp-import==2.1.0
     # via mkdocs
-idna==3.8
+idna==3.10
     # via
     #   -c ../backend/requirements-dev.txt
     #   -c ../backend/requirements.txt
@@ -62,7 +62,7 @@ paginate==0.5.7
     # via mkdocs-material
 pathspec==0.12.1
     # via mkdocs
-platformdirs==4.3.2
+platformdirs==4.3.6
     # via
     #   -c ../backend/requirements-dev.txt
     #   mkdocs-get-deps
