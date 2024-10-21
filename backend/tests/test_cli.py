@@ -4,8 +4,8 @@ from unittest import mock
 
 import pytest
 
-from auditize import __version__
 from auditize.__main__ import async_main
+from auditize.version import __version__
 from helpers.http import HttpTestHelper
 
 pytestmark = pytest.mark.anyio

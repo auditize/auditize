@@ -1,6 +1,8 @@
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 
+from auditize.version import __version__
+
 _TAGS = [
     {
         "name": "auth",
@@ -125,8 +127,6 @@ def _add_slash_api_prefix(schema):
 
 
 def get_customized_openapi_schema(app, include_internal_routes=True):
-    from auditize import __version__  # workaround for circular import
-
     routes = (
         app.routes
         if include_internal_routes

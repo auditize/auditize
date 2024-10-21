@@ -8,7 +8,6 @@ import sys
 import uvicorn
 from pymongo.errors import PyMongoError
 
-from auditize import __version__
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import get_dbm, init_dbm
@@ -25,6 +24,7 @@ from auditize.user.service import (
     hash_user_password,
     save_user,
 )
+from auditize.version import __version__
 
 
 def _lazy_init(*, skip_dbm_init=False):
