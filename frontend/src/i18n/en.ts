@@ -8,6 +8,7 @@ export default {
     logi18nprofiles: "Log Translations",
     preferences: "Preferences",
     logout: "Logout",
+    about: "About",
   },
   language: {
     fr: "French",
@@ -474,5 +475,9 @@ export default {
     },
     loginLink: "You can now log in by <1>clicking on this link</1>.",
     documentTitle: "Password Change",
+  },
+  about: {
+    title: "About",
+    auditizeVersion: "Auditize version {{version}}",
   },
 };

@@ -8,6 +8,7 @@ export default {
     logi18nprofiles: "Traductions des journaux",
     preferences: "Préférences",
     logout: "Déconnexion",
+    about: "À propos",
   },
   language: {
     fr: "Français",
@@ -479,5 +480,9 @@ export default {
     loginLink:
       "Vous pouvez maintenant vous connecter en <1>cliquant sur ce lien</1>.",
     documentTitle: "Changement du mot de passe",
+  },
+  about: {
+    title: "À propos",
+    auditizeVersion: "Auditize version {{version}}",
   },
 };

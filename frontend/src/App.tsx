@@ -18,7 +18,7 @@ import "@mantine/notifications/styles.css";
 import { QueryClientProvider } from "@tanstack/react-query";
 import i18n from "i18next";
 import "mantine-datatable/styles.layer.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   createBrowserRouter,
@@ -48,6 +48,7 @@ import { ModalTitle } from "./components/ModalTitle";
 import { Navbar, NavbarItem, NavbarItemGroup } from "./components/Navbar";
 import { ApikeysManagement } from "./features/apikey";
 import { logOut } from "./features/auth";
+import { About } from "./features/info";
 import { LogI18nProfileManagement } from "./features/log-i18n-profile";
 import { UserSettings } from "./features/user";
 import { I18nProvider } from "./i18n";
@@ -96,7 +97,8 @@ function LogoutModal({
 function UserMenu() {
   const { t } = useTranslation();
   const { currentUser, declareLogout } = useAuthenticatedUser();
-  const [opened, { open, close }] = useDisclosure(false);
+  const [prefsOpened, setPrefsOpened] = useState(false);
+  const [aboutOpened, setAboutOpened] = useState(false);
   const initials =
     currentUser.firstName[0].toUpperCase() +
     currentUser.lastName[0].toUpperCase();
@@ -110,15 +112,23 @@ function UserMenu() {
           </UnstyledButton>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item onClick={() => open()}>
+          <Menu.Item onClick={() => setAboutOpened(true)}>
+            {t("navigation.about")}
+          </Menu.Item>
+          <Menu.Item onClick={() => setPrefsOpened(true)}>
             {t("navigation.preferences")}
           </Menu.Item>
+          <Menu.Divider />
           <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
             {t("navigation.logout")}
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-      <UserSettings opened={opened} onClose={close} />
+      <UserSettings
+        opened={prefsOpened}
+        onClose={() => setPrefsOpened(false)}
+      />
+      <About opened={aboutOpened} onClose={() => setAboutOpened(false)} />
     </>
   );
 }
