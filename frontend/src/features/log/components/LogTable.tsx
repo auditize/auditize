@@ -98,6 +98,7 @@ function DateField({ log }: { log: Log }) {
       textProps={{
         size: "xs",
       }}
+      tooltip
     />
   );
 }

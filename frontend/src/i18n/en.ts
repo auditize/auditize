@@ -129,6 +129,7 @@ export default {
         name: "Name",
         email: "Email",
         permissions: "Permissions",
+        authenticatedAt: "Last login",
       },
     },
     create: {

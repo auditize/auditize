@@ -10,7 +10,7 @@ dayjs.extend(localizedFormat);
 export function DateTime({
   value,
   textProps,
-  tooltip = true,
+  tooltip = false,
 }: {
   value: string;
   textProps?: TextProps;

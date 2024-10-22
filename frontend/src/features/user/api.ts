@@ -19,6 +19,7 @@ export interface UserCreation {
 
 export interface User extends UserCreation {
   id: string;
+  authenticatedAt: string | null;
 }
 
 export type UserUpdate = {

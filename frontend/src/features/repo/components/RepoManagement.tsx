@@ -98,14 +98,14 @@ export function RepoManagement() {
         ],
         [
           t("repo.list.column.createdAt"),
-          (repo: Repo) => <DateTime value={repo.createdAt} tooltip={false} />,
+          (repo: Repo) => <DateTime value={repo.createdAt} />,
           { textAlign: "right" },
         ],
         [
           t("repo.list.column.lastLog"),
           (repo: Repo) =>
             repo.stats!.lastLogDate ? (
-              <DateTime value={repo.stats!.lastLogDate} tooltip={false} />
+              <DateTime value={repo.stats!.lastLogDate} />
             ) : undefined,
           { textAlign: "right" },
         ],

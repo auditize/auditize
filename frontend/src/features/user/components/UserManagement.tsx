@@ -2,6 +2,7 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { IconUsers } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
+import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { PermissionSummary } from "@/features/permissions";
@@ -46,6 +47,14 @@ export function UsersManagement() {
         [
           t("user.list.column.permissions"),
           (user: User) => <PermissionSummary permissions={user.permissions} />,
+        ],
+        [
+          t("user.list.column.authenticatedAt"),
+          (user: User) =>
+            user.authenticatedAt ? (
+              <DateTime value={user.authenticatedAt} />
+            ) : undefined,
+          { textAlign: "right" },
         ],
       ]}
       resourceCreationComponentBuilder={
