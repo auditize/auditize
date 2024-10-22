@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
@@ -9,7 +10,7 @@ from auditize.permissions.api_models import (
     PermissionsOutputData,
 )
 from auditize.permissions.operations import compute_applicable_permissions
-from auditize.resource.api_models import IdField
+from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.user.models import USER_PASSWORD_MIN_LENGTH, User
 
@@ -72,6 +73,13 @@ def _UserPermissionsField(**kwargs):  # noqa
     )
 
 
+def _UserAuthenticatedAtField(**kwargs):  # noqa
+    return Field(
+        description="The date at which the user authenticated for the last time",
+        **kwargs,
+    )
+
+
 class UserCreationRequest(BaseModel):
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
@@ -94,13 +102,14 @@ class UserCreationResponse(BaseModel):
     id: UUID = _UserIdField()
 
 
-class UserReadingResponse(BaseModel):
+class UserReadingResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _UserIdField()
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
     lang: Lang = _UserLangField()
     permissions: PermissionsOutputData = _UserPermissionsField()
+    authenticated_at: datetime | None = _UserAuthenticatedAtField()
 
 
 class UserListResponse(PagePaginatedResponse[User, UserReadingResponse]):

@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from unittest.mock import patch
 
 import callee
@@ -18,6 +19,7 @@ from helpers.permissions.constants import (
 )
 from helpers.permissions.tests import BasePermissionTests
 from helpers.user import PreparedUser
+from helpers.utils import DATETIME_FORMAT
 
 pytestmark = pytest.mark.anyio
 
@@ -283,6 +285,18 @@ async def test_user_get(user_read_client: HttpTestHelper, user: PreparedUser):
         f"/users/{user.id}",
         expected_status_code=200,
         expected_json=user.expected_api_response(),
+    )
+
+
+async def test_user_get_authenticated(
+    user_read_client: HttpTestHelper, user_builder: UserBuilder
+):
+    user = await user_builder({})
+    await user.log_in(HttpTestHelper.spawn())
+
+    await user_read_client.assert_get_ok(
+        f"/users/{user.id}",
+        expected_json=user.expected_api_response({"authenticated_at": DATETIME_FORMAT}),
     )
 
 
@@ -565,7 +579,12 @@ async def test_update_user_me_lang(user_builder: UserBuilder):
         )
 
     await assert_collection(
-        get_dbm().core_db.users, [user.expected_document({"lang": "fr"})]
+        get_dbm().core_db.users,
+        [
+            user.expected_document(
+                {"lang": "fr", "authenticated_at": callee.IsA(datetime)}
+            )
+        ],
     )
 
 
@@ -583,7 +602,10 @@ async def test_update_user_me_password(
         )
 
     # Make sure we don't have side effects in DB
-    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
+    await assert_collection(
+        get_dbm().core_db.users,
+        [user.expected_document({"authenticated_at": callee.IsA(datetime)})],
+    )
 
     # Make sure the new password actually works
     await anon_client.assert_post_ok(
@@ -602,7 +624,10 @@ async def test_update_user_me_forbidden_field(user_builder: UserBuilder):
         )
 
     # ensure nothing changed
-    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
+    await assert_collection(
+        get_dbm().core_db.users,
+        [user.expected_document({"authenticated_at": callee.IsA(datetime)})],
+    )
 
 
 async def test_update_user_me_as_unauthorized(anon_client: HttpTestHelper):

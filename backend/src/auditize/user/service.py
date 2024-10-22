@@ -190,6 +190,11 @@ async def authenticate_user(email: str, password: str) -> User:
     if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
         raise AuthenticationFailure()
 
+    dbm = get_dbm()
+    await update_resource_document(
+        dbm.core_db.users, user.id, {"authenticated_at": now()}
+    )
+
     return user
 
 

@@ -23,6 +23,7 @@ class User(BaseModel, HasId, HasCreatedAt):
     password_hash: Optional[str] = Field(default=None)
     permissions: Permissions = Field(default_factory=Permissions)
     password_reset_token: Optional[PasswordResetToken] = Field(default=None)
+    authenticated_at: Optional[datetime] = Field(default=None)
 
 
 class UserUpdate(BaseModel):

@@ -139,6 +139,7 @@ class PreparedUser:
             "password_hash": callee.IsA(str) if self.password else None,
             "created_at": callee.IsA(datetime),
             "password_reset_token": None if self.password else password_reset_token,
+            "authenticated_at": None,
             **(extra or {}),
         }
 
@@ -150,6 +151,7 @@ class PreparedUser:
             "email": self.data["email"],
             "lang": self.data.get("lang", "en"),
             "permissions": DEFAULT_PERMISSIONS,
+            "authenticated_at": None,
             **(extra or {}),
         }
 
