@@ -20,6 +20,7 @@ import { useTranslation } from "react-i18next";
 import { iconSize } from "@/utils/ui";
 
 import { ApiErrorMessage } from "../ErrorMessage";
+import cssClasses from "./ResourceManagement.module.css";
 import { useResourceManagementState } from "./ResourceManagementState";
 
 type ResourceCreationComponentBuilder = (
@@ -64,7 +65,7 @@ function ResourceTableRow({
             {builder(resource)}
           </Table.Td>
         ))}
-        <Table.Td style={{ textAlign: "right" }}>
+        <Table.Td style={{ textAlign: "right" }} p="0">
           {deletionConfirmModal && (
             <Tooltip label={t("resource.list.delete")} withArrow>
               <ActionIcon
@@ -76,6 +77,7 @@ function ResourceTableRow({
                 color="red"
               >
                 <IconTrash
+                  className={cssClasses["delete-icon"]}
                   style={{
                     position: "relative",
                     top: "1px",
@@ -232,7 +234,7 @@ export function ResourceManagement({
                   {name}
                 </Table.Th>
               ))}
-              <Table.Th></Table.Th>
+              <Table.Th w="0"></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>

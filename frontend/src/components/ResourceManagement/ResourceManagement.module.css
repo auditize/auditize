@@ -1,0 +1,7 @@
+.delete-icon {
+  display: none;
+}
+
+tr:hover .delete-icon {
+  display: block;
+}
