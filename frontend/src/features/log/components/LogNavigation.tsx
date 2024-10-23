@@ -33,6 +33,7 @@ import { notifyError, notifySuccess } from "@/components/notifications";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import {
   getLogFilters,
+  LogFilter,
   LogFilterCreation,
   LogFilterDrawer,
   normalizeFilterColumnsForApi,
@@ -1143,22 +1144,146 @@ function columnsToCsvColumns(columns: string[]): string[] {
   );
 }
 
-// NB: this function is a hack to avoid calling useNavigate outside react-router-dom
-// in Web Component mode (where withLogFilters=false).
-// Using a hook within a conditional statement should not be a problem since the
-// withLogFilters has a fixed value that never changes during the lifecycle of the component.
-function useRedirectToFilter(withLogFilters: boolean): (id: string) => void {
-  if (withLogFilters) {
-    const navigate = useNavigate();
-    return (id: string) => navigate(`/logs?filterId=${id}`);
-  } else {
-    // will never be called
-    return () => {};
-  }
+function ExtraActionsCsvExport({
+  searchParams,
+  selectedColumns,
+}: {
+  searchParams: LogSearchParams;
+  selectedColumns: string[];
+}) {
+  const { t } = useTranslation();
+  const csvExportUrl =
+    (window.auditizeBaseURL ?? "") +
+    "/api/repos/" +
+    searchParams.repoId +
+    "/logs/csv?" +
+    new URLSearchParams(
+      searchParams.serialize({
+        includeRepoId: false,
+        snakeCase: true,
+      }),
+    ).toString();
+
+  return (
+    <>
+      <Menu.Label>{t("log.csv.csv")}</Menu.Label>
+      <Menu.Item
+        component="a"
+        href={csvExportUrl}
+        leftSection={<IconDownload style={iconSize(14)} />}
+      >
+        {t("log.csv.csvExportDefault")}
+      </Menu.Item>
+      <Menu.Item
+        component="a"
+        href={`${csvExportUrl}&columns=${columnsToCsvColumns(selectedColumns).join(",")}`}
+        leftSection={<IconDownload style={iconSize(14)} />}
+      >
+        {t("log.csv.csvExportCurrent")}
+      </Menu.Item>
+    </>
+  );
 }
 
-export function ExtraActions({
-  searchParams: logSearchParams,
+function useFavoriteLogFiltersQuery(enabled = true) {
+  return useQuery({
+    queryKey: ["logFilters", { isFavorite: true }],
+    queryFn: () =>
+      getLogFilters({ isFavorite: true, pageSize: 10 }).then(
+        ([filters]) => filters,
+      ),
+    enabled: enabled,
+  });
+}
+
+function ExtraActionsFavoriteFilters() {
+  const { t } = useTranslation();
+  const filtersQuery = useFavoriteLogFiltersQuery();
+  const filters = filtersQuery.data;
+
+  return (
+    filters &&
+    filters.length > 0 && (
+      <>
+        <Menu.Divider />
+        <Menu.Label>{t("log.filter.favoriteFilters")}</Menu.Label>
+        {filters.map((filter) => (
+          <Menu.Item
+            key={filter.id}
+            component={NavLink}
+            to={`/logs?filterId=${filter.id}`}
+            leftSection={<IconFilter style={iconSize(14)} />}
+          >
+            {filter.name}
+          </Menu.Item>
+        ))}
+      </>
+    )
+  );
+}
+
+function ExtraActionsFilterManagement({
+  searchParams,
+  openFilterCreation,
+  openFilterManagement,
+}: {
+  searchParams: LogSearchParams;
+  openFilterCreation: () => void;
+  openFilterManagement: () => void;
+}) {
+  const { t } = useTranslation();
+  const { filter, isFilterDirty } = useLogNavigationState();
+  const navigate = useNavigate();
+  const mutation = useLogFilterMutation(filter?.id!, {
+    onSuccess: () => {
+      notifySuccess(t("log.filter.updateSuccess"));
+      navigate(`/logs?filterId=${filter?.id!}`);
+    },
+    onError: () => {
+      notifyError(t("log.filter.updateError"));
+    },
+  });
+
+  return (
+    <>
+      <Menu.Divider />
+      <Menu.Label>{t("log.filter.filters")}</Menu.Label>
+      {filter && isFilterDirty && (
+        <Menu.Item
+          component="a"
+          onClick={() =>
+            mutation.mutate({
+              searchParams: searchParams.serialize({
+                includeRepoId: false,
+                snakeCase: true,
+              }),
+            })
+          }
+          leftSection={<IconDeviceFloppy style={iconSize(14)} />}
+        >
+          {t("log.filter.saveChanges")}
+        </Menu.Item>
+      )}
+      <Menu.Item
+        component="a"
+        onClick={openFilterCreation}
+        leftSection={<IconDeviceFloppy style={iconSize(14)} />}
+      >
+        {t(filter ? "log.filter.saveAsNew" : "log.filter.save")}
+      </Menu.Item>
+      <Menu.Item
+        component="a"
+        onClick={openFilterManagement}
+        leftSection={<IconAdjustmentsHorizontal style={iconSize(14)} />}
+      >
+        {t("log.filter.manage")}
+      </Menu.Item>
+    </>
+  );
+}
+
+function ExtraActions({
+  searchParams,
   selectedColumns,
   withLogFilters,
 }: {
@@ -1168,58 +1293,27 @@ export function ExtraActions({
 }) {
   const { t } = useTranslation();
   const [menuOpened, setMenuOpened] = useState(false);
-  const { filter, isFilterDirty } = useLogNavigationState();
-  const redirectToFilter = useRedirectToFilter(withLogFilters);
-  const [
-    filterPopoverOpened,
-    { open: openFilterPopover, close: closeFilterPopover },
-  ] = useDisclosure(false);
-  const [
-    filterDrawerOpened,
-    { open: openFilterDrawer, close: closeFilterDrawer },
-  ] = useDisclosure(false);
-  const filterListQuery = useQuery({
-    queryKey: ["logFilters", { isFavorite: true }],
-    queryFn: () =>
-      getLogFilters({ isFavorite: true, pageSize: 10 }).then(
-        ([filters]) => filters,
-      ),
-    enabled: withLogFilters,
-  });
-  const filterMutation = useLogFilterMutation(filter?.id!, {
-    onSuccess: () => {
-      notifySuccess(t("log.filter.updateSuccess"));
-      redirectToFilter(filter?.id!);
-    },
-    onError: () => {
-      notifyError(t("log.filter.updateError"));
-    },
-  });
-  const serializedLogSearchParams = logSearchParams.serialize({
-    includeRepoId: false,
-    snakeCase: true,
-  });
-  const csvExportUrl =
-    (window.auditizeBaseURL ?? "") +
-    "/api/repos/" +
-    logSearchParams.repoId +
-    "/logs/csv?" +
-    new URLSearchParams(serializedLogSearchParams).toString();
+  const [filterCreationOpened, setFilterCreationOpened] = useState(false);
+  const [filterManagementOpened, setFilterManagementOpened] = useState(false);
+  useFavoriteLogFiltersQuery(withLogFilters); // prefetch favorite filters
 
   return (
     <>
       {withLogFilters && (
         <>
           <LogFilterCreation
-            repoId={logSearchParams.repoId}
-            searchParams={serializedLogSearchParams}
+            repoId={searchParams.repoId}
+            searchParams={searchParams.serialize({
+              includeRepoId: false,
+              snakeCase: true,
+            })}
             columns={normalizeFilterColumnsForApi(selectedColumns)}
-            opened={filterPopoverOpened}
-            onClose={closeFilterPopover}
+            opened={filterCreationOpened}
+            onClose={() => setFilterCreationOpened(false)}
           />
           <LogFilterDrawer
-            opened={filterDrawerOpened}
-            onClose={closeFilterDrawer}
+            opened={filterManagementOpened}
+            onClose={() => setFilterManagementOpened(false)}
           />
         </>
       )}
@@ -1243,68 +1337,18 @@ export function ExtraActions({
           </Tooltip>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Label>{t("log.csv.csv")}</Menu.Label>
-          <Menu.Item
-            component="a"
-            href={csvExportUrl}
-            leftSection={<IconDownload style={iconSize(14)} />}
-          >
-            {t("log.csv.csvExportDefault")}
-          </Menu.Item>
-          <Menu.Item
-            component="a"
-            href={`${csvExportUrl}&columns=${columnsToCsvColumns(selectedColumns).join(",")}`}
-            leftSection={<IconDownload style={iconSize(14)} />}
-          >
-            {t("log.csv.csvExportCurrent")}
-          </Menu.Item>
+          <ExtraActionsCsvExport
+            searchParams={searchParams}
+            selectedColumns={selectedColumns}
+          />
           {withLogFilters && (
             <>
-              {filterListQuery.data && filterListQuery.data.length > 0 && (
-                <>
-                  <Menu.Divider />
-                  <Menu.Label>{t("log.filter.favoriteFilters")}</Menu.Label>
-                  {filterListQuery.data.map((filter) => (
-                    <Menu.Item
-                      key={filter.id}
-                      component={NavLink}
-                      to={`/logs?filterId=${filter.id}`}
-                      leftSection={<IconFilter style={iconSize(14)} />}
-                    >
-                      {filter.name}
-                    </Menu.Item>
-                  ))}
-                </>
-              )}
-              <Menu.Divider />
-              <Menu.Label>{t("log.filter.filters")}</Menu.Label>
-              {filter && isFilterDirty && (
-                <Menu.Item
-                  component="a"
-                  onClick={() =>
-                    filterMutation.mutate({
-                      searchParams: serializedLogSearchParams,
-                    })
-                  }
-                  leftSection={<IconDeviceFloppy style={iconSize(14)} />}
-                >
-                  {t("log.filter.saveChanges")}
-                </Menu.Item>
-              )}
-              <Menu.Item
-                component="a"
-                onClick={openFilterPopover}
-                leftSection={<IconDeviceFloppy style={iconSize(14)} />}
-              >
-                {t(filter ? "log.filter.saveAsNew" : "log.filter.save")}
-              </Menu.Item>
-              <Menu.Item
-                component="a"
-                onClick={openFilterDrawer}
-                leftSection={<IconAdjustmentsHorizontal style={iconSize(14)} />}
-              >
-                {t("log.filter.manage")}
-              </Menu.Item>
+              <ExtraActionsFavoriteFilters />
+              <ExtraActionsFilterManagement
+                searchParams={searchParams}
+                openFilterManagement={() => setFilterManagementOpened(true)}
+                openFilterCreation={() => setFilterCreationOpened(true)}
+              />
             </>
           )}
         </Menu.Dropdown>

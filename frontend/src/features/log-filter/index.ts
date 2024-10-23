@@ -4,6 +4,7 @@ export {
   getLogFilter,
   useLogFilterMutation,
 } from "./api";
+export type { LogFilter } from "./api";
 export {
   LogFilterCreation,
   LogFilterEdition,
