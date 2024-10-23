@@ -11,7 +11,6 @@ import {
 } from "@mantine/core";
 import "@mantine/core/styles.layer.css";
 import "@mantine/dates/styles.layer.css";
-import { useDisclosure } from "@mantine/hooks";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import "@mantine/notifications/styles.css";
@@ -214,7 +213,7 @@ function Main() {
   );
 }
 
-function CatchAll() {
+function NotAuthenticatedCatchAll() {
   const { isRefreshingAuthData } = useCurrentUser();
   const location = useLocation();
 
@@ -233,18 +232,32 @@ function CatchAll() {
   return <Navigate to={path} replace />;
 }
 
+function Home() {
+  const { currentUser } = useAuthenticatedUser();
+  const location = useLocation();
+
+  if (location.pathname === "/") {
+    const redirection = getUserHomeRoute(currentUser);
+    if (redirection !== "/") {
+      return <Navigate to={redirection} replace />;
+    }
+  }
+
+  return (
+    <I18nProvider lang={currentUser!.lang}>
+      <Main />
+    </I18nProvider>
+  );
+}
+
 function AppRoutes() {
-  const { isAuthenticated, declareLogin, currentUser } = useCurrentUser();
+  const { isAuthenticated, declareLogin } = useCurrentUser();
 
   const router = createBrowserRouter([
     isAuthenticated
       ? {
           path: "/",
-          element: (
-            <I18nProvider lang={currentUser!.lang}>
-              <Main />
-            </I18nProvider>
-          ),
+          element: <Home />,
           children: [
             {
               path: "logs",
@@ -274,7 +287,7 @@ function AppRoutes() {
         }
       : {
           path: "*",
-          element: <CatchAll />,
+          element: <NotAuthenticatedCatchAll />,
         },
     {
       path: "/account-setup/:token",
