@@ -34,13 +34,15 @@ function LogFilterNameColumn({ filter }: { filter: LogFilter }) {
             e.stopPropagation();
           }}
           variant="transparent"
-          ml={rem(10)}
+          ml={6}
+          style={{
+            position: "relative",
+            top: rem(3),
+          }}
         >
           <IconCornerDownLeft
             style={iconBesideText({
               size: "18",
-              top: "5px",
-              marginRight: rem(8),
             })}
           />
         </ActionIcon>
