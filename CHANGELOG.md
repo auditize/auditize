@@ -1,3 +1,13 @@
+# 0.3.0 (2024-10-24)
+
+- Overhaul of the log filter UI
+- Add favorite log filters feature
+- The log search parameter selectors and the log table column selectors are now searchable
+- Add an "About" entry in the user menu
+- Display the last login date in the user management page
+- Various minor UI improvements and bug fixes
+- Upgrade backend dependencies
+
 # 0.2.4 (2024-10-16)
 
 - Disable Search indexing (Google, Bing, etc...) with noindex
