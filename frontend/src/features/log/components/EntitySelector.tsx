@@ -143,38 +143,25 @@ function useLogEntityChildrenFetcher({
   return query.isLoading;
 }
 
-function useLogEntitiesTreeData(
-  repoId: string,
-  entityRefs: string[],
-  onReset?: () => void,
-) {
+function useLogEntitiesTreeData(repoId: string, entityRefs: string[]) {
   const query = useQuery({
     queryKey: ["logEntities", repoId],
     queryFn: () => getAllLogEntities(repoId),
     enabled: !!repoId,
   });
   const [data, setData] = useState<TreeNodeData[]>([]);
-  const [currentRepoId, setCurrentRepoId] = useState<string | null>(null);
+  const [dataRepoId, setDataRepoId] = useState<string | null>(null);
 
   useEffect(() => {
     if (query.data) {
       setData(() => query.data.map(logEntityToTreeNodeData));
-      // clear existing selected entities when a new repository is chosen
-      // because the selected entities may not exist in the new repository
-      if (
-        onReset &&
-        entityRefs.length !== 0 &&
-        currentRepoId &&
-        repoId !== currentRepoId
-      ) {
-        onReset();
-      }
-      setCurrentRepoId(repoId);
+      setDataRepoId(repoId);
     }
   }, [query.data]);
 
   useEffect(() => {
     if (
+      dataRepoId === repoId && // make sure the data we are working on is for the current repo
       data.length > 0 &&
       entityRefs.length > 0 &&
       entityRefs.some((entityRef) => !findNode(data, entityRef))
@@ -398,7 +385,7 @@ export function EntitySelector({
   onChange: (value: string) => void;
 }) {
   const entityRefs = useMemo(() => (entityRef ? [entityRef] : []), [entityRef]);
-  const data = useLogEntitiesTreeData(repoId!, entityRefs, () => onChange(""));
+  const data = useLogEntitiesTreeData(repoId!, entityRefs);
   const tree = useTree({});
 
   return (

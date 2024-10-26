@@ -927,6 +927,9 @@ function searchParamsReducer(
       if (action.name === "actionCategory") {
         update["actionType"] = "";
       }
+      if (action.name === "repoId") {
+        update["entityRef"] = "";
+      }
       return LogSearchParams.fromProperties({ ...state, ...update });
     case "resetParams":
       return LogSearchParams.fromProperties(action.params ?? {});
