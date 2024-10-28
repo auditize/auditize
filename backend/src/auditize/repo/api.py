@@ -10,7 +10,6 @@ from auditize.auth.authorizer import (
     AuthorizedForLogRead,
     AuthorizedUser,
 )
-from auditize.database import DatabaseManager, get_dbm
 from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.api_models import LogTranslation
