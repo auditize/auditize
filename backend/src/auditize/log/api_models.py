@@ -32,7 +32,7 @@ def _LogIdField(**kwargs):  # noqa
 def _ActionTypeField():  # noqa
     return Field(
         description="Action type",
-        json_schema_extra={"example": "create_configuration_profile"},
+        json_schema_extra={"example": "create-configuration-profile"},
         pattern=IDENTIFIER_PATTERN,
     )
 
@@ -60,7 +60,7 @@ def _SourceField(**kwargs):  # noqa
         json_schema_extra={
             "example": [
                 {"name": "ip", "value": "127.0.0.1"},
-                {"name": "user_agent", "value": "Mozilla/5.0"},
+                {"name": "user-agent", "value": "Mozilla/5.0"},
             ]
         },
         **kwargs,
@@ -173,8 +173,8 @@ def _DetailsField(**kwargs):  # noqa
         description="Details about the action",
         json_schema_extra={
             "example": [
-                {"name": "field_name_1", "description": "value_1"},
-                {"name": "field_name_2", "description": "value_2"},
+                {"name": "field-name-1", "value": "value 1"},
+                {"name": "field-name-2", "value": "value 2"},
             ],
         },
         **kwargs,
@@ -209,7 +209,7 @@ class _TagInputData(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "example": [
+            "examples": [
                 {"type": "security"},
                 {
                     "ref": "config-profile:123",
@@ -228,7 +228,7 @@ class _TagOutputData(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "example": [
+            "examples": [
                 {"ref": None, "type": "security", "name": None},
                 {
                     "ref": "config-profile:123",
@@ -325,7 +325,7 @@ class NameListResponse(PagePaginatedResponse[str, NameData]):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "items": [{"name": "identifier_1"}, {"name": "identifier_2"}],
+                "items": [{"name": "identifier-1"}, {"name": "identifier-2"}],
                 "pagination": {
                     "page": 1,
                     "page_size": 10,
