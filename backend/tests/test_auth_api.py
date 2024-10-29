@@ -84,8 +84,20 @@ async def test_user_logout(user_builder: UserBuilder):
     user = await user_builder({})
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await client.assert_post("/auth/user/logout", expected_status_code=204)
+        resp = await client.assert_post_no_content("/auth/user/logout")
+        assert "Secure" not in resp.headers["set-cookie"]
         await client.assert_get_unauthorized("/users/me")
+
+
+async def test_user_logout_cookie_secure(user_builder: UserBuilder):
+    user = await user_builder({})
+    async with user.client() as client:
+        client: HttpTestHelper  # make pycharm happy
+        with patch("auditize.auth.api.get_config") as mock:
+            mock.return_value.cookie_secure = True
+            resp = await client.assert_post_no_content("/auth/user/logout")
+            assert "Secure" in resp.headers["set-cookie"]
+            await client.assert_get_unauthorized("/users/me")
 
 
 async def test_access_token_empty_permissions(apikey_builder: ApikeyBuilder):

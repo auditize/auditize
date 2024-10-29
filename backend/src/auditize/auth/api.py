@@ -58,7 +58,10 @@ async def logout_user(
     authorized: AuthorizedUser(),
     response: Response,
 ):
-    response.delete_cookie("session", httponly=True, samesite="strict", secure=True)
+    config = get_config()
+    response.delete_cookie(
+        "session", httponly=True, samesite="strict", secure=config.cookie_secure
+    )
 
 
 @router.post(
