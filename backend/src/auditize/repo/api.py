@@ -123,7 +123,7 @@ async def get_repo(
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
 ) -> RepoReadingResponse:
     repo = await service.get_repo(repo_id)
-    response = RepoReadingResponse.model_validate(repo.model_dump())
+    response = RepoReadingResponse.from_repo(repo)
     await _handle_repo_include_options(response, include)
     return response
 

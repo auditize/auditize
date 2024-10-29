@@ -8,7 +8,7 @@ from auditize.resource.models import HasCreatedAt, HasId
 
 class Apikey(BaseModel, HasId, HasCreatedAt):
     name: str
-    key_hash: Optional[str] = Field(default=None)
+    key_hash: Optional[str] = None
     permissions: Permissions = Field(default_factory=Permissions)
 
 

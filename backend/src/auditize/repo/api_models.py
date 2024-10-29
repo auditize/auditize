@@ -105,13 +105,16 @@ class _BaseRepoReadingResponse(BaseModel):
 
 class RepoReadingResponse(_BaseRepoReadingResponse, HasDatetimeSerialization):
     status: RepoStatus = _RepoStatusField()
-    retention_period: Optional[int] = _RepoRetentionPeriodField()
-    log_i18n_profile_id: Optional[UUID] = _RepoLogI18nProfileIdField()
-    stats: Optional[RepoStatsData] = Field(
+    retention_period: int | None = _RepoRetentionPeriodField()
+    log_i18n_profile_id: UUID | None = _RepoLogI18nProfileIdField()
+    stats: RepoStatsData | None = Field(
         description="The repository stats (available if `include=stats` has been set in query parameters)",
-        default=None,
     )
     created_at: datetime = Field(description="The repository creation date")
+
+    @classmethod
+    def from_repo(cls, repo: Repo):
+        return cls.model_validate({**repo.model_dump(), "stats": None})
 
 
 class UserRepoReadingResponse(_BaseRepoReadingResponse):
@@ -128,7 +131,7 @@ class UserRepoReadingResponse(_BaseRepoReadingResponse):
 class RepoListResponse(PagePaginatedResponse[Repo, RepoReadingResponse]):
     @classmethod
     def build_item(cls, repo: Repo) -> RepoReadingResponse:
-        return RepoReadingResponse.model_validate(repo.model_dump())
+        return RepoReadingResponse.from_repo(repo)
 
 
 class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoReadingResponse]):

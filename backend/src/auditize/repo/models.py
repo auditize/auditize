@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from auditize.exceptions import UnknownModelException
 from auditize.log_i18n_profile.models import LogI18nProfile
@@ -19,10 +19,10 @@ class RepoStatus(str, Enum):
 
 class Repo(BaseModel, HasId, HasCreatedAt):
     name: str
-    log_db_name: str = Field(default=None)
-    status: RepoStatus = Field(default=RepoStatus.enabled)
-    retention_period: int | None = Field(default=None)
-    log_i18n_profile_id: Optional[UUID] = Field(default=None)
+    log_db_name: str = None
+    status: RepoStatus = RepoStatus.enabled
+    retention_period: Optional[int] = None
+    log_i18n_profile_id: Optional[UUID] = None
 
     async def get_log_i18n_profile(self) -> LogI18nProfile | None:
         try:
@@ -39,7 +39,7 @@ class RepoUpdate(BaseModel):
 
 
 class RepoStats(BaseModel):
-    first_log_date: Optional[datetime] = None
-    last_log_date: Optional[datetime] = None
+    first_log_date: datetime | None = None
+    last_log_date: datetime | None = None
     log_count: int = 0
     storage_size: int = 0

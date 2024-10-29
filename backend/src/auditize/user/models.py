@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -19,11 +18,11 @@ class User(BaseModel, HasId, HasCreatedAt):
     first_name: str
     last_name: str
     email: str
-    lang: Lang = Field(default=Lang.EN)
-    password_hash: Optional[str] = Field(default=None)
+    lang: Lang = Lang.EN
+    password_hash: str | None = None
     permissions: Permissions = Field(default_factory=Permissions)
-    password_reset_token: Optional[PasswordResetToken] = Field(default=None)
-    authenticated_at: Optional[datetime] = Field(default=None)
+    password_reset_token: PasswordResetToken | None = None
+    authenticated_at: datetime | None = None
 
 
 class UserUpdate(BaseModel):
