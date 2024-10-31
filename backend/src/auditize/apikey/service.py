@@ -2,6 +2,8 @@ import hashlib
 import secrets
 from uuid import UUID
 
+from motor.motor_asyncio import AsyncIOMotorClientSession
+
 from auditize.apikey.models import Apikey, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import get_dbm
@@ -98,6 +100,8 @@ async def delete_apikey(apikey_id: UUID):
     await delete_resource_document(dbm.core_db.apikeys, apikey_id)
 
 
-async def remove_repo_from_apikeys_permissions(repo_id: UUID):
+async def remove_repo_from_apikeys_permissions(
+    repo_id: UUID, session: AsyncIOMotorClientSession
+):
     dbm = get_dbm()
-    await remove_repo_from_permissions(dbm.core_db.apikeys, repo_id)
+    await remove_repo_from_permissions(dbm.core_db.apikeys, repo_id, session)

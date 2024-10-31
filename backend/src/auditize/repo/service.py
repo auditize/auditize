@@ -194,11 +194,14 @@ async def delete_repo(repo_id: UUID):
     from auditize.user.service import remove_repo_from_users_permissions
 
     logs_db = await get_log_db_for_config(repo_id)
-    await delete_resource_document(get_dbm().core_db.repos, repo_id)
+    core_db = get_dbm().core_db
+    async with await core_db.client.start_session() as session:
+        async with session.start_transaction():
+            await delete_resource_document(core_db.repos, repo_id, session=session)
+            await remove_repo_from_users_permissions(repo_id, session)
+            await remove_repo_from_apikeys_permissions(repo_id, session)
+            await delete_log_filters_with_repo(repo_id, session)
     await logs_db.client.drop_database(logs_db.name)
-    await remove_repo_from_users_permissions(repo_id)
-    await remove_repo_from_apikeys_permissions(repo_id)
-    await delete_log_filters_with_repo(repo_id)
 
 
 async def is_log_i18n_profile_used_by_repo(profile_id: UUID) -> bool:

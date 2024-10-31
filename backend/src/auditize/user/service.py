@@ -3,6 +3,7 @@ from datetime import timedelta
 from uuid import UUID
 
 import bcrypt
+from motor.motor_asyncio import AsyncIOMotorClientSession
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager, get_dbm
@@ -174,8 +175,10 @@ async def delete_user(user_id: UUID):
     await delete_resource_document(get_dbm().core_db.users, user_id)
 
 
-async def remove_repo_from_users_permissions(repo_id: UUID):
-    await remove_repo_from_permissions(get_dbm().core_db.users, repo_id)
+async def remove_repo_from_users_permissions(
+    repo_id: UUID, session: AsyncIOMotorClientSession
+):
+    await remove_repo_from_permissions(get_dbm().core_db.users, repo_id, session)
 
 
 async def authenticate_user(email: str, password: str) -> User:
