@@ -16,7 +16,7 @@ The following sections will guide you through the installation of Auditize in tw
 
 !!! info "MongoDB"
 
-    Auditize requires MongoDB 7.0+ to run.
+    Auditize requires MongoDB 7.0+ to run. It uses transactions for certain operations, meaning that your MongoDB server must be [configured with a replica set](https://www.mongodb.com/docs/manual/replication/#transactions). Please note that a replicat set can be configured with a single MongoDB instance.
 
     Auditize creates a main database named `auditize` in charge of storing the configuration data. For each new log repository, a dedicated database will be created with a name prefixed by `auditize_logs_`.
 
@@ -55,26 +55,20 @@ ENTRYPOINT ["auditize"]
 
 This image will be used to run both the web application and the scheduler Docker Compose services.
 
-Now, build a Docker image from this Dockerfile:
-
-```bash
-docker build -t auditize .
-```
-
 Next, create a `docker-compose.yml` file in the same directory with the following content:
 
 ```yaml
 services:
   mongo:
     image: mongo
+    command: ["--replSet", "rs0"]
     restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
     volumes:
       - mongo-data:/data/db
   web:
     image: auditize
+    build: .
+    pull_policy: never
     depends_on:
       - mongo
     command: ["serve", "--host", "0.0.0.0", "--port", "80"]
@@ -82,15 +76,17 @@ services:
       - "8000:80"
     env_file: ".env"
     environment:
-      - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
+      - AUDITIZE_MONGODB_URI=mongodb://mongo:27017/
   scheduler:
     image: auditize
+    build: .
+    pull_policy: never
     depends_on:
       - mongo
     command: ["schedule"]
     env_file: ".env"
     environment:
-      - AUDITIZE_MONGODB_URI=mongodb://root:root@mongo:27017/
+      - AUDITIZE_MONGODB_URI=mongodb://mongo:27017/
       # we set PYTHONUNBUFFERED, otherwise the print() from "schedule" are not shown
       - PYTHONUNBUFFERED=1
 volumes:
@@ -113,6 +109,12 @@ Finally, start the Docker containers:
 
 ```bash
 docker compose up -d
+```
+
+You need then to initialize the MongoDB replica set by running the following command:
+
+```bash
+docker exec -it auditize-docker-mongo-1 mongosh --eval "rs.initiate()"
 ```
 
 Before you can use Auditize, you need to create a superadmin user. You can do this by running the following command:
@@ -191,7 +193,7 @@ In this section, we will build a standalone Auditize environment using:
 - Gunicorn with ASGI workers
 - Nginx as a reverse proxy
 
-**We assume that you have a working MongoDB instance available and the corresponding MongoDB URI to connect to it.**
+**We assume that you have a working MongoDB instance available [configured with a replica set](https://www.mongodb.com/docs/manual/replication/#transactions) and the corresponding MongoDB URI to connect to it.**
 
 Here, we take Ubuntu 24.04 as an example, but the steps should be similar for other Linux distributions (especially Debian-based ones and distros using `systemd`).
 
@@ -200,7 +202,6 @@ Here, we take Ubuntu 24.04 as an example, but the steps should be similar for ot
 First, install the `virtualenv` package and create a Python virtual environment with Auditize and Gunicorn:
 
 ```bash
-
 sudo apt install -y python3-virtualenv
 sudo virtualenv /opt/auditize
 sudo /opt/auditize/bin/pip install auditize gunicorn
