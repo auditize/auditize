@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from motor.motor_asyncio import AsyncIOMotorClientSession
+
 from auditize.database import get_dbm
 from auditize.exceptions import (
     UnknownModelException,
@@ -85,10 +87,12 @@ async def delete_log_filter(user_id: UUID, log_filter_id: UUID):
     )
 
 
-async def delete_log_filters_with_repo(repo_id: UUID):
+async def delete_log_filters_with_repo(
+    repo_id: UUID, session: AsyncIOMotorClientSession
+):
     try:
         await delete_resource_document(
-            get_dbm().core_db.log_filters, {"repo_id": repo_id}
+            get_dbm().core_db.log_filters, {"repo_id": repo_id}, session=session
         )
     except UnknownModelException:
         pass

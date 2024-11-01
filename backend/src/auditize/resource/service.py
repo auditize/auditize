@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorCollection
 from pydantic import BaseModel
 from pymongo.errors import DuplicateKeyError
 
@@ -75,8 +75,11 @@ async def has_resource_document(
 
 
 async def delete_resource_document(
-    collection: AsyncIOMotorCollection, filter: UUID | dict
+    collection: AsyncIOMotorCollection,
+    filter: UUID | dict,
+    *,
+    session: AsyncIOMotorClientSession = None,
 ):
-    result = await collection.delete_one(_normalize_filter(filter))
+    result = await collection.delete_one(_normalize_filter(filter), session=session)
     if result.deleted_count == 0:
         raise UnknownModelException()
