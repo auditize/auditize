@@ -12,7 +12,7 @@ jobs:
         working-directory: ./backend
     strategy:
       matrix:
-        python: ["3.12"]
+        python: ["3.12", "3.13"]
         mongodb: ["7.0"]
 
     steps:
