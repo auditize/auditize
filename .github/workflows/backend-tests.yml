@@ -14,7 +14,9 @@ jobs:
       matrix:
         python: ["3.12", "3.13"]
         mongodb: ["7.0"]
-
+        include:
+          - python: "3.12"
+            mongodb: "8.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
