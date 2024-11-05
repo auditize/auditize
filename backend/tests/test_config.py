@@ -20,6 +20,7 @@ def test_get_config():
     assert config.attachment_max_size == 1024
     assert config.csv_max_rows == 10
     assert config.mongodb_uri is None
+    assert config.mongodb_tls is False
     assert config.smtp_server is None
     assert config.smtp_port is None
     assert config.smtp_username is None
@@ -68,6 +69,13 @@ def test_config_var_mongodb_uri():
         {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_MONGODB_URI": "mongodb://localhost:27017"}
     )
     assert config.mongodb_uri == "mongodb://localhost:27017"
+
+
+def test_config_var_mongodb_tls():
+    config = Config.load_from_env(
+        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_MONGODB_TLS": "true"}
+    )
+    assert config.mongodb_tls is True
 
 
 def test_config_var_user_session_token_lifetime():

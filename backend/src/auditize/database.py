@@ -1,6 +1,7 @@
 from datetime import timezone
 from functools import lru_cache
 
+import certifi
 from bson.binary import UuidRepresentation
 from bson.codec_options import CodecOptions
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
@@ -97,7 +98,11 @@ def init_dbm(name_prefix="auditize", *, force_init=False) -> DatabaseManager:
         raise Exception("DatabaseManager is already initialized")
     config = get_config()
     _dbm = DatabaseManager.spawn(
-        AsyncIOMotorClient(config.mongodb_uri), name_prefix=name_prefix
+        AsyncIOMotorClient(
+            config.mongodb_uri,
+            tlsCAFile=certifi.where() if config.mongodb_tls else None,
+        ),
+        name_prefix=name_prefix,
     )
     return _dbm
 

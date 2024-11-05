@@ -8,6 +8,7 @@ The base Auditize configuration is done through environment variables. The follo
 | `AUDITIZE_PUBLIC_URL` | **Required** | The public URL of your Auditize instance from which your users access Auditize. It will be used for instance to build the URL of the application in emails sent to users. |
 | `AUDITIZE_JWT_SIGNING_KEY` | **Required** | The secret key used to sign the JWT tokens (user session cookies and access tokens). It must be a long random string. A [32 bytes long key is recommended](https://crypto.stackexchange.com/a/34866) (i.e 64 characters in hexadecimal representation), you can generate one with the command `openssl rand -hex 32`. |
 | `AUDITIZE_MONGODB_URI` | MongoDB server running locally | The URI of the MongoDB server used by Auditize, it follows the [MongoDB URI format](https://docs.mongodb.com/manual/reference/connection-string/), example: `mongodb://user:password@localhost:27017/`. |
+| `AUDITIZE_MONGODB_TLS` | `false` | Whether the MongoDB connection should use TLS (it must be set to `true` for MongoDB Atlas). |
 | `AUDITIZE_SMTP_SERVER` | | The SMTP server used to send emails. |
 | `AUDITIZE_SMTP_PORT` |  | The SMTP server port. |
 | `AUDITIZE_SMTP_USERNAME` |  | The SMTP account username. |

@@ -26,6 +26,7 @@ class Config:
     attachment_max_size: int
     csv_max_rows: int
     mongodb_uri: str
+    mongodb_tls: bool
     smtp_server: str
     smtp_port: int
     smtp_username: str
@@ -119,6 +120,9 @@ class Config:
                     validator=int,
                 ),
                 mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
+                mongodb_tls=optional(
+                    "AUDITIZE_MONGODB_TLS", validator=cls._validate_bool, default=False
+                ),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
                 smtp_port=optional("AUDITIZE_SMTP_PORT", validator=int),
                 smtp_username=optional("AUDITIZE_SMTP_USERNAME"),
