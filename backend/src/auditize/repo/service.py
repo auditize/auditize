@@ -217,7 +217,7 @@ async def delete_repo(repo_id: UUID):
             await remove_repo_from_users_permissions(repo_id, session)
             await remove_repo_from_apikeys_permissions(repo_id, session)
             await delete_log_filters_with_repo(repo_id, session)
-    await logs_db.client.drop_database(logs_db.name)
+            await logs_db.client.drop_database(logs_db.name)
 
 
 async def is_log_i18n_profile_used_by_repo(profile_id: UUID) -> bool:
