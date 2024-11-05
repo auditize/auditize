@@ -18,6 +18,7 @@ async def create_resource_document(
     document: dict | BaseModel,
     *,
     resource_id: UUID = None,
+    session: AsyncIOMotorClientSession = None,
 ) -> UUID:
     if isinstance(document, BaseModel):
         document = document.model_dump(exclude={"id"})
@@ -25,7 +26,9 @@ async def create_resource_document(
         resource_id = uuid4()
 
     try:
-        result = await collection.insert_one({**document, "_id": resource_id})
+        result = await collection.insert_one(
+            {**document, "_id": resource_id}, session=session
+        )
     except DuplicateKeyError:
         raise ConstraintViolation()
 
@@ -56,9 +59,13 @@ async def update_resource_document(
 async def get_resource_document(
     collection: AsyncIOMotorCollection,
     filter: UUID | dict,
+    *,
     projection: dict = None,
+    session: AsyncIOMotorClientSession = None,
 ):
-    result = await collection.find_one(_normalize_filter(filter), projection=projection)
+    result = await collection.find_one(
+        _normalize_filter(filter), projection=projection, session=session
+    )
     if not result:
         raise UnknownModelException()
     return result

@@ -1,6 +1,8 @@
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
+from motor.motor_asyncio import AsyncIOMotorClientSession
+
 from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import (
     UnknownModelException,
@@ -46,20 +48,28 @@ async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
     await _validate_repo(repo)
     dbm = get_dbm()
     repo_id = uuid4()
-    with enhance_constraint_violation_exception("error.constraint_violation.repo"):
-        await create_resource_document(
-            dbm.core_db.repos,
-            {
-                **repo.model_dump(exclude={"id", "log_db_name"}),
-                "log_db_name": (
-                    log_db.name if log_db else f"{dbm.name_prefix}_logs_{repo_id}"
-                ),
-            },
-            resource_id=repo_id,
-        )
-    if not log_db:
-        log_db = await get_log_db_for_config(repo_id)
-        await log_db.setup()
+
+    async with await dbm.core_db.client.start_session() as session:
+        async with session.start_transaction():
+            with enhance_constraint_violation_exception(
+                "error.constraint_violation.repo"
+            ):
+                await create_resource_document(
+                    dbm.core_db.repos,
+                    {
+                        **repo.model_dump(exclude={"id", "log_db_name"}),
+                        "log_db_name": (
+                            log_db.name
+                            if log_db
+                            else f"{dbm.name_prefix}_logs_{repo_id}"
+                        ),
+                    },
+                    resource_id=repo_id,
+                    session=session,
+                )
+            if not log_db:
+                log_db = await get_log_db_for_config(await _get_repo(repo_id, session))
+                await log_db.setup()
     return repo_id
 
 
@@ -71,9 +81,15 @@ async def update_repo(repo_id: UUID, update: RepoUpdate):
         await update_resource_document(get_dbm().core_db.repos, repo_id, update)
 
 
-async def get_repo(repo_id: UUID) -> Repo:
-    result = await get_resource_document(get_dbm().core_db.repos, repo_id)
+async def _get_repo(repo_id: UUID, session: AsyncIOMotorClientSession = None) -> Repo:
+    result = await get_resource_document(
+        get_dbm().core_db.repos, repo_id, session=session
+    )
     return Repo.model_validate(result)
+
+
+async def get_repo(repo_id: UUID):
+    return await _get_repo(repo_id)
 
 
 async def get_repo_stats(repo_id: UUID) -> RepoStats:
