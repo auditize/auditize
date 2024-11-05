@@ -2,7 +2,11 @@ from functools import partial
 from uuid import UUID, uuid4
 
 from aiocache import Cache
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from motor.motor_asyncio import (
+    AsyncIOMotorClient,
+    AsyncIOMotorClientSession,
+    AsyncIOMotorCollection,
+)
 
 from auditize.config import get_config
 from auditize.database import BaseDatabase, Collection, get_dbm
@@ -19,7 +23,9 @@ class LogDatabase(BaseDatabase):
         self,
         collection: AsyncIOMotorCollection,
         data: dict[str, str],
+        *,
         update: dict[str, str] = None,
+        session: AsyncIOMotorClientSession = None,
     ):
         if update is None:
             update = {}
@@ -33,6 +39,7 @@ class LogDatabase(BaseDatabase):
             data,
             {"$set": update, "$setOnInsert": {"_id": uuid4()}},
             upsert=True,
+            session=session,
         )
         await self._cache.set(cache_key, result)
 

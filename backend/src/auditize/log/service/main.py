@@ -37,9 +37,11 @@ async def save_log(repo_id: UUID, log: Log) -> UUID:
     db = await get_log_db_for_writing(repo_id)
 
     await check_log(db, log)
-    log_id = await create_resource_document(db.logs, log)
 
-    await consolidate_log(db, log)
+    async with await db.db.client.start_session() as session:
+        async with session.start_transaction():
+            log_id = await create_resource_document(db.logs, log, session=session)
+            await consolidate_log(db, log, session)
 
     return log_id
 

@@ -1,7 +1,7 @@
 from functools import partial
 from uuid import UUID
 
-from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorCollection
 
 from auditize.exceptions import (
     ConstraintViolation,
@@ -22,46 +22,61 @@ from auditize.resource.service import (
 )
 
 
-async def consolidate_log_action(db: LogDatabase, action: Log.Action):
+async def consolidate_log_action(db: LogDatabase, action: Log.Action, session):
     await db.consolidate_data(
-        db.log_actions, {"category": action.category, "type": action.type}
+        db.log_actions,
+        {"category": action.category, "type": action.type},
+        session=session,
     )
 
 
-async def consolidate_log_source(db: LogDatabase, source: list[CustomField]):
+async def consolidate_log_source(db: LogDatabase, source: list[CustomField], session):
     for field in source:
-        await db.consolidate_data(db.log_source_fields, {"name": field.name})
+        await db.consolidate_data(
+            db.log_source_fields, {"name": field.name}, session=session
+        )
 
 
-async def consolidate_log_actor(db: LogDatabase, actor: Log.Actor):
-    await db.consolidate_data(db.log_actor_types, {"type": actor.type})
+async def consolidate_log_actor(db: LogDatabase, actor: Log.Actor, session):
+    await db.consolidate_data(db.log_actor_types, {"type": actor.type}, session=session)
     for field in actor.extra:
-        await db.consolidate_data(db.log_actor_extra_fields, {"name": field.name})
+        await db.consolidate_data(
+            db.log_actor_extra_fields, {"name": field.name}, session=session
+        )
 
 
-async def consolidate_log_resource(db: LogDatabase, resource: Log.Resource):
-    await db.consolidate_data(db.log_resource_types, {"type": resource.type})
+async def consolidate_log_resource(db: LogDatabase, resource: Log.Resource, session):
+    await db.consolidate_data(
+        db.log_resource_types, {"type": resource.type}, session=session
+    )
     for field in resource.extra:
-        await db.consolidate_data(db.log_resource_extra_fields, {"name": field.name})
+        await db.consolidate_data(
+            db.log_resource_extra_fields, {"name": field.name}, session=session
+        )
 
 
-async def consolidate_log_tags(db: LogDatabase, tags: list[Log.Tag]):
+async def consolidate_log_tags(db: LogDatabase, tags: list[Log.Tag], session):
     for tag in tags:
-        await db.consolidate_data(db.log_tag_types, {"type": tag.type})
+        await db.consolidate_data(db.log_tag_types, {"type": tag.type}, session=session)
 
 
-async def consolidate_log_details(db: LogDatabase, details: list[CustomField]):
+async def consolidate_log_details(db: LogDatabase, details: list[CustomField], session):
     for field in details:
-        await db.consolidate_data(db.log_detail_fields, {"name": field.name})
+        await db.consolidate_data(
+            db.log_detail_fields, {"name": field.name}, session=session
+        )
 
 
-async def consolidate_log_entity_path(db: LogDatabase, entity_path: list[Log.Entity]):
+async def consolidate_log_entity_path(
+    db: LogDatabase, entity_path: list[Log.Entity], session
+):
     parent_entity_ref = None
     for entity in entity_path:
         await db.consolidate_data(
             db.log_entities,
             {"ref": entity.ref},
-            {"parent_entity_ref": parent_entity_ref, "name": entity.name},
+            update={"parent_entity_ref": parent_entity_ref, "name": entity.name},
+            session=session,
         )
         parent_entity_ref = entity.ref
 
@@ -83,16 +98,18 @@ async def consolidate_log_attachment(
     )
 
 
-async def consolidate_log(db: LogDatabase, log: Log):
-    await consolidate_log_action(db, log.action)
-    await consolidate_log_source(db, log.source)
+async def consolidate_log(
+    db: LogDatabase, log: Log, session: AsyncIOMotorClientSession
+):
+    await consolidate_log_action(db, log.action, session)
+    await consolidate_log_source(db, log.source, session)
     if log.actor:
-        await consolidate_log_actor(db, log.actor)
+        await consolidate_log_actor(db, log.actor, session)
     if log.resource:
-        await consolidate_log_resource(db, log.resource)
-    await consolidate_log_details(db, log.details)
-    await consolidate_log_tags(db, log.tags)
-    await consolidate_log_entity_path(db, log.entity_path)
+        await consolidate_log_resource(db, log.resource, session)
+    await consolidate_log_details(db, log.details, session)
+    await consolidate_log_tags(db, log.tags, session)
+    await consolidate_log_entity_path(db, log.entity_path, session)
 
 
 async def check_log(db: LogDatabase, log: Log):
