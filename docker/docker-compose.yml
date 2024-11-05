@@ -1,6 +1,7 @@
 services:
   mongo:
     image: mongo
+    hostname: mongo # we need a static hostname for MongoDB replication
     command: ["--replSet", "rs0"]
     # Initialization of the replica set is needed the very first time:
     # docker exec -it auditize-mongo-1 mongosh --eval "rs.initiate()"

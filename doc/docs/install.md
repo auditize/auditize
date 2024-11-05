@@ -61,6 +61,7 @@ Next, create a `docker-compose.yml` file in the same directory with the followin
 services:
   mongo:
     image: mongo
+    hostname: mongo  # we need a static hostname for MongoDB replication
     command: ["--replSet", "rs0"]
     restart: always
     volumes:
