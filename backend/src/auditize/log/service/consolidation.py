@@ -120,7 +120,9 @@ async def _consolidate_log_entity_path(
 
 
 async def consolidate_log_attachment(
-    db: LogDatabase, attachment: Log.AttachmentMetadata
+    db: LogDatabase,
+    attachment: Log.AttachmentMetadata,
+    session: AsyncIOMotorClientSession,
 ):
     await _consolidate_data(
         db,
@@ -128,6 +130,7 @@ async def consolidate_log_attachment(
         {
             "type": attachment.type,
         },
+        session=session,
     )
     await _consolidate_data(
         db,
@@ -135,6 +138,7 @@ async def consolidate_log_attachment(
         {
             "mime_type": attachment.mime_type,
         },
+        session=session,
     )
 
 

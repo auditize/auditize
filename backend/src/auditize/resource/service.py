@@ -41,13 +41,14 @@ async def update_resource_document(
     update: dict | BaseModel,
     *,
     operator="$set",
+    session: AsyncIOMotorClientSession = None,
 ):
     if isinstance(update, BaseModel):
         update = update.model_dump(exclude_unset=True, exclude={"id"})
 
     try:
         result = await collection.update_one(
-            _normalize_filter(filter), {operator: update}
+            _normalize_filter(filter), {operator: update}, session=session
         )
     except DuplicateKeyError:
         raise ConstraintViolation()

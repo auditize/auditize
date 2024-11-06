@@ -56,13 +56,15 @@ async def save_log_attachment(
 ):
     db = await get_log_db_for_writing(repo_id)
     attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
-    await update_resource_document(
-        db.logs,
-        log_id,
-        {"attachments": attachment.model_dump()},
-        operator="$push",
-    )
-    await consolidate_log_attachment(db, attachment)
+    async with db.transaction() as session:
+        await update_resource_document(
+            db.logs,
+            log_id,
+            {"attachments": attachment.model_dump()},
+            operator="$push",
+            session=session,
+        )
+        await consolidate_log_attachment(db, attachment, session)
 
 
 async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:
