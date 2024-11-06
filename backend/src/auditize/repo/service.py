@@ -49,27 +49,22 @@ async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
     dbm = get_dbm()
     repo_id = uuid4()
 
-    async with await dbm.core_db.client.start_session() as session:
-        async with session.start_transaction():
-            with enhance_constraint_violation_exception(
-                "error.constraint_violation.repo"
-            ):
-                await create_resource_document(
-                    dbm.core_db.repos,
-                    {
-                        **repo.model_dump(exclude={"id", "log_db_name"}),
-                        "log_db_name": (
-                            log_db.name
-                            if log_db
-                            else f"{dbm.name_prefix}_logs_{repo_id}"
-                        ),
-                    },
-                    resource_id=repo_id,
-                    session=session,
-                )
-            if not log_db:
-                log_db = await get_log_db_for_config(await _get_repo(repo_id, session))
-                await log_db.setup()
+    async with dbm.core_db.transaction() as session:
+        with enhance_constraint_violation_exception("error.constraint_violation.repo"):
+            await create_resource_document(
+                dbm.core_db.repos,
+                {
+                    **repo.model_dump(exclude={"id", "log_db_name"}),
+                    "log_db_name": (
+                        log_db.name if log_db else f"{dbm.name_prefix}_logs_{repo_id}"
+                    ),
+                },
+                resource_id=repo_id,
+                session=session,
+            )
+        if not log_db:
+            log_db = await get_log_db_for_config(await _get_repo(repo_id, session))
+            await log_db.setup()
     return repo_id
 
 
@@ -211,13 +206,12 @@ async def delete_repo(repo_id: UUID):
 
     logs_db = await get_log_db_for_config(repo_id)
     core_db = get_dbm().core_db
-    async with await core_db.client.start_session() as session:
-        async with session.start_transaction():
-            await delete_resource_document(core_db.repos, repo_id, session=session)
-            await remove_repo_from_users_permissions(repo_id, session)
-            await remove_repo_from_apikeys_permissions(repo_id, session)
-            await delete_log_filters_with_repo(repo_id, session)
-            await logs_db.client.drop_database(logs_db.name)
+    async with core_db.transaction() as session:
+        await delete_resource_document(core_db.repos, repo_id, session=session)
+        await remove_repo_from_users_permissions(repo_id, session)
+        await remove_repo_from_apikeys_permissions(repo_id, session)
+        await delete_log_filters_with_repo(repo_id, session)
+        await logs_db.client.drop_database(logs_db.name)
 
 
 async def is_log_i18n_profile_used_by_repo(profile_id: UUID) -> bool:

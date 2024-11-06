@@ -1,10 +1,15 @@
+from contextlib import asynccontextmanager, contextmanager
 from datetime import timezone
 from functools import lru_cache
 
 import certifi
 from bson.binary import UuidRepresentation
 from bson.codec_options import CodecOptions
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from motor.motor_asyncio import (
+    AsyncIOMotorClient,
+    AsyncIOMotorClientSession,
+    AsyncIOMotorCollection,
+)
 
 from auditize.config import get_config
 
@@ -36,6 +41,12 @@ class BaseDatabase:
 
     def get_collection(self, name):
         return self.db.get_collection(name)
+
+    @asynccontextmanager
+    async def transaction(self) -> AsyncIOMotorClientSession:
+        async with await self.client.start_session() as session:
+            async with session.start_transaction():
+                yield session
 
 
 class CoreDatabase(BaseDatabase):
