@@ -1,12 +1,5 @@
 from functools import partial
-from uuid import UUID, uuid4
-
-from aiocache import Cache
-from motor.motor_asyncio import (
-    AsyncIOMotorClient,
-    AsyncIOMotorClientSession,
-    AsyncIOMotorCollection,
-)
+from uuid import UUID
 
 from auditize.config import get_config
 from auditize.database import BaseDatabase, Collection, get_dbm
@@ -15,34 +8,6 @@ from auditize.repo.models import Repo, RepoStatus
 
 
 class LogDatabase(BaseDatabase):
-    def __init__(self, name: str, client: AsyncIOMotorClient):
-        super().__init__(name, client)
-        self._cache = Cache(Cache.MEMORY)
-
-    async def consolidate_data(
-        self,
-        collection: AsyncIOMotorCollection,
-        data: dict[str, str],
-        *,
-        update: dict[str, str] = None,
-        session: AsyncIOMotorClientSession = None,
-    ):
-        if update is None:
-            update = {}
-        cache_key = "%s:%s" % (
-            collection.name,
-            ":".join(val or "" for val in {**data, **update}.values()),
-        )
-        if await self._cache.exists(cache_key):
-            return
-        result = await collection.update_one(
-            data,
-            {"$set": update, "$setOnInsert": {"_id": uuid4()}},
-            upsert=True,
-            session=session,
-        )
-        await self._cache.set(cache_key, result)
-
     async def setup(self):
         config = get_config()
 

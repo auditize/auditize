@@ -6,6 +6,7 @@ from icecream import ic
 from auditize.config import init_config
 from auditize.database import DatabaseManager
 from auditize.log.db import LogDatabase
+from auditize.log.service.consolidation import _CONSOLIDATED_DATA_CACHE
 
 ic.configureOutput(includeContext=True)
 
@@ -93,6 +94,7 @@ async def _log_db_pool(_dbm: DatabaseManager):
 async def dbm(_dbm, anyio_backend):
     yield _dbm
     await cleanup_db(_dbm.core_db.db)
+    await _CONSOLIDATED_DATA_CACHE.clear()
 
 
 RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]
