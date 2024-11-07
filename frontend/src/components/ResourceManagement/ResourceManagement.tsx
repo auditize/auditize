@@ -61,32 +61,44 @@ function ResourceTableRow({
     <>
       <Table.Tr onClick={onClick} style={{ cursor: "pointer" }}>
         {columnDefinitions.map(([_, builder, style], i) => (
-          <Table.Td key={i} style={style}>
+          <Table.Td
+            key={i}
+            style={style}
+            className={
+              i + 1 === columnDefinitions.length
+                ? cssClasses["delete-cell"]
+                : undefined
+            }
+          >
             {builder(resource)}
+            {i + 1 === columnDefinitions.length && deletionConfirmModal && (
+              <span className={cssClasses["delete-action"]}>
+                <Tooltip
+                  label={t("resource.list.delete")}
+                  withArrow
+                  withinPortal={false}
+                >
+                  <ActionIcon
+                    onClick={(event) => {
+                      open();
+                      event.stopPropagation();
+                    }}
+                    variant="transparent"
+                    color="red"
+                    className={cssClasses["delete-icon"]}
+                  >
+                    <IconTrash
+                      style={{
+                        position: "relative",
+                        top: "1px",
+                      }}
+                    />
+                  </ActionIcon>
+                </Tooltip>
+              </span>
+            )}
           </Table.Td>
         ))}
-        <Table.Td style={{ textAlign: "right" }} p="0">
-          {deletionConfirmModal && (
-            <Tooltip label={t("resource.list.delete")} withArrow>
-              <ActionIcon
-                onClick={(event) => {
-                  open();
-                  event.stopPropagation();
-                }}
-                variant="transparent"
-                color="red"
-              >
-                <IconTrash
-                  className={cssClasses["delete-icon"]}
-                  style={{
-                    position: "relative",
-                    top: "1px",
-                  }}
-                />
-              </ActionIcon>
-            </Tooltip>
-          )}
-        </Table.Td>
       </Table.Tr>
       {deletionConfirmModal}
     </>
@@ -234,7 +246,6 @@ export function ResourceManagement({
                   {name}
                 </Table.Th>
               ))}
-              <Table.Th w="0"></Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>

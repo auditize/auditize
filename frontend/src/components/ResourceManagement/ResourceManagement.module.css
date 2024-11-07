@@ -1,7 +1,29 @@
-.delete-icon {
-  display: none;
+.delete-cell {
+  position: relative;
 }
 
-tr:hover .delete-icon {
-  display: block;
+.delete-action {
+  display: none;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 6rem;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--table-hover-color) 0%, transparent 100%),
+    var(--table-hover-color),
+    #fff
+  );
+}
+
+tr:hover .delete-action {
+  display: inline-block;
+}
+
+.delete-icon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
 }
