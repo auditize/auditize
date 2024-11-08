@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import asyncio
 import json
 import os
 import random
@@ -9,6 +10,11 @@ import uuid
 from dataclasses import dataclass
 
 import requests
+
+from auditize.config import init_config
+from auditize.database import init_dbm
+from auditize.log.models import Log
+from auditize.log.service import save_log, save_log_attachment
 
 # fmt: off
 
@@ -641,7 +647,7 @@ class ApiInjector:
         self.repo_id = repo_id
         self.api_key = api_key
 
-    def __call__(self, log, attachments):
+    async def __call__(self, log, attachments):
         resp = requests.post(
             f"{self.base_url}/api/repos/{self.repo_id}/logs",
             headers={"Authorization": f"Bearer {self.api_key}"},
@@ -669,28 +675,52 @@ class ApiInjector:
                 )
 
 
-def main(argv):
+class ServiceInjector:
+    def __init__(self, repo_id: str):
+        self.repo_id = uuid.UUID(repo_id)
+        init_config()
+        init_dbm()
+
+    async def __call__(self, log, attachments):
+        log_model = Log.model_validate(log)
+        log_id = await save_log(self.repo_id, log_model)
+        for attachment in attachments:
+            await save_log_attachment(
+                self.repo_id,
+                log_id,
+                name=attachment["name"],
+                type=attachment["type"],
+                mime_type="text/plain",
+                data=attachment["data"],
+            )
+
+
+async def main(argv):
     if len(argv) != 2:
         sys.exit("Usage: %s COUNT" % argv[0])
 
     try:
-        base_url = os.environ["AUDITIZE_URL"]
+        base_url = os.environ.get("AUDITIZE_URL")
         repo_id = os.environ["AUDITIZE_REPO"]
-        api_key = os.environ["AUDITIZE_APIKEY"]
+        api_key = os.environ.get("AUDITIZE_APIKEY")
     except KeyError as e:
         sys.exit("Missing environment variable: %s" % e)
 
-    injector = ApiInjector(base_url, repo_id, api_key)
+    if base_url and api_key:
+        injector = ApiInjector(base_url, repo_id, api_key)
+    else:
+        injector = ServiceInjector(repo_id)
+
     count = int(argv[1])
     provider = LogProvider.prepare()
-    start_time = time.time()
 
+    start_time = time.time()
     for (log, attachments), i in zip(provider.build_logs(), range(count)):
         print("Inject log %d of %d" % (i + 1, count), end="\r")
-        injector(log, attachments)
+        await injector(log, attachments)
     print()
     print(f"Done in {time.time() - start_time:.2f}s")
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    asyncio.run(main(sys.argv))
