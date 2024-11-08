@@ -8,6 +8,7 @@ import sys
 import time
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 import requests
 
@@ -676,13 +677,20 @@ class ApiInjector:
 
 
 class ServiceInjector:
-    def __init__(self, repo_id: str):
+    def __init__(self, repo_id: str, log_count: int):
         self.repo_id = uuid.UUID(repo_id)
+        # create a time span for 1000 logs / day
+        self.time_end = int(time.time())
+        self.time_start = self.time_end - ((log_count / 1000) * 24 * 60 * 60)
+
         init_config()
         init_dbm()
 
     async def __call__(self, log, attachments):
         log_model = Log.model_validate(log)
+        log_model.saved_at = datetime.fromtimestamp(
+            random.uniform(self.time_start, self.time_end), timezone.utc
+        )
         log_id = await save_log(self.repo_id, log_model)
         for attachment in attachments:
             await save_log_attachment(
@@ -706,12 +714,13 @@ async def main(argv):
     except KeyError as e:
         sys.exit("Missing environment variable: %s" % e)
 
+    count = int(argv[1])
+
     if base_url and api_key:
         injector = ApiInjector(base_url, repo_id, api_key)
     else:
-        injector = ServiceInjector(repo_id)
+        injector = ServiceInjector(repo_id, count)
 
-    count = int(argv[1])
     provider = LogProvider.prepare()
 
     start_time = time.time()
