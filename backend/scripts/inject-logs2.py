@@ -635,31 +635,38 @@ def jsonify(data):
     return json.dumps(data, indent=4, ensure_ascii=False)
 
 
-def inject_log(base_url, repo_id, api_key, log, attachments):
-    resp = requests.post(
-        f"{base_url}/api/repos/{repo_id}/logs",
-        headers={"Authorization": f"Bearer " + api_key},
-        json=log,
-    )
-    if not resp.ok:
-        sys.exit(
-            "Error %s while pushing log:\n%s" % (resp.status_code, jsonify(resp.json()))
-        )
-    log_id = resp.json()["id"]
-    for attachment in attachments:
+class ApiInjector:
+    def __init__(self, base_url, repo_id, api_key):
+        self.base_url = base_url
+        self.repo_id = repo_id
+        self.api_key = api_key
+
+    def __call__(self, log, attachments):
         resp = requests.post(
-            f"{base_url}/api/repos/{repo_id}/logs/{log_id}/attachments",
-            headers={"Authorization": f"Bearer " + api_key},
-            files={"file": (attachment["name"], attachment["data"])},
-            data={
-                "type": attachment["type"],
-            },
+            f"{self.base_url}/api/repos/{self.repo_id}/logs",
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            json=log,
         )
         if not resp.ok:
             sys.exit(
-                "Error %s while pushing attachment: %s"
+                "Error %s while pushing log:\n%s"
                 % (resp.status_code, jsonify(resp.json()))
             )
+        log_id = resp.json()["id"]
+        for attachment in attachments:
+            resp = requests.post(
+                f"{self.base_url}/api/repos/{self.repo_id}/logs/{log_id}/attachments",
+                headers={"Authorization": f"Bearer " + self.api_key},
+                files={"file": (attachment["name"], attachment["data"])},
+                data={
+                    "type": attachment["type"],
+                },
+            )
+            if not resp.ok:
+                sys.exit(
+                    "Error %s while pushing attachment: %s"
+                    % (resp.status_code, jsonify(resp.json()))
+                )
 
 
 def main(argv):
@@ -673,15 +680,14 @@ def main(argv):
     except KeyError as e:
         sys.exit("Missing environment variable: %s" % e)
 
+    injector = ApiInjector(base_url, repo_id, api_key)
     count = int(argv[1])
-
     provider = LogProvider.prepare()
-
     start_time = time.time()
 
     for (log, attachments), i in zip(provider.build_logs(), range(count)):
         print("Inject log %d of %d" % (i + 1, count), end="\r")
-        inject_log(base_url, repo_id, api_key, log, attachments)
+        injector(log, attachments)
     print()
     print(f"Done in {time.time() - start_time:.2f}s")
 
