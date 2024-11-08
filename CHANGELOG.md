@@ -1,3 +1,12 @@
+# 0.4.0 (2024-11-08)
+
+- Improve performance of `POST /api/repos/{repo_id}/logs` endpoint
+- New environment variable `AUDITIZE_MONGODB_TLS` to support MongoDB TLS connections
+- Add official support for Python 3.13
+- Add official support for MongoDB 8
+- Minor fixes and improvements
+- **Breaking change**: Auditize now requires MongoDB to be configured with a Replica Set
+
 # 0.3.0 (2024-10-24)
 
 - Overhaul of the log filter UI
