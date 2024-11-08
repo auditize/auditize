@@ -2,7 +2,11 @@
 
 name: Frontend compilation test
 
-on: [push]
+on:
+  push:
+    # do not run workflow on pushed tags
+    branches:
+      - "**"
 
 jobs:
   build:
