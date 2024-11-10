@@ -38,9 +38,10 @@ async def save_log(repo_id: UUID, log: Log) -> UUID:
 
     await check_log(db, log)
 
-    async with db.transaction() as session:
-        log_id = await create_resource_document(db.logs, log, session=session)
-        await consolidate_log(db, log, session)
+    # NB: do not use transaction here to avoid possible WriteConflict errors
+    # on consolidated data documents
+    log_id = await create_resource_document(db.logs, log)
+    await consolidate_log(db, log)
 
     return log_id
 
@@ -56,15 +57,16 @@ async def save_log_attachment(
 ):
     db = await get_log_db_for_writing(repo_id)
     attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
-    async with db.transaction() as session:
-        await update_resource_document(
-            db.logs,
-            log_id,
-            {"attachments": attachment.model_dump()},
-            operator="$push",
-            session=session,
-        )
-        await consolidate_log_attachment(db, attachment, session)
+
+    # NB: do not use transaction here to avoid possible WriteConflict errors
+    # on consolidated data documents
+    await update_resource_document(
+        db.logs,
+        log_id,
+        {"attachments": attachment.model_dump()},
+        operator="$push",
+    )
+    await consolidate_log_attachment(db, attachment)
 
 
 async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:

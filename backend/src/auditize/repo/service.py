@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
-from auditize.database import get_dbm
+from auditize.database import DatabaseManager, get_dbm
 from auditize.exceptions import (
     UnknownModelException,
     ValidationError,
