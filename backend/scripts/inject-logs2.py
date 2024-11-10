@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Iterator
 
-import requests
+import httpx
 
 from auditize.config import init_config
 from auditize.database import init_dbm
@@ -648,21 +648,22 @@ class ApiInjector:
         self.base_url = base_url
         self.repo_id = repo_id
         self.api_key = api_key
+        self.client = httpx.AsyncClient()
 
     async def __call__(self, log, attachments):
-        resp = requests.post(
+        resp = await self.client.post(
             f"{self.base_url}/api/repos/{self.repo_id}/logs",
             headers={"Authorization": f"Bearer {self.api_key}"},
             json=log,
         )
-        if not resp.ok:
+        if resp.is_error:
             sys.exit(
                 "Error %s while pushing log:\n%s"
                 % (resp.status_code, jsonify(resp.json()))
             )
         log_id = resp.json()["id"]
         for attachment in attachments:
-            resp = requests.post(
+            resp = await self.client.post(
                 f"{self.base_url}/api/repos/{self.repo_id}/logs/{log_id}/attachments",
                 headers={"Authorization": f"Bearer " + self.api_key},
                 files={"file": (attachment["name"], attachment["data"])},
@@ -670,7 +671,7 @@ class ApiInjector:
                     "type": attachment["type"],
                 },
             )
-            if not resp.ok:
+            if resp.is_error:
                 sys.exit(
                     "Error %s while pushing attachment: %s"
                     % (resp.status_code, jsonify(resp.json()))
