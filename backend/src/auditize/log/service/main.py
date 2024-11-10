@@ -38,6 +38,8 @@ async def save_log(repo_id: UUID, log: Log) -> UUID:
 
     await check_log(db, log)
 
+    # NB: do not use transaction here to avoid possible WriteConflict errors
+    # on consolidated data documents
     log_id = await create_resource_document(db.logs, log)
     await consolidate_log(db, log)
 
@@ -55,6 +57,9 @@ async def save_log_attachment(
 ):
     db = await get_log_db_for_writing(repo_id)
     attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
+
+    # NB: do not use transaction here to avoid possible WriteConflict errors
+    # on consolidated data documents
     await update_resource_document(
         db.logs,
         log_id,
