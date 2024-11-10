@@ -9,6 +9,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Iterator
 
 import requests
 
@@ -703,6 +704,28 @@ class ServiceInjector:
             )
 
 
+# Adapted from https://death.andgravity.com/limit-concurrency#asyncio-wait
+async def run_concurrently(aws: Iterator, limit: int):
+    aws_ended = False
+    pending = set()
+
+    while pending or not aws_ended:
+        while len(pending) < limit and not aws_ended:
+            try:
+                aw = next(aws)
+            except StopIteration:
+                aws_ended = True
+            else:
+                pending.add(asyncio.create_task(aw))
+
+        if not pending:
+            return
+
+        done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+        while done:
+            yield done.pop()
+
+
 async def main(argv):
     if len(argv) != 2:
         sys.exit("Usage: %s COUNT" % argv[0])
@@ -723,10 +746,16 @@ async def main(argv):
 
     provider = LogProvider.prepare()
 
+    log_injections = (
+        injector(log, attachments)
+        for (log, attachments), _ in zip(provider.build_logs(), range(count))
+    )
     start_time = time.time()
-    for (log, attachments), i in zip(provider.build_logs(), range(count)):
-        print("Inject log %d of %d" % (i + 1, count), end="\r")
-        await injector(log, attachments)
+    i = 1
+    async for task in run_concurrently(log_injections, limit=20):
+        print("Inject log %d of %d" % (i, count), end="\r")
+        await task
+        i += 1
     print()
     print(f"Done in {time.time() - start_time:.2f}s")
 
