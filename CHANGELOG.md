@@ -1,3 +1,8 @@
+# 0.4.1 (2024-11-11)
+
+- Fix regression introduced in 0.4.0 that could lead to `POST /api/repos/{repo_id}/logs`
+  failures on concurrent access
+
 # 0.4.0 (2024-11-08)
 
 - Improve performance of `POST /api/repos/{repo_id}/logs` endpoint
