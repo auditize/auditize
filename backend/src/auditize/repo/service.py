@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
@@ -87,27 +88,23 @@ async def get_repo(repo_id: UUID):
     return await _get_repo(repo_id)
 
 
+async def _get_log_saved_at(db: LogDatabase, *, sort: int) -> datetime | None:
+    results = (
+        await db.logs.find({}, projection={"saved_at": 1})
+        .sort({"saved_at": sort})
+        .limit(1)
+        .to_list(None)
+    )
+    return results[0]["saved_at"] if results else None
+
+
 async def get_repo_stats(repo_id: UUID) -> RepoStats:
     logs_db = await get_log_db_for_config(repo_id)
-    results = await logs_db.logs.aggregate(
-        [
-            {
-                "$group": {
-                    "_id": None,
-                    "first_log_date": {"$min": "$saved_at"},
-                    "last_log_date": {"$max": "$saved_at"},
-                    "count": {"$count": {}},
-                }
-            }
-        ]
-    ).to_list(None)
-
     stats = RepoStats()
 
-    if results:
-        stats.first_log_date = results[0]["first_log_date"]
-        stats.last_log_date = results[0]["last_log_date"]
-        stats.log_count = results[0]["count"]
+    stats.first_log_date = await _get_log_saved_at(logs_db, sort=1)
+    stats.last_log_date = await _get_log_saved_at(logs_db, sort=-1)
+    stats.log_count = await logs_db.logs.estimated_document_count()
 
     db_stats = await logs_db.db.command("dbstats")
     stats.storage_size = int(db_stats["storageSize"])
