@@ -107,7 +107,7 @@ async def get_repo_stats(repo_id: UUID) -> RepoStats:
     stats.log_count = await logs_db.logs.estimated_document_count()
 
     db_stats = await logs_db.db.command("dbstats")
-    stats.storage_size = int(db_stats["storageSize"])
+    stats.storage_size = int(db_stats["storageSize"]) + int(db_stats["indexSize"])
 
     return stats
 
