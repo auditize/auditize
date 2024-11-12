@@ -217,9 +217,7 @@ async def _apply_log_retention_period(repo: Repo):
 
 async def apply_log_retention_period(repo: UUID | Repo = None):
     if repo:
-        if type(repo) is UUID:
-            repo = await get_repo(repo)
-        repos = [repo]
+        repos = [await get_repo(repo)]
     else:
         repos = await get_retention_period_enabled_repos()
 

@@ -533,7 +533,7 @@ async def _purge_orphan_consolidated_log_entities(db: LogDatabase):
 
 
 async def purge_orphan_consolidated_log_data(repo: Repo):
-    db = await get_log_db_for_maintenance(repo.id)
+    db = await get_log_db_for_maintenance(repo)
     await _purge_orphan_consolidated_log_actions(db)
     await _purge_orphan_consolidated_log_source_fields(db)
     await _purge_orphan_consolidated_log_actor_types(db)

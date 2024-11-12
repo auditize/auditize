@@ -66,8 +66,7 @@ class LogDatabase(BaseDatabase):
 async def _get_log_db(repo: UUID | Repo, statuses: list[RepoStatus]) -> LogDatabase:
     from auditize.repo.service import get_repo  # avoid circular import
 
-    if type(repo) is UUID:
-        repo = await get_repo(repo)
+    repo = await get_repo(repo)
 
     if statuses:
         if repo.status not in statuses:

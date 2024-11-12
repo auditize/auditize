@@ -84,7 +84,9 @@ async def _get_repo(repo_id: UUID, session: AsyncIOMotorClientSession = None) ->
     return Repo.model_validate(result)
 
 
-async def get_repo(repo_id: UUID):
+async def get_repo(repo_id: UUID | Repo) -> Repo:
+    if isinstance(repo_id, Repo):
+        return repo_id
     return await _get_repo(repo_id)
 
 
