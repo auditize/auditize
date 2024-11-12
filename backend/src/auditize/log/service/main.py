@@ -21,7 +21,7 @@ from auditize.log.service.consolidation import (
     purge_orphan_consolidated_log_data,
 )
 from auditize.repo.models import Repo
-from auditize.repo.service import get_retention_period_enabled_repos
+from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
 from auditize.resource.service import (
     create_resource_document,
@@ -204,18 +204,25 @@ async def _apply_log_retention_period(repo: Repo):
     if not repo.retention_period:
         return
 
-    db = await get_log_db_for_maintenance(repo.id)
+    db = await get_log_db_for_maintenance(repo)
     result = await db.logs.delete_many(
         {"saved_at": {"$lt": now() - timedelta(days=repo.retention_period)}}
     )
     if result.deleted_count > 0:
         print(
             f"Deleted {result.deleted_count} logs older than {repo.retention_period} days "
-            f"from log repository {repo.name!r}"
+            f"in log repository {repo.name!r}"
         )
 
 
-async def apply_log_retention_period():
-    for repo in await get_retention_period_enabled_repos():
+async def apply_log_retention_period(repo: UUID | Repo = None):
+    if repo:
+        if type(repo) is UUID:
+            repo = await get_repo(repo)
+        repos = [repo]
+    else:
+        repos = await get_retention_period_enabled_repos()
+
+    for repo in repos:
         await _apply_log_retention_period(repo)
         await purge_orphan_consolidated_log_data(repo)

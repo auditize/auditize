@@ -1,11 +1,13 @@
 import json
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 from unittest import mock
 
 import pytest
 
 from auditize.__main__ import async_main
 from auditize.version import __version__
+from conftest import RepoBuilder
 from helpers.http import HttpTestHelper
 
 pytestmark = pytest.mark.anyio
@@ -110,3 +112,42 @@ async def test_bootstrap_superadmin_password_too_short_retry_ok(capsys):
         )
 
     await _assert_user_ok("john.doe@example.net", "John", "Doe", "longpassword")
+
+
+async def test_purge_expired_logs_none(
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
+):
+    repo = await repo_builder({})
+    await repo.create_log(superadmin_client)
+    await async_main(["purge-expired-logs"])
+    assert (await repo.db.logs.count_documents({})) == 1
+
+
+async def test_purge_expired_logs_all(
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
+):
+    repo = await repo_builder({"retention_period": 30})
+    await repo.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=90)
+    )
+    await async_main(["purge-expired-logs"])
+    assert (await repo.db.logs.count_documents({})) == 0
+
+
+async def test_purge_expired_logs_single(
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
+):
+    repo_1 = await repo_builder({"retention_period": 30})
+    await repo_1.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=90)
+    )
+
+    repo_2 = await repo_builder({"retention_period": 30})
+    await repo_2.create_log(
+        superadmin_client, saved_at=datetime.now() - timedelta(days=90)
+    )
+
+    await async_main(["purge-expired-logs", repo_1.id])
+
+    assert (await repo_1.db.logs.count_documents({})) == 0
+    assert (await repo_2.db.logs.count_documents({})) == 1

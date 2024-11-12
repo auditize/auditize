@@ -4,6 +4,7 @@ import getpass
 import json
 import platform
 import sys
+from uuid import UUID
 
 import uvicorn
 from pymongo.errors import PyMongoError
@@ -16,6 +17,7 @@ from auditize.exceptions import (
     ConfigError,
     ConstraintViolation,
 )
+from auditize.log.service import apply_log_retention_period
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.models import Permissions
 from auditize.scheduler import build_scheduler
@@ -94,6 +96,11 @@ async def serve(host: str, port: int):
     await server.serve()
 
 
+async def purge_expired_logs(repo: UUID = None):
+    _lazy_init()
+    await apply_log_retention_period(repo)
+
+
 async def schedule():
     _lazy_init()
     scheduler = build_scheduler()
@@ -157,6 +164,15 @@ async def async_main(args=None):
     serve_parser.add_argument("--host", default="127.0.0.1")
     serve_parser.add_argument("--port", default=8000, type=int)
     serve_parser.set_defaults(func=lambda cmd_args: serve(cmd_args.host, cmd_args.port))
+
+    # CMD purge-expired-logs
+    purge_expired_logs_parser = sub_parsers.add_parser(
+        "purge-expired-logs", help="Purge expired logs"
+    )
+    purge_expired_logs_parser.add_argument("repo", type=UUID, nargs="?")
+    purge_expired_logs_parser.set_defaults(
+        func=lambda cmd_args: purge_expired_logs(cmd_args.repo)
+    )
 
     # CMD schedule
     schedule_parser = sub_parsers.add_parser(
