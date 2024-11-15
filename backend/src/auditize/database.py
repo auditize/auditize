@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 from datetime import timezone
 from functools import lru_cache
 
@@ -19,7 +19,7 @@ class Collection:
         self.name = name
 
     @lru_cache
-    def __get__(self, db: "BaseDatabase", _) -> AsyncIOMotorCollection:
+    def __get__(self, db: "Database", _) -> AsyncIOMotorCollection:
         return db.db.get_collection(
             self.name,
             codec_options=CodecOptions(
@@ -30,7 +30,7 @@ class Collection:
         )
 
 
-class BaseDatabase:
+class Database:
     def __init__(self, name: str, client: AsyncIOMotorClient):
         self.name = name
         self.client = client
@@ -49,7 +49,7 @@ class BaseDatabase:
                 yield session
 
 
-class CoreDatabase(BaseDatabase):
+class CoreDatabase(Database):
     async def setup(self):
         # Unique indexes
         await self.repos.create_index("name", unique=True)

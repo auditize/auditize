@@ -2,12 +2,12 @@ from functools import partial
 from uuid import UUID
 
 from auditize.config import get_config
-from auditize.database import BaseDatabase, Collection, get_dbm
+from auditize.database import Collection, Database, get_dbm
 from auditize.exceptions import PermissionDenied
 from auditize.repo.models import Repo, RepoStatus
 
 
-class LogDatabase(BaseDatabase):
+class LogDatabase(Database):
     async def setup(self):
         config = get_config()
 
