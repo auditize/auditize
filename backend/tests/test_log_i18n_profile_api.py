@@ -1,7 +1,7 @@
 import callee
 import pytest
 
-from auditize.database import get_dbm
+from auditize.database import get_core_db
 from auditize.i18n import Lang
 from auditize.log_i18n_profile.models import (
     LogI18nProfile,
@@ -26,7 +26,7 @@ async def _test_create_log_i18n_profile(client: HttpTestHelper, data: dict):
     )
     profile = PreparedLogI18nProfile(resp.json()["id"], data)
     await assert_collection(
-        get_dbm().core_db.log_i18n_profiles, [profile.expected_document()]
+        get_core_db().log_i18n_profiles, [profile.expected_document()]
     )
 
 
@@ -150,7 +150,7 @@ async def test_log_i18n_profile_update_name(repo_write_client: HttpTestHelper):
         },
     )
     await assert_collection(
-        get_dbm().core_db.log_i18n_profiles,
+        get_core_db().log_i18n_profiles,
         [profile.expected_document({"name": "i18n updated"})],
     )
 
@@ -175,7 +175,7 @@ async def test_log_i18n_profile_update_add_translation(
         },
     )
     await assert_collection(
-        get_dbm().core_db.log_i18n_profiles,
+        get_core_db().log_i18n_profiles,
         [
             profile.expected_document(
                 {
@@ -208,7 +208,7 @@ async def test_log_i18n_profile_update_remove_translation(
         },
     )
     await assert_collection(
-        get_dbm().core_db.log_i18n_profiles,
+        get_core_db().log_i18n_profiles,
         [
             profile.expected_document(
                 {
@@ -262,7 +262,7 @@ async def test_log_i18n_profile_update_existing_translation(
         },
     )
     await assert_collection(
-        get_dbm().core_db.log_i18n_profiles,
+        get_core_db().log_i18n_profiles,
         [
             profile.expected_document(
                 {
@@ -459,7 +459,7 @@ async def test_log_i18n_profile_delete(
         f"/log-i18n-profiles/{log_i18n_profile.id}"
     )
 
-    await assert_collection(get_dbm().core_db.log_i18n_profiles, [])
+    await assert_collection(get_core_db().log_i18n_profiles, [])
 
 
 async def test_log_i18n_profile_delete_while_used_by_repo(

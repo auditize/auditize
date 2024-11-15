@@ -11,7 +11,7 @@ from pymongo.errors import PyMongoError
 
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import get_dbm, init_dbm
+from auditize.database import get_core_db, init_dbm
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -65,9 +65,9 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
     _lazy_init()
 
     # Make sure we can connect to the database before asking for the password
-    dbm = get_dbm()
+    db = get_core_db()
     try:
-        await dbm.ping()
+        await db.ping()
     except PyMongoError as exc:
         sys.exit(f"Error: could not connect to MongoDB: {exc}")
 

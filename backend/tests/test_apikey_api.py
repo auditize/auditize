@@ -4,7 +4,7 @@ import callee
 import pytest
 from httpx import Response
 
-from auditize.database import get_dbm
+from auditize.database import get_core_db
 from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
@@ -32,7 +32,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper):
     )
 
     apikey = PreparedApikey(resp.json()["id"], resp.json()["key"], data)
-    await assert_collection(get_dbm().core_db.apikeys, [apikey.expected_document()])
+    await assert_collection(get_core_db().apikeys, [apikey.expected_document()])
 
     # Test that the key actually works
     apikey_client = HttpTestHelper.spawn()
@@ -90,7 +90,7 @@ async def test_apikey_update(
         f"/apikeys/{apikey.id}", json=data, expected_status_code=204
     )
 
-    await assert_collection(get_dbm().core_db.apikeys, [apikey.expected_document(data)])
+    await assert_collection(get_core_db().apikeys, [apikey.expected_document(data)])
 
 
 async def test_apikey_update_unknown_id(apikey_write_client: HttpTestHelper):
@@ -131,8 +131,8 @@ async def test_apikey_regenerate_key(
     apikey_write_client: HttpTestHelper,
     apikey: PreparedApikey,
 ):
-    dbm = get_dbm()
-    mongo_document = await dbm.core_db.apikeys.find_one({"_id": uuid.UUID(apikey.id)})
+    db = get_core_db()
+    mongo_document = await db.apikeys.find_one({"_id": uuid.UUID(apikey.id)})
 
     await apikey_write_client.assert_post(
         f"/apikeys/{apikey.id}/key",
@@ -142,7 +142,7 @@ async def test_apikey_regenerate_key(
 
     # make sure the key has changed
     await assert_collection(
-        dbm.core_db.apikeys,
+        db.apikeys,
         [
             apikey.expected_document(
                 {
@@ -231,7 +231,7 @@ async def test_apikey_delete(
         f"/apikeys/{apikey.id}", expected_status_code=204
     )
 
-    await assert_collection(get_dbm().core_db.apikeys, [])
+    await assert_collection(get_core_db().apikeys, [])
 
 
 async def test_apikey_delete_unknown_id(apikey_write_client: HttpTestHelper):
@@ -255,7 +255,7 @@ class TestPermissions(BasePermissionTests):
         return "/apikeys"
 
     def get_principal_collection(self):
-        return get_dbm().core_db.apikeys
+        return get_core_db().apikeys
 
     async def inject_grantor(self, permissions=None) -> PreparedUser:
         return await PreparedUser.inject_into_db(

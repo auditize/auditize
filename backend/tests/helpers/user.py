@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 import callee
 from httpx import Response
 
-from auditize.database import get_dbm
+from auditize.database import get_core_db
 from auditize.i18n.lang import Lang
 from auditize.permissions.models import Permissions
 from auditize.resource.service import create_resource_document
@@ -71,7 +71,7 @@ class PreparedUser:
             user = cls.prepare_model(password=password)
         # FIXME: auditize.users.service.save_user should be used here
         user_id = await create_resource_document(
-            get_dbm().core_db.users, build_document_from_user(user)
+            get_core_db().users, build_document_from_user(user)
         )
         return cls(
             id=str(user_id),
@@ -84,7 +84,7 @@ class PreparedUser:
         )
 
     async def expire_password_reset_token(self):
-        await get_dbm().core_db.users.update_one(
+        await get_core_db().users.update_one(
             {"_id": UUID(self.id)},
             {
                 "$set": {

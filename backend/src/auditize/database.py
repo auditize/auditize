@@ -48,6 +48,9 @@ class Database:
             async with session.start_transaction():
                 yield session
 
+    async def ping(self):
+        await self.client.server_info()
+
 
 class CoreDatabase(Database):
     async def setup(self):
@@ -118,7 +121,7 @@ def init_dbm(name_prefix="auditize", *, force_init=False) -> DatabaseManager:
     return _dbm
 
 
-def get_dbm() -> DatabaseManager:
+def get_core_db() -> CoreDatabase:
     if not _dbm:
         raise Exception("DatabaseManager is not initialized")
-    return _dbm
+    return _dbm.core_db

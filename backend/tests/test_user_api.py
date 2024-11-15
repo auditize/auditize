@@ -6,7 +6,7 @@ import callee
 import pytest
 from httpx import Response
 
-from auditize.database import DatabaseManager, get_dbm
+from auditize.database import get_core_db
 from conftest import UserBuilder
 from helpers.apikey import PreparedApikey
 from helpers.database import assert_collection
@@ -64,7 +64,7 @@ async def test_user_create(user_write_client: HttpTestHelper):
     password_reset_token = await _wrap_password_reset_link_sending(func, data["email"])
 
     user = PreparedUser(user_id, data)
-    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
+    await assert_collection(get_core_db().users, [user.expected_document()])
 
     await _assert_password_reset_token_validity(password_reset_token)
 
@@ -79,7 +79,7 @@ async def test_user_create_lang_fr(user_write_client: HttpTestHelper):
     )
 
     user = PreparedUser(resp.json()["id"], data)
-    await assert_collection(get_dbm().core_db.users, [user.expected_document()])
+    await assert_collection(get_core_db().users, [user.expected_document()])
 
 
 async def test_user_create_missing_parameter(user_write_client: HttpTestHelper):
@@ -174,7 +174,7 @@ async def test_user_update_multiple_fields(
         f"/users/{user.id}", json=data, expected_status_code=204
     )
 
-    await assert_collection(get_dbm().core_db.users, [user.expected_document(data)])
+    await assert_collection(get_core_db().users, [user.expected_document(data)])
 
 
 async def test_user_update_single_field(
@@ -185,7 +185,7 @@ async def test_user_update_single_field(
         f"/users/{user.id}", json=data, expected_status_code=204
     )
 
-    await assert_collection(get_dbm().core_db.users, [user.expected_document(data)])
+    await assert_collection(get_core_db().users, [user.expected_document(data)])
 
 
 async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
@@ -367,7 +367,7 @@ async def test_user_list_forbidden(no_permission_client: HttpTestHelper):
 async def test_user_delete(user_write_client: HttpTestHelper, user: PreparedUser):
     await user_write_client.assert_delete(f"/users/{user.id}", expected_status_code=204)
 
-    await assert_collection(get_dbm().core_db.users, [])
+    await assert_collection(get_core_db().users, [])
 
 
 async def test_user_delete_unknown_id(user_write_client: HttpTestHelper):
@@ -446,7 +446,7 @@ async def test_user_password_reset_set_password_fresh_user(
     )
 
     await assert_collection(
-        get_dbm().core_db.users,
+        get_core_db().users,
         [
             user.expected_document(
                 {"password_hash": callee.IsA(str), "password_reset_token": None}
@@ -476,7 +476,7 @@ async def test_user_password_reset_set_password_after_forgot_password(
     )
 
     await assert_collection(
-        get_dbm().core_db.users,
+        get_core_db().users,
         [
             user.expected_document(
                 {"password_hash": callee.IsA(str), "password_reset_token": None}
@@ -579,7 +579,7 @@ async def test_update_user_me_lang(user_builder: UserBuilder):
         )
 
     await assert_collection(
-        get_dbm().core_db.users,
+        get_core_db().users,
         [
             user.expected_document(
                 {"lang": "fr", "authenticated_at": callee.IsA(datetime)}
@@ -603,7 +603,7 @@ async def test_update_user_me_password(
 
     # Make sure we don't have side effects in DB
     await assert_collection(
-        get_dbm().core_db.users,
+        get_core_db().users,
         [user.expected_document({"authenticated_at": callee.IsA(datetime)})],
     )
 
@@ -625,7 +625,7 @@ async def test_update_user_me_forbidden_field(user_builder: UserBuilder):
 
     # ensure nothing changed
     await assert_collection(
-        get_dbm().core_db.users,
+        get_core_db().users,
         [user.expected_document({"authenticated_at": callee.IsA(datetime)})],
     )
 
@@ -699,7 +699,7 @@ class TestPermissions(BasePermissionTests):
         return "/users"
 
     def get_principal_collection(self):
-        return get_dbm().core_db.users
+        return get_core_db().users
 
     async def inject_grantor(self, permissions=None) -> PreparedApikey:
         return await PreparedApikey.inject_into_db(

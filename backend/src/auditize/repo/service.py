@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
-from auditize.database import DatabaseManager, get_dbm
+from auditize.database import get_core_db
 from auditize.exceptions import (
     UnknownModelException,
     ValidationError,
@@ -47,17 +47,17 @@ async def _validate_repo(repo: Repo | RepoUpdate):
 
 async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
     await _validate_repo(repo)
-    dbm = get_dbm()
+    db = get_core_db()
     repo_id = uuid4()
 
-    async with dbm.core_db.transaction() as session:
+    async with db.transaction() as session:
         with enhance_constraint_violation_exception("error.constraint_violation.repo"):
             await create_resource_document(
-                dbm.core_db.repos,
+                db.repos,
                 {
                     **repo.model_dump(exclude={"id", "log_db_name"}),
                     "log_db_name": (
-                        log_db.name if log_db else f"{dbm.name_prefix}_logs_{repo_id}"
+                        log_db.name if log_db else f"{db.name}_logs_{repo_id}"
                     ),
                 },
                 resource_id=repo_id,
@@ -74,13 +74,11 @@ async def update_repo(repo_id: UUID, update: RepoUpdate):
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_i18n_profile"
     ):
-        await update_resource_document(get_dbm().core_db.repos, repo_id, update)
+        await update_resource_document(get_core_db().repos, repo_id, update)
 
 
 async def _get_repo(repo_id: UUID, session: AsyncIOMotorClientSession = None) -> Repo:
-    result = await get_resource_document(
-        get_dbm().core_db.repos, repo_id, session=session
-    )
+    result = await get_resource_document(get_core_db().repos, repo_id, session=session)
     return Repo.model_validate(result)
 
 
@@ -90,9 +88,9 @@ async def get_repo(repo_id: UUID | Repo) -> Repo:
     return await _get_repo(repo_id)
 
 
-async def _get_log_saved_at(db: LogDatabase, *, sort: int) -> datetime | None:
+async def _get_log_saved_at(log_db: LogDatabase, *, sort: int) -> datetime | None:
     results = (
-        await db.logs.find({}, projection={"saved_at": 1})
+        await log_db.logs.find({}, projection={"saved_at": 1})
         .sort({"saved_at": sort})
         .limit(1)
         .to_list(None)
@@ -101,14 +99,14 @@ async def _get_log_saved_at(db: LogDatabase, *, sort: int) -> datetime | None:
 
 
 async def get_repo_stats(repo_id: UUID) -> RepoStats:
-    logs_db = await get_log_db_for_config(repo_id)
+    log_db = await get_log_db_for_config(repo_id)
     stats = RepoStats()
 
-    stats.first_log_date = await _get_log_saved_at(logs_db, sort=1)
-    stats.last_log_date = await _get_log_saved_at(logs_db, sort=-1)
-    stats.log_count = await logs_db.logs.estimated_document_count()
+    stats.first_log_date = await _get_log_saved_at(log_db, sort=1)
+    stats.last_log_date = await _get_log_saved_at(log_db, sort=-1)
+    stats.log_count = await log_db.logs.estimated_document_count()
 
-    db_stats = await logs_db.db.command("dbstats")
+    db_stats = await log_db.db.command("dbstats")
     stats.storage_size = int(db_stats["storageSize"]) + int(db_stats["indexSize"])
 
     return stats
@@ -120,7 +118,7 @@ async def _get_repos(
     page_size: int,
 ) -> tuple[list[Repo], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
-        get_dbm().core_db.repos,
+        get_core_db().repos,
         filter=filter,
         sort=[("name", 1)],
         page=page,
@@ -139,7 +137,7 @@ async def get_repos(
 
 
 async def get_all_repos():
-    results = get_dbm().core_db.repos.find({})
+    results = get_core_db().repos.find({})
     return [Repo.model_validate(result) async for result in results]
 
 
@@ -203,19 +201,19 @@ async def delete_repo(repo_id: UUID):
     from auditize.log_filter.service import delete_log_filters_with_repo
     from auditize.user.service import remove_repo_from_users_permissions
 
-    logs_db = await get_log_db_for_config(repo_id)
-    core_db = get_dbm().core_db
+    log_db = await get_log_db_for_config(repo_id)
+    core_db = get_core_db()
     async with core_db.transaction() as session:
         await delete_resource_document(core_db.repos, repo_id, session=session)
         await remove_repo_from_users_permissions(repo_id, session)
         await remove_repo_from_apikeys_permissions(repo_id, session)
         await delete_log_filters_with_repo(repo_id, session)
-        await logs_db.client.drop_database(logs_db.name)
+        await log_db.client.drop_database(log_db.name)
 
 
 async def is_log_i18n_profile_used_by_repo(profile_id: UUID) -> bool:
     return await has_resource_document(
-        get_dbm().core_db.repos, {"log_i18n_profile_id": profile_id}
+        get_core_db().repos, {"log_i18n_profile_id": profile_id}
     )
 
 
@@ -240,5 +238,5 @@ async def ensure_repos_in_permissions_exist(permissions: Permissions):
 
 
 async def get_retention_period_enabled_repos() -> list[Repo]:
-    results = get_dbm().core_db.repos.find({"retention_period": {"$ne": None}})
+    results = get_core_db().repos.find({"retention_period": {"$ne": None}})
     return [Repo.model_validate(result) async for result in results]

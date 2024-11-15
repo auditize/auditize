@@ -2,7 +2,7 @@ from functools import partial
 from uuid import UUID
 
 from auditize.config import get_config
-from auditize.database import Collection, Database, get_dbm
+from auditize.database import Collection, Database, get_core_db
 from auditize.exceptions import PermissionDenied
 from auditize.repo.models import Repo, RepoStatus
 
@@ -75,7 +75,7 @@ async def _get_log_db(repo: UUID | Repo, statuses: list[RepoStatus]) -> LogDatab
                 "The repository status does not allow the requested operation"
             )
 
-    return LogDatabase(repo.log_db_name, get_dbm().client)
+    return LogDatabase(repo.log_db_name, get_core_db().client)
 
 
 get_log_db_for_reading = partial(

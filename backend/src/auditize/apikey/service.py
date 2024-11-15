@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClientSession
 
 from auditize.apikey.models import Apikey, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
-from auditize.database import get_dbm
+from auditize.database import get_core_db
 from auditize.exceptions import enhance_constraint_violation_exception
 from auditize.permissions.operations import normalize_permissions, update_permissions
 from auditize.permissions.service import remove_repo_from_permissions
@@ -36,7 +36,7 @@ async def create_apikey(apikey: Apikey) -> tuple[UUID, str]:
     key, key_hash = _generate_key()
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
         apikey_id = await create_resource_document(
-            get_dbm().core_db.apikeys,
+            get_core_db().apikeys,
             {
                 **apikey.model_dump(exclude={"id", "key_hash", "permissions"}),
                 "key_hash": key_hash,
@@ -55,21 +55,19 @@ async def update_apikey(apikey_id: UUID, update: ApikeyUpdate):
         doc_update["permissions"] = apikey_permissions.model_dump()
 
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
-        await update_resource_document(get_dbm().core_db.apikeys, apikey_id, doc_update)
+        await update_resource_document(get_core_db().apikeys, apikey_id, doc_update)
 
 
 async def regenerate_apikey(apikey_id: UUID) -> str:
-    dbm = get_dbm()
     key, key_hash = _generate_key()
     await update_resource_document(
-        dbm.core_db.apikeys, apikey_id, {"key_hash": key_hash}
+        get_core_db().apikeys, apikey_id, {"key_hash": key_hash}
     )
     return key
 
 
 async def _get_apikey(filter: any) -> Apikey:
-    dbm = get_dbm()
-    result = await get_resource_document(dbm.core_db.apikeys, filter)
+    result = await get_resource_document(get_core_db().apikeys, filter)
     return Apikey.model_validate(result)
 
 
@@ -84,9 +82,8 @@ async def get_apikey_by_key(key: str) -> Apikey:
 async def get_apikeys(
     query: str, page: int, page_size: int
 ) -> tuple[list[Apikey], PagePaginationInfo]:
-    dbm = get_dbm()
     results, page_info = await find_paginated_by_page(
-        dbm.core_db.apikeys,
+        get_core_db().apikeys,
         filter={"$text": {"$search": query}} if query else None,
         sort=[("name", 1)],
         page=page,
@@ -96,12 +93,10 @@ async def get_apikeys(
 
 
 async def delete_apikey(apikey_id: UUID):
-    dbm = get_dbm()
-    await delete_resource_document(dbm.core_db.apikeys, apikey_id)
+    await delete_resource_document(get_core_db().apikeys, apikey_id)
 
 
 async def remove_repo_from_apikeys_permissions(
     repo_id: UUID, session: AsyncIOMotorClientSession
 ):
-    dbm = get_dbm()
-    await remove_repo_from_permissions(dbm.core_db.apikeys, repo_id, session)
+    await remove_repo_from_permissions(get_core_db().apikeys, repo_id, session)
