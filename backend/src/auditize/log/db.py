@@ -13,7 +13,7 @@ class LogDatabase(Database):
 
         # Log collection indexes
         if not config.test_mode:
-            await self.logs.create_index({"saved_at": -1, "_id": -1})
+            await self.logs.create_index({"saved_at": -1})
             await self.logs.create_index("action.type")
             await self.logs.create_index("action.category")
             await self.logs.create_index({"source.name": 1, "source.value": 1})
