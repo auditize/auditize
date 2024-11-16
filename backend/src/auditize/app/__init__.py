@@ -6,21 +6,21 @@ from auditize.app.app_api import build_app as build_api_app
 from auditize.app.app_static import build_app as build_static_app
 from auditize.app.cors import setup_cors
 from auditize.config import get_config, init_config
-from auditize.database import init_dbm
+from auditize.database import init_core_db, migrate_databases
 
 __all__ = ("build_app", "build_api_app", "app_factory")
 
 
 @asynccontextmanager
 async def _setup_app(_):
-    dbm = init_dbm()
-    await dbm.setup()
+    init_core_db()
+    await migrate_databases()
     yield
 
 
 def build_app():
     # This function is intended to be used in a context where
-    # config and dbm have already been initialized
+    # config and core db have already been initialized
     app = FastAPI(openapi_url=None)
     config = get_config()
     app.mount(

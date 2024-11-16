@@ -11,7 +11,7 @@ from pymongo.errors import PyMongoError
 
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import get_core_db, init_dbm
+from auditize.database import get_core_db, init_core_db
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -29,17 +29,17 @@ from auditize.user.service import (
 from auditize.version import __version__
 
 
-def _lazy_init(*, skip_dbm_init=False):
+def _lazy_init(*, skip_db_init=False):
     try:
         init_config()
     except ConfigAlreadyInitialized:
-        # this case corresponds to tests where config and dbm are already initialized
+        # this case corresponds to tests where config and db are already initialized
         return
     except ConfigError as exc:
         sys.exit("ERROR: " + str(exc))
 
-    if not skip_dbm_init:
-        init_dbm()
+    if not skip_db_init:
+        init_core_db()
 
 
 def _get_password() -> str:
@@ -114,7 +114,7 @@ async def schedule():
 
 
 async def dump_config():
-    _lazy_init(skip_dbm_init=True)
+    _lazy_init(skip_db_init=True)
     config = get_config()
     print(json.dumps(config.to_dict(), ensure_ascii=False, indent=4))
 

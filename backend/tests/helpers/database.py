@@ -3,25 +3,25 @@ import random
 
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
-from auditize.database import DatabaseManager, init_dbm
+from auditize.database import CoreDatabase, Database, init_core_db
 from auditize.log.db import LogDatabase
 
 
-def setup_test_dbm():
-    name_prefix = "test_%04d" % int(random.random() * 10000)
+def setup_test_core_db() -> CoreDatabase:
+    db_name = "test_%04d" % int(random.random() * 10000)
     try:
-        name_prefix += "_" + os.environ["PYTEST_XDIST_WORKER"]
+        db_name += "_" + os.environ["PYTEST_XDIST_WORKER"]
     except KeyError:
         pass
-    return init_dbm(name_prefix, force_init=True)
+    return init_core_db(db_name, force_init=True)
 
 
-async def teardown_test_dbm(test_dbm):
-    for db_name in await test_dbm.client.list_database_names():
-        if db_name.startswith(test_dbm.name_prefix):
-            await test_dbm.client.drop_database(db_name)
+async def teardown_test_core_db(core_db: CoreDatabase):
+    for db_name in await core_db.client.list_database_names():
+        if db_name.startswith(core_db.name):
+            await core_db.client.drop_database(db_name)
 
-    test_dbm.client.close()
+    core_db.client.close()
 
 
 async def assert_collection(
@@ -31,31 +31,31 @@ async def assert_collection(
     assert results == expected
 
 
-async def cleanup_db(db: AsyncIOMotorDatabase):
-    for collection_name in await db.list_collection_names():
-        await db[collection_name].delete_many({})
+async def cleanup_db(db: Database):
+    for collection_name in await db.db.list_collection_names():
+        await db.db[collection_name].delete_many({})
 
 
 class TestLogDatabasePool:
-    def __init__(self, dbm: DatabaseManager):
-        self.dbm = dbm
+    def __init__(self, core_db: CoreDatabase):
+        self.core_db = core_db
         self._cache = {}
 
     async def get_db(self) -> LogDatabase:
-        for db, is_used in self._cache.items():
+        for log_db, is_used in self._cache.items():
             if not is_used:
-                self._cache[db] = True
-                return db
+                self._cache[log_db] = True
+                return log_db
         else:
-            db = LogDatabase(
-                f"{self.dbm.name_prefix}_logs_{len(self._cache)}", self.dbm.client
+            log_db = LogDatabase(
+                f"{self.core_db.name}_logs_{len(self._cache)}", self.core_db.client
             )
-            await db.setup()
-            self._cache[db] = True
-            return db
+            await log_db.setup()
+            self._cache[log_db] = True
+            return log_db
 
     async def release(self):
-        for db, is_used in self._cache.items():
+        for log_db, is_used in self._cache.items():
             if is_used:
-                await cleanup_db(db.db)
-                self._cache[db] = False
+                await cleanup_db(log_db)
+                self._cache[log_db] = False

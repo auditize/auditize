@@ -103,25 +103,36 @@ class DatabaseManager:
         await self.client.server_info()
 
 
-_dbm: DatabaseManager | None = None
+async def migrate_databases():
+    # avoid circular imports
+    from auditize.log.db import get_log_db_for_maintenance
+    from auditize.repo.service import get_all_repos
+
+    await get_core_db().setup()
+    for repo in await get_all_repos():
+        log_db = await get_log_db_for_maintenance(repo)
+        await log_db.setup()
 
 
-def init_dbm(name_prefix="auditize", *, force_init=False) -> DatabaseManager:
-    global _dbm
-    if not force_init and _dbm:
-        raise Exception("DatabaseManager is already initialized")
+_core_db: CoreDatabase | None = None
+
+
+def init_core_db(name="auditize", *, force_init=False) -> CoreDatabase:
+    global _core_db
+    if not force_init and _core_db:
+        raise Exception("CoreDatabase is already initialized")
     config = get_config()
-    _dbm = DatabaseManager.spawn(
+    _core_db = CoreDatabase(
+        name,
         AsyncIOMotorClient(
             config.mongodb_uri,
             tlsCAFile=certifi.where() if config.mongodb_tls else None,
         ),
-        name_prefix=name_prefix,
     )
-    return _dbm
+    return _core_db
 
 
 def get_core_db() -> CoreDatabase:
-    if not _dbm:
-        raise Exception("DatabaseManager is not initialized")
-    return _dbm.core_db
+    if not _core_db:
+        raise Exception("CoreDatabase is not initialized")
+    return _core_db
