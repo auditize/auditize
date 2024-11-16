@@ -6,6 +6,10 @@ class AuditizeException(Exception):
     pass
 
 
+class MigrationLocked(Exception):
+    pass
+
+
 class ConfigError(AuditizeException):
     pass
 

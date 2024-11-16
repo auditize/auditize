@@ -4,7 +4,7 @@ import pytest
 from icecream import ic
 
 from auditize.config import init_config
-from auditize.database import CoreDatabase, migrate_databases
+from auditize.database import CoreDatabase, Database, migrate_databases
 from auditize.log.db import LogDatabase
 from auditize.log.service.consolidation import _CONSOLIDATED_DATA_CACHE
 
@@ -95,6 +95,13 @@ async def core_db(_core_db, anyio_backend):
     yield _core_db
     await cleanup_db(_core_db)
     await _CONSOLIDATED_DATA_CACHE.clear()
+
+
+@pytest.fixture(scope="function")
+async def tmp_db(_core_db: CoreDatabase):
+    db = Database(_core_db.name + "_tmp", _core_db.client)
+    yield db
+    await db.client.drop_database(db.name)
 
 
 RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]
