@@ -71,36 +71,11 @@ class CoreDatabase(Database):
         await self.log_filters.create_index({"name": "text"})
 
     # Collections
-    # FIXME: naming convention (spaces vs underscores)
     repos = Collection("repos")
     log_i18n_profiles = Collection("log_i18n_profiles")
     users = Collection("users")
     apikeys = Collection("apikeys")
     log_filters = Collection("log_filters")
-
-
-class DatabaseManager:
-    def __init__(self, client: AsyncIOMotorClient, name_prefix: str):
-        self.client = client
-        self.name_prefix = name_prefix
-        self.core_db = CoreDatabase(self.name_prefix, client)
-
-    @classmethod
-    def spawn(cls, client: AsyncIOMotorClient, name_prefix="auditize"):
-        return cls(client, name_prefix)
-
-    async def setup(self):
-        # avoid circular imports
-        from auditize.log.db import get_log_db_for_maintenance
-        from auditize.repo.service import get_all_repos
-
-        await self.core_db.setup()
-        for repo in await get_all_repos():
-            log_db = await get_log_db_for_maintenance(repo)
-            await log_db.setup()
-
-    async def ping(self):
-        await self.client.server_info()
 
 
 async def migrate_databases():

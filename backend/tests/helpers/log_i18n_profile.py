@@ -3,7 +3,6 @@ from datetime import datetime
 
 import callee
 
-from auditize.database import DatabaseManager
 from auditize.log_i18n_profile.models import LogI18nProfile
 from auditize.log_i18n_profile.service import create_log_i18n_profile
 
