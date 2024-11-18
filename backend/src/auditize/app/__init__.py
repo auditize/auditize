@@ -6,7 +6,8 @@ from auditize.app.app_api import build_app as build_api_app
 from auditize.app.app_static import build_app as build_static_app
 from auditize.app.cors import setup_cors
 from auditize.config import get_config, init_config
-from auditize.database import init_core_db, migrate_databases
+from auditize.database import init_core_db, migrate_core_db
+from auditize.log.db import migrate_all_log_dbs
 
 __all__ = ("build_app", "build_api_app", "app_factory")
 
@@ -14,7 +15,8 @@ __all__ = ("build_app", "build_api_app", "app_factory")
 @asynccontextmanager
 async def _setup_app(_):
     init_core_db()
-    await migrate_databases()
+    await migrate_core_db()
+    await migrate_all_log_dbs()
     yield
 
 

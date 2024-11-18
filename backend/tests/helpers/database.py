@@ -1,10 +1,10 @@
 import os
 import random
 
-from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import CoreDatabase, Database, init_core_db
-from auditize.log.db import LogDatabase
+from auditize.log.db import LogDatabase, migrate_log_db
 
 
 def setup_test_core_db() -> CoreDatabase:
@@ -50,7 +50,7 @@ class TestLogDatabasePool:
             log_db = LogDatabase(
                 f"{self.core_db.name}_logs_{len(self._cache)}", self.core_db.client
             )
-            await log_db.setup()
+            await migrate_log_db(log_db)
             self._cache[log_db] = True
             return log_db
 

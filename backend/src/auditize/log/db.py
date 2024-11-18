@@ -1,53 +1,14 @@
 from functools import partial
+from typing import Awaitable, Callable, Iterable, cast
 from uuid import UUID
 
 from auditize.config import get_config
-from auditize.database import Collection, Database, get_core_db
+from auditize.database import Collection, Database, Migrator, get_core_db
 from auditize.exceptions import PermissionDenied
 from auditize.repo.models import Repo, RepoStatus
 
 
 class LogDatabase(Database):
-    async def setup(self):
-        config = get_config()
-
-        # Log collection indexes
-        if not config.test_mode:
-            await self.logs.create_index({"saved_at": -1})
-            await self.logs.create_index("action.type")
-            await self.logs.create_index("action.category")
-            await self.logs.create_index({"source.name": 1, "source.value": 1})
-            await self.logs.create_index("actor.ref")
-            await self.logs.create_index("actor.name")
-            await self.logs.create_index(
-                {"actor.extra.name": 1, "actor.extra.value": 1}
-            )
-            await self.logs.create_index("resource.type")
-            await self.logs.create_index("resource.ref")
-            await self.logs.create_index("resource.name")
-            await self.logs.create_index(
-                {"resource.extra.name": 1, "resource.extra.value": 1}
-            )
-            await self.logs.create_index({"details.name": 1, "details.value": 1})
-            await self.logs.create_index("tags.type")
-            await self.logs.create_index("tags.ref")
-            await self.logs.create_index("entity_path.ref")
-
-        # Consolidated data indexes
-        if not config.test_mode:
-            await self.log_actions.create_index("type")
-            await self.log_actions.create_index("category")
-        await self.log_source_fields.create_index("name", unique=True)
-        await self.log_actor_types.create_index("type", unique=True)
-        await self.log_actor_extra_fields.create_index("name", unique=True)
-        await self.log_resource_types.create_index("type", unique=True)
-        await self.log_resource_extra_fields.create_index("name", unique=True)
-        await self.log_detail_fields.create_index("name", unique=True)
-        await self.log_tag_types.create_index("type", unique=True)
-        await self.log_attachment_types.create_index("type", unique=True)
-        await self.log_attachment_mime_types.create_index("mime_type", unique=True)
-        await self.log_entities.create_index("ref", unique=True)
-
     # Collections
     logs = Collection("logs")
     log_actions = Collection("log_actions")
@@ -87,3 +48,61 @@ get_log_db_for_writing = partial(_get_log_db, statuses=[RepoStatus.enabled])
 get_log_db_for_config = partial(_get_log_db, statuses=None)
 
 get_log_db_for_maintenance = partial(_get_log_db, statuses=None)
+
+
+class _LogDbMigrator(Migrator):
+    def get_migrations(self) -> Iterable[tuple[int, Callable[[], Awaitable]]]:
+        return ((1, self.apply_v1),)
+
+    async def apply_v1(self):
+        config = get_config()
+
+        db = cast(LogDatabase, self.db)
+
+        # Log collection indexes
+        if not config.test_mode:
+            await db.logs.create_index({"saved_at": -1})
+            await db.logs.create_index("action.type")
+            await db.logs.create_index("action.category")
+            await db.logs.create_index({"source.name": 1, "source.value": 1})
+            await db.logs.create_index("actor.ref")
+            await db.logs.create_index("actor.name")
+            await db.logs.create_index({"actor.extra.name": 1, "actor.extra.value": 1})
+            await db.logs.create_index("resource.type")
+            await db.logs.create_index("resource.ref")
+            await db.logs.create_index("resource.name")
+            await db.logs.create_index(
+                {"resource.extra.name": 1, "resource.extra.value": 1}
+            )
+            await db.logs.create_index({"details.name": 1, "details.value": 1})
+            await db.logs.create_index("tags.type")
+            await db.logs.create_index("tags.ref")
+            await db.logs.create_index("entity_path.ref")
+
+        # Consolidated data indexes
+        if not config.test_mode:
+            await db.log_actions.create_index("type")
+            await db.log_actions.create_index("category")
+        await db.log_source_fields.create_index("name", unique=True)
+        await db.log_actor_types.create_index("type", unique=True)
+        await db.log_actor_extra_fields.create_index("name", unique=True)
+        await db.log_resource_types.create_index("type", unique=True)
+        await db.log_resource_extra_fields.create_index("name", unique=True)
+        await db.log_detail_fields.create_index("name", unique=True)
+        await db.log_tag_types.create_index("type", unique=True)
+        await db.log_attachment_types.create_index("type", unique=True)
+        await db.log_attachment_mime_types.create_index("mime_type", unique=True)
+        await db.log_entities.create_index("ref", unique=True)
+
+
+async def migrate_log_db(log_db: LogDatabase):
+    migrator = _LogDbMigrator(log_db)
+    await migrator.apply_migrations()
+
+
+async def migrate_all_log_dbs():
+    from auditize.repo.service import get_all_repos  # avoid circular imports
+
+    for repo in await get_all_repos():
+        log_db = await get_log_db_for_maintenance(repo)
+        await migrate_log_db(log_db)

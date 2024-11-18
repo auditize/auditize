@@ -4,7 +4,7 @@ import pytest
 from icecream import ic
 
 from auditize.config import init_config
-from auditize.database import CoreDatabase, Database, migrate_databases
+from auditize.database import CoreDatabase, Database, migrate_core_db
 from auditize.log.db import LogDatabase
 from auditize.log.service.consolidation import _CONSOLIDATED_DATA_CACHE
 
@@ -46,7 +46,7 @@ def _config(anyio_backend):
 @pytest.fixture(scope="session")
 async def _core_db():
     test_db = setup_test_core_db()
-    await migrate_databases()
+    await migrate_core_db()
     yield test_db
     await teardown_test_core_db(test_db)
 

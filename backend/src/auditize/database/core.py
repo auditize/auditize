@@ -69,15 +69,3 @@ class _CoreDbMigrator(Migrator):
 async def migrate_core_db():
     migrator = _CoreDbMigrator(get_core_db())
     await migrator.apply_migrations()
-
-
-async def migrate_databases():
-    # avoid circular imports
-    from auditize.log.db import get_log_db_for_maintenance
-    from auditize.repo.service import get_all_repos
-
-    await migrate_core_db()
-
-    for repo in await get_all_repos():
-        log_db = await get_log_db_for_maintenance(repo)
-        await log_db.setup()
