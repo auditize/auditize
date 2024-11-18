@@ -1,3 +1,5 @@
+from typing import Awaitable, Callable, Iterable, cast
+
 import certifi
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
@@ -5,27 +7,10 @@ from motor.motor_asyncio import (
 
 from auditize.config import get_config
 from auditize.database.database import Collection, Database
+from auditize.database.migration import Migrator
 
 
 class CoreDatabase(Database):
-    async def setup(self):
-        # Unique indexes
-        await self.repos.create_index("name", unique=True)
-        await self.users.create_index("email", unique=True)
-        await self.apikeys.create_index("name", unique=True)
-        await self.log_i18n_profiles.create_index("name", unique=True)
-        await self.log_filters.create_index("name", unique=True)
-
-        # Text indexes
-        await self.repos.create_index({"name": "text"})
-        await self.users.create_index(
-            {"first_name": "text", "last_name": "text", "email": "text"}
-        )
-        await self.apikeys.create_index({"name": "text"})
-        await self.log_i18n_profiles.create_index({"name": "text"})
-        await self.log_filters.create_index({"name": "text"})
-
-    # Collections
     repos = Collection("repos")
     log_i18n_profiles = Collection("log_i18n_profiles")
     users = Collection("users")
@@ -57,12 +42,42 @@ def get_core_db() -> CoreDatabase:
     return _core_db
 
 
+class _CoreDbMigrator(Migrator):
+    def get_migrations(self) -> Iterable[tuple[int, Callable[[], Awaitable]]]:
+        return ((1, self.apply_v1),)
+
+    async def apply_v1(self):
+        db = cast(CoreDatabase, self.db)
+
+        # Unique indexes
+        await db.repos.create_index("name", unique=True)
+        await db.users.create_index("email", unique=True)
+        await db.apikeys.create_index("name", unique=True)
+        await db.log_i18n_profiles.create_index("name", unique=True)
+        await db.log_filters.create_index("name", unique=True)
+
+        # Text indexes
+        await db.repos.create_index({"name": "text"})
+        await db.users.create_index(
+            {"first_name": "text", "last_name": "text", "email": "text"}
+        )
+        await db.apikeys.create_index({"name": "text"})
+        await db.log_i18n_profiles.create_index({"name": "text"})
+        await db.log_filters.create_index({"name": "text"})
+
+
+async def migrate_core_db():
+    migrator = _CoreDbMigrator(get_core_db())
+    await migrator.apply_migrations()
+
+
 async def migrate_databases():
     # avoid circular imports
     from auditize.log.db import get_log_db_for_maintenance
     from auditize.repo.service import get_all_repos
 
-    await get_core_db().setup()
+    await migrate_core_db()
+
     for repo in await get_all_repos():
         log_db = await get_log_db_for_maintenance(repo)
         await log_db.setup()

@@ -4,7 +4,7 @@ from typing import Callable, Iterable
 
 from pymongo.errors import DuplicateKeyError
 
-from auditize.database import Database
+from auditize.database.database import Database
 from auditize.exceptions import AuditizeException, MigrationLocked
 from auditize.helpers.datetime import now
 
