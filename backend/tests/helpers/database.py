@@ -24,13 +24,6 @@ async def teardown_test_core_db(core_db: CoreDatabase):
     core_db.client.close()
 
 
-async def assert_collection(
-    collection: AsyncIOMotorCollection, expected, *, filter=None
-):
-    results = await collection.find(filter or {}).to_list(None)
-    assert results == expected
-
-
 async def cleanup_db(db: Database):
     for collection_name in await db.db.list_collection_names():
         await db.db[collection_name].delete_many({})
@@ -59,3 +52,23 @@ class TestLogDatabasePool:
             if is_used:
                 await cleanup_db(log_db)
                 self._cache[log_db] = False
+
+
+async def assert_collection(
+    collection: AsyncIOMotorCollection, expected, *, filter=None
+):
+    results = await collection.find(filter or {}).to_list(None)
+    assert results == expected
+
+
+async def assert_db_indexes(db: Database, expected):
+    assert list(sorted(await db.db.list_collection_names())) == list(
+        sorted(expected.keys())
+    )
+    for collection_name, expected_indexes in expected.items():
+        actual_indexes = [
+            index["name"] async for index in db.db[collection_name].list_indexes()
+        ]
+        assert list(sorted(actual_indexes)) == list(
+            sorted(expected_indexes + ("_id_",))
+        )

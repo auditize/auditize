@@ -66,6 +66,8 @@ class _CoreDbMigrator(Migrator):
         await db.log_filters.create_index({"name": "text"})
 
 
-async def migrate_core_db():
-    migrator = _CoreDbMigrator(get_core_db())
+async def migrate_core_db(core_db=None):
+    if not core_db:
+        core_db = get_core_db()
+    migrator = _CoreDbMigrator(core_db)
     await migrator.apply_migrations()
