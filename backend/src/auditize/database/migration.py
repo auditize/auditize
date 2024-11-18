@@ -78,6 +78,12 @@ class Migrator:
         async for migration_version, migration in self.get_applicable_migrations(
             target_version
         ):
+            print(
+                f"Database {self.db.name!r}: migration version {migration_version} started..."
+            )
             await self.mark_migration_as_started(migration_version)
             await migration()
             await self.mark_migration_as_finished(migration_version)
+            print(
+                f"Database {self.db.name!r}: migration version {migration_version} finished"
+            )
