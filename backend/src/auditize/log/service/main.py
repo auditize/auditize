@@ -94,14 +94,10 @@ async def get_log_attachment(
     return Log.Attachment(**doc["attachments"][0])
 
 
-def _text_search_filter(text: str) -> dict[str, Any]:
-    return {"$regex": re.compile(re.escape(text), re.IGNORECASE)}
-
-
 def _custom_field_search_filter(params: dict[str, str]) -> dict:
     return {
         "$all": [
-            {"$elemMatch": {"name": name, "value": _text_search_filter(value)}}
+            {"$elemMatch": {"name": name, "value": value}}
             for name, value in params.items()
         ]
     }
@@ -121,7 +117,7 @@ def _get_criteria_from_search_params(
     if sp.actor_type:
         criteria.append({"actor.type": sp.actor_type})
     if sp.actor_name:
-        criteria.append({"actor.name": _text_search_filter(sp.actor_name)})
+        criteria.append({"actor.name": sp.actor_name})
     if sp.actor_ref:
         criteria.append({"actor.ref": sp.actor_ref})
     if sp.actor_extra:
@@ -129,7 +125,7 @@ def _get_criteria_from_search_params(
     if sp.resource_type:
         criteria.append({"resource.type": sp.resource_type})
     if sp.resource_name:
-        criteria.append({"resource.name": _text_search_filter(sp.resource_name)})
+        criteria.append({"resource.name": sp.resource_name})
     if sp.resource_ref:
         criteria.append({"resource.ref": sp.resource_ref})
     if sp.resource_extra:
@@ -143,14 +139,14 @@ def _get_criteria_from_search_params(
     if sp.tag_type:
         criteria.append({"tags.type": sp.tag_type})
     if sp.tag_name:
-        criteria.append({"tags.name": _text_search_filter(sp.tag_name)})
+        criteria.append({"tags.name": sp.tag_name})
     if sp.has_attachment is not None:
         if sp.has_attachment:
             criteria.append({"attachments": {"$not": {"$size": 0}}})
         else:
             criteria.append({"attachments": {"$size": 0}})
     if sp.attachment_name:
-        criteria.append({"attachments.name": _text_search_filter(sp.attachment_name)})
+        criteria.append({"attachments.name": sp.attachment_name})
     if sp.attachment_type:
         criteria.append({"attachments.type": sp.attachment_type})
     if sp.attachment_mime_type:
