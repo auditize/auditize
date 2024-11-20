@@ -61,16 +61,16 @@ async def find_paginated_by_cursor(
     if pagination_cursor:
         cursor = PaginationCursor.load(pagination_cursor)
         filter = {  # noqa
-            **filter,
-            "$or": [
-                {"saved_at": {"$lt": cursor.date}},
+            "$and": [
+                filter,
+                {"saved_at": {"$lte": cursor.date}},
                 {
-                    "$and": [
-                        {"saved_at": {"$eq": cursor.date}},
+                    "$or": [
+                        {"saved_at": {"$lt": cursor.date}},
                         {"_id": {"$lt": cursor.id}},
                     ]
                 },
-            ],
+            ]
         }
 
     results = await collection.find(
