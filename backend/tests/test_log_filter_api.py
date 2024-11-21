@@ -4,7 +4,7 @@ from uuid import UUID
 import callee
 import pytest
 
-from auditize.database import get_dbm
+from auditize.database import get_core_db
 from conftest import RepoBuilder, UserBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
@@ -29,7 +29,7 @@ async def _test_log_filter_creation(user: PreparedUser, data: dict):
     log_filter = PreparedLogFilter(resp.json()["id"], data)
 
     await assert_collection(
-        get_dbm().core_db.log_filters,
+        get_core_db().log_filters,
         [log_filter.expected_document({"user_id": UUID(user.id)})],
     )
 
@@ -340,7 +340,7 @@ async def _test_log_filter_update(
             json=update,
         )
     await assert_collection(
-        get_dbm().core_db.log_filters,
+        get_core_db().log_filters,
         [
             log_filter.expected_document({**update, "user_id": UUID(log_read_user.id)}),
         ],
@@ -741,7 +741,7 @@ async def test_log_filter_delete(log_read_user: PreparedUser, repo: PreparedRepo
     async with log_read_user.client() as client:
         client: HttpTestHelper
         await client.assert_delete_no_content(f"/users/me/logs/filters/{log_filter.id}")
-    await assert_collection(get_dbm().core_db.log_filters, [])
+    await assert_collection(get_core_db().log_filters, [])
 
 
 async def test_log_filter_delete_unknown(log_read_user_client: HttpTestHelper):

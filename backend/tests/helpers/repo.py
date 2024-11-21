@@ -74,7 +74,7 @@ class PreparedRepo:
         )
         log_id = resp.json()["id"]
         if saved_at:
-            self.db.logs.update_one(
+            await self.db.logs.update_one(
                 {"_id": UUID(log_id)}, {"$set": {"saved_at": saved_at}}
             )
         return PreparedLog(log_id, data, self)

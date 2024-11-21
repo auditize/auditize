@@ -14,7 +14,7 @@ from typing import Iterator
 import httpx
 
 from auditize.config import init_config
-from auditize.database import init_dbm
+from auditize.database import init_core_db
 from auditize.log.models import Log
 from auditize.log.service import save_log, save_log_attachment
 
@@ -686,7 +686,7 @@ class ServiceInjector:
         self.time_start = self.time_end - ((log_count / 1000) * 24 * 60 * 60)
 
         init_config()
-        init_dbm()
+        init_core_db()
 
     async def __call__(self, log, attachments):
         log_model = Log.model_validate(log)

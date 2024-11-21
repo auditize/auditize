@@ -6,7 +6,7 @@ import bcrypt
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
 from auditize.config import get_config
-from auditize.database import DatabaseManager, get_dbm
+from auditize.database import get_core_db
 from auditize.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
@@ -61,7 +61,7 @@ def build_document_from_user(user: User) -> dict:
 async def save_user(user: User) -> UUID:
     await ensure_repos_in_permissions_exist(user.permissions)
     return await create_resource_document(
-        get_dbm().core_db.users, build_document_from_user(user)
+        get_core_db().users, build_document_from_user(user)
     )
 
 
@@ -87,11 +87,11 @@ async def update_user(user_id: UUID, update: UserUpdate):
         doc_update["password_hash"] = hash_user_password(update.password)
 
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        await update_resource_document(get_dbm().core_db.users, user_id, doc_update)
+        await update_resource_document(get_core_db().users, user_id, doc_update)
 
 
 async def _get_user(filter: UUID | dict) -> User:
-    result = await get_resource_document(get_dbm().core_db.users, filter)
+    result = await get_resource_document(get_core_db().users, filter)
     return User.model_validate(result)
 
 
@@ -130,7 +130,7 @@ async def update_user_password_by_password_reset_token(token: str, password: str
     password_hash = hash_user_password(password)
     with enhance_unknown_model_exception("error.invalid_password_reset_token"):
         await update_resource_document(
-            get_dbm().core_db.users,
+            get_core_db().users,
             _build_password_reset_token_filter(token),
             {"password_hash": password_hash, "password_reset_token": None},
         )
@@ -140,7 +140,7 @@ async def get_users(
     query: str | None, page: int, page_size: int
 ) -> tuple[list[User], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
-        get_dbm().core_db.users,
+        get_core_db().users,
         # NB: '@' is considered as a separator by mongo default analyzer which means that searching on
         # john.doe@example.net would search on "john" or "doe" or "example" and lead to unexpected
         # results.
@@ -161,7 +161,7 @@ async def get_users(
 async def _forbid_last_superadmin_deletion(user_id: UUID):
     user = await get_user(user_id)
     if user.permissions.is_superadmin:
-        other_superadmin = await get_dbm().core_db.users.find_one(
+        other_superadmin = await get_core_db().users.find_one(
             {"_id": {"$ne": user_id}, "permissions.is_superadmin": True}
         )
         if not other_superadmin:
@@ -172,13 +172,13 @@ async def _forbid_last_superadmin_deletion(user_id: UUID):
 
 async def delete_user(user_id: UUID):
     await _forbid_last_superadmin_deletion(user_id)
-    await delete_resource_document(get_dbm().core_db.users, user_id)
+    await delete_resource_document(get_core_db().users, user_id)
 
 
 async def remove_repo_from_users_permissions(
     repo_id: UUID, session: AsyncIOMotorClientSession
 ):
-    await remove_repo_from_permissions(get_dbm().core_db.users, repo_id, session)
+    await remove_repo_from_permissions(get_core_db().users, repo_id, session)
 
 
 async def authenticate_user(email: str, password: str) -> User:
@@ -193,9 +193,8 @@ async def authenticate_user(email: str, password: str) -> User:
     if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
         raise AuthenticationFailure()
 
-    dbm = get_dbm()
     await update_resource_document(
-        dbm.core_db.users, user.id, {"authenticated_at": now()}
+        get_core_db().users, user.id, {"authenticated_at": now()}
     )
 
     return user
@@ -219,7 +218,7 @@ async def send_user_password_reset_link(email: str):
         return
     user.password_reset_token = _generate_password_reset_token()
     await update_resource_document(
-        get_dbm().core_db.users,
+        get_core_db().users,
         user.id,
         {
             "password_reset_token": user.password_reset_token.model_dump(),

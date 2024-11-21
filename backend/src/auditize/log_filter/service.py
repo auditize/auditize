@@ -2,7 +2,7 @@ from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
-from auditize.database import get_dbm
+from auditize.database import get_core_db
 from auditize.exceptions import (
     UnknownModelException,
     ValidationError,
@@ -35,7 +35,7 @@ async def create_log_filter(log_filter: LogFilter) -> UUID:
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_filter"
     ):
-        return await create_resource_document(get_dbm().core_db.log_filters, log_filter)
+        return await create_resource_document(get_core_db().log_filters, log_filter)
 
 
 def _log_filter_discriminator(user_id: UUID, log_filter_id: UUID) -> dict:
@@ -50,7 +50,7 @@ async def update_log_filter(
         "error.constraint_violation.log_filter"
     ):
         await update_resource_document(
-            get_dbm().core_db.log_filters,
+            get_core_db().log_filters,
             _log_filter_discriminator(user_id, log_filter_id),
             update,
         )
@@ -58,7 +58,7 @@ async def update_log_filter(
 
 async def get_log_filter(user_id: UUID, log_filter_id: UUID) -> LogFilter:
     result = await get_resource_document(
-        get_dbm().core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
+        get_core_db().log_filters, _log_filter_discriminator(user_id, log_filter_id)
     )
     return LogFilter.model_validate(result)
 
@@ -72,7 +72,7 @@ async def get_log_filters(
     if is_favorite is not None:
         doc_filter["is_favorite"] = is_favorite
     results, page_info = await find_paginated_by_page(
-        get_dbm().core_db.log_filters,
+        get_core_db().log_filters,
         filter=doc_filter,
         sort=[("name", 1)],
         page=page,
@@ -83,7 +83,7 @@ async def get_log_filters(
 
 async def delete_log_filter(user_id: UUID, log_filter_id: UUID):
     await delete_resource_document(
-        get_dbm().core_db.log_filters, _log_filter_discriminator(user_id, log_filter_id)
+        get_core_db().log_filters, _log_filter_discriminator(user_id, log_filter_id)
     )
 
 
@@ -92,7 +92,7 @@ async def delete_log_filters_with_repo(
 ):
     try:
         await delete_resource_document(
-            get_dbm().core_db.log_filters, {"repo_id": repo_id}, session=session
+            get_core_db().log_filters, {"repo_id": repo_id}, session=session
         )
     except UnknownModelException:
         pass

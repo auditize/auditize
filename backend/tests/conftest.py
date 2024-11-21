@@ -4,7 +4,7 @@ import pytest
 from icecream import ic
 
 from auditize.config import init_config
-from auditize.database import DatabaseManager
+from auditize.database import CoreDatabase, Database, migrate_core_db
 from auditize.log.db import LogDatabase
 from auditize.log.service.consolidation import _CONSOLIDATED_DATA_CACHE
 
@@ -15,8 +15,8 @@ from helpers.apikey import PreparedApikey
 from helpers.database import (
     TestLogDatabasePool,
     cleanup_db,
-    setup_test_dbm,
-    teardown_test_dbm,
+    setup_test_core_db,
+    teardown_test_core_db,
 )
 from helpers.http import HttpTestHelper
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -44,11 +44,11 @@ def _config(anyio_backend):
 
 
 @pytest.fixture(scope="session")
-async def _dbm():
-    test_dbm = setup_test_dbm()
-    await test_dbm.setup()
-    yield test_dbm
-    await teardown_test_dbm(test_dbm)
+async def _core_db():
+    test_db = setup_test_core_db()
+    await migrate_core_db()
+    yield test_db
+    await teardown_test_core_db(test_db)
 
 
 @pytest.fixture(scope="function")
@@ -79,29 +79,36 @@ async def anon_client():
 
 
 @pytest.fixture(scope="session")
-async def _log_db(_dbm: DatabaseManager):
-    log_db = LogDatabase(_dbm.name_prefix + "_logs", _dbm.client)
+async def _log_db(_core_db: CoreDatabase):
+    log_db = LogDatabase(_core_db.name + "_logs", _core_db.client)
     await log_db.setup()
     return log_db
 
 
 @pytest.fixture(scope="session")
-async def _log_db_pool(_dbm: DatabaseManager):
-    return TestLogDatabasePool(_dbm)
+async def _log_db_pool(_core_db: CoreDatabase):
+    return TestLogDatabasePool(_core_db)
 
 
 @pytest.fixture(scope="function", autouse=True)
-async def dbm(_dbm, anyio_backend):
-    yield _dbm
-    await cleanup_db(_dbm.core_db.db)
+async def core_db(_core_db, anyio_backend):
+    yield _core_db
+    await cleanup_db(_core_db)
     await _CONSOLIDATED_DATA_CACHE.clear()
+
+
+@pytest.fixture(scope="function")
+async def tmp_db(_core_db: CoreDatabase):
+    db = Database(_core_db.name + "_tmp", _core_db.client)
+    yield db
+    await db.client.drop_database(db.name)
 
 
 RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]
 
 
 @pytest.fixture(scope="function")
-async def repo_builder(dbm, _log_db_pool) -> RepoBuilder:
+async def repo_builder(core_db, _log_db_pool) -> RepoBuilder:
     async def func(extra):
         return await PreparedRepo.create(
             PreparedRepo.prepare_data(extra), log_db=await _log_db_pool.get_db()
@@ -135,7 +142,7 @@ ApikeyBuilder = Callable[[dict], Awaitable[PreparedApikey]]
 
 
 @pytest.fixture(scope="function")
-def apikey_builder(dbm) -> ApikeyBuilder:
+def apikey_builder(core_db) -> ApikeyBuilder:
     async def func(permissions):
         return await PreparedApikey.inject_into_db_with_permissions(permissions)
 
@@ -149,7 +156,7 @@ class UserBuilder(Protocol):
 
 
 @pytest.fixture(scope="function")
-def user_builder(dbm) -> UserBuilder:
+def user_builder(core_db) -> UserBuilder:
     async def func(permissions, lang=None):
         return await PreparedUser.inject_into_db(
             user=PreparedUser.prepare_model(

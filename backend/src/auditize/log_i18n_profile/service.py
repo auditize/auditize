@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from auditize.database import get_dbm
+from auditize.database import get_core_db
 from auditize.exceptions import (
     ConstraintViolation,
     enhance_constraint_violation_exception,
@@ -26,7 +26,7 @@ async def create_log_i18n_profile(profile: LogI18nProfile) -> UUID:
         "error.constraint_violation.log_i18n_profile"
     ):
         profile_id = await create_resource_document(
-            get_dbm().core_db.log_i18n_profiles, profile
+            get_core_db().log_i18n_profiles, profile
         )
     return profile_id
 
@@ -47,14 +47,12 @@ async def update_log_i18n_profile(profile_id: UUID, update: LogI18nProfileUpdate
         "error.constraint_violation.log_i18n_profile"
     ):
         await update_resource_document(
-            get_dbm().core_db.log_i18n_profiles, profile_id, profile
+            get_core_db().log_i18n_profiles, profile_id, profile
         )
 
 
 async def get_log_i18n_profile(profile_id: UUID) -> LogI18nProfile:
-    result = await get_resource_document(
-        get_dbm().core_db.log_i18n_profiles, profile_id
-    )
+    result = await get_resource_document(get_core_db().log_i18n_profiles, profile_id)
     return LogI18nProfile.model_validate(result)
 
 
@@ -62,7 +60,7 @@ async def get_log_i18n_profile_translation(
     profile_id: UUID, lang: str
 ) -> LogTranslation:
     result = await get_resource_document(
-        get_dbm().core_db.log_i18n_profiles,
+        get_core_db().log_i18n_profiles,
         profile_id,
         projection={"translations." + lang: 1},
     )
@@ -76,7 +74,7 @@ async def get_log_i18n_profiles(
     query: str, page: int, page_size: int
 ) -> tuple[list[LogI18nProfile], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
-        get_dbm().core_db.log_i18n_profiles,
+        get_core_db().log_i18n_profiles,
         filter={"$text": {"$search": query}} if query else None,
         sort=[("name", 1)],
         page=page,
@@ -96,8 +94,8 @@ async def delete_log_i18n_profile(profile_id: UUID):
         raise ConstraintViolation(
             ("error.log_i18n_profile_deletion_forbidden", {"profile_id": profile_id}),
         )
-    await delete_resource_document(get_dbm().core_db.log_i18n_profiles, profile_id)
+    await delete_resource_document(get_core_db().log_i18n_profiles, profile_id)
 
 
 async def has_log_i18n_profile(profile_id: UUID) -> bool:
-    return await has_resource_document(get_dbm().core_db.log_i18n_profiles, profile_id)
+    return await has_resource_document(get_core_db().log_i18n_profiles, profile_id)

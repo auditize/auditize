@@ -838,7 +838,7 @@ async def test_get_logs_filter_actor_name(
     )
 
     # filter on actor_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, {"actor_name": "FIND"}, log)
+    await _test_get_logs_filter(log_rw_client, repo, {"actor_name": "find_me"}, log)
 
 
 async def test_get_logs_filter_actor_ref(
@@ -916,7 +916,7 @@ async def test_get_logs_filter_resource_name(
     )
 
     # filter on resource_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, {"resource_name": "FIND"}, log)
+    await _test_get_logs_filter(log_rw_client, repo, {"resource_name": "find_me"}, log)
 
 
 async def test_get_logs_filter_resource_ref(
@@ -1075,7 +1075,7 @@ async def test_get_logs_filter_tag_name(
     )
 
     # filter on tag_name is substring and case-insensitive
-    await _test_get_logs_filter(log_rw_client, repo, {"tag_name": "FIND"}, log)
+    await _test_get_logs_filter(log_rw_client, repo, {"tag_name": "find_me"}, log)
 
 
 async def test_get_logs_filter_tag_ref(
@@ -1134,7 +1134,9 @@ async def test_get_logs_filter_attachment_name(
         type="text",
         mime_type="text/plain",
     )
-    await _test_get_logs_filter(log_rw_client, repo, {"attachment_name": "FIND"}, log)
+    await _test_get_logs_filter(
+        log_rw_client, repo, {"attachment_name": "find_me"}, log
+    )
 
 
 async def test_get_logs_filter_attachment_type(
