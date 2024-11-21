@@ -69,9 +69,7 @@ function ResourceEditor({
       size="lg"
       padding="lg"
       opened={opened}
-      // onClose is called even when the modal is close when the "ESC" key is pressed,
-      // if onClose has been set to navigate(-1), it triggers an undesired navigation
-      onClose={() => opened && onClose()}
+      onClose={onClose}
     >
       <Box px={"lg"}>
         <LoadingOverlay visible={opened && (isLoading || mutation.isPending)} />
