@@ -1,3 +1,11 @@
+# 0.5.0 (2024-11-21)
+
+- Improve log search performance
+- Add command `auditize purge-expired-logs`
+  (the expired logs purge is also managed by the `auditize scheduler` command)
+- Add database migration mechanism
+- Upgrade front dependencies
+
 # 0.4.1 (2024-11-11)
 
 - Fix regression introduced in 0.4.0 that could lead to `POST /api/repos/{repo_id}/logs`
