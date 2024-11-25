@@ -86,16 +86,26 @@ async def save_log_attachment(
 
 
 async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:
-    db = await get_log_db_for_reading(repo_id)
-    filter = {"_id": log_id}
+    es = get_es_client()
+    filter = {"_id": str(log_id)}
     if authorized_entities:
-        filter["entity_path.ref"] = {"$in": list(authorized_entities)}
-    document = await get_resource_document(
-        db.logs,
-        filter=filter,
-        projection=_EXCLUDE_ATTACHMENT_DATA,
+        filter["entity_path.ref"] = list(authorized_entities)
+
+    resp = await es.search(
+        index=f"auditize_logs_{repo_id}",
+        query={
+            "bool": {
+                "filter": [{"term": {field: value} for field, value in filter.items()}]
+            }
+        },
+        source_excludes=["attachments.data"],
     )
-    return Log.model_validate(document)
+    documents = resp["hits"]["hits"]
+    if not documents:
+        raise UnknownModelException()
+
+    model = Log.model_validate({**documents[0]["_source"], "_id": log_id})
+    return model
 
 
 async def get_log_attachment(
