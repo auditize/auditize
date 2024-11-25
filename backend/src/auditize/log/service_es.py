@@ -1,3 +1,4 @@
+import base64
 import os
 import uuid
 from datetime import timedelta
@@ -66,18 +67,22 @@ async def save_log_attachment(
     mime_type: str,
     data: bytes,
 ):
-    db = await get_log_db_for_writing(repo_id)
+    es = get_es_client()
     attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
 
-    # NB: do not use transaction here to avoid possible WriteConflict errors
-    # on consolidated data documents
-    await update_resource_document(
-        db.logs,
-        log_id,
-        {"attachments": attachment.model_dump()},
-        operator="$push",
+    await es.update(
+        index=f"auditize_logs_{repo_id}",
+        id=str(log_id),
+        script={
+            "source": "ctx._source.attachments.add(params.attachment)",
+            "params": {
+                "attachment": {
+                    **attachment.model_dump(exclude={"data"}),
+                    "data": base64.b64encode(data).decode(),
+                }
+            },
+        },
     )
-    await consolidate_log_attachment(db, attachment)
 
 
 async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:
