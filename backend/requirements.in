@@ -9,3 +9,5 @@ bcrypt
 Authlib
 apscheduler
 python-dotenv
+elasticsearch[async]
+
