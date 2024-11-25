@@ -260,3 +260,88 @@ async def apply_log_retention_period(repo: UUID | Repo = None):
     for repo in repos:
         await _apply_log_retention_period(repo)
         await purge_orphan_consolidated_log_data(repo)
+
+
+async def create_index(repo_id: UUID):
+    es = get_es_client()
+    await es.indices.create(
+        index=f"auditize_logs_{repo_id}",
+        mappings={
+            "properties": {
+                "saved_at": {"type": "date"},
+                "action": {
+                    "properties": {
+                        "type": {"type": "keyword"},
+                        "category": {"type": "keyword"},
+                    }
+                },
+                "source": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {"type": "keyword"},
+                        "value": {"type": "text"},
+                    },
+                },
+                "actor": {
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {"type": "text"},
+                        "extra": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {"type": "keyword"},
+                                "value": {"type": "text"},
+                            },
+                        },
+                    }
+                },
+                "resource": {
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {"type": "text"},
+                        "extra": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {"type": "keyword"},
+                                "value": {"type": "text"},
+                            },
+                        },
+                    }
+                },
+                "details": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {"type": "keyword"},
+                        "value": {"type": "text"},
+                    },
+                },
+                "tags": {
+                    "type": "nested",
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {"type": "text"},
+                    },
+                },
+                "attachments": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {"type": "text"},
+                        "type": {"type": "keyword"},
+                        "mime_type": {"type": "keyword"},
+                        "saved_at": {"type": "date"},
+                        "data": {"type": "binary"},
+                    },
+                },
+                "entity_path": {
+                    "type": "nested",
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "name": {"type": "text"},
+                    },
+                },
+            }
+        },
+    )
