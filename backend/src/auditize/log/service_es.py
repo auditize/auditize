@@ -111,13 +111,27 @@ async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) ->
 async def get_log_attachment(
     repo_id: UUID, log_id: UUID, attachment_idx: int
 ) -> Log.Attachment:
-    db = await get_log_db_for_reading(repo_id)
-    doc = await get_resource_document(
-        db.logs, log_id, projection={"attachments": {"$slice": [attachment_idx, 1]}}
+    es = get_es_client()
+
+    # NB: we retrieve all attachments here, which is not really efficient is the log contains
+    # more than 1 log, unfortunately ES does not a let us retrieve a nested object to a specific
+    # array index unless adding an extra metadata such as "index" to the stored document
+    resp = await es.get(
+        index=f"auditize_logs_{repo_id}",
+        id=str(log_id),
+        source_includes=["attachments"],
     )
-    if len(doc["attachments"]) == 0:
+    if not resp["found"]:
         raise UnknownModelException()
-    return Log.Attachment(**doc["attachments"][0])
+
+    try:
+        attachment = resp["_source"]["attachments"][attachment_idx]
+    except IndexError:
+        raise UnknownModelException()
+
+    return Log.Attachment.model_validate(
+        {**attachment, "data": base64.b64decode(attachment["data"])}
+    )
 
 
 def _custom_field_search_filter(params: dict[str, str]) -> dict:
