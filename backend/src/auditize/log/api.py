@@ -16,7 +16,7 @@ from auditize.helpers.api.validators import (
 )
 from auditize.helpers.datetime import now
 from auditize.i18n import get_request_lang
-from auditize.log import service
+from auditize.log import service_es as service
 from auditize.log.api_models import (
     LogCreationRequest,
     LogCreationResponse,
