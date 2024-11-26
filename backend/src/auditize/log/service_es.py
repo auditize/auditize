@@ -10,7 +10,7 @@ from elasticsearch import AsyncElasticsearch
 from auditize.exceptions import (
     UnknownModelException,
 )
-from auditize.helpers.datetime import now
+from auditize.helpers.datetime import now, serialize_datetime
 from auditize.log.db import (
     LogDatabase,
     get_log_db_for_maintenance,
@@ -59,7 +59,11 @@ async def save_log(repo_id: UUID, log: Log) -> UUID:
     await es.index(
         index=f"auditize_logs_{repo_id}",
         id=str(log_id),
-        document={**log.model_dump(exclude={"id"}), "id": log_id},
+        document={
+            **log.model_dump(exclude={"id"}),
+            "saved_at": serialize_datetime(log.saved_at, with_milliseconds=True),
+            "id": log_id,
+        },
     )
     return log_id
 
@@ -264,6 +268,7 @@ async def get_logs(
 
     if pagination_cursor:
         cursor = PaginationCursor.load(pagination_cursor)
+        filter.append({"range": {"saved_at": {"lte": cursor.date}}})
         filter.append(
             {
                 "bool": {
@@ -303,6 +308,8 @@ async def get_logs(
         Log.model_validate({**hit["_source"], "_id": hit["_source"]["id"]})
         for hit in hits
     ]
+
+    print("RETURN: %s" % [(log.id, log.saved_at) for log in logs])
 
     return logs, next_cursor
 
