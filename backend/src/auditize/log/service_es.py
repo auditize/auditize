@@ -1,7 +1,7 @@
 import base64
 import os
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -26,13 +26,17 @@ from auditize.log.service.consolidation import (
 )
 from auditize.repo.models import Repo
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
-from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
+from auditize.resource.pagination.cursor.service import (
+    PaginationCursor,
+    find_paginated_by_cursor,
+)
 from auditize.resource.service import (
     create_resource_document,
     get_resource_document,
     update_resource_document,
 )
 
+from ..resource.pagination.page.models import PagePaginationInfo
 from .service import CSV_BUILTIN_COLUMNS
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
@@ -53,7 +57,7 @@ async def save_log(repo_id: UUID, log: Log) -> UUID:
     await es.index(
         index=f"auditize_logs_{repo_id}",
         id=str(log_id),
-        document=log.model_dump(exclude={"id"}),
+        document={**log.model_dump(exclude={"id"}), "id": log_id},
     )
     return log_id
 
@@ -134,104 +138,175 @@ async def get_log_attachment(
     )
 
 
-def _custom_field_search_filter(params: dict[str, str]) -> dict:
+# def _custom_field_search_filter(params: dict[str, str]) -> dict:
+#     return {
+#         "$all": [
+#             {"$elemMatch": {"name": name, "value": value}}
+#             for name, value in params.items()
+#         ]
+#     }
+
+
+def _custom_field_search_filter(type: str, fields: dict[str, str]):
+    return [
+        {
+            "nested": {
+                "path": type,
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"term": {f"{type}.name": name}},
+                            {"term": {f"{type}.value": value}},
+                        ]
+                    }
+                },
+            }
+        }
+        for name, value in fields.items()
+    ]
+
+
+def _nested_filter_term(path, name, value):
     return {
-        "$all": [
-            {"$elemMatch": {"name": name, "value": value}}
-            for name, value in params.items()
-        ]
+        "nested": {
+            "path": path,
+            "query": {"bool": {"filter": [{"term": {name: value}}]}},
+        }
     }
 
 
-def _get_criteria_from_search_params(
-    search_params: LogSearchParams,
-) -> list[dict[str, Any]]:
+def _prepare_es_query(search_params: LogSearchParams) -> tuple[list[dict], list[dict]]:
     sp = search_params
-    criteria = []
+    filter = []
+    must_not = []
     if sp.action_type:
-        criteria.append({"action.type": sp.action_type})
+        filter.append({"term": {"action.type": sp.action_type}})
     if sp.action_category:
-        criteria.append({"action.category": sp.action_category})
+        filter.append({"term": {"action.category": sp.action_category}})
     if sp.source:
-        criteria.append({"source": _custom_field_search_filter(sp.source)})
+        filter.extend(_custom_field_search_filter("source", sp.source))
     if sp.actor_type:
-        criteria.append({"actor.type": sp.actor_type})
+        filter.append({"term": {"actor.type": sp.actor_type}})
     if sp.actor_name:
-        criteria.append({"actor.name": sp.actor_name})
+        filter.append({"term": {"actor.name": sp.actor_name}})
     if sp.actor_ref:
-        criteria.append({"actor.ref": sp.actor_ref})
+        filter.append({"term": {"actor.ref": sp.actor_ref}})
     if sp.actor_extra:
-        criteria.append({"actor.extra": _custom_field_search_filter(sp.actor_extra)})
+        filter.extend(_custom_field_search_filter("actor.extra", sp.actor_extra))
     if sp.resource_type:
-        criteria.append({"resource.type": sp.resource_type})
+        filter.append({"term": {"resource.type": sp.resource_type}})
     if sp.resource_name:
-        criteria.append({"resource.name": sp.resource_name})
+        filter.append({"term": {"resource.name": sp.resource_name}})
     if sp.resource_ref:
-        criteria.append({"resource.ref": sp.resource_ref})
+        filter.append({"term": {"resource.ref": sp.resource_ref}})
     if sp.resource_extra:
-        criteria.append(
-            {"resource.extra": _custom_field_search_filter(sp.resource_extra)}
-        )
+        filter.extend(_custom_field_search_filter("resource.extra", sp.resource_extra))
     if sp.details:
-        criteria.append({"details": _custom_field_search_filter(sp.details)})
+        filter.extend(_custom_field_search_filter("details", sp.details))
     if sp.tag_ref:
-        criteria.append({"tags.ref": sp.tag_ref})
+        filter.append(_nested_filter_term("tags", "tags.ref", sp.tag_ref))
     if sp.tag_type:
-        criteria.append({"tags.type": sp.tag_type})
+        filter.append(_nested_filter_term("tags", "tags.type", sp.tag_type))
     if sp.tag_name:
-        criteria.append({"tags.name": sp.tag_name})
+        filter.append(_nested_filter_term("tags", "tags.name", sp.tag_name))
     if sp.has_attachment is not None:
         if sp.has_attachment:
-            criteria.append({"attachments": {"$not": {"$size": 0}}})
+            filter.append(
+                {
+                    "nested": {
+                        "path": "attachments",
+                        "query": {"exists": {"field": "attachments"}},
+                    }
+                }
+            )
         else:
-            criteria.append({"attachments": {"$size": 0}})
+            must_not.append({"exists": {"field": "attachments"}})
     if sp.attachment_name:
-        criteria.append({"attachments.name": sp.attachment_name})
+        filter.append(
+            _nested_filter_term("attachments", "attachments.name", sp.attachment_name)
+        )
     if sp.attachment_type:
-        criteria.append({"attachments.type": sp.attachment_type})
+        filter.append(
+            _nested_filter_term("attachments", "attachments.type", sp.attachment_type)
+        )
     if sp.attachment_mime_type:
-        criteria.append({"attachments.mime_type": sp.attachment_mime_type})
+        filter.append(
+            _nested_filter_term(
+                "attachments", "attachments.mime_type", sp.attachment_mime_type
+            )
+        )
     if sp.entity_ref:
-        criteria.append({"entity_path.ref": sp.entity_ref})
+        filter.append(
+            _nested_filter_term("entity_path", "entity_path.ref", sp.entity_ref)
+        )
     if sp.since:
-        criteria.append({"saved_at": {"$gte": sp.since}})
+        filter.append({"range": {"saved_at": {"gte": sp.since}}})
     if sp.until:
         # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
         # will also include logs saved at 23:59:59.500 for instance
-        criteria.append({"saved_at": {"$lte": sp.until.replace(microsecond=999999)}})
-    return criteria
+        filter.append(
+            {"range": {"saved_at": {"lte": sp.until.replace(microsecond=999999)}}}
+        )
+    return filter, must_not
 
 
 async def get_logs(
     repo: UUID | LogDatabase,
     *,
+    search_params: LogSearchParams,
     authorized_entities: set[str] = None,
-    search_params: LogSearchParams = None,
     limit: int = 10,
     pagination_cursor: str = None,
 ) -> tuple[list[Log], str | None]:
-    if isinstance(repo, LogDatabase):
-        db = repo
-    else:
-        db = await get_log_db_for_reading(repo)
+    es = get_es_client()
 
-    criteria: list[dict[str, Any]] = []
+    filter, must_not = _prepare_es_query(search_params)
+    should = []
+
     if authorized_entities:
-        criteria.append({"entity_path.ref": {"$in": list(authorized_entities)}})
-    if search_params:
-        criteria.extend(_get_criteria_from_search_params(search_params))
+        filter.append({"term": {"entity_path.ref": list(authorized_entities)}})
 
-    results, next_cursor = await find_paginated_by_cursor(
-        db.logs,
-        id_field="_id",
-        date_field="saved_at",
-        projection=_EXCLUDE_ATTACHMENT_DATA,
-        filter={"$and": criteria} if criteria else None,
-        limit=limit,
-        pagination_cursor=pagination_cursor,
+    if pagination_cursor:
+        cursor = PaginationCursor.load(pagination_cursor)
+        filter.append(
+            {
+                "bool": {
+                    "should": [
+                        {"range": {"saved_at": {"lt": cursor.date}}},
+                        {"range": {"id": {"lt": cursor.id}}},
+                    ]
+                }
+            }
+        )
+
+    query = {"bool": {"filter": filter, "must_not": must_not, "should": should}}
+    print("QUERY: %s" % query)
+    resp = await es.search(
+        index=f"auditize_logs_{repo}",
+        query=query,
+        source_excludes=["attachments.data"],
+        sort=[{"saved_at": "desc", "id": "desc"}],
+        size=limit + 1,
     )
+    hits = list(resp["hits"]["hits"])
 
-    logs = [Log(**result) for result in results]
+    # we previously fetched one extra log to check if there are more logs to fetch
+    if len(hits) == limit + 1:
+        # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
+        # limit range
+        next_cursor_obj = PaginationCursor(
+            datetime.fromisoformat(hits[-2]["_source"]["saved_at"]),
+            uuid.UUID(hits[-2]["_source"]["id"]),
+        )
+        next_cursor = next_cursor_obj.serialize()
+        hits.pop(-1)
+    else:
+        next_cursor = None
+
+    logs = [
+        Log.model_validate({**hit["_source"], "_id": hit["_source"]["id"]})
+        for hit in hits
+    ]
 
     return logs, next_cursor
 
@@ -268,6 +343,7 @@ async def create_index(repo_id: UUID):
         index=f"auditize_logs_{repo_id}",
         mappings={
             "properties": {
+                "id": {"type": "keyword"},
                 "saved_at": {"type": "date"},
                 "action": {
                     "properties": {
@@ -345,3 +421,7 @@ async def create_index(repo_id: UUID):
             }
         },
     )
+
+
+async def get_log_resource_extra_fields(*args, **kwargs):
+    return [], PagePaginationInfo.build(1, 0, 0)
