@@ -51,8 +51,10 @@ def get_es_client():
     )
 
 
+es = get_es_client()
+
+
 async def save_log(repo_id: UUID, log: Log) -> UUID:
-    es = get_es_client()
     log_id = uuid.uuid4()
     await es.index(
         index=f"auditize_logs_{repo_id}",
@@ -71,7 +73,6 @@ async def save_log_attachment(
     mime_type: str,
     data: bytes,
 ):
-    es = get_es_client()
     attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
 
     await es.update(
@@ -90,7 +91,6 @@ async def save_log_attachment(
 
 
 async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:
-    es = get_es_client()
     filter = {"_id": str(log_id)}
     if authorized_entities:
         filter["entity_path.ref"] = list(authorized_entities)
@@ -115,8 +115,6 @@ async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) ->
 async def get_log_attachment(
     repo_id: UUID, log_id: UUID, attachment_idx: int
 ) -> Log.Attachment:
-    es = get_es_client()
-
     # NB: we retrieve all attachments here, which is not really efficient is the log contains
     # more than 1 log, unfortunately ES does not a let us retrieve a nested object to a specific
     # array index unless adding an extra metadata such as "index" to the stored document
@@ -258,8 +256,6 @@ async def get_logs(
     limit: int = 10,
     pagination_cursor: str = None,
 ) -> tuple[list[Log], str | None]:
-    es = get_es_client()
-
     filter, must_not = _prepare_es_query(search_params)
     should = []
 
@@ -338,7 +334,6 @@ async def apply_log_retention_period(repo: UUID | Repo = None):
 
 
 async def create_index(repo_id: UUID):
-    es = get_es_client()
     await es.indices.create(
         index=f"auditize_logs_{repo_id}",
         mappings={
