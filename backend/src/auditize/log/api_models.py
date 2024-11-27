@@ -317,7 +317,7 @@ class NameData(BaseModel):
     name: str
 
 
-class NameListResponse(PagePaginatedResponse[str, NameData]):
+class NameListResponse(CursorPaginatedResponse[str, NameData]):
     @classmethod
     def build_item(cls, name: str) -> NameData:
         return NameData(name=name)

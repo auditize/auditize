@@ -1,7 +1,11 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
-import { getAllPagePaginatedItems, reqGet } from "@/utils/api";
+import {
+  getAllCursorPaginatedItems,
+  getAllPagePaginatedItems,
+  reqGet,
+} from "@/utils/api";
 
 import { LogSearchParams } from "./LogSearchParams";
 
@@ -92,7 +96,7 @@ export async function getAllLogActionCategories(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/actions/categories`,
       {},
     ),

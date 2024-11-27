@@ -1,4 +1,6 @@
 import base64
+import binascii
+import json
 import os
 import uuid
 from datetime import datetime, timedelta
@@ -27,6 +29,7 @@ from auditize.log.service.consolidation import (
 from auditize.repo.models import Repo
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.service import (
+    InvalidPaginationCursor,
     PaginationCursor,
     find_paginated_by_cursor,
 )
@@ -426,4 +429,107 @@ async def create_index(repo_id: UUID):
 
 
 async def get_log_resource_extra_fields(*args, **kwargs):
-    return [], PagePaginationInfo.build(1, 0, 0)
+    return [], PagePaginationInfo.build(1, 10, 0)
+
+
+get_log_action_types = get_log_resource_extra_fields
+
+get_log_actor_types = get_log_resource_extra_fields
+
+get_log_actor_extra_fields = get_log_resource_extra_fields
+
+get_log_resource_types = get_log_resource_extra_fields
+
+get_log_tag_types = get_log_resource_extra_fields
+
+get_log_source_fields = get_log_resource_extra_fields
+
+get_log_detail_fields = get_log_resource_extra_fields
+
+get_log_attachment_types = get_log_resource_extra_fields
+
+get_log_attachment_mime_types = get_log_resource_extra_fields
+
+get_log_entities = get_log_resource_extra_fields
+
+
+class AggPaginationCursor:
+    def __init__(self, after_key: dict):
+        self.after_key = after_key
+
+    @classmethod
+    def load(cls, value: str) -> "AggPaginationCursor":
+        try:
+            decoded = json.loads(base64.b64decode(value).decode("utf-8"))
+        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
+            raise InvalidPaginationCursor(value)
+
+        try:
+            return cls(decoded)
+        except (KeyError, ValueError):
+            raise InvalidPaginationCursor(value)
+
+    def serialize(self) -> str:
+        return base64.b64encode(json.dumps(self.after_key).encode("utf-8")).decode(
+            "utf-8"
+        )
+
+
+async def _get_paginated_agg(
+    repo_id: UUID, field: str, limit: int, pagination_cursor: str | None
+) -> tuple[list[str], str]:
+    if pagination_cursor:
+        cursor = AggPaginationCursor.load(pagination_cursor)
+        after = cursor.after_key
+    else:
+        after = None
+    aggregations = {
+        "agg": {
+            "composite": {
+                "size": limit,
+                "sources": [{field: {"terms": {"field": field, "order": "asc"}}}],
+                **({"after": after} if after else {}),
+            }
+        },
+    }
+    print("REQUEST: %s" % aggregations)
+    resp = await es.search(
+        index=f"auditize_logs_{repo_id}",
+        aggregations=aggregations,
+        size=0,
+    )
+    import json
+
+    print("RESPONSE: %s" % json.dumps(dict(resp)))
+
+    if (
+        len(resp["aggregations"]["agg"]["buckets"]) == limit
+        and "after_key" in resp["aggregations"]["agg"]
+    ):
+        next_cursor = AggPaginationCursor(resp["aggregations"]["agg"]["after_key"])
+        next_cursor_raw = next_cursor.serialize()
+    else:
+        next_cursor_raw = None
+
+    values = [bucket["key"][field] for bucket in resp["aggregations"]["agg"]["buckets"]]
+
+    return values, next_cursor_raw
+
+
+async def get_log_action_categories(
+    repo_id: UUID, limit: int, pagination_cursor: str | None
+) -> tuple[list[str], str]:
+    return await _get_paginated_agg(
+        repo_id, "action.category", limit, pagination_cursor
+    )
+    # resp = await es.search(
+    #     index=f"auditize_logs_{repo_id}",
+    #     aggregations={"agg": {"terms": {"field": "action.category"}}},
+    #     size=0,
+    #     # size=page_size,
+    #     # from_=(page - 1) * page_size,
+    # )
+    # import json
+    #
+    # print(json.dumps(dict(resp)))
+    # return [], PagePaginationInfo.build(page, page_size, 0)
