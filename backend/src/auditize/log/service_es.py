@@ -287,7 +287,7 @@ async def get_logs(
         )
 
     query = {"bool": {"filter": filter}}
-    print("QUERY: %s" % json.dumps(query))
+    print("QUERY: %s" % json.dumps(query, default=str))
     resp = await es.search(
         index=f"auditize_logs_{repo}",
         query=query,
