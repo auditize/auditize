@@ -41,7 +41,7 @@ from auditize.resource.service import (
 )
 
 from ..resource.pagination.page.models import PagePaginationInfo
-from .service import CSV_BUILTIN_COLUMNS
+from .service import CSV_BUILTIN_COLUMNS, get_logs_as_csv, validate_csv_columns
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}

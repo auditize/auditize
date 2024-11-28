@@ -13,7 +13,6 @@ from auditize.helpers.datetime import serialize_datetime
 from auditize.i18n import Lang, t
 from auditize.log.db import get_log_db_for_reading
 from auditize.log.models import CustomField, Log, LogSearchParams
-from auditize.log.service.main import get_logs
 from auditize.log_i18n_profile.models import LogI18nProfile, get_log_value_translation
 from auditize.repo.service import get_repo
 
@@ -131,6 +130,8 @@ async def get_logs_as_csv(
     columns: list[str],
     lang: Lang,
 ) -> AsyncGenerator[str, None]:
+    from auditize.log.service_es import get_logs
+
     max_rows = get_config().csv_max_rows
     returned_rows = 0
     repo = await get_repo(repo_id)
@@ -145,7 +146,7 @@ async def get_logs_as_csv(
                 _translate_csv_column(col, log_i18n_profile, lang) for col in columns
             )
         logs, cursor = await get_logs(
-            logs_db,
+            repo_id,
             authorized_entities=authorized_entities,
             search_params=search_params,
             pagination_cursor=cursor,
