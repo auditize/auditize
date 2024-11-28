@@ -162,7 +162,7 @@ def _custom_field_search_filter(type: str, fields: dict[str, str]):
                     "bool": {
                         "must": [
                             {"term": {f"{type}.name": name}},
-                            {"term": {f"{type}.value": value}},
+                            {"term": {f"{type}.value.keyword": value}},
                         ]
                     }
                 },
@@ -194,7 +194,7 @@ def _prepare_es_query(search_params: LogSearchParams) -> tuple[list[dict], list[
     if sp.actor_type:
         filter.append({"term": {"actor.type": sp.actor_type}})
     if sp.actor_name:
-        filter.append({"term": {"actor.name": sp.actor_name}})
+        filter.append({"term": {"actor.name.keyword": sp.actor_name}})
     if sp.actor_ref:
         filter.append({"term": {"actor.ref": sp.actor_ref}})
     if sp.actor_extra:
@@ -202,7 +202,7 @@ def _prepare_es_query(search_params: LogSearchParams) -> tuple[list[dict], list[
     if sp.resource_type:
         filter.append({"term": {"resource.type": sp.resource_type}})
     if sp.resource_name:
-        filter.append({"term": {"resource.name": sp.resource_name}})
+        filter.append({"term": {"resource.name.keyword": sp.resource_name}})
     if sp.resource_ref:
         filter.append({"term": {"resource.ref": sp.resource_ref}})
     if sp.resource_extra:
@@ -214,7 +214,7 @@ def _prepare_es_query(search_params: LogSearchParams) -> tuple[list[dict], list[
     if sp.tag_type:
         filter.append(_nested_filter_term("tags", "tags.type", sp.tag_type))
     if sp.tag_name:
-        filter.append(_nested_filter_term("tags", "tags.name", sp.tag_name))
+        filter.append(_nested_filter_term("tags", "tags.name.keyword", sp.tag_name))
     if sp.has_attachment is not None:
         if sp.has_attachment:
             filter.append(
@@ -229,7 +229,9 @@ def _prepare_es_query(search_params: LogSearchParams) -> tuple[list[dict], list[
             must_not.append({"exists": {"field": "attachments"}})
     if sp.attachment_name:
         filter.append(
-            _nested_filter_term("attachments", "attachments.name", sp.attachment_name)
+            _nested_filter_term(
+                "attachments", "attachments.name.keyword", sp.attachment_name
+            )
         )
     if sp.attachment_type:
         filter.append(
@@ -284,8 +286,8 @@ async def get_logs(
             }
         )
 
-    query = {"bool": {"filter": filter, "must_not": must_not, "should": should}}
-    print("QUERY: %s" % query)
+    query = {"bool": {"filter": filter}}
+    print("QUERY: %s" % json.dumps(query))
     resp = await es.search(
         index=f"auditize_logs_{repo}",
         query=query,
@@ -361,19 +363,28 @@ async def create_index(repo_id: UUID):
                     "type": "nested",
                     "properties": {
                         "name": {"type": "keyword"},
-                        "value": {"type": "text"},
+                        "value": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                     },
                 },
                 "actor": {
                     "properties": {
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
-                        "name": {"type": "text"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                         "extra": {
                             "type": "nested",
                             "properties": {
                                 "name": {"type": "keyword"},
-                                "value": {"type": "text"},
+                                "value": {
+                                    "type": "text",
+                                    "fields": {"keyword": {"type": "keyword"}},
+                                },
                             },
                         },
                     }
@@ -382,12 +393,18 @@ async def create_index(repo_id: UUID):
                     "properties": {
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
-                        "name": {"type": "text"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                         "extra": {
                             "type": "nested",
                             "properties": {
                                 "name": {"type": "keyword"},
-                                "value": {"type": "text"},
+                                "value": {
+                                    "type": "text",
+                                    "fields": {"keyword": {"type": "keyword"}},
+                                },
                             },
                         },
                     }
@@ -396,7 +413,10 @@ async def create_index(repo_id: UUID):
                     "type": "nested",
                     "properties": {
                         "name": {"type": "keyword"},
-                        "value": {"type": "text"},
+                        "value": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                     },
                 },
                 "tags": {
@@ -404,13 +424,19 @@ async def create_index(repo_id: UUID):
                     "properties": {
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
-                        "name": {"type": "text"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                     },
                 },
                 "attachments": {
                     "type": "nested",
                     "properties": {
-                        "name": {"type": "text"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                         "type": {"type": "keyword"},
                         "mime_type": {"type": "keyword"},
                         "saved_at": {"type": "date"},
@@ -421,7 +447,10 @@ async def create_index(repo_id: UUID):
                     "type": "nested",
                     "properties": {
                         "ref": {"type": "keyword"},
-                        "name": {"type": "text"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                     },
                 },
             }
@@ -467,8 +496,6 @@ async def _get_paginated_agg(
     limit: int,
     pagination_cursor: str | None,
 ) -> tuple[list[str], str]:
-    import json
-
     if pagination_cursor:
         cursor = AggPaginationCursor.load(pagination_cursor)
         after = cursor.after_key
