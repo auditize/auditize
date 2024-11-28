@@ -142,7 +142,7 @@ export async function getAllLogResourceTypes(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/resources/types`,
       {},
     ),
