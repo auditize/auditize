@@ -4,6 +4,7 @@ import json
 import os
 import uuid
 from datetime import datetime, timedelta
+from functools import partial
 from typing import Any
 from uuid import UUID
 
@@ -432,8 +433,6 @@ async def get_log_resource_extra_fields(*args, **kwargs):
     return [], PagePaginationInfo.build(1, 10, 0)
 
 
-get_log_actor_types = get_log_resource_extra_fields
-
 get_log_actor_extra_fields = get_log_resource_extra_fields
 
 get_log_resource_types = get_log_resource_extra_fields
@@ -573,3 +572,6 @@ async def get_log_tag_types(
         limit=limit,
         pagination_cursor=pagination_cursor,
     )
+
+
+get_log_actor_types = partial(_get_paginated_agg, field="actor.type")

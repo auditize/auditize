@@ -105,13 +105,13 @@ async def get_log_action_categories(
 async def get_log_actor_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
-    return await _get_consolidated_data(
-        repo_id,
-        service.get_log_actor_types,
-        page_params,
+    actor_types, pagination_cursor = await service.get_log_actor_types(
+        repo_id, limit=page_params.limit, pagination_cursor=page_params.cursor
     )
+
+    return NameListResponse.build(actor_types, pagination_cursor)
 
 
 @router.get(

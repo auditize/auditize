@@ -117,7 +117,7 @@ export async function getAllLogActionTypes(
 
 export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
+    getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
   );
 }
 
