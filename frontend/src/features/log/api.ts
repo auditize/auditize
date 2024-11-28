@@ -108,7 +108,7 @@ export async function getAllLogActionTypes(
   category?: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/actions/types`,
       category ? { category } : {},
     ),
@@ -165,7 +165,7 @@ export async function getAllLogDetailFields(repoId: string): Promise<string[]> {
 
 export async function getAllLogTagTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
+    getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
   );
 }
 

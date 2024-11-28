@@ -432,15 +432,11 @@ async def get_log_resource_extra_fields(*args, **kwargs):
     return [], PagePaginationInfo.build(1, 10, 0)
 
 
-get_log_action_types = get_log_resource_extra_fields
-
 get_log_actor_types = get_log_resource_extra_fields
 
 get_log_actor_extra_fields = get_log_resource_extra_fields
 
 get_log_resource_types = get_log_resource_extra_fields
-
-get_log_tag_types = get_log_resource_extra_fields
 
 get_log_source_fields = get_log_resource_extra_fields
 
@@ -476,15 +472,24 @@ class AggPaginationCursor:
 
 
 async def _get_paginated_agg(
-    repo_id: UUID, field: str, limit: int, pagination_cursor: str | None
+    repo_id: UUID,
+    *,
+    nested: str = None,
+    field: str,
+    query: dict = None,
+    limit: int,
+    pagination_cursor: str | None,
 ) -> tuple[list[str], str]:
+    import json
+
     if pagination_cursor:
         cursor = AggPaginationCursor.load(pagination_cursor)
         after = cursor.after_key
     else:
         after = None
+
     aggregations = {
-        "agg": {
+        "group_by": {
             "composite": {
                 "size": limit,
                 "sources": [{field: {"terms": {"field": field, "order": "asc"}}}],
@@ -492,26 +497,38 @@ async def _get_paginated_agg(
             }
         },
     }
-    print("REQUEST: %s" % aggregations)
+    if nested:
+        aggregations = {
+            "nested_group_by": {
+                "nested": {
+                    "path": nested,
+                },
+                "aggs": aggregations,
+            },
+        }
+
+    print("REQUEST: %s" % json.dumps(aggregations))
     resp = await es.search(
         index=f"auditize_logs_{repo_id}",
+        query=query,
         aggregations=aggregations,
         size=0,
     )
-    import json
 
     print("RESPONSE: %s" % json.dumps(dict(resp)))
 
-    if (
-        len(resp["aggregations"]["agg"]["buckets"]) == limit
-        and "after_key" in resp["aggregations"]["agg"]
-    ):
-        next_cursor = AggPaginationCursor(resp["aggregations"]["agg"]["after_key"])
+    if nested:
+        group_by_result = resp["aggregations"]["nested_group_by"]["group_by"]
+    else:
+        group_by_result = resp["aggregations"]["group_by"]
+
+    if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
+        next_cursor = AggPaginationCursor(group_by_result["after_key"])
         next_cursor_raw = next_cursor.serialize()
     else:
         next_cursor_raw = None
 
-    values = [bucket["key"][field] for bucket in resp["aggregations"]["agg"]["buckets"]]
+    values = [bucket["key"][field] for bucket in group_by_result["buckets"]]
 
     return values, next_cursor_raw
 
@@ -520,16 +537,39 @@ async def get_log_action_categories(
     repo_id: UUID, limit: int, pagination_cursor: str | None
 ) -> tuple[list[str], str]:
     return await _get_paginated_agg(
-        repo_id, "action.category", limit, pagination_cursor
+        repo_id,
+        field="action.category",
+        limit=limit,
+        pagination_cursor=pagination_cursor,
     )
-    # resp = await es.search(
-    #     index=f"auditize_logs_{repo_id}",
-    #     aggregations={"agg": {"terms": {"field": "action.category"}}},
-    #     size=0,
-    #     # size=page_size,
-    #     # from_=(page - 1) * page_size,
-    # )
-    # import json
-    #
-    # print(json.dumps(dict(resp)))
-    # return [], PagePaginationInfo.build(page, page_size, 0)
+
+
+async def get_log_action_types(
+    repo_id: UUID,
+    action_category: str | None,
+    limit: int,
+    pagination_cursor: str | None,
+) -> tuple[list[str], str]:
+    return await _get_paginated_agg(
+        repo_id,
+        field="action.type",
+        query=(
+            {"bool": {"filter": {"term": {"action.category": action_category}}}}
+            if action_category
+            else None
+        ),
+        limit=limit,
+        pagination_cursor=pagination_cursor,
+    )
+
+
+async def get_log_tag_types(
+    repo_id: UUID, limit: int, pagination_cursor: str | None
+) -> tuple[list[str], str]:
+    return await _get_paginated_agg(
+        repo_id,
+        nested="tags",
+        field="tags.type",
+        limit=limit,
+        pagination_cursor=pagination_cursor,
+    )
