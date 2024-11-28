@@ -40,13 +40,13 @@ router = APIRouter(
 async def _get_consolidated_data(
     repo_id: UUID,
     get_data_func,
-    page_params,
+    page_params: CursorPaginationParams,
     **kwargs,
 ) -> NameListResponse:
     data, pagination = await get_data_func(
         repo_id,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        limit=page_params.limit,
+        pagination_cursor=page_params.cursor,
         **kwargs,
     )
     return NameListResponse.build(data, pagination)
@@ -66,14 +66,9 @@ async def get_log_action_types(
     page_params: Annotated[CursorPaginationParams, Depends()],
     category: str = None,
 ) -> NameListResponse:
-    action_categories, pagination_cursor = await service.get_log_action_types(
-        repo_id,
-        action_category=category,
-        limit=page_params.limit,
-        pagination_cursor=page_params.cursor,
+    return await _get_consolidated_data(
+        repo_id, service.get_log_action_types, page_params, action_category=category
     )
-
-    return NameListResponse.build(action_categories, pagination_cursor)
 
 
 @router.get(
@@ -88,11 +83,9 @@ async def get_log_action_categories(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
-    action_categories, pagination_cursor = await service.get_log_action_categories(
-        repo_id, limit=page_params.limit, pagination_cursor=page_params.cursor
+    return await _get_consolidated_data(
+        repo_id, service.get_log_action_categories, page_params
     )
-
-    return NameListResponse.build(action_categories, pagination_cursor)
 
 
 @router.get(
@@ -107,11 +100,9 @@ async def get_log_actor_types(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
-    actor_types, pagination_cursor = await service.get_log_actor_types(
-        repo_id, limit=page_params.limit, pagination_cursor=page_params.cursor
+    return await _get_consolidated_data(
+        repo_id, service.get_log_actor_types, page_params
     )
-
-    return NameListResponse.build(actor_types, pagination_cursor)
 
 
 @router.get(

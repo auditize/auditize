@@ -532,15 +532,7 @@ async def _get_paginated_agg(
     return values, next_cursor_raw
 
 
-async def get_log_action_categories(
-    repo_id: UUID, limit: int, pagination_cursor: str | None
-) -> tuple[list[str], str]:
-    return await _get_paginated_agg(
-        repo_id,
-        field="action.category",
-        limit=limit,
-        pagination_cursor=pagination_cursor,
-    )
+get_log_action_categories = partial(_get_paginated_agg, field="action.category")
 
 
 async def get_log_action_types(
@@ -562,16 +554,7 @@ async def get_log_action_types(
     )
 
 
-async def get_log_tag_types(
-    repo_id: UUID, limit: int, pagination_cursor: str | None
-) -> tuple[list[str], str]:
-    return await _get_paginated_agg(
-        repo_id,
-        nested="tags",
-        field="tags.type",
-        limit=limit,
-        pagination_cursor=pagination_cursor,
-    )
+get_log_tag_types = partial(_get_paginated_agg, nested="tags", field="tags.type")
 
 
 get_log_actor_types = partial(_get_paginated_agg, field="actor.type")
