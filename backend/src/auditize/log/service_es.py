@@ -433,10 +433,6 @@ async def _empty_agg(*args, **kwargs):
     return [], PagePaginationInfo.build(1, 10, 0)
 
 
-get_log_attachment_types = _empty_agg
-
-get_log_attachment_mime_types = _empty_agg
-
 get_log_entities = _empty_agg
 
 
@@ -572,4 +568,12 @@ get_log_source_fields = partial(
 
 get_log_detail_fields = partial(
     _get_paginated_agg, nested="details", field="details.name"
+)
+
+get_log_attachment_types = partial(
+    _get_paginated_agg, nested="attachments", field="attachments.type"
+)
+
+get_log_attachment_mime_types = partial(
+    _get_paginated_agg, nested="attachments", field="attachments.mime_type"
 )

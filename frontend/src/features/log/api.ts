@@ -174,7 +174,7 @@ export async function getAllLogTagTypes(repoId: string): Promise<string[]> {
 
 export async function getAllAttachmentTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/attachments/types`,
       {},
     ),
@@ -185,7 +185,7 @@ export async function getAllAttachmentMimeTypes(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/attachments/mime-types`,
       {},
     ),

@@ -234,7 +234,7 @@ async def get_log_detail_fields(
 async def get_log_attachment_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -254,7 +254,7 @@ async def get_log_attachment_types(
 async def get_log_attachment_mime_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
