@@ -295,6 +295,7 @@ async def get_logs(
         sort=[{"saved_at": "desc", "id": "desc"}],
         size=limit + 1,
     )
+    print("RESPONSE: %s" % json.dumps(dict(resp), default=str))
     hits = list(resp["hits"]["hits"])
 
     # we previously fetched one extra log to check if there are more logs to fetch
@@ -314,8 +315,6 @@ async def get_logs(
         Log.model_validate({**hit["_source"], "_id": hit["_source"]["id"]})
         for hit in hits
     ]
-
-    print("RETURN: %s" % [(log.id, log.saved_at) for log in logs])
 
     return logs, next_cursor
 
