@@ -214,7 +214,7 @@ async def get_log_source_fields(
 async def get_log_detail_fields(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,

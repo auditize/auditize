@@ -162,7 +162,7 @@ export async function getAllLogResourceCustomFields(
 
 export async function getAllLogDetailFields(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/details`, {}),
+    getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/details`, {}),
   );
 }
 
