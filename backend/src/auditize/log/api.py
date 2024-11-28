@@ -116,7 +116,7 @@ async def get_log_actor_types(
 async def get_log_actor_extras(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,

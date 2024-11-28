@@ -125,7 +125,10 @@ export async function getAllLogActorCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/extras`, {}),
+    getAllCursorPaginatedItems<Named>(
+      `/repos/${repoId}/logs/actors/extras`,
+      {},
+    ),
   );
 }
 

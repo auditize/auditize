@@ -433,8 +433,6 @@ async def get_log_resource_extra_fields(*args, **kwargs):
     return [], PagePaginationInfo.build(1, 10, 0)
 
 
-get_log_actor_extra_fields = get_log_resource_extra_fields
-
 get_log_resource_types = get_log_resource_extra_fields
 
 get_log_source_fields = get_log_resource_extra_fields
@@ -558,3 +556,8 @@ get_log_tag_types = partial(_get_paginated_agg, nested="tags", field="tags.type"
 
 
 get_log_actor_types = partial(_get_paginated_agg, field="actor.type")
+
+
+get_log_actor_extra_fields = partial(
+    _get_paginated_agg, nested="actor.extra", field="actor.extra.name"
+)
