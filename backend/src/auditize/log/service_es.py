@@ -429,19 +429,19 @@ async def create_index(repo_id: UUID):
     )
 
 
-async def get_log_resource_extra_fields(*args, **kwargs):
+async def _empty_agg(*args, **kwargs):
     return [], PagePaginationInfo.build(1, 10, 0)
 
 
-get_log_source_fields = get_log_resource_extra_fields
+get_log_source_fields = _empty_agg
 
-get_log_detail_fields = get_log_resource_extra_fields
+get_log_detail_fields = _empty_agg
 
-get_log_attachment_types = get_log_resource_extra_fields
+get_log_attachment_types = _empty_agg
 
-get_log_attachment_mime_types = get_log_resource_extra_fields
+get_log_attachment_mime_types = _empty_agg
 
-get_log_entities = get_log_resource_extra_fields
+get_log_entities = _empty_agg
 
 
 class AggPaginationCursor:
@@ -560,4 +560,10 @@ get_log_actor_extra_fields = partial(
     _get_paginated_agg, nested="actor.extra", field="actor.extra.name"
 )
 
+
 get_log_resource_types = partial(_get_paginated_agg, field="resource.type")
+
+
+get_log_resource_extra_fields = partial(
+    _get_paginated_agg, nested="resource.extra", field="resource.extra.name"
+)
