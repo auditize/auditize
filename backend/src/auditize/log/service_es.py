@@ -471,12 +471,12 @@ async def _empty_agg(*args, **kwargs):
 get_log_entities = _empty_agg
 
 
-class AggPaginationCursor:
-    def __init__(self, after_key: dict):
-        self.after_key = after_key
+class AfterPaginationCursor:
+    def __init__(self, after):
+        self.after = after
 
     @classmethod
-    def load(cls, value: str) -> "AggPaginationCursor":
+    def load(cls, value: str) -> "AfterPaginationCursor":
         try:
             decoded = json.loads(base64.b64decode(value).decode("utf-8"))
         except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError):
@@ -488,9 +488,7 @@ class AggPaginationCursor:
             raise InvalidPaginationCursor(value)
 
     def serialize(self) -> str:
-        return base64.b64encode(json.dumps(self.after_key).encode("utf-8")).decode(
-            "utf-8"
-        )
+        return base64.b64encode(json.dumps(self.after).encode("utf-8")).decode("utf-8")
 
 
 async def _get_paginated_agg(
@@ -503,8 +501,8 @@ async def _get_paginated_agg(
     pagination_cursor: str | None,
 ) -> tuple[list[str], str]:
     if pagination_cursor:
-        cursor = AggPaginationCursor.load(pagination_cursor)
-        after = cursor.after_key
+        cursor = AfterPaginationCursor.load(pagination_cursor)
+        after = cursor.after
     else:
         after = None
 
@@ -543,7 +541,7 @@ async def _get_paginated_agg(
         group_by_result = resp["aggregations"]["group_by"]
 
     if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
-        next_cursor = AggPaginationCursor(group_by_result["after_key"])
+        next_cursor = AfterPaginationCursor(group_by_result["after_key"])
         next_cursor_raw = next_cursor.serialize()
     else:
         next_cursor_raw = None
