@@ -272,25 +272,17 @@ async def get_logs(
     if authorized_entities:
         filter.append({"term": {"entity_path.ref": list(authorized_entities)}})
 
+    search_after = None
     if pagination_cursor:
-        cursor = PaginationCursor.load(pagination_cursor)
-        filter.append({"range": {"saved_at": {"lte": cursor.date}}})
-        filter.append(
-            {
-                "bool": {
-                    "should": [
-                        {"range": {"saved_at": {"lt": cursor.date}}},
-                        {"range": {"id": {"lt": cursor.id}}},
-                    ]
-                }
-            }
-        )
+        cursor = AfterPaginationCursor.load(pagination_cursor)
+        search_after = cursor.after
 
     query = {"bool": {"filter": filter}}
     print("QUERY: %s" % json.dumps(query, default=str))
     resp = await es.search(
         index=f"auditize_logs_{repo}",
         query=query,
+        search_after=search_after,
         source_excludes=["attachments.data"],
         sort=[{"saved_at": "desc", "id": "desc"}],
         size=limit + 1,
@@ -303,10 +295,7 @@ async def get_logs(
     if len(hits) == limit + 1:
         # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
         # limit range
-        next_cursor_obj = PaginationCursor(
-            datetime.fromisoformat(hits[-2]["_source"]["saved_at"]),
-            uuid.UUID(hits[-2]["_source"]["id"]),
-        )
+        next_cursor_obj = AfterPaginationCursor(hits[-2]["sort"])
         next_cursor = next_cursor_obj.serialize()
         hits.pop(-1)
     else:
