@@ -8,6 +8,8 @@ from functools import partial
 from typing import Any
 from uuid import UUID
 
+import elasticsearch
+from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
 
 from auditize.exceptions import (
@@ -59,9 +61,10 @@ es = get_es_client()
 
 
 async def save_log(repo_id: UUID, log: Log) -> UUID:
+    index = f"auditize_logs_{repo_id}"
     log_id = uuid.uuid4()
     await es.index(
-        index=f"auditize_logs_{repo_id}",
+        index=index,
         id=str(log_id),
         document={
             **log.model_dump(exclude={"id"}),
@@ -69,6 +72,7 @@ async def save_log(repo_id: UUID, log: Log) -> UUID:
             "id": log_id,
         },
     )
+    await _consolidate_log_entity_path(index, log.entity_path)
     return log_id
 
 
@@ -597,3 +601,43 @@ get_log_attachment_types = partial(
 get_log_attachment_mime_types = partial(
     _get_paginated_agg, nested="attachments", field="attachments.mime_type"
 )
+
+
+_CONSOLIDATED_LOG_ENTITIES = Cache(Cache.MEMORY)
+
+
+async def _consolidate_log_entity(
+    index: str, entity: Log.Entity, parent_entity: Log.Entity | None
+):
+    doc = {
+        "ref": entity.ref,
+        "name": entity.name,
+        "parent_entity_ref": parent_entity.ref if parent_entity else None,
+    }
+    cache_key = "%s:%s" % (index, doc.values())
+    if await _CONSOLIDATED_LOG_ENTITIES.exists(cache_key):
+        return
+
+    try:
+        await es.update(
+            index=f"{index}_entities",
+            id=entity.ref,
+            doc=doc,
+            doc_as_upsert=True,
+        )
+    except elasticsearch.ConflictError:
+        # We may encounter a 409 error if two updates are made at the same time
+        # just ignore those errors and mark the log entity as already consolidated.
+        # It assumes that the being log entity being updated was the same as the one
+        # we attempted to index.
+        print(
+            f"Detected conflict error while consolidating entity {entity.ref}, skip it."
+        )
+    await _CONSOLIDATED_LOG_ENTITIES.set(cache_key, True)
+
+
+async def _consolidate_log_entity_path(index: str, entity_path: list[Log.Entity]):
+    parent_entity = None
+    for entity in entity_path:
+        await _consolidate_log_entity(index, entity, parent_entity)
+        parent_entity = entity
