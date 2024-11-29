@@ -294,6 +294,7 @@ async def get_logs(
         source_excludes=["attachments.data"],
         sort=[{"saved_at": "desc", "id": "desc"}],
         size=limit + 1,
+        track_total_hits=False,
     )
     print("RESPONSE: %s" % json.dumps(dict(resp), default=str))
     hits = list(resp["hits"]["hits"])
@@ -452,6 +453,12 @@ async def create_index(repo_id: UUID):
                         },
                     },
                 },
+            }
+        },
+        settings={
+            "index": {
+                "sort.field": ["saved_at", "id"],
+                "sort.order": ["desc", "desc"],
             }
         },
     )
