@@ -313,32 +313,6 @@ async def get_logs(
     return logs, next_cursor
 
 
-async def _apply_log_retention_period(repo: Repo):
-    if not repo.retention_period:
-        return
-
-    db = await get_log_db_for_maintenance(repo)
-    result = await db.logs.delete_many(
-        {"saved_at": {"$lt": now() - timedelta(days=repo.retention_period)}}
-    )
-    if result.deleted_count > 0:
-        print(
-            f"Deleted {result.deleted_count} logs older than {repo.retention_period} days "
-            f"in log repository {repo.name!r}"
-        )
-
-
-async def apply_log_retention_period(repo: UUID | Repo = None):
-    if repo:
-        repos = [await get_repo(repo)]
-    else:
-        repos = await get_retention_period_enabled_repos()
-
-    for repo in repos:
-        await _apply_log_retention_period(repo)
-        await purge_orphan_consolidated_log_data(repo)
-
-
 async def create_indexes(repo_id: UUID):
     await es.indices.create(
         index=f"auditize_logs_{repo_id}",
@@ -676,6 +650,9 @@ async def _has_entity_children(repo_id: UUID, entity_ref: str) -> bool:
 async def _get_log_entities(
     repo_id: UUID, *, query: dict, page=1, page_size=10
 ) -> tuple[list[Entity], PagePaginationInfo]:
+    # We make 1 main search + 1 extra search / entity to know whether it has children.
+    # FIXME: This is not efficient, we'd better build something aggregation based.
+
     print("_get_log_entities query: %s" % json.dumps(query))
     resp = await es.search(
         index=f"auditize_logs_{repo_id}_entities",
@@ -793,3 +770,38 @@ async def get_log_entity(
         ):
             raise UnknownModelException()
     return await _get_log_entity(repo_id, entity_ref)
+
+
+async def _apply_log_retention_period(repo: Repo):
+    if not repo.retention_period:
+        return
+
+    resp = await es.delete_by_query(
+        index=f"auditize_logs_{repo.id}",
+        query={
+            "bool": {
+                "filter": [
+                    {
+                        "range": {
+                            "saved_at": {
+                                "lt": now() - timedelta(days=repo.retention_period)
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+    )
+    print("RESPONSE: %s" % json.dumps(dict(resp)))
+    if resp["deleted"] > 0:
+        print(
+            f"Deleted {resp["deleted"]} logs older than {repo.retention_period} days "
+            f"in log repository {repo.name!r}"
+        )
+
+
+async def apply_log_retention_period(repo: UUID | Repo):
+    repos = [await get_repo(repo)]
+    for repo in repos:
+        await _apply_log_retention_period(repo)
+        await purge_orphan_consolidated_log_data(repo)
