@@ -339,7 +339,7 @@ async def apply_log_retention_period(repo: UUID | Repo = None):
         await purge_orphan_consolidated_log_data(repo)
 
 
-async def create_index(repo_id: UUID):
+async def create_indexes(repo_id: UUID):
     await es.indices.create(
         index=f"auditize_logs_{repo_id}",
         mappings={
@@ -452,6 +452,25 @@ async def create_index(repo_id: UUID):
             "index": {
                 "sort.field": ["saved_at", "id"],
                 "sort.order": ["desc", "desc"],
+            }
+        },
+    )
+    await es.indices.create(
+        index=f"auditize_logs_{repo_id}_entities",
+        mappings={
+            "properties": {
+                "ref": {"type": "keyword"},
+                "name": {
+                    "type": "text",
+                    "fields": {"keyword": {"type": "keyword"}},
+                },
+                "parent_ref": {"type": "keyword"},
+            }
+        },
+        settings={
+            "index": {
+                "sort.field": "name.keyword",
+                "sort.order": "asc",
             }
         },
     )

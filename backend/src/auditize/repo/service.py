@@ -46,7 +46,7 @@ async def _validate_repo(repo: Repo | RepoUpdate):
 
 
 async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
-    from auditize.log.service_es import create_index
+    from auditize.log.service_es import create_indexes
 
     await _validate_repo(repo)
     db = get_core_db()
@@ -66,7 +66,7 @@ async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
                 session=session,
             )
         if not log_db:
-            await create_index(repo_id)
+            await create_indexes(repo_id)
     return repo_id
 
 
