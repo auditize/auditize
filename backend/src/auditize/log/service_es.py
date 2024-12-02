@@ -22,7 +22,7 @@ from auditize.log.db import (
     get_log_db_for_reading,
     get_log_db_for_writing,
 )
-from auditize.log.models import Log, LogSearchParams
+from auditize.log.models import Entity, Log, LogSearchParams
 from auditize.log.service.consolidation import (
     check_log,
     consolidate_log,
@@ -464,7 +464,7 @@ async def create_indexes(repo_id: UUID):
                     "type": "text",
                     "fields": {"keyword": {"type": "keyword"}},
                 },
-                "parent_ref": {"type": "keyword"},
+                "parent_entity_ref": {"type": "keyword"},
             }
         },
         settings={
@@ -478,9 +478,6 @@ async def create_indexes(repo_id: UUID):
 
 async def _empty_agg(*args, **kwargs):
     return [], PagePaginationInfo.build(1, 10, 0)
-
-
-get_log_entities = _empty_agg
 
 
 class AfterPaginationCursor:
@@ -660,3 +657,139 @@ async def _consolidate_log_entity_path(index: str, entity_path: list[Log.Entity]
     for entity in entity_path:
         await _consolidate_log_entity(index, entity, parent_entity)
         parent_entity = entity
+
+
+async def _has_entity_children(repo_id: UUID, entity_ref: str) -> bool:
+    print(
+        "_has_entity_children query: %s"
+        % json.dumps({"bool": {"filter": {"term": {"parent_entity_ref": entity_ref}}}})
+    )
+    resp = await es.search(
+        index=f"auditize_logs_{repo_id}_entities",
+        query={"bool": {"filter": {"term": {"parent_entity_ref": entity_ref}}}},
+        size=1,
+    )
+    print("_has_entity_children response: %s" % json.dumps(dict(resp)))
+    return bool(resp["hits"]["hits"])
+
+
+async def _get_log_entities(
+    repo_id: UUID, *, query: dict, page=1, page_size=10
+) -> tuple[list[Entity], PagePaginationInfo]:
+    print("_get_log_entities query: %s" % json.dumps(query))
+    resp = await es.search(
+        index=f"auditize_logs_{repo_id}_entities",
+        query=query,
+        sort=[{"name.keyword": "asc"}],
+        from_=(page - 1) * page_size,
+        size=page_size,
+    )
+
+    entities = [
+        Entity.model_validate(
+            {
+                **hit["_source"],
+                "id": hit["_id"],
+                "has_children": await _has_entity_children(
+                    repo_id, hit["_source"]["ref"]
+                ),
+            }
+        )
+        for hit in resp["hits"]["hits"]
+    ]
+    return entities, PagePaginationInfo.build(
+        page, page_size, resp["hits"]["total"]["value"]
+    )
+
+
+async def _get_entity_hierarchy(repo_id: UUID, entity_ref: str) -> set[str]:
+    entity = await _get_log_entity(repo_id, entity_ref)
+    hierarchy = {entity.ref}
+    while entity.parent_entity_ref:
+        entity = await _get_log_entity(repo_id, entity.parent_entity_ref)
+        hierarchy.add(entity.ref)
+    return hierarchy
+
+
+async def _get_entities_hierarchy(repo_id: UUID, entity_refs: set[str]) -> set[str]:
+    parent_entities: dict[str, str] = {}
+    for entity_ref in entity_refs:
+        entity = await _get_log_entity(repo_id, entity_ref)
+        while True:
+            if entity.ref in parent_entities:
+                break
+            parent_entities[entity.ref] = entity.parent_entity_ref
+            if not entity.parent_entity_ref:
+                break
+            entity = await _get_log_entity(repo_id, entity.parent_entity_ref)
+
+    return entity_refs | parent_entities.keys()
+
+
+async def get_log_entities(
+    repo_id: UUID,
+    authorized_entities: set[str],
+    *,
+    parent_entity_ref=NotImplemented,
+    page=1,
+    page_size=10,
+) -> tuple[list[Log.Entity], PagePaginationInfo]:
+    # please note that we use NotImplemented instead of None because None is a valid value for parent_entity_ref
+    # (it means filtering on top entities)
+    filter = []
+    must_not = {}
+    if parent_entity_ref is not NotImplemented:
+        if parent_entity_ref is None:
+            must_not = {"exists": {"field": "parent_entity_ref"}}
+        else:
+            filter.append({"term": {"parent_entity_ref": parent_entity_ref}})
+
+    if authorized_entities:
+        # get the complete hierarchy of the entity from the entity itself to the top entity
+        parent_entity_ref_hierarchy = (
+            await _get_entity_hierarchy(repo_id, parent_entity_ref)
+            if parent_entity_ref
+            else set()
+        )
+        # we check if we have permission on parent_entity_ref or any of its parent entities
+        # if not, we have to manually filter the entities we'll have a direct or indirect visibility
+        if not parent_entity_ref_hierarchy or not (
+            authorized_entities & parent_entity_ref_hierarchy
+        ):
+            visible_entities = await _get_entities_hierarchy(
+                repo_id, authorized_entities
+            )
+            filter.append({"term": {"ref": list(visible_entities)}})
+
+    query = {"bool": {}}
+    if filter:
+        query["bool"]["filter"] = filter
+    if must_not:
+        query["bool"]["must_not"] = must_not
+    return await _get_log_entities(repo_id, query=query, page=page, page_size=page_size)
+
+
+async def _get_log_entity(repo_id: UUID, entity_ref: str) -> Log.Entity:
+    entities, _ = await _get_log_entities(
+        repo_id, query={"bool": {"filter": {"term": {"ref": entity_ref}}}}
+    )
+    try:
+        return entities[0]
+    except IndexError:
+        raise UnknownModelException(entity_ref)
+
+
+async def get_log_entity(
+    repo_id: UUID, entity_ref: str, authorized_entities: set[str]
+) -> Log.Entity:
+    if authorized_entities:
+        entity_ref_hierarchy = await _get_entity_hierarchy(repo_id, entity_ref)
+        authorized_entities_hierarchy = await _get_entities_hierarchy(
+            repo_id, authorized_entities
+        )
+        if not (
+            entity_ref_hierarchy & authorized_entities
+            or entity_ref in authorized_entities_hierarchy
+        ):
+            raise UnknownModelException()
+    return await _get_log_entity(repo_id, entity_ref)
