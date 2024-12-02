@@ -5,7 +5,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from functools import partial
-from typing import Any
+from typing import Any, Iterator
 from uuid import UUID
 
 import elasticsearch
@@ -666,7 +666,7 @@ async def _get_log_entities(
         Entity.model_validate(
             {
                 **hit["_source"],
-                "id": hit["_id"],
+                "_id": hit["_id"],
                 "has_children": await _has_entity_children(
                     repo_id, hit["_source"]["ref"]
                 ),
@@ -746,6 +746,19 @@ async def get_log_entities(
     return await _get_log_entities(repo_id, query=query, page=page, page_size=page_size)
 
 
+async def _iter_log_entities(repo_id: UUID):
+    page = 1
+    while True:
+        entities, pagination = await get_log_entities(
+            repo_id, authorized_entities=set(), page=page
+        )
+        for entity in entities:
+            yield entity
+        if page >= pagination.total_pages:
+            break
+        page += 1
+
+
 async def _get_log_entity(repo_id: UUID, entity_ref: str) -> Log.Entity:
     entities, _ = await _get_log_entities(
         repo_id, query={"bool": {"filter": {"term": {"ref": entity_ref}}}}
@@ -770,6 +783,39 @@ async def get_log_entity(
         ):
             raise UnknownModelException()
     return await _get_log_entity(repo_id, entity_ref)
+
+
+async def _purge_orphan_consolidated_log_entity_if_needed(
+    repo_id: UUID, entity: Entity
+):
+    """
+    This function assumes that the entity has no children and delete it if it has no associated logs.
+    It performs the same operation recursively on its ancestors.
+    """
+    # FIXME: non-leaf entities with all children nodes removed are not removed as expected
+    # maybe there is some ES caching mechanism involved, to be investigated
+    associated_logs, _ = await get_logs(
+        repo_id, search_params=LogSearchParams(entity_ref=entity.ref), limit=1
+    )
+    if not associated_logs:
+        await es.delete(index=f"auditize_logs_{repo_id}_entities", id=str(entity.id))
+        print(f"Deleted orphan log entity {entity!r} from log repository {repo_id!r}")
+        if entity.parent_entity_ref:
+            parent_entity = await _get_log_entity(repo_id, entity.parent_entity_ref)
+            if not parent_entity.has_children:
+                await _purge_orphan_consolidated_log_entity_if_needed(
+                    repo_id, parent_entity
+                )
+
+
+async def _purge_orphan_consolidated_log_entities(repo_id: UUID):
+    leaf_entities = [
+        entity
+        async for entity in _iter_log_entities(repo_id)
+        if not entity.has_children
+    ]
+    for entity in leaf_entities:
+        await _purge_orphan_consolidated_log_entity_if_needed(repo_id, entity)
 
 
 async def _apply_log_retention_period(repo: Repo):
@@ -804,4 +850,4 @@ async def apply_log_retention_period(repo: UUID | Repo):
     repos = [await get_repo(repo)]
     for repo in repos:
         await _apply_log_retention_period(repo)
-        await purge_orphan_consolidated_log_data(repo)
+        await _purge_orphan_consolidated_log_entities(repo.id)
