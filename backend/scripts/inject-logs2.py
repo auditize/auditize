@@ -16,7 +16,7 @@ import httpx
 from auditize.config import init_config
 from auditize.database import init_core_db
 from auditize.log.models import Log
-from auditize.log.service import save_log, save_log_attachment
+from auditize.log.service_es import save_log, save_log_attachment
 
 # fmt: off
 
