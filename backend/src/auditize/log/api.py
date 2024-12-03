@@ -525,7 +525,14 @@ async def get_log_attachment(
         description="The index of the attachment in the log's attachments list (starts from 0)",
     ),
 ):
-    attachment = await service.get_log_attachment(repo_id, log_id, attachment_idx)
+    attachment = await service.get_log_attachment(
+        repo_id,
+        log_id,
+        attachment_idx,
+        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
+            repo_id
+        ),
+    )
     return Response(
         content=attachment.data,
         media_type=attachment.mime_type,

@@ -544,6 +544,30 @@ async def test_get_log_forbidden(
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/{log.id}")
 
 
+async def test_get_log_forbidden_entity(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, apikey_builder: ApikeyBuilder
+):
+    log_1 = await repo.create_log_with_entity_path(superadmin_client, ["entity_A"])
+    log_2 = await repo.create_log_with_entity_path(superadmin_client, ["entity_B"])
+    apikey = await apikey_builder(
+        {
+            "logs": {
+                "repos": [
+                    {
+                        "repo_id": repo.id,
+                        "read": True,
+                        "readable_entities": ["entity_A"],
+                    }
+                ]
+            }
+        }
+    )
+    async with apikey.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(f"/repos/{repo.id}/logs/{log_1.id}")
+        await client.assert_get_not_found(f"/repos/{repo.id}/logs/{log_2.id}")
+
+
 @pytest.mark.parametrize(
     "repo_status,status_code", [("readonly", 200), ("disabled", 403)]
 )
@@ -639,6 +663,35 @@ async def test_get_log_attachment_forbidden(
     await no_permission_client.assert_get_forbidden(
         f"/repos/{repo.id}/logs/{log.id}/attachments/0"
     )
+
+
+async def test_get_log_attachment_forbidden_entity(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo, apikey_builder: ApikeyBuilder
+):
+    log_1 = await repo.create_log_with_entity_path(superadmin_client, ["entity_A"])
+    await log_1.upload_attachment(superadmin_client)
+    log_2 = await repo.create_log_with_entity_path(superadmin_client, ["entity_B"])
+    await log_2.upload_attachment(superadmin_client)
+    apikey = await apikey_builder(
+        {
+            "logs": {
+                "repos": [
+                    {
+                        "repo_id": repo.id,
+                        "read": True,
+                        "readable_entities": ["entity_A"],
+                    }
+                ]
+            }
+        }
+    )
+
+    async with apikey.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(f"/repos/{repo.id}/logs/{log_1.id}/attachments/0")
+        await client.assert_get_not_found(
+            f"/repos/{repo.id}/logs/{log_2.id}/attachments/0"
+        )
 
 
 @pytest.mark.parametrize(

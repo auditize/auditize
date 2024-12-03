@@ -69,29 +69,35 @@ async def save_log_attachment(
     await consolidate_log_attachment(db, attachment)
 
 
-async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:
-    db = await get_log_db_for_reading(repo_id)
+def _log_filter(log_id: UUID, authorized_entities: set[str]):
     filter = {"_id": log_id}
     if authorized_entities:
         filter["entity_path.ref"] = {"$in": list(authorized_entities)}
+    return filter
+
+
+async def get_log(repo_id: UUID, log_id: UUID, authorized_entities: set[str]) -> Log:
+    db = await get_log_db_for_reading(repo_id)
     document = await get_resource_document(
         db.logs,
-        filter=filter,
+        filter=_log_filter(log_id, authorized_entities),
         projection=_EXCLUDE_ATTACHMENT_DATA,
     )
     return Log.model_validate(document)
 
 
 async def get_log_attachment(
-    repo_id: UUID, log_id: UUID, attachment_idx: int
+    repo_id: UUID, log_id: UUID, attachment_idx: int, authorized_entities: set[str]
 ) -> Log.Attachment:
     db = await get_log_db_for_reading(repo_id)
     doc = await get_resource_document(
-        db.logs, log_id, projection={"attachments": {"$slice": [attachment_idx, 1]}}
+        db.logs,
+        filter=_log_filter(log_id, authorized_entities),
+        projection={"attachments": {"$slice": [attachment_idx, 1]}},
     )
     if len(doc["attachments"]) == 0:
         raise UnknownModelException()
-    return Log.Attachment(**doc["attachments"][0])
+    return Log.Attachment.model_validate(doc["attachments"][0])
 
 
 def _custom_field_search_filter(params: dict[str, str]) -> dict:
