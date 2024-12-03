@@ -1263,6 +1263,7 @@ function useLogSearchQuery(searchParams: LogSearchParams) {
     initialPageParam: null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: 0,
+    gcTime: 0,
   });
 }
 
