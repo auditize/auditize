@@ -1,3 +1,9 @@
+# 0.5.1 (2024-12-04)
+
+- Fix log entity read restrictions not taken into account in
+  `GET /api/repos/{repo_id}/logs/{log_id}/attachments/{attachment_idx}`
+- Minor UI fixes
+
 # 0.5.0 (2024-11-21)
 
 - Improve log search performance
