@@ -61,7 +61,7 @@ Next, create a `docker-compose.yml` file in the same directory with the followin
 services:
   mongo:
     image: mongo
-    hostname: mongo  # we need a static hostname for MongoDB replication
+    hostname: mongo # we need a static hostname for MongoDB replication
     command: ["--replSet", "rs0"]
     restart: always
     volumes:
@@ -106,19 +106,25 @@ AUDITIZE_JWT_SIGNING_KEY=YOUR_AUDITIZE_JWT_SIGNING_KEY
 
 Please refer to the [configuration documentation](config.md) for more details.
 
-Finally, start the Docker containers:
+Before running Auditize services, you need to start the MongoDB service first and initialize the replica set:
+
+```bash
+docker compose up -d mongo
+docker exec -it auditize-docker-mongo-1 mongosh --eval "rs.initiate()"
+```
+
+Then, you can run all other services:
 
 ```bash
 docker compose up -d
 ```
 
-You need then to initialize the MongoDB replica set by running the following command:
+!!! note
 
-```bash
-docker exec -it auditize-docker-mongo-1 mongosh --eval "rs.initiate()"
-```
+    As you only need to initialize the MongoDB replicat set once, the docker environment can be run using
+    `docker compose up -d` all subsequent times.
 
-Before you can use Auditize, you need to create a superadmin user. You can do this by running the following command:
+In order to login on Auditize, you need to create a superadmin user. You can do this by running the following command:
 
 ```bash
 docker exec -it auditize-docker-web-1 auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME
