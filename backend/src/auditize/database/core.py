@@ -21,11 +21,13 @@ class CoreDatabase(Database):
 _core_db: CoreDatabase | None = None
 
 
-def init_core_db(name="auditize", *, force_init=False) -> CoreDatabase:
+def init_core_db(name=None, *, force_init=False) -> CoreDatabase:
     global _core_db
     if not force_init and _core_db:
         raise Exception("CoreDatabase is already initialized")
     config = get_config()
+    if not name:
+        name = config.db_name
     _core_db = CoreDatabase(
         name,
         AsyncIOMotorClient(

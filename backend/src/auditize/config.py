@@ -27,6 +27,7 @@ class Config:
     csv_max_rows: int
     mongodb_uri: str
     mongodb_tls: bool
+    db_name: str
     smtp_server: str
     smtp_port: int
     smtp_username: str
@@ -123,6 +124,7 @@ class Config:
                 mongodb_tls=optional(
                     "AUDITIZE_MONGODB_TLS", validator=cls._validate_bool, default=False
                 ),
+                db_name=optional("AUDITIZE_DB_NAME", default="auditize"),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
                 smtp_port=optional("AUDITIZE_SMTP_PORT", validator=int),
                 smtp_username=optional("AUDITIZE_SMTP_USERNAME"),

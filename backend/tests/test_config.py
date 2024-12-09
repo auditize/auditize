@@ -21,6 +21,7 @@ def test_get_config():
     assert config.csv_max_rows == 10
     assert config.mongodb_uri is None
     assert config.mongodb_tls is False
+    assert config.db_name == "auditize"
     assert config.smtp_server is None
     assert config.smtp_port is None
     assert config.smtp_username is None
@@ -51,6 +52,8 @@ def test_config_minimum_viable_config():
     assert config.attachment_max_size == 5242880  # 5MB
     assert config.csv_max_rows == 10_000
     assert config.mongodb_uri is None
+    assert config.mongodb_tls is False
+    assert config.db_name == "auditize"
     assert config.smtp_server is None
     assert config.smtp_port is None
     assert config.smtp_username is None
@@ -76,6 +79,13 @@ def test_config_var_mongodb_tls():
         {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_MONGODB_TLS": "true"}
     )
     assert config.mongodb_tls is True
+
+
+def test_config_var_db_name():
+    config = Config.load_from_env(
+        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_DB_NAME": "my_db"}
+    )
+    assert config.db_name == "my_db"
 
 
 def test_config_var_user_session_token_lifetime():
