@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // FIXME: handle possible errors and make a distinction between 401 and others
     queryFn: () => getCurrentUserInfo(),
     staleTime: Infinity,
+    enabled: !loggedIn && !loggedOut,
   });
 
   const currentUser = loggedOut ? null : loggedIn || authQuery.data || null;
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoggedIn(user);
         },
         isAuthenticated: currentUser !== null,
-        isRefreshingAuthData: authQuery.isPending,
+        isRefreshingAuthData: authQuery.isFetching,
       }}
     >
       {children}

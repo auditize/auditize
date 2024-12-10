@@ -14,7 +14,7 @@ import "@mantine/dates/styles.layer.css";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import "@mantine/notifications/styles.css";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import i18n from "i18next";
 import "mantine-datatable/styles.layer.css";
 import { useEffect, useState } from "react";
@@ -54,6 +54,16 @@ import { I18nProvider } from "./i18n";
 import "./layers.css";
 import { interceptStatusCode } from "./utils/axios";
 import { auditizeQueryClient } from "./utils/query";
+
+function usePostLogoutHandler() {
+  const { declareLogout } = useAuthenticatedUser();
+  const queryClient = useQueryClient();
+
+  return () => {
+    declareLogout();
+    queryClient.removeQueries();
+  };
+}
 
 function logoutConfirmationModal(onLogout: () => void) {
   const { t } = i18n;
@@ -95,7 +105,8 @@ function LogoutModal({
 
 function UserMenu() {
   const { t } = useTranslation();
-  const { currentUser, declareLogout } = useAuthenticatedUser();
+  const { currentUser } = useAuthenticatedUser();
+  const handlePostLogout = usePostLogoutHandler();
   const [prefsOpened, setPrefsOpened] = useState(false);
   const [aboutOpened, setAboutOpened] = useState(false);
   const initials =
@@ -118,7 +129,7 @@ function UserMenu() {
             {t("navigation.preferences")}
           </Menu.Item>
           <Menu.Divider />
-          <Menu.Item onClick={logoutConfirmationModal(declareLogout)}>
+          <Menu.Item onClick={logoutConfirmationModal(handlePostLogout)}>
             {t("navigation.logout")}
           </Menu.Item>
         </Menu.Dropdown>
@@ -148,7 +159,8 @@ function Logo({}) {
 }
 
 function Main() {
-  const { currentUser, declareLogout } = useAuthenticatedUser();
+  const { currentUser } = useAuthenticatedUser();
+  const handlePostLogout = usePostLogoutHandler();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -159,7 +171,7 @@ function Main() {
         alreadyIntercepted = true; // avoid multiple modals in a row when we have multiple 401 responses
         modals.openContextModal({
           modal: "logout",
-          innerProps: { onLogout: declareLogout },
+          innerProps: { onLogout: handlePostLogout },
         });
       }
     });
