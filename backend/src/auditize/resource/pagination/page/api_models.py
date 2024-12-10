@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Generic, Self, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -47,9 +47,7 @@ class PagePaginatedResponse(BaseModel, Generic[ModelItemT, ApiItemT]):
     items: list[ApiItemT] = Field(description="List of items")
 
     @classmethod
-    def build(
-        cls, items: list[ModelItemT], pagination: PagePaginationInfo
-    ) -> "PagePaginatedResponse[ModelItemT, ApiItemT]":
+    def build(cls, items: list[ModelItemT], pagination: PagePaginationInfo) -> Self:
         return cls(
             items=list(map(cls.build_item, items)),
             pagination=PagePaginationData.model_validate(pagination.model_dump()),
