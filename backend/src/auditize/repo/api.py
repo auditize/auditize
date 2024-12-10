@@ -222,14 +222,16 @@ async def list_user_repos(
         repo_response.permissions = RepoLogPermissionsData(
             read=(
                 repo.status in (RepoStatus.enabled, RepoStatus.readonly)
-                and authorized.comply(can_read_logs(repo_response.id))
+                and authorized.comply(
+                    can_read_logs(repo_response.id, on_all_entities=True)
+                )
             ),
             write=(
                 repo.status == RepoStatus.enabled
                 and authorized.comply(can_write_logs(repo_response.id))
             ),
-            readable_entities=authorized.permissions.logs.get_repo_readable_entities(
-                repo_response.id
+            readable_entities=list(
+                authorized.permissions.logs.get_repo_readable_entities(repo_response.id)
             ),
         )
 

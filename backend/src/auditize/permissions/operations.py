@@ -38,16 +38,21 @@ def _normalize_repo_permissions(
     for single_repo_perms in repo_perms:
         read = False if global_read else (single_repo_perms.read or False)
         write = False if global_write else (single_repo_perms.write or False)
+        readable_entities = (
+            [] if global_read or read else (single_repo_perms.readable_entities or [])
+        )
         normalized[single_repo_perms.repo_id] = RepoLogPermissions(
             repo_id=single_repo_perms.repo_id,
             read=read,
             write=write,
-            readable_entities=(single_repo_perms.readable_entities or [])
-            if read
-            else [],
+            readable_entities=readable_entities,
         )
 
-    return [perms for perms in normalized.values() if perms.read or perms.write]
+    return [
+        perms
+        for perms in normalized.values()
+        if any((perms.read, perms.readable_entities, perms.write))
+    ]
 
 
 def _normalize_read_write_permissions(
@@ -122,7 +127,10 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
             logs=ApplicableLogPermissions(
                 read=_get_applicable_log_permission_scope(
                     perms.logs.read,
-                    any(repo_perms.read for repo_perms in perms.logs.repos),
+                    any(
+                        repo_perms.read or repo_perms.readable_entities
+                        for repo_perms in perms.logs.repos
+                    ),
                 ),
                 write=_get_applicable_log_permission_scope(
                     perms.logs.write,
@@ -167,19 +175,19 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
             )
             _authorize_grant(
                 assignee_repo_perms.read,
-                (
-                    grantor_repo_perms
-                    and grantor_repo_perms.read
-                    # grantor must have global access to the repo, not a entity subset, to grant read access:
-                    and not grantor_repo_perms.readable_entities
-                )
-                or grantor_perms.logs.read,
+                grantor_repo_perms.read or grantor_perms.logs.read,
+                f"logs read on repo {assignee_repo_perms.repo_id}",
+            )
+            _authorize_grant(
+                bool(assignee_repo_perms.readable_entities)
+                if assignee_repo_perms.readable_entities is not None
+                else None,
+                grantor_repo_perms.read or grantor_perms.logs.read,
                 f"logs read on repo {assignee_repo_perms.repo_id}",
             )
             _authorize_grant(
                 assignee_repo_perms.write,
-                (grantor_repo_perms and grantor_repo_perms.write)
-                or grantor_perms.logs.write,
+                grantor_repo_perms.write or grantor_perms.logs.write,
                 f"logs write on repo {assignee_repo_perms.repo_id}",
             )
 
@@ -225,7 +233,13 @@ def update_permissions(
     new.logs.write = _update_permission(orig_perms.logs.write, update_perms.logs.write)
     all_repo_perms = {perms.repo_id: perms for perms in orig_perms.logs.repos}
     for update_repo_perms in update_perms.logs.repos:
-        if update_repo_perms.read is False and update_repo_perms.write is False:
+        if not any(
+            (
+                update_repo_perms.read,
+                update_repo_perms.write,
+                update_repo_perms.readable_entities,
+            )
+        ):
             all_repo_perms.pop(update_repo_perms.repo_id, None)
         else:
             orig_repo_perms = all_repo_perms.get(update_repo_perms.repo_id)

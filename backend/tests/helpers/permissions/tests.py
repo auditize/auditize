@@ -57,7 +57,6 @@ class BasePermissionTests:
                             {"repo_id": repo_1.id, "read": True, "write": True},
                             {
                                 "repo_id": repo_2.id,
-                                "read": True,
                                 "readable_entities": ["customer:1"],
                             },
                         ],
@@ -92,7 +91,7 @@ class BasePermissionTests:
                                     },
                                     {
                                         "repo_id": UUID(repo_2.id),
-                                        "read": True,
+                                        "read": False,
                                         "write": False,
                                         "readable_entities": ["customer:1"],
                                     },
@@ -184,7 +183,7 @@ class BasePermissionTests:
                             "repos": [
                                 {
                                     "repo_id": repo.id,
-                                    "read": True,
+                                    "read": False,
                                     "write": True,
                                     "readable_entities": ["entity1"],
                                 }
@@ -212,7 +211,7 @@ class BasePermissionTests:
                                 "repos": [
                                     {
                                         "repo_id": UUID(repo.id),
-                                        "read": True,
+                                        "read": False,
                                         "write": True,
                                         "readable_entities": ["entity1"],
                                     }

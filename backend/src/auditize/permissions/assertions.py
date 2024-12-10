@@ -22,46 +22,43 @@ __all__ = (
 PermissionAssertion = Callable[[Permissions], bool]
 
 
-@dataclass
-class LogPermissionAssertion:
-    permission_type: str  # "read" or "write"
-    repo_id: UUID = None
-
-    def __call__(self, perms: Permissions) -> bool:
+def can_read_logs(
+    repo_id: UUID = None, *, on_all_entities=False
+) -> PermissionAssertion:
+    def func(perms: Permissions) -> bool:
         if perms.is_superadmin:
             return True
 
-        if self.permission_type == "read":
-            if perms.logs.read:
-                return True
-            if self.repo_id is None:
-                return False
-            return any(
-                repo_perms.repo_id == self.repo_id and repo_perms.read
-                for repo_perms in perms.logs.repos
-            )
+        if perms.logs.read:
+            return True
 
-        if self.permission_type == "write":
-            if perms.logs.write:
-                return True
-            if self.repo_id is None:
-                return False
-            return any(
-                repo_perms.repo_id == self.repo_id and repo_perms.write
-                for repo_perms in perms.logs.repos
-            )
+        if repo_id is None:
+            return False
 
-        raise Exception(
-            f"Invalid log permission type: {self.permission_type}"
-        )  # pragma: no cover, cannot happen
+        repo_perms = perms.logs.get_repo_permissions(repo_id)
+        if on_all_entities:
+            return bool(repo_perms.read)
+        else:
+            return bool(repo_perms.read or repo_perms.readable_entities)
 
-
-def can_read_logs(repo_id: UUID = None) -> PermissionAssertion:
-    return LogPermissionAssertion(permission_type="read", repo_id=repo_id)
+    return func
 
 
 def can_write_logs(repo_id: UUID = None) -> PermissionAssertion:
-    return LogPermissionAssertion(permission_type="write", repo_id=repo_id)
+    def func(perms: Permissions) -> bool:
+        if perms.is_superadmin:
+            return True
+
+        if perms.logs.write:
+            return True
+        if repo_id is None:
+            return False
+        return any(
+            repo_perms.repo_id == repo_id and repo_perms.write
+            for repo_perms in perms.logs.repos
+        )
+
+    return func
 
 
 @dataclass

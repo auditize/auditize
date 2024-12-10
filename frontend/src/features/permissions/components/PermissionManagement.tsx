@@ -88,7 +88,7 @@ function LogRepoPermissionManagement({
         onChange={(entities) =>
           onChange({ ...perms, readableEntities: entities })
         }
-        disabled={readOnly || !assignablePerms.read || !perms.read}
+        disabled={readOnly || !assignablePerms.read || perms.read}
         buttonProps={{ size: "xs" }}
         popoverProps={{ position: "left" }}
       />

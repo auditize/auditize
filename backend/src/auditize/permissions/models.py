@@ -51,24 +51,24 @@ class LogPermissions(ReadWritePermissions):
     model_config = ConfigDict(extra="forbid")
 
     def get_repos(self, *, can_read=False, can_write=False) -> list[UUID]:
-        def perms_ok(perms: ReadWritePermissions):
-            read_ok = perms.read if can_read else True
+        def perms_ok(perms: RepoLogPermissions):
+            read_ok = perms.read or perms.readable_entities if can_read else True
             write_ok = perms.write if can_write else True
             return read_ok and write_ok
 
         return [perms.repo_id for perms in self.repos if perms_ok(perms)]
 
-    def get_repo_permissions(self, repo_id: UUID) -> RepoLogPermissions | None:
+    def get_repo_permissions(self, repo_id: UUID) -> RepoLogPermissions:
         for perms in self.repos:
             if perms.repo_id == repo_id:
                 return perms
-        return None
+        return RepoLogPermissions(
+            repo_id=repo_id, read=False, write=False, readable_entities=list()
+        )
 
     def get_repo_readable_entities(self, repo_id: UUID) -> set[str]:
         perms = self.get_repo_permissions(repo_id)
-        return (
-            set(perms.readable_entities) if perms and perms.readable_entities else set()
-        )
+        return set(perms.readable_entities) if perms.readable_entities else set()
 
 
 class Permissions(BaseModel):

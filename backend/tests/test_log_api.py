@@ -555,7 +555,6 @@ async def test_get_log_forbidden_entity(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True,
                         "readable_entities": ["entity_A"],
                     }
                 ]
@@ -678,7 +677,6 @@ async def test_get_log_attachment_forbidden_entity(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True,
                         "readable_entities": ["entity_A"],
                     }
                 ]
@@ -1412,7 +1410,7 @@ async def test_get_logs_filter_no_result(
 async def _test_get_logs_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
-    authorized_entities: list[str],
+    authorized_entities: list[str] | None,
     search_params: dict[str, str],
     expected_logs: list[PreparedLog],
 ):
@@ -1422,7 +1420,7 @@ async def _test_get_logs_visibility(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True,
+                        "read": True if authorized_entities is None else False,
                         "readable_entities": authorized_entities,
                     }
                 ]
@@ -1451,7 +1449,7 @@ async def test_get_logs_with_limited_entity_visibility_1(
 
     await _test_get_logs_visibility(apikey_builder, repo, ["A"], {}, [log1])
     await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log2])
-    await _test_get_logs_visibility(apikey_builder, repo, [], {}, [log2, log1])
+    await _test_get_logs_visibility(apikey_builder, repo, None, {}, [log2, log1])
 
 
 async def test_get_logs_with_limited_entity_visibility_2(
@@ -1515,7 +1513,6 @@ async def _test_get_log_visibility(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True,
                         "readable_entities": authorized_entities,
                     }
                 ]
@@ -1553,7 +1550,7 @@ async def test_get_log_visibility(
 async def _test_get_log_entities_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
-    authorized_entities: list[str],
+    authorized_entities: list[str] | None,
     search_params: dict[str, str],
     expected: list[str],
 ):
@@ -1563,7 +1560,7 @@ async def _test_get_log_entities_visibility(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True,
+                        "read": True if authorized_entities is None else False,
                         "readable_entities": authorized_entities,
                     }
                 ]
@@ -1622,22 +1619,22 @@ async def test_get_log_entities_visibility(
 
     # Test with a user without entity restriction
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, [], {"root": "1"}, ["A", "B"]
+        apikey_builder, repo, None, {"root": "1"}, ["A", "B"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, [], {"parent_entity_ref": "A"}, ["AA", "AB"]
+        apikey_builder, repo, None, {"parent_entity_ref": "A"}, ["AA", "AB"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, [], {"parent_entity_ref": "AA"}, ["AAA", "AAB"]
+        apikey_builder, repo, None, {"parent_entity_ref": "AA"}, ["AAA", "AAB"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, [], {"parent_entity_ref": "AB"}, ["ABA", "ABB"]
+        apikey_builder, repo, None, {"parent_entity_ref": "AB"}, ["ABA", "ABB"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, [], {"parent_entity_ref": "B"}, ["BA"]
+        apikey_builder, repo, None, {"parent_entity_ref": "B"}, ["BA"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, [], {"parent_entity_ref": "BA"}, ["BAA", "BAB"]
+        apikey_builder, repo, None, {"parent_entity_ref": "BA"}, ["BAA", "BAB"]
     )
 
     # Test with a user with entity permission on entity "A"
@@ -1698,7 +1695,7 @@ async def test_get_log_entities_visibility(
 async def _test_get_log_entity_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
-    authorized_entities: list[str],
+    authorized_entities: list[str] | None,
     entity_ref: str,
     expected_status_code: int,
 ):
@@ -1708,7 +1705,7 @@ async def _test_get_log_entity_visibility(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True,
+                        "read": True if authorized_entities is None else False,
                         "readable_entities": authorized_entities,
                     }
                 ]
@@ -1751,9 +1748,9 @@ async def test_get_log_entity_visibility(
     await repo.create_log_with_entity_path(superadmin_client, ["A", "AB", "ABA"])
     await repo.create_log_with_entity_path(superadmin_client, ["A", "AB", "ABB"])
 
-    await _test_get_log_entity_visibility(apikey_builder, repo, [], "A", 200)
-    await _test_get_log_entity_visibility(apikey_builder, repo, [], "AA", 200)
-    await _test_get_log_entity_visibility(apikey_builder, repo, [], "AAA", 200)
+    await _test_get_log_entity_visibility(apikey_builder, repo, None, "A", 200)
+    await _test_get_log_entity_visibility(apikey_builder, repo, None, "AA", 200)
+    await _test_get_log_entity_visibility(apikey_builder, repo, None, "AAA", 200)
 
     await _test_get_log_entity_visibility(apikey_builder, repo, ["A"], "A", 200)
     await _test_get_log_entity_visibility(apikey_builder, repo, ["A"], "AA", 200)

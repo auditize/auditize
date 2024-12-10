@@ -672,7 +672,7 @@ async def test_repo_list_user_repos_with_permissions(
                     {"repo_id": repo_2.id, "read": False, "write": True},
                     {
                         "repo_id": repo_3.id,
-                        "read": True,
+                        "read": False,
                         "write": True,
                         "readable_entities": ["entity1"],
                     },
@@ -699,7 +699,7 @@ async def test_repo_list_user_repos_with_permissions(
                     "readable_entities": [],
                 },
                 repo_3.id: {
-                    "read": True,
+                    "read": False,
                     "write": True,
                     "readable_entities": ["entity1"],
                 },
@@ -720,7 +720,7 @@ async def test_repo_list_user_repos_with_permissions(
                     "readable_entities": [],
                 },
                 repo_3.id: {
-                    "read": True,
+                    "read": False,
                     "write": True,
                     "readable_entities": ["entity1"],
                 },
@@ -741,7 +741,7 @@ async def test_repo_list_user_repos_with_permissions(
                     "readable_entities": [],
                 },
                 repo_3.id: {
-                    "read": True,
+                    "read": False,
                     "write": True,
                     "readable_entities": ["entity1"],
                 },
@@ -752,7 +752,7 @@ async def test_repo_list_user_repos_with_permissions(
             {"has_read_permission": True, "has_write_permission": True},
             {
                 repo_3.id: {
-                    "read": True,
+                    "read": False,
                     "write": True,
                     "readable_entities": ["entity1"],
                 }

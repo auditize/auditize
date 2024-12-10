@@ -121,7 +121,7 @@ def test_normalization_read_logs_on_all_repos():
                     {"repo_id": REPO_3, "read": True, "write": False},
                     {
                         "repo_id": REPO_4,
-                        "read": True,
+                        "read": False,
                         "write": True,
                         "readable_entities": ["entity1", "entity2"],
                     },
@@ -163,7 +163,7 @@ def test_normalization_read_logs_on_all_repos():
     )
 
 
-def test_normalization_repo_entities_without_read_permission():
+def test_normalization_repo_entities_with_read_permission():
     _test_access_perms_normalization(
         {
             "logs": {
@@ -172,7 +172,7 @@ def test_normalization_repo_entities_without_read_permission():
                 "repos": [
                     {
                         "repo_id": REPO_1,
-                        "read": False,
+                        "read": True,
                         "write": True,
                         "readable_entities": ["entity1", "entity2"],
                     },
@@ -187,9 +187,48 @@ def test_normalization_repo_entities_without_read_permission():
                 "repos": [
                     {
                         "repo_id": REPO_1,
-                        "read": False,
+                        "read": True,
                         "write": True,
                         "readable_entities": [],
+                    },
+                ],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_normalization_repo_entities_without_read_permission():
+    _test_access_perms_normalization(
+        {
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {
+                        "repo_id": REPO_1,
+                        "read": False,
+                        "write": False,
+                        "readable_entities": ["entity1", "entity2"],
+                    },
+                ],
+            },
+        },
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [
+                    {
+                        "repo_id": REPO_1,
+                        "read": False,
+                        "write": False,
+                        "readable_entities": ["entity1", "entity2"],
                     },
                 ],
             },
@@ -342,7 +381,7 @@ def test_authorize_grant_on_logs_with_entity():
     granted_perms = {
         "logs": {
             "repos": [
-                {"repo_id": REPO_1, "read": True, "readable_entities": ["entity1"]},
+                {"repo_id": REPO_1, "readable_entities": ["entity1"]},
             ]
         }
     }
@@ -524,7 +563,12 @@ def test_update_permission_grant_read_logs_on_entities_1():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": REPO_1, "read": True, "readable_entities": ["entity1"]},
+                    {
+                        "repo_id": REPO_1,
+                        "read": False,
+                        "write": False,
+                        "readable_entities": ["entity1"],
+                    },
                 ],
             },
         },
@@ -536,7 +580,7 @@ def test_update_permission_grant_read_logs_on_entities_1():
                 "repos": [
                     {
                         "repo_id": REPO_1,
-                        "read": True,
+                        "read": False,
                         "write": False,
                         "readable_entities": ["entity1"],
                     },
@@ -556,7 +600,11 @@ def test_update_permission_grant_read_logs_on_entities_2():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": REPO_1, "read": True, "readable_entities": ["entity1"]},
+                    {
+                        "repo_id": REPO_1,
+                        "read": False,
+                        "readable_entities": ["entity1"],
+                    },
                 ],
             },
         },
@@ -595,7 +643,11 @@ def test_update_permission_grant_read_logs_on_entities_3():
         {
             "logs": {
                 "repos": [
-                    {"repo_id": REPO_1, "read": True, "readable_entities": ["entity1"]},
+                    {
+                        "repo_id": REPO_1,
+                        "read": False,
+                        "readable_entities": ["entity1"],
+                    },
                 ],
             },
         },
@@ -614,7 +666,7 @@ def test_update_permission_grant_read_logs_on_entities_3():
                 "repos": [
                     {
                         "repo_id": REPO_1,
-                        "read": True,
+                        "read": False,
                         "write": True,
                         "readable_entities": ["entity1"],
                     },
@@ -745,7 +797,7 @@ def test_get_applicable_permissions_partial_rights():
                     {"repo_id": REPO_2, "read": False, "write": True},
                     {
                         "repo_id": REPO_3,
-                        "read": True,
+                        "read": False,
                         "write": False,
                         "readable_entities": ["entity1"],
                     },
