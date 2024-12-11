@@ -7,7 +7,8 @@ from auditize.permissions.models import Permissions
 
 __all__ = (
     "PermissionAssertion",
-    "can_read_logs",
+    "can_read_logs_from_repo",
+    "can_read_logs_from_all_repos",
     "can_write_logs",
     "can_read_repo",
     "can_write_repo",
@@ -22,18 +23,19 @@ __all__ = (
 PermissionAssertion = Callable[[Permissions], bool]
 
 
-def can_read_logs(
-    repo_id: UUID = None, *, on_all_entities=False
+def can_read_logs_from_all_repos() -> PermissionAssertion:
+    def func(perms: Permissions) -> bool:
+        return bool(perms.is_superadmin or perms.logs.read)
+
+    return func
+
+
+def can_read_logs_from_repo(
+    repo_id: UUID, *, on_all_entities=False
 ) -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        if perms.is_superadmin:
+        if perms.is_superadmin or perms.logs.read:
             return True
-
-        if perms.logs.read:
-            return True
-
-        if repo_id is None:
-            return False
 
         repo_perms = perms.logs.get_repo_permissions(repo_id)
         if on_all_entities:

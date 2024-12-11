@@ -14,7 +14,8 @@ from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.api_models import LogTranslation
 from auditize.permissions.assertions import (
-    can_read_logs,
+    can_read_logs_from_all_repos,
+    can_read_logs_from_repo,
     can_read_repo,
     can_write_logs,
     can_write_repo,
@@ -62,7 +63,9 @@ async def create_repo(
     repo_id = await service.create_repo(Repo.model_validate(repo.model_dump()))
 
     # Ensure that authorized will have read & write logs permissions on the repo he created
-    if not authorized.comply(permissions_and(can_read_logs(), can_write_logs())):
+    if not authorized.comply(
+        permissions_and(can_read_logs_from_all_repos(), can_write_logs())
+    ):
         grant_rw_on_repo_logs = Permissions(
             logs=LogPermissions(
                 repos=[RepoLogPermissions(repo_id=repo_id, read=True, write=True)]
@@ -137,7 +140,7 @@ async def get_repo(
     responses=error_responses(404),
 )
 async def get_repo_translation_for_user(
-    authorized: AuthorizedUser(can_read_logs()),
+    authorized: AuthorizedUser(can_read_logs_from_all_repos()),
     repo_id: UUID,
 ) -> LogTranslation:
     translation = await service.get_repo_translation(repo_id, authorized.user.lang)
@@ -223,7 +226,7 @@ async def list_user_repos(
             read=(
                 repo.status in (RepoStatus.enabled, RepoStatus.readonly)
                 and authorized.comply(
-                    can_read_logs(repo_response.id, on_all_entities=True)
+                    can_read_logs_from_repo(repo_response.id, on_all_entities=True)
                 )
             ),
             write=(

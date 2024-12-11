@@ -5,7 +5,8 @@ from icecream import ic
 
 from auditize.permissions.assertions import (
     can_read_apikey,
-    can_read_logs,
+    can_read_logs_from_all_repos,
+    can_read_logs_from_repo,
     can_read_repo,
     can_read_user,
     can_write_apikey,
@@ -40,7 +41,7 @@ def assert_unauthorized(perms, *assertions):
 def test_permission_assertions_as_superadmin():
     assert_authorized(
         {"is_superadmin": True},
-        can_read_logs(REPO_1),
+        can_read_logs_from_repo(REPO_1),
         can_write_logs(REPO_2),
         can_read_repo(),
         can_write_repo(),
@@ -54,7 +55,7 @@ def test_permission_assertions_as_superadmin():
 def test_permission_assertions_as_no_right():
     assert_unauthorized(
         {},
-        can_read_logs(REPO_1),
+        can_read_logs_from_repo(REPO_1),
         can_write_logs(REPO_2),
         can_read_repo(),
         can_write_repo(),
@@ -67,16 +68,16 @@ def test_permission_assertions_as_no_right():
 
 def test_permission_assertions_on_logs_as_permissions_on_all_repos():
     read_perms = {"logs": {"read": True}}
-    assert_authorized(read_perms, can_read_logs(REPO_1))
-    assert_authorized(read_perms, can_read_logs())
+    assert_authorized(read_perms, can_read_logs_from_repo(REPO_1))
+    assert_authorized(read_perms, can_read_logs_from_all_repos())
     assert_unauthorized(read_perms, can_write_logs(REPO_1))
     assert_unauthorized(read_perms, can_write_logs())
 
     write_perms = {"logs": {"write": True}}
     assert_authorized(write_perms, can_write_logs(REPO_1))
     assert_authorized(write_perms, can_write_logs())
-    assert_unauthorized(write_perms, can_read_logs(REPO_1))
-    assert_unauthorized(write_perms, can_read_logs())
+    assert_unauthorized(write_perms, can_read_logs_from_repo(REPO_1))
+    assert_unauthorized(write_perms, can_read_logs_from_all_repos())
 
 
 def test_permission_assertions_on_logs_as_permissions_specific_repos():
@@ -88,8 +89,8 @@ def test_permission_assertions_on_logs_as_permissions_specific_repos():
             ]
         }
     }
-    assert_authorized(perms, can_read_logs(REPO_1), can_write_logs(REPO_2))
-    assert_unauthorized(perms, can_write_logs(REPO_1), can_read_logs(REPO_2))
+    assert_authorized(perms, can_read_logs_from_repo(REPO_1), can_write_logs(REPO_2))
+    assert_unauthorized(perms, can_write_logs(REPO_1), can_read_logs_from_repo(REPO_2))
 
 
 def test_permission_assertions_on_management_as_specific_permissions():
@@ -125,14 +126,14 @@ def test_permission_assertions_on_management_as_specific_permissions():
 
 
 def test_permissions_or():
-    assertion = permissions_or(can_read_logs(REPO_1), can_write_logs(REPO_1))
+    assertion = permissions_or(can_read_logs_from_repo(REPO_1), can_write_logs(REPO_1))
     assert_authorized({"logs": {"read": True, "write": False}}, assertion)
     assert_authorized({"logs": {"read": False, "write": True}}, assertion)
     assert_unauthorized({}, assertion)
 
 
 def test_permissions_and():
-    assertion = permissions_and(can_read_logs(REPO_1), can_write_logs(REPO_1))
+    assertion = permissions_and(can_read_logs_from_repo(REPO_1), can_write_logs(REPO_1))
     assert_unauthorized({"logs": {"read": True, "write": False}}, assertion)
     assert_unauthorized({"logs": {"read": False, "write": True}}, assertion)
     assert_authorized({"logs": {"read": True, "write": True}}, assertion)

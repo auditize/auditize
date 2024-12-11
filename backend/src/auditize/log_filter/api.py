@@ -14,7 +14,7 @@ from auditize.log_filter.api_models import (
     LogFilterUpdateRequest,
 )
 from auditize.log_filter.models import LogFilter, LogFilterUpdate
-from auditize.permissions.assertions import can_read_logs
+from auditize.permissions.assertions import can_read_logs_from_all_repos
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 
@@ -30,7 +30,7 @@ router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
     responses=error_responses(400, 409),
 )
 async def create_filter(
-    authorized: AuthorizedUser(can_read_logs()),
+    authorized: AuthorizedUser(can_read_logs_from_all_repos()),
     log_filter: LogFilterCreationRequest,
 ) -> LogFilterCreationResponse:
     log_filter_id = await service.create_log_filter(
@@ -53,7 +53,7 @@ async def create_filter(
     responses=error_responses(400, 404, 409),
 )
 async def update_filter(
-    authorized: AuthorizedUser(can_read_logs()),
+    authorized: AuthorizedUser(can_read_logs_from_all_repos()),
     update: LogFilterUpdateRequest,
     filter_id: UUID,
 ):
@@ -73,7 +73,7 @@ async def update_filter(
     responses=error_responses(404),
 )
 async def get_filter(
-    authorized: AuthorizedUser(can_read_logs()),
+    authorized: AuthorizedUser(can_read_logs_from_all_repos()),
     filter_id: UUID,
 ) -> LogFilterReadingResponse:
     log_filter = await service.get_log_filter(authorized.user.id, filter_id)
@@ -87,7 +87,7 @@ async def get_filter(
     tags=["log-filter"],
 )
 async def list_log_filters(
-    authorized: AuthorizedUser(can_read_logs()),
+    authorized: AuthorizedUser(can_read_logs_from_all_repos()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     is_favorite: bool = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
@@ -111,7 +111,7 @@ async def list_log_filters(
     responses=error_responses(404),
 )
 async def delete_filter(
-    authorized: AuthorizedUser(can_read_logs()),
+    authorized: AuthorizedUser(can_read_logs_from_all_repos()),
     filter_id: UUID,
 ):
     await service.delete_log_filter(authorized.user.id, filter_id)

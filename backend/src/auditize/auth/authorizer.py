@@ -16,7 +16,7 @@ from auditize.exceptions import (
 )
 from auditize.permissions.assertions import (
     PermissionAssertion,
-    can_read_logs,
+    can_read_logs_from_repo,
     can_write_logs,
 )
 from auditize.permissions.models import Permissions
@@ -197,7 +197,9 @@ def AuthorizedApikey(assertion: PermissionAssertion = None) -> Type[Authenticate
 
 
 def AuthorizedForLogRead() -> Type[Authenticated]:  # noqa
-    return Annotated[Authenticated, Depends(_authorized_on_logs(can_read_logs))]
+    return Annotated[
+        Authenticated, Depends(_authorized_on_logs(can_read_logs_from_repo))
+    ]
 
 
 def AuthorizedForLogWrite() -> Type[Authenticated]:  # noqa
