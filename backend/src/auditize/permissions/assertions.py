@@ -9,6 +9,7 @@ __all__ = (
     "PermissionAssertion",
     "can_read_logs_from_repo",
     "can_read_logs_from_all_repos",
+    "can_read_logs_from_any_repo",
     "can_write_logs_to_repo",
     "can_write_logs_to_all_repos",
     "can_read_repo",
@@ -47,7 +48,17 @@ def can_read_logs_from_repo(
     return func
 
 
-def can_write_logs_to_all_repos():
+def can_read_logs_from_any_repo() -> PermissionAssertion:
+    def func(perms: Permissions) -> bool:
+        if perms.is_superadmin or perms.logs.read:
+            return True
+
+        return any(repo.read or repo.readable_entities for repo in perms.logs.repos)
+
+    return func
+
+
+def can_write_logs_to_all_repos() -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
         return bool(perms.is_superadmin or perms.logs.write)
 
