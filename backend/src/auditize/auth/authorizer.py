@@ -17,7 +17,7 @@ from auditize.exceptions import (
 from auditize.permissions.assertions import (
     PermissionAssertion,
     can_read_logs_from_repo,
-    can_write_logs,
+    can_write_logs_to_repo,
 )
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import authorize_grant
@@ -203,4 +203,6 @@ def AuthorizedForLogRead() -> Type[Authenticated]:  # noqa
 
 
 def AuthorizedForLogWrite() -> Type[Authenticated]:  # noqa
-    return Annotated[Authenticated, Depends(_authorized_on_logs(can_write_logs))]
+    return Annotated[
+        Authenticated, Depends(_authorized_on_logs(can_write_logs_to_repo))
+    ]

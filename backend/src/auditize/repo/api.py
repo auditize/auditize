@@ -17,7 +17,8 @@ from auditize.permissions.assertions import (
     can_read_logs_from_all_repos,
     can_read_logs_from_repo,
     can_read_repo,
-    can_write_logs,
+    can_write_logs_to_all_repos,
+    can_write_logs_to_repo,
     can_write_repo,
     permissions_and,
 )
@@ -64,7 +65,7 @@ async def create_repo(
 
     # Ensure that authorized will have read & write logs permissions on the repo he created
     if not authorized.comply(
-        permissions_and(can_read_logs_from_all_repos(), can_write_logs())
+        permissions_and(can_read_logs_from_all_repos(), can_write_logs_to_all_repos())
     ):
         grant_rw_on_repo_logs = Permissions(
             logs=LogPermissions(
@@ -231,7 +232,7 @@ async def list_user_repos(
             ),
             write=(
                 repo.status == RepoStatus.enabled
-                and authorized.comply(can_write_logs(repo_response.id))
+                and authorized.comply(can_write_logs_to_repo(repo_response.id))
             ),
             readable_entities=list(
                 authorized.permissions.logs.get_repo_readable_entities(repo_response.id)
