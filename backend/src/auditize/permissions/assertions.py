@@ -7,8 +7,11 @@ from auditize.permissions.models import Permissions
 
 __all__ = (
     "PermissionAssertion",
-    "can_read_logs",
-    "can_write_logs",
+    "can_read_logs_from_repo",
+    "can_read_logs_from_all_repos",
+    "can_read_logs_from_any_repo",
+    "can_write_logs_to_repo",
+    "can_write_logs_to_all_repos",
     "can_read_repo",
     "can_write_repo",
     "can_read_user",
@@ -22,18 +25,19 @@ __all__ = (
 PermissionAssertion = Callable[[Permissions], bool]
 
 
-def can_read_logs(
-    repo_id: UUID = None, *, on_all_entities=False
+def can_read_logs_from_all_repos() -> PermissionAssertion:
+    def func(perms: Permissions) -> bool:
+        return bool(perms.is_superadmin or perms.logs.read)
+
+    return func
+
+
+def can_read_logs_from_repo(
+    repo_id: UUID, *, on_all_entities=False
 ) -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        if perms.is_superadmin:
+        if perms.is_superadmin or perms.logs.read:
             return True
-
-        if perms.logs.read:
-            return True
-
-        if repo_id is None:
-            return False
 
         repo_perms = perms.logs.get_repo_permissions(repo_id)
         if on_all_entities:
@@ -44,19 +48,30 @@ def can_read_logs(
     return func
 
 
-def can_write_logs(repo_id: UUID = None) -> PermissionAssertion:
+def can_read_logs_from_any_repo() -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        if perms.is_superadmin:
+        if perms.is_superadmin or perms.logs.read:
             return True
 
-        if perms.logs.write:
+        return any(repo.read or repo.readable_entities for repo in perms.logs.repos)
+
+    return func
+
+
+def can_write_logs_to_all_repos() -> PermissionAssertion:
+    def func(perms: Permissions) -> bool:
+        return bool(perms.is_superadmin or perms.logs.write)
+
+    return func
+
+
+def can_write_logs_to_repo(repo_id: UUID) -> PermissionAssertion:
+    def func(perms: Permissions) -> bool:
+        if perms.is_superadmin or perms.logs.write:
             return True
-        if repo_id is None:
-            return False
-        return any(
-            repo_perms.repo_id == repo_id and repo_perms.write
-            for repo_perms in perms.logs.repos
-        )
+
+        repo_perms = perms.logs.get_repo_permissions(repo_id)
+        return bool(repo_perms.write)
 
     return func
 

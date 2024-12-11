@@ -34,11 +34,12 @@ async def _test_log_filter_creation(user: PreparedUser, data: dict):
     )
 
 
-async def test_log_filter_create_simple(
-    log_read_user: PreparedUser, repo: PreparedRepo
-):
+async def test_log_filter_create_simple(user_builder: UserBuilder, repo: PreparedRepo):
+    user = await user_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
     await _test_log_filter_creation(
-        log_read_user,
+        user,
         {
             "name": "my filter",
             "repo_id": repo.id,
@@ -347,11 +348,12 @@ async def _test_log_filter_update(
     )
 
 
-async def test_log_filter_update_simple(
-    log_read_user: PreparedUser, repo: PreparedRepo
-):
+async def test_log_filter_update_simple(user_builder: UserBuilder, repo: PreparedRepo):
+    user = await user_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
     await _test_log_filter_update(
-        log_read_user,
+        user,
         {
             "name": "my filter",
             "repo_id": repo.id,
@@ -463,8 +465,12 @@ async def test_log_filter_update_forbidden(
         )
 
 
-async def test_log_filter_get_simple(log_read_user: PreparedUser, repo: PreparedRepo):
-    log_filter = await log_read_user.create_log_filter(
+async def test_log_filter_get_simple(user_builder: UserBuilder, repo: PreparedRepo):
+    user = await user_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
+
+    log_filter = await user.create_log_filter(
         {
             "name": "my filter",
             "repo_id": repo.id,
@@ -472,7 +478,7 @@ async def test_log_filter_get_simple(log_read_user: PreparedUser, repo: Prepared
             "columns": [],
         }
     )
-    async with log_read_user.client() as client:
+    async with user.client() as client:
         client: HttpTestHelper
         await client.assert_get_ok(
             f"/users/me/logs/filters/{log_filter.id}",
@@ -535,9 +541,13 @@ async def test_log_filter_get_forbidden(user_builder: UserBuilder, repo: Prepare
         await client.assert_get_not_found(f"/users/me/logs/filters/{log_filter.id}")
 
 
-async def test_log_filter_list(log_read_user: PreparedUser, repo: PreparedRepo):
+async def test_log_filter_list(user_builder: UserBuilder, repo: PreparedRepo):
+    user = await user_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
+
     log_filters = [
-        await log_read_user.create_log_filter(
+        await user.create_log_filter(
             {
                 "name": f"filter_{i}",
                 "repo_id": repo.id,
@@ -553,7 +563,7 @@ async def test_log_filter_list(log_read_user: PreparedUser, repo: PreparedRepo):
         for i in range(5)
     ]
 
-    async with log_read_user.client() as client:
+    async with user.client() as client:
         client: HttpTestHelper
         await do_test_page_pagination_common_scenarios(
             client,
@@ -734,11 +744,15 @@ async def test_log_filter_list_forbidden(user_builder: UserBuilder):
         await client.assert_get_forbidden("/users/me/logs/filters")
 
 
-async def test_log_filter_delete(log_read_user: PreparedUser, repo: PreparedRepo):
-    log_filter = await log_read_user.create_log_filter(
+async def test_log_filter_delete(user_builder: UserBuilder, repo: PreparedRepo):
+    user = await user_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
+
+    log_filter = await user.create_log_filter(
         PreparedLogFilter.prepare_data({"repo_id": repo.id})
     )
-    async with log_read_user.client() as client:
+    async with user.client() as client:
         client: HttpTestHelper
         await client.assert_delete_no_content(f"/users/me/logs/filters/{log_filter.id}")
     await assert_collection(get_core_db().log_filters, [])

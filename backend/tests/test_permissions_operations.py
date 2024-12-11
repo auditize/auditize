@@ -5,7 +5,7 @@ import pytest
 from icecream import ic
 
 from auditize.exceptions import PermissionDenied
-from auditize.permissions.assertions import can_read_logs
+from auditize.permissions.assertions import can_read_logs_from_repo
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import (
     authorize_access,
@@ -847,7 +847,7 @@ def test_get_applicable_permissions_no_rights():
 
 
 def test_authorize_access():
-    assertion = can_read_logs(REPO_1)
+    assertion = can_read_logs_from_repo(REPO_1)
 
     # OK case
     authorize_access(Permissions(is_superadmin=True), assertion)

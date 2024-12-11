@@ -18,8 +18,8 @@ from auditize.log_i18n_profile.service import (
     has_log_i18n_profile,
 )
 from auditize.permissions.assertions import (
-    can_read_logs,
-    can_write_logs,
+    can_read_logs_from_all_repos,
+    can_write_logs_to_all_repos,
     permissions_and,
 )
 from auditize.permissions.models import Permissions
@@ -147,14 +147,17 @@ def _get_authorized_repo_ids_for_user(
     no_filtering_needed = any(
         (
             is_authorized(
-                user.permissions, permissions_and(can_read_logs(), can_write_logs())
+                user.permissions,
+                permissions_and(
+                    can_read_logs_from_all_repos(), can_write_logs_to_all_repos()
+                ),
             ),
             (
-                is_authorized(user.permissions, can_read_logs())
+                is_authorized(user.permissions, can_read_logs_from_all_repos())
                 and (has_read_perm and not has_write_perm)
             ),
             (
-                is_authorized(user.permissions, can_write_logs())
+                is_authorized(user.permissions, can_write_logs_to_all_repos())
                 and (has_write_perm and not has_read_perm)
             ),
         )
@@ -164,10 +167,12 @@ def _get_authorized_repo_ids_for_user(
 
     return user.permissions.logs.get_repos(
         can_read=(
-            has_read_perm and not is_authorized(user.permissions, can_read_logs())
+            has_read_perm
+            and not is_authorized(user.permissions, can_read_logs_from_all_repos())
         ),
         can_write=(
-            has_write_perm and not is_authorized(user.permissions, can_write_logs())
+            has_write_perm
+            and not is_authorized(user.permissions, can_write_logs_to_all_repos())
         ),
     )
 
