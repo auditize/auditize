@@ -141,9 +141,10 @@ async def get_repo(
     responses=error_responses(404),
 )
 async def get_repo_translation_for_user(
-    authorized: AuthorizedUser(can_read_logs_from_all_repos()),
+    authorized: AuthorizedForLogRead(),
     repo_id: UUID,
 ) -> LogTranslation:
+    authorized.ensure_user()
     translation = await service.get_repo_translation(repo_id, authorized.user.lang)
     return LogTranslation.model_validate(translation.model_dump())
 

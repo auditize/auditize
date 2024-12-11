@@ -350,12 +350,18 @@ async def test_repo_get_forbidden(
 
 
 async def test_repo_get_translation_for_user_not_configured(
-    log_read_user_client: HttpTestHelper, repo: PreparedRepo
+    user_builder: UserBuilder, repo: PreparedRepo
 ):
-    await log_read_user_client.assert_get_ok(
-        f"/repos/{repo.id}/translation",
-        expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
+    user = await user_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
     )
+
+    async with user.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/repos/{repo.id}/translation",
+            expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
+        )
 
 
 async def test_repo_get_translation_for_user_not_available_for_user_lang(
