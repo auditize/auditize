@@ -1,4 +1,3 @@
-import re
 from datetime import timedelta
 from typing import Any
 from uuid import UUID
@@ -46,17 +45,8 @@ async def save_log(repo_id: UUID, log: Log) -> UUID:
     return log_id
 
 
-async def save_log_attachment(
-    repo_id: UUID,
-    log_id: UUID,
-    *,
-    name: str,
-    type: str,
-    mime_type: str,
-    data: bytes,
-):
+async def save_log_attachment(repo_id: UUID, log_id: UUID, attachment: Log.Attachment):
     db = await get_log_db_for_writing(repo_id)
-    attachment = Log.Attachment(name=name, type=type, mime_type=mime_type, data=data)
 
     # NB: do not use transaction here to avoid possible WriteConflict errors
     # on consolidated data documents

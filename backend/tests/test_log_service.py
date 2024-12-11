@@ -92,7 +92,8 @@ async def test_save_log_lookup_tables(repo: PreparedRepo):
     await assert_consolidated_data(repo.db.log_detail_fields, {"name": "detail_name"})
     await assert_consolidated_data(repo.db.log_tag_types, {"type": "rich_tag"})
     await assert_consolidated_data(
-        repo.db.log_entities, {"parent_entity_ref": None, "ref": "1", "name": "Customer 1"}
+        repo.db.log_entities,
+        {"parent_entity_ref": None, "ref": "1", "name": "Customer 1"},
     )
 
     # second log
@@ -112,10 +113,12 @@ async def test_save_log_lookup_tables(repo: PreparedRepo):
     await save_log_attachment(
         UUID(repo.id),
         log_id,
-        name="file.txt",
-        type="text",
-        mime_type="text/plain",
-        data=b"hello",
+        Log.Attachment(
+            name="file.txt",
+            type="text",
+            mime_type="text/plain",
+            data=b"hello",
+        ),
     )
     await assert_consolidated_data(
         repo.db.log_actions,

@@ -397,10 +397,12 @@ async def add_attachment(
     await service.save_log_attachment(
         repo_id,
         log_id,
-        name=name or file.filename,
-        type=type,
-        mime_type=mime_type or file.content_type or "application/octet-stream",
-        data=data,
+        Log.Attachment(
+            name=name or file.filename,
+            type=type,
+            mime_type=mime_type or file.content_type or "application/octet-stream",
+            data=data,
+        ),
     )
 
 
