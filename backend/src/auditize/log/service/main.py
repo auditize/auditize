@@ -1,11 +1,13 @@
-from datetime import timedelta
+import uuid
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 from auditize.exceptions import (
+    InvalidPaginationCursor,
     UnknownModelException,
 )
-from auditize.helpers.datetime import now
+from auditize.helpers.datetime import now, serialize_datetime
 from auditize.log.db import (
     LogDatabase,
     get_log_db_for_maintenance,
@@ -21,7 +23,10 @@ from auditize.log.service.consolidation import (
 )
 from auditize.repo.models import Repo
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
-from auditize.resource.pagination.cursor.service import find_paginated_by_cursor
+from auditize.resource.pagination.cursor.serialization import (
+    load_pagination_cursor,
+    serialize_pagination_cursor,
+)
 from auditize.resource.service import (
     create_resource_document,
     get_resource_document,
@@ -158,6 +163,79 @@ def _get_criteria_from_search_params(
     return criteria
 
 
+class _LogsPaginationCursor:
+    def __init__(self, date: datetime, id: uuid.UUID):
+        self.date = date
+        self.id = id
+
+    @classmethod
+    def load(cls, value: str) -> "_LogsPaginationCursor":
+        decoded = load_pagination_cursor(value)
+
+        try:
+            return cls(
+                datetime.fromisoformat(decoded["date"]), uuid.UUID(decoded["id"])
+            )
+        except (KeyError, ValueError):
+            raise InvalidPaginationCursor(value)
+
+    def serialize(self) -> str:
+        return serialize_pagination_cursor(
+            {
+                "date": serialize_datetime(self.date, with_milliseconds=True),
+                "id": str(self.id),
+            }
+        )
+
+
+async def _get_logs_paginated(
+    log_db: LogDatabase,
+    *,
+    id_field,
+    date_field,
+    filter=None,
+    projection=None,
+    limit: int = 10,
+    pagination_cursor: str = None,
+) -> tuple[list[Log], str | None]:
+    if filter is None:
+        filter = {}
+
+    if pagination_cursor:
+        cursor = _LogsPaginationCursor.load(pagination_cursor)
+        filter = {  # noqa
+            "$and": [
+                filter,
+                {"saved_at": {"$lte": cursor.date}},
+                {
+                    "$or": [
+                        {"saved_at": {"$lt": cursor.date}},
+                        {"_id": {"$lt": cursor.id}},
+                    ]
+                },
+            ]
+        }
+
+    results = await log_db.logs.find(
+        filter, projection, sort=[(date_field, -1), (id_field, -1)], limit=limit + 1
+    ).to_list(None)
+
+    # we previously fetched one extra log to check if there are more logs to fetch
+    if len(results) == limit + 1:
+        # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
+        # limit range
+        next_cursor_obj = _LogsPaginationCursor(
+            results[-2][date_field], results[-2][id_field]
+        )
+        next_cursor = next_cursor_obj.serialize()
+        # remove the extra log
+        results.pop(-1)
+    else:
+        next_cursor = None
+
+    return [Log(**result) for result in results], next_cursor
+
+
 async def get_logs(
     repo: UUID | LogDatabase,
     *,
@@ -177,8 +255,8 @@ async def get_logs(
     if search_params:
         criteria.extend(_get_criteria_from_search_params(search_params))
 
-    results, next_cursor = await find_paginated_by_cursor(
-        db.logs,
+    return await _get_logs_paginated(
+        db,
         id_field="_id",
         date_field="saved_at",
         projection=_EXCLUDE_ATTACHMENT_DATA,
@@ -186,10 +264,6 @@ async def get_logs(
         limit=limit,
         pagination_cursor=pagination_cursor,
     )
-
-    logs = [Log(**result) for result in results]
-
-    return logs, next_cursor
 
 
 async def _apply_log_retention_period(repo: Repo):
