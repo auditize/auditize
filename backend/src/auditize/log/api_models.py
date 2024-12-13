@@ -361,7 +361,7 @@ class LogEntityResponse(EntityItemData):
     pass
 
 
-class LogEntityListResponse(PagePaginatedResponse[Log.Entity, EntityItemData]):
+class LogEntityListResponse(CursorPaginatedResponse[Log.Entity, EntityItemData]):
     @classmethod
     def build_item(cls, entity: Log.Entity) -> EntityItemData:
         return EntityItemData.model_validate(entity.model_dump())

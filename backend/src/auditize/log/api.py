@@ -280,9 +280,9 @@ async def get_log_attachment_mime_types(
 async def get_log_entities(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
+    page_params: Annotated[CursorPaginationParams, Depends()],
     root: bool = False,
     parent_entity_ref: str = None,
-    page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> LogEntityListResponse:
     if not (root ^ (parent_entity_ref is not None)):
         raise ValidationError(
@@ -301,8 +301,8 @@ async def get_log_entities(
         authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
             repo_id
         ),
-        page=page_params.page,
-        page_size=page_params.page_size,
+        limit=page_params.limit,
+        pagination_cursor=page_params.cursor,
         **filter_args,
     )
     return LogEntityListResponse.build(entities, pagination)

@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Self
 from uuid import UUID, uuid4
 
 from aiocache import Cache
@@ -15,6 +16,11 @@ from auditize.log.db import (
 )
 from auditize.log.models import CustomField, Entity, Log
 from auditize.repo.models import Repo
+from auditize.resource.pagination.cursor.api_models import CursorPaginationData
+from auditize.resource.pagination.cursor.serialization import (
+    load_pagination_cursor,
+    serialize_pagination_cursor,
+)
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
@@ -328,14 +334,30 @@ async def _get_entities_hierarchy(db: LogDatabase, entity_refs: set[str]) -> set
     return entity_refs | parent_entities.keys()
 
 
+class _OffsetPaginationCursor:
+    def __init__(self, offset: int):
+        self.offset = offset
+
+    @classmethod
+    def load(cls, value: str) -> Self:
+        decoded = load_pagination_cursor(value)
+        try:
+            return cls(int(decoded["offset"]))
+        except (KeyError, ValueError):
+            raise InvalidPaginationCursor(value)
+
+    def serialize(self) -> str:
+        return serialize_pagination_cursor({"offset": self.offset})
+
+
 async def get_log_entities(
     repo_id: UUID,
     authorized_entities: set[str],
     *,
     parent_entity_ref=NotImplemented,
-    page=1,
-    page_size=10,
-) -> tuple[list[Log.Entity], PagePaginationInfo]:
+    limit: int = 10,
+    pagination_cursor: str = None,
+) -> tuple[list[Log.Entity], str | None]:
     db = await get_log_db_for_reading(repo_id)
 
     # please note that we use NotImplemented instead of None because None is a valid value for parent_entity_ref
@@ -360,22 +382,37 @@ async def get_log_entities(
             visible_entities = await _get_entities_hierarchy(db, authorized_entities)
             filter["ref"] = {"$in": list(visible_entities)}
 
-    results = await _get_log_entities(
-        db,
-        match=filter,
-        pipeline_extra=[
-            {"$sort": {"name": 1}},
-            {"$skip": (page - 1) * page_size},
-            {"$limit": page_size},
-        ],
-    )
+    if pagination_cursor:
+        pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
+        skip = pagination_cursor_obj.offset
+    else:
+        skip = 0
 
-    total = await db.log_entities.count_documents(filter or {})
+    results = [
+        result
+        async for result in await _get_log_entities(
+            db,
+            match=filter,
+            pipeline_extra=[
+                {"$sort": {"name": 1}},
+                {"$skip": skip},
+                {"$limit": limit + 1},
+            ],
+        )
+    ]
 
-    return (
-        [Entity(**result) async for result in results],
-        PagePaginationInfo.build(page=page, page_size=page_size, total=total),
-    )
+    # we previously fetched one extra log to check if there are more logs to fetch
+    if len(results) == limit + 1:
+        # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
+        # limit range
+        next_cursor_obj = _OffsetPaginationCursor(skip + limit)
+        next_cursor = next_cursor_obj.serialize()
+        # remove the extra log
+        results.pop(-1)
+    else:
+        next_cursor = None
+
+    return ([Entity(**result) for result in results], next_cursor)
 
 
 async def _get_log_entity(db: LogDatabase, entity_ref: str) -> Log.Entity:
