@@ -13,8 +13,6 @@ from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
     do_test_cursor_pagination_common_scenarios,
     do_test_cursor_pagination_empty_data,
-    do_test_page_pagination_common_scenarios,
-    do_test_page_pagination_empty_data,
 )
 from helpers.repo import PreparedRepo
 from helpers.utils import DATETIME_FORMAT
@@ -1775,14 +1773,14 @@ class _ConsolidatedDataTest:
     ):
         values = list(reversed(range(5)))  # insert in reverse order to test sorting
         items = await self.create_consolidated_data(superadmin_client, repo, values)
-        await do_test_page_pagination_common_scenarios(
+        await do_test_cursor_pagination_common_scenarios(
             log_read_client,
             self.get_path(repo.id),
             [{"name": item} for item in reversed(items)],
         )
 
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
-        await do_test_page_pagination_empty_data(
+        await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id)
         )
 
@@ -1869,12 +1867,7 @@ class TestLogActionTypes(_ConsolidatedDataTest):
             f"/repos/{repo.id}/logs/actions/types?category=category-2",
             expected_json={
                 "items": [{"name": f"type-{2}"}],
-                "pagination": {
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 1,
-                    "total_pages": 1,
-                },
+                "pagination": {"next_cursor": None},
             },
         )
 

@@ -151,15 +151,36 @@ async def check_log(db: LogDatabase, log: Log):
         parent_entity_ref = entity.ref
 
 
+class _OffsetPaginationCursor:
+    def __init__(self, offset: int):
+        self.offset = offset
+
+    @classmethod
+    def load(cls, value: str | None) -> Self:
+        if value is not None:
+            decoded = load_pagination_cursor(value)
+            try:
+                return cls(int(decoded["offset"]))
+            except (KeyError, ValueError):
+                raise InvalidPaginationCursor(value)
+        else:
+            return cls(offset=0)
+
+    def serialize(self) -> str:
+        return serialize_pagination_cursor({"offset": self.offset})
+
+
 async def _get_consolidated_data_aggregated_field(
     repo_id: str,
     collection_name: str,
     field_name: str,
     *,
     match=None,
-    page=1,
-    page_size=10,
-) -> tuple[list[str], PagePaginationInfo]:
+    limit=10,
+    pagination_cursor: str = None,
+) -> tuple[list[str], str | None]:
+    pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
+
     # Get all unique aggregated data field
     db = await get_log_db_for_reading(repo_id)
     collection = db.get_collection(collection_name)
@@ -168,23 +189,24 @@ async def _get_consolidated_data_aggregated_field(
         + [
             {"$group": {"_id": "$" + field_name}},
             {"$sort": {"_id": 1}},
-            {"$skip": (page - 1) * page_size},
-            {"$limit": page_size},
+            {"$skip": pagination_cursor_obj.offset},
+            {"$limit": limit + 1},
         ]
     )
     values = [result["_id"] async for result in results]
 
-    # Get the total number of unique aggregated field value
-    results = collection.aggregate(
-        ([{"$match": match}] if match else [])
-        + [{"$group": {"_id": "$" + field_name}}, {"$count": "total"}]
-    )
-    try:
-        total = (await results.next())["total"]
-    except StopAsyncIteration:
-        total = 0
+    # we previously fetched one extra log to check if there are more logs to fetch
+    if len(values) == limit + 1:
+        # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
+        # limit range
+        next_cursor_obj = _OffsetPaginationCursor(pagination_cursor_obj.offset + limit)
+        next_cursor = next_cursor_obj.serialize()
+        # remove the extra log
+        values.pop(-1)
+    else:
+        next_cursor = None
 
-    return values, PagePaginationInfo.build(page=page, page_size=page_size, total=total)
+    return values, next_cursor
 
 
 async def _get_consolidated_data_field(
@@ -192,18 +214,32 @@ async def _get_consolidated_data_field(
     collection_name,
     field_name: str,
     *,
-    page=1,
-    page_size=10,
-) -> tuple[list[str], PagePaginationInfo]:
+    limit=10,
+    pagination_cursor: str = None,
+) -> tuple[list[str], str | None]:
+    pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
+
     db = await get_log_db_for_reading(repo_id)
-    results, pagination = await find_paginated_by_page(
-        db.get_collection(collection_name),
+    collection = db.get_collection(collection_name)
+    results = await collection.find(
         projection=[field_name],
         sort={field_name: 1},
-        page=page,
-        page_size=page_size,
-    )
-    return [result[field_name] async for result in results], pagination
+        skip=pagination_cursor_obj.offset,
+        limit=limit + 1,
+    ).to_list(None)
+
+    # we previously fetched one extra log to check if there are more logs to fetch
+    if len(results) == limit + 1:
+        # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
+        # limit range
+        next_cursor_obj = _OffsetPaginationCursor(pagination_cursor_obj.offset + limit)
+        next_cursor = next_cursor_obj.serialize()
+        # remove the extra log
+        results.pop(-1)
+    else:
+        next_cursor = None
+
+    return ([result[field_name] for result in results], next_cursor)
 
 
 get_log_action_categories = partial(
@@ -217,15 +253,15 @@ async def get_log_action_types(
     repo_id: str,
     *,
     action_category: str = None,
-    page=1,
-    page_size=10,
+    limit=10,
+    pagination_cursor: str = None,
 ) -> tuple[list[str], PagePaginationInfo]:
     return await _get_consolidated_data_aggregated_field(
         repo_id,
         collection_name="log_actions",
         field_name="type",
-        page=page,
-        page_size=page_size,
+        limit=limit,
+        pagination_cursor=pagination_cursor,
         match={"category": action_category} if action_category else None,
     )
 
@@ -334,22 +370,6 @@ async def _get_entities_hierarchy(db: LogDatabase, entity_refs: set[str]) -> set
     return entity_refs | parent_entities.keys()
 
 
-class _OffsetPaginationCursor:
-    def __init__(self, offset: int):
-        self.offset = offset
-
-    @classmethod
-    def load(cls, value: str) -> Self:
-        decoded = load_pagination_cursor(value)
-        try:
-            return cls(int(decoded["offset"]))
-        except (KeyError, ValueError):
-            raise InvalidPaginationCursor(value)
-
-    def serialize(self) -> str:
-        return serialize_pagination_cursor({"offset": self.offset})
-
-
 async def get_log_entities(
     repo_id: UUID,
     authorized_entities: set[str],
@@ -382,11 +402,7 @@ async def get_log_entities(
             visible_entities = await _get_entities_hierarchy(db, authorized_entities)
             filter["ref"] = {"$in": list(visible_entities)}
 
-    if pagination_cursor:
-        pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
-        skip = pagination_cursor_obj.offset
-    else:
-        skip = 0
+    pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
 
     results = [
         result
@@ -395,7 +411,7 @@ async def get_log_entities(
             match=filter,
             pipeline_extra=[
                 {"$sort": {"name": 1}},
-                {"$skip": skip},
+                {"$skip": pagination_cursor_obj.offset},
                 {"$limit": limit + 1},
             ],
         )
@@ -405,7 +421,7 @@ async def get_log_entities(
     if len(results) == limit + 1:
         # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
         # limit range
-        next_cursor_obj = _OffsetPaginationCursor(skip + limit)
+        next_cursor_obj = _OffsetPaginationCursor(pagination_cursor_obj.offset + limit)
         next_cursor = next_cursor_obj.serialize()
         # remove the extra log
         results.pop(-1)

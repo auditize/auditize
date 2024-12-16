@@ -40,16 +40,16 @@ router = APIRouter(
 async def _get_consolidated_data(
     repo_id: UUID,
     get_data_func,
-    page_params,
+    page_params: CursorPaginationParams,
     **kwargs,
 ) -> NameListResponse:
-    data, pagination = await get_data_func(
+    data, next_cursor = await get_data_func(
         repo_id,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        limit=page_params.limit,
+        pagination_cursor=page_params.cursor,
         **kwargs,
     )
-    return NameListResponse.build(data, pagination)
+    return NameListResponse.build(data, next_cursor)
 
 
 @router.get(
@@ -63,7 +63,7 @@ async def _get_consolidated_data(
 async def get_log_action_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
     category: str = None,
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -84,7 +84,7 @@ async def get_log_action_types(
 async def get_log_action_categories(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -103,7 +103,7 @@ async def get_log_action_categories(
 async def get_log_actor_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -123,7 +123,7 @@ async def get_log_actor_types(
 async def get_log_actor_extras(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -142,7 +142,7 @@ async def get_log_actor_extras(
 async def get_log_resource_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -162,7 +162,7 @@ async def get_log_resource_types(
 async def get_log_resource_extras(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -181,7 +181,7 @@ async def get_log_resource_extras(
 async def get_log_tag_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -201,7 +201,7 @@ async def get_log_tag_types(
 async def get_log_source_fields(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -221,7 +221,7 @@ async def get_log_source_fields(
 async def get_log_detail_fields(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -241,7 +241,7 @@ async def get_log_detail_fields(
 async def get_log_attachment_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
@@ -261,7 +261,7 @@ async def get_log_attachment_types(
 async def get_log_attachment_mime_types(
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    page_params: Annotated[PagePaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
