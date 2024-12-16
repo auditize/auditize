@@ -6,7 +6,7 @@ from icecream import ic
 from auditize.config import init_config
 from auditize.database import CoreDatabase, Database, migrate_core_db
 from auditize.log.db import LogDatabase
-from auditize.log.service.consolidation import _CONSOLIDATED_DATA_CACHE
+from auditize.log.service import _CONSOLIDATED_DATA_CACHE
 
 ic.configureOutput(includeContext=True)
 

@@ -9,11 +9,11 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from auditize.exceptions import InvalidPaginationCursor
 from auditize.log.models import CustomField, Log
 from auditize.log.service import (
+    _LogsPaginationCursor,
     apply_log_retention_period,
     save_log,
     save_log_attachment,
 )
-from auditize.log.service.main import _LogsPaginationCursor
 from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper

@@ -13,7 +13,7 @@ from auditize.helpers.datetime import serialize_datetime
 from auditize.i18n import Lang, t
 from auditize.log.db import get_log_db_for_reading
 from auditize.log.models import CustomField, Log, LogSearchParams
-from auditize.log.service.main import get_logs
+from auditize.log.service import get_logs
 from auditize.log_i18n_profile.models import LogI18nProfile, get_log_value_translation
 from auditize.repo.service import get_repo
 
