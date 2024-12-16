@@ -16,7 +16,6 @@ from auditize.helpers.api.validators import (
 )
 from auditize.helpers.datetime import now
 from auditize.i18n import get_request_lang
-from auditize.log import service
 from auditize.log.api_models import (
     LogCreationRequest,
     LogCreationResponse,
@@ -27,10 +26,14 @@ from auditize.log.api_models import (
     LogsReadingResponse,
     NameListResponse,
 )
-from auditize.log.db import get_log_db_for_reading
+from auditize.log.csv import (
+    LOG_CSV_BUILTIN_COLUMNS,
+    stream_logs_as_csv,
+    validate_log_csv_columns,
+)
 from auditize.log.models import Log, LogSearchParams
+from auditize.log.service import LogService
 from auditize.resource.pagination.cursor.api_models import CursorPaginationParams
-from auditize.resource.pagination.page.api_models import PagePaginationParams
 
 router = APIRouter(
     responses=error_responses(401, 403, 404),
@@ -39,12 +42,12 @@ router = APIRouter(
 
 async def _get_consolidated_data(
     repo_id: UUID,
-    get_data_func,
+    get_data_func_name,
     page_params: CursorPaginationParams,
     **kwargs,
 ) -> NameListResponse:
-    data, next_cursor = await get_data_func(
-        repo_id,
+    service = await LogService.for_reading(repo_id)
+    data, next_cursor = await getattr(service, get_data_func_name)(
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,
         **kwargs,
@@ -68,7 +71,7 @@ async def get_log_action_types(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_action_types,
+        "get_log_action_types",
         page_params,
         action_category=category,
     )
@@ -88,7 +91,7 @@ async def get_log_action_categories(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_action_categories,
+        "get_log_action_categories",
         page_params,
     )
 
@@ -107,7 +110,7 @@ async def get_log_actor_types(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_actor_types,
+        "get_log_actor_types",
         page_params,
     )
 
@@ -127,7 +130,7 @@ async def get_log_actor_extras(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_actor_extra_fields,
+        "get_log_actor_extra_fields",
         page_params,
     )
 
@@ -146,7 +149,7 @@ async def get_log_resource_types(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_resource_types,
+        "get_log_resource_types",
         page_params,
     )
 
@@ -166,7 +169,7 @@ async def get_log_resource_extras(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_resource_extra_fields,
+        "get_log_resource_extra_fields",
         page_params,
     )
 
@@ -185,7 +188,7 @@ async def get_log_tag_types(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_tag_types,
+        "get_log_tag_types",
         page_params,
     )
 
@@ -205,7 +208,7 @@ async def get_log_source_fields(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_source_fields,
+        "get_log_source_fields",
         page_params,
     )
 
@@ -225,7 +228,7 @@ async def get_log_detail_fields(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_detail_fields,
+        "get_log_detail_fields",
         page_params,
     )
 
@@ -245,7 +248,7 @@ async def get_log_attachment_types(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_attachment_types,
+        "get_log_attachment_types",
         page_params,
     )
 
@@ -265,7 +268,7 @@ async def get_log_attachment_mime_types(
 ) -> NameListResponse:
     return await _get_consolidated_data(
         repo_id,
-        service.get_log_attachment_mime_types,
+        "get_log_attachment_mime_types",
         page_params,
     )
 
@@ -296,8 +299,9 @@ async def get_log_entities(
     else:
         filter_args = {}
 
+    service = await LogService.for_reading(repo_id)
+
     entities, pagination = await service.get_log_entities(
-        repo_id,
         authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
             repo_id
         ),
@@ -320,8 +324,8 @@ async def get_log_entity(
     repo_id: UUID,
     entity_ref: Annotated[str, Path(description="Entity ref")],
 ) -> LogEntityResponse:
+    service = await LogService.for_reading(repo_id)
     entity = await service.get_log_entity(
-        repo_id,
         entity_ref,
         authorized.permissions.logs.get_repo_readable_entities(repo_id),
     )
@@ -342,7 +346,8 @@ async def create_log(
     repo_id: UUID,
     log_req: LogCreationRequest,
 ) -> LogCreationResponse:
-    log_id = await service.save_log(repo_id, Log.model_validate(log_req.model_dump()))
+    service = await LogService.for_writing(repo_id)
+    log_id = await service.save_log(Log.model_validate(log_req.model_dump()))
     return LogCreationResponse(id=log_id)
 
 
@@ -394,8 +399,8 @@ async def add_attachment(
         raise PayloadTooLarge(
             f"Attachment size exceeds the maximum allowed size ({config.attachment_max_size} bytes)"
         )
+    service = await LogService.for_writing(repo_id)
     await service.save_log_attachment(
-        repo_id,
         log_id,
         Log.Attachment(
             name=name or file.filename,
@@ -412,7 +417,7 @@ class _CsvResponse(Response):
 
 _COLUMNS_DESCRIPTION = f"""
 Comma-separated list of columns to include in the CSV output. Available columns are:
-{"\n".join(f"- `{col}`" for col in service.CSV_BUILTIN_COLUMNS)}
+{"\n".join(f"- `{col}`" for col in LOG_CSV_BUILTIN_COLUMNS)}
 - `source.<custom-field>`
 - `actor.<custom-field>`
 - `resource.<custom-field>`
@@ -449,20 +454,20 @@ async def get_logs_as_csv(
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     columns: Annotated[str, Query(description=_COLUMNS_DESCRIPTION)] = ",".join(
-        service.CSV_BUILTIN_COLUMNS
+        LOG_CSV_BUILTIN_COLUMNS
     ),
 ):
     # NB: as we cannot properly handle an error in a StreamingResponse,
     # we perform as much validation as possible before calling get_logs_as_csv
-    await get_log_db_for_reading(repo_id)
+    service = await LogService.for_reading(repo_id)
     columns = columns.split(",")  # convert columns string to a list
-    service.validate_csv_columns(columns)
+    validate_log_csv_columns(columns)
 
     filename = f"auditize-logs_{repo_id}_{now().strftime("%Y%m%d%H%M%S")}.csv"
 
     return StreamingResponse(
-        service.get_logs_as_csv(
-            repo_id,
+        stream_logs_as_csv(
+            service,
             authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
                 repo_id
             ),
@@ -488,8 +493,8 @@ async def get_log(
     repo_id: UUID,
     log_id: Annotated[UUID, Path(description="Log ID")],
 ) -> LogReadingResponse:
+    service = await LogService.for_reading(repo_id)
     log = await service.get_log(
-        repo_id,
         log_id,
         authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
             repo_id
@@ -527,8 +532,8 @@ async def get_log_attachment(
         description="The index of the attachment in the log's attachments list (starts from 0)",
     ),
 ):
+    service = await LogService.for_reading(repo_id)
     attachment = await service.get_log_attachment(
-        repo_id,
         log_id,
         attachment_idx,
         authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
@@ -556,8 +561,8 @@ async def get_logs(
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> LogsReadingResponse:
     # FIXME: we must check that "until" is greater than "since"
+    service = await LogService.for_reading(repo_id)
     logs, next_cursor = await service.get_logs(
-        repo_id,
         authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
             repo_id
         ),
