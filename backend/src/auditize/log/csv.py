@@ -17,7 +17,7 @@ from auditize.log.service.main import get_logs
 from auditize.log_i18n_profile.models import LogI18nProfile, get_log_value_translation
 from auditize.repo.service import get_repo
 
-CSV_BUILTIN_COLUMNS = (
+LOG_CSV_BUILTIN_COLUMNS = (
     "log_id",
     "saved_at",
     "action_type",
@@ -105,7 +105,7 @@ def _translate_csv_column(
 
 
 def _parse_csv_column(col: str) -> tuple[str, ...]:
-    if col in CSV_BUILTIN_COLUMNS:
+    if col in LOG_CSV_BUILTIN_COLUMNS:
         return (col,)
 
     parts = col.split(".")
@@ -115,7 +115,7 @@ def _parse_csv_column(col: str) -> tuple[str, ...]:
     raise ValidationError(f"Invalid column name: {col!r}")
 
 
-def validate_csv_columns(cols: list[str]):
+def validate_log_csv_columns(cols: list[str]):
     if len(cols) != len(set(cols)):
         raise ValidationError("Duplicated column names are forbidden")
 
@@ -123,7 +123,7 @@ def validate_csv_columns(cols: list[str]):
         _parse_csv_column(col)
 
 
-async def get_logs_as_csv(
+async def stream_logs_as_csv(
     repo_id: UUID,
     *,
     authorized_entities: set[str] = None,

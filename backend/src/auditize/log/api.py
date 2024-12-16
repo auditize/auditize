@@ -27,6 +27,11 @@ from auditize.log.api_models import (
     LogsReadingResponse,
     NameListResponse,
 )
+from auditize.log.csv import (
+    LOG_CSV_BUILTIN_COLUMNS,
+    stream_logs_as_csv,
+    validate_log_csv_columns,
+)
 from auditize.log.db import get_log_db_for_reading
 from auditize.log.models import Log, LogSearchParams
 from auditize.resource.pagination.cursor.api_models import CursorPaginationParams
@@ -412,7 +417,7 @@ class _CsvResponse(Response):
 
 _COLUMNS_DESCRIPTION = f"""
 Comma-separated list of columns to include in the CSV output. Available columns are:
-{"\n".join(f"- `{col}`" for col in service.CSV_BUILTIN_COLUMNS)}
+{"\n".join(f"- `{col}`" for col in LOG_CSV_BUILTIN_COLUMNS)}
 - `source.<custom-field>`
 - `actor.<custom-field>`
 - `resource.<custom-field>`
@@ -449,19 +454,19 @@ async def get_logs_as_csv(
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     columns: Annotated[str, Query(description=_COLUMNS_DESCRIPTION)] = ",".join(
-        service.CSV_BUILTIN_COLUMNS
+        LOG_CSV_BUILTIN_COLUMNS
     ),
 ):
     # NB: as we cannot properly handle an error in a StreamingResponse,
     # we perform as much validation as possible before calling get_logs_as_csv
     await get_log_db_for_reading(repo_id)
     columns = columns.split(",")  # convert columns string to a list
-    service.validate_csv_columns(columns)
+    validate_log_csv_columns(columns)
 
     filename = f"auditize-logs_{repo_id}_{now().strftime("%Y%m%d%H%M%S")}.csv"
 
     return StreamingResponse(
-        service.get_logs_as_csv(
+        stream_logs_as_csv(
             repo_id,
             authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
                 repo_id
