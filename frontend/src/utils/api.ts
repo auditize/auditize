@@ -37,6 +37,28 @@ export async function getAllPagePaginatedItems<T>(
   return allItems;
 }
 
+export async function getAllCursorPaginatedItems<T>(
+  path: string,
+  filter = {},
+): Promise<T[]> {
+  let cursor = null;
+  const allItems: T[] = [];
+
+  while (true) {
+    const response: any = await axiosInstance.get(path, {
+      params: camelCaseToSnakeCaseObjectKeys({ cursor, ...filter }),
+    });
+    const { items, pagination } = response.data;
+    allItems.push(...snakeCaseToCamelCaseObjectKeys(items));
+    if (!pagination.next_cursor) {
+      break;
+    }
+    cursor = pagination.next_cursor;
+  }
+
+  return allItems;
+}
+
 export async function reqPost(
   path: string,
   data: any,
