@@ -80,6 +80,16 @@ class _OffsetPaginationCursor:
     def serialize(self) -> str:
         return serialize_pagination_cursor({"offset": self.offset})
 
+    def get_next_cursor(self, results: list, limit: int) -> str | None:
+        # we previously fetched one extra result to check if there are more results to fetch
+        if len(results) == limit + 1:
+            next_cursor_obj = _OffsetPaginationCursor(self.offset + limit)
+            next_cursor = next_cursor_obj.serialize()
+            results.pop(-1)  # remove the extra log
+        else:
+            next_cursor = None
+        return next_cursor
+
 
 class LogService:
     def __init__(self, repo: Repo, log_db: LogDatabase):
@@ -478,19 +488,7 @@ class LogService:
         )
         values = [result["_id"] async for result in results]
 
-        # we previously fetched one extra log to check if there are more logs to fetch
-        if len(values) == limit + 1:
-            # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
-            # limit range
-            next_cursor_obj = _OffsetPaginationCursor(
-                pagination_cursor_obj.offset + limit
-            )
-            next_cursor = next_cursor_obj.serialize()
-            # remove the extra log
-            values.pop(-1)
-        else:
-            next_cursor = None
-
+        next_cursor = pagination_cursor_obj.get_next_cursor(values, limit)
         return values, next_cursor
 
     async def _get_consolidated_data_field(
@@ -511,19 +509,7 @@ class LogService:
             limit=limit + 1,
         ).to_list(None)
 
-        # we previously fetched one extra log to check if there are more logs to fetch
-        if len(results) == limit + 1:
-            # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
-            # limit range
-            next_cursor_obj = _OffsetPaginationCursor(
-                pagination_cursor_obj.offset + limit
-            )
-            next_cursor = next_cursor_obj.serialize()
-            # remove the extra log
-            results.pop(-1)
-        else:
-            next_cursor = None
-
+        next_cursor = pagination_cursor_obj.get_next_cursor(results, limit)
         return [result[field_name] for result in results], next_cursor
 
     get_log_action_categories = partialmethod(
@@ -697,19 +683,7 @@ class LogService:
             )
         ]
 
-        # we previously fetched one extra log to check if there are more logs to fetch
-        if len(results) == limit + 1:
-            # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
-            # limit range
-            next_cursor_obj = _OffsetPaginationCursor(
-                pagination_cursor_obj.offset + limit
-            )
-            next_cursor = next_cursor_obj.serialize()
-            # remove the extra log
-            results.pop(-1)
-        else:
-            next_cursor = None
-
+        next_cursor = pagination_cursor_obj.get_next_cursor(results, limit)
         return [Entity(**result) for result in results], next_cursor
 
     async def _get_log_entity(self, entity_ref: str) -> Log.Entity:
