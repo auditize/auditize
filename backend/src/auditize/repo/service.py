@@ -11,7 +11,7 @@ from auditize.exceptions import (
     enhance_constraint_violation_exception,
 )
 from auditize.i18n.lang import Lang
-from auditize.log.db import LogDatabase, get_log_db_for_config, migrate_log_db
+from auditize.log.db import LogDatabase, migrate_log_db
 from auditize.log_i18n_profile.models import LogTranslation
 from auditize.log_i18n_profile.service import (
     get_log_i18n_profile_translation,
@@ -64,7 +64,7 @@ async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
                 session=session,
             )
         if not log_db:
-            log_db = await get_log_db_for_config(await _get_repo(repo_id, session))
+            log_db = LogDatabase.from_repo(await _get_repo(repo_id, session))
             await migrate_log_db(log_db)
     return repo_id
 
@@ -99,7 +99,8 @@ async def _get_log_saved_at(log_db: LogDatabase, *, sort: int) -> datetime | Non
 
 
 async def get_repo_stats(repo_id: UUID) -> RepoStats:
-    log_db = await get_log_db_for_config(repo_id)
+    repo = await _get_repo(repo_id)
+    log_db = LogDatabase.from_repo(repo)
     stats = RepoStats()
 
     stats.first_log_date = await _get_log_saved_at(log_db, sort=1)
@@ -206,7 +207,8 @@ async def delete_repo(repo_id: UUID):
     from auditize.log_filter.service import delete_log_filters_with_repo
     from auditize.user.service import remove_repo_from_users_permissions
 
-    log_db = await get_log_db_for_config(repo_id)
+    repo = await _get_repo(repo_id)
+    log_db = LogDatabase.from_repo(repo)
     core_db = get_core_db()
     async with core_db.transaction() as session:
         await delete_resource_document(core_db.repos, repo_id, session=session)

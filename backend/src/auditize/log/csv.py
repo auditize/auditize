@@ -3,7 +3,6 @@ from functools import partial
 from io import StringIO
 from itertools import count
 from typing import Any, AsyncGenerator
-from uuid import UUID
 
 from auditize.config import get_config
 from auditize.exceptions import (
@@ -11,11 +10,9 @@ from auditize.exceptions import (
 )
 from auditize.helpers.datetime import serialize_datetime
 from auditize.i18n import Lang, t
-from auditize.log.db import get_log_db_for_reading
 from auditize.log.models import CustomField, Log, LogSearchParams
-from auditize.log.service import get_logs
+from auditize.log.service import LogService
 from auditize.log_i18n_profile.models import LogI18nProfile, get_log_value_translation
-from auditize.repo.service import get_repo
 
 LOG_CSV_BUILTIN_COLUMNS = (
     "log_id",
@@ -124,7 +121,7 @@ def validate_log_csv_columns(cols: list[str]):
 
 
 async def stream_logs_as_csv(
-    repo_id: UUID,
+    log_service: LogService,
     *,
     authorized_entities: set[str] = None,
     search_params: LogSearchParams = None,
@@ -133,9 +130,7 @@ async def stream_logs_as_csv(
 ) -> AsyncGenerator[str, None]:
     max_rows = get_config().csv_max_rows
     returned_rows = 0
-    repo = await get_repo(repo_id)
-    log_i18n_profile = await repo.get_log_i18n_profile()
-    logs_db = await get_log_db_for_reading(repo)
+    log_i18n_profile = await log_service.repo.get_log_i18n_profile()
     cursor = None
     for i in count(0):
         csv_buffer = StringIO()
@@ -144,8 +139,7 @@ async def stream_logs_as_csv(
             csv_writer.writerow(
                 _translate_csv_column(col, log_i18n_profile, lang) for col in columns
             )
-        logs, cursor = await get_logs(
-            logs_db,
+        logs, cursor = await log_service.get_logs(
             authorized_entities=authorized_entities,
             search_params=search_params,
             pagination_cursor=cursor,

@@ -1,16 +1,14 @@
-from functools import partial
 from typing import Awaitable, Callable, Iterable, cast
-from uuid import UUID
 
-from pymongo.collation import Collation
-
-from auditize.config import get_config
 from auditize.database import Collection, Database, Migrator, get_core_db
-from auditize.exceptions import PermissionDenied
-from auditize.repo.models import Repo, RepoStatus
+from auditize.repo.models import Repo
 
 
 class LogDatabase(Database):
+    @classmethod
+    def from_repo(cls, repo: Repo):
+        return cls(repo.log_db_name, get_core_db().client)
+
     # Collections
     logs = Collection("logs")
     log_actions = Collection("log_actions")
@@ -24,32 +22,6 @@ class LogDatabase(Database):
     log_attachment_types = Collection("log_attachment_types")
     log_attachment_mime_types = Collection("log_attachment_mime_types")
     log_entities = Collection("log_entities")
-
-
-async def _get_log_db(repo: UUID | Repo, statuses: list[RepoStatus]) -> LogDatabase:
-    from auditize.repo.service import get_repo  # avoid circular import
-
-    repo = await get_repo(repo)
-
-    if statuses:
-        if repo.status not in statuses:
-            # NB: we could also raise a ConstraintViolation, to be discussed
-            raise PermissionDenied(
-                "The repository status does not allow the requested operation"
-            )
-
-    return LogDatabase(repo.log_db_name, get_core_db().client)
-
-
-get_log_db_for_reading = partial(
-    _get_log_db, statuses=[RepoStatus.enabled, RepoStatus.readonly]
-)
-
-get_log_db_for_writing = partial(_get_log_db, statuses=[RepoStatus.enabled])
-
-get_log_db_for_config = partial(_get_log_db, statuses=None)
-
-get_log_db_for_maintenance = partial(_get_log_db, statuses=None)
 
 
 class _LogDbMigrator(Migrator):
@@ -109,5 +81,5 @@ async def migrate_all_log_dbs():
     from auditize.repo.service import get_all_repos  # avoid circular imports
 
     for repo in await get_all_repos():
-        log_db = await get_log_db_for_maintenance(repo)
+        log_db = LogDatabase.from_repo(repo)
         await migrate_log_db(log_db)
