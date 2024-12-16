@@ -38,6 +38,11 @@ class ValidationError(AuditizeException):
     pass
 
 
+# NB: a custom exception is not really necessary, but it makes tests easier
+class InvalidPaginationCursor(ValidationError):
+    pass
+
+
 class ConstraintViolation(AuditizeException):
     pass
 

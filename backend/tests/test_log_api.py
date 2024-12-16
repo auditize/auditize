@@ -11,8 +11,8 @@ from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
-    do_test_page_pagination_common_scenarios,
-    do_test_page_pagination_empty_data,
+    do_test_cursor_pagination_common_scenarios,
+    do_test_cursor_pagination_empty_data,
 )
 from helpers.repo import PreparedRepo
 from helpers.utils import DATETIME_FORMAT
@@ -804,25 +804,12 @@ async def test_get_logs_limit(log_rw_client: HttpTestHelper, repo: PreparedRepo)
 async def test_get_logs_limit_and_cursor(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    logs = [await repo.create_log(log_rw_client) for _ in range(10)]
+    logs = [await repo.create_log(log_rw_client) for _ in range(5)]
 
-    # first step, get 5 logs and check the next_cursor
-    resp = await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs?limit=5",
-        expected_json={
-            "items": [log.expected_api_response() for log in reversed(logs[-5:])],
-            "pagination": {"next_cursor": callee.IsA(str)},
-        },
-    )
-    next_cursor = resp.json()["pagination"]["next_cursor"]
-
-    # second step, get the next 5 logs using the next_cursor from the previous response and check next_cursor is None
-    await log_rw_client.assert_get(
-        f"/repos/{repo.id}/logs?limit=5&cursor={next_cursor}",
-        expected_json={
-            "items": [log.expected_api_response() for log in reversed(logs[:5])],
-            "pagination": {"next_cursor": None},
-        },
+    await do_test_cursor_pagination_common_scenarios(
+        log_rw_client,
+        f"/repos/{repo.id}/logs",
+        items=[log.expected_api_response() for log in reversed(logs)],
     )
 
 
@@ -1584,12 +1571,7 @@ async def _test_get_log_entities_visibility(
                     }
                     for entity_ref in expected
                 ],
-                "pagination": {
-                    "page": 1,
-                    "page_size": 10,
-                    "total": len(expected),
-                    "total_pages": 1 if len(expected) > 0 else 0,
-                },
+                "pagination": {"next_cursor": None},
             },
         )
 
@@ -1791,14 +1773,14 @@ class _ConsolidatedDataTest:
     ):
         values = list(reversed(range(5)))  # insert in reverse order to test sorting
         items = await self.create_consolidated_data(superadmin_client, repo, values)
-        await do_test_page_pagination_common_scenarios(
+        await do_test_cursor_pagination_common_scenarios(
             log_read_client,
             self.get_path(repo.id),
             [{"name": item} for item in reversed(items)],
         )
 
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
-        await do_test_page_pagination_empty_data(
+        await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id)
         )
 
@@ -1885,12 +1867,7 @@ class TestLogActionTypes(_ConsolidatedDataTest):
             f"/repos/{repo.id}/logs/actions/types?category=category-2",
             expected_json={
                 "items": [{"name": f"type-{2}"}],
-                "pagination": {
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 1,
-                    "total_pages": 1,
-                },
+                "pagination": {"next_cursor": None},
             },
         )
 
@@ -2245,7 +2222,7 @@ async def test_get_log_entities_with_filters(
             )
 
     # test top-level entities
-    await do_test_page_pagination_common_scenarios(
+    await do_test_cursor_pagination_common_scenarios(
         log_read_client,
         f"/repos/{repo.id}/logs/entities?root=true",
         [
@@ -2260,7 +2237,7 @@ async def test_get_log_entities_with_filters(
     )
 
     # test non-top-level entities
-    await do_test_page_pagination_common_scenarios(
+    await do_test_cursor_pagination_common_scenarios(
         log_read_client,
         f"/repos/{repo.id}/logs/entities?parent_entity_ref=customer:2",
         [
@@ -2278,7 +2255,7 @@ async def test_get_log_entities_with_filters(
 async def test_get_log_entities_empty(
     log_read_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await do_test_page_pagination_empty_data(
+    await do_test_cursor_pagination_empty_data(
         log_read_client, f"/repos/{repo.id}/logs/entities?root=true"
     )
 

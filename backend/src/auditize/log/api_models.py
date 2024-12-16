@@ -317,7 +317,7 @@ class NameData(BaseModel):
     name: str
 
 
-class NameListResponse(PagePaginatedResponse[str, NameData]):
+class NameListResponse(CursorPaginatedResponse[str, NameData]):
     @classmethod
     def build_item(cls, name: str) -> NameData:
         return NameData(name=name)
@@ -326,12 +326,7 @@ class NameListResponse(PagePaginatedResponse[str, NameData]):
         json_schema_extra={
             "example": {
                 "items": [{"name": "identifier-1"}, {"name": "identifier-2"}],
-                "pagination": {
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 2,
-                    "total_pages": 1,
-                },
+                "pagination": {"next_cursor": None},
             }
         }
     )
@@ -361,7 +356,7 @@ class LogEntityResponse(EntityItemData):
     pass
 
 
-class LogEntityListResponse(PagePaginatedResponse[Log.Entity, EntityItemData]):
+class LogEntityListResponse(CursorPaginatedResponse[Log.Entity, EntityItemData]):
     @classmethod
     def build_item(cls, entity: Log.Entity) -> EntityItemData:
         return EntityItemData.model_validate(entity.model_dump())

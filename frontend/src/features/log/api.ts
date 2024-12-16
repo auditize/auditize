@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
-import { getAllPagePaginatedItems, reqGet } from "@/utils/api";
+import { getAllCursorPaginatedItems, reqGet } from "@/utils/api";
 
 import { LogSearchParams } from "./LogSearchParams";
 
@@ -92,7 +92,7 @@ export async function getAllLogActionCategories(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/actions/categories`,
       {},
     ),
@@ -104,7 +104,7 @@ export async function getAllLogActionTypes(
   category?: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/actions/types`,
       category ? { category } : {},
     ),
@@ -113,7 +113,7 @@ export async function getAllLogActionTypes(
 
 export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
+    getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
   );
 }
 
@@ -121,13 +121,16 @@ export async function getAllLogActorCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/actors/extras`, {}),
+    getAllCursorPaginatedItems<Named>(
+      `/repos/${repoId}/logs/actors/extras`,
+      {},
+    ),
   );
 }
 
 export async function getAllLogSourceFields(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/sources`, {}),
+    getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/sources`, {}),
   );
 }
 
@@ -135,7 +138,7 @@ export async function getAllLogResourceTypes(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/resources/types`,
       {},
     ),
@@ -146,7 +149,7 @@ export async function getAllLogResourceCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/resources/extras`,
       {},
     ),
@@ -155,19 +158,19 @@ export async function getAllLogResourceCustomFields(
 
 export async function getAllLogDetailFields(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/details`, {}),
+    getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/details`, {}),
   );
 }
 
 export async function getAllLogTagTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
+    getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
   );
 }
 
 export async function getAllAttachmentTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/attachments/types`,
       {},
     ),
@@ -178,7 +181,7 @@ export async function getAllAttachmentMimeTypes(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllPagePaginatedItems<Named>(
+    getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/attachments/mime-types`,
       {},
     ),
@@ -189,7 +192,7 @@ export async function getAllLogEntities(
   repoId: string,
   parentEntityRef?: string | null,
 ): Promise<LogEntity[]> {
-  return getAllPagePaginatedItems<LogEntity>(
+  return getAllCursorPaginatedItems<LogEntity>(
     `/repos/${repoId}/logs/entities`,
     parentEntityRef ? { parentEntityRef: parentEntityRef } : { root: true },
   );

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -5,12 +6,14 @@ import callee
 import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
+from auditize.exceptions import InvalidPaginationCursor
 from auditize.log.models import CustomField, Log
 from auditize.log.service import (
     apply_log_retention_period,
     save_log,
     save_log_attachment,
 )
+from auditize.log.service.main import _LogsPaginationCursor
 from conftest import RepoBuilder
 from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
@@ -394,3 +397,24 @@ async def test_log_retention_period_purge_log_entities_2(
         repo.db.log_entities,
         [],
     )
+
+
+def test_pagination_cursor():
+    # build initial cursor
+    obj_id = uuid.UUID("cc12c9bb-0b33-43cd-a410-e3f9c848a62b")
+    date = datetime.fromisoformat("2021-07-19T00:00:00Z")
+    cursor = _LogsPaginationCursor(id=obj_id, date=date)
+
+    # test cursor serialization
+    serialized = cursor.serialize()
+    assert type(serialized) is str
+
+    # test cursor deserialization
+    new_cursor = _LogsPaginationCursor.load(serialized)
+    assert new_cursor.id == obj_id
+    assert new_cursor.date == date
+
+
+def test_pagination_cursor_invalid_string():
+    with pytest.raises(InvalidPaginationCursor):
+        _LogsPaginationCursor.load("invalid_cursor_string")
