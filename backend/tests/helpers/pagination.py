@@ -30,7 +30,7 @@ async def do_test_page_pagination_common_scenarios(
 
 
 async def do_test_cursor_pagination_common_scenarios(
-    client: HttpTestHelper, path: str, items: list
+    client: HttpTestHelper, path: str, *, params: dict = {}, items: list
 ):
     """
     This function assumes that for the given path (with possible query string), the total number of items is 5.
@@ -38,6 +38,7 @@ async def do_test_cursor_pagination_common_scenarios(
     # first test, without pagination parameters
     await client.assert_get(
         path,
+        params=params,
         expected_json={
             "items": items,
             "pagination": {"next_cursor": None},
@@ -47,7 +48,7 @@ async def do_test_cursor_pagination_common_scenarios(
     # second test, get items in two different pages
     resp = await client.assert_get(
         path,
-        params={"limit": 3},
+        params={**params, "limit": 3},
         expected_json={
             "items": items[:3],
             "pagination": {"next_cursor": callee.IsA(str)},
@@ -55,7 +56,11 @@ async def do_test_cursor_pagination_common_scenarios(
     )
     await client.assert_get(
         path,
-        params={"cursor": resp.json()["pagination"]["next_cursor"], "limit": 3},
+        params={
+            **params,
+            "cursor": resp.json()["pagination"]["next_cursor"],
+            "limit": 3,
+        },
         expected_json={
             "items": items[3:],
             "pagination": {"next_cursor": None},

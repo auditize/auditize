@@ -1776,7 +1776,7 @@ class _ConsolidatedDataTest:
         await do_test_cursor_pagination_common_scenarios(
             log_read_client,
             self.get_path(repo.id),
-            [{"name": item} for item in reversed(items)],
+            items=[{"name": item} for item in reversed(items)],
         )
 
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
@@ -2224,8 +2224,9 @@ async def test_get_log_entities_with_filters(
     # test top-level entities
     await do_test_cursor_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/entities?root=true",
-        [
+        f"/repos/{repo.id}/logs/entities",
+        params={"root": "true"},
+        items=[
             {
                 "ref": f"customer:{i}",
                 "name": f"Customer {i}",
@@ -2239,8 +2240,9 @@ async def test_get_log_entities_with_filters(
     # test non-top-level entities
     await do_test_cursor_pagination_common_scenarios(
         log_read_client,
-        f"/repos/{repo.id}/logs/entities?parent_entity_ref=customer:2",
-        [
+        f"/repos/{repo.id}/logs/entities",
+        params={"parent_entity_ref": "customer:2"},
+        items=[
             {
                 "ref": f"entity:2-{j}",
                 "name": f"Entity {j}",
