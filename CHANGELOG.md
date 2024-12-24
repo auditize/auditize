@@ -1,3 +1,13 @@
+# 0.6.0 (2024-12-24)
+
+- The database name can now be chosen through the `AUDITIZE_DB_NAME` env variable
+- **Breaking changes**:
+  - in user/apikey management, `permissions.logs.repos.readable_entities` now
+    controls the list of readable entities when `permissions.logs.repos.read` is false
+  - use cursor-based pagination in `GET /api/repos/{repo_id}/logs/...` endpoints
+- Minor fixes
+- Upgrade back & front dependencies
+
 # 0.5.1 (2024-12-04)
 
 - Fix log entity read restrictions not taken into account in
