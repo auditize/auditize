@@ -76,7 +76,7 @@ Log permissions control the access to logs. Permissions can be set either global
 - the "Read" permission allows the user to view logs
 - the "Write" permission allows the user to send logs to the Auditize API
 
-When log permissions are set per repository, you can also restrict the read permission to certain log entities. When no log entity is selected, the permission applies to all logs independently of their associated entity. If log entities are selected, the user / API key will only be able to view logs associated with the selected entities.
+You can also also restrict the read permission to certain log entities instead of the whole repository by setting the "Entities" field rather than the "Read" field.
 
 
 ### Superadmin role
