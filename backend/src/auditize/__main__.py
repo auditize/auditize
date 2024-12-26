@@ -11,7 +11,7 @@ from pymongo.errors import PyMongoError
 
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import get_core_db, init_core_db
+from auditize.database import get_core_db, init_dbm
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -39,7 +39,7 @@ def _lazy_init(*, skip_db_init=False):
         sys.exit("ERROR: " + str(exc))
 
     if not skip_db_init:
-        init_core_db()
+        init_dbm()
 
 
 def _get_password() -> str:

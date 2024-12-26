@@ -15,8 +15,8 @@ from helpers.apikey import PreparedApikey
 from helpers.database import (
     TestLogDatabasePool,
     cleanup_db,
-    setup_test_core_db,
-    teardown_test_core_db,
+    setup_test_dbm,
+    teardown_test_dbm,
 )
 from helpers.http import HttpTestHelper
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -48,10 +48,10 @@ def _config(anyio_backend):
 
 @pytest.fixture(scope="session")
 async def _core_db():
-    test_db = setup_test_core_db()
-    await migrate_core_db()
-    yield test_db
-    await teardown_test_core_db(test_db)
+    dbm = setup_test_dbm()
+    await migrate_core_db(dbm.core_db)
+    yield dbm.core_db
+    await teardown_test_dbm(dbm)
 
 
 @pytest.fixture(scope="function")

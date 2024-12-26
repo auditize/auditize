@@ -9,7 +9,7 @@ from auditize.config import get_config, init_config
 from auditize.database import (
     acquire_migration_lock,
     get_core_db,
-    init_core_db,
+    init_dbm,
     migrate_core_db,
     release_migration_lock,
 )
@@ -59,6 +59,6 @@ def app_factory():
     # This function is intended to be used with
     # uvicorn auditize.app:app_factory --factory
     init_config()
-    init_core_db()
+    init_dbm()
 
     return build_app()

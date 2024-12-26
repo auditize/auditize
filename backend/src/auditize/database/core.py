@@ -1,11 +1,5 @@
 from typing import Awaitable, Callable, Iterable, cast
 
-import certifi
-from motor.motor_asyncio import (
-    AsyncIOMotorClient,
-)
-
-from auditize.config import get_config
 from auditize.database.database import Collection, Database
 from auditize.database.migration import Migrator
 
@@ -16,32 +10,6 @@ class CoreDatabase(Database):
     users = Collection("users")
     apikeys = Collection("apikeys")
     log_filters = Collection("log_filters")
-
-
-_core_db: CoreDatabase | None = None
-
-
-def init_core_db(name=None, *, force_init=False) -> CoreDatabase:
-    global _core_db
-    if not force_init and _core_db:
-        raise Exception("CoreDatabase is already initialized")
-    config = get_config()
-    if not name:
-        name = config.db_name
-    _core_db = CoreDatabase(
-        name,
-        AsyncIOMotorClient(
-            config.mongodb_uri,
-            tlsCAFile=certifi.where() if config.mongodb_tls else None,
-        ),
-    )
-    return _core_db
-
-
-def get_core_db() -> CoreDatabase:
-    if not _core_db:
-        raise Exception("CoreDatabase is not initialized")
-    return _core_db
 
 
 class _CoreDbMigrator(Migrator):
@@ -68,8 +36,6 @@ class _CoreDbMigrator(Migrator):
         await db.log_filters.create_index({"name": "text"})
 
 
-async def migrate_core_db(core_db=None):
-    if not core_db:
-        core_db = get_core_db()
+async def migrate_core_db(core_db):
     migrator = _CoreDbMigrator(core_db)
     await migrator.apply_migrations()

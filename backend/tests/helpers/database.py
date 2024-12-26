@@ -3,25 +3,25 @@ import random
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import CoreDatabase, Database, init_core_db
+from auditize.database import CoreDatabase, Database, DatabaseManager, init_dbm
 from auditize.log.db import LogDatabase, migrate_log_db
 
 
-def setup_test_core_db() -> CoreDatabase:
+def setup_test_dbm() -> DatabaseManager:
     db_name = "test_%04d" % int(random.random() * 10000)
     try:
         db_name += "_" + os.environ["PYTEST_XDIST_WORKER"]
     except KeyError:
         pass
-    return init_core_db(db_name, force_init=True)
+    return init_dbm(db_name, force_init=True)
 
 
-async def teardown_test_core_db(core_db: CoreDatabase):
-    for db_name in await core_db.client.list_database_names():
-        if db_name.startswith(core_db.name):
-            await core_db.client.drop_database(db_name)
+async def teardown_test_dbm(dbm: DatabaseManager):
+    for db_name in await dbm.core_db.client.list_database_names():
+        if db_name.startswith(dbm.core_db.name):
+            await dbm.core_db.client.drop_database(db_name)
 
-    core_db.client.close()
+    dbm.core_db.client.close()
 
 
 async def cleanup_db(db: Database):
