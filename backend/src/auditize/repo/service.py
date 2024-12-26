@@ -11,7 +11,7 @@ from auditize.exceptions import (
     enhance_constraint_violation_exception,
 )
 from auditize.i18n.lang import Lang
-from auditize.log.db import LogDatabase, migrate_log_db
+from auditize.log.db import LogDatabase
 from auditize.log_i18n_profile.models import LogTranslation
 from auditize.log_i18n_profile.service import (
     get_log_i18n_profile_translation,
@@ -46,6 +46,8 @@ async def _validate_repo(repo: Repo | RepoUpdate):
 
 
 async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
+    from auditize.log.service import LogService
+
     await _validate_repo(repo)
     db = get_core_db()
     repo_id = uuid4()
@@ -64,8 +66,10 @@ async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
                 session=session,
             )
         if not log_db:
-            log_db = LogDatabase.from_repo(await _get_repo(repo_id, session))
-            await migrate_log_db(log_db)
+            log_service = await LogService.for_maintenance(
+                await _get_repo(repo_id, session)
+            )
+            await log_service.create_log_db()
     return repo_id
 
 
