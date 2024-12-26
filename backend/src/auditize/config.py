@@ -27,6 +27,10 @@ class Config:
     csv_max_rows: int
     mongodb_uri: str
     mongodb_tls: bool
+    elastic_url: str
+    elastic_user: str
+    elastic_user_password: str
+    elastic_ssl_verify: bool
     db_name: str
     smtp_server: str
     smtp_port: int
@@ -123,6 +127,14 @@ class Config:
                 mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
                 mongodb_tls=optional(
                     "AUDITIZE_MONGODB_TLS", validator=cls._validate_bool, default=False
+                ),
+                elastic_url=required("AUDITIZE_ELASTIC_URL"),
+                elastic_user=required("AUDITIZE_ELASTIC_USER"),
+                elastic_user_password=required("AUDITIZE_ELASTIC_USER_PASSWORD"),
+                elastic_ssl_verify=optional(
+                    "AUDITIZE_ELASTIC_SSL_VERIFY",
+                    validator=cls._validate_bool,
+                    default=True,
                 ),
                 db_name=optional("AUDITIZE_DB_NAME", default="auditize"),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),

@@ -34,6 +34,9 @@ def anyio_backend():
 def _config(anyio_backend):
     init_config(
         {
+            "AUDITIZE_ELASTIC_URL": "http://localhost:9200",
+            "AUDITIZE_ELASTIC_USER": "elastic",
+            "AUDITIZE_ELASTIC_USER_PASSWORD": "password",
             "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
             "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
             "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
