@@ -1,17 +1,20 @@
 from typing import Self
 
 import certifi
+from elasticsearch import AsyncElasticsearch
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from auditize.config import get_config
 from auditize.database import CoreDatabase
+from auditize.database.elastic import get_elastic_client
 
 
 class DatabaseManager:
     _dbm: Self = None
 
-    def __init__(self, core_db: CoreDatabase):
+    def __init__(self, *, core_db: CoreDatabase, elastic_client: AsyncElasticsearch):
         self.core_db: CoreDatabase = core_db
+        self.elastic_client: AsyncElasticsearch = elastic_client
 
     @classmethod
     def init(cls, name=None, *, force_init=False) -> Self:
@@ -20,14 +23,16 @@ class DatabaseManager:
         config = get_config()
         if not name:
             name = config.db_name
-        core_db = CoreDatabase(
-            name,
-            AsyncIOMotorClient(
-                config.mongodb_uri,
-                tlsCAFile=certifi.where() if config.mongodb_tls else None,
+        cls._dbm = cls(
+            core_db=CoreDatabase(
+                name,
+                AsyncIOMotorClient(
+                    config.mongodb_uri,
+                    tlsCAFile=certifi.where() if config.mongodb_tls else None,
+                ),
             ),
+            elastic_client=get_elastic_client(),
         )
-        cls._dbm = cls(core_db)
         return cls._dbm
 
     @classmethod
