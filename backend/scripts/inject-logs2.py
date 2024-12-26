@@ -16,7 +16,7 @@ import httpx
 from auditize.config import init_config
 from auditize.database import init_dbm
 from auditize.log.models import Log
-from auditize.log.service import save_log, save_log_attachment
+from auditize.log.service import LogService
 
 # fmt: off
 
@@ -679,30 +679,31 @@ class ApiInjector:
 
 
 class ServiceInjector:
-    def __init__(self, repo_id: str, log_count: int):
-        self.repo_id = uuid.UUID(repo_id)
+    def __init__(self, log_service: LogService, log_count: int):
+        self.log_service = log_service
         # create a time span for 1000 logs / day
         self.time_end = int(time.time())
         self.time_start = self.time_end - ((log_count / 1000) * 24 * 60 * 60)
 
+    @classmethod
+    async def spawn(cls, repo_id: str, log_count: int):
         init_config()
         init_dbm()
+
+        log_service = await LogService.for_maintenance(uuid.UUID(repo_id))
+        return cls(log_service, log_count)
 
     async def __call__(self, log, attachments):
         log_model = Log.model_validate(log)
         log_model.saved_at = datetime.fromtimestamp(
             random.uniform(self.time_start, self.time_end), timezone.utc
         )
-        log_id = await save_log(self.repo_id, log_model)
+        log_id = await self.log_service.save_log(log_model)
         for attachment in attachments:
-            await save_log_attachment(
-                self.repo_id,
-                log_id,
-                name=attachment["name"],
-                type=attachment["type"],
-                mime_type="text/plain",
-                data=attachment["data"],
+            attachment_model = Log.Attachment.model_validate(
+                {**attachment, "mime_type": "text/plain"}
             )
+            await self.log_service.save_log_attachment(log_id, attachment_model)
 
 
 # Adapted from https://death.andgravity.com/limit-concurrency#asyncio-wait
@@ -743,7 +744,7 @@ async def main(argv):
     if base_url and api_key:
         injector = ApiInjector(base_url, repo_id, api_key)
     else:
-        injector = ServiceInjector(repo_id, count)
+        injector = await ServiceInjector.spawn(repo_id, count)
 
     provider = LogProvider.prepare()
 
