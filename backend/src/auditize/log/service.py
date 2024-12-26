@@ -124,7 +124,7 @@ class LogService:
 
     @classmethod
     async def for_config(cls, repo: Repo | UUID):
-        return await cls._for_statuses(repo, [RepoStatus.enabled])
+        return await cls._for_statuses(repo)
 
     for_maintenance = for_config
 
@@ -156,7 +156,7 @@ class LogService:
             document={
                 **log.model_dump(exclude={"id"}),
                 "saved_at": serialize_datetime(log.saved_at, with_milliseconds=True),
-                "id": log_id,
+                "log_id": log_id,
             },
         )
         await self._consolidate_log_entity_path(log.entity_path)
@@ -365,7 +365,7 @@ class LogService:
             query=query,
             search_after=search_after,
             source_excludes=["attachments.data"],
-            sort=[{"saved_at": "desc", "id": "desc"}],
+            sort=[{"saved_at": "desc", "log_id": "desc"}],
             size=limit + 1,
             track_total_hits=False,
         )
@@ -386,6 +386,35 @@ class LogService:
         ]
 
         return logs, next_cursor
+
+    async def _get_sorted_log(self, sort) -> Log | None:
+        resp = await self.es.search(
+            index=self.index,
+            query={"match_all": {}},
+            sort=sort,
+            size=1,
+        )
+        hits = resp["hits"]["hits"]
+        if not hits:
+            return None
+        return Log.model_validate({**hits[0]["_source"], "_id": hits[0]["_id"]})
+
+    async def get_oldest_log(self) -> Log | None:
+        return await self._get_sorted_log([{"saved_at": "asc", "log_id": "asc"}])
+
+    async def get_newest_log(self) -> Log | None:
+        return await self._get_sorted_log([{"saved_at": "desc", "log_id": "desc"}])
+
+    async def get_log_count(self) -> int:
+        resp = await self.es.count(
+            index=self.index,
+            query={"match_all": {}},
+        )
+        return resp["count"]
+
+    async def get_storage_size(self) -> int:
+        resp = await self.es.indices.stats(index=self.index)
+        return resp["_all"]["primaries"]["store"]["size_in_bytes"]
 
     async def _get_paginated_agg(
         self,
@@ -699,7 +728,7 @@ class LogService:
             index=self.index,
             mappings={
                 "properties": {
-                    "id": {"type": "keyword"},
+                    "log_id": {"type": "keyword"},
                     "saved_at": {"type": "date"},
                     "action": {
                         "properties": {
@@ -805,7 +834,7 @@ class LogService:
             },
             settings={
                 "index": {
-                    "sort.field": ["saved_at", "id"],
+                    "sort.field": ["saved_at", "log_id"],
                     "sort.order": ["desc", "desc"],
                 }
             },

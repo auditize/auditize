@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
+import elasticsearch
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
 from auditize.database import get_core_db
@@ -103,16 +104,23 @@ async def _get_log_saved_at(log_db: LogDatabase, *, sort: int) -> datetime | Non
 
 
 async def get_repo_stats(repo_id: UUID) -> RepoStats:
+    from auditize.log.service import LogService
+
     repo = await _get_repo(repo_id)
-    log_db = LogDatabase.from_repo(repo)
+    log_service = await LogService.for_maintenance(repo)
     stats = RepoStats()
 
-    stats.first_log_date = await _get_log_saved_at(log_db, sort=1)
-    stats.last_log_date = await _get_log_saved_at(log_db, sort=-1)
-    stats.log_count = await log_db.logs.estimated_document_count()
-
-    db_stats = await log_db.db.command("dbstats")
-    stats.storage_size = int(db_stats["storageSize"]) + int(db_stats["indexSize"])
+    try:
+        first_log = await log_service.get_oldest_log()
+        last_log = await log_service.get_newest_log()
+        stats.first_log_date = first_log.saved_at if first_log else None
+        stats.last_log_date = last_log.saved_at if last_log else None
+        stats.log_count = await log_service.get_log_count()
+        stats.storage_size = await log_service.get_storage_size()
+    except (elasticsearch.NotFoundError, elasticsearch.BadRequestError) as exc:
+        # FIXME: handle the case where the log db is a MongoDB database
+        print(f"Got an error while fetching stats for repo {repo_id}: {exc}")
+        pass
 
     return stats
 
