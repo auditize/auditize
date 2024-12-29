@@ -18,10 +18,10 @@ def test_get_config():
     assert isinstance(config, Config)
     assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key is not None
-    assert config.elastic_url == "http://localhost:9200"
+    assert config.elastic_url == "https://localhost:9200"
     assert config.elastic_user == "elastic"
-    assert config.elastic_user_password == "password"
-    assert config.elastic_ssl_verify is True
+    assert config.elastic_user_password
+    assert config.elastic_ssl_verify is False
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 1024

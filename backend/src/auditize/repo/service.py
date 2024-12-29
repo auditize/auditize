@@ -46,7 +46,7 @@ async def _validate_repo(repo: Repo | RepoUpdate):
             )
 
 
-async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
+async def create_repo(repo: Repo, log_db_name: str = None) -> UUID:
     from auditize.log.service import LogService
 
     await _validate_repo(repo)
@@ -60,13 +60,13 @@ async def create_repo(repo: Repo, log_db: LogDatabase = None) -> UUID:
                 {
                     **repo.model_dump(exclude={"id", "log_db_name"}),
                     "log_db_name": (
-                        log_db.name if log_db else f"{db.name}_logs_{repo_id}"
+                        log_db_name if log_db_name else f"{db.name}_logs_{repo_id}"
                     ),
                 },
                 resource_id=repo_id,
                 session=session,
             )
-        if not log_db:
+        if not log_db_name:
             log_service = await LogService.for_maintenance(
                 await _get_repo(repo_id, session)
             )

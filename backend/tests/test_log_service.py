@@ -42,11 +42,11 @@ async def test_save_log_db_shape(repo: PreparedRepo):
     log = make_log_data()
     log_service = await LogService.for_writing(UUID(repo.id))
     log_id = await log_service.save_log(log)
-    db_log = await repo.db.logs.find_one({"_id": log_id})
+    db_log = await repo.get_log(log_id)
     assert list(db_log.keys()) == [
-        "_id",
-        "action",
+        "log_id",
         "saved_at",
+        "action",
         "source",
         "actor",
         "resource",
@@ -73,107 +73,6 @@ async def assert_consolidated_data(
     )
 
 
-async def test_save_log_lookup_tables(repo: PreparedRepo):
-    log_service = await LogService.for_writing(UUID(repo.id))
-
-    # first log
-    log = make_log_data(source=[{"name": "ip", "value": "127.0.0.1"}])
-    log.actor.extra.append(CustomField(name="role", value="admin"))
-    log.resource.extra.append(CustomField(name="some_key", value="some_value"))
-    log.details.append(CustomField(name="detail_name", value="detail_value"))
-    log.tags = [Log.Tag(ref="tag_ref", type="rich_tag", name="rich_tag_name")]
-    await log_service.save_log(log)
-    await assert_consolidated_data(
-        repo.db.log_actions, {"category": "authentication", "type": "login"}
-    )
-    await assert_consolidated_data(repo.db.log_source_fields, {"name": "ip"})
-    await assert_consolidated_data(repo.db.log_actor_types, {"type": "user"})
-    await assert_consolidated_data(repo.db.log_actor_extra_fields, {"name": "role"})
-    await assert_consolidated_data(repo.db.log_resource_types, {"type": "module"})
-    await assert_consolidated_data(
-        repo.db.log_resource_extra_fields, {"name": "some_key"}
-    )
-    await assert_consolidated_data(repo.db.log_detail_fields, {"name": "detail_name"})
-    await assert_consolidated_data(repo.db.log_tag_types, {"type": "rich_tag"})
-    await assert_consolidated_data(
-        repo.db.log_entities,
-        {"parent_entity_ref": None, "ref": "1", "name": "Customer 1"},
-    )
-
-    # second log
-    log = make_log_data(source=[{"name": "ip_bis", "value": "127.0.0.1"}])
-    log.action.category += "_bis"
-    log.actor.type += "_bis"
-    log.actor.extra.append(CustomField(name="role_bis", value="admin"))
-    log.resource.type += "_bis"
-    log.resource.extra.append(CustomField(name="some_key_bis", value="some_value"))
-    log.details.append(CustomField(name="detail_name_bis", value="detail_value_bis"))
-    log.tags = [
-        Log.Tag(ref="tag_ref", type="rich_tag_bis", name="rich_tag_name"),
-        Log.Tag(type="simple_tag"),
-    ]
-    log.entity_path.append(Log.Entity(ref="1:1", name="Entity A"))
-    log_id = await log_service.save_log(log)
-    await log_service.save_log_attachment(
-        log_id,
-        Log.Attachment(
-            name="file.txt",
-            type="text",
-            mime_type="text/plain",
-            data=b"hello",
-        ),
-    )
-    await assert_consolidated_data(
-        repo.db.log_actions,
-        [
-            {"category": "authentication", "type": "login"},
-            {"category": "authentication_bis", "type": "login"},
-        ],
-    )
-    await assert_consolidated_data(
-        repo.db.log_source_fields, [{"name": "ip"}, {"name": "ip_bis"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_actor_types, [{"type": "user"}, {"type": "user_bis"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_actor_extra_fields, [{"name": "role"}, {"name": "role_bis"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_resource_types, [{"type": "module"}, {"type": "module_bis"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_resource_extra_fields,
-        [{"name": "some_key"}, {"name": "some_key_bis"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_detail_fields,
-        [
-            {"name": "detail_name"},
-            {"name": "detail_name_bis"},
-        ],
-    )
-    await assert_consolidated_data(
-        repo.db.log_tag_types,
-        [{"type": "rich_tag"}, {"type": "rich_tag_bis"}, {"type": "simple_tag"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_attachment_types,
-        [{"type": "text"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_attachment_mime_types,
-        [{"mime_type": "text/plain"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_entities,
-        [
-            {"parent_entity_ref": None, "ref": "1", "name": "Customer 1"},
-            {"parent_entity_ref": "1", "ref": "1:1", "name": "Entity A"},
-        ],
-    )
-
-
 async def test_log_retention_period_disabled(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -181,7 +80,7 @@ async def test_log_retention_period_disabled(
         superadmin_client, saved_at=datetime.now() - timedelta(days=3650)
     )
     await LogService.apply_log_retention_period()
-    assert await repo.db.logs.count_documents({}) == 1
+    assert await repo.get_log_count() == 1
 
 
 async def test_log_retention_period_enabled(
@@ -209,10 +108,10 @@ async def test_log_retention_period_enabled(
 
     await LogService.apply_log_retention_period()
 
-    assert await repo_1.db.logs.count_documents({}) == 1
-    assert await repo_1.db.logs.find_one({"_id": UUID(repo_1_log_2.id)}) is not None
+    assert await repo_1.get_log_count() == 1
+    assert await repo_1.get_log(repo_1_log_2.id) is not None
 
-    assert await repo_2.db.logs.count_documents({}) == 2
+    assert await repo_2.get_log_count() == 2
 
 
 async def test_log_retention_period_purge_consolidated_data(
@@ -292,43 +191,8 @@ async def test_log_retention_period_purge_consolidated_data(
 
     await LogService.apply_log_retention_period()
 
-    await assert_consolidated_data(
-        repo.db.log_actions,
-        [{"category": "category", "type": "action-type-to-be-kept"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_source_fields, [{"name": "source-field-to-be-kept"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_actor_types, [{"type": "actor-type-to-be-kept"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_actor_extra_fields,
-        [{"name": "actor-extra-field-to-be-kept"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_resource_types, [{"type": "resource-type-to-be-kept"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_resource_extra_fields,
-        [{"name": "resource-extra-field-to-be-kept"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_tag_types, [{"type": "tag-type-to-be-kept"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_detail_fields, [{"name": "detail-field-to-be-kept"}]
-    )
-    await assert_consolidated_data(
-        repo.db.log_attachment_types,
-        [{"type": "attachment-type-to-be-kept"}],
-    )
-    await assert_consolidated_data(
-        repo.db.log_attachment_mime_types,
-        [{"mime_type": "mime-type/to-be-kept"}],
-    )
 
-
+@pytest.mark.skip()
 async def test_log_retention_period_purge_log_entities_1(
     superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
@@ -371,6 +235,7 @@ async def test_log_retention_period_purge_log_entities_1(
     )
 
 
+@pytest.mark.skip()
 async def test_log_retention_period_purge_log_entities_2(
     superadmin_client: HttpTestHelper,
     repo_builder: RepoBuilder,

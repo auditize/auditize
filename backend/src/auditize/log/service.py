@@ -3,14 +3,14 @@ import json
 import uuid
 from datetime import datetime, timedelta
 from functools import partialmethod
-from typing import Any, Self
-from uuid import UUID, uuid4
+from typing import Self
+from uuid import UUID
 
 import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
-from motor.motor_asyncio import AsyncIOMotorCollection
 
+from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.exceptions import (
     ConstraintViolation,
@@ -19,7 +19,7 @@ from auditize.exceptions import (
     UnknownModelException,
 )
 from auditize.helpers.datetime import now, serialize_datetime
-from auditize.log.models import CustomField, Entity, Log, LogSearchParams
+from auditize.log.models import Entity, Log, LogSearchParams
 from auditize.repo.models import Repo, RepoStatus
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.serialization import (
@@ -94,7 +94,8 @@ class LogService:
     def __init__(self, repo: Repo, es: AsyncElasticsearch):
         self.repo = repo
         self.es = es
-        self.index = f"auditize_logs_{repo.id}"
+        self.index = repo.log_db_name
+        self._refresh = get_config().test_mode
 
     @classmethod
     async def _for_statuses(
@@ -154,19 +155,20 @@ class LogService:
             index=self.index,
             id=str(log_id),
             document={
-                **log.model_dump(exclude={"id"}),
-                "saved_at": serialize_datetime(log.saved_at, with_milliseconds=True),
                 "log_id": log_id,
+                "saved_at": serialize_datetime(log.saved_at, with_milliseconds=True),
+                **log.model_dump(exclude={"id"}),
             },
+            refresh=self._refresh,
         )
         await self._consolidate_log_entity_path(log.entity_path)
 
         return log_id
 
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
-        await self.es.update(
+        resp = await self.es.update_by_query(
             index=self.index,
-            id=str(log_id),
+            query=self._log_query(log_id),
             script={
                 "source": "ctx._source.attachments.add(params.attachment)",
                 "params": {
@@ -176,18 +178,39 @@ class LogService:
                     }
                 },
             },
+            refresh=self._refresh,
         )
+        if resp["updated"] == 0:
+            raise UnknownModelException()
 
     @staticmethod
-    def _log_query(log_id: UUID, authorized_entities: set[str]):
-        query: dict = {"bool": {"filter": [{"term": {"_id": log_id}}]}}
+    def _authorized_entity_filter(authorized_entities: set[str]):
+        return {
+            "nested": {
+                "path": "entity_path",
+                "query": {
+                    "bool": {
+                        "filter": {
+                            "terms": {"entity_path.ref": list(authorized_entities)}
+                        }
+                    }
+                },
+            }
+        }
+
+    @staticmethod
+    def _log_query(log_id: UUID, authorized_entities: set[str] = None):
+        query: dict = {"bool": {"filter": [{"term": {"_id": str(log_id)}}]}}
         if authorized_entities:
             query["bool"]["filter"].append(
-                {"term": {"entity_path.ref": list(authorized_entities)}}
+                LogService._authorized_entity_filter(authorized_entities)
             )
         return query
 
     async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
+        print(
+            "LOG QUERY: %s" % json.dumps(self._log_query(log_id, authorized_entities))
+        )
         resp = await self.es.search(
             index=self.index,
             query=self._log_query(log_id, authorized_entities),
@@ -211,8 +234,6 @@ class LogService:
             query=self._log_query(log_id, authorized_entities),
             source_includes=["attachments"],
         )
-        if not resp["found"]:
-            raise UnknownModelException()
 
         try:
             attachment = resp["hits"]["hits"][0]["_source"]["attachments"][
@@ -257,10 +278,9 @@ class LogService:
     def _prepare_es_query(
         cls,
         search_params: LogSearchParams,
-    ) -> tuple[list[dict], list[dict]]:
+    ) -> list[dict]:
         sp = search_params
         filter = []
-        must_not = []
         if sp.action_type:
             filter.append({"term": {"action.type": sp.action_type}})
         if sp.action_category:
@@ -308,7 +328,19 @@ class LogService:
                     }
                 )
             else:
-                must_not.append({"exists": {"field": "attachments"}})
+                filter.append(
+                    {
+                        "bool": {
+                            "must_not": {
+                                "nested": {
+                                    "path": "attachments",
+                                    "query": {"exists": {"field": "attachments"}},
+                                }
+                            }
+                        }
+                    }
+                )
+
         if sp.attachment_name:
             filter.append(
                 cls._nested_filter_term(
@@ -339,7 +371,7 @@ class LogService:
             filter.append(
                 {"range": {"saved_at": {"lte": sp.until.replace(microsecond=999999)}}}
             )
-        return filter, must_not
+        return filter
 
     async def get_logs(
         self,
@@ -349,10 +381,10 @@ class LogService:
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
-        filter, must_not = self._prepare_es_query(search_params)
+        filter = self._prepare_es_query(search_params)
 
         if authorized_entities:
-            filter.append({"term": {"entity_path.ref": list(authorized_entities)}})
+            filter.append(self._authorized_entity_filter(authorized_entities))
 
         search_after = (
             load_pagination_cursor(pagination_cursor) if pagination_cursor else None
@@ -527,12 +559,28 @@ class LogService:
         if not self.repo.retention_period:
             return
 
-        result = await self.log_db.logs.delete_many(
-            {"saved_at": {"$lt": now() - timedelta(days=self.repo.retention_period)}}
+        resp = await self.es.delete_by_query(
+            index=self.index,
+            query={
+                "bool": {
+                    "filter": [
+                        {
+                            "range": {
+                                "saved_at": {
+                                    "lt": now()
+                                    - timedelta(days=self.repo.retention_period)
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            refresh=self._refresh,
         )
-        if result.deleted_count > 0:
+        print("RESPONSE: %s" % json.dumps(dict(resp)))
+        if resp["deleted"] > 0:
             print(
-                f"Deleted {result.deleted_count} logs older than {self.repo.retention_period} days "
+                f"Deleted {resp["deleted"]} logs older than {self.repo.retention_period} days "
                 f"in log repository {self.repo.name!r}"
             )
 
@@ -546,7 +594,7 @@ class LogService:
         for repo in repos:
             service = await cls.for_maintenance(repo)
             await service._apply_log_retention_period()
-            await service.purge_orphan_consolidated_log_data()
+            # FIXME: we should also delete the consolidated entities that are not referenced by any log
 
     async def _consolidate_log_entity(
         self, entity: Log.Entity, parent_entity: Log.Entity | None
@@ -561,11 +609,13 @@ class LogService:
             return
 
         try:
+            print("CONSOLIDATE ENTITY: %s" % json.dumps(doc))
             await self.es.update(
                 index=f"{self.index}_entities",
-                id=entity.ref,
+                id=str(uuid.uuid4()),
                 doc=doc,
                 doc_as_upsert=True,
+                refresh=self._refresh,
             )
         except elasticsearch.ConflictError:
             # We may encounter a 409 error if two updates are made at the same time
@@ -610,6 +660,7 @@ class LogService:
             from_=cursor_obj.offset,
             size=limit + 1,
         )
+        print("_get_log_entities response: %s" % json.dumps(dict(resp)))
 
         entities = [
             Entity.model_validate(
@@ -687,7 +738,7 @@ class LogService:
                 visible_entities = await self._get_entities_hierarchy(
                     authorized_entities
                 )
-                filter.append({"term": {"ref": list(visible_entities)}})
+                filter.append({"terms": {"ref": list(visible_entities)}})
 
         query = {"bool": {}}
         if filter:
@@ -724,137 +775,141 @@ class LogService:
         return await self._get_log_entity(entity_ref)
 
     async def create_log_db(self):
-        await self.es.indices.create(
-            index=self.index,
-            mappings={
-                "properties": {
-                    "log_id": {"type": "keyword"},
-                    "saved_at": {"type": "date"},
-                    "action": {
-                        "properties": {
-                            "type": {"type": "keyword"},
-                            "category": {"type": "keyword"},
-                        }
-                    },
-                    "source": {
-                        "type": "nested",
-                        "properties": {
-                            "name": {"type": "keyword"},
-                            "value": {
-                                "type": "text",
-                                "fields": {"keyword": {"type": "keyword"}},
-                            },
+        await create_indices(self.es, self.index)
+
+
+async def create_indices(elastic_client: AsyncElasticsearch, index_name: str):
+    await elastic_client.indices.create(
+        index=index_name,
+        mappings={
+            "properties": {
+                "log_id": {"type": "keyword"},
+                "saved_at": {"type": "date"},
+                "action": {
+                    "properties": {
+                        "type": {"type": "keyword"},
+                        "category": {"type": "keyword"},
+                    }
+                },
+                "source": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {"type": "keyword"},
+                        "value": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
                         },
                     },
-                    "actor": {
-                        "properties": {
-                            "ref": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                            "name": {
-                                "type": "text",
-                                "fields": {"keyword": {"type": "keyword"}},
-                            },
-                            "extra": {
-                                "type": "nested",
-                                "properties": {
-                                    "name": {"type": "keyword"},
-                                    "value": {
-                                        "type": "text",
-                                        "fields": {"keyword": {"type": "keyword"}},
-                                    },
+                },
+                "actor": {
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                        "extra": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {"type": "keyword"},
+                                "value": {
+                                    "type": "text",
+                                    "fields": {"keyword": {"type": "keyword"}},
                                 },
                             },
-                        }
-                    },
-                    "resource": {
-                        "properties": {
-                            "ref": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                            "name": {
-                                "type": "text",
-                                "fields": {"keyword": {"type": "keyword"}},
-                            },
-                            "extra": {
-                                "type": "nested",
-                                "properties": {
-                                    "name": {"type": "keyword"},
-                                    "value": {
-                                        "type": "text",
-                                        "fields": {"keyword": {"type": "keyword"}},
-                                    },
+                        },
+                    }
+                },
+                "resource": {
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                        "extra": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {"type": "keyword"},
+                                "value": {
+                                    "type": "text",
+                                    "fields": {"keyword": {"type": "keyword"}},
                                 },
                             },
-                        }
-                    },
-                    "details": {
-                        "type": "nested",
-                        "properties": {
-                            "name": {"type": "keyword"},
-                            "value": {
-                                "type": "text",
-                                "fields": {"keyword": {"type": "keyword"}},
-                            },
+                        },
+                    }
+                },
+                "details": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {"type": "keyword"},
+                        "value": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
                         },
                     },
-                    "tags": {
-                        "type": "nested",
-                        "properties": {
-                            "ref": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                            "name": {
-                                "type": "text",
-                                "fields": {"keyword": {"type": "keyword"}},
-                            },
+                },
+                "tags": {
+                    "type": "nested",
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
                         },
                     },
-                    "attachments": {
-                        "type": "nested",
-                        "properties": {
-                            "name": {
-                                "type": "text",
-                                "fields": {"keyword": {"type": "keyword"}},
-                            },
-                            "type": {"type": "keyword"},
-                            "mime_type": {"type": "keyword"},
-                            "saved_at": {"type": "date"},
-                            "data": {"type": "binary"},
+                },
+                "attachments": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                        "type": {"type": "keyword"},
+                        "mime_type": {"type": "keyword"},
+                        "saved_at": {"type": "date"},
+                        "data": {"type": "binary"},
+                    },
+                },
+                "entity_path": {
+                    "type": "nested",
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
                         },
                     },
-                    "entity_path": {
-                        "type": "nested",
-                        "properties": {
-                            "ref": {"type": "keyword"},
-                            "name": {
-                                "type": "text",
-                                "fields": {"keyword": {"type": "keyword"}},
-                            },
-                        },
-                    },
-                }
-            },
-            settings={
-                "index": {
-                    "sort.field": ["saved_at", "log_id"],
-                    "sort.order": ["desc", "desc"],
-                }
-            },
-        )
-        await self.es.indices.create(
-            index=f"{self.index}_entities",
-            mappings={
-                "properties": {
-                    "ref": {"type": "keyword"},
-                    "name": {
-                        "type": "text",
-                        "fields": {"keyword": {"type": "keyword"}},
-                    },
-                    "parent_entity_ref": {"type": "keyword"},
-                }
-            },
-            settings={
-                "index": {
-                    "sort.field": "name.keyword",
-                    "sort.order": "asc",
-                }
-            },
-        )
+                },
+            }
+        },
+        settings={
+            "index": {
+                "sort.field": ["saved_at", "log_id"],
+                "sort.order": ["desc", "desc"],
+            }
+        },
+    )
+    await elastic_client.indices.create(
+        index=f"{index_name}_entities",
+        mappings={
+            "properties": {
+                "ref": {"type": "keyword"},
+                "name": {
+                    "type": "text",
+                    "fields": {"keyword": {"type": "keyword"}},
+                },
+                "parent_entity_ref": {"type": "keyword"},
+            }
+        },
+        settings={
+            "index": {
+                "sort.field": "name.keyword",
+                "sort.order": "asc",
+            }
+        },
+    )

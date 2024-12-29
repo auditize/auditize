@@ -1,8 +1,11 @@
+import base64
 import uuid
 from datetime import datetime
 
 import callee
 from icecream import ic
+
+from auditize.database import get_dbm
 
 from .http import HttpTestHelper
 from .utils import DATETIME_FORMAT
@@ -87,15 +90,23 @@ class PreparedLog:
             attachment["saved_at"] = DATETIME_FORMAT
         return {**expected, **(extra or {})}
 
-    async def assert_db(self, extra=None):
+    def expected_db_document(self, extra=None) -> dict:
         expected = self.expected_api_response(extra)
-
-        # from expected API response, make data suitable for db comparison
-        expected["saved_at"] = callee.IsA(datetime)
+        expected["saved_at"] = callee.IsA(str)
+        for expected_attachment in expected["attachments"]:
+            expected_attachment["data"] = base64.b64encode(
+                expected_attachment["data"]
+            ).decode()
+            expected_attachment["saved_at"] = callee.IsA(str)
+        expected["log_id"] = self.id
         del expected["id"]
+        return expected
 
-        db_log = await self.repo.db.logs.find_one(
-            {"_id": uuid.UUID(self.id)}, {"_id": 0}
-        )
+    async def assert_db(self, extra=None):
+        expected = self.expected_db_document(extra)
+
+        dbm = get_dbm()
+        resp = await dbm.elastic_client.get(index=self.repo.log_db_name, id=self.id)
+        db_log = resp["_source"]
         ic(db_log)
         assert db_log == expected

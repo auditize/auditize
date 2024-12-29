@@ -3,7 +3,9 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import callee
+from elasticsearch import AsyncElasticsearch
 
+from auditize.database import get_dbm
 from auditize.log.db import LogDatabase
 from auditize.repo.models import Repo
 from auditize.repo.service import create_repo
@@ -13,24 +15,28 @@ from .log import PreparedLog
 
 
 class PreparedRepo:
-    def __init__(self, id: str, data: dict, db: LogDatabase):
+    def __init__(self, id: str, data: dict, log_db_name: str):
         self.id = id
         self.data = data
-        self.db = db
+        self.log_db_name = log_db_name
+
+    @property
+    def es(self) -> AsyncElasticsearch:
+        return get_dbm().elastic_client
 
     @staticmethod
     def prepare_data(extra=None):
         return {"name": f"Repo {uuid4()}", **(extra or {})}
 
     @classmethod
-    async def create(cls, data, log_db: LogDatabase):
+    async def create(cls, data, log_db_name: str):
         if not data:
             data: dict[str, Any] = cls.prepare_data()
         model_data = data.copy()
         if "log_i18n_profile_id" in model_data:
             model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
-        repo_id = await create_repo(Repo(**model_data), log_db=log_db)
-        return cls(str(repo_id), data, log_db)
+        repo_id = await create_repo(Repo(**model_data), log_db_name=log_db_name)
+        return cls(str(repo_id), data, log_db_name)
 
     @staticmethod
     def build_expected_document(repo_id, data, extra=None):
@@ -74,24 +80,35 @@ class PreparedRepo:
         )
         log_id = resp.json()["id"]
         if saved_at:
-            await self.db.logs.update_one(
-                {"_id": UUID(log_id)}, {"$set": {"saved_at": saved_at}}
+            await self.es.update(
+                index=self.log_db_name,
+                id=log_id,
+                doc={"saved_at": saved_at},
+                refresh=True,
             )
         return PreparedLog(log_id, data, self)
 
-    def create_log_with(
+    async def create_log_with(
         self, client: HttpTestHelper, extra: dict, *, saved_at: datetime = None
     ):
-        return self.create_log(
+        return await self.create_log(
             client, PreparedLog.prepare_data(extra), saved_at=saved_at
         )
 
     async def create_log_with_entity_path(
-        self, client: HttpTestHelper, entity_path: list[str], *, saved_at: datetime = None
+        self,
+        client: HttpTestHelper,
+        entity_path: list[str],
+        *,
+        saved_at: datetime = None,
     ):
         return await self.create_log_with(
             client,
-            {"entity_path": [{"name": entity, "ref": entity} for entity in entity_path]},
+            {
+                "entity_path": [
+                    {"name": entity, "ref": entity} for entity in entity_path
+                ]
+            },
             saved_at=saved_at,
         )
 
@@ -99,3 +116,14 @@ class PreparedRepo:
         await client.assert_patch(
             f"/repos/{self.id}", json={"status": status}, expected_status_code=204
         )
+
+    async def get_log(self, log_id: str | UUID) -> dict | None:
+        resp = await self.es.get(index=self.log_db_name, id=log_id)
+        return resp["_source"]
+
+    async def get_log_count(self) -> int:
+        resp = await self.es.count(
+            index=self.log_db_name,
+            query={"match_all": {}},
+        )
+        return resp["count"]

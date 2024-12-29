@@ -46,6 +46,10 @@ def init_dbm(name=None, *, force_init=False) -> DatabaseManager:
     return DatabaseManager.init(name, force_init=force_init)
 
 
+def get_dbm() -> DatabaseManager:
+    return DatabaseManager.get()
+
+
 def get_core_db() -> CoreDatabase:
-    dbm = DatabaseManager.get()
+    dbm = get_dbm()
     return dbm.core_db

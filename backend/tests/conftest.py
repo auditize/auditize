@@ -1,12 +1,13 @@
+import os
 from typing import Awaitable, Callable, Optional, Protocol
 
 import pytest
 from icecream import ic
 
 from auditize.config import init_config
-from auditize.database import CoreDatabase, Database, migrate_core_db
+from auditize.database import CoreDatabase, Database, DatabaseManager, migrate_core_db
 from auditize.log.db import LogDatabase
-from auditize.log.service import _CONSOLIDATED_DATA_CACHE
+from auditize.log.service import _CONSOLIDATED_LOG_ENTITIES
 
 ic.configureOutput(includeContext=True)
 
@@ -34,9 +35,10 @@ def anyio_backend():
 def _config(anyio_backend):
     init_config(
         {
-            "AUDITIZE_ELASTIC_URL": "http://localhost:9200",
+            "AUDITIZE_ELASTIC_URL": "https://localhost:9200",
             "AUDITIZE_ELASTIC_USER": "elastic",
-            "AUDITIZE_ELASTIC_USER_PASSWORD": "password",
+            "AUDITIZE_ELASTIC_USER_PASSWORD": os.environ["ES_PASSWORD"],
+            "AUDITIZE_ELASTIC_SSL_VERIFY": "false",
             "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
             "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
             "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
@@ -47,11 +49,16 @@ def _config(anyio_backend):
 
 
 @pytest.fixture(scope="session")
-async def _core_db():
+async def _dbm():
     dbm = setup_test_dbm()
     await migrate_core_db(dbm.core_db)
-    yield dbm.core_db
+    yield dbm
     await teardown_test_dbm(dbm)
+
+
+@pytest.fixture(scope="session")
+async def _core_db(_dbm):
+    return _dbm.core_db
 
 
 @pytest.fixture(scope="function")
@@ -82,22 +89,15 @@ async def anon_client():
 
 
 @pytest.fixture(scope="session")
-async def _log_db(_core_db: CoreDatabase):
-    log_db = LogDatabase(_core_db.name + "_logs", _core_db.client)
-    await log_db.setup()
-    return log_db
-
-
-@pytest.fixture(scope="session")
-async def _log_db_pool(_core_db: CoreDatabase):
-    return TestLogDatabasePool(_core_db)
+async def _log_db_pool(_dbm: DatabaseManager):
+    return TestLogDatabasePool(_dbm)
 
 
 @pytest.fixture(scope="function", autouse=True)
 async def core_db(_core_db, anyio_backend):
     yield _core_db
     await cleanup_db(_core_db)
-    await _CONSOLIDATED_DATA_CACHE.clear()
+    await _CONSOLIDATED_LOG_ENTITIES.clear()
 
 
 @pytest.fixture(scope="function")
@@ -114,7 +114,8 @@ RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]
 async def repo_builder(core_db, _log_db_pool) -> RepoBuilder:
     async def func(extra):
         return await PreparedRepo.create(
-            PreparedRepo.prepare_data(extra), log_db=await _log_db_pool.get_db()
+            PreparedRepo.prepare_data(extra),
+            log_db_name=await _log_db_pool.get_db_name(),
         )
 
     yield func

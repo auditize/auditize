@@ -3,8 +3,8 @@ import random
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import CoreDatabase, Database, DatabaseManager, init_dbm
-from auditize.log.db import LogDatabase, migrate_log_db
+from auditize.database import Database, DatabaseManager, init_dbm
+from auditize.log.service import create_indices
 
 
 def setup_test_dbm() -> DatabaseManager:
@@ -17,9 +17,11 @@ def setup_test_dbm() -> DatabaseManager:
 
 
 async def teardown_test_dbm(dbm: DatabaseManager):
-    for db_name in await dbm.core_db.client.list_database_names():
-        if db_name.startswith(dbm.core_db.name):
-            await dbm.core_db.client.drop_database(db_name)
+    for index_name in await dbm.elastic_client.indices.get_alias(
+        index=dbm.core_db.name + "*"
+    ):
+        if index_name.startswith(dbm.core_db.name):
+            await dbm.elastic_client.indices.delete(index=index_name)
 
     dbm.core_db.client.close()
 
@@ -30,28 +32,34 @@ async def cleanup_db(db: Database):
 
 
 class TestLogDatabasePool:
-    def __init__(self, core_db: CoreDatabase):
-        self.core_db = core_db
+    def __init__(self, dbm: DatabaseManager):
+        self.dbm = dbm
         self._cache = {}
 
-    async def get_db(self) -> LogDatabase:
-        for log_db, is_used in self._cache.items():
+    async def get_db_name(self) -> str:
+        for db_name, is_used in self._cache.items():
             if not is_used:
-                self._cache[log_db] = True
-                return log_db
+                self._cache[db_name] = True
+                return db_name
         else:
-            log_db = LogDatabase(
-                f"{self.core_db.name}_logs_{len(self._cache)}", self.core_db.client
-            )
-            await migrate_log_db(log_db)
-            self._cache[log_db] = True
-            return log_db
+            db_name = f"{self.dbm.core_db.name}_logs_{len(self._cache)}"
+            await create_indices(self.dbm.elastic_client, db_name)
+            self._cache[db_name] = True
+            return db_name
 
     async def release(self):
-        for log_db, is_used in self._cache.items():
+        for db_name, is_used in self._cache.items():
             if is_used:
-                await cleanup_db(log_db)
-                self._cache[log_db] = False
+                es_client = self.dbm.elastic_client
+                await es_client.delete_by_query(
+                    index=db_name, body={"query": {"match_all": {}}}, refresh=True
+                )
+                await es_client.delete_by_query(
+                    index=f"{db_name}_entities",
+                    body={"query": {"match_all": {}}},
+                    refresh=True,
+                )
+                self._cache[db_name] = False
 
 
 async def assert_collection(
