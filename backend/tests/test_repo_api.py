@@ -339,6 +339,13 @@ async def test_repo_get_with_stats(
     )
 
 
+async def test_repo_get_with_stats_disabled_repo(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
+):
+    await repo.update_status(superadmin_client, "disabled")
+    await superadmin_client.assert_get_ok(f"/repos/{repo.id}?include=stats")
+
+
 async def test_repo_get_unknown_id(repo_read_client: HttpTestHelper):
     await repo_read_client.assert_get_not_found(f"/repos/{UNKNOWN_UUID}")
 
