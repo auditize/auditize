@@ -30,5 +30,18 @@ jobs:
         with:
           mongodb-version: ${{ matrix.mongodb }}
           mongodb-replica-set: rs0
+      - name: Configure sysctl limits for Elasticsearch
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      - name: Runs Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
+        with:
+          stack-version: 8.16.2
       - run: pip install tox
-      - run: tox -e py # Run tox using the version of Python in `PATH`
+      - name: Run tests
+        env:
+          ES_PASSWORD: "changeme"
+        run: tox -e py # Run tox using the version of Python in `PATH`
