@@ -14,12 +14,11 @@ from auditize.database import (
     release_migration_lock,
 )
 from auditize.exceptions import MigrationLocked
-from auditize.log.db import migrate_all_log_dbs
 
 __all__ = ("build_app", "build_api_app", "app_factory")
 
 
-async def _migrate_all_databases():
+async def _migrate_database():
     core_db = get_core_db()
 
     try:
@@ -29,14 +28,13 @@ async def _migrate_all_databases():
 
     try:
         await migrate_core_db(core_db)
-        await migrate_all_log_dbs()
     finally:
         await release_migration_lock(core_db)
 
 
 @asynccontextmanager
 async def _setup_app(_):
-    await migrate_all_log_dbs()
+    await _migrate_database()
     yield
 
 

@@ -777,6 +777,10 @@ class LogService:
     async def create_log_db(self):
         await create_indices(self.es, self.index)
 
+    async def delete_log_db(self):
+        await self.es.indices.delete(index=self.index)
+        await self.es.indices.delete(index=f"{self.index}_entities")
+
 
 async def create_indices(elastic_client: AsyncElasticsearch, index_name: str):
     await elastic_client.indices.create(

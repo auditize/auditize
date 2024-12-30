@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Any, Sequence
 from uuid import UUID, uuid4
 
@@ -12,7 +11,6 @@ from auditize.exceptions import (
     enhance_constraint_violation_exception,
 )
 from auditize.i18n.lang import Lang
-from auditize.log.db import LogDatabase
 from auditize.log_i18n_profile.models import LogTranslation
 from auditize.log_i18n_profile.service import (
     get_log_i18n_profile_translation,
@@ -91,16 +89,6 @@ async def get_repo(repo_id: UUID | Repo) -> Repo:
     if isinstance(repo_id, Repo):
         return repo_id
     return await _get_repo(repo_id)
-
-
-async def _get_log_saved_at(log_db: LogDatabase, *, sort: int) -> datetime | None:
-    results = (
-        await log_db.logs.find({}, projection={"saved_at": 1})
-        .sort({"saved_at": sort})
-        .limit(1)
-        .to_list(None)
-    )
-    return results[0]["saved_at"] if results else None
 
 
 async def get_repo_stats(repo_id: UUID) -> RepoStats:
@@ -216,18 +204,18 @@ async def get_user_repos(
 async def delete_repo(repo_id: UUID):
     # avoid circular imports
     from auditize.apikey.service import remove_repo_from_apikeys_permissions
+    from auditize.log.service import LogService
     from auditize.log_filter.service import delete_log_filters_with_repo
     from auditize.user.service import remove_repo_from_users_permissions
 
-    repo = await _get_repo(repo_id)
-    log_db = LogDatabase.from_repo(repo)
     core_db = get_core_db()
+    log_service = await LogService.for_maintenance(repo_id)
     async with core_db.transaction() as session:
         await delete_resource_document(core_db.repos, repo_id, session=session)
         await remove_repo_from_users_permissions(repo_id, session)
         await remove_repo_from_apikeys_permissions(repo_id, session)
         await delete_log_filters_with_repo(repo_id, session)
-        await log_db.client.drop_database(log_db.name)
+        await log_service.delete_log_db()
 
 
 async def is_log_i18n_profile_used_by_repo(profile_id: UUID) -> bool:

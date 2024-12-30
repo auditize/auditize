@@ -1,6 +1,7 @@
 import os
 import random
 
+import elasticsearch
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database import Database, DatabaseManager, init_dbm
@@ -51,15 +52,22 @@ class TestLogDatabasePool:
         for db_name, is_used in self._cache.items():
             if is_used:
                 es_client = self.dbm.elastic_client
-                await es_client.delete_by_query(
-                    index=db_name, body={"query": {"match_all": {}}}, refresh=True
-                )
-                await es_client.delete_by_query(
-                    index=f"{db_name}_entities",
-                    body={"query": {"match_all": {}}},
-                    refresh=True,
-                )
-                self._cache[db_name] = False
+                try:
+                    await es_client.delete_by_query(
+                        index=db_name, query={"match_all": {}}, refresh=True
+                    )
+                    await es_client.delete_by_query(
+                        index=f"{db_name}_entities",
+                        query={"match_all": {}},
+                        refresh=True,
+                    )
+                except elasticsearch.NotFoundError:
+                    # The index has been deleted. As an index with the same name
+                    # may be created and could lead to a conflict since it may be
+                    # not yet available, we let this index marked as used.
+                    pass
+                else:
+                    self._cache[db_name] = False
 
 
 async def assert_collection(
