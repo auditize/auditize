@@ -25,6 +25,9 @@ class Config:
     access_token_lifetime: int
     attachment_max_size: int
     csv_max_rows: int
+    postgres_host: str
+    postgres_user: str
+    postgres_user_password: str
     mongodb_uri: str
     mongodb_tls: bool
     elastic_url: str
@@ -124,6 +127,9 @@ class Config:
                     default=_DEFAULT_CSV_MAX_ROWS,
                     validator=int,
                 ),
+                postgres_host=optional("AUDITIZE_PG_HOST", default="localhost"),
+                postgres_user=required("AUDITIZE_PG_USER"),
+                postgres_user_password=required("AUDITIZE_PG_USER_PASSWORD"),
                 mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
                 mongodb_tls=optional(
                     "AUDITIZE_MONGODB_TLS", validator=cls._validate_bool, default=False

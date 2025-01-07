@@ -37,6 +37,8 @@ def _config(anyio_backend):
             "AUDITIZE_ELASTIC_URL": "https://localhost:9200",
             "AUDITIZE_ELASTIC_USER": "elastic",
             "AUDITIZE_ELASTIC_USER_PASSWORD": os.environ["ES_PASSWORD"],
+            "AUDITIZE_PG_USER": os.environ["USER"],
+            "AUDITIZE_PG_USER_PASSWORD": "",
             "AUDITIZE_ELASTIC_SSL_VERIFY": "false",
             "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
             "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",

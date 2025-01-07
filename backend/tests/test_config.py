@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from auditize.config import Config, get_config
@@ -9,6 +11,8 @@ MINIMUM_VIABLE_CONFIG = {
     "AUDITIZE_ELASTIC_URL": "http://localhost:9200",
     "AUDITIZE_ELASTIC_USER": "elastic",
     "AUDITIZE_ELASTIC_USER_PASSWORD": "password",
+    "AUDITIZE_PG_USER": "postgres",
+    "AUDITIZE_PG_USER_PASSWORD": "password",
 }
 
 
@@ -18,6 +22,9 @@ def test_get_config():
     assert isinstance(config, Config)
     assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key is not None
+    assert config.postgres_host == "localhost"
+    assert config.postgres_user == os.environ["USER"]
+    assert config.postgres_user_password == ""
     assert config.elastic_url == "https://localhost:9200"
     assert config.elastic_user == "elastic"
     assert config.elastic_user_password
@@ -214,6 +221,8 @@ def test_config_from_file(tmp_path):
             AUDITIZE_ELASTIC_URL=http://localhost:9200
             AUDITIZE_ELASTIC_USER=elastic
             AUDITIZE_ELASTIC_USER_PASSWORD=password
+            AUDITIZE_PG_USER=postgres
+            AUDITIZE_PG_USER_PASSWORD=password
             """
         )
     config = Config.load_from_env(
