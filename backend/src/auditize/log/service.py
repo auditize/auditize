@@ -98,9 +98,12 @@ class LogService:
 
     @classmethod
     async def _for_statuses(
-        cls, repo: Repo | UUID, statuses: list[RepoStatus] = None
+        cls, repo: Repo | UUID | str, statuses: list[RepoStatus] = None
     ) -> Self:
         from auditize.repo.service import get_repo  # avoid circular import
+
+        if isinstance(repo, str):
+            repo = UUID(repo)
 
         if isinstance(repo, UUID):
             repo = await get_repo(repo)
@@ -115,15 +118,15 @@ class LogService:
         return cls(repo, LogDatabase.from_repo(repo))
 
     @classmethod
-    async def for_reading(cls, repo: Repo | UUID):
+    async def for_reading(cls, repo: Repo | UUID | str):
         return await cls._for_statuses(repo, [RepoStatus.enabled, RepoStatus.readonly])
 
     @classmethod
-    async def for_writing(cls, repo: Repo | UUID):
+    async def for_writing(cls, repo: Repo | UUID | str):
         return await cls._for_statuses(repo, [RepoStatus.enabled])
 
     @classmethod
-    async def for_config(cls, repo: Repo | UUID):
+    async def for_config(cls, repo: Repo | UUID | str):
         return await cls._for_statuses(repo, [RepoStatus.enabled])
 
     for_maintenance = for_config
