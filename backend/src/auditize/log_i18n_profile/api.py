@@ -7,15 +7,13 @@ from auditize.auth.authorizer import Authorized
 from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile import service
-from auditize.log_i18n_profile.api_models import (
-    LogI18nProfileCreationRequest,
-    LogI18nProfileCreationResponse,
-    LogI18nProfileListResponse,
-    LogI18nProfileReadingResponse,
-    LogI18nProfileUpdateRequest,
+from auditize.log_i18n_profile.models import (
+    LogI18nProfileCreate,
+    LogI18nProfileList,
+    LogI18nProfileRead,
+    LogI18nProfileUpdate,
     LogTranslation,
 )
-from auditize.log_i18n_profile.models import LogI18nProfile, LogI18nProfileUpdate
 from auditize.permissions.assertions import (
     can_read_repo,
     can_write_repo,
@@ -36,14 +34,9 @@ router = APIRouter(responses=error_responses(401, 403))
     responses=error_responses(400, 409),
 )
 async def create_profile(
-    authorized: Authorized(can_write_repo()),
-    profile: LogI18nProfileCreationRequest,
-) -> LogI18nProfileCreationResponse:
-    profile_id = await service.create_log_i18n_profile(
-        LogI18nProfile.model_validate(profile.model_dump())
-    )
-
-    return LogI18nProfileCreationResponse(id=profile_id)
+    _: Authorized(can_write_repo()), profile_create: LogI18nProfileCreate
+) -> LogI18nProfileRead:
+    return await service.create_log_i18n_profile(profile_create)
 
 
 @router.patch(
@@ -52,20 +45,13 @@ async def create_profile(
     description="Requires `repo:write` permission.",
     operation_id="update_log_i18n_profile",
     tags=["log-i18n-profile"],
-    status_code=204,
+    status_code=200,
     responses=error_responses(400, 409),
 )
 async def update_profile(
-    authorized: Authorized(can_write_repo()),
-    profile_id: UUID,
-    update: LogI18nProfileUpdateRequest,
-):
-    await service.update_log_i18n_profile(
-        profile_id,
-        # we use exclude_none=True instead of exclude_unset=True
-        # to keep the potential empty dict fields in LogTranslation sub-model
-        LogI18nProfileUpdate.model_validate(update.model_dump(exclude_none=True)),
-    )
+    _: Authorized(can_write_repo()), profile_id: UUID, update: LogI18nProfileUpdate
+) -> LogI18nProfileRead:
+    return await service.update_log_i18n_profile(profile_id, update)
 
 
 @router.get(
@@ -77,11 +63,9 @@ async def update_profile(
     responses=error_responses(404),
 )
 async def get_profile(
-    authorized: Authorized(can_read_repo()),
-    profile_id: UUID,
-) -> LogI18nProfileReadingResponse:
-    profile = await service.get_log_i18n_profile(profile_id)
-    return LogI18nProfileReadingResponse.model_validate(profile.model_dump())
+    _: Authorized(can_read_repo()), profile_id: UUID
+) -> LogI18nProfileRead:
+    return await service.get_log_i18n_profile(profile_id)
 
 
 @router.get(
@@ -93,12 +77,9 @@ async def get_profile(
     responses=error_responses(404),
 )
 async def get_profile_translation(
-    authorized: Authorized(can_read_repo()),
-    profile_id: UUID,
-    lang: Lang,
+    _: Authorized(can_read_repo()), profile_id: UUID, lang: Lang
 ) -> LogTranslation:
-    translation = await service.get_log_i18n_profile_translation(profile_id, lang)
-    return LogTranslation.model_validate(translation.model_dump())
+    return await service.get_log_i18n_profile_translation(profile_id, lang)
 
 
 @router.get(
@@ -109,16 +90,16 @@ async def get_profile_translation(
     tags=["log-i18n-profile"],
 )
 async def list_profiles(
-    authorized: Authorized(can_read_repo()),
+    _: Authorized(can_read_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogI18nProfileListResponse:
+) -> LogI18nProfileList:
     profiles, page_info = await service.get_log_i18n_profiles(
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    return LogI18nProfileListResponse.build(profiles, page_info)
+    return LogI18nProfileList.build(profiles, page_info)
 
 
 @router.delete(
@@ -130,8 +111,5 @@ async def list_profiles(
     status_code=204,
     responses=error_responses(404),
 )
-async def delete_profile(
-    authorized: Authorized(can_write_repo()),
-    profile_id: UUID,
-):
+async def delete_profile(_: Authorized(can_write_repo()), profile_id: UUID):
     await service.delete_log_i18n_profile(profile_id)

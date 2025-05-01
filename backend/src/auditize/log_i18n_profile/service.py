@@ -7,6 +7,8 @@ from auditize.exceptions import (
 )
 from auditize.log_i18n_profile.models import (
     LogI18nProfile,
+    LogI18nProfileCreate,
+    LogI18nProfileRead,
     LogI18nProfileUpdate,
     LogTranslation,
 )
@@ -14,6 +16,7 @@ from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
+    create_resource_document2,
     delete_resource_document,
     get_resource_document,
     has_resource_document,
@@ -21,22 +24,27 @@ from auditize.resource.service import (
 )
 
 
-async def create_log_i18n_profile(profile: LogI18nProfile) -> UUID:
+async def create_log_i18n_profile(
+    profile_create: LogI18nProfileCreate,
+) -> LogI18nProfile:
+    profile = LogI18nProfile.model_validate(profile_create.model_dump())
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_i18n_profile"
     ):
-        profile_id = await create_resource_document(
+        profile_data = await create_resource_document2(
             get_core_db().log_i18n_profiles, profile
         )
-    return profile_id
+    return LogI18nProfile.model_validate(profile_data)
 
 
-async def update_log_i18n_profile(profile_id: UUID, update: LogI18nProfileUpdate):
+async def update_log_i18n_profile(
+    profile_id: UUID, profile_update: LogI18nProfileUpdate
+) -> LogI18nProfile:
     profile = await get_log_i18n_profile(profile_id)
-    if update.name:
-        profile.name = update.name
-    if update.translations:
-        for lang, translation in update.translations.items():
+    if profile_update.name:
+        profile.name = profile_update.name
+    if profile_update.translations:
+        for lang, translation in profile_update.translations.items():
             if translation:
                 profile.translations[lang] = translation
             else:
@@ -46,9 +54,14 @@ async def update_log_i18n_profile(profile_id: UUID, update: LogI18nProfileUpdate
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_i18n_profile"
     ):
+        # we use exclude_none=True instead of exclude_unset=True
+        # to keep the potential empty dict fields in LogTranslation sub-model
+        profile_data = profile.model_dump(exclude_none=True, exclude={"id"})
         await update_resource_document(
-            get_core_db().log_i18n_profiles, profile_id, profile
+            get_core_db().log_i18n_profiles, profile_id, profile_data
         )
+
+    return await get_log_i18n_profile(profile_id)
 
 
 async def get_log_i18n_profile(profile_id: UUID) -> LogI18nProfile:

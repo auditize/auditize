@@ -35,6 +35,28 @@ async def create_resource_document(
     return result.inserted_id
 
 
+async def create_resource_document2(
+    collection: AsyncIOMotorCollection,
+    document: dict | BaseModel,
+    *,
+    resource_id: UUID = None,
+    session: AsyncIOMotorClientSession = None,
+) -> dict:
+    if isinstance(document, BaseModel):
+        document = document.model_dump(exclude={"id"})
+    if not resource_id:
+        resource_id = uuid4()
+
+    document_with_id = {**document, "_id": resource_id}
+
+    try:
+        await collection.insert_one(document_with_id, session=session)
+    except DuplicateKeyError:
+        raise ConstraintViolation()
+
+    return document_with_id
+
+
 async def update_resource_document(
     collection: AsyncIOMotorCollection,
     filter: UUID | dict,

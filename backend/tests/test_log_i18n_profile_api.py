@@ -1,4 +1,3 @@
-import callee
 import pytest
 
 from auditize.database import get_core_db
@@ -19,14 +18,10 @@ pytestmark = pytest.mark.anyio
 
 
 async def _test_create_log_i18n_profile(client: HttpTestHelper, data: dict):
-    resp = await client.assert_post_created(
+    await client.assert_post_created(
         "/log-i18n-profiles",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    profile = PreparedLogI18nProfile(resp.json()["id"], data)
-    await assert_collection(
-        get_core_db().log_i18n_profiles, [profile.expected_document()]
+        expected_json=PreparedLogI18nProfile.build_api_expected_response(data),
     )
 
 
@@ -143,15 +138,12 @@ async def test_log_i18n_profile_update_name(repo_write_client: HttpTestHelper):
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "name": "i18n updated",
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [profile.expected_document({"name": "i18n updated"})],
+        expected_json=profile.expected_api_response({"name": "i18n updated"}),
     )
 
 
@@ -166,26 +158,21 @@ async def test_log_i18n_profile_update_add_translation(
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "translations": {
                 "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
             },
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [
-            profile.expected_document(
-                {
-                    "translations": {
-                        "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
-                        "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
-                    }
+        expected_json=profile.expected_api_response(
+            {
+                "translations": {
+                    "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                    "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
                 }
-            )
-        ],
+            }
+        ),
     )
 
 
@@ -201,23 +188,19 @@ async def test_log_i18n_profile_update_remove_translation(
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "translations": {"fr": None},
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [
-            profile.expected_document(
-                {
-                    "translations": {
-                        "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
-                    }
+        expected_json=profile.expected_api_response(
+            {
+                "translations": {
+                    "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                    # French translation must be removed
                 }
-            )
-        ],
+            }
+        ),
     )
 
 
@@ -248,7 +231,7 @@ async def test_log_i18n_profile_update_existing_translation(
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "translations": {
@@ -260,32 +243,25 @@ async def test_log_i18n_profile_update_existing_translation(
                 },
             },
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [
-            profile.expected_document(
-                {
-                    "translations": {
-                        "en": {
-                            **PreparedLogI18nProfile.EMPTY_TRANSLATION,
-                            "action_type": {
-                                "action_type_1": "action_type_1 EN updated"
-                            },
+        expected_json=profile.expected_api_response(
+            {
+                "translations": {
+                    "en": {
+                        **PreparedLogI18nProfile.EMPTY_TRANSLATION,
+                        "action_type": {"action_type_1": "action_type_1 EN updated"},
+                    },
+                    "fr": {
+                        **PreparedLogI18nProfile.EMPTY_TRANSLATION,
+                        "action_type": {
+                            "action_type_1": "action_type_1 FR",
                         },
-                        "fr": {
-                            **PreparedLogI18nProfile.EMPTY_TRANSLATION,
-                            "action_type": {
-                                "action_type_1": "action_type_1 FR",
-                            },
-                            "action_category": {
-                                "action_1": "action_1 FR",
-                            },
+                        "action_category": {
+                            "action_1": "action_1 FR",
                         },
-                    }
+                    },
                 }
-            )
-        ],
+            }
+        ),
     )
 
 

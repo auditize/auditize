@@ -12,7 +12,7 @@ from auditize.auth.authorizer import (
 )
 from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
-from auditize.log_i18n_profile.api_models import LogTranslation
+from auditize.log_i18n_profile.models import LogTranslation
 from auditize.permissions.assertions import (
     can_read_logs_from_all_repos,
     can_read_logs_from_repo,
