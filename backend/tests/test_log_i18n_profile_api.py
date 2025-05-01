@@ -21,7 +21,7 @@ async def _test_create_log_i18n_profile(client: HttpTestHelper, data: dict):
     await client.assert_post_created(
         "/log-i18n-profiles",
         json=data,
-        expected_json=PreparedLogI18nProfile.build_api_expected_response(data),
+        expected_json=PreparedLogI18nProfile.build_expected_api_response(data),
     )
 
 

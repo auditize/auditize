@@ -23,11 +23,11 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import Permissions
 from auditize.permissions.operations import is_authorized
-from auditize.repo.models import Repo, RepoStats, RepoStatus, RepoUpdate
+from auditize.repo.models import Repo, RepoCreate, RepoStats, RepoStatus, RepoUpdate
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
-    create_resource_document,
+    create_resource_document2,
     delete_resource_document,
     get_resource_document,
     has_resource_document,
@@ -44,19 +44,19 @@ async def _validate_repo(repo: Repo | RepoUpdate):
             )
 
 
-async def create_repo(repo: Repo, log_db_name: str = None) -> UUID:
+async def create_repo(repo_create: RepoCreate, log_db_name: str = None) -> Repo:
     from auditize.log.service import LogService
 
-    await _validate_repo(repo)
+    await _validate_repo(repo_create)
     db = get_core_db()
     repo_id = uuid4()
 
     async with db.transaction() as session:
         with enhance_constraint_violation_exception("error.constraint_violation.repo"):
-            await create_resource_document(
+            repo_data = await create_resource_document2(
                 db.repos,
                 {
-                    **repo.model_dump(exclude={"id", "log_db_name"}),
+                    **repo_create.model_dump(exclude={"id", "log_db_name"}),
                     "log_db_name": (
                         log_db_name if log_db_name else f"{db.name}_logs_{repo_id}"
                     ),
@@ -69,15 +69,16 @@ async def create_repo(repo: Repo, log_db_name: str = None) -> UUID:
                 await _get_repo(repo_id, session)
             )
             await log_service.create_log_db()
-    return repo_id
+    return Repo.model_validate(repo_data)
 
 
-async def update_repo(repo_id: UUID, update: RepoUpdate):
+async def update_repo(repo_id: UUID, update: RepoUpdate) -> Repo:
     await _validate_repo(update)
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_i18n_profile"
     ):
         await update_resource_document(get_core_db().repos, repo_id, update)
+    return await get_repo(repo_id)
 
 
 async def _get_repo(repo_id: UUID, session: AsyncIOMotorClientSession = None) -> Repo:

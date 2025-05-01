@@ -101,7 +101,7 @@ class PreparedLogI18nProfile:
         return cls(str(profile.id), data)
 
     @classmethod
-    def build_api_expected_response(cls, extra=None):
+    def build_expected_api_response(cls, extra=None):
         if extra is None:
             extra = {}
         return {
@@ -115,7 +115,7 @@ class PreparedLogI18nProfile:
         }
 
     def expected_api_response(self, extra=None) -> dict:
-        return self.build_api_expected_response(
+        return self.build_expected_api_response(
             {
                 "id": self.id,
                 "name": self.data["name"],

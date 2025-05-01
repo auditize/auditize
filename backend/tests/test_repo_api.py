@@ -25,17 +25,12 @@ pytestmark = pytest.mark.anyio
 async def _test_repo_create(client: HttpTestHelper, collection: AsyncIOMotorCollection):
     data = {"name": "myrepo"}
 
-    resp = await client.assert_post(
+    resp = await client.assert_post_created(
         "/repos",
         json=data,
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str)},
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
     repo_id = resp.json()["id"]
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(repo_id, data)],
-    )
 
     # check that the authenticated user has read & write permissions on the new repo
     permission_holder = await collection.find_one({})
@@ -65,14 +60,10 @@ async def test_repo_create_with_explicit_status(
 ):
     data = {"name": "myrepo", "status": status}
 
-    resp = await superadmin_client.assert_post_created(
+    await superadmin_client.assert_post_created(
         "/repos",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
 
 
@@ -82,33 +73,23 @@ async def test_repo_create_with_log_i18n_profile(
 ):
     data = {"name": "myrepo", "log_i18n_profile_id": log_i18n_profile.id}
 
-    resp = await superadmin_client.assert_post_created(
+    await superadmin_client.assert_post_created(
         "/repos",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
 
 
-async def test_repo_create_with_retention_period(
-    superadmin_client: HttpTestHelper,
-):
+async def test_repo_create_with_retention_period(superadmin_client: HttpTestHelper):
     data = {
         "name": "myrepo",
         "retention_period": 30,
     }
 
-    resp = await superadmin_client.assert_post_created(
+    await superadmin_client.assert_post_created(
         "/repos",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
 
 
@@ -157,12 +138,10 @@ async def test_repo_update(
     field: str,
     value: str,
 ):
-    await repo_write_client.assert_patch(
-        f"/repos/{repo.id}", json={field: value}, expected_status_code=204
-    )
-
-    await assert_collection(
-        get_core_db().repos, [repo.expected_document({field: value})]
+    await repo_write_client.assert_patch_ok(
+        f"/repos/{repo.id}",
+        json={field: value},
+        expected_json=repo.expected_api_response({field: value}),
     )
 
 
@@ -171,13 +150,12 @@ async def test_repo_update_set_log_i18n_profile_id(
     repo: PreparedRepo,
     log_i18n_profile: PreparedLogI18nProfile,
 ):
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"log_i18n_profile_id": log_i18n_profile.id},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"log_i18n_profile_id": UUID(log_i18n_profile.id)})],
+        expected_json=repo.expected_api_response(
+            {"log_i18n_profile_id": log_i18n_profile.id}
+        ),
     )
 
 
@@ -187,13 +165,10 @@ async def test_repo_update_unset_log_i18n_profile_id(
     repo_builder: RepoBuilder,
 ):
     repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"log_i18n_profile_id": None},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"log_i18n_profile_id": None})],
+        expected_json=repo.expected_api_response({"log_i18n_profile_id": None}),
     )
 
 
@@ -201,13 +176,10 @@ async def test_repo_update_set_retention_period(
     repo_write_client: HttpTestHelper,
     repo: PreparedRepo,
 ):
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"retention_period": 30},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"retention_period": 30})],
+        expected_json=repo.expected_api_response({"retention_period": 30}),
     )
 
 
@@ -216,13 +188,10 @@ async def test_repo_update_unset_retention_period(
     repo_builder: RepoBuilder,
 ):
     repo = await repo_builder({"retention_period": 30})
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"retention_period": None},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"retention_period": None})],
+        expected_json=repo.expected_api_response({"retention_period": None}),
     )
 
 
@@ -232,11 +201,11 @@ async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
     repo_builder: RepoBuilder,
 ):
     repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={},
+        expected_json=repo.expected_api_response(),
     )
-    await assert_collection(get_core_db().repos, [repo.expected_document()])
 
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
@@ -874,7 +843,6 @@ async def test_repo_delete_with_related_resources(
         await client.assert_delete_no_content(f"/repos/{to_be_deleted_repo_id}")
 
     # Check that the related resources have been deleted
-    await assert_collection(get_core_db().repos, [repo.expected_document()])
     await assert_collection(
         get_core_db().apikeys,
         [

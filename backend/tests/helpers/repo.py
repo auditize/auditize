@@ -34,40 +34,32 @@ class PreparedRepo:
         model_data = data.copy()
         if "log_i18n_profile_id" in model_data:
             model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
-        repo_id = await create_repo(Repo(**model_data), log_db_name=log_db_name)
-        return cls(str(repo_id), data, log_db_name)
+        repo = await create_repo(Repo(**model_data), log_db_name=log_db_name)
+        return cls(str(repo.id), data, log_db_name)
 
     @staticmethod
-    def build_expected_document(repo_id, data, extra=None):
+    def build_expected_api_response(extra=None):
         return {
-            "_id": UUID(repo_id),
-            "name": data["name"],
-            "log_db_name": callee.IsA(str),
-            "status": data.get("status", "enabled"),
-            "retention_period": data.get("retention_period", None),
-            "log_i18n_profile_id": (
-                UUID(data["log_i18n_profile_id"])
-                if "log_i18n_profile_id" in data
-                else None
-            ),
-            "created_at": callee.IsA(datetime),
-            **(extra or {}),
-        }
-
-    def expected_document(self, extra=None):
-        return self.build_expected_document(self.id, self.data, extra)
-
-    def expected_api_response(self, extra=None) -> dict:
-        return {
-            "id": self.id,
-            "name": self.data["name"],
-            "status": self.data.get("status", "enabled"),
-            "retention_period": self.data.get("retention_period", None),
-            "log_i18n_profile_id": self.data.get("log_i18n_profile_id", None),
+            "id": callee.IsA(str),
             "created_at": callee.IsA(str),
+            "status": "enabled",
+            "log_i18n_profile_id": None,
+            "retention_period": None,
             "stats": None,
             **(extra or {}),
         }
+
+    def expected_api_response(self, extra=None) -> dict:
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "name": self.data["name"],
+                "status": self.data.get("status", "enabled"),
+                "retention_period": self.data.get("retention_period", None),
+                "log_i18n_profile_id": self.data.get("log_i18n_profile_id", None),
+                **(extra or {}),
+            }
+        )
 
     async def create_log(
         self, client: HttpTestHelper, data: dict = None, *, saved_at: datetime = None
@@ -112,9 +104,7 @@ class PreparedRepo:
         )
 
     async def update_status(self, client: HttpTestHelper, status: str):
-        await client.assert_patch(
-            f"/repos/{self.id}", json={"status": status}, expected_status_code=204
-        )
+        await client.assert_patch_ok(f"/repos/{self.id}", json={"status": status})
 
     async def get_log(self, log_id: str | UUID) -> dict | None:
         resp = await self.es.get(index=self.log_db_name, id=log_id)
