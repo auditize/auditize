@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from auditize.apikey.models import Apikey
-from auditize.permissions.api_models import PermissionsInputData, PermissionsOutputData
+from auditize.permissions.models import PermissionsInput, PermissionsOutput
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
@@ -40,14 +40,14 @@ def _ApikeyPermissionsField(**kwargs):  # noqa
 
 class ApikeyCreationRequest(BaseModel):
     name: str = _ApikeyNameField()
-    permissions: PermissionsInputData = _ApikeyPermissionsField(
-        default_factory=PermissionsInputData
+    permissions: PermissionsInput = _ApikeyPermissionsField(
+        default_factory=PermissionsInput
     )
 
 
 class ApikeyUpdateRequest(BaseModel):
     name: str = _ApikeyNameField(default=None)
-    permissions: PermissionsInputData = _ApikeyPermissionsField(default=None)
+    permissions: PermissionsInput = _ApikeyPermissionsField(default=None)
 
 
 class ApikeyCreationResponse(BaseModel):
@@ -58,7 +58,7 @@ class ApikeyCreationResponse(BaseModel):
 class ApikeyReadingResponse(BaseModel):
     id: UUID = _ApikeyIdField()
     name: str = _ApikeyNameField()
-    permissions: PermissionsOutputData = _ApikeyPermissionsField()
+    permissions: PermissionsOutput = _ApikeyPermissionsField()
 
 
 class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyReadingResponse]):
@@ -72,7 +72,7 @@ class ApikeyRegenerationResponse(BaseModel):
 
 
 class AccessTokenRequest(BaseModel):
-    permissions: PermissionsInputData = _ApikeyPermissionsField()
+    permissions: PermissionsInput = _ApikeyPermissionsField()
 
 
 class AccessTokenResponse(BaseModel, HasDatetimeSerialization):

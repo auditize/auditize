@@ -4,10 +4,10 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 
 from auditize.i18n.lang import Lang
-from auditize.permissions.api_models import (
-    ApplicablePermissionsData,
-    PermissionsInputData,
-    PermissionsOutputData,
+from auditize.permissions.models import (
+    ApplicablePermissions,
+    PermissionsInput,
+    PermissionsOutput,
 )
 from auditize.permissions.operations import compute_applicable_permissions
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
@@ -85,8 +85,8 @@ class UserCreationRequest(BaseModel):
     last_name: str = _UserLastNameField()
     email: EmailStr = _UserEmailField()
     lang: Lang = _UserLangField()
-    permissions: PermissionsInputData = _UserPermissionsField(
-        default_factory=PermissionsInputData
+    permissions: PermissionsInput = _UserPermissionsField(
+        default_factory=PermissionsInput
     )
 
 
@@ -95,7 +95,7 @@ class UserUpdateRequest(BaseModel):
     last_name: str = _UserLastNameField(default=None)
     email: str = _UserEmailField(default=None)
     lang: Lang = _UserLangField(default=None)
-    permissions: PermissionsInputData = _UserPermissionsField(default=None)
+    permissions: PermissionsInput = _UserPermissionsField(default=None)
 
 
 class UserCreationResponse(BaseModel):
@@ -108,7 +108,7 @@ class UserReadingResponse(BaseModel, HasDatetimeSerialization):
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
     lang: Lang = _UserLangField()
-    permissions: PermissionsOutputData = _UserPermissionsField()
+    permissions: PermissionsOutput = _UserPermissionsField()
     authenticated_at: datetime | None = _UserAuthenticatedAtField()
 
 
@@ -141,7 +141,7 @@ class UserMeResponse(BaseModel):
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()
     lang: Lang = _UserLangField()
-    permissions: ApplicablePermissionsData = _UserPermissionsField()
+    permissions: ApplicablePermissions = _UserPermissionsField()
 
     @classmethod
     def from_user(cls, user: User):
