@@ -26,8 +26,8 @@ __all__ = (
 
 
 class ReadWritePermissions(BaseModel):
-    read: bool | None = Field(default=None)
-    write: bool | None = Field(default=None)
+    read: bool = Field(default=False)
+    write: bool = Field(default=False)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -50,7 +50,7 @@ class ManagementPermissions(BaseModel):
 
 class RepoLogPermissions(ReadWritePermissions):
     repo_id: UUID
-    readable_entities: list[str] | None = Field(default=None)
+    readable_entities: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -82,7 +82,7 @@ class LogPermissions(ReadWritePermissions):
 
 
 class Permissions(BaseModel):
-    is_superadmin: bool | None = Field(default=None)
+    is_superadmin: bool = Field(default=False)
     logs: LogPermissions = Field(default_factory=LogPermissions)
     management: ManagementPermissions = Field(default_factory=ManagementPermissions)
 
@@ -177,7 +177,9 @@ class LogPermissionsInput(ReadWritePermissionsInput):
 
 class PermissionsInput(BaseModel):
     is_superadmin: bool | None = _IsSuperadminField(default=None)
-    logs: LogPermissions = _LogPermissionsField(default_factory=LogPermissionsInput)
+    logs: LogPermissionsInput = _LogPermissionsField(
+        default_factory=LogPermissionsInput
+    )
     management: ManagementPermissionsInput = _ManagementPermissionsField(
         default_factory=ManagementPermissionsInput
     )
@@ -214,7 +216,7 @@ class LogPermissionsOutput(ReadWritePermissionsOutput):
 class PermissionsOutput(BaseModel):
     is_superadmin: bool = _IsSuperadminField()
     logs: LogPermissions = _LogPermissionsField()
-    management: ManagementPermissionsInput = _ManagementPermissionsField()
+    management: ManagementPermissionsOutput = _ManagementPermissionsField()
 
     model_config = ConfigDict(json_schema_extra={"example": _PERMISSIONS_EXAMPLE})
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from auditize.i18n.lang import Lang
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import Permissions, PermissionsInput
 from auditize.resource.models import HasCreatedAt, HasId
 
 USER_PASSWORD_MIN_LENGTH = 8
@@ -30,5 +30,5 @@ class UserUpdate(BaseModel):
     last_name: str = None
     email: str = None
     lang: Lang = None
-    permissions: Permissions = None
+    permissions: PermissionsInput = None
     password: str = None

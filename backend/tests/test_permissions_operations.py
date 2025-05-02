@@ -6,7 +6,7 @@ from icecream import ic
 
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_logs_from_repo
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import Permissions, PermissionsInput
 from auditize.permissions.operations import (
     authorize_access,
     authorize_grant,
@@ -22,7 +22,7 @@ REPO_4 = UUID("8ecdf2db-c70d-4cad-8610-d4334e65d0df")
 
 
 def _test_access_perms_normalization(input: dict, expected: dict):
-    input = Permissions.model_validate(input)
+    input = PermissionsInput.model_validate(input)
 
     assert normalize_permissions(input).model_dump() == expected
 
@@ -312,21 +312,21 @@ def test_normalization_read_and_write_logs_on_all_repos():
     )
 
 
-def assert_authorized(perms, *grants):
-    perms = Permissions.model_validate(perms)
+def assert_authorized(grantor_perms, *granted_perms):
+    grantor_perms = Permissions.model_validate(grantor_perms)
 
-    for grant in grants:
-        ic(grant)
-        authorize_grant(perms, Permissions.model_validate(grant))
+    for granted in granted_perms:
+        ic(granted)
+        authorize_grant(grantor_perms, PermissionsInput.model_validate(granted))
 
 
-def assert_unauthorized(perms, *grants):
-    perms = Permissions.model_validate(perms)
+def assert_unauthorized(grantor_perms, *granted_perms):
+    grantor_perms = Permissions.model_validate(grantor_perms)
 
-    for grant in grants:
-        ic(grant)
+    for granted in granted_perms:
+        ic(granted)
         with pytest.raises(PermissionDenied):
-            authorize_grant(perms, Permissions.model_validate(grant))
+            authorize_grant(grantor_perms, PermissionsInput.model_validate(granted))
 
 
 def test_authorize_grant_as_superadmin():
@@ -443,7 +443,7 @@ def test_permission_assertions_on_management_as_specific_permissions():
 
 def _test_update_permission(orig: dict, update: dict, expected: dict):
     orig = Permissions.model_validate(orig)
-    update = Permissions.model_validate(update)
+    update = PermissionsInput.model_validate(update)
 
     actual = update_permissions(orig, update)
     assert actual.model_dump() == expected

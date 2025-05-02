@@ -25,8 +25,11 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.models import (
     LogPermissions,
+    LogPermissionsInput,
     Permissions,
+    PermissionsInput,
     RepoLogPermissions,
+    RepoLogPermissionsInput,
 )
 from auditize.repo import service
 from auditize.repo.models import (
@@ -70,9 +73,9 @@ async def create_repo(
     if not authorized.comply(
         permissions_and(can_read_logs_from_all_repos(), can_write_logs_to_all_repos())
     ):
-        grant_rw_on_repo_logs = Permissions(
-            logs=LogPermissions(
-                repos=[RepoLogPermissions(repo_id=repo.id, read=True, write=True)]
+        grant_rw_on_repo_logs = PermissionsInput(
+            logs=LogPermissionsInput(
+                repos=[RepoLogPermissionsInput(repo_id=repo.id, read=True, write=True)]
             ),
         )
         if authorized.apikey:

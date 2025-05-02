@@ -8,7 +8,8 @@ from authlib.jose.errors import ExpiredTokenError, JoseError
 from auditize.config import get_config
 from auditize.exceptions import AuthenticationFailure
 from auditize.helpers.datetime import now
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import Permissions, PermissionsInput
+from auditize.permissions.operations import normalize_permissions
 
 _SUB_PREFIX_SESSION_TOKEN = "user_email:"
 _SUB_PREFIX_ACCESS_TOKEN = "apikey_id:"
@@ -97,6 +98,8 @@ def get_access_token_data(token: str) -> tuple[UUID, Permissions]:
         raise AuthenticationFailure("Invalid 'sub' field in JWT token")
     apikey_id = sub[len(_SUB_PREFIX_ACCESS_TOKEN) :]
 
-    permissions = Permissions.model_validate(payload["permissions"])
+    permissions = normalize_permissions(
+        PermissionsInput.model_validate(payload["permissions"])
+    )
 
     return UUID(apikey_id), permissions

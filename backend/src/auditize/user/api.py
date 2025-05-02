@@ -11,7 +11,7 @@ from auditize.auth.authorizer import (
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import can_read_user, can_write_user
-from auditize.permissions.operations import authorize_grant
+from auditize.permissions.operations import authorize_grant, normalize_permissions
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.user import service
@@ -66,8 +66,13 @@ async def create_user(
     authorized: Authorized(can_write_user()),
     user: UserCreationRequest,
 ) -> UserCreationResponse:
-    user_model = User.model_validate(user.model_dump())
-    authorize_grant(authorized.permissions, user_model.permissions)
+    authorize_grant(authorized.permissions, user.permissions)
+    user_model = User.model_validate(
+        {
+            **user.model_dump(exclude={"permissions"}),
+            "permissions": normalize_permissions(user.permissions),
+        }
+    )
     user_id = await service.create_user(user_model)
     return UserCreationResponse(id=user_id)
 

@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import Permissions, PermissionsInput
 from auditize.resource.models import HasCreatedAt, HasId
 
 
@@ -14,4 +14,4 @@ class Apikey(BaseModel, HasId, HasCreatedAt):
 
 class ApikeyUpdate(BaseModel):
     name: str = None
-    permissions: Permissions = None
+    permissions: PermissionsInput = None

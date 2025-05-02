@@ -10,7 +10,6 @@ from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
 from auditize.helpers.api.errors import error_responses
-from auditize.permissions.models import Permissions
 from auditize.permissions.operations import authorize_grant
 from auditize.user import service
 from auditize.user.api_models import UserAuthenticationRequest, UserMeResponse
@@ -76,9 +75,10 @@ async def auth_access_token(
     authorized: AuthorizedApikey(),
     request: AccessTokenRequest,
 ) -> AccessTokenResponse:
-    permissions = Permissions.model_validate(request.permissions.model_dump())
-    authorize_grant(authorized.permissions, permissions)
-    access_token, expires_at = generate_access_token(authorized.apikey.id, permissions)
+    authorize_grant(authorized.permissions, request.permissions)
+    access_token, expires_at = generate_access_token(
+        authorized.apikey.id, request.permissions
+    )
 
     return AccessTokenResponse(
         access_token=ACCESS_TOKEN_PREFIX + access_token, expires_at=expires_at

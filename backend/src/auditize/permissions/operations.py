@@ -9,7 +9,9 @@ from auditize.permissions.models import (
     LogPermissions,
     ManagementPermissions,
     Permissions,
+    PermissionsInput,
     ReadWritePermissions,
+    ReadWritePermissionsInput,
     RepoLogPermissions,
 )
 
@@ -56,7 +58,7 @@ def _normalize_repo_permissions(
 
 
 def _normalize_read_write_permissions(
-    permissions: ReadWritePermissions,
+    permissions: ReadWritePermissionsInput | ReadWritePermissions,
 ) -> ReadWritePermissions:
     return ReadWritePermissions(
         read=permissions.read or False,
@@ -64,7 +66,7 @@ def _normalize_read_write_permissions(
     )
 
 
-def normalize_permissions(perms: Permissions) -> Permissions:
+def normalize_permissions(perms: PermissionsInput | Permissions) -> Permissions:
     # What kind of normalization do we do:
     # - if superadmin, set all other permissions to False
     # - if logs.read is True, set all logs.repos[repo_id].read permissions to False
@@ -149,13 +151,15 @@ def _authorize_grant(assignee_perm: bool | None, grantor_perm: bool, name: str):
 
 
 def _authorize_rw_perms_grant(
-    assignee_perms: ReadWritePermissions, grantor_perms: ReadWritePermissions, name: str
+    assignee_perms: ReadWritePermissionsInput,
+    grantor_perms: ReadWritePermissions,
+    name: str,
 ):
     _authorize_grant(assignee_perms.read, grantor_perms.read, f"{name} read")
     _authorize_grant(assignee_perms.write, grantor_perms.write, f"{name} write")
 
 
-def authorize_grant(grantor_perms: Permissions, assignee_perms: Permissions):
+def authorize_grant(grantor_perms: Permissions, assignee_perms: PermissionsInput):
     # if superadmin, can grant anything
     if grantor_perms.is_superadmin:
         return
@@ -210,7 +214,7 @@ def _update_permission(orig: bool, update: bool | None) -> bool:
 
 
 def _update_rw_permissions(
-    orig_perms: ReadWritePermissions, update_perms: ReadWritePermissions
+    orig_perms: ReadWritePermissions, update_perms: ReadWritePermissionsInput
 ) -> ReadWritePermissions:
     return ReadWritePermissions(
         read=_update_permission(orig_perms.read, update_perms.read),
@@ -219,7 +223,7 @@ def _update_rw_permissions(
 
 
 def update_permissions(
-    orig_perms: Permissions, update_perms: Permissions
+    orig_perms: Permissions, update_perms: PermissionsInput
 ) -> Permissions:
     new = Permissions()
 
@@ -246,10 +250,12 @@ def update_permissions(
             all_repo_perms[update_repo_perms.repo_id] = RepoLogPermissions(
                 repo_id=update_repo_perms.repo_id,
                 read=_update_permission(
-                    orig_repo_perms and orig_repo_perms.read, update_repo_perms.read
+                    bool(orig_repo_perms and orig_repo_perms.read),
+                    update_repo_perms.read,
                 ),
                 write=_update_permission(
-                    orig_repo_perms and orig_repo_perms.write, update_repo_perms.write
+                    bool(orig_repo_perms and orig_repo_perms.write),
+                    update_repo_perms.write,
                 ),
                 readable_entities=(
                     update_repo_perms.readable_entities
