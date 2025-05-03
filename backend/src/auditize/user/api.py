@@ -11,23 +11,22 @@ from auditize.auth.authorizer import (
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import can_read_user, can_write_user
-from auditize.permissions.operations import authorize_grant, normalize_permissions
+from auditize.permissions.operations import authorize_grant
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.user import service
-from auditize.user.api_models import (
-    UserCreationRequest,
-    UserCreationResponse,
-    UserListResponse,
+from auditize.user.models import (
+    UserCreate,
+    UserList,
     UserMeResponse,
     UserMeUpdateRequest,
     UserPasswordResetInfoResponse,
     UserPasswordResetRequest,
     UserPasswordResetRequestRequest,
-    UserReadingResponse,
+    UserRead,
+    UserUpdate,
     UserUpdateRequest,
 )
-from auditize.user.models import User, UserUpdate
 
 router = APIRouter(responses=error_responses(401, 403))
 
@@ -64,17 +63,10 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
 )
 async def create_user(
     authorized: Authorized(can_write_user()),
-    user: UserCreationRequest,
-) -> UserCreationResponse:
-    authorize_grant(authorized.permissions, user.permissions)
-    user_model = User.model_validate(
-        {
-            **user.model_dump(exclude={"permissions"}),
-            "permissions": normalize_permissions(user.permissions),
-        }
-    )
-    user_id = await service.create_user(user_model)
-    return UserCreationResponse(id=user_id)
+    user_create: UserCreate,
+) -> UserRead:
+    authorize_grant(authorized.permissions, user_create.permissions)
+    return await service.create_user(user_create)
 
 
 @router.patch(
@@ -87,11 +79,12 @@ async def create_user(
 )
 async def update_user_me(
     authorized: AuthorizedUser(),
-    update_request: UserMeUpdateRequest,
-):
-    update = UserUpdate.model_validate(update_request.model_dump(exclude_unset=True))
-    await service.update_user(authorized.user.id, update)
-    user = await service.get_user(authorized.user.id)
+    user_me_update: UserMeUpdateRequest,
+) -> UserMeResponse:
+    user_update = UserUpdate.model_validate(
+        user_me_update.model_dump(exclude_unset=True)
+    )
+    user = await service.update_user(authorized.user.id, user_update)
     return UserMeResponse.from_user(user)
 
 
@@ -100,23 +93,24 @@ async def update_user_me(
     summary="Update user",
     operation_id="update_user",
     tags=["user"],
-    status_code=204,
+    status_code=200,
     responses=error_responses(400, 404, 409),
 )
 async def update_user(
     authorized: Authorized(can_write_user()),
     user_id: UUID,
-    update: UserUpdateRequest,
-):
+    user_update: UserUpdateRequest,
+) -> UserRead:
     _ensure_cannot_alter_own_user(authorized, user_id)
     await _ensure_cannot_update_email_of_user_with_non_grantable_permission(
-        authorized, user_id, update
+        authorized, user_id, user_update
     )
+    if user_update.permissions:
+        authorize_grant(authorized.permissions, user_update.permissions)
 
-    update_model = UserUpdate.model_validate(update.model_dump(exclude_unset=True))
-    if update_model.permissions:
-        authorize_grant(authorized.permissions, update_model.permissions)
-    await service.update_user(user_id, update_model)
+    return await service.update_user(
+        user_id, UserUpdate.model_validate(user_update.model_dump(exclude_unset=True))
+    )
 
 
 @router.get(
@@ -139,12 +133,8 @@ async def get_user_me(
     tags=["user"],
     responses=error_responses(404),
 )
-async def get_user(
-    authorized: Authorized(can_read_user()),
-    user_id: UUID,
-) -> UserReadingResponse:
-    user = await service.get_user(user_id)
-    return UserReadingResponse.model_validate(user.model_dump())
+async def get_user(_: Authorized(can_read_user()), user_id: UUID) -> UserRead:
+    return await service.get_user(user_id)
 
 
 @router.get(
@@ -155,16 +145,16 @@ async def get_user(
     tags=["user"],
 )
 async def list_users(
-    authorized: Authorized(can_read_user()),
+    _: Authorized(can_read_user()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> UserListResponse:
+) -> UserList:
     users, page_info = await service.get_users(
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    return UserListResponse.build(users, page_info)
+    return UserList.build(users, page_info)
 
 
 @router.delete(

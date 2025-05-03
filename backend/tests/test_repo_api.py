@@ -867,10 +867,11 @@ async def test_repo_delete_with_related_resources(
             )
         ],
     )
-    await assert_collection(
-        get_core_db().users,
-        [
-            user.expected_document(
+    async with superadmin.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/users/{user.id}",
+            expected_json=user.expected_api_response(
                 {
                     "permissions": {
                         **DEFAULT_PERMISSIONS,
@@ -879,7 +880,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": UUID(repo.id),
+                                    "repo_id": repo.id,
                                     "read": True,
                                     "write": False,
                                     "readable_entities": [],
@@ -888,14 +889,22 @@ async def test_repo_delete_with_related_resources(
                         },
                     }
                 }
-            )
-        ],
-        filter={"email": user.email},
-    )
-    await assert_collection(
-        get_core_db().log_filters,
-        [log_filter.expected_document({"user_id": UUID(superadmin.id)})],
-    )
+            ),
+        )
+    async with superadmin.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/users/me/logs/filters",
+            expected_json={
+                "items": [log_filter.expected_api_response()],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
+        )
 
 
 async def test_repo_delete_unknown_id(repo_write_client: HttpTestHelper):

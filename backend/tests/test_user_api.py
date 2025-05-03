@@ -49,22 +49,15 @@ async def _assert_password_reset_token_validity(token: str):
 
 async def test_user_create(user_write_client: HttpTestHelper):
     data = PreparedUser.prepare_data()
-    user_id = ""
 
     async def func():
-        nonlocal user_id
-        resp = await user_write_client.assert_post(
+        await user_write_client.assert_post_created(
             "/users",
             json=data,
-            expected_status_code=201,
-            expected_json={"id": callee.IsA(str)},
+            expected_json=PreparedUser.build_expected_api_response(data),
         )
-        user_id = resp.json()["id"]
 
     password_reset_token = await _wrap_password_reset_link_sending(func, data["email"])
-
-    user = PreparedUser(user_id, data)
-    await assert_collection(get_core_db().users, [user.expected_document()])
 
     await _assert_password_reset_token_validity(password_reset_token)
 
@@ -72,14 +65,11 @@ async def test_user_create(user_write_client: HttpTestHelper):
 async def test_user_create_lang_fr(user_write_client: HttpTestHelper):
     data = PreparedUser.prepare_data({"lang": "fr"})
 
-    resp = await user_write_client.assert_post_created(
+    await user_write_client.assert_post_created(
         "/users",
         json=data,
-        expected_json={"id": callee.IsA(str)},
+        expected_json=PreparedUser.build_expected_api_response(data),
     )
-
-    user = PreparedUser(resp.json()["id"], data)
-    await assert_collection(get_core_db().users, [user.expected_document()])
 
 
 async def test_user_create_missing_parameter(user_write_client: HttpTestHelper):
@@ -170,22 +160,18 @@ async def test_user_update_multiple_fields(
         "email": "john.doe_updated@example.net",
         "lang": "fr",
     }
-    await superadmin_client.assert_patch(
-        f"/users/{user.id}", json=data, expected_status_code=204
+    await superadmin_client.assert_patch_ok(
+        f"/users/{user.id}", json=data, expected_json=user.expected_api_response(data)
     )
-
-    await assert_collection(get_core_db().users, [user.expected_document(data)])
 
 
 async def test_user_update_single_field(
     user_write_client: HttpTestHelper, user: PreparedUser
 ):
     data = {"first_name": "John Updated"}
-    await user_write_client.assert_patch(
-        f"/users/{user.id}", json=data, expected_status_code=204
+    await user_write_client.assert_patch_ok(
+        f"/users/{user.id}", json=data, expected_json=user.expected_api_response(data)
     )
-
-    await assert_collection(get_core_db().users, [user.expected_document(data)])
 
 
 async def test_user_update_unknown_id(user_write_client: HttpTestHelper):
@@ -257,13 +243,6 @@ async def test_user_update_email_with_user_holding_non_grantable_permission(
 async def test_user_update_email_with_user_holding_non_grantable_permission_same_email(
     user_builder: UserBuilder,
 ):
-    assignee = await user_builder(
-        {
-            "management": {
-                "repos": {"read": True, "write": True},
-            }
-        }
-    )
     grantor = await user_builder(
         {
             "management": {
@@ -271,12 +250,32 @@ async def test_user_update_email_with_user_holding_non_grantable_permission_same
             }
         }
     )
+    assignee = await user_builder(
+        {
+            "management": {
+                "repos": {"read": True, "write": True},
+            }
+        }
+    )
 
     async with grantor.client() as client:
         client: HttpTestHelper
-        await client.assert_patch_no_content(
+        await client.assert_patch_ok(
             f"/users/{assignee.id}",
             json={"email": assignee.email},
+            expected_json=assignee.expected_api_response(
+                {
+                    "permissions": {
+                        "is_superadmin": False,
+                        "logs": {"read": False, "write": False, "repos": []},
+                        "management": {
+                            "repos": {"read": True, "write": True},
+                            "users": {"read": False, "write": False},
+                            "apikeys": {"read": False, "write": False},
+                        },
+                    }
+                }
+            ),
         )
 
 
@@ -440,28 +439,29 @@ async def _assert_user_password_validity(email: str, password: str):
 async def test_user_password_reset_set_password_fresh_user(
     anon_client: HttpTestHelper, user: PreparedUser
 ):
+    # Set password
     await anon_client.assert_post_no_content(
         f"/users/password-reset/{await user.password_reset_token}",
         json={"password": "new_password"},
     )
 
-    await assert_collection(
-        get_core_db().users,
-        [
-            user.expected_document(
-                {"password_hash": callee.IsA(str), "password_reset_token": None}
-            )
-        ],
-    )
-
+    # Ensure the password is working
     await _assert_user_password_validity(user.email, "new_password")
+
+    # Ensure the password reset token is removed / cannot be used again
+    await anon_client.assert_post_not_found(
+        f"/users/password-reset/{await user.password_reset_token}",
+        json={"password": "new_password"},
+    )
 
 
 async def test_user_password_reset_set_password_after_forgot_password(
     user_builder: UserBuilder,
 ):
+    # Create user
     user = await user_builder({})
 
+    # Ask for password reset
     async def func():
         await HttpTestHelper.spawn().assert_post_no_content(
             "/users/forgot-password",
@@ -470,21 +470,20 @@ async def test_user_password_reset_set_password_after_forgot_password(
 
     password_reset_token = await _wrap_password_reset_link_sending(func, user.email)
 
+    # Reset password
     await HttpTestHelper.spawn().assert_post_no_content(
         f"/users/password-reset/{password_reset_token}",
         json={"password": "new_password"},
     )
 
-    await assert_collection(
-        get_core_db().users,
-        [
-            user.expected_document(
-                {"password_hash": callee.IsA(str), "password_reset_token": None}
-            )
-        ],
-    )
-
+    # Ensure the password is working
     await _assert_user_password_validity(user.email, "new_password")
+
+    # Ensure the password reset token is removed / cannot be used again
+    await HttpTestHelper.spawn().assert_post_not_found(
+        f"/users/password-reset/{password_reset_token}",
+        json={"password": "new_password"},
+    )
 
 
 async def test_user_password_reset_set_password_too_short(
@@ -578,20 +577,14 @@ async def test_update_user_me_lang(user_builder: UserBuilder):
             },
         )
 
-    await assert_collection(
-        get_core_db().users,
-        [
-            user.expected_document(
-                {"lang": "fr", "authenticated_at": callee.IsA(datetime)}
-            )
-        ],
-    )
-
 
 async def test_update_user_me_password(
-    user_builder: UserBuilder, anon_client: HttpTestHelper
+    user_builder: UserBuilder, anon_client: HttpTestHelper, superadmin_client
 ):
+    # Create user
     user = await user_builder({})
+
+    # Update password
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await client.assert_patch_ok(
@@ -602,9 +595,9 @@ async def test_update_user_me_password(
         )
 
     # Make sure we don't have side effects in DB
-    await assert_collection(
-        get_core_db().users,
-        [user.expected_document({"authenticated_at": callee.IsA(datetime)})],
+    await superadmin_client.assert_get_ok(
+        f"/users/{user.id}",
+        expected_json=user.expected_api_response({"authenticated_at": DATETIME_FORMAT}),
     )
 
     # Make sure the new password actually works
@@ -614,8 +607,13 @@ async def test_update_user_me_password(
     )
 
 
-async def test_update_user_me_forbidden_field(user_builder: UserBuilder):
+async def test_update_user_me_forbidden_field(
+    user_builder: UserBuilder, superadmin_client: HttpTestHelper
+):
+    # Create user
     user = await user_builder({})
+
+    # Try to update forbidden field
     async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
         await client.assert_patch_ok(
@@ -623,10 +621,10 @@ async def test_update_user_me_forbidden_field(user_builder: UserBuilder):
             json={"first_name": "I cannot do this"},
         )
 
-    # ensure nothing changed
-    await assert_collection(
-        get_core_db().users,
-        [user.expected_document({"authenticated_at": callee.IsA(datetime)})],
+    # Ensure nothing changed
+    await superadmin_client.assert_get_ok(
+        f"/users/{user.id}",
+        expected_json=user.expected_api_response({"authenticated_at": DATETIME_FORMAT}),
     )
 
 

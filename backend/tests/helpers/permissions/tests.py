@@ -43,7 +43,9 @@ class BasePermissionTests:
     ) -> PreparedUser | PreparedApikey:
         raise NotImplementedError()
 
-    async def test_create_custom_permissions(self, repo_builder: RepoBuilder):
+    async def test_create_custom_permissions(
+        self, repo_builder: RepoBuilder, superadmin_client: HttpTestHelper
+    ):
         repo_1 = await repo_builder({})
         repo_2 = await repo_builder({})
 
@@ -72,40 +74,38 @@ class BasePermissionTests:
             )
 
         assignee = self.rebuild_assignee_from_response(resp, assignee_data)
-        await assert_collection(
-            self.get_principal_collection(),
-            [
-                assignee.expected_document(
-                    {
-                        "permissions": {
-                            "is_superadmin": False,
-                            "logs": {
-                                "read": False,
-                                "write": False,
-                                "repos": [
-                                    {
-                                        "repo_id": UUID(repo_1.id),
-                                        "read": True,
-                                        "write": True,
-                                        "readable_entities": [],
-                                    },
-                                    {
-                                        "repo_id": UUID(repo_2.id),
-                                        "read": False,
-                                        "write": False,
-                                        "readable_entities": ["customer:1"],
-                                    },
-                                ],
-                            },
-                            "management": {
-                                "repos": {"read": True, "write": True},
-                                "users": {"read": False, "write": False},
-                                "apikeys": {"read": False, "write": False},
-                            },
-                        }
+        await superadmin_client.assert_get_ok(
+            f"{self.base_path}/{assignee.id}",
+            expected_json=assignee.expected_api_response(
+                {
+                    "permissions": {
+                        "is_superadmin": False,
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": [
+                                {
+                                    "repo_id": repo_1.id,
+                                    "read": True,
+                                    "write": True,
+                                    "readable_entities": [],
+                                },
+                                {
+                                    "repo_id": repo_2.id,
+                                    "read": False,
+                                    "write": False,
+                                    "readable_entities": ["customer:1"],
+                                },
+                            ],
+                        },
+                        "management": {
+                            "repos": {"read": True, "write": True},
+                            "users": {"read": False, "write": False},
+                            "apikeys": {"read": False, "write": False},
+                        },
                     }
-                )
-            ],
+                }
+            ),
         )
 
     async def test_create_custom_permissions_unknown_repo(
@@ -173,7 +173,7 @@ class BasePermissionTests:
                 ),
             )
 
-            await client.assert_patch(
+            await client.assert_patch_ok(
                 f"{self.base_path}/{assignee.id}",
                 json={
                     "permissions": {
@@ -195,13 +195,7 @@ class BasePermissionTests:
                         },
                     }
                 },
-                expected_status_code=204,
-            )
-
-        await assert_collection(
-            self.get_principal_collection(),
-            [
-                assignee.expected_document(
+                expected_json=assignee.expected_api_response(
                     {
                         "permissions": {
                             "is_superadmin": False,
@@ -210,7 +204,7 @@ class BasePermissionTests:
                                 "write": False,
                                 "repos": [
                                     {
-                                        "repo_id": UUID(repo.id),
+                                        "repo_id": repo.id,
                                         "read": False,
                                         "write": True,
                                         "readable_entities": ["entity1"],
@@ -224,9 +218,8 @@ class BasePermissionTests:
                             },
                         }
                     }
-                )
-            ],
-        )
+                ),
+            )
 
     async def test_update_permissions_unknown_repo(
         self, superadmin_client: HttpTestHelper
@@ -259,18 +252,37 @@ class BasePermissionTests:
             superadmin_client,
             self.prepare_assignee_data(
                 {
-                    "logs": {
-                        "repos": [
-                            {"repo_id": repo.id, "read": True, "write": True},
-                        ]
+                    "permissions": {
+                        "logs": {
+                            "repos": [
+                                {"repo_id": repo.id, "read": True, "write": True},
+                            ]
+                        }
                     }
                 }
             ),
         )
         await superadmin_client.assert_delete_no_content(f"/repos/{repo.id}")
-        await superadmin_client.assert_patch_no_content(
+        await superadmin_client.assert_patch_ok(
             f"{self.base_path}/{assignee.id}",
             json={"permissions": {"management": {"repos": {"write": True}}}},
+            expected_json=assignee.expected_api_response(
+                {
+                    "permissions": {
+                        "is_superadmin": False,
+                        "logs": {
+                            "read": False,
+                            "write": False,
+                            "repos": [],
+                        },
+                        "management": {
+                            "repos": {"read": False, "write": True},
+                            "users": {"read": False, "write": False},
+                            "apikeys": {"read": False, "write": False},
+                        },
+                    }
+                }
+            ),
         )
 
     async def test_update_forbidden_permissions(self):

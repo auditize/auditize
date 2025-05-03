@@ -23,11 +23,12 @@ from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
+    create_resource_document2,
     delete_resource_document,
     get_resource_document,
     update_resource_document,
 )
-from auditize.user.models import PasswordResetToken, User, UserUpdate
+from auditize.user.models import PasswordResetToken, User, UserCreate, UserUpdate
 
 _DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
 
@@ -58,36 +59,44 @@ def build_document_from_user(user: User) -> dict:
     }
 
 
-async def save_user(user: User) -> UUID:
+async def save_user(user: User) -> User:
     await ensure_repos_in_permissions_exist(user.permissions)
-    return await create_resource_document(
+    user_data = await create_resource_document2(
         get_core_db().users, build_document_from_user(user)
     )
+    return User.model_validate(user_data)
 
 
-async def create_user(user: User) -> UUID:
-    user = user.model_copy()
+async def create_user(user_create: UserCreate) -> User:
+    user = User.model_validate(
+        {
+            **user_create.model_dump(exclude={"permissions"}),
+            "permissions": normalize_permissions(user_create.permissions),
+        }
+    )
     user.password_reset_token = _generate_password_reset_token()
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        user_id = await save_user(user)
+        user = await save_user(user)
     _send_account_setup_email(user)
-    return user_id
+    return user
 
 
-async def update_user(user_id: UUID, update: UserUpdate):
-    doc_update = update.model_dump(
+async def update_user(user_id: UUID, user_update: UserUpdate) -> User:
+    doc_update = user_update.model_dump(
         exclude_unset=True, exclude={"permissions", "password"}
     )
-    if update.permissions:
+    if user_update.permissions:
         user = await get_user(user_id)
-        user_permissions = update_permissions(user.permissions, update.permissions)
+        user_permissions = update_permissions(user.permissions, user_update.permissions)
         await ensure_repos_in_permissions_exist(user_permissions)
         doc_update["permissions"] = user_permissions.model_dump()
-    if update.password:
-        doc_update["password_hash"] = hash_user_password(update.password)
+    if user_update.password:
+        doc_update["password_hash"] = hash_user_password(user_update.password)
 
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
         await update_resource_document(get_core_db().users, user_id, doc_update)
+
+    return await get_user(user_id)
 
 
 async def _get_user(filter: UUID | dict) -> User:

@@ -124,36 +124,27 @@ class PreparedUser:
         resp = await self.log_in(client)
         return get_cookie_by_name(resp, "session").value
 
-    def expected_document(self, extra=None) -> dict:
-        password_reset_token = {
-            "token": callee.Regex(r"^[0-9a-f]{64}$"),
-            "expires_at": callee.IsA(datetime),
-        }
+    @staticmethod
+    def build_expected_api_response(extra=None) -> dict:
         return {
-            "_id": UUID(self.id),
-            "first_name": self.data["first_name"],
-            "last_name": self.data["last_name"],
-            "email": self.data["email"],
-            "lang": self.data.get("lang", "en"),
+            "id": callee.IsA(str),
+            "lang": "en",
             "permissions": DEFAULT_PERMISSIONS,
-            "password_hash": callee.IsA(str) if self.password else None,
-            "created_at": callee.IsA(datetime),
-            "password_reset_token": None if self.password else password_reset_token,
             "authenticated_at": None,
             **(extra or {}),
         }
 
     def expected_api_response(self, extra=None) -> dict:
-        return {
-            "id": self.id,
-            "first_name": self.data["first_name"],
-            "last_name": self.data["last_name"],
-            "email": self.data["email"],
-            "lang": self.data.get("lang", "en"),
-            "permissions": DEFAULT_PERMISSIONS,
-            "authenticated_at": None,
-            **(extra or {}),
-        }
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "first_name": self.data["first_name"],
+                "last_name": self.data["last_name"],
+                "email": self.data["email"],
+                "lang": self.data.get("lang", "en"),
+                **(extra or {}),
+            }
+        )
 
     async def create_log_filter(self, data):
         async with self.client() as client:
