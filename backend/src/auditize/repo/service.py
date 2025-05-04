@@ -21,7 +21,7 @@ from auditize.permissions.assertions import (
     can_write_logs_to_all_repos,
     permissions_and,
 )
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import Permissions, PermissionsInput
 from auditize.permissions.operations import is_authorized
 from auditize.repo.models import Repo, RepoCreate, RepoStats, RepoStatus, RepoUpdate
 from auditize.resource.pagination.page.models import PagePaginationInfo

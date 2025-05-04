@@ -781,6 +781,7 @@ async def test_repo_delete(repo_write_client: HttpTestHelper):
 async def test_repo_delete_with_related_resources(
     user_builder: UserBuilder, repo: PreparedRepo
 ):
+    remaining_repo = repo  # repo that will not be deleted
     superadmin = await user_builder({"is_superadmin": True})
 
     async with superadmin.client() as client:
@@ -798,7 +799,7 @@ async def test_repo_delete_with_related_resources(
                     "logs": {
                         "repos": [
                             {"repo_id": to_be_deleted_repo_id, "read": True},
-                            {"repo_id": repo.id, "read": True},
+                            {"repo_id": remaining_repo.id, "read": True},
                         ]
                     }
                 },
@@ -814,7 +815,7 @@ async def test_repo_delete_with_related_resources(
                         "logs": {
                             "repos": [
                                 {"repo_id": to_be_deleted_repo_id, "read": True},
-                                {"repo_id": repo.id, "read": True},
+                                {"repo_id": remaining_repo.id, "read": True},
                             ]
                         }
                     },
@@ -833,8 +834,8 @@ async def test_repo_delete_with_related_resources(
         )
         log_filter = await superadmin.create_log_filter(
             {
-                "name": "filter",
-                "repo_id": repo.id,
+                "name": "filter_to_keep",
+                "repo_id": remaining_repo.id,
                 "search_params": {},
                 "columns": [],
             },
@@ -842,11 +843,15 @@ async def test_repo_delete_with_related_resources(
 
         await client.assert_delete_no_content(f"/repos/{to_be_deleted_repo_id}")
 
+    ###
     # Check that the related resources have been deleted
-    await assert_collection(
-        get_core_db().apikeys,
-        [
-            apikey.expected_document(
+    ###
+
+    async with superadmin.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/apikeys/{apikey.id}",
+            expected_json=apikey.expected_api_response(
                 {
                     "permissions": {
                         **DEFAULT_PERMISSIONS,
@@ -855,7 +860,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": UUID(repo.id),
+                                    "repo_id": remaining_repo.id,
                                     "read": True,
                                     "write": False,
                                     "readable_entities": [],
@@ -864,9 +869,9 @@ async def test_repo_delete_with_related_resources(
                         },
                     }
                 }
-            )
-        ],
-    )
+            ),
+        )
+
     async with superadmin.client() as client:
         client: HttpTestHelper
         await client.assert_get_ok(
@@ -880,7 +885,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": repo.id,
+                                    "repo_id": remaining_repo.id,
                                     "read": True,
                                     "write": False,
                                     "readable_entities": [],

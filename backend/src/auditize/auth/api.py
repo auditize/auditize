@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from starlette.responses import Response
 
-from auditize.apikey.api_models import AccessTokenRequest, AccessTokenResponse
+from auditize.apikey.models import AccessTokenRequest, AccessTokenResponse
 from auditize.auth.authorizer import (
     AuthorizedApikey,
     AuthorizedUser,
@@ -53,10 +53,7 @@ async def login_user(
     status_code=204,
     responses=error_responses(401),
 )
-async def logout_user(
-    authorized: AuthorizedUser(),
-    response: Response,
-):
+async def logout_user(_: AuthorizedUser(), response: Response):
     config = get_config()
     response.delete_cookie(
         "session", httponly=True, samesite="strict", secure=config.cookie_secure
@@ -72,8 +69,7 @@ async def logout_user(
     responses=error_responses(401, 403),
 )
 async def auth_access_token(
-    authorized: AuthorizedApikey(),
-    request: AccessTokenRequest,
+    authorized: AuthorizedApikey(), request: AccessTokenRequest
 ) -> AccessTokenResponse:
     authorize_grant(authorized.permissions, request.permissions)
     access_token, expires_at = generate_access_token(

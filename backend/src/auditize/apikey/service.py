@@ -4,7 +4,7 @@ from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
-from auditize.apikey.models import Apikey, ApikeyUpdate
+from auditize.apikey.models import Apikey, ApikeyCreate, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import get_core_db
 from auditize.exceptions import enhance_constraint_violation_exception
@@ -14,7 +14,7 @@ from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
-    create_resource_document,
+    create_resource_document2,
     delete_resource_document,
     get_resource_document,
     update_resource_document,
@@ -31,31 +31,35 @@ def _generate_key() -> tuple[str, str]:
     return value, _hash_key(value)
 
 
-async def create_apikey(apikey: Apikey) -> tuple[UUID, str]:
+async def create_apikey(apikey_create: ApikeyCreate) -> tuple[Apikey, str]:
+    apikey = Apikey.model_validate(
+        {
+            **apikey_create.model_dump(exclude={"id", "key_hash", "permissions"}),
+            "permissions": normalize_permissions(apikey_create.permissions),
+        }
+    )
     await ensure_repos_in_permissions_exist(apikey.permissions)
     key, key_hash = _generate_key()
+    apikey.key_hash = key_hash
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
-        apikey_id = await create_resource_document(
-            get_core_db().apikeys,
-            {
-                **apikey.model_dump(exclude={"id", "key_hash", "permissions"}),
-                "key_hash": key_hash,
-                "permissions": normalize_permissions(apikey.permissions).model_dump(),
-            },
-        )
-    return apikey_id, key
+        apikey_data = await create_resource_document2(get_core_db().apikeys, apikey)
+    return Apikey.model_validate(apikey_data), key
 
 
-async def update_apikey(apikey_id: UUID, update: ApikeyUpdate):
-    doc_update = update.model_dump(exclude_unset=True, exclude={"permissions"})
-    if update.permissions:
+async def update_apikey(apikey_id: UUID, apikey_update: ApikeyUpdate) -> Apikey:
+    doc_update = apikey_update.model_dump(exclude_unset=True, exclude={"permissions"})
+    if apikey_update.permissions:
         apikey = await get_apikey(apikey_id)
-        apikey_permissions = update_permissions(apikey.permissions, update.permissions)
+        apikey_permissions = update_permissions(
+            apikey.permissions, apikey_update.permissions
+        )
         await ensure_repos_in_permissions_exist(apikey_permissions)
         doc_update["permissions"] = apikey_permissions.model_dump()
 
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
         await update_resource_document(get_core_db().apikeys, apikey_id, doc_update)
+
+    return await get_apikey(apikey_id)
 
 
 async def regenerate_apikey(apikey_id: UUID) -> str:

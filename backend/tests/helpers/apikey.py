@@ -43,13 +43,11 @@ class PreparedApikey:
     async def inject_into_db(cls, apikey: Apikey = None) -> "PreparedApikey":
         if apikey is None:
             apikey = cls.prepare_model()
-        apikey_id, key = await create_apikey(apikey)
+        apikey, key = await create_apikey(apikey)
         return cls(
-            id=str(apikey_id),
+            id=str(apikey.id),
             key=key,
-            data={
-                "name": apikey.name,
-            },
+            data={"name": apikey.name},
         )
 
     @classmethod
@@ -58,23 +56,22 @@ class PreparedApikey:
     ) -> "PreparedApikey":
         return await cls.inject_into_db(cls.prepare_model(permissions=permissions))
 
-    def expected_document(self, extra=None):
+    @staticmethod
+    def build_expected_api_response(extra=None):
         return {
-            "_id": uuid.UUID(self.id),
-            "name": self.data["name"],
-            "key_hash": callee.IsA(str),
-            "created_at": callee.IsA(datetime),
+            "id": callee.IsA(str),
             "permissions": DEFAULT_PERMISSIONS,
             **(extra or {}),
         }
 
     def expected_api_response(self, extra=None):
-        return {
-            "id": self.id,
-            "name": self.data["name"],
-            "permissions": DEFAULT_PERMISSIONS,
-            **(extra or {}),
-        }
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "name": self.data["name"],
+                **(extra or {}),
+            }
+        )
 
     def client(self) -> HttpTestHelper:
         c = HttpTestHelper.spawn()

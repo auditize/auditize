@@ -24,21 +24,19 @@ pytestmark = pytest.mark.anyio
 async def test_apikey_create(apikey_write_client: HttpTestHelper):
     data = PreparedApikey.prepare_data()
 
-    resp = await apikey_write_client.assert_post(
+    resp = await apikey_write_client.assert_post_created(
         "/apikeys",
         json=data,
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str), "key": callee.IsA(str)},
+        expected_json=PreparedApikey.build_expected_api_response(
+            {**data, "key": callee.IsA(str)}
+        ),
     )
-
-    apikey = PreparedApikey(resp.json()["id"], resp.json()["key"], data)
-    await assert_collection(get_core_db().apikeys, [apikey.expected_document()])
 
     # Test that the key actually works
     apikey_client = HttpTestHelper.spawn()
     await apikey_client.assert_get(
         "/apikeys",
-        headers={"Authorization": f"Bearer {apikey.key}"},
+        headers={"Authorization": f"Bearer {resp.json()['key']}"},
         expected_status_code=403,  # 403 means that authentication was successful, otherwise it would be 401
     )
 
@@ -86,11 +84,11 @@ async def test_apikey_update(
     apikey: PreparedApikey,
 ):
     data = {"name": "Apikey Updated"}
-    await apikey_write_client.assert_patch(
-        f"/apikeys/{apikey.id}", json=data, expected_status_code=204
+    await apikey_write_client.assert_patch_ok(
+        f"/apikeys/{apikey.id}",
+        json=data,
+        expected_json=apikey.expected_api_response(data),
     )
-
-    await assert_collection(get_core_db().apikeys, [apikey.expected_document(data)])
 
 
 async def test_apikey_update_unknown_id(apikey_write_client: HttpTestHelper):
@@ -131,29 +129,18 @@ async def test_apikey_regenerate_key(
     apikey_write_client: HttpTestHelper,
     apikey: PreparedApikey,
 ):
-    db = get_core_db()
-    mongo_document = await db.apikeys.find_one({"_id": uuid.UUID(apikey.id)})
-
-    await apikey_write_client.assert_post(
+    # Regenerate the key
+    resp = await apikey_write_client.assert_post_ok(
         f"/apikeys/{apikey.id}/key",
-        expected_status_code=200,
         expected_json={"key": callee.IsA(str)},
     )
 
-    # make sure the key has changed
-    await assert_collection(
-        db.apikeys,
-        [
-            apikey.expected_document(
-                {
-                    "key_hash": callee.Matching(
-                        lambda val: (
-                            type(val) is str and val != mongo_document["key_hash"]
-                        )
-                    )
-                }
-            )
-        ],
+    # Test that the generated key actually works
+    apikey_client = HttpTestHelper.spawn()
+    await apikey_client.assert_get(
+        "/repos",
+        headers={"Authorization": f"Bearer {resp.json()['key']}"},
+        expected_status_code=403,  # 403 means that authentication was successful, otherwise it would be 401
     )
 
 
