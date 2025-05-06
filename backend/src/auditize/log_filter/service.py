@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
@@ -8,12 +9,13 @@ from auditize.exceptions import (
     ValidationError,
     enhance_constraint_violation_exception,
 )
-from auditize.log_filter.models import LogFilter, LogFilterUpdate
+from auditize.log_filter.models import LogFilter, LogFilterCreate, LogFilterUpdate
 from auditize.repo.service import get_repo
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
+    create_resource_document2,
     delete_resource_document,
     get_resource_document,
     update_resource_document,
@@ -30,12 +32,15 @@ async def _validate_log_filter(log_filter: LogFilter | LogFilterUpdate):
             raise ValidationError(f"Repository {log_filter.repo_id!r} does not exist")
 
 
-async def create_log_filter(log_filter: LogFilter) -> UUID:
-    await _validate_log_filter(log_filter)
+async def create_log_filter(log_filter_create: LogFilterCreate) -> LogFilter:
+    await _validate_log_filter(log_filter_create)
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_filter"
     ):
-        return await create_resource_document(get_core_db().log_filters, log_filter)
+        log_filter_data = await create_resource_document2(
+            get_core_db().log_filters, log_filter_create
+        )
+    return LogFilter.model_validate(log_filter_data)
 
 
 def _log_filter_discriminator(user_id: UUID, log_filter_id: UUID) -> dict:
@@ -44,7 +49,7 @@ def _log_filter_discriminator(user_id: UUID, log_filter_id: UUID) -> dict:
 
 async def update_log_filter(
     user_id: UUID, log_filter_id: UUID, update: LogFilterUpdate
-):
+) -> LogFilter:
     await _validate_log_filter(update)
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_filter"
@@ -54,6 +59,7 @@ async def update_log_filter(
             _log_filter_discriminator(user_id, log_filter_id),
             update,
         )
+    return await get_log_filter(user_id, log_filter_id)
 
 
 async def get_log_filter(user_id: UUID, log_filter_id: UUID) -> LogFilter:
@@ -66,7 +72,7 @@ async def get_log_filter(user_id: UUID, log_filter_id: UUID) -> LogFilter:
 async def get_log_filters(
     user_id: UUID, *, query: str, is_favorite: bool | None, page: int, page_size: int
 ) -> tuple[list[LogFilter], PagePaginationInfo]:
-    doc_filter = {"user_id": user_id}
+    doc_filter: dict[str, Any] = {"user_id": user_id}
     if query:
         doc_filter["$text"] = {"$search": query}
     if is_favorite is not None:

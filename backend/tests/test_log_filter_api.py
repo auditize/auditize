@@ -20,18 +20,11 @@ pytestmark = pytest.mark.anyio
 async def _test_log_filter_creation(user: PreparedUser, data: dict):
     async with user.client() as client:
         client: HttpTestHelper
-        resp = await client.assert_post_created(
+        await client.assert_post_created(
             "/users/me/logs/filters",
             json=data,
-            expected_json={"id": callee.IsA(str)},
+            expected_json=PreparedLogFilter(None, data).expected_api_response(),
         )
-
-    log_filter = PreparedLogFilter(resp.json()["id"], data)
-
-    await assert_collection(
-        get_core_db().log_filters,
-        [log_filter.expected_document({"user_id": UUID(user.id)})],
-    )
 
 
 async def test_log_filter_create_simple(user_builder: UserBuilder, repo: PreparedRepo):
@@ -336,16 +329,11 @@ async def _test_log_filter_update(
     log_filter = await log_read_user.create_log_filter(data)
     async with log_read_user.client() as client:
         client: HttpTestHelper
-        await client.assert_patch_no_content(
+        await client.assert_patch_ok(
             f"/users/me/logs/filters/{log_filter.id}",
             json=update,
+            expected_json=log_filter.expected_api_response(update),
         )
-    await assert_collection(
-        get_core_db().log_filters,
-        [
-            log_filter.expected_document({**update, "user_id": UUID(log_read_user.id)}),
-        ],
-    )
 
 
 async def test_log_filter_update_simple(user_builder: UserBuilder, repo: PreparedRepo):

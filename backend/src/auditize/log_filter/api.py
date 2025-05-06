@@ -6,14 +6,13 @@ from fastapi import APIRouter, Depends
 from auditize.auth.authorizer import AuthorizedUser
 from auditize.helpers.api.errors import error_responses
 from auditize.log_filter import service
-from auditize.log_filter.api_models import (
-    LogFilterCreationRequest,
-    LogFilterCreationResponse,
+from auditize.log_filter.models import (
+    LogFilter,
+    LogFilterCreate,
     LogFilterListResponse,
-    LogFilterReadingResponse,
-    LogFilterUpdateRequest,
+    LogFilterResponse,
+    LogFilterUpdate,
 )
-from auditize.log_filter.models import LogFilter, LogFilterUpdate
 from auditize.permissions.assertions import can_read_logs_from_any_repo
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
@@ -31,9 +30,9 @@ router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
 )
 async def create_filter(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
-    log_filter: LogFilterCreationRequest,
-) -> LogFilterCreationResponse:
-    log_filter_id = await service.create_log_filter(
+    log_filter: LogFilterCreate,
+) -> LogFilterResponse:
+    return await service.create_log_filter(
         LogFilter.model_validate(
             {
                 **log_filter.model_dump(),
@@ -41,7 +40,6 @@ async def create_filter(
             }
         ),
     )
-    return LogFilterCreationResponse(id=log_filter_id)
 
 
 @router.patch(
@@ -49,19 +47,15 @@ async def create_filter(
     summary="Update log filter",
     operation_id="update_log_filter",
     tags=["log-filter"],
-    status_code=204,
+    status_code=200,
     responses=error_responses(400, 404, 409),
 )
 async def update_filter(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
-    update: LogFilterUpdateRequest,
+    update: LogFilterUpdate,
     filter_id: UUID,
-):
-    await service.update_log_filter(
-        authorized.user.id,
-        filter_id,
-        LogFilterUpdate.model_validate(update.model_dump(exclude_unset=True)),
-    )
+) -> LogFilterResponse:
+    return await service.update_log_filter(authorized.user.id, filter_id, update)
 
 
 @router.get(
@@ -75,9 +69,8 @@ async def update_filter(
 async def get_filter(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     filter_id: UUID,
-) -> LogFilterReadingResponse:
-    log_filter = await service.get_log_filter(authorized.user.id, filter_id)
-    return LogFilterReadingResponse.model_validate(log_filter.model_dump())
+) -> LogFilterResponse:
+    return await service.get_log_filter(authorized.user.id, filter_id)
 
 
 @router.get(

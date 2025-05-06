@@ -841,6 +841,7 @@ async def test_repo_delete_with_related_resources(
             },
         )
 
+        # Delete the repo
         await client.assert_delete_no_content(f"/repos/{to_be_deleted_repo_id}")
 
     ###
@@ -896,6 +897,7 @@ async def test_repo_delete_with_related_resources(
                 }
             ),
         )
+
     async with superadmin.client() as client:
         client: HttpTestHelper
         await client.assert_get_ok(
