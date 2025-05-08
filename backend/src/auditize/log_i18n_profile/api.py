@@ -9,8 +9,8 @@ from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile import service
 from auditize.log_i18n_profile.models import (
     LogI18nProfileCreate,
-    LogI18nProfileList,
-    LogI18nProfileRead,
+    LogI18nProfileListResponse,
+    LogI18nProfileResponse,
     LogI18nProfileUpdate,
     LogTranslation,
 )
@@ -35,7 +35,7 @@ router = APIRouter(responses=error_responses(401, 403))
 )
 async def create_profile(
     _: Authorized(can_write_repo()), profile_create: LogI18nProfileCreate
-) -> LogI18nProfileRead:
+) -> LogI18nProfileResponse:
     return await service.create_log_i18n_profile(profile_create)
 
 
@@ -50,7 +50,7 @@ async def create_profile(
 )
 async def update_profile(
     _: Authorized(can_write_repo()), profile_id: UUID, update: LogI18nProfileUpdate
-) -> LogI18nProfileRead:
+) -> LogI18nProfileResponse:
     return await service.update_log_i18n_profile(profile_id, update)
 
 
@@ -64,7 +64,7 @@ async def update_profile(
 )
 async def get_profile(
     _: Authorized(can_read_repo()), profile_id: UUID
-) -> LogI18nProfileRead:
+) -> LogI18nProfileResponse:
     return await service.get_log_i18n_profile(profile_id)
 
 
@@ -93,13 +93,13 @@ async def list_profiles(
     _: Authorized(can_read_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogI18nProfileList:
+) -> LogI18nProfileListResponse:
     profiles, page_info = await service.get_log_i18n_profiles(
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    return LogI18nProfileList.build(profiles, page_info)
+    return LogI18nProfileListResponse.build(profiles, page_info)
 
 
 @router.delete(

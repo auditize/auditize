@@ -16,5 +16,5 @@ router = APIRouter()
     status_code=200,
     responses=error_responses(401),
 )
-async def info(authorized: Authorized()) -> InfoResponse:
+async def info(_: Authorized()) -> InfoResponse:
     return InfoResponse(auditize_version=__version__)

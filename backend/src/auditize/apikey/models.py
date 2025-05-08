@@ -57,20 +57,20 @@ class ApikeyUpdate(BaseModel):
     permissions: PermissionsInput = _ApikeyPermissionsField(default=None)
 
 
-class ApikeyRead(BaseModel):
+class ApikeyResponse(BaseModel):
     id: UUID = _ApikeyIdField()
     name: str = _ApikeyNameField()
     permissions: PermissionsOutput = _ApikeyPermissionsField()
 
 
-class ApikeyCreateResponse(ApikeyRead):
+class ApikeyCreateResponse(ApikeyResponse):
     key: str = _ApikeyKeyField()
 
 
-class ApikeyList(PagePaginatedResponse[Apikey, ApikeyRead]):
+class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyResponse]):
     @classmethod
-    def build_item(cls, apikey: Apikey) -> ApikeyRead:
-        return ApikeyRead.model_validate(apikey.model_dump())
+    def build_item(cls, apikey: Apikey) -> ApikeyResponse:
+        return ApikeyResponse.model_validate(apikey.model_dump())
 
 
 class ApikeyRegenerationResponse(BaseModel):

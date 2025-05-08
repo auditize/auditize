@@ -34,12 +34,12 @@ from auditize.permissions.models import (
 from auditize.repo import service
 from auditize.repo.models import (
     RepoCreate,
-    RepoList,
-    RepoRead,
+    RepoListResponse,
+    RepoResponse,
     RepoStats,
     RepoStatus,
     RepoUpdate,
-    UserRepoList,
+    UserRepoListResponse,
     UserRepoPermissions,
 )
 from auditize.resource.api_models import ResourceSearchParams
@@ -66,7 +66,7 @@ router = APIRouter(responses=error_responses(401, 403))
 )
 async def create_repo(
     authorized: Authorized(can_write_repo()), repo_create: RepoCreate
-) -> RepoRead:
+) -> RepoResponse:
     repo = await service.create_repo(repo_create)
 
     # Ensure that authorized will have read & write logs permissions on the repo he created
@@ -102,12 +102,12 @@ async def create_repo(
 )
 async def update_repo(
     _: Authorized(can_write_repo()), repo_id: UUID, update: RepoUpdate
-) -> RepoRead:
+) -> RepoResponse:
     return await service.update_repo(repo_id, update)
 
 
 async def _handle_repo_include_options(
-    repo_read: RepoRead, include: list[RepoIncludeOptions]
+    repo_read: RepoResponse, include: list[RepoIncludeOptions]
 ):
     if RepoIncludeOptions.STATS in include:
         stats = await service.get_repo_stats(repo_read.id)
@@ -125,9 +125,9 @@ async def get_repo(
     _: Authorized(can_read_repo()),
     repo_id: UUID,
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
-) -> RepoRead:
+) -> RepoResponse:
     repo = await service.get_repo(repo_id)
-    response = RepoRead.from_repo(repo)
+    response = RepoResponse.from_repo(repo)
     await _handle_repo_include_options(response, include)
     return response
 
@@ -173,13 +173,13 @@ async def list_repos(
     search_params: Annotated[ResourceSearchParams, Depends()],
     include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> RepoList:
+) -> RepoListResponse:
     repos, page_info = await service.get_repos(
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    repo_list = RepoList.build(repos, page_info)
+    repo_list = RepoListResponse.build(repos, page_info)
     if include:
         for repo_read in repo_list.items:
             await _handle_repo_include_options(repo_read, include)
@@ -208,7 +208,7 @@ async def list_user_repos(
         ),
     ] = False,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
-) -> UserRepoList:
+) -> UserRepoListResponse:
     repos, page_info = await service.get_user_repos(
         user=authorized.user,
         user_can_read=has_read_permission,
@@ -217,7 +217,7 @@ async def list_user_repos(
         page_size=page_params.page_size,
     )
 
-    repo_list = UserRepoList.build(repos, page_info)
+    repo_list = UserRepoListResponse.build(repos, page_info)
     for repo_read, repo in zip(repo_list.items, repos):
         repo_read.permissions = UserRepoPermissions(
             read=(

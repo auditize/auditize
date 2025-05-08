@@ -108,14 +108,16 @@ class LogI18nProfileUpdate(BaseModel):
     )
 
 
-class LogI18nProfileRead(BaseModel, HasDatetimeSerialization):
+class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _ProfileIdField()
     name: str = _ProfileNameField()
     translations: dict[Lang, LogTranslation] = _ProfileTranslationsField()
     created_at: datetime = _ProfileCreatedAtField()
 
 
-class LogI18nProfileList(PagePaginatedResponse[LogI18nProfile, LogI18nProfileRead]):
+class LogI18nProfileListResponse(
+    PagePaginatedResponse[LogI18nProfile, LogI18nProfileResponse]
+):
     @classmethod
-    def build_item(cls, profile: LogI18nProfile) -> LogI18nProfileRead:
-        return LogI18nProfileRead.model_validate(profile.model_dump())
+    def build_item(cls, profile: LogI18nProfile) -> LogI18nProfileResponse:
+        return LogI18nProfileResponse.model_validate(profile.model_dump())

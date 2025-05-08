@@ -132,7 +132,7 @@ class UserCreationResponse(BaseModel):
     id: UUID = _UserIdField()
 
 
-class UserRead(BaseModel, HasDatetimeSerialization):
+class UserResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _UserIdField()
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
@@ -142,10 +142,10 @@ class UserRead(BaseModel, HasDatetimeSerialization):
     authenticated_at: datetime | None = _UserAuthenticatedAtField()
 
 
-class UserList(PagePaginatedResponse[User, UserRead]):
+class UserListResponse(PagePaginatedResponse[User, UserResponse]):
     @classmethod
-    def build_item(cls, user: User) -> UserRead:
-        return UserRead.model_validate(user.model_dump())
+    def build_item(cls, user: User) -> UserResponse:
+        return UserResponse.model_validate(user.model_dump())
 
 
 class UserPasswordResetInfoResponse(BaseModel):

@@ -33,13 +33,6 @@ class Repo(BaseModel, HasId, HasCreatedAt):
             return None
 
 
-class RepoUpdate(BaseModel):
-    name: str = None
-    status: RepoStatus = None
-    retention_period: Optional[int] = None
-    log_i18n_profile_id: Optional[UUID] = None
-
-
 def _RepoLogI18nProfileIdField(**kwargs):  # noqa
     return IdField(
         description="Log i18n profile ID",
@@ -116,12 +109,12 @@ class RepoStats(BaseModel, HasDatetimeSerialization):
     )
 
 
-class _BaseRepoRead(BaseModel):
+class _BaseRepoResponse(BaseModel):
     id: UUID = _RepoIdField()
     name: str = _RepoNameField()
 
 
-class RepoRead(_BaseRepoRead, HasDatetimeSerialization):
+class RepoResponse(_BaseRepoResponse, HasDatetimeSerialization):
     status: RepoStatus = _RepoStatusField()
     retention_period: int | None = _RepoRetentionPeriodField()
     log_i18n_profile_id: UUID | None = _RepoLogI18nProfileIdField()
@@ -136,10 +129,10 @@ class RepoRead(_BaseRepoRead, HasDatetimeSerialization):
         return cls.model_validate({**repo.model_dump(), "stats": None})
 
 
-class RepoList(PagePaginatedResponse[Repo, RepoRead]):
+class RepoListResponse(PagePaginatedResponse[Repo, RepoResponse]):
     @classmethod
-    def build_item(cls, repo: Repo) -> RepoRead:
-        return RepoRead.from_repo(repo)
+    def build_item(cls, repo: Repo) -> RepoResponse:
+        return RepoResponse.from_repo(repo)
 
 
 class UserRepoPermissions(BaseModel):
@@ -154,7 +147,7 @@ class UserRepoPermissions(BaseModel):
     )
 
 
-class UserRepoRead(_BaseRepoRead):
+class UserRepoResponse(_BaseRepoResponse):
     permissions: UserRepoPermissions = Field(
         description="The repository permissions",
         # NB: we have to use a default value here because the permissions field will be
@@ -165,7 +158,7 @@ class UserRepoRead(_BaseRepoRead):
     )
 
 
-class UserRepoList(PagePaginatedResponse[Repo, UserRepoRead]):
+class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoResponse]):
     @classmethod
-    def build_item(cls, repo: Repo) -> UserRepoRead:
-        return UserRepoRead.model_validate(repo.model_dump())
+    def build_item(cls, repo: Repo) -> UserRepoResponse:
+        return UserRepoResponse.model_validate(repo.model_dump())

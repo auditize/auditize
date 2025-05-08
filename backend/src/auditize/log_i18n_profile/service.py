@@ -8,7 +8,7 @@ from auditize.exceptions import (
 from auditize.log_i18n_profile.models import (
     LogI18nProfile,
     LogI18nProfileCreate,
-    LogI18nProfileRead,
+    LogI18nProfileResponse,
     LogI18nProfileUpdate,
     LogTranslation,
 )

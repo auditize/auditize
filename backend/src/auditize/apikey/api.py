@@ -7,9 +7,9 @@ from auditize.apikey import service
 from auditize.apikey.models import (
     ApikeyCreate,
     ApikeyCreateResponse,
-    ApikeyList,
-    ApikeyRead,
+    ApikeyListResponse,
     ApikeyRegenerationResponse,
+    ApikeyResponse,
     ApikeyUpdate,
 )
 from auditize.auth.authorizer import Authenticated, Authorized
@@ -62,7 +62,7 @@ async def update_apikey(
     authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
     apikey_update: ApikeyUpdate,
-) -> ApikeyRead:
+) -> ApikeyResponse:
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
     if apikey_update.permissions:
         authorize_grant(authorized.permissions, apikey_update.permissions)
@@ -80,7 +80,7 @@ async def update_apikey(
 async def get_repo(
     _: Authorized(can_read_apikey()),
     apikey_id: UUID,
-) -> ApikeyRead:
+) -> ApikeyResponse:
     return await service.get_apikey(apikey_id)
 
 
@@ -95,13 +95,13 @@ async def list_apikeys(
     _: Authorized(can_read_apikey()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> ApikeyList:
+) -> ApikeyListResponse:
     apikeys, page_info = await service.get_apikeys(
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    return ApikeyList.build(apikeys, page_info)
+    return ApikeyListResponse.build(apikeys, page_info)
 
 
 @router.delete(

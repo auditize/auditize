@@ -17,13 +17,13 @@ from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.user import service
 from auditize.user.models import (
     UserCreate,
-    UserList,
+    UserListResponse,
     UserMeResponse,
     UserMeUpdateRequest,
     UserPasswordResetInfoResponse,
     UserPasswordResetRequest,
     UserPasswordResetRequestRequest,
-    UserRead,
+    UserResponse,
     UserUpdate,
     UserUpdateRequest,
 )
@@ -64,7 +64,7 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
 async def create_user(
     authorized: Authorized(can_write_user()),
     user_create: UserCreate,
-) -> UserRead:
+) -> UserResponse:
     authorize_grant(authorized.permissions, user_create.permissions)
     return await service.create_user(user_create)
 
@@ -100,7 +100,7 @@ async def update_user(
     authorized: Authorized(can_write_user()),
     user_id: UUID,
     user_update: UserUpdateRequest,
-) -> UserRead:
+) -> UserResponse:
     _ensure_cannot_alter_own_user(authorized, user_id)
     await _ensure_cannot_update_email_of_user_with_non_grantable_permission(
         authorized, user_id, user_update
@@ -133,7 +133,7 @@ async def get_user_me(
     tags=["user"],
     responses=error_responses(404),
 )
-async def get_user(_: Authorized(can_read_user()), user_id: UUID) -> UserRead:
+async def get_user(_: Authorized(can_read_user()), user_id: UUID) -> UserResponse:
     return await service.get_user(user_id)
 
 
@@ -148,13 +148,13 @@ async def list_users(
     _: Authorized(can_read_user()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> UserList:
+) -> UserListResponse:
     users, page_info = await service.get_users(
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    return UserList.build(users, page_info)
+    return UserListResponse.build(users, page_info)
 
 
 @router.delete(
