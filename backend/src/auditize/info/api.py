@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from auditize.auth.authorizer import Authorized
 from auditize.helpers.api.errors import error_responses
-from auditize.info.api_models import InfoResponse
+from auditize.info.models import InfoResponse
 from auditize.version import __version__
 
 router = APIRouter()
