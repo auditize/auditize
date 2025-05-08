@@ -41,8 +41,8 @@ def make_log_data(**extra) -> Log:
 async def test_save_log_db_shape(repo: PreparedRepo):
     log = make_log_data()
     log_service = await LogService.for_writing(UUID(repo.id))
-    log_id = await log_service.save_log(log)
-    db_log = await repo.get_log(log_id)
+    log = await log_service.save_log(log)
+    db_log = await repo.get_log(log.id)
     assert list(db_log.keys()) == [
         "log_id",
         "saved_at",

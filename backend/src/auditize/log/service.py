@@ -19,7 +19,7 @@ from auditize.exceptions import (
     UnknownModelException,
 )
 from auditize.helpers.datetime import now, serialize_datetime
-from auditize.log.models import Entity, Log, LogSearchParams
+from auditize.log.models import Entity, Log, LogCreate, LogSearchParams
 from auditize.repo.models import Repo, RepoStatus
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.resource.pagination.cursor.serialization import (
@@ -147,15 +147,16 @@ class LogService:
                 )
             parent_entity_ref = entity.ref
 
-    async def save_log(self, log: Log) -> UUID:
+    async def save_log(self, log_create: LogCreate) -> Log:
         # await self.check_log(log)
 
-        log_id = uuid.uuid4()
+        log = Log.model_validate(log_create.model_dump())
+        log.id = uuid.uuid4()
         await self.es.index(
             index=self.index,
-            id=str(log_id),
+            id=str(log.id),
             document={
-                "log_id": log_id,
+                "log_id": log.id,
                 "saved_at": serialize_datetime(log.saved_at, with_milliseconds=True),
                 **log.model_dump(exclude={"id"}),
             },
@@ -163,7 +164,7 @@ class LogService:
         )
         await self._consolidate_log_entity_path(log.entity_path)
 
-        return log_id
+        return log
 
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
         resp = await self.es.update_by_query(

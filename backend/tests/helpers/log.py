@@ -1,6 +1,7 @@
 import base64
 import uuid
 from datetime import datetime
+from typing import Any
 
 import callee
 from icecream import ic
@@ -67,16 +68,17 @@ class PreparedLog:
             }
         )
 
-    def expected_api_response(self, extra=None) -> dict:
-        expected: dict[str, any] = {
+    @staticmethod
+    def build_expected_api_response(data=None) -> dict:
+        expected: dict[str, Any] = {
             "source": [],
             "actor": None,
             "resource": None,
             "details": [],
             "tags": [],
-            "attachments": self._attachments,
-            "id": self.id,
-            **self.data,
+            "attachments": [],
+            "id": callee.IsA(str),
+            **(data or {}),
             "saved_at": DATETIME_FORMAT,
         }
         for tag in expected["tags"]:
@@ -88,7 +90,17 @@ class PreparedLog:
             expected["resource"].setdefault("extra", [])
         for attachment in expected["attachments"]:
             attachment["saved_at"] = DATETIME_FORMAT
-        return {**expected, **(extra or {})}
+        return expected
+
+    def expected_api_response(self, extra=None) -> dict:
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "attachments": self._attachments,
+                **self.data,
+                **(extra or {}),
+            }
+        )
 
     def expected_db_document(self, extra=None) -> dict:
         expected = self.expected_api_response(extra)

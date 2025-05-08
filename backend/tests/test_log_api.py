@@ -54,11 +54,11 @@ async def test_log_repo_access_control(
 async def test_create_log_minimal_fields(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await log_write_client.assert_post(
+    log_data = PreparedLog.prepare_data()
+    await log_write_client.assert_post_created(
         f"/repos/{repo.id}/logs",
-        json=PreparedLog.prepare_data(),
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str)},
+        json=log_data,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
     )
 
 
@@ -73,7 +73,7 @@ async def test_create_log_forbidden(
 async def test_create_log_all_fields(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    data = PreparedLog.prepare_data(
+    log_data = PreparedLog.prepare_data(
         {
             "source": [
                 {"name": "ip", "value": "1.1.1.1"},
@@ -106,9 +106,9 @@ async def test_create_log_all_fields(
 
     await log_write_client.assert_post(
         f"/repos/{repo.id}/logs",
-        json=data,
+        json=log_data,
         expected_status_code=201,
-        expected_json={"id": callee.IsA(str)},
+        expected_json=PreparedLog.build_expected_api_response(log_data),
     )
 
 
