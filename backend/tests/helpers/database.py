@@ -24,6 +24,8 @@ async def teardown_test_dbm(dbm: DatabaseManager):
         if index_name.startswith(dbm.core_db.name):
             await dbm.elastic_client.indices.delete(index=index_name)
 
+    await dbm.core_db.client.drop_database(dbm.core_db.name)
+
     dbm.core_db.client.close()
 
 
