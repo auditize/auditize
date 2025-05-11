@@ -9,7 +9,6 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from auditize.database import get_core_db
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.apikey import PreparedApikey
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -770,12 +769,11 @@ async def test_repo_list_user_repos_as_apikey(apikey_builder: ApikeyBuilder):
         await client.assert_get_forbidden("/users/me/repos")
 
 
-async def test_repo_delete(repo_write_client: HttpTestHelper):
+async def test_repo_delete(repo_write_client: HttpTestHelper, superadmin_client):
     resp = await repo_write_client.assert_post_created("/repos", json={"name": "repo"})
     repo_id = resp.json()["id"]
     await repo_write_client.assert_delete_no_content(f"/repos/{repo_id}")
-
-    await assert_collection(get_core_db().repos, [])
+    await superadmin_client.assert_get_not_found(f"/repos/{repo_id}")
 
 
 async def test_repo_delete_with_related_resources(

@@ -1,5 +1,4 @@
 import re
-from datetime import datetime
 from unittest.mock import patch
 
 import callee
@@ -9,7 +8,6 @@ from httpx import Response
 from auditize.database import get_core_db
 from conftest import UserBuilder
 from helpers.apikey import PreparedApikey
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
@@ -363,10 +361,11 @@ async def test_user_list_forbidden(no_permission_client: HttpTestHelper):
     await no_permission_client.assert_get_forbidden("/users")
 
 
-async def test_user_delete(user_write_client: HttpTestHelper, user: PreparedUser):
-    await user_write_client.assert_delete(f"/users/{user.id}", expected_status_code=204)
-
-    await assert_collection(get_core_db().users, [])
+async def test_user_delete(
+    user_write_client: HttpTestHelper, user: PreparedUser, superadmin_client
+):
+    await user_write_client.assert_delete_no_content(f"/users/{user.id}")
+    await superadmin_client.assert_get_not_found(f"/users/{user.id}")
 
 
 async def test_user_delete_unknown_id(user_write_client: HttpTestHelper):

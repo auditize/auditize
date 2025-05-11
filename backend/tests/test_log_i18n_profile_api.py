@@ -1,6 +1,5 @@
 import pytest
 
-from auditize.database import get_core_db
 from auditize.i18n import Lang
 from auditize.log_i18n_profile.models import (
     LogI18nProfile,
@@ -8,7 +7,6 @@ from auditize.log_i18n_profile.models import (
     get_log_value_translation,
 )
 from conftest import RepoBuilder
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -430,12 +428,14 @@ async def test_log_i18n_profile_list_forbidden(repo_write_client: HttpTestHelper
 async def test_log_i18n_profile_delete(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
+    superadmin_client,
 ):
     await repo_write_client.assert_delete_no_content(
         f"/log-i18n-profiles/{log_i18n_profile.id}"
     )
-
-    await assert_collection(get_core_db().log_i18n_profiles, [])
+    await superadmin_client.assert_get_not_found(
+        f"/log-i18n-profiles/{log_i18n_profile.id}"
+    )
 
 
 async def test_log_i18n_profile_delete_while_used_by_repo(

@@ -1,12 +1,8 @@
 from typing import Any
-from uuid import UUID
 
-import callee
 import pytest
 
-from auditize.database import get_core_db
 from conftest import RepoBuilder, UserBuilder
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
 from helpers.log_filter import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
@@ -743,7 +739,7 @@ async def test_log_filter_delete(user_builder: UserBuilder, repo: PreparedRepo):
     async with user.client() as client:
         client: HttpTestHelper
         await client.assert_delete_no_content(f"/users/me/logs/filters/{log_filter.id}")
-    await assert_collection(get_core_db().log_filters, [])
+        await client.assert_get_not_found(f"/users/me/logs/filters/{log_filter.id}")
 
 
 async def test_log_filter_delete_unknown(log_read_user_client: HttpTestHelper):

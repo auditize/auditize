@@ -1,12 +1,9 @@
-from uuid import UUID
-
 import callee
 from httpx import Response
 
 from conftest import RepoBuilder
 
 from ..apikey import PreparedApikey
-from ..database import assert_collection
 from ..http import HttpTestHelper
 from ..log import UNKNOWN_UUID
 from ..repo import PreparedRepo

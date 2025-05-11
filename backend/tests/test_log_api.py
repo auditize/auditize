@@ -7,7 +7,6 @@ import callee
 import pytest
 
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
@@ -2143,28 +2142,32 @@ async def test_log_entity_consolidation_move_entity(
     await repo.create_log_with_entity_path(superadmin_client, ["B"])
     await repo.create_log_with_entity_path(superadmin_client, ["B", "AA"])
 
-    await assert_collection(
-        repo.db.log_entities,
-        [
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": None,
-                "ref": "A",
-                "name": "A",
-            },
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": "B",
-                "ref": "AA",
-                "name": "AA",
-            },
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": None,
-                "ref": "B",
-                "name": "B",
-            },
-        ],
+    # Check that the entity AA is now a child of B
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/entities",
+        expected_json={
+            "items": [
+                {
+                    "ref": "A",
+                    "name": "A",
+                    "parent_entity_ref": None,
+                    "has_children": True,
+                },
+                {
+                    "ref": "AA",
+                    "name": "AA",
+                    "parent_entity_ref": "A",
+                    "has_children": False,
+                },
+                {
+                    "ref": "B",
+                    "name": "B",
+                    "parent_entity_ref": None,
+                    "has_children": True,
+                },
+            ],
+            "pagination": {"next_cursor": None},
+        },
     )
 
 

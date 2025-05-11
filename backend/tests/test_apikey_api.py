@@ -7,7 +7,6 @@ from httpx import Response
 from auditize.database import get_core_db
 from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
@@ -211,14 +210,10 @@ async def test_apikey_list_forbidden(no_permission_client: HttpTestHelper):
 
 
 async def test_apikey_delete(
-    apikey_write_client: HttpTestHelper,
-    apikey: PreparedApikey,
+    apikey_write_client: HttpTestHelper, apikey: PreparedApikey, superadmin_client
 ):
-    await apikey_write_client.assert_delete(
-        f"/apikeys/{apikey.id}", expected_status_code=204
-    )
-
-    await assert_collection(get_core_db().apikeys, [])
+    await apikey_write_client.assert_delete_no_content(f"/apikeys/{apikey.id}")
+    await superadmin_client.assert_get_not_found(f"/apikeys/{apikey.id}")
 
 
 async def test_apikey_delete_unknown_id(apikey_write_client: HttpTestHelper):
