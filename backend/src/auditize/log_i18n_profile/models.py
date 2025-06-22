@@ -1,11 +1,14 @@
+import uuid
 from datetime import datetime
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import JSON, DateTime, ForeignKey, Uuid
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from auditize.database.dbm import Base
+from auditize.helpers.datetime import now
 from auditize.i18n.lang import DEFAULT_LANG, Lang
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
-from auditize.resource.models import HasCreatedAt, HasId
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
@@ -50,19 +53,47 @@ class LogTranslation(BaseModel):
         return translations.get(key, None)
 
 
-class LogI18nProfile(BaseModel, HasId, HasCreatedAt):
-    name: str
-    translations: dict[Lang, LogTranslation] = Field(default_factory=dict)
+class LogTranslationForLang(Base):
+    __tablename__ = "log_i18n_profile_translation"
 
-    def get_translation(self, lang: Lang, key_type: str, key: str) -> str | None:
-        actual_lang = None
-        if lang in self.translations:
-            actual_lang = lang
-        elif DEFAULT_LANG in self.translations:
-            actual_lang = DEFAULT_LANG
-        if actual_lang:
-            return self.translations[actual_lang].get_translation(key_type, key)
-        return None
+    id: Mapped[Uuid] = mapped_column(Uuid(), primary_key=True, default=uuid.uuid4)
+    lang: Mapped[Lang] = mapped_column(nullable=False)
+    profile_id: Mapped[Uuid] = mapped_column(
+        ForeignKey("log_i18n_profile.id", ondelete="CASCADE"), nullable=False
+    )
+    data: Mapped[JSON] = mapped_column(JSON(), nullable=False)
+
+    @property
+    def translation(self) -> LogTranslation:
+        return LogTranslation.model_validate(self.data)
+
+
+class LogI18nProfile(Base):
+    __tablename__ = "log_i18n_profile"
+
+    id: Mapped[Uuid] = mapped_column(Uuid(), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(nullable=False, unique=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=now
+    )
+    translations: Mapped[list[LogTranslationForLang]] = relationship(
+        lazy="selectin", cascade="all, delete-orphan"
+    )
+
+    def get_translation_for_lang(
+        self, lang: Lang | str
+    ) -> LogTranslationForLang | None:
+        return next((t for t in self.translations if t.lang == lang), None)
+
+    def get_translation(self, lang: Lang | str, key_type: str, key: str) -> str | None:
+        translation = self.get_translation_for_lang(lang)
+        if not translation:
+            translation = self.get_translation_for_lang(DEFAULT_LANG)
+
+        if not translation:
+            return None
+
+        return translation.translation.get_translation(key_type, key)
 
 
 def _build_default_translation(value: str) -> str:
@@ -70,7 +101,7 @@ def _build_default_translation(value: str) -> str:
 
 
 def get_log_value_translation(
-    profile: LogI18nProfile | None, lang: Lang, key_type: str, key: str
+    profile: LogI18nProfile | None, lang: Lang | str, key_type: str, key: str
 ) -> str:
     translation = None
     if profile:
@@ -109,10 +140,20 @@ class LogI18nProfileUpdate(BaseModel):
 
 
 class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
-    id: UUID = _ProfileIdField()
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID = _ProfileIdField()
     name: str = _ProfileNameField()
-    translations: dict[Lang, LogTranslation] = _ProfileTranslationsField()
+    translations: dict[Lang, LogTranslation] = _ProfileTranslationsField(
+        default_factory=dict
+    )
     created_at: datetime = _ProfileCreatedAtField()
+
+    @field_validator("translations", mode="before")
+    def validate_translations(
+        cls, translations: list[LogTranslation]
+    ) -> dict[Lang, LogTranslation]:
+        return {t.lang: t.translation for t in translations}
 
 
 class LogI18nProfileListResponse(
@@ -120,4 +161,4 @@ class LogI18nProfileListResponse(
 ):
     @classmethod
     def build_item(cls, profile: LogI18nProfile) -> LogI18nProfileResponse:
-        return LogI18nProfileResponse.model_validate(profile.model_dump())
+        return LogI18nProfileResponse.model_validate(profile)

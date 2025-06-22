@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from auditize.auth.authorizer import Authorized
+from auditize.dependencies import DbSession
 from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile import service
@@ -31,12 +32,15 @@ router = APIRouter(responses=error_responses(401, 403))
     operation_id="create_log_i18n_profile",
     tags=["log-i18n-profile"],
     status_code=201,
+    response_model=LogI18nProfileResponse,
     responses=error_responses(400, 409),
 )
 async def create_profile(
-    _: Authorized(can_write_repo()), profile_create: LogI18nProfileCreate
-) -> LogI18nProfileResponse:
-    return await service.create_log_i18n_profile(profile_create)
+    _: Authorized(can_write_repo()),
+    profile_create: LogI18nProfileCreate,
+    session: DbSession,
+):
+    return await service.create_log_i18n_profile(session, profile_create)
 
 
 @router.patch(
@@ -46,12 +50,16 @@ async def create_profile(
     operation_id="update_log_i18n_profile",
     tags=["log-i18n-profile"],
     status_code=200,
+    response_model=LogI18nProfileResponse,
     responses=error_responses(400, 409),
 )
 async def update_profile(
-    _: Authorized(can_write_repo()), profile_id: UUID, update: LogI18nProfileUpdate
-) -> LogI18nProfileResponse:
-    return await service.update_log_i18n_profile(profile_id, update)
+    _: Authorized(can_write_repo()),
+    profile_id: UUID,
+    update: LogI18nProfileUpdate,
+    session: DbSession,
+):
+    return await service.update_log_i18n_profile(session, profile_id, update)
 
 
 @router.get(
@@ -60,12 +68,13 @@ async def update_profile(
     description="Requires `repo:read` permission.",
     operation_id="get_log_i18n_profile",
     tags=["log-i18n-profile"],
+    response_model=LogI18nProfileResponse,
     responses=error_responses(404),
 )
 async def get_profile(
-    _: Authorized(can_read_repo()), profile_id: UUID
-) -> LogI18nProfileResponse:
-    return await service.get_log_i18n_profile(profile_id)
+    _: Authorized(can_read_repo()), profile_id: UUID, session: DbSession
+):
+    return await service.get_log_i18n_profile(session, profile_id)
 
 
 @router.get(
@@ -74,12 +83,13 @@ async def get_profile(
     description="Requires `repo:read` permission.",
     operation_id="get_log_i18n_profile_translation",
     tags=["log-i18n-profile"],
+    response_model=LogTranslation,
     responses=error_responses(404),
 )
 async def get_profile_translation(
-    _: Authorized(can_read_repo()), profile_id: UUID, lang: Lang
-) -> LogTranslation:
-    return await service.get_log_i18n_profile_translation(profile_id, lang)
+    _: Authorized(can_read_repo()), profile_id: UUID, lang: Lang, session: DbSession
+):
+    return await service.get_log_i18n_profile_translation(session, profile_id, lang)
 
 
 @router.get(
@@ -93,8 +103,10 @@ async def list_profiles(
     _: Authorized(can_read_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
+    session: DbSession,
 ) -> LogI18nProfileListResponse:
     profiles, page_info = await service.get_log_i18n_profiles(
+        session,
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
@@ -111,5 +123,7 @@ async def list_profiles(
     status_code=204,
     responses=error_responses(404),
 )
-async def delete_profile(_: Authorized(can_write_repo()), profile_id: UUID):
-    await service.delete_log_i18n_profile(profile_id)
+async def delete_profile(
+    _: Authorized(can_write_repo()), profile_id: UUID, session: DbSession
+):
+    await service.delete_log_i18n_profile(session, profile_id)

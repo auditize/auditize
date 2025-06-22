@@ -3,8 +3,13 @@ import random
 
 import elasticsearch
 from motor.motor_asyncio import AsyncIOMotorCollection
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.testing import future
 
+from auditize.config import get_config
 from auditize.database import Database, DatabaseManager, init_dbm
+from auditize.database.dbm import Base
 from auditize.log.service import create_indices
 
 
@@ -32,6 +37,45 @@ async def teardown_test_dbm(dbm: DatabaseManager):
 async def cleanup_db(db: Database):
     for collection_name in await db.db.list_collection_names():
         await db.db[collection_name].delete_many({})
+
+
+async def create_pg_db(dbm: DatabaseManager):
+    config = get_config()
+    pg_url = "postgresql+asyncpg://%s:%s@%s:5432/postgres" % (
+        config.postgres_user,
+        config.postgres_user_password,
+        config.postgres_host,
+    )
+    engine = create_async_engine(pg_url)
+    async with engine.connect() as conn:
+        conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+        await conn.execute(text(f"CREATE DATABASE {dbm.core_db.name}"))
+
+    async with dbm.db_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+async def truncate_pg_db(dbm: DatabaseManager):
+    async with dbm.db_engine.begin() as conn:
+        table_names = [table.name for table in Base.metadata.sorted_tables]
+        table_names_as_str = ", ".join(f'"{name}"' for name in table_names)
+        await conn.execute(
+            text(f"TRUNCATE TABLE {table_names_as_str} RESTART IDENTITY CASCADE")
+        )
+
+
+async def drop_pg_db(dbm: DatabaseManager):
+    config = get_config()
+    pg_url = "postgresql+asyncpg://%s:%s@%s:5432/postgres" % (
+        config.postgres_user,
+        config.postgres_user_password,
+        config.postgres_host,
+    )
+    await dbm.db_engine.dispose()
+    engine = create_async_engine(pg_url)
+    async with engine.connect() as conn:
+        conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+        await conn.execute(text(f"DROP DATABASE {dbm.core_db.name}"))
 
 
 class TestLogDatabasePool:

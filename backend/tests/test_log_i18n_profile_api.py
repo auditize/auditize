@@ -4,6 +4,7 @@ from auditize.i18n import Lang
 from auditize.log_i18n_profile.models import (
     LogI18nProfile,
     LogTranslation,
+    LogTranslationForLang,
     get_log_value_translation,
 )
 from conftest import RepoBuilder
@@ -467,8 +468,13 @@ async def test_log_i18n_profile_delete_forbidden(
 
 def test_get_log_value_translation():
     profile = LogI18nProfile(name="test")
-    profile.translations[Lang.FR] = LogTranslation(
-        action_type={"user-login": "Authentification utilisateur"},
+    profile.translations.append(
+        LogTranslationForLang(
+            lang=Lang.EN,
+            data=LogTranslation(
+                action_type={"user-login": "Authentification utilisateur"},
+            ).model_dump(),
+        )
     )
     assert (
         get_log_value_translation(profile, Lang.FR, "action_type", "user-login")
@@ -485,7 +491,9 @@ def test_get_log_value_translation_without_log_i18n_profile():
 
 def test_get_log_value_translation_unknown_key_type():
     profile = LogI18nProfile(name="test")
-    profile.translations[Lang.FR] = LogTranslation()
+    profile.translations.append(
+        LogTranslationForLang(lang=Lang.FR, data=LogTranslation().model_dump())
+    )
     with pytest.raises(ValueError):
         get_log_value_translation(profile, Lang.FR, "unknown_key_type", "user-login")
 
@@ -500,8 +508,13 @@ async def test_get_log_value_translation_unknown_key():
 
 async def test_get_log_value_translation_english_fallback():
     profile = LogI18nProfile(name="test")
-    profile.translations[Lang.EN] = LogTranslation(
-        action_type={"user-login": "User Authentication"},
+    profile.translations.append(
+        LogTranslationForLang(
+            lang=Lang.EN,
+            data=LogTranslation(
+                action_type={"user-login": "User Authentication"},
+            ).model_dump(),
+        )
     )
     assert (
         get_log_value_translation(profile, Lang.FR, "action_type", "user-login")

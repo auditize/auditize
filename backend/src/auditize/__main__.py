@@ -11,7 +11,8 @@ from pymongo.errors import PyMongoError
 
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import get_core_db, init_dbm
+from auditize.database import get_core_db, get_dbm, init_dbm
+from auditize.database.dbm import Base
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -132,6 +133,13 @@ async def dump_openapi():
     )
 
 
+async def create_db():
+    _lazy_init()
+    dbm = get_dbm()
+    async with dbm.db_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
 async def version():
     print(
         "auditize version %s (using Python %s - %s)"
@@ -189,6 +197,12 @@ async def async_main(args=None):
     # CMD openapi
     openapi_parser = sub_parsers.add_parser("openapi", help="Dump the OpenAPI schema")
     openapi_parser.set_defaults(func=lambda _: dump_openapi())
+
+    # CMD create-db
+    create_db_parser = sub_parsers.add_parser(
+        "create-db", help="Create the Auditize database"
+    )
+    create_db_parser.set_defaults(func=lambda _: create_db())
 
     # CMD version
     version_parser = sub_parsers.add_parser("version", help="Print version information")

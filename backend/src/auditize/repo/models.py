@@ -4,6 +4,7 @@ from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.exceptions import UnknownModelException
 from auditize.log_i18n_profile.models import LogI18nProfile
@@ -26,9 +27,13 @@ class Repo(BaseModel, HasId, HasCreatedAt):
     retention_period: Optional[int] = None
     log_i18n_profile_id: Optional[UUID] = None
 
-    async def get_log_i18n_profile(self) -> LogI18nProfile | None:
+    async def get_log_i18n_profile(
+        self, session: AsyncSession
+    ) -> LogI18nProfile | None:
+        if not self.log_i18n_profile_id:
+            return None
         try:
-            return await get_log_i18n_profile(self.log_i18n_profile_id)
+            return await get_log_i18n_profile(session, self.log_i18n_profile_id)
         except UnknownModelException:
             return None
 

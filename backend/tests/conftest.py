@@ -15,8 +15,11 @@ from helpers.apikey import PreparedApikey
 from helpers.database import (
     TestLogDatabasePool,
     cleanup_db,
+    create_pg_db,
+    drop_pg_db,
     setup_test_dbm,
     teardown_test_dbm,
+    truncate_pg_db,
 )
 from helpers.http import HttpTestHelper
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -106,6 +109,19 @@ async def tmp_db(_core_db: CoreDatabase):
     db = Database(_core_db.name + "_tmp", _core_db.client)
     yield db
     await db.client.drop_database(db.name)
+
+
+@pytest.fixture(scope="session")
+async def _pg_db(_dbm: DatabaseManager):
+    await create_pg_db(_dbm)
+    yield
+    await drop_pg_db(_dbm)
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def pg_db(_dbm: DatabaseManager, _pg_db):
+    yield
+    await truncate_pg_db(_dbm)
 
 
 RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]

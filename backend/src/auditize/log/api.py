@@ -9,6 +9,7 @@ from auditize.auth.authorizer import (
     AuthorizedForLogWrite,
 )
 from auditize.config import get_config
+from auditize.dependencies import DbSession
 from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.api.errors import error_responses
 from auditize.helpers.api.validators import (

@@ -3,7 +3,8 @@ from datetime import datetime
 
 import callee
 
-from auditize.log_i18n_profile.models import LogI18nProfile
+from auditize.database.dbm import open_db_session
+from auditize.log_i18n_profile.models import LogI18nProfile, LogI18nProfileCreate
 from auditize.log_i18n_profile.service import create_log_i18n_profile
 
 
@@ -97,7 +98,10 @@ class PreparedLogI18nProfile:
     async def create(cls, data=None):
         if not data:
             data = cls.prepare_data()
-        profile = await create_log_i18n_profile(LogI18nProfile(**data))
+        async with open_db_session() as session:
+            profile = await create_log_i18n_profile(
+                session, LogI18nProfileCreate(**data)
+            )
         return cls(str(profile.id), data)
 
     @classmethod

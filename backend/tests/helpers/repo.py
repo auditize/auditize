@@ -6,6 +6,7 @@ import callee
 from elasticsearch import AsyncElasticsearch
 
 from auditize.database import get_dbm
+from auditize.database.dbm import open_db_session
 from auditize.repo.models import Repo
 from auditize.repo.service import create_repo
 
@@ -34,7 +35,10 @@ class PreparedRepo:
         model_data = data.copy()
         if "log_i18n_profile_id" in model_data:
             model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
-        repo = await create_repo(Repo(**model_data), log_db_name=log_db_name)
+        async with open_db_session() as session:
+            repo = await create_repo(
+                session, Repo(**model_data), log_db_name=log_db_name
+            )
         return cls(str(repo.id), data, log_db_name)
 
     @staticmethod

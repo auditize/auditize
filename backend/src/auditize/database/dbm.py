@@ -1,14 +1,22 @@
-from typing import Generator, Self
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Self
 
 import certifi
 from elasticsearch import AsyncElasticsearch
+from fastapi.params import Depends
 from motor.motor_asyncio import AsyncIOMotorClient
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.ext.asyncio import AsyncSession as _AsyncSession
+from sqlalchemy.orm import DeclarativeBase
+from starlette.requests import Request
 
 from auditize.config import get_config
 from auditize.database import CoreDatabase
 from auditize.database.elastic import get_elastic_client
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 class DatabaseManager:
@@ -46,7 +54,7 @@ class DatabaseManager:
                     config.postgres_user,
                     config.postgres_user_password,
                     config.postgres_host,
-                    config.db_name,
+                    name,
                 )
             ),
             elastic_client=get_elastic_client(),
@@ -73,7 +81,19 @@ def get_core_db() -> CoreDatabase:
     return dbm.core_db
 
 
-def get_db_session() -> Generator[_AsyncSession, None, None]:
+@asynccontextmanager
+async def open_db_session():
     dbm = get_dbm()
-    with _AsyncSession(dbm.db_engine, expire_on_commit=False) as session:
+    async with _AsyncSession(dbm.db_engine, expire_on_commit=False) as session:
+        try:
+            yield session
+        except Exception as e:
+            await session.rollback()
+            raise e
+        finally:
+            await session.close()
+
+
+async def get_db_session() -> AsyncGenerator[_AsyncSession, None]:
+    async with open_db_session() as session:
         yield session

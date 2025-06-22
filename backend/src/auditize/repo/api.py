@@ -11,6 +11,7 @@ from auditize.auth.authorizer import (
     AuthorizedForLogRead,
     AuthorizedUser,
 )
+from auditize.dependencies import DbSession
 from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import LogTranslation
@@ -65,9 +66,11 @@ router = APIRouter(responses=error_responses(401, 403))
     responses=error_responses(400, 409),
 )
 async def create_repo(
-    authorized: Authorized(can_write_repo()), repo_create: RepoCreate
+    authorized: Authorized(can_write_repo()),
+    repo_create: RepoCreate,
+    session: DbSession,
 ) -> RepoResponse:
-    repo = await service.create_repo(repo_create)
+    repo = await service.create_repo(session, repo_create)
 
     # Ensure that authorized will have read & write logs permissions on the repo he created
     if not authorized.comply(
@@ -101,9 +104,12 @@ async def create_repo(
     responses=error_responses(400, 404, 409),
 )
 async def update_repo(
-    _: Authorized(can_write_repo()), repo_id: UUID, update: RepoUpdate
+    _: Authorized(can_write_repo()),
+    repo_id: UUID,
+    update: RepoUpdate,
+    session: DbSession,
 ) -> RepoResponse:
-    return await service.update_repo(repo_id, update)
+    return await service.update_repo(session, repo_id, update)
 
 
 async def _handle_repo_include_options(
@@ -141,10 +147,10 @@ async def get_repo(
     responses=error_responses(404),
 )
 async def get_repo_translation_for_user(
-    authorized: AuthorizedForLogRead(), repo_id: UUID
+    authorized: AuthorizedForLogRead(), repo_id: UUID, session: DbSession
 ) -> LogTranslation:
     authorized.ensure_user()
-    return await service.get_repo_translation(repo_id, authorized.user.lang)
+    return await service.get_repo_translation(session, repo_id, authorized.user.lang)
 
 
 @router.get(
@@ -156,9 +162,9 @@ async def get_repo_translation_for_user(
     responses=error_responses(404),
 )
 async def get_repo_translation(
-    _: AuthorizedForLogRead(), repo_id: UUID, lang: Lang
+    _: AuthorizedForLogRead(), repo_id: UUID, lang: Lang, session: DbSession
 ) -> LogTranslation:
-    return await service.get_repo_translation(repo_id, lang)
+    return await service.get_repo_translation(session, repo_id, lang)
 
 
 @router.get(

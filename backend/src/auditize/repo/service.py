@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 import elasticsearch
 from motor.motor_asyncio import AsyncIOMotorClientSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database import get_core_db
 from auditize.exceptions import (
@@ -36,18 +37,20 @@ from auditize.resource.service import (
 from auditize.user.models import User
 
 
-async def _validate_repo(repo: Repo | RepoUpdate):
+async def _validate_repo(session: AsyncSession, repo: Repo | RepoUpdate):
     if repo.log_i18n_profile_id:
-        if not await has_log_i18n_profile(repo.log_i18n_profile_id):
+        if not await has_log_i18n_profile(session, repo.log_i18n_profile_id):
             raise ValidationError(
                 f"Log i18n profile {repo.log_i18n_profile_id!r} does not exist"
             )
 
 
-async def create_repo(repo_create: RepoCreate, log_db_name: str = None) -> Repo:
+async def create_repo(
+    session: AsyncSession, repo_create: RepoCreate, log_db_name: str = None
+) -> Repo:
     from auditize.log.service import LogService
 
-    await _validate_repo(repo_create)
+    await _validate_repo(session, repo_create)
     db = get_core_db()
     repo_id = uuid4()
 
@@ -72,8 +75,8 @@ async def create_repo(repo_create: RepoCreate, log_db_name: str = None) -> Repo:
     return Repo.model_validate(repo_data)
 
 
-async def update_repo(repo_id: UUID, update: RepoUpdate) -> Repo:
-    await _validate_repo(update)
+async def update_repo(session: AsyncSession, repo_id: UUID, update: RepoUpdate) -> Repo:
+    await _validate_repo(session, update)
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_i18n_profile"
     ):
@@ -225,12 +228,16 @@ async def is_log_i18n_profile_used_by_repo(profile_id: UUID) -> bool:
     )
 
 
-async def get_repo_translation(repo_id: UUID, lang: Lang) -> LogTranslation:
+async def get_repo_translation(
+    session: AsyncSession, repo_id: UUID, lang: Lang
+) -> LogTranslation:
     repo = await get_repo(repo_id)
     if not repo.log_i18n_profile_id:
         return LogTranslation()
     try:
-        return await get_log_i18n_profile_translation(repo.log_i18n_profile_id, lang)
+        return await get_log_i18n_profile_translation(
+            session, repo.log_i18n_profile_id, lang
+        )
     except UnknownModelException:  # NB: this should not happen
         return LogTranslation()
 
