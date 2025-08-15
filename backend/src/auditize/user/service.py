@@ -4,6 +4,7 @@ from uuid import UUID
 
 import bcrypt
 from motor.motor_asyncio import AsyncIOMotorClientSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.config import get_config
 from auditize.database import get_core_db
@@ -59,15 +60,15 @@ def build_document_from_user(user: User) -> dict:
     }
 
 
-async def save_user(user: User) -> User:
-    await ensure_repos_in_permissions_exist(user.permissions)
+async def save_user(session: AsyncSession, user: User) -> User:
+    await ensure_repos_in_permissions_exist(session, user.permissions)
     user_data = await create_resource_document2(
         get_core_db().users, build_document_from_user(user)
     )
     return User.model_validate(user_data)
 
 
-async def create_user(user_create: UserCreate) -> User:
+async def create_user(session: AsyncSession, user_create: UserCreate) -> User:
     user = User.model_validate(
         {
             **user_create.model_dump(exclude={"permissions"}),
@@ -76,19 +77,21 @@ async def create_user(user_create: UserCreate) -> User:
     )
     user.password_reset_token = _generate_password_reset_token()
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        user = await save_user(user)
+        user = await save_user(session, user)
     _send_account_setup_email(user)
     return user
 
 
-async def update_user(user_id: UUID, user_update: UserUpdate) -> User:
+async def update_user(
+    session: AsyncSession, user_id: UUID, user_update: UserUpdate
+) -> User:
     doc_update = user_update.model_dump(
         exclude_unset=True, exclude={"permissions", "password"}
     )
     if user_update.permissions:
         user = await get_user(user_id)
         user_permissions = update_permissions(user.permissions, user_update.permissions)
-        await ensure_repos_in_permissions_exist(user_permissions)
+        await ensure_repos_in_permissions_exist(session, user_permissions)
         doc_update["permissions"] = user_permissions.model_dump()
     if user_update.password:
         doc_update["password_hash"] = hash_user_password(user_update.password)

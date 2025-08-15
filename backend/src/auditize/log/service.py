@@ -9,6 +9,7 @@ from uuid import UUID
 import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager
@@ -99,12 +100,12 @@ class LogService:
 
     @classmethod
     async def _for_statuses(
-        cls, repo: Repo | UUID, statuses: list[RepoStatus] = None
+        cls, session: AsyncSession, repo: Repo | UUID, statuses: list[RepoStatus] = None
     ) -> Self:
         from auditize.repo.service import get_repo  # avoid circular import
 
         if isinstance(repo, UUID):
-            repo = await get_repo(repo)
+            repo = await get_repo(session, repo)
 
         if statuses:
             if repo.status not in statuses:
@@ -116,16 +117,18 @@ class LogService:
         return cls(repo, DatabaseManager.get().elastic_client)
 
     @classmethod
-    async def for_reading(cls, repo: Repo | UUID):
-        return await cls._for_statuses(repo, [RepoStatus.enabled, RepoStatus.readonly])
+    async def for_reading(cls, session: AsyncSession, repo: Repo | UUID):
+        return await cls._for_statuses(
+            session, repo, [RepoStatus.enabled, RepoStatus.readonly]
+        )
 
     @classmethod
-    async def for_writing(cls, repo: Repo | UUID):
-        return await cls._for_statuses(repo, [RepoStatus.enabled])
+    async def for_writing(cls, session: AsyncSession, repo: Repo | UUID):
+        return await cls._for_statuses(session, repo, [RepoStatus.enabled])
 
     @classmethod
-    async def for_config(cls, repo: Repo | UUID):
-        return await cls._for_statuses(repo)
+    async def for_config(cls, session: AsyncSession, repo: Repo | UUID):
+        return await cls._for_statuses(session, repo)
 
     for_maintenance = for_config
 
@@ -586,14 +589,16 @@ class LogService:
             )
 
     @classmethod
-    async def apply_log_retention_period(cls, repo: UUID | Repo = None):
+    async def apply_log_retention_period(
+        cls, session: AsyncSession, repo: UUID | Repo = None
+    ):
         if repo:
-            repos = [await get_repo(repo)]
+            repos = [await get_repo(session, repo)]
         else:
-            repos = await get_retention_period_enabled_repos()
+            repos = await get_retention_period_enabled_repos(session)
 
         for repo in repos:
-            service = await cls.for_maintenance(repo)
+            service = await cls.for_maintenance(session, repo)
             await service._apply_log_retention_period()
             # FIXME: we should also delete the consolidated entities that are not referenced by any log
 

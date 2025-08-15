@@ -3,6 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.apikey.models import ApikeyUpdate
 from auditize.apikey.service import update_apikey
@@ -83,11 +84,13 @@ async def create_repo(
         )
         if authorized.apikey:
             await update_apikey(
+                session,
                 authorized.apikey.id,
                 ApikeyUpdate(permissions=grant_rw_on_repo_logs),
             )
         if authorized.user:
             await update_user(
+                session,
                 authorized.user.id,
                 UserUpdate(permissions=grant_rw_on_repo_logs),
             )
@@ -113,10 +116,10 @@ async def update_repo(
 
 
 async def _handle_repo_include_options(
-    repo_read: RepoResponse, include: list[RepoIncludeOptions]
+    session: AsyncSession, repo_read: RepoResponse, include: list[RepoIncludeOptions]
 ):
     if RepoIncludeOptions.STATS in include:
-        stats = await service.get_repo_stats(repo_read.id)
+        stats = await service.get_repo_stats(session, repo_read.id)
         repo_read.stats = RepoStats.model_validate(stats.model_dump())
 
 
@@ -130,11 +133,12 @@ async def _handle_repo_include_options(
 async def get_repo(
     _: Authorized(can_read_repo()),
     repo_id: UUID,
+    session: DbSession,
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
 ) -> RepoResponse:
-    repo = await service.get_repo(repo_id)
+    repo = await service.get_repo(session, repo_id)
     response = RepoResponse.from_repo(repo)
-    await _handle_repo_include_options(response, include)
+    await _handle_repo_include_options(session, response, include)
     return response
 
 
@@ -179,8 +183,10 @@ async def list_repos(
     search_params: Annotated[ResourceSearchParams, Depends()],
     include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
     page_params: Annotated[PagePaginationParams, Depends()],
+    session: DbSession,
 ) -> RepoListResponse:
     repos, page_info = await service.get_repos(
+        session,
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
@@ -188,7 +194,7 @@ async def list_repos(
     repo_list = RepoListResponse.build(repos, page_info)
     if include:
         for repo_read in repo_list.items:
-            await _handle_repo_include_options(repo_read, include)
+            await _handle_repo_include_options(session, repo_read, include)
     return repo_list
 
 
@@ -201,6 +207,7 @@ async def list_repos(
 )
 async def list_user_repos(
     authorized: AuthorizedUser(),
+    session: DbSession,
     has_read_permission: Annotated[
         bool,
         Query(
@@ -216,6 +223,7 @@ async def list_user_repos(
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> UserRepoListResponse:
     repos, page_info = await service.get_user_repos(
+        session,
         user=authorized.user,
         user_can_read=has_read_permission,
         user_can_write=has_write_permission,
@@ -253,5 +261,7 @@ async def list_user_repos(
     status_code=204,
     responses=error_responses(404),
 )
-async def delete_repo(_: Authorized(can_write_repo()), repo_id: UUID):
-    await service.delete_repo(repo_id)
+async def delete_repo(
+    _: Authorized(can_write_repo()), repo_id: UUID, session: DbSession
+):
+    await service.delete_repo(session, repo_id)

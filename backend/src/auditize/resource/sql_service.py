@@ -1,5 +1,6 @@
 import uuid
 
+from pydantic import BaseModel
 from sqlalchemy import delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,14 @@ async def save_sql_model(session: AsyncSession, model: Base) -> None:
     except IntegrityError as exc:
         raise ConstraintViolation() from exc
     await session.refresh(model)
+
+
+async def update_sql_model[T: Base](
+    session: AsyncSession, model: T, pydantic_model: BaseModel
+) -> None:
+    for field, value in pydantic_model.model_dump(exclude_unset=True).items():
+        setattr(model, field, value)
+    await save_sql_model(session, model)
 
 
 async def get_sql_model[T: Base](

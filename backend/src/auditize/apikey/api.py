@@ -13,6 +13,7 @@ from auditize.apikey.models import (
     ApikeyUpdate,
 )
 from auditize.auth.authorizer import Authenticated, Authorized
+from auditize.dependencies import DbSession
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import (
@@ -43,9 +44,10 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
 async def create_apikey(
     authorized: Authorized(can_write_apikey()),
     apikey_create: ApikeyCreate,
+    session: DbSession,
 ) -> ApikeyCreateResponse:
     authorize_grant(authorized.permissions, apikey_create.permissions)
-    apikey, key = await service.create_apikey(apikey_create)
+    apikey, key = await service.create_apikey(session, apikey_create)
     return ApikeyCreateResponse.model_validate({**apikey.model_dump(), "key": key})
 
 
@@ -62,11 +64,12 @@ async def update_apikey(
     authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
     apikey_update: ApikeyUpdate,
+    session: DbSession,
 ) -> ApikeyResponse:
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
     if apikey_update.permissions:
         authorize_grant(authorized.permissions, apikey_update.permissions)
-    return await service.update_apikey(apikey_id, apikey_update)
+    return await service.update_apikey(session, apikey_id, apikey_update)
 
 
 @router.get(

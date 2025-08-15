@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 import elasticsearch
 from motor.motor_asyncio import AsyncIOMotorClientSession
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database import get_core_db
@@ -26,7 +27,7 @@ from auditize.permissions.models import Permissions, PermissionsInput
 from auditize.permissions.operations import is_authorized
 from auditize.repo.models import Repo, RepoCreate, RepoStats, RepoStatus, RepoUpdate
 from auditize.resource.pagination.page.models import PagePaginationInfo
-from auditize.resource.pagination.page.service import find_paginated_by_page
+from auditize.resource.pagination.page.sql_service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document2,
     delete_resource_document,
@@ -34,10 +35,16 @@ from auditize.resource.service import (
     has_resource_document,
     update_resource_document,
 )
+from auditize.resource.sql_service import (
+    delete_sql_model,
+    get_sql_model,
+    save_sql_model,
+    update_sql_model,
+)
 from auditize.user.models import User
 
 
-async def _validate_repo(session: AsyncSession, repo: Repo | RepoUpdate):
+async def _validate_repo(session: AsyncSession, repo: RepoCreate | RepoUpdate):
     if repo.log_i18n_profile_id:
         if not await has_log_i18n_profile(session, repo.log_i18n_profile_id):
             raise ValidationError(
@@ -54,25 +61,21 @@ async def create_repo(
     db = get_core_db()
     repo_id = uuid4()
 
-    async with db.transaction() as session:
-        with enhance_constraint_violation_exception("error.constraint_violation.repo"):
-            repo_data = await create_resource_document2(
-                db.repos,
-                {
-                    **repo_create.model_dump(exclude={"id", "log_db_name"}),
-                    "log_db_name": (
-                        log_db_name if log_db_name else f"{db.name}_logs_{repo_id}"
-                    ),
-                },
-                resource_id=repo_id,
-                session=session,
-            )
-        if not log_db_name:
-            log_service = await LogService.for_maintenance(
-                await _get_repo(repo_id, session)
-            )
-            await log_service.create_log_db()
-    return Repo.model_validate(repo_data)
+    with enhance_constraint_violation_exception("error.constraint_violation.repo"):
+        repo = Repo(
+            id=repo_id,
+            name=repo_create.name,
+            status=repo_create.status,
+            retention_period=repo_create.retention_period,
+            log_i18n_profile_id=repo_create.log_i18n_profile_id,
+            log_db_name=(log_db_name if log_db_name else f"{db.name}_logs_{repo_id}"),
+        )
+        await save_sql_model(session, repo)
+
+    if not log_db_name:
+        log_service = await LogService.for_maintenance(session, repo)
+        await log_service.create_log_db()
+    return repo
 
 
 async def update_repo(session: AsyncSession, repo_id: UUID, update: RepoUpdate) -> Repo:
@@ -80,26 +83,26 @@ async def update_repo(session: AsyncSession, repo_id: UUID, update: RepoUpdate) 
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_i18n_profile"
     ):
-        await update_resource_document(get_core_db().repos, repo_id, update)
-    return await get_repo(repo_id)
+        repo = await get_repo(session, repo_id)
+        await update_sql_model(session, repo, update)
+    return repo
 
 
-async def _get_repo(repo_id: UUID, session: AsyncIOMotorClientSession = None) -> Repo:
-    result = await get_resource_document(get_core_db().repos, repo_id, session=session)
-    return Repo.model_validate(result)
+async def _get_repo(session: AsyncSession, repo_id: UUID) -> Repo:
+    return await get_sql_model(session, Repo, repo_id)
 
 
-async def get_repo(repo_id: UUID | Repo) -> Repo:
+async def get_repo(session: AsyncSession, repo_id: UUID | Repo) -> Repo:
     if isinstance(repo_id, Repo):
         return repo_id
-    return await _get_repo(repo_id)
+    return await _get_repo(session, repo_id)
 
 
-async def get_repo_stats(repo_id: UUID) -> RepoStats:
+async def get_repo_stats(session: AsyncSession, repo_id: UUID) -> RepoStats:
     from auditize.log.service import LogService
 
-    repo = await _get_repo(repo_id)
-    log_service = await LogService.for_maintenance(repo)
+    repo = await _get_repo(session, repo_id)
+    log_service = await LogService.for_maintenance(session, repo)
     stats = RepoStats()
 
     try:
@@ -118,26 +121,27 @@ async def get_repo_stats(repo_id: UUID) -> RepoStats:
 
 
 async def _get_repos(
-    filter: dict[str, Any],
+    session: AsyncSession,
+    filter: Any | None,
     page: int,
     page_size: int,
 ) -> tuple[list[Repo], PagePaginationInfo]:
-    results, page_info = await find_paginated_by_page(
-        get_core_db().repos,
+    models, page_info = await find_paginated_by_page(
+        session,
+        Repo,
         filter=filter,
-        sort=[("name", 1)],
+        order_by=Repo.name.asc(),
         page=page,
         page_size=page_size,
     )
-
-    return [Repo.model_validate(result) async for result in results], page_info
+    return models, page_info
 
 
 async def get_repos(
-    query: str, page: int, page_size: int
+    session: AsyncSession, query: str, page: int, page_size: int
 ) -> tuple[list[Repo], PagePaginationInfo]:
     return await _get_repos(
-        {"$text": {"$search": query}} if query else None, page, page_size
+        session, Repo.name.ilike(f"%{query}%") if query else None, page, page_size
     )
 
 
@@ -183,6 +187,7 @@ def _get_authorized_repo_ids_for_user(
 
 
 async def get_user_repos(
+    session: AsyncSession,
     *,
     user: User,
     user_can_read: bool,
@@ -190,22 +195,19 @@ async def get_user_repos(
     page: int,
     page_size: int,
 ) -> tuple[list[Repo], PagePaginationInfo]:
-    filter = dict[str, Any]()
-
-    filter["status"] = (
-        RepoStatus.enabled
-        if user_can_write
-        else {"$in": [RepoStatus.enabled, RepoStatus.readonly]}
-    )
+    if user_can_write:
+        filter = Repo.status == RepoStatus.enabled
+    else:
+        filter = Repo.status.in_([RepoStatus.enabled, RepoStatus.readonly])
 
     repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
     if repo_ids is not None:
-        filter["_id"] = {"$in": repo_ids}
+        filter = and_(filter, Repo.id.in_(repo_ids))
 
-    return await _get_repos(filter, page, page_size)
+    return await _get_repos(session, filter, page, page_size)
 
 
-async def delete_repo(repo_id: UUID):
+async def delete_repo(session: AsyncSession, repo_id: UUID):
     # avoid circular imports
     from auditize.apikey.service import remove_repo_from_apikeys_permissions
     from auditize.log.service import LogService
@@ -213,25 +215,29 @@ async def delete_repo(repo_id: UUID):
     from auditize.user.service import remove_repo_from_users_permissions
 
     core_db = get_core_db()
-    log_service = await LogService.for_maintenance(repo_id)
-    async with core_db.transaction() as session:
-        await delete_resource_document(core_db.repos, repo_id, session=session)
-        await remove_repo_from_users_permissions(repo_id, session)
-        await remove_repo_from_apikeys_permissions(repo_id, session)
-        await delete_log_filters_with_repo(repo_id, session)
+    async with core_db.transaction() as mongo_session:
+        log_service = await LogService.for_maintenance(session, repo_id)
+        await delete_sql_model(session, Repo, repo_id)
+        await remove_repo_from_users_permissions(repo_id, mongo_session)
+        await remove_repo_from_apikeys_permissions(repo_id, mongo_session)
+        await delete_log_filters_with_repo(repo_id, mongo_session)
         await log_service.delete_log_db()
 
 
-async def is_log_i18n_profile_used_by_repo(profile_id: UUID) -> bool:
-    return await has_resource_document(
-        get_core_db().repos, {"log_i18n_profile_id": profile_id}
-    )
+async def is_log_i18n_profile_used_by_repo(
+    session: AsyncSession, profile_id: UUID
+) -> bool:
+    return (
+        await session.execute(
+            select(Repo).where(Repo.log_i18n_profile_id == profile_id)
+        )
+    ).scalars().first() is not None
 
 
 async def get_repo_translation(
     session: AsyncSession, repo_id: UUID, lang: Lang
 ) -> LogTranslation:
-    repo = await get_repo(repo_id)
+    repo = await get_repo(session, repo_id)
     if not repo.log_i18n_profile_id:
         return LogTranslation()
     try:
@@ -242,16 +248,21 @@ async def get_repo_translation(
         return LogTranslation()
 
 
-async def ensure_repos_in_permissions_exist(permissions: Permissions):
+async def ensure_repos_in_permissions_exist(
+    session: AsyncSession, permissions: Permissions
+):
     for repo_id in permissions.logs.get_repos():
         try:
-            await get_repo(repo_id)
+            await get_repo(session, repo_id)
         except UnknownModelException:
             raise ValidationError(
                 f"Repository {repo_id} cannot be assigned in log permissions as it does not exist"
             )
 
 
-async def get_retention_period_enabled_repos() -> list[Repo]:
-    results = get_core_db().repos.find({"retention_period": {"$ne": None}})
-    return [Repo.model_validate(result) async for result in results]
+async def get_retention_period_enabled_repos(session: AsyncSession) -> list[Repo]:
+    return (
+        (await session.execute(select(Repo).where(Repo.retention_period.isnot(None))))
+        .scalars()
+        .all()
+    )

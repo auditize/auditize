@@ -1,10 +1,10 @@
 import uuid
-from datetime import datetime
 
 import callee
 
 from auditize.apikey.models import Apikey
 from auditize.apikey.service import create_apikey
+from auditize.database.dbm import open_db_session
 from auditize.permissions.models import Permissions
 
 from .http import HttpTestHelper
@@ -43,7 +43,9 @@ class PreparedApikey:
     async def inject_into_db(cls, apikey: Apikey = None) -> "PreparedApikey":
         if apikey is None:
             apikey = cls.prepare_model()
-        apikey, key = await create_apikey(apikey)
+
+        async with open_db_session() as session:
+            apikey, key = await create_apikey(session, apikey)
         return cls(
             id=str(apikey.id),
             key=key,

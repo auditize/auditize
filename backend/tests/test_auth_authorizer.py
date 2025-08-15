@@ -13,6 +13,7 @@ from auditize.auth.jwt import (
     generate_access_token_payload,
     generate_session_token_payload,
 )
+from auditize.database.dbm import open_db_session
 from auditize.exceptions import AuthenticationFailure
 from auditize.permissions.models import Permissions
 from conftest import ApikeyBuilder
@@ -103,7 +104,8 @@ async def test_auth_access_control_downgraded_apikey_permissions(
     apikey_update = ApikeyUpdate()
     apikey_update.permissions = Permissions()
     apikey_update.permissions.is_superadmin = False
-    await update_apikey(UUID(apikey.id), apikey_update)
+    async with open_db_session() as session:
+        await update_apikey(session, UUID(apikey.id), apikey_update)
 
     # fourth step, try to authenticate with the access token
     # it must fail because the access token has now more permissions than the original API key

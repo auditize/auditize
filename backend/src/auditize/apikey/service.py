@@ -3,6 +3,7 @@ import secrets
 from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.apikey.models import Apikey, ApikeyCreate, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
@@ -31,14 +32,16 @@ def _generate_key() -> tuple[str, str]:
     return value, _hash_key(value)
 
 
-async def create_apikey(apikey_create: ApikeyCreate) -> tuple[Apikey, str]:
+async def create_apikey(
+    session: AsyncSession, apikey_create: ApikeyCreate
+) -> tuple[Apikey, str]:
     apikey = Apikey.model_validate(
         {
             **apikey_create.model_dump(exclude={"id", "key_hash", "permissions"}),
             "permissions": normalize_permissions(apikey_create.permissions),
         }
     )
-    await ensure_repos_in_permissions_exist(apikey.permissions)
+    await ensure_repos_in_permissions_exist(session, apikey.permissions)
     key, key_hash = _generate_key()
     apikey.key_hash = key_hash
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
@@ -46,14 +49,16 @@ async def create_apikey(apikey_create: ApikeyCreate) -> tuple[Apikey, str]:
     return Apikey.model_validate(apikey_data), key
 
 
-async def update_apikey(apikey_id: UUID, apikey_update: ApikeyUpdate) -> Apikey:
+async def update_apikey(
+    session: AsyncSession, apikey_id: UUID, apikey_update: ApikeyUpdate
+) -> Apikey:
     doc_update = apikey_update.model_dump(exclude_unset=True, exclude={"permissions"})
     if apikey_update.permissions:
         apikey = await get_apikey(apikey_id)
         apikey_permissions = update_permissions(
             apikey.permissions, apikey_update.permissions
         )
-        await ensure_repos_in_permissions_exist(apikey_permissions)
+        await ensure_repos_in_permissions_exist(session, apikey_permissions)
         doc_update["permissions"] = apikey_permissions.model_dump()
 
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):

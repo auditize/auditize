@@ -6,6 +6,7 @@ import callee
 import pytest
 from motor.motor_asyncio import AsyncIOMotorCollection
 
+from auditize.database.dbm import open_db_session
 from auditize.exceptions import InvalidPaginationCursor
 from auditize.log.models import CustomField, Log
 from auditize.log.service import (
@@ -40,8 +41,10 @@ def make_log_data(**extra) -> Log:
 
 async def test_save_log_db_shape(repo: PreparedRepo):
     log = make_log_data()
-    log_service = await LogService.for_writing(UUID(repo.id))
-    log = await log_service.save_log(log)
+
+    async with open_db_session() as session:
+        log_service = await LogService.for_writing(session, UUID(repo.id))
+        log = await log_service.save_log(log)
     db_log = await repo.get_log(log.id)
     assert list(db_log.keys()) == [
         "log_id",
@@ -79,7 +82,9 @@ async def test_log_retention_period_disabled(
     await repo.create_log(
         superadmin_client, saved_at=datetime.now() - timedelta(days=3650)
     )
-    await LogService.apply_log_retention_period()
+
+    async with open_db_session() as session:
+        await LogService.apply_log_retention_period(session)
     assert await repo.get_log_count() == 1
 
 
@@ -106,7 +111,8 @@ async def test_log_retention_period_enabled(
         superadmin_client, saved_at=datetime.now() - timedelta(days=29)
     )
 
-    await LogService.apply_log_retention_period()
+    async with open_db_session() as session:
+        await LogService.apply_log_retention_period(session)
 
     assert await repo_1.get_log_count() == 1
     assert await repo_1.get_log(repo_1_log_2.id) is not None
@@ -189,7 +195,8 @@ async def test_log_retention_period_purge_consolidated_data(
         mime_type="mime-type/to-be-purged",
     )
 
-    await LogService.apply_log_retention_period()
+    async with open_db_session() as session:
+        await LogService.apply_log_retention_period(session)
 
 
 @pytest.mark.skip()
@@ -223,7 +230,8 @@ async def test_log_retention_period_purge_log_entities_1(
         ["A", "AC"],
     )
 
-    await LogService.apply_log_retention_period()
+    async with open_db_session() as session:
+        await LogService.apply_log_retention_period(session)
 
     await assert_consolidated_data(
         repo.db.log_entities,
@@ -256,7 +264,8 @@ async def test_log_retention_period_purge_log_entities_2(
         saved_at=datetime.now() - timedelta(days=40),
     )
 
-    await LogService.apply_log_retention_period()
+    async with open_db_session() as session:
+        await LogService.apply_log_retention_period(session)
 
     await assert_consolidated_data(
         repo.db.log_entities,

@@ -1,17 +1,24 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.ext.asyncio import AsyncSession
+if TYPE_CHECKING:
+    from auditize.log_i18n_profile.models import LogI18nProfile
 
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import ForeignKey
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from auditize.database.dbm import Base
 from auditize.exceptions import UnknownModelException
 from auditize.log_i18n_profile.models import LogI18nProfile
 from auditize.log_i18n_profile.service import get_log_i18n_profile
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.models import HasCreatedAt, HasId
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
+from auditize.resource.sql_models import HasCreatedAt, HasId
 
 
 class RepoStatus(str, Enum):
@@ -20,22 +27,21 @@ class RepoStatus(str, Enum):
     disabled = "disabled"
 
 
-class Repo(BaseModel, HasId, HasCreatedAt):
-    name: str
-    log_db_name: str = None
-    status: RepoStatus = RepoStatus.enabled
-    retention_period: Optional[int] = None
-    log_i18n_profile_id: Optional[UUID] = None
+class Repo(Base, HasId, HasCreatedAt):
+    __tablename__ = "repo"
 
-    async def get_log_i18n_profile(
-        self, session: AsyncSession
-    ) -> LogI18nProfile | None:
-        if not self.log_i18n_profile_id:
-            return None
-        try:
-            return await get_log_i18n_profile(session, self.log_i18n_profile_id)
-        except UnknownModelException:
-            return None
+    name: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
+    log_db_name: Mapped[str] = mapped_column(nullable=False)
+    status: Mapped[RepoStatus] = mapped_column(
+        nullable=False, default=RepoStatus.enabled
+    )
+    retention_period: Mapped[Optional[int]] = mapped_column(nullable=True)
+    log_i18n_profile_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("log_i18n_profile.id"), nullable=True
+    )
+    log_i18n_profile: Mapped[Optional["LogI18nProfile"]] = relationship(
+        "LogI18nProfile", lazy="selectin"
+    )
 
 
 def _RepoLogI18nProfileIdField(**kwargs):  # noqa
@@ -131,7 +137,7 @@ class RepoResponse(_BaseRepoResponse, HasDatetimeSerialization):
 
     @classmethod
     def from_repo(cls, repo: Repo):
-        return cls.model_validate({**repo.model_dump(), "stats": None})
+        return cls.model_validate(repo, from_attributes=True)
 
 
 class RepoListResponse(PagePaginatedResponse[Repo, RepoResponse]):
@@ -166,4 +172,4 @@ class UserRepoResponse(_BaseRepoResponse):
 class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoResponse]):
     @classmethod
     def build_item(cls, repo: Repo) -> UserRepoResponse:
-        return UserRepoResponse.model_validate(repo.model_dump())
+        return UserRepoResponse.model_validate(repo, from_attributes=True)

@@ -8,6 +8,7 @@ from auditize.auth.authorizer import (
     Authorized,
     AuthorizedUser,
 )
+from auditize.dependencies import DbSession
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import can_read_user, can_write_user
@@ -64,9 +65,10 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
 async def create_user(
     authorized: Authorized(can_write_user()),
     user_create: UserCreate,
+    session: DbSession,
 ) -> UserResponse:
     authorize_grant(authorized.permissions, user_create.permissions)
-    return await service.create_user(user_create)
+    return await service.create_user(session, user_create)
 
 
 @router.patch(
@@ -80,11 +82,12 @@ async def create_user(
 async def update_user_me(
     authorized: AuthorizedUser(),
     user_me_update: UserMeUpdateRequest,
+    session: DbSession,
 ) -> UserMeResponse:
     user_update = UserUpdate.model_validate(
         user_me_update.model_dump(exclude_unset=True)
     )
-    user = await service.update_user(authorized.user.id, user_update)
+    user = await service.update_user(session, authorized.user.id, user_update)
     return UserMeResponse.from_user(user)
 
 
@@ -100,6 +103,7 @@ async def update_user(
     authorized: Authorized(can_write_user()),
     user_id: UUID,
     user_update: UserUpdateRequest,
+    session: DbSession,
 ) -> UserResponse:
     _ensure_cannot_alter_own_user(authorized, user_id)
     await _ensure_cannot_update_email_of_user_with_non_grantable_permission(
@@ -109,7 +113,9 @@ async def update_user(
         authorize_grant(authorized.permissions, user_update.permissions)
 
     return await service.update_user(
-        user_id, UserUpdate.model_validate(user_update.model_dump(exclude_unset=True))
+        session,
+        user_id,
+        UserUpdate.model_validate(user_update.model_dump(exclude_unset=True)),
     )
 
 

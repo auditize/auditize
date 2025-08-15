@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from auditize.auth.authorizer import AuthorizedUser
+from auditize.dependencies import DbSession
 from auditize.helpers.api.errors import error_responses
 from auditize.log_filter import service
 from auditize.log_filter.models import (
@@ -31,8 +32,10 @@ router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
 async def create_filter(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     log_filter: LogFilterCreate,
+    session: DbSession,
 ) -> LogFilterResponse:
     return await service.create_log_filter(
+        session,
         LogFilter.model_validate(
             {
                 **log_filter.model_dump(),
@@ -54,8 +57,11 @@ async def update_filter(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     update: LogFilterUpdate,
     filter_id: UUID,
+    session: DbSession,
 ) -> LogFilterResponse:
-    return await service.update_log_filter(authorized.user.id, filter_id, update)
+    return await service.update_log_filter(
+        session, authorized.user.id, filter_id, update
+    )
 
 
 @router.get(

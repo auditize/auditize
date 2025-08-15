@@ -12,7 +12,7 @@ from pymongo.errors import PyMongoError
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import get_core_db, get_dbm, init_dbm
-from auditize.database.dbm import Base
+from auditize.database.dbm import Base, open_db_session
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -75,15 +75,17 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
     password = _get_password()
 
     try:
-        await save_user(
-            User(
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                password_hash=hash_user_password(password),
-                permissions=Permissions(is_superadmin=True),
+        async with open_db_session() as session:
+            await save_user(
+                session,
+                User(
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    password_hash=hash_user_password(password),
+                    permissions=Permissions(is_superadmin=True),
+                ),
             )
-        )
     except ConstraintViolation:
         sys.exit(f"Error: user with email {email} already exists")
     print(f"User with email {email} has been successfully created")
@@ -99,7 +101,8 @@ async def serve(host: str, port: int):
 
 async def purge_expired_logs(repo: UUID = None):
     _lazy_init()
-    await LogService.apply_log_retention_period(repo)
+    async with open_db_session() as session:
+        await LogService.apply_log_retention_period(session, repo)
 
 
 async def schedule():

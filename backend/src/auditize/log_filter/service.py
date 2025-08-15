@@ -2,6 +2,7 @@ from typing import Any
 from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database import get_core_db
 from auditize.exceptions import (
@@ -22,18 +23,22 @@ from auditize.resource.service import (
 )
 
 
-async def _validate_log_filter(log_filter: LogFilter | LogFilterUpdate):
+async def _validate_log_filter(
+    session: AsyncSession, log_filter: LogFilter | LogFilterUpdate
+):
     # please note that we don't check if the user has the permission on the repo logs
     # the actual permission check is done when the user actually
     if log_filter.repo_id:
         try:
-            await get_repo(log_filter.repo_id)
+            await get_repo(session, log_filter.repo_id)
         except UnknownModelException:
             raise ValidationError(f"Repository {log_filter.repo_id!r} does not exist")
 
 
-async def create_log_filter(log_filter_create: LogFilterCreate) -> LogFilter:
-    await _validate_log_filter(log_filter_create)
+async def create_log_filter(
+    session: AsyncSession, log_filter_create: LogFilterCreate
+) -> LogFilter:
+    await _validate_log_filter(session, log_filter_create)
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_filter"
     ):
@@ -48,9 +53,9 @@ def _log_filter_discriminator(user_id: UUID, log_filter_id: UUID) -> dict:
 
 
 async def update_log_filter(
-    user_id: UUID, log_filter_id: UUID, update: LogFilterUpdate
+    session: AsyncSession, user_id: UUID, log_filter_id: UUID, update: LogFilterUpdate
 ) -> LogFilter:
-    await _validate_log_filter(update)
+    await _validate_log_filter(session, update)
     with enhance_constraint_violation_exception(
         "error.constraint_violation.log_filter"
     ):

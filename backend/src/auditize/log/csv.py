@@ -4,10 +4,7 @@ from io import StringIO
 from itertools import count
 from typing import Any, AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from auditize.config import get_config
-from auditize.database.dbm import open_db_session
 from auditize.exceptions import (
     ValidationError,
 )
@@ -135,15 +132,14 @@ async def stream_logs_as_csv(
     returned_rows = 0
     # NB: we instantiate the session here because StreamingResponse and router dependencies
     # do not work play well together.
-    async with open_db_session() as session:
-        log_i18n_profile = await log_service.repo.get_log_i18n_profile(session)
     cursor = None
     for i in count(0):
         csv_buffer = StringIO()
         csv_writer = csv.writer(csv_buffer)
         if i == 0:
             csv_writer.writerow(
-                _translate_csv_column(col, log_i18n_profile, lang) for col in columns
+                _translate_csv_column(col, log_service.repo.log_i18n_profile, lang)
+                for col in columns
             )
         logs, cursor = await log_service.get_logs(
             authorized_entities=authorized_entities,
@@ -153,7 +149,9 @@ async def stream_logs_as_csv(
         )
         returned_rows += len(logs)
         csv_writer.writerows(
-            _log_dict_to_csv_row(_log_to_dict(log, log_i18n_profile, lang), columns)
+            _log_dict_to_csv_row(
+                _log_to_dict(log, log_service.repo.log_i18n_profile, lang), columns
+            )
             for log in logs
         )
         yield csv_buffer.getvalue()
