@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import JSON, DateTime, ForeignKey, Uuid
+from sqlalchemy import JSON, ForeignKey, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import Base
-from auditize.helpers.datetime import now
 from auditize.i18n.lang import DEFAULT_LANG, Lang
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
+from auditize.resource.sql_models import HasCreatedAt, HasId
 
 
 class LogTranslation(BaseModel):
@@ -68,14 +68,10 @@ class LogTranslationForLang(Base):
         return LogTranslation.model_validate(self.data)
 
 
-class LogI18nProfile(Base):
+class LogI18nProfile(Base, HasId, HasCreatedAt):
     __tablename__ = "log_i18n_profile"
 
-    id: Mapped[Uuid] = mapped_column(Uuid(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(nullable=False, unique=True)
-    created_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=now
-    )
     translations: Mapped[list[LogTranslationForLang]] = relationship(
         lazy="selectin", cascade="all, delete-orphan"
     )
