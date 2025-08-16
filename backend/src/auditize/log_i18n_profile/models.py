@@ -56,7 +56,7 @@ class LogTranslation(BaseModel):
 class LogTranslationForLang(Base):
     __tablename__ = "log_i18n_profile_translation"
 
-    id: Mapped[Uuid] = mapped_column(Uuid(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[int] = mapped_column(primary_key=True)
     lang: Mapped[Lang] = mapped_column(nullable=False)
     profile_id: Mapped[Uuid] = mapped_column(
         ForeignKey("log_i18n_profile.id", ondelete="CASCADE"), nullable=False
