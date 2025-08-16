@@ -2,15 +2,18 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from sqlalchemy import JSON, Text, TypeDecorator
+from sqlalchemy.orm import Mapped, mapped_column
 
+from auditize.database.dbm import Base
 from auditize.helpers.api.validators import (
     FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN,
     FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING,
 )
 from auditize.log.models import BaseLogSearchParams
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
-from auditize.resource.models import HasCreatedAt, HasId
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
+from auditize.resource.sql_models import HasCreatedAt, HasId
 
 _BUILTIN_FILTER_COLUMNS = (
     "saved_at",
@@ -65,13 +68,41 @@ class LogFilterSearchParams(BaseLogSearchParams):
         return self
 
 
-class LogFilter(BaseModel, HasId, HasCreatedAt):
-    name: str
-    repo_id: UUID
-    user_id: UUID
-    search_params: LogFilterSearchParams
-    columns: list[str]
-    is_favorite: bool = False  # Added in 0.3.0
+class LogFilterSearchParamsAsJSON(TypeDecorator):
+    impl = JSON
+
+    def process_bind_param(self, value: LogFilterSearchParams | dict, _) -> dict:
+        if isinstance(value, LogFilterSearchParams):
+            return value.model_dump(mode="json")
+        return value
+
+    def process_result_value(self, value: dict, _) -> LogFilterSearchParams:
+        return LogFilterSearchParams.model_validate(value)
+
+
+class LogFilterColumnsAsList(TypeDecorator):
+    impl = Text
+
+    def process_bind_param(self, value: list[str], _) -> str:
+        return ",".join(value)
+
+    def process_result_value(self, value: str, _) -> list[str]:
+        return value.split(",") if value else []
+
+
+class LogFilter(Base, HasId, HasCreatedAt):
+    __tablename__ = "log_filter"
+
+    name: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
+    repo_id: Mapped[UUID] = mapped_column(nullable=False)
+    user_id: Mapped[UUID] = mapped_column(nullable=False)
+    search_params: Mapped[LogFilterSearchParams] = mapped_column(
+        LogFilterSearchParamsAsJSON(), nullable=False
+    )
+    columns: Mapped[list[str]] = mapped_column(LogFilterColumnsAsList(), nullable=False)
+    is_favorite: Mapped[bool] = mapped_column(
+        nullable=False, default=False
+    )  # Added in 0.3.0
 
 
 def _FilterIdField(**kwargs):  # noqa
@@ -194,4 +225,4 @@ class LogFilterResponse(BaseModel, HasDatetimeSerialization):
 class LogFilterListResponse(PagePaginatedResponse[LogFilter, LogFilterResponse]):
     @classmethod
     def build_item(cls, log_filter: LogFilter) -> LogFilterResponse:
-        return LogFilterResponse.model_validate(log_filter.model_dump())
+        return LogFilterResponse.model_validate(log_filter, from_attributes=True)

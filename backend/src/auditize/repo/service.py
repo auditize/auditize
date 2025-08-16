@@ -220,7 +220,7 @@ async def delete_repo(session: AsyncSession, repo_id: UUID):
         await delete_sql_model(session, Repo, repo_id)
         await remove_repo_from_users_permissions(repo_id, mongo_session)
         await remove_repo_from_apikeys_permissions(repo_id, mongo_session)
-        await delete_log_filters_with_repo(repo_id, mongo_session)
+        await delete_log_filters_with_repo(session, repo_id)
         await log_service.delete_log_db()
 
 

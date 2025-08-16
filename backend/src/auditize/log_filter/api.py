@@ -34,15 +34,7 @@ async def create_filter(
     log_filter: LogFilterCreate,
     session: DbSession,
 ) -> LogFilterResponse:
-    return await service.create_log_filter(
-        session,
-        LogFilter.model_validate(
-            {
-                **log_filter.model_dump(),
-                "user_id": authorized.user.id,
-            }
-        ),
-    )
+    return await service.create_log_filter(session, authorized.user.id, log_filter)
 
 
 @router.patch(
@@ -75,8 +67,9 @@ async def update_filter(
 async def get_filter(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     filter_id: UUID,
+    session: DbSession,
 ) -> LogFilterResponse:
-    return await service.get_log_filter(authorized.user.id, filter_id)
+    return await service.get_log_filter(session, authorized.user.id, filter_id)
 
 
 @router.get(
@@ -88,10 +81,12 @@ async def get_filter(
 async def list_log_filters(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
+    session: DbSession,
     is_favorite: bool = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> LogFilterListResponse:
     log_filters, page_info = await service.get_log_filters(
+        session,
         user_id=authorized.user.id,
         query=search_params.query,
         is_favorite=is_favorite,
@@ -112,5 +107,6 @@ async def list_log_filters(
 async def delete_filter(
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     filter_id: UUID,
+    session: DbSession,
 ):
-    await service.delete_log_filter(authorized.user.id, filter_id)
+    await service.delete_log_filter(session, authorized.user.id, filter_id)

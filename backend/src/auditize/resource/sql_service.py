@@ -1,7 +1,8 @@
 import uuid
+from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,23 +28,22 @@ async def update_sql_model[T: Base](
 
 
 async def get_sql_model[T: Base](
-    session: AsyncSession, model_class: type[T], model_id: uuid.UUID
+    session: AsyncSession, model_class: type[T], lookup: uuid.UUID | Any
 ) -> T:
-    model = await session.get(model_class, model_id)
+    if isinstance(lookup, uuid.UUID):
+        lookup = model_class.id == lookup
+    model = await session.scalar(select(model_class).where(lookup))
     if not model:
-        raise UnknownModelException(
-            f"Resource {model_class.__name__} with ID {str(model_id)!r} not found."
-        )
+        raise UnknownModelException()
     return model
 
 
 async def delete_sql_model[T: Base](
-    session: AsyncSession, model_class: type[T], model_id: uuid.UUID
+    session: AsyncSession, model_class: type[T], lookup: uuid.UUID | Any
 ) -> None:
-    query = delete(model_class).where(model_class.id == model_id)
-    result = await session.execute(query)
+    if isinstance(lookup, uuid.UUID):
+        lookup = model_class.id == lookup
+    result = await session.execute(delete(model_class).where(lookup))
     await session.commit()
     if result.rowcount == 0:
-        raise UnknownModelException(
-            f"Resource {model_class.__name__} with ID {str(model_id)!r} not found."
-        )
+        raise UnknownModelException()
