@@ -44,11 +44,10 @@ async def create_log_i18n_profile(
     session: AsyncSession,
     profile_create: LogI18nProfileCreate,
 ) -> LogI18nProfile:
-    profile = LogI18nProfile()
-    profile.name = profile_create.name
+    profile = LogI18nProfile(name=profile_create.name)
     for translation_lang, translation in profile_create.translations.items():
         profile.translations.append(
-            LogTranslationForLang(lang=translation_lang, data=translation.model_dump())
+            LogTranslationForLang(lang=translation_lang, translation=translation)
         )
 
     await _save_log_i18n_profile(session, profile)
@@ -67,17 +66,12 @@ async def update_log_i18n_profile(
             current_translation = profile.get_translation_for_lang(lang)
             # Update or add translation for the specified lang
             if updated_translation:
-                # we use exclude_none=True instead of exclude_unset=True
-                # to keep the potential empty dict fields in LogTranslation sub-model
-                updated_translation_serialized = updated_translation.model_dump(
-                    exclude_none=True
-                )
                 if current_translation:
-                    current_translation.data = updated_translation_serialized
+                    current_translation.translation = updated_translation
                 else:
                     profile.translations.append(
                         LogTranslationForLang(
-                            lang=lang, data=updated_translation_serialized
+                            lang=lang, translation=updated_translation
                         )
                     )
             # Remove translation for the specified lang if it is None

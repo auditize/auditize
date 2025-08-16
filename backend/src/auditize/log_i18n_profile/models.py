@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import JSON, ForeignKey, Uuid
+from sqlalchemy import JSON, ForeignKey, TypeDecorator, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import Base
@@ -53,6 +53,18 @@ class LogTranslation(BaseModel):
         return translations.get(key, None)
 
 
+class LogTranslationAsJSON(TypeDecorator):
+    impl = JSON
+
+    def process_bind_param(self, value: LogTranslation, _) -> dict:
+        # we use exclude_none=True instead of exclude_unset=True
+        # to keep the potential empty dict fields in LogTranslation sub-model
+        return value.model_dump(exclude_none=True)
+
+    def process_result_value(self, value: dict, _) -> LogTranslation:
+        return LogTranslation.model_validate(value)
+
+
 class LogTranslationForLang(Base):
     __tablename__ = "log_i18n_profile_translation"
 
@@ -61,11 +73,9 @@ class LogTranslationForLang(Base):
     profile_id: Mapped[Uuid] = mapped_column(
         ForeignKey("log_i18n_profile.id", ondelete="CASCADE"), nullable=False
     )
-    data: Mapped[JSON] = mapped_column(JSON(), nullable=False)
-
-    @property
-    def translation(self) -> LogTranslation:
-        return LogTranslation.model_validate(self.data)
+    translation: Mapped[LogTranslation] = mapped_column(
+        LogTranslationAsJSON(), nullable=False
+    )
 
 
 class LogI18nProfile(Base, HasId, HasCreatedAt):
