@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.apikey import service
 from auditize.apikey.models import (
@@ -13,7 +14,7 @@ from auditize.apikey.models import (
     ApikeyUpdate,
 )
 from auditize.auth.authorizer import Authenticated, Authorized
-from auditize.dependencies import DbSession
+from auditize.dependencies import get_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import (
@@ -42,9 +43,9 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
     responses=error_responses(400, 409),
 )
 async def create_apikey(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_apikey()),
     apikey_create: ApikeyCreate,
-    session: DbSession,
 ) -> ApikeyCreateResponse:
     authorize_grant(authorized.permissions, apikey_create.permissions)
     apikey, key = await service.create_apikey(session, apikey_create)
@@ -61,10 +62,10 @@ async def create_apikey(
     responses=error_responses(400, 404, 409),
 )
 async def update_apikey(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
     apikey_update: ApikeyUpdate,
-    session: DbSession,
 ) -> ApikeyResponse:
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
     if apikey_update.permissions:

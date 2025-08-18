@@ -9,7 +9,7 @@ from auditize.auth.authorizer import (
     Authorized,
     AuthorizedUser,
 )
-from auditize.dependencies import DbSession
+from auditize.dependencies import get_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.assertions import can_read_user, can_write_user
@@ -65,9 +65,9 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
     responses=error_responses(400, 409),
 )
 async def create_user(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_user()),
     user_create: UserCreate,
-    session: DbSession,
 ) -> UserResponse:
     authorize_grant(authorized.permissions, user_create.permissions)
     return await service.create_user(session, user_create)
@@ -82,9 +82,9 @@ async def create_user(
     responses=error_responses(400),
 )
 async def update_user_me(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedUser(),
     user_me_update: UserMeUpdateRequest,
-    session: DbSession,
 ) -> UserMeResponse:
     user_update = UserUpdate.model_validate(
         user_me_update.model_dump(exclude_unset=True)
@@ -102,10 +102,10 @@ async def update_user_me(
     responses=error_responses(400, 404, 409),
 )
 async def update_user(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_user()),
     user_id: UUID,
     user_update: UserUpdateRequest,
-    session: DbSession,
 ) -> UserResponse:
     _ensure_cannot_alter_own_user(authorized, user_id)
     await _ensure_cannot_update_email_of_user_with_non_grantable_permission(
@@ -142,7 +142,9 @@ async def get_user_me(
     responses=error_responses(404),
 )
 async def get_user(
-    _: Authorized(can_read_user()), user_id: UUID, session: DbSession
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Authorized(can_read_user()),
+    user_id: UUID,
 ) -> UserResponse:
     return await service.get_user(session, user_id)
 
@@ -155,7 +157,7 @@ async def get_user(
     tags=["user"],
 )
 async def list_users(
-    session: DbSession,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Authorized(can_read_user()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
@@ -179,9 +181,9 @@ async def list_users(
     responses=error_responses(404, 409),
 )
 async def delete_user(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_user()),
     user_id: UUID,
-    session: DbSession,
 ):
     _ensure_cannot_alter_own_user(authorized, user_id)
     await service.delete_user(session, user_id)
@@ -195,8 +197,8 @@ async def delete_user(
     responses=error_responses(404),
 )
 async def get_user_password_reset_info(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     token: Annotated[str, Path(description="Password-reset token")],
-    session: DbSession,
 ) -> UserPasswordResetInfoResponse:
     user = await service.get_user_by_password_reset_token(session, token)
     return UserPasswordResetInfoResponse.model_validate(user, from_attributes=True)
@@ -211,7 +213,7 @@ async def get_user_password_reset_info(
     responses=error_responses(400, 404),
 )
 async def set_user_password(
-    session: DbSession,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     token: Annotated[str, Path(description="Password-reset token")],
     request: UserPasswordResetRequest,
 ):
@@ -231,7 +233,7 @@ async def set_user_password(
     responses=error_responses(400),
 )
 async def forgot_password(
-    session: DbSession,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     reset_request: UserPasswordResetRequestRequest,
 ):
     await service.send_user_password_reset_link(session, reset_request.email)

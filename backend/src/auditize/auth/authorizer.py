@@ -10,7 +10,7 @@ from auditize.apikey.models import Apikey
 from auditize.apikey.service import get_apikey, get_apikey_by_key
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX, APIKEY_SECRET_PREFIX
 from auditize.auth.jwt import get_access_token_data, get_user_email_from_session_token
-from auditize.database.dbm import get_db_session
+from auditize.dependencies import get_db_session
 from auditize.exceptions import (
     AuthenticationFailure,
     PermissionDenied,

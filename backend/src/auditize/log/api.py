@@ -10,7 +10,7 @@ from auditize.auth.authorizer import (
     AuthorizedForLogWrite,
 )
 from auditize.config import get_config
-from auditize.dependencies import DbSession
+from auditize.dependencies import get_db_session
 from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.api.errors import error_responses
 from auditize.helpers.api.validators import (
@@ -67,10 +67,10 @@ async def _get_consolidated_data(
     tags=["log"],
 )
 async def get_log_action_types(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
     category: str = None,
 ) -> NameListResponse:
     return await _get_consolidated_data(
@@ -90,10 +90,10 @@ async def get_log_action_types(
     tags=["log"],
 )
 async def get_log_action_categories(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -111,10 +111,10 @@ async def get_log_action_categories(
     tags=["log"],
 )
 async def get_log_actor_types(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -133,10 +133,10 @@ async def get_log_actor_types(
     response_model=NameListResponse,
 )
 async def get_log_actor_extras(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -154,10 +154,10 @@ async def get_log_actor_extras(
     tags=["log"],
 )
 async def get_log_resource_types(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -176,10 +176,10 @@ async def get_log_resource_types(
     response_model=NameListResponse,
 )
 async def get_log_resource_extras(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -197,10 +197,10 @@ async def get_log_resource_extras(
     tags=["log"],
 )
 async def get_log_tag_types(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -219,10 +219,10 @@ async def get_log_tag_types(
     response_model=NameListResponse,
 )
 async def get_log_source_fields(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -241,10 +241,10 @@ async def get_log_source_fields(
     response_model=NameListResponse,
 )
 async def get_log_detail_fields(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -263,10 +263,10 @@ async def get_log_detail_fields(
     response_model=NameListResponse,
 )
 async def get_log_attachment_types(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -285,10 +285,10 @@ async def get_log_attachment_types(
     response_model=NameListResponse,
 )
 async def get_log_attachment_mime_types(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> NameListResponse:
     return await _get_consolidated_data(
         session,
@@ -306,10 +306,10 @@ async def get_log_attachment_mime_types(
     tags=["log"],
 )
 async def get_log_entities(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
     root: bool = False,
     parent_entity_ref: str = None,
 ) -> LogEntityListResponse:
@@ -346,10 +346,10 @@ async def get_log_entities(
     tags=["log"],
 )
 async def get_log_entity(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     entity_ref: Annotated[str, Path(description="Entity ref")],
-    session: DbSession,
 ) -> LogEntityResponse:
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log_entity(
@@ -368,7 +368,10 @@ async def get_log_entity(
     tags=["log"],
 )
 async def create_log(
-    _: AuthorizedForLogWrite(), repo_id: UUID, log_create: LogCreate, session: DbSession
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: AuthorizedForLogWrite(),
+    repo_id: UUID,
+    log_create: LogCreate,
 ) -> LogResponse:
     service = await LogService.for_writing(session, repo_id)
     return await service.save_log(log_create)
@@ -385,6 +388,7 @@ async def create_log(
     responses=error_responses(400, 413),
 )
 async def add_attachment(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: AuthorizedForLogWrite(),
     repo_id: UUID,
     log_id: Annotated[
@@ -400,7 +404,6 @@ async def add_attachment(
             pattern=IDENTIFIER_PATTERN_STRING,
         ),
     ],
-    session: DbSession,
     name: Annotated[
         str,
         Form(
@@ -473,11 +476,11 @@ _CUSTOM_FIELDS_DESCRIPTION = (
     response_class=_CsvResponse,
 )
 async def get_logs_as_csv(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     request: Request,
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
-    session: DbSession,
     columns: Annotated[str, Query(description=_COLUMNS_DESCRIPTION)] = ",".join(
         LOG_CSV_BUILTIN_COLUMNS
     ),
@@ -514,10 +517,10 @@ async def get_logs_as_csv(
     status_code=200,
 )
 async def get_log(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     log_id: Annotated[UUID, Path(description="Log ID")],
-    session: DbSession,
 ) -> LogResponse:
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log(
@@ -550,9 +553,9 @@ async def get_log(
     },
 )
 async def get_log_attachment(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-    session: DbSession,
     log_id: UUID = Path(description="Log ID"),
     attachment_idx: int = Path(
         description="The index of the attachment in the log's attachments list (starts from 0)",
@@ -581,11 +584,11 @@ async def get_log_attachment(
     tags=["log"],
 )
 async def get_logs(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     page_params: Annotated[CursorPaginationParams, Depends()],
-    session: DbSession,
 ) -> LogListResponse:
     # FIXME: we must check that "until" is greater than "since"
     service = await LogService.for_reading(session, repo_id)

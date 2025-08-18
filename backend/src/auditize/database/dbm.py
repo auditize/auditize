@@ -92,8 +92,3 @@ async def open_db_session():
             raise e
         finally:
             await session.close()
-
-
-async def get_db_session() -> AsyncGenerator[_AsyncSession, None]:
-    async with open_db_session() as session:
-        yield session

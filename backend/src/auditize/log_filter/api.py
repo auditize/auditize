@@ -2,9 +2,10 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.auth.authorizer import AuthorizedUser
-from auditize.dependencies import DbSession
+from auditize.dependencies import get_db_session
 from auditize.helpers.api.errors import error_responses
 from auditize.log_filter import service
 from auditize.log_filter.models import (
@@ -30,9 +31,9 @@ router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
     responses=error_responses(400, 409),
 )
 async def create_filter(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     log_filter: LogFilterCreate,
-    session: DbSession,
 ) -> LogFilterResponse:
     return await service.create_log_filter(session, authorized.user.id, log_filter)
 
@@ -46,10 +47,10 @@ async def create_filter(
     responses=error_responses(400, 404, 409),
 )
 async def update_filter(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     update: LogFilterUpdate,
     filter_id: UUID,
-    session: DbSession,
 ) -> LogFilterResponse:
     return await service.update_log_filter(
         session, authorized.user.id, filter_id, update
@@ -65,9 +66,9 @@ async def update_filter(
     responses=error_responses(404),
 )
 async def get_filter(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     filter_id: UUID,
-    session: DbSession,
 ) -> LogFilterResponse:
     return await service.get_log_filter(session, authorized.user.id, filter_id)
 
@@ -79,9 +80,9 @@ async def get_filter(
     tags=["log-filter"],
 )
 async def list_log_filters(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
-    session: DbSession,
     is_favorite: bool = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> LogFilterListResponse:
@@ -105,8 +106,8 @@ async def list_log_filters(
     responses=error_responses(404),
 )
 async def delete_filter(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedUser(can_read_logs_from_any_repo()),
     filter_id: UUID,
-    session: DbSession,
 ):
     await service.delete_log_filter(session, authorized.user.id, filter_id)
