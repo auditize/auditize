@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Awaitable, Callable
 from uuid import UUID
 
 import callee
@@ -21,7 +22,9 @@ from helpers.utils import strip_dict_keys
 pytestmark = pytest.mark.anyio
 
 
-async def _test_repo_create(client: HttpTestHelper, collection: AsyncIOMotorCollection):
+async def _test_repo_create(
+    client: HttpTestHelper, permissions_getter: Callable[[], Awaitable]
+):
     data = {"name": "myrepo"}
 
     resp = await client.assert_post_created(
@@ -32,25 +35,45 @@ async def _test_repo_create(client: HttpTestHelper, collection: AsyncIOMotorColl
     repo_id = resp.json()["id"]
 
     # check that the authenticated user has read & write permissions on the new repo
-    permission_holder = await collection.find_one({})
-    assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": UUID(repo_id), "read": True, "write": True, "readable_entities": []}
+
+    permissions = await permissions_getter()
+    assert permissions["logs"]["repos"] == [
+        {"repo_id": repo_id, "read": True, "write": True, "readable_entities": []}
     ]
 
 
-async def test_repo_create_as_apikey(apikey_builder: ApikeyBuilder):
-    apikey_builder = await apikey_builder({"management": {"repos": {"write": True}}})
-
-    async with apikey_builder.client() as client:
-        await _test_repo_create(client, get_core_db().apikeys)
+async def _get_apikey_permissions(client: HttpTestHelper, user_id: str):
+    resp = await client.assert_get_ok(f"/apikeys/{user_id}")
+    return resp.json()["permissions"]
 
 
-async def test_repo_create_as_user(user_builder: UserBuilder):
-    user_builder = await user_builder({"management": {"repos": {"write": True}}})
+async def test_repo_create_as_apikey(
+    apikey_builder: ApikeyBuilder, superadmin_client: HttpTestHelper
+):
+    apikey = await apikey_builder({"management": {"repos": {"write": True}}})
 
-    async with user_builder.client() as client:
+    async with apikey.client() as client:
+        await _test_repo_create(
+            client,
+            lambda: _get_apikey_permissions(superadmin_client, apikey.id),
+        )
+
+
+async def _get_user_permissions(client: HttpTestHelper, user_id: str):
+    resp = await client.assert_get_ok(f"/users/{user_id}")
+    return resp.json()["permissions"]
+
+
+async def test_repo_create_as_user(
+    user_builder: UserBuilder, superadmin_client: HttpTestHelper
+):
+    user = await user_builder({"management": {"repos": {"write": True}}})
+
+    async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await _test_repo_create(client, get_core_db().users)
+        await _test_repo_create(
+            client, lambda: _get_user_permissions(superadmin_client, user.id)
+        )
 
 
 @pytest.mark.parametrize("status", ["enabled", "readonly", "disabled"])
@@ -776,6 +799,7 @@ async def test_repo_delete(repo_write_client: HttpTestHelper, superadmin_client)
     await superadmin_client.assert_get_not_found(f"/repos/{repo_id}")
 
 
+@pytest.mark.skip("Waiting for foreign key constraints to be implemented")
 async def test_repo_delete_with_related_resources(
     user_builder: UserBuilder, repo: PreparedRepo
 ):

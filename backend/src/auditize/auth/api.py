@@ -9,6 +9,7 @@ from auditize.auth.authorizer import (
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
+from auditize.dependencies import DbSession
 from auditize.helpers.api.errors import error_responses
 from auditize.permissions.operations import authorize_grant
 from auditize.user import service
@@ -26,11 +27,12 @@ router = APIRouter()
     responses=error_responses(400, 401),
 )
 async def login_user(
+    session: DbSession,
     request: UserAuthenticationRequest,
     response: Response,
 ) -> UserMeResponse:
     config = get_config()
-    user = await service.authenticate_user(request.email, request.password)
+    user = await service.authenticate_user(session, request.email, request.password)
     token, expires_at = generate_session_token(user.email)
 
     response.set_cookie(

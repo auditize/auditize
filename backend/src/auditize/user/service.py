@@ -1,10 +1,14 @@
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import bcrypt
 from motor.motor_asyncio import AsyncIOMotorClientSession
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import and_
+from sqlalchemy.types import Boolean
 
 from auditize.config import get_config
 from auditize.database import get_core_db
@@ -21,7 +25,7 @@ from auditize.permissions.operations import normalize_permissions, update_permis
 from auditize.permissions.service import remove_repo_from_permissions
 from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
-from auditize.resource.pagination.page.service import find_paginated_by_page
+from auditize.resource.pagination.page.sql_service import find_paginated_by_page
 from auditize.resource.service import (
     create_resource_document,
     create_resource_document2,
@@ -29,16 +33,21 @@ from auditize.resource.service import (
     get_resource_document,
     update_resource_document,
 )
-from auditize.user.models import PasswordResetToken, User, UserCreate, UserUpdate
+from auditize.resource.sql_service import (
+    delete_sql_model,
+    get_sql_model,
+    save_sql_model,
+    update_sql_model,
+)
+from auditize.user.models import User, UserCreate, UserUpdate
 
 _DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
 
 
-def _generate_password_reset_token() -> PasswordResetToken:
-    return PasswordResetToken(
-        token=secrets.token_hex(32),
-        expires_at=now() + timedelta(seconds=_DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME),
-    )
+def _generate_password_reset_token() -> tuple[str, datetime]:
+    token = secrets.token_hex(32)
+    expires_at = now() + timedelta(seconds=_DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME)
+    return token, expires_at
 
 
 def _send_account_setup_email(user: User):
@@ -47,7 +56,7 @@ def _send_account_setup_email(user: User):
         user.email,
         "Welcome to Auditize",
         f"Welcome, {user.first_name}! Please click the following link to complete your registration: "
-        f"{config.public_url}/account-setup/{user.password_reset_token.token}",
+        f"{config.public_url}/account-setup/{user.password_reset_token}",
     )
 
 
@@ -62,20 +71,16 @@ def build_document_from_user(user: User) -> dict:
 
 async def save_user(session: AsyncSession, user: User) -> User:
     await ensure_repos_in_permissions_exist(session, user.permissions)
-    user_data = await create_resource_document2(
-        get_core_db().users, build_document_from_user(user)
-    )
-    return User.model_validate(user_data)
+    await save_sql_model(session, user)
+    return user
 
 
 async def create_user(session: AsyncSession, user_create: UserCreate) -> User:
-    user = User.model_validate(
-        {
-            **user_create.model_dump(exclude={"permissions"}),
-            "permissions": normalize_permissions(user_create.permissions),
-        }
+    user = User(**user_create.model_dump())
+    user.permissions = normalize_permissions(user_create.permissions)
+    user.password_reset_token, user.password_reset_token_expires_at = (
+        _generate_password_reset_token()
     )
-    user.password_reset_token = _generate_password_reset_token()
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
         user = await save_user(session, user)
     _send_account_setup_email(user)
@@ -85,46 +90,49 @@ async def create_user(session: AsyncSession, user_create: UserCreate) -> User:
 async def update_user(
     session: AsyncSession, user_id: UUID, user_update: UserUpdate
 ) -> User:
-    doc_update = user_update.model_dump(
+    user = await get_user(session, user_id)
+    user_updated_fields = user_update.model_dump(
         exclude_unset=True, exclude={"permissions", "password"}
     )
     if user_update.permissions:
-        user = await get_user(user_id)
-        user_permissions = update_permissions(user.permissions, user_update.permissions)
-        await ensure_repos_in_permissions_exist(session, user_permissions)
-        doc_update["permissions"] = user_permissions.model_dump()
+        user_updated_permissions = update_permissions(
+            user.permissions, user_update.permissions
+        )
+        await ensure_repos_in_permissions_exist(session, user_updated_permissions)
+        user_updated_fields["permissions"] = user_updated_permissions.model_dump(
+            mode="json"
+        )
     if user_update.password:
-        doc_update["password_hash"] = hash_user_password(user_update.password)
+        user_updated_fields["password_hash"] = hash_user_password(user_update.password)
 
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        await update_resource_document(get_core_db().users, user_id, doc_update)
+        await update_sql_model(session, user, user_updated_fields)
 
-    return await get_user(user_id)
-
-
-async def _get_user(filter: UUID | dict) -> User:
-    result = await get_resource_document(get_core_db().users, filter)
-    return User.model_validate(result)
+    return user
 
 
-async def get_user(user_id: UUID) -> User:
-    return await _get_user(user_id)
+async def _get_user(session: AsyncSession, filter: UUID | Any) -> User:
+    return await get_sql_model(session, User, filter)
 
 
-async def get_user_by_email(email: str) -> User:
-    return await _get_user({"email": email})
+async def get_user(session: AsyncSession, user_id: UUID) -> User:
+    return await _get_user(session, user_id)
+
+
+async def get_user_by_email(session: AsyncSession, email: str) -> User:
+    return await _get_user(session, User.email == email)
 
 
 def _build_password_reset_token_filter(token: str):
-    return {
-        "password_reset_token.token": token,
-        "password_reset_token.expires_at": {"$gt": now()},
-    }
+    return and_(
+        User.password_reset_token == token,
+        User.password_reset_token_expires_at > now(),
+    )
 
 
-async def get_user_by_password_reset_token(token: str) -> User:
+async def get_user_by_password_reset_token(session: AsyncSession, token: str) -> User:
     with enhance_unknown_model_exception("error.invalid_password_reset_token"):
-        return await _get_user(_build_password_reset_token_filter(token))
+        return await _get_user(session, _build_password_reset_token_filter(token))
 
 
 # NB: this function is let public to be used in tests and to make sure that passwords
@@ -138,53 +146,58 @@ def hash_user_password(password: str) -> str:
     ).decode()
 
 
-async def update_user_password_by_password_reset_token(token: str, password: str):
+async def update_user_password_by_password_reset_token(
+    session: AsyncSession, token: str, password: str
+):
     password_hash = hash_user_password(password)
     with enhance_unknown_model_exception("error.invalid_password_reset_token"):
-        await update_resource_document(
-            get_core_db().users,
-            _build_password_reset_token_filter(token),
-            {"password_hash": password_hash, "password_reset_token": None},
-        )
+        user = await _get_user(session, _build_password_reset_token_filter(token))
+    user.password_hash = password_hash
+    user.password_reset_token = None
+    await save_sql_model(session, user)
 
 
 async def get_users(
-    query: str | None, page: int, page_size: int
+    session: AsyncSession, query: str | None, page: int, page_size: int
 ) -> tuple[list[User], PagePaginationInfo]:
     results, page_info = await find_paginated_by_page(
-        get_core_db().users,
-        # NB: '@' is considered as a separator by mongo default analyzer which means that searching on
-        # john.doe@example.net would search on "john" or "doe" or "example" and lead to unexpected
-        # results.
-        # As searching on email is a common use case, we quote the query when it contains an '@'
-        # to make sure that the whole email is searched.
+        session,
+        User,
         filter=(
-            {"$text": {"$search": query if "@" not in query else f'"{query}"'}}
+            or_(
+                User.last_name.ilike(f"%{query}%"),
+                User.first_name.ilike(f"%{query}%"),
+                User.email.ilike(f"%{query}%"),
+            )
             if query
             else None
         ),
-        sort=[("last_name", 1), ("first_name", 1)],
+        order_by=(User.last_name, User.first_name),
         page=page,
         page_size=page_size,
     )
-    return [User.model_validate(result) async for result in results], page_info
+    return results, page_info
 
 
-async def _forbid_last_superadmin_deletion(user_id: UUID):
-    user = await get_user(user_id)
+async def _forbid_last_superadmin_deletion(session: AsyncSession, user_id: UUID):
+    user = await get_user(session, user_id)
     if user.permissions.is_superadmin:
-        other_superadmin = await get_core_db().users.find_one(
-            {"_id": {"$ne": user_id}, "permissions.is_superadmin": True}
+        other_superadmin = await session.execute(
+            select(User).where(
+                User.id != user_id,
+                User.permissions["is_superadmin"].astext.cast(Boolean) == True,
+            )
         )
+        other_superadmin = other_superadmin.scalar()
         if not other_superadmin:
             raise ConstraintViolation(
                 "Cannot delete the last user with superadmin permissions"
             )
 
 
-async def delete_user(user_id: UUID):
-    await _forbid_last_superadmin_deletion(user_id)
-    await delete_resource_document(get_core_db().users, user_id)
+async def delete_user(session: AsyncSession, user_id: UUID):
+    await _forbid_last_superadmin_deletion(session, user_id)
+    await delete_sql_model(session, User, user_id)
 
 
 async def remove_repo_from_users_permissions(
@@ -193,9 +206,9 @@ async def remove_repo_from_users_permissions(
     await remove_repo_from_permissions(get_core_db().users, repo_id, session)
 
 
-async def authenticate_user(email: str, password: str) -> User:
+async def authenticate_user(session: AsyncSession, email: str, password: str) -> User:
     try:
-        user = await get_user_by_email(email)
+        user = await get_user_by_email(session, email)
     except UnknownModelException:
         raise AuthenticationFailure()
 
@@ -205,9 +218,8 @@ async def authenticate_user(email: str, password: str) -> User:
     if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
         raise AuthenticationFailure()
 
-    await update_resource_document(
-        get_core_db().users, user.id, {"authenticated_at": now()}
-    )
+    user.authenticated_at = now()
+    await update_sql_model(session, user, {"authenticated_at": now()})
 
     return user
 
@@ -218,22 +230,19 @@ def _send_password_reset_link(user: User):
         user.email,
         "Change your password on Auditize",
         f"Please follow this link to reset your password: "
-        f"{config.public_url}/password-reset/{user.password_reset_token.token}",
+        f"{config.public_url}/password-reset/{user.password_reset_token}",
     )
 
 
-async def send_user_password_reset_link(email: str):
+async def send_user_password_reset_link(session: AsyncSession, email: str):
     try:
-        user = await get_user_by_email(email)
+        user = await get_user_by_email(session, email)
     except UnknownModelException:
         # in case of unknown email, just do nothing to avoid leaking information
         return
-    user.password_reset_token = _generate_password_reset_token()
-    await update_resource_document(
-        get_core_db().users,
-        user.id,
-        {
-            "password_reset_token": user.password_reset_token.model_dump(),
-        },
+
+    user.password_reset_token, user.password_reset_token_expires_at = (
+        _generate_password_reset_token()
     )
+    await save_sql_model(session, user)
     _send_password_reset_link(user)

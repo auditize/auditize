@@ -241,9 +241,7 @@ class TestPermissions(BasePermissionTests):
 
     async def inject_grantor(self, permissions=None) -> PreparedUser:
         return await PreparedUser.inject_into_db(
-            user=PreparedUser.prepare_model(
-                password="dummypassword", permissions=permissions
-            ),
+            user=PreparedUser.prepare_model(permissions=permissions),
             password="dummypassword",
         )
 

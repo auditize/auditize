@@ -87,6 +87,7 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
                 ),
             )
     except ConstraintViolation:
+        # FIXME: we could get a ConstraintViolation for other reasons
         sys.exit(f"Error: user with email {email} already exists")
     print(f"User with email {email} has been successfully created")
 

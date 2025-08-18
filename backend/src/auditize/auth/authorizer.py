@@ -3,12 +3,14 @@ from typing import Annotated, Callable, Type
 from uuid import UUID
 
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from auditize.apikey.models import Apikey
 from auditize.apikey.service import get_apikey, get_apikey_by_key
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX, APIKEY_SECRET_PREFIX
 from auditize.auth.jwt import get_access_token_data, get_user_email_from_session_token
+from auditize.database.dbm import get_db_session
 from auditize.exceptions import (
     AuthenticationFailure,
     PermissionDenied,
@@ -120,7 +122,7 @@ async def authenticate_access_token(access_token: str) -> Authenticated:
     )
 
 
-async def authenticate_user(request: Request) -> Authenticated:
+async def authenticate_user(session: AsyncSession, request: Request) -> Authenticated:
     if not request.cookies:
         raise AuthenticationFailure()
 
@@ -130,7 +132,7 @@ async def authenticate_user(request: Request) -> Authenticated:
 
     user_email = get_user_email_from_session_token(session_token)
     try:
-        user = await get_user_by_email(user_email)
+        user = await get_user_by_email(session, user_email)
     except UnknownModelException:
         raise AuthenticationFailure("User does no longer exist")
 
@@ -140,7 +142,9 @@ async def authenticate_user(request: Request) -> Authenticated:
     return Authenticated.from_user(user)
 
 
-async def get_authenticated(request: Request) -> Authenticated:
+async def get_authenticated(
+    session: Annotated[AsyncSession, Depends(get_db_session)], request: Request
+) -> Authenticated:
     bearer = _get_authorization_bearer(request)
     if bearer:
         if bearer.startswith(APIKEY_SECRET_PREFIX):
@@ -149,7 +153,7 @@ async def get_authenticated(request: Request) -> Authenticated:
             return await authenticate_access_token(bearer)
         raise AuthenticationFailure("Invalid bearer token")
 
-    return await authenticate_user(request)
+    return await authenticate_user(session, request)
 
 
 class _Authorized:

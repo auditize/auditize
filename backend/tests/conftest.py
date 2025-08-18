@@ -114,6 +114,7 @@ async def tmp_db(_core_db: CoreDatabase):
 @pytest.fixture(scope="session")
 async def _pg_db(_dbm: DatabaseManager):
     await create_pg_db(_dbm)
+    print("Created PostgreSQL database:", _dbm.core_db.name)
     yield
     await drop_pg_db(_dbm)
 
@@ -180,9 +181,7 @@ class UserBuilder(Protocol):
 def user_builder(core_db) -> UserBuilder:
     async def func(permissions, lang=None):
         return await PreparedUser.inject_into_db(
-            user=PreparedUser.prepare_model(
-                password="dummypassword", permissions=permissions, lang=lang
-            ),
+            user=PreparedUser.prepare_model(permissions=permissions, lang=lang),
             password="dummypassword",
         )
 

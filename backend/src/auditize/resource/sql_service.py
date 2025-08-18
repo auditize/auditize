@@ -20,9 +20,11 @@ async def save_sql_model(session: AsyncSession, model: Base) -> None:
 
 
 async def update_sql_model[T: Base](
-    session: AsyncSession, model: T, pydantic_model: BaseModel
+    session: AsyncSession, model: T, update: BaseModel | dict
 ) -> None:
-    for field, value in pydantic_model.model_dump(exclude_unset=True).items():
+    if isinstance(update, BaseModel):
+        update = update.model_dump(exclude_unset=True)
+    for field, value in update.items():
         setattr(model, field, value)
     await save_sql_model(session, model)
 

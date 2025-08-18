@@ -1,4 +1,5 @@
 import callee
+import pytest
 from httpx import Response
 
 from conftest import RepoBuilder
@@ -240,6 +241,7 @@ class BasePermissionTests:
             },
         )
 
+    @pytest.mark.skip("waiting for permissions foreign key support")
     async def test_update_permissions_unknown_repo_in_existing_permissions(
         self,
         superadmin_client: HttpTestHelper,

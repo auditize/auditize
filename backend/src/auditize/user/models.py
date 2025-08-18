@@ -1,8 +1,13 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from sqlalchemy import DateTime, TypeDecorator
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.orm import Mapped, mapped_column
 
+from auditize.database.dbm import Base
 from auditize.i18n.lang import Lang
 from auditize.permissions.models import (
     ApplicablePermissions,
@@ -10,28 +15,49 @@ from auditize.permissions.models import (
     PermissionsInput,
     PermissionsOutput,
 )
-from auditize.permissions.operations import compute_applicable_permissions
+from auditize.permissions.operations import (
+    compute_applicable_permissions,
+    normalize_permissions,
+)
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
-from auditize.resource.models import HasCreatedAt, HasId
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
+from auditize.resource.sql_models import HasCreatedAt, HasId
 
 USER_PASSWORD_MIN_LENGTH = 8
 
 
-class PasswordResetToken(BaseModel):
-    token: str
-    expires_at: datetime
+class PermissionsAsJSON(TypeDecorator):
+    impl = JSON
+
+    def process_bind_param(self, value: Permissions | Any, _):
+        return (
+            normalize_permissions(value).model_dump(mode="json")
+            if isinstance(value, Permissions)
+            else value
+        )
+
+    def process_result_value(self, value: dict, _) -> Permissions:
+        return Permissions.model_validate(value)
 
 
-class User(BaseModel, HasId, HasCreatedAt):
-    first_name: str
-    last_name: str
-    email: str
-    lang: Lang = Lang.EN
-    password_hash: str | None = None
-    permissions: Permissions = Field(default_factory=Permissions)
-    password_reset_token: PasswordResetToken | None = None
-    authenticated_at: datetime | None = None
+class User(Base, HasId, HasCreatedAt):
+    __tablename__ = "user"
+
+    first_name: Mapped[str] = mapped_column(nullable=False, index=True)
+    last_name: Mapped[str] = mapped_column(nullable=False, index=True)
+    email: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
+    lang: Mapped[Lang] = mapped_column(nullable=False, default=Lang.EN)
+    password_hash: Mapped[str | None] = mapped_column(nullable=True)
+    permissions: Mapped[Permissions] = mapped_column(
+        PermissionsAsJSON(), nullable=False
+    )
+    password_reset_token: Mapped[str | None] = mapped_column(nullable=True)
+    password_reset_token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    authenticated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 def _UserFirstNameField(**kwargs):  # noqa
@@ -145,7 +171,7 @@ class UserResponse(BaseModel, HasDatetimeSerialization):
 class UserListResponse(PagePaginatedResponse[User, UserResponse]):
     @classmethod
     def build_item(cls, user: User) -> UserResponse:
-        return UserResponse.model_validate(user.model_dump())
+        return UserResponse.model_validate(user, from_attributes=True)
 
 
 class UserPasswordResetInfoResponse(BaseModel):
@@ -173,16 +199,15 @@ class UserMeResponse(BaseModel):
     lang: Lang = _UserLangField()
     permissions: ApplicablePermissions = _UserPermissionsField()
 
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("permissions", mode="before")
+    def validate_permissions(cls, permissions: Permissions):
+        return compute_applicable_permissions(permissions)
+
     @classmethod
     def from_user(cls, user: User):
-        return cls.model_validate(
-            {
-                **user.model_dump(exclude={"permissions"}),
-                "permissions": compute_applicable_permissions(
-                    user.permissions
-                ).model_dump(),
-            }
-        )
+        return cls.model_validate(user)
 
 
 class UserMeUpdateRequest(BaseModel):

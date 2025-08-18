@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +12,7 @@ async def find_paginated_by_page[T: Base](
     model_class: type[T],
     *,
     filter=None,
-    order_by=None,
+    order_by: list | tuple | None | Any = None,
     page=1,
     page_size=10,
 ) -> tuple[list[T], PagePaginationInfo]:
@@ -19,7 +21,9 @@ async def find_paginated_by_page[T: Base](
     if filter is not None:
         query = query.where(filter)
     if order_by is not None:
-        query = query.order_by(order_by)
+        query = query.order_by(
+            *(order_by if isinstance(order_by, (list, tuple)) else [order_by])
+        )
     query = query.offset((page - 1) * page_size).limit(page_size)
     result = await session.execute(query)
     models = list(result.scalars().all())

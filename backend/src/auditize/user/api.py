@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.auth.authorizer import (
     Authenticated,
@@ -38,6 +39,7 @@ def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
 
 
 async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
+    session: AsyncSession,
     authorized: Authorized,
     user_id: UUID,
     update: UserUpdateRequest,
@@ -45,7 +47,7 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
     if not update.email:
         return
 
-    user = await service.get_user(user_id)
+    user = await service.get_user(session, user_id)
     if update.email != user.email:
         try:
             authorize_grant(authorized.permissions, user.permissions)
@@ -107,7 +109,7 @@ async def update_user(
 ) -> UserResponse:
     _ensure_cannot_alter_own_user(authorized, user_id)
     await _ensure_cannot_update_email_of_user_with_non_grantable_permission(
-        authorized, user_id, user_update
+        session, authorized, user_id, user_update
     )
     if user_update.permissions:
         authorize_grant(authorized.permissions, user_update.permissions)
@@ -139,8 +141,10 @@ async def get_user_me(
     tags=["user"],
     responses=error_responses(404),
 )
-async def get_user(_: Authorized(can_read_user()), user_id: UUID) -> UserResponse:
-    return await service.get_user(user_id)
+async def get_user(
+    _: Authorized(can_read_user()), user_id: UUID, session: DbSession
+) -> UserResponse:
+    return await service.get_user(session, user_id)
 
 
 @router.get(
@@ -151,11 +155,13 @@ async def get_user(_: Authorized(can_read_user()), user_id: UUID) -> UserRespons
     tags=["user"],
 )
 async def list_users(
+    session: DbSession,
     _: Authorized(can_read_user()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> UserListResponse:
     users, page_info = await service.get_users(
+        session,
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
@@ -175,9 +181,10 @@ async def list_users(
 async def delete_user(
     authorized: Authorized(can_write_user()),
     user_id: UUID,
+    session: DbSession,
 ):
     _ensure_cannot_alter_own_user(authorized, user_id)
-    await service.delete_user(user_id)
+    await service.delete_user(session, user_id)
 
 
 @router.get(
@@ -189,9 +196,10 @@ async def delete_user(
 )
 async def get_user_password_reset_info(
     token: Annotated[str, Path(description="Password-reset token")],
+    session: DbSession,
 ) -> UserPasswordResetInfoResponse:
-    user = await service.get_user_by_password_reset_token(token)
-    return UserPasswordResetInfoResponse.model_validate(user.model_dump())
+    user = await service.get_user_by_password_reset_token(session, token)
+    return UserPasswordResetInfoResponse.model_validate(user, from_attributes=True)
 
 
 @router.post(
@@ -203,10 +211,13 @@ async def get_user_password_reset_info(
     responses=error_responses(400, 404),
 )
 async def set_user_password(
+    session: DbSession,
     token: Annotated[str, Path(description="Password-reset token")],
     request: UserPasswordResetRequest,
 ):
-    await service.update_user_password_by_password_reset_token(token, request.password)
+    await service.update_user_password_by_password_reset_token(
+        session, token, request.password
+    )
 
 
 @router.post(
@@ -220,6 +231,7 @@ async def set_user_password(
     responses=error_responses(400),
 )
 async def forgot_password(
+    session: DbSession,
     reset_request: UserPasswordResetRequestRequest,
 ):
-    await service.send_user_password_reset_link(reset_request.email)
+    await service.send_user_password_reset_link(session, reset_request.email)
