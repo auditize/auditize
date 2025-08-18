@@ -8,10 +8,12 @@ from auditize.permissions.models import (
     ApplicablePermissions,
     LogPermissions,
     ManagementPermissions,
+    ManagementPermissionsOutput,
     Permissions,
     PermissionsInput,
     ReadWritePermissions,
     ReadWritePermissionsInput,
+    ReadWritePermissionsOutput,
     RepoLogPermissions,
 )
 
@@ -117,10 +119,10 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
         return ApplicablePermissions(
             is_superadmin=True,
             logs=ApplicableLogPermissions(read="all", write="all"),
-            management=ManagementPermissions(
-                repos=ReadWritePermissions.yes(),
-                users=ReadWritePermissions.yes(),
-                apikeys=ReadWritePermissions.yes(),
+            management=ManagementPermissionsOutput(
+                repos=ReadWritePermissionsOutput.yes(),
+                users=ReadWritePermissionsOutput.yes(),
+                apikeys=ReadWritePermissionsOutput.yes(),
             ),
         )
     else:
@@ -139,7 +141,9 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
                     any(repo_perms.write for repo_perms in perms.logs.repos),
                 ),
             ),
-            management=perms.management.model_copy(deep=True),
+            management=ManagementPermissionsOutput.model_validate(
+                perms.management.model_dump()
+            ),
         )
 
 

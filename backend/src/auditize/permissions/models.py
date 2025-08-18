@@ -89,13 +89,6 @@ class Permissions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-def _RepoLogPermissionsField(**kwargs):  # noqa
-    return Field(
-        description="Per repository permissions",
-        **kwargs,
-    )
-
-
 def _IsSuperadminField(**kwargs):  # noqa
     return Field(
         description="Superadmin has all permissions",
@@ -191,6 +184,14 @@ class ReadWritePermissionsOutput(BaseModel):
     read: bool = Field()
     write: bool = Field()
 
+    @classmethod
+    def yes(cls) -> Self:
+        return cls(read=True, write=True)
+
+    @classmethod
+    def no(cls) -> Self:
+        return cls(read=False, write=False)
+
 
 class ManagementPermissionsOutput(BaseModel):
     repos: ReadWritePermissionsOutput = Field(
@@ -215,7 +216,7 @@ class LogPermissionsOutput(ReadWritePermissionsOutput):
 
 class PermissionsOutput(BaseModel):
     is_superadmin: bool = _IsSuperadminField()
-    logs: LogPermissions = _LogPermissionsField()
+    logs: LogPermissionsOutput = _LogPermissionsField()
     management: ManagementPermissionsOutput = _ManagementPermissionsField()
 
     model_config = ConfigDict(json_schema_extra={"example": _PERMISSIONS_EXAMPLE})
@@ -232,7 +233,9 @@ class ApplicableLogPermissions(BaseModel):
 class ApplicablePermissions(BaseModel):
     is_superadmin: bool
     logs: ApplicableLogPermissions = Field(default_factory=ApplicableLogPermissions)
-    management: ManagementPermissions = Field(default_factory=ManagementPermissions)
+    management: ManagementPermissionsOutput = Field(
+        default_factory=ManagementPermissionsOutput
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
