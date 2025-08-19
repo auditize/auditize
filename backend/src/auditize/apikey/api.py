@@ -49,7 +49,12 @@ async def create_apikey(
 ) -> ApikeyCreateResponse:
     authorize_grant(authorized.permissions, apikey_create.permissions)
     apikey, key = await service.create_apikey(session, apikey_create)
-    return ApikeyCreateResponse.model_validate({**apikey.model_dump(), "key": key})
+    return ApikeyCreateResponse(
+        id=apikey.id,
+        name=apikey.name,
+        permissions=apikey.permissions.model_dump(),
+        key=key,
+    )
 
 
 @router.patch(
@@ -81,11 +86,12 @@ async def update_apikey(
     tags=["apikey"],
     responses=error_responses(404),
 )
-async def get_repo(
+async def get_apikey(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Authorized(can_read_apikey()),
     apikey_id: UUID,
 ) -> ApikeyResponse:
-    return await service.get_apikey(apikey_id)
+    return await service.get_apikey(session, apikey_id)
 
 
 @router.get(
@@ -96,11 +102,13 @@ async def get_repo(
     tags=["apikey"],
 )
 async def list_apikeys(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Authorized(can_read_apikey()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> ApikeyListResponse:
     apikeys, page_info = await service.get_apikeys(
+        session,
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
@@ -118,11 +126,12 @@ async def list_apikeys(
     responses=error_responses(404),
 )
 async def delete_apikey(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
 ):
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
-    await service.delete_apikey(apikey_id)
+    await service.delete_apikey(session, apikey_id)
 
 
 @router.post(
@@ -135,9 +144,10 @@ async def delete_apikey(
     responses=error_responses(404),
 )
 async def regenerate_apikey(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_apikey()),
     apikey_id: UUID,
 ) -> ApikeyRegenerationResponse:
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
-    key = await service.regenerate_apikey(apikey_id)
+    key = await service.regenerate_apikey(session, apikey_id)
     return ApikeyRegenerationResponse(key=key)

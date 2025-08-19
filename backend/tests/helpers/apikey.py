@@ -2,10 +2,10 @@ import uuid
 
 import callee
 
-from auditize.apikey.models import Apikey
+from auditize.apikey.models import Apikey, ApikeyCreate
 from auditize.apikey.service import create_apikey
 from auditize.database.dbm import open_db_session
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import Permissions, PermissionsInput
 
 from .http import HttpTestHelper
 from .permissions.constants import DEFAULT_PERMISSIONS
@@ -33,10 +33,10 @@ class PreparedApikey:
         return cls(resp.json()["id"], resp.json()["key"], data)
 
     @staticmethod
-    def prepare_model(*, permissions=None) -> Apikey:
-        model = Apikey(name=f"Apikey {uuid.uuid4()}")
+    def prepare_model(*, permissions=None) -> ApikeyCreate:
+        model = ApikeyCreate(name=f"Apikey {uuid.uuid4()}")
         if permissions is not None:
-            model.permissions = Permissions.model_validate(permissions)
+            model.permissions = PermissionsInput.model_validate(permissions)
         return model
 
     @classmethod

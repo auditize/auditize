@@ -90,20 +90,22 @@ def _get_authorization_bearer(request: Request) -> str | None:
     return authorization[len(_BEARER_PREFIX) :]
 
 
-async def authenticate_apikey(key: str) -> Authenticated:
+async def authenticate_apikey(session: AsyncSession, key: str) -> Authenticated:
     try:
-        apikey = await get_apikey_by_key(key)
+        apikey = await get_apikey_by_key(session, key)
     except UnknownModelException:
         raise AuthenticationFailure("Invalid API key")
 
     return Authenticated.from_apikey(apikey)
 
 
-async def authenticate_access_token(access_token: str) -> Authenticated:
+async def authenticate_access_token(
+    session: AsyncSession, access_token: str
+) -> Authenticated:
     jwt_token = access_token[len(ACCESS_TOKEN_PREFIX) :]
     apikey_id, permissions = get_access_token_data(jwt_token)
     try:
-        apikey = await get_apikey(apikey_id)
+        apikey = await get_apikey(session, apikey_id)
     except UnknownModelException:
         raise AuthenticationFailure(
             "Invalid API key corresponding to access token is no longer valid"
@@ -148,9 +150,9 @@ async def get_authenticated(
     bearer = _get_authorization_bearer(request)
     if bearer:
         if bearer.startswith(APIKEY_SECRET_PREFIX):
-            return await authenticate_apikey(bearer)
+            return await authenticate_apikey(session, bearer)
         if bearer.startswith(ACCESS_TOKEN_PREFIX):
-            return await authenticate_access_token(bearer)
+            return await authenticate_access_token(session, bearer)
         raise AuthenticationFailure("Invalid bearer token")
 
     return await authenticate_user(session, request)

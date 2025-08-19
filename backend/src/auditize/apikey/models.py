@@ -1,19 +1,40 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from sqlalchemy import TypeDecorator
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.orm import Mapped, mapped_column
 
+from auditize.database.dbm import Base
 from auditize.permissions.models import Permissions, PermissionsInput, PermissionsOutput
+from auditize.permissions.operations import normalize_permissions
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
-from auditize.resource.models import HasCreatedAt, HasId
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
+from auditize.resource.sql_models import HasCreatedAt, HasId
 
 
-class Apikey(BaseModel, HasId, HasCreatedAt):
-    name: str
-    key_hash: Optional[str] = None
-    permissions: Permissions = Field(default_factory=Permissions)
+class PermissionsAsJSON(TypeDecorator):
+    impl = JSON
+
+    def process_bind_param(self, value: Permissions | Any, _):
+        return (
+            normalize_permissions(value).model_dump(mode="json")
+            if isinstance(value, Permissions)
+            else value
+        )
+
+    def process_result_value(self, value: dict, _) -> Permissions:
+        return Permissions.model_validate(value)
+
+
+class Apikey(Base, HasId, HasCreatedAt):
+    __tablename__ = "apikey"
+
+    name: Mapped[str] = mapped_column(unique=True, index=True)
+    key_hash: Mapped[str | None] = mapped_column()
+    permissions: Mapped[Permissions] = mapped_column(PermissionsAsJSON())
 
 
 def _ApikeyNameField(**kwargs):  # noqa
@@ -70,7 +91,7 @@ class ApikeyCreateResponse(ApikeyResponse):
 class ApikeyListResponse(PagePaginatedResponse[Apikey, ApikeyResponse]):
     @classmethod
     def build_item(cls, apikey: Apikey) -> ApikeyResponse:
-        return ApikeyResponse.model_validate(apikey.model_dump())
+        return ApikeyResponse.model_validate(apikey, from_attributes=True)
 
 
 class ApikeyRegenerationResponse(BaseModel):
