@@ -9,7 +9,10 @@ from auditize.config import get_config
 from auditize.exceptions import AuthenticationFailure
 from auditize.helpers.datetime import now
 from auditize.permissions.models import Permissions, PermissionsInput
-from auditize.permissions.operations import normalize_permissions
+from auditize.permissions.service import (
+    build_permissions,
+    build_permissions_output,
+)
 
 _SUB_PREFIX_SESSION_TOKEN = "user_email:"
 _SUB_PREFIX_ACCESS_TOKEN = "apikey_id:"
@@ -69,7 +72,7 @@ def get_user_email_from_session_token(token: str) -> str:
 
 
 def generate_access_token_payload(
-    apikey_id: UUID, permissions: Permissions
+    apikey_id: UUID, permissions: PermissionsInput
 ) -> tuple[dict, datetime]:
     return _generate_jwt_payload(
         {
@@ -84,7 +87,7 @@ def generate_access_token_payload(
 
 
 def generate_access_token(
-    apikey_id: UUID, permissions: Permissions
+    apikey_id: UUID, permissions: PermissionsInput
 ) -> tuple[str, datetime]:
     payload, expires_at = generate_access_token_payload(apikey_id, permissions)
     return _sign_jwt_token(payload), expires_at
@@ -98,7 +101,7 @@ def get_access_token_data(token: str) -> tuple[UUID, Permissions]:
         raise AuthenticationFailure("Invalid 'sub' field in JWT token")
     apikey_id = sub[len(_SUB_PREFIX_ACCESS_TOKEN) :]
 
-    permissions = normalize_permissions(
+    permissions = build_permissions(
         PermissionsInput.model_validate(payload["permissions"])
     )
 

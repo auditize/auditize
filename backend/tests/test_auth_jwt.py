@@ -10,7 +10,12 @@ from auditize.auth.jwt import (
     get_access_token_data,
     get_user_email_from_session_token,
 )
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import (
+    ManagementPermissionsInput,
+    Permissions,
+    PermissionsInput,
+    ReadWritePermissionsInput,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -29,14 +34,19 @@ async def test_user_session_token():
 
 async def test_access_token():
     apikey_id = uuid.uuid4()
-    permissions = Permissions()
-    permissions.management.repos.read = True
     now = int(time.time())
 
-    token, expires_at = generate_access_token(apikey_id, permissions)
+    token, expires_at = generate_access_token(
+        apikey_id,
+        PermissionsInput(
+            management=ManagementPermissionsInput(
+                repos=ReadWritePermissionsInput(read=True)
+            )
+        ),
+    )
     ic(token, expires_at)
 
     assert expires_at.timestamp() > now
     actual_apikey_id, actual_permissions = get_access_token_data(token)
     assert actual_apikey_id == apikey_id
-    assert actual_permissions == permissions
+    assert actual_permissions == Permissions(repos_read=True)

@@ -3,9 +3,9 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
-from sqlalchemy import DateTime, TypeDecorator
+from sqlalchemy import DateTime, ForeignKey, TypeDecorator
 from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import Base
 from auditize.i18n.lang import Lang
@@ -15,7 +15,8 @@ from auditize.permissions.models import (
     PermissionsInput,
     PermissionsOutput,
 )
-from auditize.permissions.operations import (
+from auditize.permissions.service import (
+    build_permissions_output,
     compute_applicable_permissions,
     normalize_permissions,
 )
@@ -48,8 +49,12 @@ class User(Base, HasId, HasCreatedAt):
     email: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
     lang: Mapped[Lang] = mapped_column(nullable=False, default=Lang.EN)
     password_hash: Mapped[str | None] = mapped_column(nullable=True)
-    permissions: Mapped[Permissions] = mapped_column(
-        PermissionsAsJSON(), nullable=False
+    permissions_id: Mapped[int] = mapped_column(
+        ForeignKey("permissions.id", ondelete="CASCADE")
+    )
+    permissions: Mapped["Permissions"] = relationship(
+        "Permissions",
+        lazy="selectin",
     )
     password_reset_token: Mapped[str | None] = mapped_column(nullable=True)
     password_reset_token_expires_at: Mapped[datetime | None] = mapped_column(
@@ -166,6 +171,10 @@ class UserResponse(BaseModel, HasDatetimeSerialization):
     lang: Lang = _UserLangField()
     permissions: PermissionsOutput = _UserPermissionsField()
     authenticated_at: datetime | None = _UserAuthenticatedAtField()
+
+    @field_validator("permissions", mode="before")
+    def validate_permissions(cls, permissions: Permissions):
+        return build_permissions_output(permissions)
 
 
 class UserListResponse(PagePaginatedResponse[User, UserResponse]):

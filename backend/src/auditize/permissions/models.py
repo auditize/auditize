@@ -2,15 +2,16 @@ from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, MappedAsDataclass, mapped_column, relationship
+
+from auditize.database.dbm import Base
 
 __all__ = (
     "ApplicableLogPermissions",
     "ApplicableLogPermissionScope",
     "ApplicablePermissions",
-    "ReadWritePermissions",
-    "ManagementPermissions",
     "RepoLogPermissions",
-    "LogPermissions",
     "Permissions",
     "ReadWritePermissionsInput",
     "ManagementPermissionsInput",
@@ -25,68 +26,63 @@ __all__ = (
 )
 
 
-class ReadWritePermissions(BaseModel):
-    read: bool = Field(default=False)
-    write: bool = Field(default=False)
+class ReadableLogEntityPermission(Base):
+    __tablename__ = "readable_log_entity_permission"
 
-    model_config = ConfigDict(extra="forbid")
-
-    @classmethod
-    def no(cls) -> Self:
-        return cls(read=False, write=False)
-
-    @classmethod
-    def yes(cls) -> Self:
-        return cls(read=True, write=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # NB: since a log entity can appear and disappear depending on log expiration,
+    # we don't want to make a foreign key to the log entity table but rather
+    # a lazy relationship
+    ref: Mapped[str] = mapped_column()
+    repo_log_permissions_id: Mapped[int] = mapped_column(
+        ForeignKey("repo_log_permissions.id", ondelete="CASCADE")
+    )
 
 
-class ManagementPermissions(BaseModel):
-    repos: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
-    users: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
-    apikeys: ReadWritePermissions = Field(default_factory=ReadWritePermissions)
+class RepoLogPermissions(MappedAsDataclass, Base):
+    __tablename__ = "repo_log_permissions"
 
-    model_config = ConfigDict(extra="forbid")
+    id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    repo_id: Mapped[UUID] = mapped_column(ForeignKey("repo.id", ondelete="CASCADE"))
+    read: Mapped[bool] = mapped_column(default=False)
+    write: Mapped[bool] = mapped_column(default=False)
+    readable_entities: Mapped[list[ReadableLogEntityPermission]] = relationship(
+        lazy="selectin", cascade="all, delete-orphan", default_factory=list
+    )
+    permissions_id: Mapped[int] = mapped_column(
+        ForeignKey("permissions.id", ondelete="CASCADE"), init=False
+    )
 
 
-class RepoLogPermissions(ReadWritePermissions):
-    repo_id: UUID
-    readable_entities: list[str] = Field(default_factory=list)
+class Permissions(MappedAsDataclass, Base):
+    __tablename__ = "permissions"
 
-    model_config = ConfigDict(extra="forbid")
+    id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    is_superadmin: Mapped[bool] = mapped_column(default=False)
+    repos_read: Mapped[bool] = mapped_column(default=False)
+    repos_write: Mapped[bool] = mapped_column(default=False)
+    users_read: Mapped[bool] = mapped_column(default=False)
+    users_write: Mapped[bool] = mapped_column(default=False)
+    apikeys_read: Mapped[bool] = mapped_column(default=False)
+    apikeys_write: Mapped[bool] = mapped_column(default=False)
+    logs_read: Mapped[bool] = mapped_column(default=False)
+    logs_write: Mapped[bool] = mapped_column(default=False)
 
+    repo_log_permissions: Mapped[list[RepoLogPermissions]] = relationship(
+        lazy="selectin", default_factory=list
+    )
 
-class LogPermissions(ReadWritePermissions):
-    repos: list[RepoLogPermissions] = Field(default_factory=list)
-
-    model_config = ConfigDict(extra="forbid")
-
-    def get_repos(self, *, can_read=False, can_write=False) -> list[UUID]:
-        def perms_ok(perms: RepoLogPermissions):
-            read_ok = perms.read or perms.readable_entities if can_read else True
-            write_ok = perms.write if can_write else True
-            return read_ok and write_ok
-
-        return [perms.repo_id for perms in self.repos if perms_ok(perms)]
-
-    def get_repo_permissions(self, repo_id: UUID) -> RepoLogPermissions:
-        for perms in self.repos:
-            if perms.repo_id == repo_id:
-                return perms
-        return RepoLogPermissions(
-            repo_id=repo_id, read=False, write=False, readable_entities=list()
-        )
+    def get_repo_log_permissions_by_id(
+        self, repo_id: UUID
+    ) -> RepoLogPermissions | None:
+        for repo_perms in self.repo_log_permissions:
+            if repo_perms.repo_id == repo_id:
+                return repo_perms
+        return None
 
     def get_repo_readable_entities(self, repo_id: UUID) -> set[str]:
-        perms = self.get_repo_permissions(repo_id)
-        return set(perms.readable_entities) if perms.readable_entities else set()
-
-
-class Permissions(BaseModel):
-    is_superadmin: bool = Field(default=False)
-    logs: LogPermissions = Field(default_factory=LogPermissions)
-    management: ManagementPermissions = Field(default_factory=ManagementPermissions)
-
-    model_config = ConfigDict(extra="forbid")
+        perms = self.get_repo_log_permissions_by_id(repo_id)
+        return set(entity.ref for entity in perms.readable_entities) if perms else set()
 
 
 def _IsSuperadminField(**kwargs):  # noqa

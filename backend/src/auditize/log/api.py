@@ -328,9 +328,7 @@ async def get_log_entities(
     service = await LogService.for_reading(session, repo_id)
 
     entities, pagination = await service.get_log_entities(
-        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
-            repo_id
-        ),
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,
         **filter_args,
@@ -354,7 +352,7 @@ async def get_log_entity(
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log_entity(
         entity_ref,
-        authorized.permissions.logs.get_repo_readable_entities(repo_id),
+        authorized.permissions.get_repo_readable_entities(repo_id),
     )
 
 
@@ -496,7 +494,7 @@ async def get_logs_as_csv(
     return StreamingResponse(
         stream_logs_as_csv(
             service,
-            authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
+            authorized_entities=authorized.permissions.get_repo_readable_entities(
                 repo_id
             ),
             search_params=LogSearchParams.model_validate(search_params.model_dump()),
@@ -525,9 +523,7 @@ async def get_log(
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log(
         log_id,
-        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
-            repo_id
-        ),
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
     )
 
 
@@ -565,9 +561,7 @@ async def get_log_attachment(
     attachment = await service.get_log_attachment(
         log_id,
         attachment_idx,
-        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
-            repo_id
-        ),
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
     )
     return Response(
         content=attachment.data,
@@ -593,9 +587,7 @@ async def get_logs(
     # FIXME: we must check that "until" is greater than "since"
     service = await LogService.for_reading(session, repo_id)
     logs, next_cursor = await service.get_logs(
-        authorized_entities=authorized.permissions.logs.get_repo_readable_entities(
-            repo_id
-        ),
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
         search_params=LogSearchParams.model_validate(search_params.model_dump()),
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,

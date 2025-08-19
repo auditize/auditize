@@ -9,11 +9,10 @@ from httpx import Response
 from auditize.database import get_core_db
 from auditize.database.dbm import open_db_session
 from auditize.i18n.lang import Lang
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import PermissionsInput
 from auditize.resource.service import create_resource_document
 from auditize.user.models import User, UserCreate, UserUpdate
 from auditize.user.service import (
-    build_document_from_user,
     create_user,
     get_user,
     hash_user_password,
@@ -62,7 +61,7 @@ class PreparedUser:
             lang=lang or Lang.EN,
         )
         if permissions is not None:
-            model.permissions = Permissions.model_validate(permissions)
+            model.permissions = PermissionsInput.model_validate(permissions)
         return model
 
     @classmethod

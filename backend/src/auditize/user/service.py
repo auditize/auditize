@@ -8,7 +8,6 @@ from motor.motor_asyncio import AsyncIOMotorClientSession
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import and_
-from sqlalchemy.types import Boolean
 
 from auditize.config import get_config
 from auditize.database import get_core_db
@@ -21,8 +20,13 @@ from auditize.exceptions import (
 )
 from auditize.helpers.datetime import now
 from auditize.helpers.email import send_email
-from auditize.permissions.operations import normalize_permissions, update_permissions
-from auditize.permissions.service import remove_repo_from_permissions
+from auditize.permissions.models import Permissions
+from auditize.permissions.service import (
+    build_permissions,
+    remove_repo_from_permissions,
+    update_permissions,
+    validate_permissions_constraints,
+)
 from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
@@ -60,24 +64,15 @@ def _send_account_setup_email(user: User):
     )
 
 
-# NB: this function is let public to be used in tests when we have to inject
-# a user directly into database (and we want to make sure that is consistently stored)
-def build_document_from_user(user: User) -> dict:
-    return {
-        **user.model_dump(exclude={"id", "permissions"}),
-        "permissions": normalize_permissions(user.permissions).model_dump(),
-    }
-
-
 async def save_user(session: AsyncSession, user: User) -> User:
-    await ensure_repos_in_permissions_exist(session, user.permissions)
+    await validate_permissions_constraints(session, user.permissions)
     await save_sql_model(session, user)
     return user
 
 
 async def create_user(session: AsyncSession, user_create: UserCreate) -> User:
     user = User(**user_create.model_dump())
-    user.permissions = normalize_permissions(user_create.permissions)
+    user.permissions = build_permissions(user_create.permissions)
     user.password_reset_token, user.password_reset_token_expires_at = (
         _generate_password_reset_token()
     )
@@ -94,16 +89,13 @@ async def update_user(
     user_updated_fields = user_update.model_dump(
         exclude_unset=True, exclude={"permissions", "password"}
     )
-    if user_update.permissions:
-        user_updated_permissions = update_permissions(
-            user.permissions, user_update.permissions
-        )
-        await ensure_repos_in_permissions_exist(session, user_updated_permissions)
-        user_updated_fields["permissions"] = user_updated_permissions.model_dump(
-            mode="json"
-        )
+
     if user_update.password:
         user_updated_fields["password_hash"] = hash_user_password(user_update.password)
+
+    if user_update.permissions:
+        update_permissions(user.permissions, user_update.permissions)
+        await validate_permissions_constraints(session, user.permissions)
 
     with enhance_constraint_violation_exception("error.constraint_violation.user"):
         await update_sql_model(session, user, user_updated_fields)
@@ -183,10 +175,9 @@ async def _forbid_last_superadmin_deletion(session: AsyncSession, user_id: UUID)
     user = await get_user(session, user_id)
     if user.permissions.is_superadmin:
         other_superadmin = await session.execute(
-            select(User).where(
-                User.id != user_id,
-                User.permissions["is_superadmin"].astext.cast(Boolean) == True,
-            )
+            select(User)
+            .join(User.permissions)
+            .where(User.id != user_id, Permissions.is_superadmin == True)
         )
         other_superadmin = other_superadmin.scalar()
         if not other_superadmin:

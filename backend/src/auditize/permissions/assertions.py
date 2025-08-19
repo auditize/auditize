@@ -27,7 +27,7 @@ PermissionAssertion = Callable[[Permissions], bool]
 
 def can_read_logs_from_all_repos() -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        return bool(perms.is_superadmin or perms.logs.read)
+        return bool(perms.is_superadmin or perms.logs_read)
 
     return func
 
@@ -36,12 +36,15 @@ def can_read_logs_from_repo(
     repo_id: UUID, *, on_all_entities=False
 ) -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        if perms.is_superadmin or perms.logs.read:
+        if perms.is_superadmin or perms.logs_read:
             return True
 
-        repo_perms = perms.logs.get_repo_permissions(repo_id)
+        repo_perms = perms.get_repo_log_permissions_by_id(repo_id)
+        if not repo_perms:
+            return False
+
         if on_all_entities:
-            return bool(repo_perms.read)
+            return repo_perms.read
         else:
             return bool(repo_perms.read or repo_perms.readable_entities)
 
@@ -50,28 +53,32 @@ def can_read_logs_from_repo(
 
 def can_read_logs_from_any_repo() -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        if perms.is_superadmin or perms.logs.read:
-            return True
-
-        return any(repo.read or repo.readable_entities for repo in perms.logs.repos)
+        return (
+            perms.is_superadmin
+            or perms.logs_read
+            or any(
+                repo.read or repo.readable_entities
+                for repo in perms.repo_log_permissions
+            )
+        )
 
     return func
 
 
 def can_write_logs_to_all_repos() -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        return bool(perms.is_superadmin or perms.logs.write)
+        return bool(perms.is_superadmin or perms.logs_write)
 
     return func
 
 
 def can_write_logs_to_repo(repo_id: UUID) -> PermissionAssertion:
     def func(perms: Permissions) -> bool:
-        if perms.is_superadmin or perms.logs.write:
+        if perms.is_superadmin or perms.logs_write:
             return True
 
-        repo_perms = perms.logs.get_repo_permissions(repo_id)
-        return bool(repo_perms.write)
+        repo_perms = perms.get_repo_log_permissions_by_id(repo_id)
+        return bool(repo_perms and repo_perms.write)
 
     return func
 
@@ -86,20 +93,20 @@ class EntityPermissionAssertion:
             return True
 
         if self.entity_type == "repos":
-            entity_perms = perms.management.repos
+            resource_read, resource_write = perms.repos_read, perms.repos_write
         elif self.entity_type == "users":
-            entity_perms = perms.management.users
+            resource_read, resource_write = perms.users_read, perms.users_write
         elif self.entity_type == "apikeys":
-            entity_perms = perms.management.apikeys
+            resource_read, resource_write = perms.apikeys_read, perms.apikeys_write
         else:
             raise Exception(
                 f"Invalid entity type: {self.entity_type}"
             )  # pragma: no cover, cannot happen
 
         if self.permission_type == "read":
-            return bool(entity_perms.read)
+            return resource_read
         if self.permission_type == "write":
-            return bool(entity_perms.write)
+            return resource_write
 
         raise Exception(
             f"Invalid entity permission type: {self.permission_type}"

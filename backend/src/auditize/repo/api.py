@@ -26,9 +26,7 @@ from auditize.permissions.assertions import (
     permissions_and,
 )
 from auditize.permissions.models import (
-    LogPermissions,
     LogPermissionsInput,
-    Permissions,
     PermissionsInput,
     RepoLogPermissions,
     RepoLogPermissionsInput,
@@ -250,7 +248,7 @@ async def list_user_repos(
                 and authorized.comply(can_write_logs_to_repo(repo_read.id))
             ),
             readable_entities=list(
-                authorized.permissions.logs.get_repo_readable_entities(repo_read.id)
+                authorized.permissions.get_repo_readable_entities(repo_read.id)
             ),
         )
 

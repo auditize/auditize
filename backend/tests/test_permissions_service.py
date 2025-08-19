@@ -7,9 +7,11 @@ from icecream import ic
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_logs_from_repo
 from auditize.permissions.models import Permissions, PermissionsInput
-from auditize.permissions.operations import (
+from auditize.permissions.service import (
     authorize_access,
     authorize_grant,
+    build_permissions,
+    build_permissions_output,
     compute_applicable_permissions,
     normalize_permissions,
     update_permissions,
@@ -21,14 +23,19 @@ REPO_3 = UUID("14f27afe-902d-4176-8612-920bc59f95cb")
 REPO_4 = UUID("8ecdf2db-c70d-4cad-8610-d4334e65d0df")
 
 
-def _test_access_perms_normalization(input: dict, expected: dict):
-    input = PermissionsInput.model_validate(input)
-
-    assert normalize_permissions(input).model_dump() == expected
+def _test_normalization_permissions(input: dict, expected: dict):
+    assert (
+        build_permissions_output(
+            normalize_permissions(
+                build_permissions(PermissionsInput.model_validate(input))
+            )
+        ).model_dump()
+        == expected
+    )
 
 
 def test_normalization_superadmin_only():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {"is_superadmin": True},
         {
             "is_superadmin": True,
@@ -47,7 +54,7 @@ def test_normalization_superadmin_only():
 
 
 def test_normalization_superadmin_with_explicit_permissions():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {
             "is_superadmin": True,
             "management": {
@@ -81,7 +88,7 @@ def test_normalization_superadmin_with_explicit_permissions():
 
 
 def test_normalization_superadmin_with_log_permissions():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {
             "is_superadmin": True,
             "logs": {
@@ -110,7 +117,7 @@ def test_normalization_superadmin_with_log_permissions():
 
 
 def test_normalization_read_logs_on_all_repos():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {
             "logs": {
                 "read": True,
@@ -164,7 +171,7 @@ def test_normalization_read_logs_on_all_repos():
 
 
 def test_normalization_repo_entities_with_read_permission():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {
             "logs": {
                 "read": False,
@@ -203,7 +210,7 @@ def test_normalization_repo_entities_with_read_permission():
 
 
 def test_normalization_repo_entities_without_read_permission():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {
             "logs": {
                 "read": False,
@@ -242,7 +249,7 @@ def test_normalization_repo_entities_without_read_permission():
 
 
 def test_normalization_write_logs_on_all_repos():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {
             "logs": {
                 "read": False,
@@ -284,7 +291,7 @@ def test_normalization_write_logs_on_all_repos():
 
 
 def test_normalization_read_and_write_logs_on_all_repos():
-    _test_access_perms_normalization(
+    _test_normalization_permissions(
         {
             "logs": {
                 "read": True,
@@ -313,7 +320,7 @@ def test_normalization_read_and_write_logs_on_all_repos():
 
 
 def assert_authorized(grantor_perms, *granted_perms):
-    grantor_perms = Permissions.model_validate(grantor_perms)
+    grantor_perms = build_permissions(PermissionsInput.model_validate(grantor_perms))
 
     for granted in granted_perms:
         ic(granted)
@@ -321,7 +328,7 @@ def assert_authorized(grantor_perms, *granted_perms):
 
 
 def assert_unauthorized(grantor_perms, *granted_perms):
-    grantor_perms = Permissions.model_validate(grantor_perms)
+    grantor_perms = build_permissions(PermissionsInput.model_validate(grantor_perms))
 
     for granted in granted_perms:
         ic(granted)
@@ -441,12 +448,12 @@ def test_permission_assertions_on_management_as_specific_permissions():
             assert_unauthorized(all_perms_but, target_perms)
 
 
-def _test_update_permission(orig: dict, update: dict, expected: dict):
-    orig = Permissions.model_validate(orig)
+def _test_update_permission(current: dict, update: dict, expected: dict):
+    current = build_permissions(PermissionsInput.model_validate(current))
     update = PermissionsInput.model_validate(update)
 
-    actual = update_permissions(orig, update)
-    assert actual.model_dump() == expected
+    update_permissions(current, update)
+    assert build_permissions_output(current).model_dump() == expected
 
 
 def test_update_permission_grant_superadmin():
@@ -767,8 +774,12 @@ def test_update_permissions_drop_repo():
 
 
 def _test_get_applicable_permissions(input: dict, expected: dict):
-    input = Permissions.model_validate(input)
-    assert compute_applicable_permissions(input).model_dump() == expected
+    assert (
+        compute_applicable_permissions(
+            build_permissions(PermissionsInput.model_validate(input))
+        ).model_dump()
+        == expected
+    )
 
 
 def test_get_applicable_permissions_superadmin():

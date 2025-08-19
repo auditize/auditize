@@ -21,7 +21,7 @@ from auditize.permissions.assertions import (
     can_read_apikey,
     can_write_apikey,
 )
-from auditize.permissions.operations import authorize_grant
+from auditize.permissions.service import authorize_grant
 from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 
@@ -52,7 +52,7 @@ async def create_apikey(
     return ApikeyCreateResponse(
         id=apikey.id,
         name=apikey.name,
-        permissions=apikey.permissions.model_dump(),
+        permissions=apikey.permissions,
         key=key,
     )
 

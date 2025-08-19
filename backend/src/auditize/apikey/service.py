@@ -10,8 +10,13 @@ from auditize.apikey.models import Apikey, ApikeyCreate, ApikeyUpdate
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import get_core_db
 from auditize.exceptions import enhance_constraint_violation_exception
-from auditize.permissions.operations import normalize_permissions, update_permissions
-from auditize.permissions.service import remove_repo_from_permissions
+from auditize.permissions.service import (
+    build_permissions,
+    normalize_permissions,
+    remove_repo_from_permissions,
+    update_permissions,
+    validate_permissions_constraints,
+)
 from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
@@ -37,9 +42,9 @@ async def create_apikey(
 ) -> tuple[Apikey, str]:
     apikey = Apikey(
         name=apikey_create.name,
-        permissions=normalize_permissions(apikey_create.permissions),
+        permissions=build_permissions(apikey_create.permissions),
     )
-    await ensure_repos_in_permissions_exist(session, apikey.permissions)
+    await validate_permissions_constraints(session, apikey.permissions)
     key, key_hash = _generate_key()
     apikey.key_hash = key_hash
     await save_sql_model(session, apikey)
@@ -53,12 +58,10 @@ async def update_apikey(
 
     if apikey_update.name:
         apikey.name = apikey_update.name
+
     if apikey_update.permissions:
-        apikey_permissions = update_permissions(
-            apikey.permissions, apikey_update.permissions
-        )
-        await ensure_repos_in_permissions_exist(session, apikey_permissions)
-        apikey.permissions = apikey_permissions
+        update_permissions(apikey.permissions, apikey_update.permissions)
+        await validate_permissions_constraints(session, apikey.permissions)
 
     with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
         await save_sql_model(session, apikey)

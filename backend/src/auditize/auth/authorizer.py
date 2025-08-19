@@ -22,7 +22,7 @@ from auditize.permissions.assertions import (
     can_write_logs_to_repo,
 )
 from auditize.permissions.models import Permissions
-from auditize.permissions.operations import authorize_grant
+from auditize.permissions.service import authorize_grant
 from auditize.user.models import User
 from auditize.user.service import get_user_by_email
 

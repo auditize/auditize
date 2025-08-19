@@ -5,8 +5,7 @@ import certifi
 from elasticsearch import AsyncElasticsearch
 from fastapi.params import Depends
 from motor.motor_asyncio import AsyncIOMotorClient
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.ext.asyncio import AsyncSession as _AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from starlette.requests import Request
 
@@ -84,7 +83,9 @@ def get_core_db() -> CoreDatabase:
 @asynccontextmanager
 async def open_db_session():
     dbm = get_dbm()
-    async with _AsyncSession(dbm.db_engine, expire_on_commit=False) as session:
+    async with AsyncSession(
+        dbm.db_engine, expire_on_commit=False, autoflush=False
+    ) as session:
         try:
             yield session
         except Exception as e:

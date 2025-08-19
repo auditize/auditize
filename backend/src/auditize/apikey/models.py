@@ -2,31 +2,17 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
-from sqlalchemy import TypeDecorator
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import ForeignKey, TypeDecorator
 from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import Base
 from auditize.permissions.models import Permissions, PermissionsInput, PermissionsOutput
-from auditize.permissions.operations import normalize_permissions
+from auditize.permissions.service import build_permissions_output, normalize_permissions
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.resource.sql_models import HasCreatedAt, HasId
-
-
-class PermissionsAsJSON(TypeDecorator):
-    impl = JSON
-
-    def process_bind_param(self, value: Permissions | Any, _):
-        return (
-            normalize_permissions(value).model_dump(mode="json")
-            if isinstance(value, Permissions)
-            else value
-        )
-
-    def process_result_value(self, value: dict, _) -> Permissions:
-        return Permissions.model_validate(value)
 
 
 class Apikey(Base, HasId, HasCreatedAt):
@@ -34,7 +20,13 @@ class Apikey(Base, HasId, HasCreatedAt):
 
     name: Mapped[str] = mapped_column(unique=True, index=True)
     key_hash: Mapped[str | None] = mapped_column()
-    permissions: Mapped[Permissions] = mapped_column(PermissionsAsJSON())
+    permissions_id: Mapped[int] = mapped_column(
+        ForeignKey("permissions.id", ondelete="CASCADE")
+    )
+    permissions: Mapped["Permissions"] = relationship(
+        "Permissions",
+        lazy="selectin",
+    )
 
 
 def _ApikeyNameField(**kwargs):  # noqa
@@ -82,6 +74,10 @@ class ApikeyResponse(BaseModel):
     id: UUID = _ApikeyIdField()
     name: str = _ApikeyNameField()
     permissions: PermissionsOutput = _ApikeyPermissionsField()
+
+    @field_validator("permissions", mode="before")
+    def validate_permissions(cls, permissions: Permissions):
+        return build_permissions_output(permissions)
 
 
 class ApikeyCreateResponse(ApikeyResponse):

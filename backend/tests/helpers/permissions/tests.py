@@ -241,49 +241,6 @@ class BasePermissionTests:
             },
         )
 
-    @pytest.mark.skip("waiting for permissions foreign key support")
-    async def test_update_permissions_unknown_repo_in_existing_permissions(
-        self,
-        superadmin_client: HttpTestHelper,
-        repo: PreparedRepo,
-    ):
-        assignee = await self.create_assignee(
-            superadmin_client,
-            self.prepare_assignee_data(
-                {
-                    "permissions": {
-                        "logs": {
-                            "repos": [
-                                {"repo_id": repo.id, "read": True, "write": True},
-                            ]
-                        }
-                    }
-                }
-            ),
-        )
-        await superadmin_client.assert_delete_no_content(f"/repos/{repo.id}")
-        await superadmin_client.assert_patch_ok(
-            f"{self.base_path}/{assignee.id}",
-            json={"permissions": {"management": {"repos": {"write": True}}}},
-            expected_json=assignee.expected_api_response(
-                {
-                    "permissions": {
-                        "is_superadmin": False,
-                        "logs": {
-                            "read": False,
-                            "write": False,
-                            "repos": [],
-                        },
-                        "management": {
-                            "repos": {"read": False, "write": True},
-                            "users": {"read": False, "write": False},
-                            "apikeys": {"read": False, "write": False},
-                        },
-                    }
-                }
-            ),
-        )
-
     async def test_update_forbidden_permissions(self):
         grantor = await self.inject_grantor(
             {"management": {"users": {"write": True}, "apikeys": {"write": True}}},

@@ -1,4 +1,4 @@
-from typing import Any, Sequence
+from typing import Any, Generator, Sequence
 from uuid import UUID, uuid4
 
 import elasticsearch
@@ -23,8 +23,12 @@ from auditize.permissions.assertions import (
     can_write_logs_to_all_repos,
     permissions_and,
 )
-from auditize.permissions.models import Permissions, PermissionsInput
-from auditize.permissions.operations import is_authorized
+from auditize.permissions.models import (
+    Permissions,
+    PermissionsInput,
+    RepoLogPermissions,
+)
+from auditize.permissions.service import is_authorized
 from auditize.repo.models import Repo, RepoCreate, RepoStats, RepoStatus, RepoUpdate
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
@@ -150,6 +154,20 @@ async def get_all_repos():
     return [Repo.model_validate(result) async for result in results]
 
 
+def _filter_repo_by_log_permissions(
+    repo_log_permissions: list[RepoLogPermissions],
+    has_read_perm: bool,
+    has_write_perm: bool,
+) -> Generator[UUID, None, None]:
+    for repo_perms in repo_log_permissions:
+        read_ok = (
+            repo_perms.read or repo_perms.readable_entities if has_read_perm else True
+        )
+        write_ok = repo_perms.write if has_write_perm else True
+        if read_ok and write_ok:
+            yield repo_perms.repo_id
+
+
 def _get_authorized_repo_ids_for_user(
     user: User, has_read_perm: bool, has_write_perm: bool
 ) -> Sequence[UUID] | None:
@@ -174,15 +192,10 @@ def _get_authorized_repo_ids_for_user(
     if no_filtering_needed:
         return None
 
-    return user.permissions.logs.get_repos(
-        can_read=(
-            has_read_perm
-            and not is_authorized(user.permissions, can_read_logs_from_all_repos())
-        ),
-        can_write=(
-            has_write_perm
-            and not is_authorized(user.permissions, can_write_logs_to_all_repos())
-        ),
+    return list(
+        _filter_repo_by_log_permissions(
+            user.permissions.repo_log_permissions, has_read_perm, has_write_perm
+        )
     )
 
 

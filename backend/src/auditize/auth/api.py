@@ -14,7 +14,7 @@ from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
 from auditize.dependencies import get_db_session
 from auditize.helpers.api.errors import error_responses
-from auditize.permissions.operations import authorize_grant
+from auditize.permissions.service import authorize_grant
 from auditize.user import service
 from auditize.user.models import UserAuthenticationRequest, UserMeResponse
 
