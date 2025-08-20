@@ -799,7 +799,6 @@ async def test_repo_delete(repo_write_client: HttpTestHelper, superadmin_client)
     await superadmin_client.assert_get_not_found(f"/repos/{repo_id}")
 
 
-@pytest.mark.skip("Waiting for foreign key constraints to be implemented")
 async def test_repo_delete_with_related_resources(
     user_builder: UserBuilder, repo: PreparedRepo
 ):
