@@ -313,9 +313,9 @@ async def get_log_entities(
     root: bool = False,
     parent_entity_ref: str = None,
 ) -> LogEntityListResponse:
-    if not (root ^ (parent_entity_ref is not None)):
+    if root and parent_entity_ref:
         raise ValidationError(
-            "Parameters 'root' and 'parent_entity_ref' are mutually exclusive and one of them must be provided"
+            "Parameters 'root' and 'parent_entity_ref' are mutually exclusive"
         )
 
     if root:

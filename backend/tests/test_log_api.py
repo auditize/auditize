@@ -2132,7 +2132,6 @@ async def test_log_entity_consolidation_rename_entity(
     )
 
 
-@pytest.mark.skip()
 async def test_log_entity_consolidation_move_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -2149,12 +2148,12 @@ async def test_log_entity_consolidation_move_entity(
                     "ref": "A",
                     "name": "A",
                     "parent_entity_ref": None,
-                    "has_children": True,
+                    "has_children": False,
                 },
                 {
                     "ref": "AA",
                     "name": "AA",
-                    "parent_entity_ref": "A",
+                    "parent_entity_ref": "B",
                     "has_children": False,
                 },
                 {
@@ -2265,12 +2264,6 @@ async def test_get_log_entities_empty(
     await do_test_cursor_pagination_empty_data(
         log_read_client, f"/repos/{repo.id}/logs/entities?root=true"
     )
-
-
-async def test_get_log_entities_no_root_or_parent_entity_ref_params(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await log_read_client.assert_get_bad_request(f"/repos/{repo.id}/logs/entities")
 
 
 async def test_get_log_entities_both_root_or_parent_entity_ref_params(
