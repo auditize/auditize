@@ -199,7 +199,6 @@ async def test_log_retention_period_purge_consolidated_data(
         await LogService.apply_log_retention_period(session)
 
 
-@pytest.mark.skip()
 async def test_log_retention_period_purge_log_entities_1(
     superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
@@ -233,14 +232,27 @@ async def test_log_retention_period_purge_log_entities_1(
     async with open_db_session() as session:
         await LogService.apply_log_retention_period(session)
 
-    await assert_consolidated_data(
-        repo.db.log_entities,
-        [
-            {"_id": callee.Any(), "parent_entity_ref": None, "ref": "A", "name": "A"},
-            {"_id": callee.Any(), "parent_entity_ref": "A", "ref": "AB", "name": "AB"},
-            {"_id": callee.Any(), "parent_entity_ref": "A", "ref": "AC", "name": "AC"},
+    resp = await superadmin_client.assert_get_ok(f"/repos/{repo.id}/logs/entities")
+    assert resp.json() == {
+        "items": [
+            {"ref": "A", "name": "A", "parent_entity_ref": None, "has_children": True},
+            {
+                "ref": "AB",
+                "name": "AB",
+                "parent_entity_ref": "A",
+                "has_children": False,
+            },
+            {
+                "ref": "AC",
+                "name": "AC",
+                "parent_entity_ref": "A",
+                "has_children": False,
+            },
         ],
-    )
+        "pagination": {
+            "next_cursor": None,
+        },
+    }
 
 
 @pytest.mark.skip()

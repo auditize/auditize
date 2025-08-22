@@ -562,6 +562,38 @@ class LogService:
         _get_paginated_agg, nested="attachments", field="attachments.mime_type"
     )
 
+    async def _purge_orphan_log_entity_if_needed(self, entity: Entity):
+        """
+        This function assumes that the entity has no children and delete it if it has no associated logs.
+        It performs the same operation recursively on its ancestors.
+        """
+        associated_logs, _ = await self.get_logs(
+            search_params=LogSearchParams(entity_ref=entity.ref), limit=1
+        )
+        print("HAS ASSOCIATED LOGS: %s" % bool(associated_logs))
+        if not associated_logs:
+            await self.session.delete(entity)
+            await self.session.flush()
+            print(
+                f"Deleted orphan log entity {entity!r} from log repository {self.repo.log_db_name!r}"
+            )
+            parent_entity = await self.session.scalar(
+                select(Entity).where(Entity.id == entity.parent_entity_id)
+            )
+            if parent_entity and not parent_entity.has_children:
+                await self._purge_orphan_log_entity_if_needed(parent_entity)
+
+    async def _purge_orphan_log_entities(self):
+        result = await self.session.execute(
+            select(Entity).where(Entity.has_children == False)
+        )
+        leaf_entities = result.scalars().all()
+
+        for entity in leaf_entities:
+            await self._purge_orphan_log_entity_if_needed(entity)
+
+        await self.session.commit()
+
     async def _apply_log_retention_period(self):
         if not self.repo.retention_period:
             return
@@ -574,8 +606,10 @@ class LogService:
                         {
                             "range": {
                                 "saved_at": {
-                                    "lt": now()
-                                    - timedelta(days=self.repo.retention_period)
+                                    "lt": (
+                                        now()
+                                        - timedelta(days=self.repo.retention_period)
+                                    )
                                 }
                             }
                         }
@@ -590,6 +624,7 @@ class LogService:
                 f"Deleted {resp["deleted"]} logs older than {self.repo.retention_period} days "
                 f"in log repository {self.repo.name!r}"
             )
+            await self._purge_orphan_log_entities()
 
     @classmethod
     async def apply_log_retention_period(
