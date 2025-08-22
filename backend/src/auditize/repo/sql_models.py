@@ -1,6 +1,5 @@
-from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -20,6 +19,8 @@ class RepoStatus(str, Enum):
 
 
 class Repo(Base, HasId, HasCreatedAt):
+    from auditize.log_i18n_profile.sql_models import LogI18nProfile
+
     __tablename__ = "repo"
 
     name: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
@@ -27,10 +28,10 @@ class Repo(Base, HasId, HasCreatedAt):
     status: Mapped[RepoStatus] = mapped_column(
         nullable=False, default=RepoStatus.enabled
     )
-    retention_period: Mapped[Optional[int]] = mapped_column(nullable=True)
-    log_i18n_profile_id: Mapped[Optional[UUID]] = mapped_column(
+    retention_period: Mapped[int | None] = mapped_column(nullable=True)
+    log_i18n_profile_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("log_i18n_profile.id"), nullable=True
     )
-    log_i18n_profile: Mapped[Optional["LogI18nProfile"]] = relationship(
+    log_i18n_profile: Mapped[LogI18nProfile | None] = relationship(
         "LogI18nProfile", lazy="selectin"
     )

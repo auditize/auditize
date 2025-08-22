@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
@@ -7,7 +7,7 @@ from auditize.helpers.datetime import now
 
 
 class HasId:
-    id: Mapped[Uuid] = mapped_column(Uuid(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[UUID] = mapped_column(Uuid(), primary_key=True, default=uuid4)
 
 
 class HasCreatedAt:

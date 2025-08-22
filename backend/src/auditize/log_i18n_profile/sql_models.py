@@ -1,4 +1,6 @@
-from sqlalchemy import JSON, ForeignKey, TypeDecorator, Uuid
+from uuid import UUID
+
+from sqlalchemy import JSON, ForeignKey, TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import Base
@@ -24,7 +26,7 @@ class LogTranslationForLang(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     lang: Mapped[Lang] = mapped_column(nullable=False)
-    profile_id: Mapped[Uuid] = mapped_column(
+    profile_id: Mapped[UUID] = mapped_column(
         ForeignKey("log_i18n_profile.id", ondelete="CASCADE"), nullable=False
     )
     translation: Mapped[LogTranslation] = mapped_column(
