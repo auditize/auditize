@@ -11,6 +11,4 @@ class HasId:
 
 
 class HasCreatedAt:
-    created_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=now
-    )
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=now)

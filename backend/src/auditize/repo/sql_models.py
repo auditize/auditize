@@ -1,9 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING
 from uuid import UUID
-
-if TYPE_CHECKING:
-    from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -23,14 +19,12 @@ class Repo(Base, HasId, HasCreatedAt):
 
     __tablename__ = "repo"
 
-    name: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
-    log_db_name: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[RepoStatus] = mapped_column(
-        nullable=False, default=RepoStatus.enabled
-    )
-    retention_period: Mapped[int | None] = mapped_column(nullable=True)
+    name: Mapped[str] = mapped_column(unique=True, index=True)
+    log_db_name: Mapped[str] = mapped_column()
+    status: Mapped[RepoStatus] = mapped_column(default=RepoStatus.enabled)
+    retention_period: Mapped[int | None] = mapped_column()
     log_i18n_profile_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("log_i18n_profile.id"), nullable=True
+        ForeignKey("log_i18n_profile.id")
     )
     log_i18n_profile: Mapped[LogI18nProfile | None] = relationship(
         "LogI18nProfile", lazy="selectin"

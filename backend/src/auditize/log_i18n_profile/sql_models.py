@@ -25,19 +25,17 @@ class LogTranslationForLang(Base):
     __tablename__ = "log_i18n_profile_translation"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    lang: Mapped[Lang] = mapped_column(nullable=False)
+    lang: Mapped[Lang] = mapped_column()
     profile_id: Mapped[UUID] = mapped_column(
-        ForeignKey("log_i18n_profile.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("log_i18n_profile.id", ondelete="CASCADE")
     )
-    translation: Mapped[LogTranslation] = mapped_column(
-        LogTranslationAsJSON(), nullable=False
-    )
+    translation: Mapped[LogTranslation] = mapped_column(LogTranslationAsJSON())
 
 
 class LogI18nProfile(Base, HasId, HasCreatedAt):
     __tablename__ = "log_i18n_profile"
 
-    name: Mapped[str] = mapped_column(nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(unique=True, index=True)
     translations: Mapped[list[LogTranslationForLang]] = relationship(
         lazy="selectin", cascade="all, delete-orphan"
     )

@@ -33,13 +33,11 @@ class LogFilterColumnsAsList(TypeDecorator):
 class LogFilter(Base, HasId, HasCreatedAt):
     __tablename__ = "log_filter"
 
-    name: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
-    repo_id: Mapped[UUID] = mapped_column(nullable=False)
-    user_id: Mapped[UUID] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column(unique=True, index=True)
+    repo_id: Mapped[UUID] = mapped_column()
+    user_id: Mapped[UUID] = mapped_column()
     search_params: Mapped[LogFilterSearchParams] = mapped_column(
-        LogFilterSearchParamsAsJSON(), nullable=False
+        LogFilterSearchParamsAsJSON()
     )
-    columns: Mapped[list[str]] = mapped_column(LogFilterColumnsAsList(), nullable=False)
-    is_favorite: Mapped[bool] = mapped_column(
-        nullable=False, default=False
-    )  # Added in 0.3.0
+    columns: Mapped[list[str]] = mapped_column(LogFilterColumnsAsList())
+    is_favorite: Mapped[bool] = mapped_column(default=False)  # Added in 0.3.0
