@@ -5,7 +5,7 @@ from uuid import UUID
 
 import bcrypt
 from motor.motor_asyncio import AsyncIOMotorClientSession
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import and_
 
@@ -172,13 +172,12 @@ async def get_users(
     return results, page_info
 
 
-async def _forbid_last_superadmin_deletion(session: AsyncSession, user_id: UUID):
-    user = await get_user(session, user_id)
+async def _forbid_last_superadmin_deletion(session: AsyncSession, user: User):
     if user.permissions.is_superadmin:
         other_superadmin = await session.execute(
             select(User)
             .join(User.permissions)
-            .where(User.id != user_id, Permissions.is_superadmin == True)
+            .where(User.id != user.id, Permissions.is_superadmin == True)
         )
         other_superadmin = other_superadmin.scalar()
         if not other_superadmin:
@@ -188,8 +187,11 @@ async def _forbid_last_superadmin_deletion(session: AsyncSession, user_id: UUID)
 
 
 async def delete_user(session: AsyncSession, user_id: UUID):
-    await _forbid_last_superadmin_deletion(session, user_id)
-    await delete_sql_model(session, User, user_id)
+    user = await get_user(session, user_id)
+    await _forbid_last_superadmin_deletion(session, user)
+    await session.delete(user.permissions)
+    await session.delete(user)
+    await session.commit()
 
 
 async def remove_repo_from_users_permissions(

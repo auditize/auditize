@@ -17,9 +17,7 @@ class User(Base, HasId, HasCreatedAt):
     email: Mapped[str] = mapped_column(unique=True, index=True)
     lang: Mapped[Lang] = mapped_column(default=Lang.EN)
     password_hash: Mapped[str | None] = mapped_column()
-    permissions_id: Mapped[int] = mapped_column(
-        ForeignKey("permissions.id", ondelete="CASCADE")
-    )
+    permissions_id: Mapped[int] = mapped_column(ForeignKey("permissions.id"))
     permissions: Mapped["Permissions"] = relationship(
         "Permissions",
         lazy="selectin",

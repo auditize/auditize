@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorClientSession
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.apikey.models import ApikeyCreate, ApikeyUpdate
@@ -18,6 +19,7 @@ from auditize.permissions.service import (
     update_permissions,
     validate_permissions_constraints,
 )
+from auditize.permissions.sql_models import Permissions
 from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
@@ -105,7 +107,10 @@ async def get_apikeys(
 
 
 async def delete_apikey(session: AsyncSession, apikey_id: UUID):
-    await delete_sql_model(session, Apikey, apikey_id)
+    apikey = await get_apikey(session, apikey_id)
+    await session.delete(apikey.permissions)
+    await session.delete(apikey)
+    await session.commit()
 
 
 async def remove_repo_from_apikeys_permissions(
