@@ -1,7 +1,13 @@
 from uuid import UUID
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, MappedAsDataclass, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from auditize.database.dbm import Base
 
@@ -63,3 +69,16 @@ class Permissions(MappedAsDataclass, Base):
     def get_repo_readable_entities(self, repo_id: UUID) -> set[str]:
         perms = self.get_repo_log_permissions_by_id(repo_id)
         return set(entity.ref for entity in perms.readable_entities) if perms else set()
+
+
+class HasPermissions:
+    @declared_attr
+    def permissions_id(self) -> Mapped[int]:
+        return mapped_column(ForeignKey("permissions.id"))
+
+    @declared_attr
+    def permissions(self) -> Mapped["Permissions"]:
+        return relationship(
+            "Permissions",
+            lazy="selectin",
+        )
