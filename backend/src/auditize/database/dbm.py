@@ -33,7 +33,7 @@ class DatabaseManager:
         self.elastic_client: AsyncElasticsearch = elastic_client
 
     @classmethod
-    def init(cls, name=None, *, force_init=False) -> Self:
+    def init(cls, name=None, *, force_init=False, debug=False) -> Self:
         if not force_init and cls._dbm:
             raise Exception("DatabaseManager is already initialized")
         config = get_config()
@@ -54,7 +54,8 @@ class DatabaseManager:
                     config.postgres_user_password,
                     config.postgres_host,
                     name,
-                )
+                ),
+                echo=debug,
             ),
             elastic_client=get_elastic_client(),
         )
@@ -67,8 +68,8 @@ class DatabaseManager:
         return cls._dbm
 
 
-def init_dbm(name=None, *, force_init=False) -> DatabaseManager:
-    return DatabaseManager.init(name, force_init=force_init)
+def init_dbm(name=None, *, force_init=False, debug=False) -> DatabaseManager:
+    return DatabaseManager.init(name, force_init=force_init, debug=debug)
 
 
 def get_dbm() -> DatabaseManager:

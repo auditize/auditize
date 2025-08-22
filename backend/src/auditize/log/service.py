@@ -3,12 +3,14 @@ import json
 import uuid
 from datetime import datetime, timedelta
 from functools import partialmethod
-from typing import Self
+from typing import Any, Self
 from uuid import UUID
 
 import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
+from sqlalchemy import and_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.config import get_config
@@ -30,6 +32,7 @@ from auditize.resource.pagination.cursor.serialization import (
 from auditize.resource.service import (
     has_resource_document,
 )
+from auditize.resource.sql_service import get_sql_model
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
@@ -92,9 +95,10 @@ class _OffsetPaginationCursor:
 
 
 class LogService:
-    def __init__(self, repo: Repo, es: AsyncElasticsearch):
+    def __init__(self, repo: Repo, es: AsyncElasticsearch, session: AsyncSession):
         self.repo = repo
         self.es = es
+        self.session = session
         self.index = repo.log_db_name
         self._refresh = get_config().test_mode
 
@@ -114,7 +118,7 @@ class LogService:
                     "The repository status does not allow the requested operation"
                 )
 
-        return cls(repo, DatabaseManager.get().elastic_client)
+        return cls(repo, DatabaseManager.get().elastic_client, session)
 
     @classmethod
     async def for_reading(cls, session: AsyncSession, repo: Repo | UUID):
@@ -603,90 +607,77 @@ class LogService:
             # FIXME: we should also delete the consolidated entities that are not referenced by any log
 
     async def _consolidate_log_entity(
-        self, entity: Log.Entity, parent_entity: Log.Entity | None
-    ):
-        doc = {
-            "ref": entity.ref,
-            "name": entity.name,
-            "parent_entity_ref": parent_entity.ref if parent_entity else None,
-        }
-        cache_key = "%s:%s" % (self.index, doc.values())
-        if await _CONSOLIDATED_LOG_ENTITIES.exists(cache_key):
-            return
+        self, entity: Log.Entity, parent_entity_id: UUID | None
+    ) -> UUID:
+        cache_key = "\t".join(
+            (
+                str(self.repo.id),
+                entity.ref,
+                entity.name,
+                str(parent_entity_id) if parent_entity_id else "",
+            )
+        )
+        if entity_id := await _CONSOLIDATED_LOG_ENTITIES.get(cache_key):
+            return entity_id
 
-        try:
-            print("CONSOLIDATE ENTITY: %s" % json.dumps(doc))
-            await self.es.update(
-                index=f"{self.index}_entities",
-                id=str(uuid.uuid4()),
-                doc=doc,
-                doc_as_upsert=True,
-                refresh=self._refresh,
+        result = await self.session.execute(
+            insert(Entity)
+            .values(
+                repo_id=self.repo.id,
+                ref=entity.ref,
+                name=entity.name,
+                parent_entity_id=parent_entity_id,
             )
-        except elasticsearch.ConflictError:
-            # We may encounter a 409 error if two updates are made at the same time
-            # just ignore those errors and mark the log entity as already consolidated.
-            # It assumes that the being log entity being updated was the same as the one
-            # we attempted to index.
-            print(
-                f"Detected conflict error while consolidating entity {entity.ref}, skip it."
+            .on_conflict_do_update(
+                index_elements=[Entity.repo_id, Entity.ref],
+                set_=dict(
+                    name=entity.name,
+                    parent_entity_id=parent_entity_id,
+                ),
             )
-        await _CONSOLIDATED_LOG_ENTITIES.set(cache_key, True)
+            .returning(Entity.id)
+        )
+        entity_id = result.scalar_one()
+
+        await _CONSOLIDATED_LOG_ENTITIES.set(cache_key, entity_id)
+        return entity_id
 
     async def _consolidate_log_entity_path(self, entity_path: list[Log.Entity]):
-        parent_entity = None
+        parent_entity_id = None
         for entity in entity_path:
-            await self._consolidate_log_entity(entity, parent_entity)
-            parent_entity = entity
+            parent_entity_id = await self._consolidate_log_entity(
+                entity, parent_entity_id
+            )
+        await self.session.commit()
 
     async def _has_entity_children(self, entity_ref: str) -> bool:
-        print(
-            "_has_entity_children query: %s"
-            % json.dumps(
-                {"bool": {"filter": {"term": {"parent_entity_ref": entity_ref}}}}
+        return (
+            await self.session.execute(
+                select(Entity).where(Entity.parent_entity_ref == entity_ref).limit(1)
             )
-        )
-        resp = await self.es.search(
-            index=f"{self.index}_entities",
-            query={"bool": {"filter": {"term": {"parent_entity_ref": entity_ref}}}},
-            size=1,
-        )
-        print("_has_entity_children response: %s" % json.dumps(dict(resp)))
-        return bool(resp["hits"]["hits"])
+        ).scalar() is not None
 
     async def _get_log_entities(
-        self, *, query: dict, pagination_cursor: str | None = None, limit: int = 10
+        self,
+        *,
+        filters: list[Any],
+        pagination_cursor: str | None = None,
+        limit: int = 10,
     ) -> tuple[list[Entity], str | None]:
-        print("_get_log_entities query: %s" % json.dumps(query))
         cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
-        resp = await self.es.search(
-            index=f"{self.index}_entities",
-            query=query,
-            sort=[{"name.keyword": "asc"}],
-            from_=cursor_obj.offset,
-            size=limit + 1,
+        result = await self.session.execute(
+            select(Entity)
+            .where(*filters)
+            .order_by(Entity.name)
+            .offset(cursor_obj.offset)
+            .limit(limit + 1)
         )
-        print("_get_log_entities response: %s" % json.dumps(dict(resp)))
-
-        entities = [
-            Entity.model_validate(
-                {
-                    **hit["_source"],
-                    "_id": hit["_id"],
-                    "has_children": await self._has_entity_children(
-                        hit["_source"]["ref"]
-                    ),
-                }
-            )
-            for hit in resp["hits"]["hits"]
-        ]
-
+        entities = result.scalars().all()
         if len(entities) == limit + 1:
             next_cursor = _OffsetPaginationCursor(cursor_obj.offset + limit).serialize()
             entities.pop(-1)
         else:
             next_cursor = None
-
         return entities, next_cursor
 
     async def _get_entity_hierarchy(self, entity_ref: str) -> set[str]:
@@ -718,16 +709,12 @@ class LogService:
         parent_entity_ref=NotImplemented,
         limit: int = 10,
         pagination_cursor: str = None,
-    ) -> tuple[list[Log.Entity], str | None]:
+    ) -> tuple[list[Entity], str | None]:
         # please note that we use NotImplemented instead of None because None is a valid value for parent_entity_ref
         # (it means filtering on top entities)
-        filter = []
-        must_not = {}
+        filters = []
         if parent_entity_ref is not NotImplemented:
-            if parent_entity_ref is None:
-                must_not = {"exists": {"field": "parent_entity_ref"}}
-            else:
-                filter.append({"term": {"parent_entity_ref": parent_entity_ref}})
+            filters.append(Entity.parent_entity_ref == parent_entity_ref)
 
         if authorized_entities:
             # get the complete hierarchy of the entity from the entity itself to the top entity
@@ -744,26 +731,13 @@ class LogService:
                 visible_entities = await self._get_entities_hierarchy(
                     authorized_entities
                 )
-                filter.append({"terms": {"ref": list(visible_entities)}})
-
-        query = {"bool": {}}
-        if filter:
-            query["bool"]["filter"] = filter
-        if must_not:
-            query["bool"]["must_not"] = must_not
-
+                filters.append(Entity.ref.in_(visible_entities))
         return await self._get_log_entities(
-            query=query, pagination_cursor=pagination_cursor, limit=limit
+            filters=filters, pagination_cursor=pagination_cursor, limit=limit
         )
 
-    async def _get_log_entity(self, entity_ref: str) -> Log.Entity:
-        entities, _ = await self._get_log_entities(
-            query={"bool": {"filter": {"term": {"ref": entity_ref}}}}
-        )
-        try:
-            return entities[0]
-        except IndexError:
-            raise UnknownModelException(entity_ref)
+    async def _get_log_entity(self, entity_ref: str) -> Entity:
+        return await get_sql_model(self.session, Entity, Entity.ref == entity_ref)
 
     async def get_log_entity(
         self, entity_ref: str, authorized_entities: set[str]

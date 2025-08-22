@@ -19,7 +19,7 @@ def setup_test_dbm() -> DatabaseManager:
         db_name += "_" + os.environ["PYTEST_XDIST_WORKER"]
     except KeyError:
         pass
-    return init_dbm(db_name, force_init=True)
+    return init_dbm(db_name, force_init=True, debug=False)
 
 
 async def teardown_test_dbm(dbm: DatabaseManager):
