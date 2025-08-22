@@ -22,9 +22,10 @@ from auditize.exceptions import (
     UnknownModelException,
 )
 from auditize.helpers.datetime import now, serialize_datetime
-from auditize.log.models import Entity, Log, LogCreate, LogSearchParams
-from auditize.repo.models import Repo, RepoStatus
+from auditize.log.models import Log, LogCreate, LogSearchParams
+from auditize.log.sql_models import Entity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
+from auditize.repo.sql_models import Repo, RepoStatus
 from auditize.resource.pagination.cursor.serialization import (
     load_pagination_cursor,
     serialize_pagination_cursor,

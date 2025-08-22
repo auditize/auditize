@@ -7,8 +7,8 @@ from elasticsearch import AsyncElasticsearch
 
 from auditize.database import get_dbm
 from auditize.database.dbm import open_db_session
-from auditize.repo.models import Repo
 from auditize.repo.service import create_repo
+from auditize.repo.sql_models import Repo
 
 from .http import HttpTestHelper
 from .log import PreparedLog

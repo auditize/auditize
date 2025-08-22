@@ -2,11 +2,10 @@ import pytest
 
 from auditize.i18n import Lang
 from auditize.log_i18n_profile.models import (
-    LogI18nProfile,
     LogTranslation,
-    LogTranslationForLang,
     get_log_value_translation,
 )
+from auditize.log_i18n_profile.sql_models import LogI18nProfile, LogTranslationForLang
 from conftest import RepoBuilder
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID

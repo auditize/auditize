@@ -29,7 +29,8 @@ from auditize.permissions.models import (
     RepoLogPermissions,
 )
 from auditize.permissions.service import is_authorized
-from auditize.repo.models import Repo, RepoCreate, RepoStats, RepoStatus, RepoUpdate
+from auditize.repo.models import RepoCreate, RepoStats, RepoUpdate
+from auditize.repo.sql_models import Repo, RepoStatus
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
 from auditize.resource.service import (
@@ -45,7 +46,7 @@ from auditize.resource.sql_service import (
     save_sql_model,
     update_sql_model,
 )
-from auditize.user.models import User
+from auditize.user.sql_models import User
 
 
 async def _validate_repo(session: AsyncSession, repo: RepoCreate | RepoUpdate):

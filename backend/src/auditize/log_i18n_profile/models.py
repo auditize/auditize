@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import JSON, ForeignKey, TypeDecorator, Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from auditize.database.dbm import Base
-from auditize.i18n.lang import DEFAULT_LANG, Lang
+from auditize.i18n.lang import Lang
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
-from auditize.resource.sql_models import HasCreatedAt, HasId
+
+if TYPE_CHECKING:
+    from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 
 class LogTranslation(BaseModel):
@@ -53,61 +55,12 @@ class LogTranslation(BaseModel):
         return translations.get(key, None)
 
 
-class LogTranslationAsJSON(TypeDecorator):
-    impl = JSON
-
-    def process_bind_param(self, value: LogTranslation, _) -> dict:
-        # we use exclude_none=True instead of exclude_unset=True
-        # to keep the potential empty dict fields in LogTranslation sub-model
-        return value.model_dump(exclude_none=True)
-
-    def process_result_value(self, value: dict, _) -> LogTranslation:
-        return LogTranslation.model_validate(value)
-
-
-class LogTranslationForLang(Base):
-    __tablename__ = "log_i18n_profile_translation"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    lang: Mapped[Lang] = mapped_column(nullable=False)
-    profile_id: Mapped[Uuid] = mapped_column(
-        ForeignKey("log_i18n_profile.id", ondelete="CASCADE"), nullable=False
-    )
-    translation: Mapped[LogTranslation] = mapped_column(
-        LogTranslationAsJSON(), nullable=False
-    )
-
-
-class LogI18nProfile(Base, HasId, HasCreatedAt):
-    __tablename__ = "log_i18n_profile"
-
-    name: Mapped[str] = mapped_column(nullable=False, unique=True)
-    translations: Mapped[list[LogTranslationForLang]] = relationship(
-        lazy="selectin", cascade="all, delete-orphan"
-    )
-
-    def get_translation_for_lang(
-        self, lang: Lang | str
-    ) -> LogTranslationForLang | None:
-        return next((t for t in self.translations if t.lang == lang), None)
-
-    def get_translation(self, lang: Lang | str, key_type: str, key: str) -> str | None:
-        translation = self.get_translation_for_lang(lang)
-        if not translation:
-            translation = self.get_translation_for_lang(DEFAULT_LANG)
-
-        if not translation:
-            return None
-
-        return translation.translation.get_translation(key_type, key)
-
-
 def _build_default_translation(value: str) -> str:
     return " ".join(s.capitalize() for s in value.split("-"))
 
 
 def get_log_value_translation(
-    profile: LogI18nProfile | None, lang: Lang | str, key_type: str, key: str
+    profile: "LogI18nProfile" | None, lang: Lang | str, key_type: str, key: str
 ) -> str:
     translation = None
     if profile:
@@ -163,8 +116,8 @@ class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
 
 
 class LogI18nProfileListResponse(
-    PagePaginatedResponse[LogI18nProfile, LogI18nProfileResponse]
+    PagePaginatedResponse["LogI18nProfile", LogI18nProfileResponse]
 ):
     @classmethod
-    def build_item(cls, profile: LogI18nProfile) -> LogI18nProfileResponse:
+    def build_item(cls, profile: "LogI18nProfile") -> LogI18nProfileResponse:
         return LogI18nProfileResponse.model_validate(profile)

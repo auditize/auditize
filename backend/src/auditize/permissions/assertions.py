@@ -3,7 +3,7 @@ from functools import partial
 from typing import Callable
 from uuid import UUID
 
-from auditize.permissions.models import Permissions
+from auditize.permissions.sql_models import Permissions
 
 __all__ = (
     "PermissionAssertion",

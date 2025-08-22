@@ -6,8 +6,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
-from auditize.apikey.models import Apikey
 from auditize.apikey.service import get_apikey, get_apikey_by_key
+from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX, APIKEY_SECRET_PREFIX
 from auditize.auth.jwt import get_access_token_data, get_user_email_from_session_token
 from auditize.dependencies import get_db_session
@@ -21,10 +21,10 @@ from auditize.permissions.assertions import (
     can_read_logs_from_repo,
     can_write_logs_to_repo,
 )
-from auditize.permissions.models import Permissions
 from auditize.permissions.service import authorize_grant
-from auditize.user.models import User
+from auditize.permissions.sql_models import Permissions
 from auditize.user.service import get_user_by_email
+from auditize.user.sql_models import User
 
 _BEARER_PREFIX = "Bearer "
 

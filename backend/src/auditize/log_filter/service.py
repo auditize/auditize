@@ -9,7 +9,8 @@ from auditize.exceptions import (
     ValidationError,
     enhance_constraint_violation_exception,
 )
-from auditize.log_filter.models import LogFilter, LogFilterCreate, LogFilterUpdate
+from auditize.log_filter.models import LogFilterCreate, LogFilterUpdate
+from auditize.log_filter.sql_models import LogFilter
 from auditize.repo.service import get_repo
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page

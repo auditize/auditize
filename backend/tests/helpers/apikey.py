@@ -2,10 +2,12 @@ import uuid
 
 import callee
 
-from auditize.apikey.models import Apikey, ApikeyCreate
+from auditize.apikey.models import ApikeyCreate
 from auditize.apikey.service import create_apikey
+from auditize.apikey.sql_models import Apikey
 from auditize.database.dbm import open_db_session
-from auditize.permissions.models import Permissions, PermissionsInput
+from auditize.permissions.models import PermissionsInput
+from auditize.permissions.sql_models import Permissions
 
 from .http import HttpTestHelper
 from .permissions.constants import DEFAULT_PERMISSIONS

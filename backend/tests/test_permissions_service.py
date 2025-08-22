@@ -6,7 +6,7 @@ from icecream import ic
 
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_logs_from_repo
-from auditize.permissions.models import Permissions, PermissionsInput
+from auditize.permissions.models import PermissionsInput
 from auditize.permissions.service import (
     authorize_access,
     authorize_grant,
@@ -16,6 +16,7 @@ from auditize.permissions.service import (
     normalize_permissions,
     update_permissions,
 )
+from auditize.permissions.sql_models import Permissions
 
 REPO_1 = UUID("8276de01-c6f2-4174-bbbf-cadb8e9832e6")
 REPO_2 = UUID("4b3a4f91-8131-4d06-8edb-7d9d1353217b")

@@ -20,13 +20,14 @@ from auditize.exceptions import (
 )
 from auditize.log.service import LogService
 from auditize.openapi import get_customized_openapi_schema
-from auditize.permissions.models import Permissions
+from auditize.permissions.sql_models import Permissions
 from auditize.scheduler import build_scheduler
-from auditize.user.models import USER_PASSWORD_MIN_LENGTH, User
+from auditize.user.models import USER_PASSWORD_MIN_LENGTH
 from auditize.user.service import (
     hash_user_password,
     save_user,
 )
+from auditize.user.sql_models import User
 from auditize.version import __version__
 
 

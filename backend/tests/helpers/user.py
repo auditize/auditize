@@ -11,13 +11,14 @@ from auditize.database.dbm import open_db_session
 from auditize.i18n.lang import Lang
 from auditize.permissions.models import PermissionsInput
 from auditize.resource.service import create_resource_document
-from auditize.user.models import User, UserCreate, UserUpdate
+from auditize.user.models import UserCreate, UserUpdate
 from auditize.user.service import (
     create_user,
     get_user,
     hash_user_password,
     update_user,
 )
+from auditize.user.sql_models import User
 
 from .http import HttpTestHelper, get_cookie_by_name
 from .log_filter import PreparedLogFilter

@@ -12,7 +12,8 @@ from auditize.helpers.datetime import serialize_datetime
 from auditize.i18n import Lang, t
 from auditize.log.models import CustomField, Log, LogSearchParams
 from auditize.log.service import LogService
-from auditize.log_i18n_profile.models import LogI18nProfile, get_log_value_translation
+from auditize.log_i18n_profile.models import get_log_value_translation
+from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 LOG_CSV_BUILTIN_COLUMNS = (
     "log_id",

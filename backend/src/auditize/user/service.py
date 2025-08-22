@@ -20,13 +20,13 @@ from auditize.exceptions import (
 )
 from auditize.helpers.datetime import now
 from auditize.helpers.email import send_email
-from auditize.permissions.models import Permissions
 from auditize.permissions.service import (
     build_permissions,
     remove_repo_from_permissions,
     update_permissions,
     validate_permissions_constraints,
 )
+from auditize.permissions.sql_models import Permissions
 from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
@@ -43,7 +43,8 @@ from auditize.resource.sql_service import (
     save_sql_model,
     update_sql_model,
 )
-from auditize.user.models import User, UserCreate, UserUpdate
+from auditize.user.models import UserCreate, UserUpdate
+from auditize.user.sql_models import User
 
 _DEFAULT_PASSWORD_RESET_TOKEN_LIFETIME = 60 * 60 * 24  # 24 hours
 

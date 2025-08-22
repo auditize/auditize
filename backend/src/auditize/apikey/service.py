@@ -6,7 +6,8 @@ from uuid import UUID
 from motor.motor_asyncio import AsyncIOMotorClientSession
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.apikey.models import Apikey, ApikeyCreate, ApikeyUpdate
+from auditize.apikey.models import ApikeyCreate, ApikeyUpdate
+from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import get_core_db
 from auditize.exceptions import enhance_constraint_violation_exception

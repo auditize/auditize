@@ -2,30 +2,22 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.database import get_core_db
 from auditize.exceptions import (
     ConstraintViolation,
     UnknownModelException,
     enhance_constraint_violation_exception,
 )
 from auditize.log_i18n_profile.models import (
-    LogI18nProfile,
     LogI18nProfileCreate,
-    LogI18nProfileResponse,
     LogI18nProfileUpdate,
     LogTranslation,
+)
+from auditize.log_i18n_profile.sql_models import (
+    LogI18nProfile,
     LogTranslationForLang,
 )
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
-from auditize.resource.service import (
-    create_resource_document,
-    create_resource_document2,
-    delete_resource_document,
-    get_resource_document,
-    has_resource_document,
-    update_resource_document,
-)
 from auditize.resource.sql_service import (
     delete_sql_model,
     get_sql_model,

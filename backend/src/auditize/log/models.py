@@ -11,26 +11,13 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
-from sqlalchemy import (
-    Boolean,
-    ForeignKey,
-    String,
-    UniqueConstraint,
-    literal_column,
-)
-from sqlalchemy.orm import (
-    Mapped,
-    column_property,
-    mapped_column,
-)
 
-from auditize.database.dbm import Base
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import validate_datetime
+from auditize.log.sql_models import Entity
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.models import HasId
 from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
-from auditize.resource.sql_models import HasId as HasIdSql
 
 
 class CustomField(BaseModel):
@@ -90,40 +77,6 @@ class Log(BaseModel, HasId):
     tags: list[Tag] = Field(default_factory=list)
     attachments: list[AttachmentMetadata] = Field(default_factory=list)
     entity_path: list[Entity] = Field(default_factory=list)
-
-
-class Entity(Base, HasIdSql):
-    __tablename__ = "log_entity"
-
-    repo_id: Mapped[UUID] = mapped_column(ForeignKey("repo.id", ondelete="CASCADE"))
-    ref: Mapped[str] = mapped_column()
-    name: Mapped[str] = mapped_column()
-    parent_entity_id: Mapped[UUID | None] = mapped_column(ForeignKey("log_entity.id"))
-    has_children: Mapped[bool] = column_property(
-        literal_column(
-            """
-            EXISTS (
-                SELECT 1
-                FROM log_entity AS child_entity
-                WHERE child_entity.parent_entity_id = log_entity.id
-                LIMIT 1
-            )
-            """,
-            type_=Boolean,
-        )
-    )
-    parent_entity_ref: Mapped[str | None] = column_property(
-        literal_column(
-            """
-            (SELECT parent_entity.ref
-            FROM log_entity AS parent_entity
-            WHERE parent_entity.id = log_entity.parent_entity_id)
-            """,
-            type_=String,
-        )
-    )
-
-    __table_args__ = (UniqueConstraint("repo_id", "ref"),)
 
 
 class _CustomFieldData(BaseModel):

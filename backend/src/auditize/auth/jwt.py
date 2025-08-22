@@ -8,11 +8,12 @@ from authlib.jose.errors import ExpiredTokenError, JoseError
 from auditize.config import get_config
 from auditize.exceptions import AuthenticationFailure
 from auditize.helpers.datetime import now
-from auditize.permissions.models import Permissions, PermissionsInput
+from auditize.permissions.models import PermissionsInput
 from auditize.permissions.service import (
     build_permissions,
     build_permissions_output,
 )
+from auditize.permissions.sql_models import Permissions
 
 _SUB_PREFIX_SESSION_TOKEN = "user_email:"
 _SUB_PREFIX_ACCESS_TOKEN = "apikey_id:"

@@ -1,32 +1,13 @@
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import ForeignKey, TypeDecorator
-from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from auditize.database.dbm import Base
+from auditize.apikey.sql_models import Apikey
 from auditize.permissions.models import Permissions, PermissionsInput, PermissionsOutput
-from auditize.permissions.service import build_permissions_output, normalize_permissions
+from auditize.permissions.service import build_permissions_output
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
-from auditize.resource.sql_models import HasCreatedAt, HasId
-
-
-class Apikey(Base, HasId, HasCreatedAt):
-    __tablename__ = "apikey"
-
-    name: Mapped[str] = mapped_column(unique=True, index=True)
-    key_hash: Mapped[str | None] = mapped_column()
-    permissions_id: Mapped[int] = mapped_column(
-        ForeignKey("permissions.id", ondelete="CASCADE")
-    )
-    permissions: Mapped["Permissions"] = relationship(
-        "Permissions",
-        lazy="selectin",
-    )
 
 
 def _ApikeyNameField(**kwargs):  # noqa
