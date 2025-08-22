@@ -136,18 +136,17 @@ class LogService:
 
     for_maintenance = for_config
 
-    async def check_log(self, log: Log):
-        raise NotImplementedError()
+    async def check_log(self, log: LogCreate):
         parent_entity_ref = None
         for entity in log.entity_path:
-            if await has_resource_document(
-                self.log_db.log_entities,
-                {
-                    "parent_entity_ref": parent_entity_ref,
-                    "name": entity.name,
-                    "ref": {"$ne": entity.ref},
-                },
-            ):
+            existing_entity = await self.session.scalar(
+                select(Entity).where(
+                    Entity.parent_entity_ref == parent_entity_ref,
+                    Entity.name == entity.name,
+                    Entity.ref != entity.ref,
+                )
+            )
+            if existing_entity:
                 raise ConstraintViolation(
                     f"Entity {entity.ref!r} is invalid, there are other logs with "
                     f"the same entity name but with another ref at the same level (same parent)"
@@ -155,7 +154,7 @@ class LogService:
             parent_entity_ref = entity.ref
 
     async def save_log(self, log_create: LogCreate) -> Log:
-        # await self.check_log(log)
+        await self.check_log(log_create)
 
         log = Log.model_validate(log_create.model_dump())
         log.id = uuid.uuid4()

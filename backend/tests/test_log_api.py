@@ -230,7 +230,6 @@ async def test_create_log_invalid_identifiers(
         )
 
 
-@pytest.mark.skip()
 async def test_create_log_cannot_have_entities_with_same_name_and_parent(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
