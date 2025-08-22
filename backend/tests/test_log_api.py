@@ -2091,7 +2091,6 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
         return [f"text/plain{val}" for val in values]
 
 
-@pytest.mark.skip()
 async def test_log_entity_consolidation_rename_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
