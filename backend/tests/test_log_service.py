@@ -255,7 +255,6 @@ async def test_log_retention_period_purge_log_entities_1(
     }
 
 
-@pytest.mark.skip()
 async def test_log_retention_period_purge_log_entities_2(
     superadmin_client: HttpTestHelper,
     repo_builder: RepoBuilder,
@@ -279,9 +278,14 @@ async def test_log_retention_period_purge_log_entities_2(
     async with open_db_session() as session:
         await LogService.apply_log_retention_period(session)
 
-    await assert_consolidated_data(
-        repo.db.log_entities,
-        [],
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/entities",
+        expected_json={
+            "items": [],
+            "pagination": {
+                "next_cursor": None,
+            },
+        },
     )
 
 
