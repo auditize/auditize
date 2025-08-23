@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import JSON, Text, TypeDecorator
+from sqlalchemy import JSON, ForeignKey, Text, TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column
 
 from auditize.database.dbm import Base
@@ -34,8 +34,8 @@ class LogFilter(Base, HasId, HasCreatedAt):
     __tablename__ = "log_filter"
 
     name: Mapped[str] = mapped_column(unique=True, index=True)
-    repo_id: Mapped[UUID] = mapped_column()
-    user_id: Mapped[UUID] = mapped_column()
+    repo_id: Mapped[UUID] = mapped_column(ForeignKey("repo.id", ondelete="CASCADE"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     search_params: Mapped[LogFilterSearchParams] = mapped_column(
         LogFilterSearchParamsAsJSON()
     )

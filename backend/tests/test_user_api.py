@@ -1,21 +1,27 @@
 import re
 from unittest.mock import patch
+from uuid import UUID
 
 import callee
 import pytest
 from httpx import Response
 
 from auditize.database import get_core_db
+from auditize.database.dbm import open_db_session
+from auditize.exceptions import UnknownModelException
+from auditize.log_filter.service import get_log_filter
 from conftest import UserBuilder
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
+from helpers.log_filter import PreparedLogFilter
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.constants import (
     DEFAULT_APPLICABLE_PERMISSIONS,
     SUPERADMIN_APPLICABLE_PERMISSIONS,
 )
 from helpers.permissions.tests import BasePermissionTests
+from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 from helpers.utils import DATETIME_FORMAT
 
@@ -398,6 +404,18 @@ async def test_user_delete_last_superadmin(
     await user_write_client.assert_delete_constraint_violation(
         f"/users/{superadmin.id}"
     )
+
+
+async def test_user_delete_with_log_filter(
+    user_write_client: HttpTestHelper, log_read_user: PreparedUser, repo: PreparedRepo
+):
+    log_filter = await log_read_user.create_log_filter(
+        PreparedLogFilter.prepare_data({"repo_id": repo.id})
+    )
+    await user_write_client.assert_delete_no_content(f"/users/{log_read_user.id}")
+    async with open_db_session() as session:
+        with pytest.raises(UnknownModelException):
+            await get_log_filter(session, UUID(log_read_user.id), UUID(log_filter.id))
 
 
 async def test_user_password_reset(anon_client: HttpTestHelper, user: PreparedUser):

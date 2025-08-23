@@ -223,19 +223,11 @@ async def get_user_repos(
 
 async def delete_repo(session: AsyncSession, repo_id: UUID):
     # avoid circular imports
-    from auditize.apikey.service import remove_repo_from_apikeys_permissions
     from auditize.log.service import LogService
-    from auditize.log_filter.service import delete_log_filters_with_repo
-    from auditize.user.service import remove_repo_from_users_permissions
 
-    core_db = get_core_db()
-    async with core_db.transaction() as mongo_session:
-        log_service = await LogService.for_maintenance(session, repo_id)
-        await delete_sql_model(session, Repo, repo_id)
-        await remove_repo_from_users_permissions(repo_id, mongo_session)
-        await remove_repo_from_apikeys_permissions(repo_id, mongo_session)
-        await delete_log_filters_with_repo(session, repo_id)
-        await log_service.delete_log_db()
+    log_service = await LogService.for_maintenance(session, repo_id)
+    await delete_sql_model(session, Repo, repo_id)
+    await log_service.delete_log_db()
 
 
 async def is_log_i18n_profile_used_by_repo(
