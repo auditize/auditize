@@ -55,7 +55,7 @@ class Permissions(MappedAsDataclass, Base):
     logs_write: Mapped[bool] = mapped_column(default=False)
 
     repo_log_permissions: Mapped[list[RepoLogPermissions]] = relationship(
-        lazy="selectin", default_factory=list
+        lazy="selectin", cascade="all, delete-orphan", default_factory=list
     )
 
     def get_repo_log_permissions_by_id(
@@ -78,7 +78,4 @@ class HasPermissions:
 
     @declared_attr
     def permissions(self) -> Mapped["Permissions"]:
-        return relationship(
-            "Permissions",
-            lazy="selectin",
-        )
+        return relationship("Permissions", lazy="selectin")
