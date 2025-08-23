@@ -135,49 +135,49 @@ def compute_applicable_permissions(perms: Permissions) -> ApplicablePermissions:
 
 
 def _update_repo_log_permissions(
-    orig: RepoLogPermissions,
+    current: RepoLogPermissions,
     update: RepoLogPermissionsInput,
 ):
     if update.read is not None:
-        orig.read = update.read
+        current.read = update.read
     if update.write is not None:
-        orig.write = update.write
+        current.write = update.write
 
     if update.readable_entities is not None:
         for updated_readable_entity_ref in update.readable_entities:
             # Add new log entity if not already present
             if updated_readable_entity_ref not in (
-                entity.ref for entity in orig.readable_entities
+                entity.ref for entity in current.readable_entities
             ):
-                orig.readable_entities.append(
+                current.readable_entities.append(
                     ReadableLogEntityPermission(ref=updated_readable_entity_ref)
                 )
         # Remove log entities that are not present in the update
-        for orig_readable_entity in list(orig.readable_entities):
-            if orig_readable_entity.ref not in update.readable_entities:
-                orig.readable_entities.remove(orig_readable_entity)
+        for current_readable_entity in list(current.readable_entities):
+            if current_readable_entity.ref not in update.readable_entities:
+                current.readable_entities.remove(current_readable_entity)
 
 
 def _update_log_permissions(
-    orig: Permissions,
+    current: Permissions,
     update: LogPermissionsInput,
 ):
     if update.read is not None:
-        orig.logs_read = update.read
+        current.logs_read = update.read
     if update.write is not None:
-        orig.logs_write = update.write
+        current.logs_write = update.write
 
     if update.repos is not None:
         for updated_repo_perms in update.repos:
-            orig_repo_perms = next(
+            current_repo_perms = next(
                 (
                     perms
-                    for perms in orig.repo_log_permissions
+                    for perms in current.repo_log_permissions
                     if perms.repo_id == updated_repo_perms.repo_id
                 ),
                 None,
             )
-            if orig_repo_perms:
+            if current_repo_perms:
                 if not any(
                     (
                         updated_repo_perms.read,
@@ -186,48 +186,48 @@ def _update_log_permissions(
                     )
                 ):
                     # Remove repo log permissions that are said to be removed
-                    orig.repo_log_permissions.remove(orig_repo_perms)
+                    current.repo_log_permissions.remove(current_repo_perms)
                 else:
                     # Update existing repo log permissions
-                    _update_repo_log_permissions(orig_repo_perms, updated_repo_perms)
+                    _update_repo_log_permissions(current_repo_perms, updated_repo_perms)
             else:
                 # Add new repo log permissions
                 new_repo_perms = RepoLogPermissions(repo_id=updated_repo_perms.repo_id)
                 _update_repo_log_permissions(new_repo_perms, updated_repo_perms)
-                orig.repo_log_permissions.append(new_repo_perms)
+                current.repo_log_permissions.append(new_repo_perms)
 
 
 def update_permissions(
-    orig: Permissions,
+    current: Permissions,
     update: PermissionsInput,
 ):
     # Superadmin
     if update.is_superadmin is not None:
-        orig.is_superadmin = update.is_superadmin
+        current.is_superadmin = update.is_superadmin
 
     # Repos management
     if update.management.repos.read is not None:
-        orig.repos_read = update.management.repos.read
+        current.repos_read = update.management.repos.read
     if update.management.repos.write is not None:
-        orig.repos_write = update.management.repos.write
+        current.repos_write = update.management.repos.write
 
     # Users management
     if update.management.users.read is not None:
-        orig.users_read = update.management.users.read
+        current.users_read = update.management.users.read
     if update.management.users.write is not None:
-        orig.users_write = update.management.users.write
+        current.users_write = update.management.users.write
 
     # API keys management
     if update.management.apikeys.read is not None:
-        orig.apikeys_read = update.management.apikeys.read
+        current.apikeys_read = update.management.apikeys.read
     if update.management.apikeys.write is not None:
-        orig.apikeys_write = update.management.apikeys.write
+        current.apikeys_write = update.management.apikeys.write
 
     # Logs
-    _update_log_permissions(orig, update.logs)
+    _update_log_permissions(current, update.logs)
 
     # Normalize permissions
-    normalize_permissions(orig)
+    normalize_permissions(current)
 
 
 def build_permissions(input: PermissionsInput) -> Permissions:
