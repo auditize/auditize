@@ -6,11 +6,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.database.dbm import Base
+from auditize.database.dbm import SqlModel
 from auditize.exceptions import ConstraintViolation, UnknownModelException
 
 
-async def save_sql_model(session: AsyncSession, model: Base) -> None:
+async def save_sql_model(session: AsyncSession, model: SqlModel) -> None:
     session.add(model)
     try:
         await session.commit()
@@ -19,7 +19,7 @@ async def save_sql_model(session: AsyncSession, model: Base) -> None:
     await session.refresh(model)
 
 
-async def update_sql_model[T: Base](
+async def update_sql_model[T: SqlModel](
     session: AsyncSession, model: T, update: BaseModel | dict
 ) -> None:
     if isinstance(update, BaseModel):
@@ -29,7 +29,7 @@ async def update_sql_model[T: Base](
     await save_sql_model(session, model)
 
 
-async def get_sql_model[T: Base](
+async def get_sql_model[T: SqlModel](
     session: AsyncSession, model_class: type[T], lookup: uuid.UUID | Any
 ) -> T:
     if isinstance(lookup, uuid.UUID):
@@ -40,7 +40,7 @@ async def get_sql_model[T: Base](
     return model
 
 
-async def delete_sql_model[T: Base](
+async def delete_sql_model[T: SqlModel](
     session: AsyncSession, model_class: type[T], lookup: uuid.UUID | Any
 ) -> None:
     if isinstance(lookup, uuid.UUID):

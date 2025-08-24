@@ -3,11 +3,11 @@ from uuid import UUID
 from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, literal_column
 from sqlalchemy.orm import Mapped, column_property, mapped_column
 
-from auditize.database.dbm import Base
+from auditize.database.dbm import SqlModel
 from auditize.resource.sql_models import HasId
 
 
-class Entity(Base, HasId):
+class Entity(SqlModel, HasId):
     __tablename__ = "log_entity"
 
     repo_id: Mapped[UUID] = mapped_column(ForeignKey("repo.id", ondelete="CASCADE"))

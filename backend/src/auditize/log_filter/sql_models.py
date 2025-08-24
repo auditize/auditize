@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import JSON, ForeignKey, Text, TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column
 
-from auditize.database.dbm import Base
+from auditize.database.dbm import SqlModel
 from auditize.log_filter.models import LogFilterSearchParams
 from auditize.resource.sql_models import HasCreatedAt, HasId
 
@@ -30,7 +30,7 @@ class LogFilterColumnsAsList(TypeDecorator):
         return value.split(",") if value else []
 
 
-class LogFilter(Base, HasId, HasCreatedAt):
+class LogFilter(SqlModel, HasId, HasCreatedAt):
     __tablename__ = "log_filter"
 
     name: Mapped[str] = mapped_column(unique=True, index=True)

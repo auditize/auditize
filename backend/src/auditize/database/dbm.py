@@ -14,7 +14,7 @@ from auditize.database import CoreDatabase
 from auditize.database.elastic import get_elastic_client
 
 
-class Base(DeclarativeBase):
+class SqlModel(DeclarativeBase):
     pass
 
 

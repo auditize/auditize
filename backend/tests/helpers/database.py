@@ -9,7 +9,7 @@ from sqlalchemy.testing import future
 
 from auditize.config import get_config
 from auditize.database import Database, DatabaseManager, init_dbm
-from auditize.database.dbm import Base
+from auditize.database.dbm import SqlModel
 from auditize.log.service import create_indices
 
 
@@ -52,12 +52,12 @@ async def create_pg_db(dbm: DatabaseManager):
         await conn.execute(text(f"CREATE DATABASE {dbm.core_db.name}"))
 
     async with dbm.db_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(SqlModel.metadata.create_all)
 
 
 async def truncate_pg_db(dbm: DatabaseManager):
     async with dbm.db_engine.begin() as conn:
-        table_names = [table.name for table in Base.metadata.sorted_tables]
+        table_names = [table.name for table in SqlModel.metadata.sorted_tables]
         table_names_as_str = ", ".join(f'"{name}"' for name in table_names)
         await conn.execute(
             text(f"TRUNCATE TABLE {table_names_as_str} RESTART IDENTITY CASCADE")

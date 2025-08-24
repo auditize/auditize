@@ -3,11 +3,11 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.database.dbm import Base
+from auditize.database.dbm import SqlModel
 from auditize.resource.pagination.page.models import PagePaginationInfo
 
 
-async def find_paginated_by_page[T: Base](
+async def find_paginated_by_page[T: SqlModel](
     session: AsyncSession,
     model_class: type[T],
     *,

@@ -9,10 +9,10 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from auditize.database.dbm import Base
+from auditize.database.dbm import SqlModel
 
 
-class ReadableLogEntityPermission(Base):
+class ReadableLogEntityPermission(SqlModel):
     __tablename__ = "readable_log_entity_permission"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -25,7 +25,7 @@ class ReadableLogEntityPermission(Base):
     )
 
 
-class RepoLogPermissions(MappedAsDataclass, Base):
+class RepoLogPermissions(MappedAsDataclass, SqlModel):
     __tablename__ = "repo_log_permissions"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
@@ -40,7 +40,7 @@ class RepoLogPermissions(MappedAsDataclass, Base):
     )
 
 
-class Permissions(MappedAsDataclass, Base):
+class Permissions(MappedAsDataclass, SqlModel):
     __tablename__ = "permissions"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
