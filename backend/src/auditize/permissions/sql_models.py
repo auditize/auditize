@@ -13,7 +13,7 @@ from auditize.database.dbm import SqlModel
 
 
 class ReadableLogEntityPermission(SqlModel):
-    __tablename__ = "readable_log_entity_permission"
+    __tablename__ = "permissions_readable_log_entity"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     # NB: since a log entity can appear and disappear depending on log expiration,
@@ -21,12 +21,12 @@ class ReadableLogEntityPermission(SqlModel):
     # a lazy relationship
     ref: Mapped[str] = mapped_column()
     repo_log_permissions_id: Mapped[int] = mapped_column(
-        ForeignKey("repo_log_permissions.id", ondelete="CASCADE")
+        ForeignKey("permissions_repo_log.id", ondelete="CASCADE")
     )
 
 
 class RepoLogPermissions(MappedAsDataclass, SqlModel):
-    __tablename__ = "repo_log_permissions"
+    __tablename__ = "permissions_repo_log"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     repo_id: Mapped[UUID] = mapped_column(ForeignKey("repo.id", ondelete="CASCADE"))
@@ -77,5 +77,5 @@ class HasPermissions:
         return mapped_column(ForeignKey("permissions.id"))
 
     @declared_attr
-    def permissions(self) -> Mapped["Permissions"]:
+    def permissions(self) -> Mapped[Permissions]:
         return relationship("Permissions", lazy="selectin")
