@@ -14,7 +14,12 @@ from auditize.permissions.service import (
     build_permissions_output,
     compute_applicable_permissions,
 )
-from auditize.resource.api_models import HasDatetimeSerialization, IdField
+from auditize.resource.api_models import (
+    CreatedAtField,
+    HasDatetimeSerialization,
+    IdField,
+    UpdatedAtField,
+)
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.user.sql_models import User
 
@@ -121,6 +126,8 @@ class UserCreationResponse(BaseModel):
 
 class UserResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _UserIdField()
+    created_at: datetime = CreatedAtField()
+    updated_at: datetime = UpdatedAtField()
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: str = _UserEmailField()

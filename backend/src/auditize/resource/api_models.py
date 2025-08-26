@@ -25,3 +25,19 @@ def IdField(description, **kwargs):
         json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
         **kwargs,
     )
+
+
+def CreatedAtField(**kwargs):
+    return Field(
+        description="The creation date",
+        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
+        **kwargs,
+    )
+
+
+def UpdatedAtField(**kwargs):
+    return Field(
+        description="The last update date",
+        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
+        **kwargs,
+    )

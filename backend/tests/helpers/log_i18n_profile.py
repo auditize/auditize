@@ -8,6 +8,8 @@ from auditize.log_i18n_profile.models import LogI18nProfileCreate
 from auditize.log_i18n_profile.service import create_log_i18n_profile
 from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
+from .utils import DATETIME_FORMAT
+
 
 class PreparedLogI18nProfile:
     EMPTY_TRANSLATION = {
@@ -111,7 +113,8 @@ class PreparedLogI18nProfile:
             extra = {}
         return {
             "id": callee.IsA(str),
-            "created_at": callee.IsA(str),
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
             **extra,
             "translations": {
                 lang: {**cls.EMPTY_TRANSLATION, **translation}

@@ -23,6 +23,7 @@ from auditize.user.sql_models import User
 from .http import HttpTestHelper, get_cookie_by_name
 from .log_filter import PreparedLogFilter
 from .permissions.constants import DEFAULT_PERMISSIONS
+from .utils import DATETIME_FORMAT
 
 
 class PreparedUser:
@@ -123,6 +124,8 @@ class PreparedUser:
     def build_expected_api_response(extra=None) -> dict:
         return {
             "id": callee.IsA(str),
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
             "lang": "en",
             "permissions": DEFAULT_PERMISSIONS,
             "authenticated_at": None,

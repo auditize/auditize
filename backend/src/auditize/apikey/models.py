@@ -6,7 +6,12 @@ from pydantic import BaseModel, Field, field_validator
 from auditize.apikey.sql_models import Apikey
 from auditize.permissions.models import Permissions, PermissionsInput, PermissionsOutput
 from auditize.permissions.service import build_permissions_output
-from auditize.resource.api_models import HasDatetimeSerialization, IdField
+from auditize.resource.api_models import (
+    CreatedAtField,
+    HasDatetimeSerialization,
+    IdField,
+    UpdatedAtField,
+)
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
@@ -51,8 +56,10 @@ class ApikeyUpdate(BaseModel):
     permissions: PermissionsInput = _ApikeyPermissionsField(default=None)
 
 
-class ApikeyResponse(BaseModel):
+class ApikeyResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _ApikeyIdField()
+    created_at: datetime = CreatedAtField()
+    updated_at: datetime = UpdatedAtField()
     name: str = _ApikeyNameField()
     permissions: PermissionsOutput = _ApikeyPermissionsField()
 

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from auditize.database.dbm import SqlModel
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import LogTranslation
-from auditize.resource.sql_models import HasCreatedAt, HasId
+from auditize.resource.sql_models import HasDates, HasId
 
 
 class LogTranslationAsJSON(TypeDecorator):
@@ -32,7 +32,7 @@ class LogTranslationForLang(SqlModel):
     translation: Mapped[LogTranslation] = mapped_column(LogTranslationAsJSON())
 
 
-class LogI18nProfile(SqlModel, HasId, HasCreatedAt):
+class LogI18nProfile(SqlModel, HasId, HasDates):
     __tablename__ = "log_i18n_profile"
 
     name: Mapped[str] = mapped_column(unique=True, index=True)

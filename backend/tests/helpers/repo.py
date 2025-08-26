@@ -12,6 +12,7 @@ from auditize.repo.sql_models import Repo
 
 from .http import HttpTestHelper
 from .log import PreparedLog
+from .utils import DATETIME_FORMAT
 
 
 class PreparedRepo:
@@ -45,7 +46,8 @@ class PreparedRepo:
     def build_expected_api_response(extra=None):
         return {
             "id": callee.IsA(str),
-            "created_at": callee.IsA(str),
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
             "status": "enabled",
             "log_i18n_profile_id": None,
             "retention_period": None,

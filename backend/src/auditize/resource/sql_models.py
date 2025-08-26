@@ -1,9 +1,7 @@
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Uuid
+from sqlalchemy import DateTime, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
-
-from auditize.helpers.datetime import now
 
 
 class HasId:
@@ -11,4 +9,16 @@ class HasId:
 
 
 class HasCreatedAt:
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=now)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class HasUpdatedAt:
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class HasDates(HasCreatedAt, HasUpdatedAt):
+    pass

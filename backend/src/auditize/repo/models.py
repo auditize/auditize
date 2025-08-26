@@ -1,20 +1,17 @@
 from datetime import datetime
-from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID
 
-if TYPE_CHECKING:
-    from auditize.log_i18n_profile.sql_models import LogI18nProfile
-
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.exceptions import UnknownModelException
-from auditize.log_i18n_profile.service import get_log_i18n_profile
-from auditize.log_i18n_profile.sql_models import LogI18nProfile
 from auditize.repo.sql_models import Repo, RepoStatus
-from auditize.resource.api_models import HasDatetimeSerialization, IdField
-from auditize.resource.models import HasCreatedAt, HasId
+from auditize.resource.api_models import (
+    CreatedAtField,
+    HasDatetimeSerialization,
+    IdField,
+    UpdatedAtField,
+)
+from auditize.resource.models import HasId
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
@@ -100,14 +97,16 @@ class _BaseRepoResponse(BaseModel):
 
 
 class RepoResponse(_BaseRepoResponse, HasDatetimeSerialization):
+    created_at: datetime = CreatedAtField()
+    updated_at: datetime = UpdatedAtField()
     status: RepoStatus = _RepoStatusField()
     retention_period: int | None = _RepoRetentionPeriodField()
     log_i18n_profile_id: UUID | None = _RepoLogI18nProfileIdField()
+
     stats: RepoStats | None = Field(
         default=None,
         description="The repository stats (available if `include=stats` has been set in query parameters)",
     )
-    created_at: datetime = Field(description="The repository creation date")
 
     @classmethod
     def from_repo(cls, repo: Repo):

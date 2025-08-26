@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from auditize.i18n.lang import Lang
-from auditize.resource.api_models import HasDatetimeSerialization, IdField
+from auditize.resource.api_models import (
+    CreatedAtField,
+    HasDatetimeSerialization,
+    IdField,
+    UpdatedAtField,
+)
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 if TYPE_CHECKING:
@@ -80,10 +85,6 @@ def _ProfileIdField():  # noqa
     return IdField("Profile ID")
 
 
-def _ProfileCreatedAtField():  # noqa
-    return Field()
-
-
 class LogI18nProfileCreate(BaseModel):
     name: str = _ProfileNameField()
     translations: dict[Lang, LogTranslation] = _ProfileTranslationsField(
@@ -102,11 +103,12 @@ class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID = _ProfileIdField()
+    created_at: datetime = CreatedAtField()
+    updated_at: datetime = UpdatedAtField()
     name: str = _ProfileNameField()
     translations: dict[Lang, LogTranslation] = _ProfileTranslationsField(
         default_factory=dict
     )
-    created_at: datetime = _ProfileCreatedAtField()
 
     @field_validator("translations", mode="before")
     def validate_translations(

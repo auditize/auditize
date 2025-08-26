@@ -595,6 +595,7 @@ async def test_repo_list_user_repos_simple(
                         ),
                         "status",
                         "created_at",
+                        "updated_at",
                         "retention_period",
                         "stats",
                         "log_i18n_profile_id",

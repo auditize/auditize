@@ -3,6 +3,7 @@ import uuid
 import callee
 
 from .log import UNKNOWN_UUID
+from .utils import DATETIME_FORMAT
 
 DEFAULT_SEARCH_PARAMETERS = {
     "action_category": None,
@@ -48,7 +49,8 @@ class PreparedLogFilter:
         return {
             "id": self.id if self.id else callee.IsA(str),
             "name": self.data["name"],
-            "created_at": callee.IsA(str),
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
             "repo_id": self.data["repo_id"],
             "columns": self.data["columns"],
             "is_favorite": self.data.get("is_favorite", False),

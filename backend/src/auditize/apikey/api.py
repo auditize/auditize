@@ -52,6 +52,8 @@ async def create_apikey(
     return ApikeyCreateResponse(
         id=apikey.id,
         name=apikey.name,
+        created_at=apikey.created_at,
+        updated_at=apikey.updated_at,
         permissions=apikey.permissions,
         key=key,
     )

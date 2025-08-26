@@ -6,10 +6,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from auditize.database.dbm import SqlModel
 from auditize.i18n.lang import Lang
 from auditize.permissions.sql_models import HasPermissions
-from auditize.resource.sql_models import HasCreatedAt, HasId
+from auditize.resource.sql_models import HasDates, HasId
 
 
-class User(SqlModel, HasId, HasCreatedAt, HasPermissions):
+class User(SqlModel, HasId, HasDates, HasPermissions):
     __tablename__ = "user"
 
     first_name: Mapped[str] = mapped_column(index=True)

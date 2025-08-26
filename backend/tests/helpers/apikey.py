@@ -11,6 +11,7 @@ from auditize.permissions.sql_models import Permissions
 
 from .http import HttpTestHelper
 from .permissions.constants import DEFAULT_PERMISSIONS
+from .utils import DATETIME_FORMAT
 
 
 class PreparedApikey:
@@ -65,6 +66,8 @@ class PreparedApikey:
         return {
             "id": callee.IsA(str),
             "permissions": DEFAULT_PERMISSIONS,
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
             **(extra or {}),
         }
 

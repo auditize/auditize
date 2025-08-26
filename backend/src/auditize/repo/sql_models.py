@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import SqlModel
-from auditize.resource.sql_models import HasCreatedAt, HasId
+from auditize.resource.sql_models import HasDates, HasId
 
 
 class RepoStatus(str, Enum):
@@ -14,7 +14,7 @@ class RepoStatus(str, Enum):
     disabled = "disabled"
 
 
-class Repo(SqlModel, HasId, HasCreatedAt):
+class Repo(SqlModel, HasId, HasDates):
     from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
     __tablename__ = "repo"

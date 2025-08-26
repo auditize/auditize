@@ -12,7 +12,12 @@ from auditize.log.models import BaseLogSearchParams
 
 if TYPE_CHECKING:
     from auditize.log_filter.sql_models import LogFilter
-from auditize.resource.api_models import HasDatetimeSerialization, IdField
+from auditize.resource.api_models import (
+    CreatedAtField,
+    HasDatetimeSerialization,
+    IdField,
+    UpdatedAtField,
+)
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 _BUILTIN_FILTER_COLUMNS = (
@@ -71,14 +76,6 @@ class LogFilterSearchParams(BaseLogSearchParams):
 def _FilterIdField(**kwargs):  # noqa
     return IdField(
         description="Filter ID",
-        **kwargs,
-    )
-
-
-def _CreatedAtField(**kwargs):  # noqa
-    return Field(
-        description="Creation date of the filter",
-        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
         **kwargs,
     )
 
@@ -177,7 +174,8 @@ class LogFilterUpdate(BaseModel, _ValidateColumnsMixin):
 
 class LogFilterResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _FilterIdField()
-    created_at: datetime = _CreatedAtField()
+    created_at: datetime = CreatedAtField()
+    updated_at: datetime = UpdatedAtField()
     name: str = _NameField()
     repo_id: UUID = _RepoIdField()
     search_params: LogFilterSearchParams = _SearchParamsField()

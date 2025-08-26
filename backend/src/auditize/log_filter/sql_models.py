@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from auditize.database.dbm import SqlModel
 from auditize.log_filter.models import LogFilterSearchParams
-from auditize.resource.sql_models import HasCreatedAt, HasId
+from auditize.resource.sql_models import HasDates, HasId
 
 
 class LogFilterSearchParamsAsJSON(TypeDecorator):
@@ -30,7 +30,7 @@ class LogFilterColumnsAsList(TypeDecorator):
         return value.split(",") if value else []
 
 
-class LogFilter(SqlModel, HasId, HasCreatedAt):
+class LogFilter(SqlModel, HasId, HasDates):
     __tablename__ = "log_filter"
 
     name: Mapped[str] = mapped_column(unique=True, index=True)
