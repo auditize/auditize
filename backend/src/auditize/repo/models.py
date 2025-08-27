@@ -11,7 +11,6 @@ from auditize.resource.api_models import (
     IdField,
     UpdatedAtField,
 )
-from auditize.resource.models import HasId
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 

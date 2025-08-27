@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -183,7 +185,9 @@ class LogFilterResponse(BaseModel, HasDatetimeSerialization):
     is_favorite: bool = _IsFavoriteField()
 
 
-class LogFilterListResponse(PagePaginatedResponse["LogFilter", LogFilterResponse]):
+class LogFilterListResponse(
+    PagePaginatedResponse[type["LogFilter"], LogFilterResponse]
+):
     @classmethod
-    def build_item(cls, log_filter: "LogFilter") -> LogFilterResponse:
+    def build_item(cls, log_filter: LogFilter) -> LogFilterResponse:
         return LogFilterResponse.model_validate(log_filter, from_attributes=True)

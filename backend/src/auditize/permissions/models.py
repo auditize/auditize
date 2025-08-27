@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from auditize.permissions.sql_models import (
     Permissions,
-    ReadableLogEntityPermission,
     RepoLogPermissions,
 )
 

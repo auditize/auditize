@@ -1,4 +1,3 @@
-from collections import defaultdict
 from uuid import UUID
 
 from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorCollection
@@ -16,13 +15,13 @@ from auditize.permissions.models import (
     Permissions,
     PermissionsInput,
     PermissionsOutput,
-    ReadableLogEntityPermission,
     ReadWritePermissionsInput,
     ReadWritePermissionsOutput,
     RepoLogPermissions,
     RepoLogPermissionsInput,
     RepoLogPermissionsOutput,
 )
+from auditize.permissions.sql_models import ReadableLogEntityPermission
 
 
 async def remove_repo_from_permissions(

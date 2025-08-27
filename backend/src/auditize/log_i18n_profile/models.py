@@ -65,7 +65,7 @@ def _build_default_translation(value: str) -> str:
 
 
 def get_log_value_translation(
-    profile: "LogI18nProfile" | None, lang: Lang | str, key_type: str, key: str
+    profile: LogI18nProfile | None, lang: Lang | str, key_type: str, key: str
 ) -> str:
     translation = None
     if profile:
@@ -118,8 +118,8 @@ class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
 
 
 class LogI18nProfileListResponse(
-    PagePaginatedResponse["LogI18nProfile", LogI18nProfileResponse]
+    PagePaginatedResponse[type["LogI18nProfile"], LogI18nProfileResponse]
 ):
     @classmethod
-    def build_item(cls, profile: "LogI18nProfile") -> LogI18nProfileResponse:
+    def build_item(cls, profile: LogI18nProfile) -> LogI18nProfileResponse:
         return LogI18nProfileResponse.model_validate(profile)
