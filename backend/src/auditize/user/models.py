@@ -120,10 +120,6 @@ class UserUpdateRequest(_UserUpdate):
     pass
 
 
-class UserCreationResponse(BaseModel):
-    id: UUID = _UserIdField()
-
-
 class UserResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _UserIdField()
     created_at: datetime = CreatedAtField()
