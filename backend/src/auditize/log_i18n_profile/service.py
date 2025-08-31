@@ -10,11 +10,11 @@ from auditize.exceptions import (
 from auditize.log_i18n_profile.models import (
     LogI18nProfileCreate,
     LogI18nProfileUpdate,
-    LogTranslation,
+    LogLabels,
 )
 from auditize.log_i18n_profile.sql_models import (
     LogI18nProfile,
-    LogTranslationForLang,
+    LogTranslation,
 )
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
@@ -37,10 +37,8 @@ async def create_log_i18n_profile(
     profile_create: LogI18nProfileCreate,
 ) -> LogI18nProfile:
     profile = LogI18nProfile(name=profile_create.name)
-    for translation_lang, translation in profile_create.translations.items():
-        profile.translations.append(
-            LogTranslationForLang(lang=translation_lang, translation=translation)
-        )
+    for lang, labels in profile_create.translations.items():
+        profile.translations.append(LogTranslation(lang=lang, labels=labels))
 
     await _save_log_i18n_profile(session, profile)
 
@@ -54,17 +52,15 @@ async def update_log_i18n_profile(
     if profile_update.name:
         profile.name = profile_update.name
     if profile_update.translations:
-        for lang, updated_translation in profile_update.translations.items():
+        for lang, updated_labels in profile_update.translations.items():
             current_translation = profile.get_translation_for_lang(lang)
             # Update or add translation for the specified lang
-            if updated_translation:
+            if updated_labels:
                 if current_translation:
-                    current_translation.translation = updated_translation
+                    current_translation.labels = updated_labels
                 else:
                     profile.translations.append(
-                        LogTranslationForLang(
-                            lang=lang, translation=updated_translation
-                        )
+                        LogTranslation(lang=lang, labels=updated_labels)
                     )
             # Remove translation for the specified lang if it is None
             else:
@@ -84,14 +80,14 @@ async def get_log_i18n_profile(
 
 async def get_log_i18n_profile_translation(
     session: AsyncSession, profile_id: UUID, lang: str
-) -> LogTranslation:
+) -> LogLabels:
     profile = await get_log_i18n_profile(session, profile_id)
     translation = profile.get_translation_for_lang(lang)
     if translation:
-        return translation.translation
+        return translation.labels
     else:
         # Return an empty LogTranslation if no translation is found
-        return LogTranslation()
+        return LogLabels()
 
 
 async def get_log_i18n_profiles(

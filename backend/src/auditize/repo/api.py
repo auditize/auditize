@@ -15,7 +15,7 @@ from auditize.auth.authorizer import (
 from auditize.dependencies import get_db_session
 from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
-from auditize.log_i18n_profile.models import LogTranslation
+from auditize.log_i18n_profile.models import LogLabels
 from auditize.permissions.assertions import (
     can_read_logs_from_all_repos,
     can_read_logs_from_repo,
@@ -152,7 +152,7 @@ async def get_repo_translation_for_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-) -> LogTranslation:
+) -> LogLabels:
     authorized.ensure_user()
     return await service.get_repo_translation(session, repo_id, authorized.user.lang)
 
@@ -170,7 +170,7 @@ async def get_repo_translation(
     _: AuthorizedForLogRead(),
     repo_id: UUID,
     lang: Lang,
-) -> LogTranslation:
+) -> LogLabels:
     return await service.get_repo_translation(session, repo_id, lang)
 
 

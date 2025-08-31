@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 
-class LogTranslation(BaseModel):
+class LogLabels(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # FIXME: check that dict keys are identifiers
@@ -34,29 +34,29 @@ class LogTranslation(BaseModel):
     tag_type: dict[str, str] = Field(default_factory=dict)
     attachment_type: dict[str, str] = Field(default_factory=dict)
 
-    def get_translation(self, key_type: str, key: str) -> str | None:
-        if key_type == "action_type":
+    def translate(self, category: str, key: str) -> str | None:
+        if category == "action_type":
             translations = self.action_type
-        elif key_type == "action_category":
+        elif category == "action_category":
             translations = self.action_category
-        elif key_type == "actor_type":
+        elif category == "actor_type":
             translations = self.actor_type
-        elif key_type == "actor":
+        elif category == "actor":
             translations = self.actor_custom_field
-        elif key_type == "source":
+        elif category == "source":
             translations = self.source_field
-        elif key_type == "details":
+        elif category == "details":
             translations = self.detail_field
-        elif key_type == "resource_type":
+        elif category == "resource_type":
             translations = self.resource_type
-        elif key_type == "resource":
+        elif category == "resource":
             translations = self.resource_custom_field
-        elif key_type == "tag_type":
+        elif category == "tag_type":
             translations = self.tag_type
-        elif key_type == "attachment_type":
+        elif category == "attachment_type":
             translations = self.attachment_type
         else:
-            raise ValueError(f"Unknown key_type: {key_type!r}")
+            raise ValueError(f"Unknown label category: {category!r}")
         return translations.get(key, None)
 
 
@@ -87,16 +87,14 @@ def _ProfileIdField():  # noqa
 
 class LogI18nProfileCreate(BaseModel):
     name: str = _ProfileNameField()
-    translations: dict[Lang, LogTranslation] = _ProfileTranslationsField(
+    translations: dict[Lang, LogLabels] = _ProfileTranslationsField(
         default_factory=dict
     )
 
 
 class LogI18nProfileUpdate(BaseModel):
     name: str = _ProfileNameField(default=None)
-    translations: dict[Lang, LogTranslation | None] = _ProfileTranslationsField(
-        default=None
-    )
+    translations: dict[Lang, LogLabels | None] = _ProfileTranslationsField(default=None)
 
 
 class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
@@ -106,15 +104,15 @@ class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
     created_at: datetime = CreatedAtField()
     updated_at: datetime = UpdatedAtField()
     name: str = _ProfileNameField()
-    translations: dict[Lang, LogTranslation] = _ProfileTranslationsField(
+    translations: dict[Lang, LogLabels] = _ProfileTranslationsField(
         default_factory=dict
     )
 
     @field_validator("translations", mode="before")
     def validate_translations(
-        cls, translations: list[LogTranslation]
-    ) -> dict[Lang, LogTranslation]:
-        return {t.lang: t.translation for t in translations}
+        cls, translations: list[LogLabels]
+    ) -> dict[Lang, LogLabels]:
+        return {t.lang: t.labels for t in translations}
 
 
 class LogI18nProfileListResponse(

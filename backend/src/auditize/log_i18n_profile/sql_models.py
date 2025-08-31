@@ -5,23 +5,23 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import SqlModel
 from auditize.i18n.lang import Lang
-from auditize.log_i18n_profile.models import LogTranslation
+from auditize.log_i18n_profile.models import LogLabels
 from auditize.resource.sql_models import HasDates, HasId
 
 
-class LogTranslationAsJSON(TypeDecorator):
+class LogLabelsAsJSON(TypeDecorator):
     impl = JSON
 
-    def process_bind_param(self, value: LogTranslation, _) -> dict:
+    def process_bind_param(self, value: LogLabels, _) -> dict:
         # we use exclude_none=True instead of exclude_unset=True
         # to keep the potential empty dict fields in LogTranslation sub-model
         return value.model_dump(exclude_none=True)
 
-    def process_result_value(self, value: dict, _) -> LogTranslation:
-        return LogTranslation.model_validate(value)
+    def process_result_value(self, value: dict, _) -> LogLabels:
+        return LogLabels.model_validate(value)
 
 
-class LogTranslationForLang(SqlModel):
+class LogTranslation(SqlModel):
     __tablename__ = "log_i18n_profile_translation"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -29,20 +29,18 @@ class LogTranslationForLang(SqlModel):
     profile_id: Mapped[UUID] = mapped_column(
         ForeignKey("log_i18n_profile.id", ondelete="CASCADE")
     )
-    translation: Mapped[LogTranslation] = mapped_column(LogTranslationAsJSON())
+    labels: Mapped[LogLabels] = mapped_column(LogLabelsAsJSON())
 
 
 class LogI18nProfile(SqlModel, HasId, HasDates):
     __tablename__ = "log_i18n_profile"
 
     name: Mapped[str] = mapped_column(unique=True, index=True)
-    translations: Mapped[list[LogTranslationForLang]] = relationship(
+    translations: Mapped[list[LogTranslation]] = relationship(
         lazy="selectin", cascade="all, delete-orphan"
     )
 
-    def get_translation_for_lang(
-        self, lang: Lang | str
-    ) -> LogTranslationForLang | None:
+    def get_translation_for_lang(self, lang: Lang | str) -> LogTranslation | None:
         return next((t for t in self.translations if t.lang == lang), None)
 
     def get_translation(self, lang: Lang | str, key_type: str, key: str) -> str | None:
@@ -55,4 +53,4 @@ class LogI18nProfile(SqlModel, HasId, HasDates):
         if not translation:
             return None
 
-        return translation.translation.get_translation(key_type, key)
+        return translation.labels.translate(key_type, key)

@@ -14,7 +14,7 @@ from auditize.log_i18n_profile.models import (
     LogI18nProfileListResponse,
     LogI18nProfileResponse,
     LogI18nProfileUpdate,
-    LogTranslation,
+    LogLabels,
 )
 from auditize.permissions.assertions import (
     can_read_repo,
@@ -86,7 +86,7 @@ async def get_profile(
     description="Requires `repo:read` permission.",
     operation_id="get_log_i18n_profile_translation",
     tags=["log-i18n-profile"],
-    response_model=LogTranslation,
+    response_model=LogLabels,
     responses=error_responses(404),
 )
 async def get_profile_translation(

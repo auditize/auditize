@@ -13,7 +13,7 @@ from auditize.exceptions import (
     enhance_constraint_violation_exception,
 )
 from auditize.i18n.lang import Lang
-from auditize.log_i18n_profile.models import LogTranslation
+from auditize.log_i18n_profile.models import LogLabels
 from auditize.log_i18n_profile.service import (
     get_log_i18n_profile_translation,
     has_log_i18n_profile,
@@ -242,16 +242,16 @@ async def is_log_i18n_profile_used_by_repo(
 
 async def get_repo_translation(
     session: AsyncSession, repo_id: UUID, lang: Lang
-) -> LogTranslation:
+) -> LogLabels:
     repo = await get_repo(session, repo_id)
     if not repo.log_i18n_profile_id:
-        return LogTranslation()
+        return LogLabels()
     try:
         return await get_log_i18n_profile_translation(
             session, repo.log_i18n_profile_id, lang
         )
     except UnknownModelException:  # NB: this should not happen
-        return LogTranslation()
+        return LogLabels()
 
 
 async def ensure_repos_in_permissions_exist(
