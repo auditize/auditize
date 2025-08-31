@@ -5,14 +5,12 @@ from itertools import count
 from typing import Any, AsyncGenerator
 
 from auditize.config import get_config
-from auditize.exceptions import (
-    ValidationError,
-)
+from auditize.exceptions import ValidationError
 from auditize.helpers.datetime import serialize_datetime
 from auditize.i18n import Lang, t
 from auditize.log.models import CustomField, Log, LogSearchParams
 from auditize.log.service import LogService
-from auditize.log_i18n_profile.models import get_log_value_translation
+from auditize.log_i18n_profile.service import translate
 from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 LOG_CSV_BUILTIN_COLUMNS = (
@@ -44,7 +42,7 @@ def _custom_fields_to_dict(custom_fields: list[CustomField], prefix: str) -> dic
 def _log_to_dict(
     log: Log, log_i18n_profile: LogI18nProfile | None, lang: Lang
 ) -> dict[str, Any]:
-    translator = partial(get_log_value_translation, log_i18n_profile, lang)
+    translator = partial(translate, log_i18n_profile, lang)
     data = dict()
     data["log_id"] = str(log.id)
     data["action_category"] = translator("action_category", log.action.category)
@@ -96,9 +94,7 @@ def _translate_csv_column(
 
     return "%s: %s" % (
         t("log.csv.column." + normalized_col[0], lang=lang),
-        get_log_value_translation(
-            log_i18n_profile, lang, normalized_col[0], normalized_col[1]
-        ),
+        translate(log_i18n_profile, lang, normalized_col[0], normalized_col[1]),
     )
 
 

@@ -1,10 +1,8 @@
 import pytest
 
 from auditize.i18n import Lang
-from auditize.log_i18n_profile.models import (
-    LogLabels,
-    get_log_value_translation,
-)
+from auditize.log_i18n_profile.models import LogLabels
+from auditize.log_i18n_profile.service import translate
 from auditize.log_i18n_profile.sql_models import LogI18nProfile, LogTranslation
 from conftest import RepoBuilder
 from helpers.http import HttpTestHelper
@@ -476,31 +474,25 @@ def test_get_log_value_translation():
         )
     )
     assert (
-        get_log_value_translation(profile, Lang.FR, "action_type", "user-login")
+        translate(profile, Lang.FR, "action_type", "user-login")
         == "Authentification utilisateur"
     )
 
 
 def test_get_log_value_translation_without_log_i18n_profile():
-    assert (
-        get_log_value_translation(None, Lang.FR, "action_type", "user-login")
-        == "User Login"
-    )
+    assert translate(None, Lang.FR, "action_type", "user-login") == "User Login"
 
 
 def test_get_log_value_translation_unknown_key_type():
     profile = LogI18nProfile(name="test")
     profile.translations.append(LogTranslation(lang=Lang.FR, labels=LogLabels()))
     with pytest.raises(ValueError):
-        get_log_value_translation(profile, Lang.FR, "unknown_key_type", "user-login")
+        translate(profile, Lang.FR, "unknown_key_type", "user-login")
 
 
 async def test_get_log_value_translation_unknown_key():
     profile = LogI18nProfile(name="test")
-    assert (
-        get_log_value_translation(profile, Lang.FR, "action_type", "user-login")
-        == "User Login"
-    )
+    assert translate(profile, Lang.FR, "action_type", "user-login") == "User Login"
 
 
 async def test_get_log_value_translation_english_fallback():
@@ -514,6 +506,6 @@ async def test_get_log_value_translation_english_fallback():
         )
     )
     assert (
-        get_log_value_translation(profile, Lang.FR, "action_type", "user-login")
+        translate(profile, Lang.FR, "action_type", "user-login")
         == "User Authentication"
     )

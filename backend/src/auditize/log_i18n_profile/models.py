@@ -60,19 +60,6 @@ class LogLabels(BaseModel):
         return translations.get(key, None)
 
 
-def _build_default_translation(value: str) -> str:
-    return " ".join(s.capitalize() for s in value.split("-"))
-
-
-def get_log_value_translation(
-    profile: LogI18nProfile | None, lang: Lang | str, key_type: str, key: str
-) -> str:
-    translation = None
-    if profile:
-        translation = profile.get_translation(lang, key_type, key)
-    return translation if translation else _build_default_translation(key)
-
-
 def _ProfileTranslationsField(**kwargs):  # noqa
     return Field(**kwargs)
 

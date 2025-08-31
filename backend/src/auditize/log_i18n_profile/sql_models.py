@@ -40,17 +40,17 @@ class LogI18nProfile(SqlModel, HasId, HasDates):
         lazy="selectin", cascade="all, delete-orphan"
     )
 
-    def get_translation_for_lang(self, lang: Lang | str) -> LogTranslation | None:
+    def get_translation(self, lang: Lang | str) -> LogTranslation | None:
         return next((t for t in self.translations if t.lang == lang), None)
 
-    def get_translation(self, lang: Lang | str, key_type: str, key: str) -> str | None:
+    def translate(self, lang: Lang | str, category: str, key: str) -> str | None:
         from auditize.i18n.lang import DEFAULT_LANG
 
-        translation = self.get_translation_for_lang(lang)
+        translation = self.get_translation(lang)
         if not translation:
-            translation = self.get_translation_for_lang(DEFAULT_LANG)
+            translation = self.get_translation(DEFAULT_LANG)
 
         if not translation:
             return None
 
-        return translation.labels.translate(key_type, key)
+        return translation.labels.translate(category, key)

@@ -7,6 +7,7 @@ from auditize.exceptions import (
     UnknownModelException,
     enhance_constraint_violation_exception,
 )
+from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import (
     LogI18nProfileCreate,
     LogI18nProfileUpdate,
@@ -53,7 +54,7 @@ async def update_log_i18n_profile(
         profile.name = profile_update.name
     if profile_update.translations:
         for lang, updated_labels in profile_update.translations.items():
-            current_translation = profile.get_translation_for_lang(lang)
+            current_translation = profile.get_translation(lang)
             # Update or add translation for the specified lang
             if updated_labels:
                 if current_translation:
@@ -82,7 +83,7 @@ async def get_log_i18n_profile_translation(
     session: AsyncSession, profile_id: UUID, lang: str
 ) -> LogLabels:
     profile = await get_log_i18n_profile(session, profile_id)
-    translation = profile.get_translation_for_lang(lang)
+    translation = profile.get_translation(lang)
     if translation:
         return translation.labels
     else:
@@ -121,3 +122,16 @@ async def has_log_i18n_profile(session: AsyncSession, profile_id: UUID) -> bool:
         return True
     except UnknownModelException:
         return False
+
+
+def _build_default_translation(value: str) -> str:
+    return " ".join(s.capitalize() for s in value.split("-"))
+
+
+def translate(
+    profile: LogI18nProfile | None, lang: Lang | str, category: str, key: str
+) -> str:
+    label = None
+    if profile:
+        label = profile.translate(lang, category, key)
+    return label if label else _build_default_translation(key)
