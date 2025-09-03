@@ -5,6 +5,7 @@ import certifi
 from elasticsearch import AsyncElasticsearch
 from fastapi.params import Depends
 from motor.motor_asyncio import AsyncIOMotorClient
+from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from starlette.requests import Request
@@ -13,9 +14,17 @@ from auditize.config import get_config
 from auditize.database import CoreDatabase
 from auditize.database.elastic import get_elastic_client
 
+_NAMING_CONVENTION = {
+    "pk": "pk_%(table_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ix": "ix_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+}
+
 
 class SqlModel(DeclarativeBase):
-    pass
+    metadata = MetaData(naming_convention=_NAMING_CONVENTION)
 
 
 class DatabaseManager:

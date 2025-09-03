@@ -20,7 +20,7 @@ class Repo(SqlModel, HasId, HasDates):
     __tablename__ = "repo"
 
     name: Mapped[str] = mapped_column(unique=True, index=True)
-    log_db_name: Mapped[str] = mapped_column()
+    log_db_name: Mapped[str] = mapped_column(unique=True)
     status: Mapped[RepoStatus] = mapped_column(default=RepoStatus.enabled)
     retention_period: Mapped[int | None] = mapped_column()
     log_i18n_profile_id: Mapped[UUID | None] = mapped_column(

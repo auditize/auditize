@@ -9,7 +9,7 @@
     "constraint_violation": {
       "user": "A user with the same email already exists",
       "apikey": "An API key with the same name already exists",
-      "repo": "A repository with the same name already exists",
+      "repo": "A repository with the name {name!r} already exists",
       "log_i18n_profile": "A log i18n profile with the same name already exists",
       "log_filter": "A log filter with the same name already exists"
     }

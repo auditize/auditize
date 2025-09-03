@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database import get_core_db
 from auditize.exceptions import (
+    ConstraintViolation,
     UnknownModelException,
     ValidationError,
-    enhance_constraint_violation_exception,
 )
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import LogLabels
@@ -49,12 +49,17 @@ from auditize.resource.sql_service import (
 from auditize.user.sql_models import User
 
 
-async def _validate_repo(session: AsyncSession, repo: RepoCreate | RepoUpdate):
-    if repo.log_i18n_profile_id:
-        if not await has_log_i18n_profile(session, repo.log_i18n_profile_id):
-            raise ValidationError(
-                f"Log i18n profile {repo.log_i18n_profile_id!r} does not exist"
-            )
+def _build_repo_constraint_rules(
+    repo: RepoCreate | RepoUpdate,
+) -> dict[str, Exception]:
+    return {
+        "fk_repo_log_i18n_profile_id": ValidationError(
+            f"Log i18n profile {str(repo.log_i18n_profile_id)!r} does not exist",
+        ),
+        "ix_repo_name": ConstraintViolation(
+            ("error.constraint_violation.repo", {"name": repo.name}),
+        ),
+    }
 
 
 async def create_repo(
@@ -62,20 +67,20 @@ async def create_repo(
 ) -> Repo:
     from auditize.log.service import LogService
 
-    await _validate_repo(session, repo_create)
     db = get_core_db()
     repo_id = uuid4()
 
-    with enhance_constraint_violation_exception("error.constraint_violation.repo"):
-        repo = Repo(
-            id=repo_id,
-            name=repo_create.name,
-            status=repo_create.status,
-            retention_period=repo_create.retention_period,
-            log_i18n_profile_id=repo_create.log_i18n_profile_id,
-            log_db_name=(log_db_name if log_db_name else f"{db.name}_logs_{repo_id}"),
-        )
-        await save_sql_model(session, repo)
+    repo = Repo(
+        id=repo_id,
+        name=repo_create.name,
+        status=repo_create.status,
+        retention_period=repo_create.retention_period,
+        log_i18n_profile_id=repo_create.log_i18n_profile_id,
+        log_db_name=(log_db_name if log_db_name else f"{db.name}_logs_{repo_id}"),
+    )
+    await save_sql_model(
+        session, repo, constraint_rules=_build_repo_constraint_rules(repo_create)
+    )
 
     if not log_db_name:
         log_service = await LogService.for_maintenance(session, repo)
@@ -84,12 +89,10 @@ async def create_repo(
 
 
 async def update_repo(session: AsyncSession, repo_id: UUID, update: RepoUpdate) -> Repo:
-    await _validate_repo(session, update)
-    with enhance_constraint_violation_exception(
-        "error.constraint_violation.log_i18n_profile"
-    ):
-        repo = await get_repo(session, repo_id)
-        await update_sql_model(session, repo, update)
+    repo = await get_repo(session, repo_id)
+    await update_sql_model(
+        session, repo, update, constraint_rules=_build_repo_constraint_rules(update)
+    )
     return repo
 
 
