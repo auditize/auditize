@@ -15,7 +15,7 @@ from auditize.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
     UnknownModelException,
-    enhance_constraint_violation_exception,
+    ValidationError,
     enhance_unknown_model_exception,
 )
 from auditize.helpers.datetime import now
@@ -24,7 +24,6 @@ from auditize.permissions.service import (
     build_permissions,
     remove_repo_from_permissions,
     update_permissions,
-    validate_permissions_constraints,
 )
 from auditize.permissions.sql_models import Permissions
 from auditize.repo.service import ensure_repos_in_permissions_exist
@@ -65,10 +64,23 @@ def _send_account_setup_email(user: User):
     )
 
 
-async def save_user(session: AsyncSession, user: User) -> User:
-    await validate_permissions_constraints(session, user.permissions)
-    await save_sql_model(session, user)
-    return user
+def _build_user_constraint_rules(
+    user: UserCreate | UserUpdate,
+) -> dict[str, Exception]:
+    return {
+        "fk_permissions_repo_log_repo_id": ValidationError(
+            f"One or more repositories in the permissions do not exist"
+        ),
+        "ix_user_email": ConstraintViolation(
+            ("error.constraint_violation.user", {"email": user.email}),
+        ),
+    }
+
+
+async def save_user(session: AsyncSession, user: User):
+    await save_sql_model(
+        session, user, constraint_rules=_build_user_constraint_rules(user)
+    )
 
 
 async def create_user(session: AsyncSession, user_create: UserCreate) -> User:
@@ -77,8 +89,7 @@ async def create_user(session: AsyncSession, user_create: UserCreate) -> User:
     user.password_reset_token, user.password_reset_token_expires_at = (
         _generate_password_reset_token()
     )
-    with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        user = await save_user(session, user)
+    await save_user(session, user)
     _send_account_setup_email(user)
     return user
 
@@ -96,10 +107,13 @@ async def update_user(
 
     if user_update.permissions:
         update_permissions(user.permissions, user_update.permissions)
-        await validate_permissions_constraints(session, user.permissions)
 
-    with enhance_constraint_violation_exception("error.constraint_violation.user"):
-        await update_sql_model(session, user, user_updated_fields)
+    await update_sql_model(
+        session,
+        user,
+        user_updated_fields,
+        constraint_rules=_build_user_constraint_rules(user_update),
+    )
 
     return user
 

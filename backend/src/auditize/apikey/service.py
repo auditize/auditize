@@ -11,13 +11,15 @@ from auditize.apikey.models import ApikeyCreate, ApikeyUpdate
 from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database import get_core_db
-from auditize.exceptions import enhance_constraint_violation_exception
+from auditize.exceptions import (
+    ConstraintViolation,
+    ValidationError,
+)
 from auditize.permissions.service import (
     build_permissions,
     normalize_permissions,
     remove_repo_from_permissions,
     update_permissions,
-    validate_permissions_constraints,
 )
 from auditize.permissions.sql_models import Permissions
 from auditize.repo.service import ensure_repos_in_permissions_exist
@@ -40,6 +42,19 @@ def _generate_key() -> tuple[str, str]:
     return value, _hash_key(value)
 
 
+def _build_apikey_constraint_rules(
+    apikey: ApikeyCreate | ApikeyUpdate,
+) -> dict[str, Exception]:
+    return {
+        "fk_permissions_repo_log_repo_id": ValidationError(
+            f"One or more repositories in the permissions do not exist"
+        ),
+        "ix_apikey_name": ConstraintViolation(
+            ("error.constraint_violation.apikey", {"name": apikey.name}),
+        ),
+    }
+
+
 async def create_apikey(
     session: AsyncSession, apikey_create: ApikeyCreate
 ) -> tuple[Apikey, str]:
@@ -47,10 +62,11 @@ async def create_apikey(
         name=apikey_create.name,
         permissions=build_permissions(apikey_create.permissions),
     )
-    await validate_permissions_constraints(session, apikey.permissions)
     key, key_hash = _generate_key()
     apikey.key_hash = key_hash
-    await save_sql_model(session, apikey)
+    await save_sql_model(
+        session, apikey, constraint_rules=_build_apikey_constraint_rules(apikey_create)
+    )
     return apikey, key
 
 
@@ -64,10 +80,10 @@ async def update_apikey(
 
     if apikey_update.permissions:
         update_permissions(apikey.permissions, apikey_update.permissions)
-        await validate_permissions_constraints(session, apikey.permissions)
 
-    with enhance_constraint_violation_exception("error.constraint_violation.apikey"):
-        await save_sql_model(session, apikey)
+    await save_sql_model(
+        session, apikey, constraint_rules=_build_apikey_constraint_rules(apikey_update)
+    )
 
     return apikey
 

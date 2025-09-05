@@ -372,17 +372,3 @@ def is_authorized(perms: Permissions, assertion: PermissionAssertion) -> bool:
 def authorize_access(perms: Permissions, assertion: PermissionAssertion) -> None:
     if not is_authorized(perms, assertion):
         raise PermissionDenied()
-
-
-async def validate_permissions_constraints(
-    session: AsyncSession, permissions: Permissions
-):
-    from auditize.repo.service import get_repo  # avoid circular import
-
-    for repo_log_perms in permissions.repo_log_permissions:
-        try:
-            await get_repo(session, repo_log_perms.repo_id)
-        except UnknownModelException:
-            raise ValidationError(
-                f"Repository {repo_log_perms.repo_id} cannot be assigned in log permissions as it does not exist"
-            )
