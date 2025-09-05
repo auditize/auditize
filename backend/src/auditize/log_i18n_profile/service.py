@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auditize.exceptions import (
     ConstraintViolation,
     UnknownModelException,
-    enhance_constraint_violation_exception,
 )
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import (
@@ -26,11 +25,14 @@ from auditize.resource.sql_service import (
 )
 
 
-async def _save_log_i18n_profile(session: AsyncSession, profile: LogI18nProfile):
-    with enhance_constraint_violation_exception(
-        "error.constraint_violation.log_i18n_profile"
-    ):
-        await save_sql_model(session, profile)
+def build_log_i18n_profile_constraint_rules(
+    profile: LogI18nProfileCreate | LogI18nProfileUpdate,
+) -> dict[str, Exception]:
+    return {
+        "ix_log_i18n_profile_name": ConstraintViolation(
+            ("error.constraint_violation.log_i18n_profile", {"name": profile.name}),
+        ),
+    }
 
 
 async def create_log_i18n_profile(
@@ -41,7 +43,11 @@ async def create_log_i18n_profile(
     for lang, labels in profile_create.translations.items():
         profile.translations.append(LogTranslation(lang=lang, labels=labels))
 
-    await _save_log_i18n_profile(session, profile)
+    await save_sql_model(
+        session,
+        profile,
+        constraint_rules=build_log_i18n_profile_constraint_rules(profile_create),
+    )
 
     return profile
 
@@ -68,7 +74,11 @@ async def update_log_i18n_profile(
                 if current_translation:
                     profile.translations.remove(current_translation)
 
-    await _save_log_i18n_profile(session, profile)
+    await save_sql_model(
+        session,
+        profile,
+        constraint_rules=build_log_i18n_profile_constraint_rules(profile_update),
+    )
 
     return profile
 
