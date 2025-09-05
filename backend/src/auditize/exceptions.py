@@ -59,7 +59,4 @@ def _enhance_exception(exc_class, trans_key):
         raise exc_class((trans_key,))
 
 
-enhance_constraint_violation_exception = partial(
-    _enhance_exception, ConstraintViolation
-)
 enhance_unknown_model_exception = partial(_enhance_exception, UnknownModelException)

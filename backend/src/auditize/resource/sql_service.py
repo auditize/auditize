@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database.dbm import SqlModel
-from auditize.exceptions import ConstraintViolation, UnknownModelException
+from auditize.exceptions import UnknownModelException
 
 
 async def save_sql_model(
@@ -21,12 +21,10 @@ async def save_sql_model(
         await session.commit()
     except IntegrityError as exc:
         if constraint_rules:
-            for constraint, business_exc in constraint_rules.items():
-                if constraint in str(exc):
+            for constraint_name, business_exc in constraint_rules.items():
+                if constraint_name in str(exc):
                     raise business_exc
-            raise
-        else:
-            raise ConstraintViolation() from exc
+        raise
     await session.refresh(model)
 
 
