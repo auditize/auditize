@@ -32,7 +32,7 @@ def make_log_data(**extra) -> Log:
         "actor": Log.Actor(type="user", ref="user:123", name="User 123"),
         "resource": Log.Resource(ref="core", type="module", name="Core Module"),
         "tags": [Log.Tag(type="simple_tag")],
-        "entity_path": [Log.Entity(ref="1", name="Customer 1")],
+        "entity_path": [Log.EntityPathNode(ref="1", name="Customer 1")],
         **extra,
     }
 

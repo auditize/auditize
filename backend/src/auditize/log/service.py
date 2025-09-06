@@ -23,7 +23,7 @@ from auditize.exceptions import (
 )
 from auditize.helpers.datetime import now, serialize_datetime
 from auditize.log.models import Log, LogCreate, LogSearchParams
-from auditize.log.sql_models import Entity
+from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
 from auditize.resource.pagination.cursor.serialization import (
@@ -141,10 +141,10 @@ class LogService:
         parent_entity_ref = None
         for entity in log.entity_path:
             existing_entity = await self.session.scalar(
-                select(Entity).where(
-                    Entity.parent_entity_ref == parent_entity_ref,
-                    Entity.name == entity.name,
-                    Entity.ref != entity.ref,
+                select(LogEntity).where(
+                    LogEntity.parent_entity_ref == parent_entity_ref,
+                    LogEntity.name == entity.name,
+                    LogEntity.ref != entity.ref,
                 )
             )
             if existing_entity:
@@ -563,7 +563,7 @@ class LogService:
         _get_paginated_agg, nested="attachments", field="attachments.mime_type"
     )
 
-    async def _purge_orphan_log_entity_if_needed(self, entity: Entity):
+    async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """
         This function assumes that the entity has no children and delete it if it has no associated logs.
         It performs the same operation recursively on its ancestors.
@@ -579,14 +579,14 @@ class LogService:
                 f"Deleted orphan log entity {entity!r} from log repository {self.repo.log_db_name!r}"
             )
             parent_entity = await self.session.scalar(
-                select(Entity).where(Entity.id == entity.parent_entity_id)
+                select(LogEntity).where(LogEntity.id == entity.parent_entity_id)
             )
             if parent_entity and not parent_entity.has_children:
                 await self._purge_orphan_log_entity_if_needed(parent_entity)
 
     async def _purge_orphan_log_entities(self):
         result = await self.session.execute(
-            select(Entity).where(Entity.has_children == False)
+            select(LogEntity).where(LogEntity.has_children == False)
         )
         leaf_entities = result.scalars().all()
 
@@ -642,7 +642,7 @@ class LogService:
             # FIXME: we should also delete the consolidated entities that are not referenced by any log
 
     async def _consolidate_log_entity(
-        self, entity: Log.Entity, parent_entity_id: UUID | None
+        self, entity: Log.EntityPathNode, parent_entity_id: UUID | None
     ) -> UUID:
         cache_key = "\t".join(
             (
@@ -656,7 +656,7 @@ class LogService:
             return entity_id
 
         result = await self.session.execute(
-            insert(Entity)
+            insert(LogEntity)
             .values(
                 repo_id=self.repo.id,
                 ref=entity.ref,
@@ -664,20 +664,20 @@ class LogService:
                 parent_entity_id=parent_entity_id,
             )
             .on_conflict_do_update(
-                index_elements=[Entity.repo_id, Entity.ref],
+                index_elements=[LogEntity.repo_id, LogEntity.ref],
                 set_=dict(
                     name=entity.name,
                     parent_entity_id=parent_entity_id,
                 ),
             )
-            .returning(Entity.id)
+            .returning(LogEntity.id)
         )
         entity_id = result.scalar_one()
 
         await _CONSOLIDATED_LOG_ENTITIES.set(cache_key, entity_id)
         return entity_id
 
-    async def _consolidate_log_entity_path(self, entity_path: list[Log.Entity]):
+    async def _consolidate_log_entity_path(self, entity_path: list[Log.EntityPathNode]):
         parent_entity_id = None
         for entity in entity_path:
             parent_entity_id = await self._consolidate_log_entity(
@@ -688,7 +688,9 @@ class LogService:
     async def _has_entity_children(self, entity_ref: str) -> bool:
         return (
             await self.session.execute(
-                select(Entity).where(Entity.parent_entity_ref == entity_ref).limit(1)
+                select(LogEntity)
+                .where(LogEntity.parent_entity_ref == entity_ref)
+                .limit(1)
             )
         ).scalar() is not None
 
@@ -698,12 +700,12 @@ class LogService:
         filters: list[Any],
         pagination_cursor: str | None = None,
         limit: int = 10,
-    ) -> tuple[list[Entity], str | None]:
+    ) -> tuple[list[LogEntity], str | None]:
         cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
         result = await self.session.execute(
-            select(Entity)
+            select(LogEntity)
             .where(*filters)
-            .order_by(Entity.name)
+            .order_by(LogEntity.name)
             .offset(cursor_obj.offset)
             .limit(limit + 1)
         )
@@ -744,12 +746,12 @@ class LogService:
         parent_entity_ref=NotImplemented,
         limit: int = 10,
         pagination_cursor: str = None,
-    ) -> tuple[list[Entity], str | None]:
+    ) -> tuple[list[LogEntity], str | None]:
         # please note that we use NotImplemented instead of None because None is a valid value for parent_entity_ref
         # (it means filtering on top entities)
         filters = []
         if parent_entity_ref is not NotImplemented:
-            filters.append(Entity.parent_entity_ref == parent_entity_ref)
+            filters.append(LogEntity.parent_entity_ref == parent_entity_ref)
 
         if authorized_entities:
             # get the complete hierarchy of the entity from the entity itself to the top entity
@@ -766,17 +768,17 @@ class LogService:
                 visible_entities = await self._get_entities_hierarchy(
                     authorized_entities
                 )
-                filters.append(Entity.ref.in_(visible_entities))
+                filters.append(LogEntity.ref.in_(visible_entities))
         return await self._get_log_entities(
             filters=filters, pagination_cursor=pagination_cursor, limit=limit
         )
 
-    async def _get_log_entity(self, entity_ref: str) -> Entity:
-        return await get_sql_model(self.session, Entity, Entity.ref == entity_ref)
+    async def _get_log_entity(self, entity_ref: str) -> LogEntity:
+        return await get_sql_model(self.session, LogEntity, LogEntity.ref == entity_ref)
 
     async def get_log_entity(
         self, entity_ref: str, authorized_entities: set[str]
-    ) -> Log.Entity:
+    ) -> Log.EntityPathNode:
         if authorized_entities:
             entity_ref_hierarchy = await self._get_entity_hierarchy(entity_ref)
             authorized_entities_hierarchy = await self._get_entities_hierarchy(

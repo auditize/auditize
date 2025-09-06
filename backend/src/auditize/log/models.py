@@ -14,7 +14,7 @@ from pydantic import (
 
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import validate_datetime
-from auditize.log.sql_models import Entity
+from auditize.log.sql_models import LogEntity
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.models import HasId
 from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
@@ -64,7 +64,7 @@ class Log(BaseModel, HasId):
     class Attachment(AttachmentMetadata):
         data: bytes
 
-    class Entity(BaseModel):
+    class EntityPathNode(BaseModel):
         ref: str
         name: str
 
@@ -76,7 +76,7 @@ class Log(BaseModel, HasId):
     details: list[CustomField] = Field(default_factory=list)
     tags: list[Tag] = Field(default_factory=list)
     attachments: list[AttachmentMetadata] = Field(default_factory=list)
-    entity_path: list[Entity] = Field(default_factory=list)
+    entity_path: list[EntityPathNode] = Field(default_factory=list)
 
 
 class _CustomFieldData(BaseModel):
@@ -299,7 +299,7 @@ class _TagOutputData(BaseModel):
     }
 
 
-class _EntityData(BaseModel):
+class _EntityPathNodeData(BaseModel):
     ref: str = Field(description="Entity ref")
     name: str = Field(description="Entity name")
 
@@ -326,7 +326,7 @@ class LogCreate(BaseModel):
     )
     details: list[_CustomFieldData] = _DetailsField(default_factory=list)
     tags: list[_TagInputData] = Field(default_factory=list)
-    entity_path: list[_EntityData] = _EntityPathField()
+    entity_path: list[_EntityPathNodeData] = _EntityPathField()
 
     @model_validator(mode="after")
     def validate_tags(self):
@@ -361,7 +361,7 @@ class LogResponse(BaseModel, HasDatetimeSerialization):
     resource: _ResourceOutputData | None = _ResourceField()
     details: list[_CustomFieldData] = _DetailsField()
     tags: list[_TagOutputData] = Field()
-    entity_path: list[_EntityData] = _EntityPathField()
+    entity_path: list[_EntityPathNodeData] = _EntityPathField()
     attachments: list[_AttachmentData] = Field()
     saved_at: datetime
 
@@ -391,7 +391,7 @@ class NameListResponse(CursorPaginatedResponse[str, NameData]):
     )
 
 
-class EntityItemData(_EntityData):
+class LogEntityResponse(_EntityPathNodeData):
     parent_entity_ref: str | None = Field(
         description="The ID of the parent entity. It is null for top-level entities.",
     )
@@ -411,14 +411,12 @@ class EntityItemData(_EntityData):
     )
 
 
-class LogEntityResponse(EntityItemData):
-    pass
-
-
-class LogEntityListResponse(CursorPaginatedResponse[Log.Entity, EntityItemData]):
+class LogEntityListResponse(
+    CursorPaginatedResponse[Log.EntityPathNode, LogEntityResponse]
+):
     @classmethod
-    def build_item(cls, entity: Entity) -> EntityItemData:
-        return EntityItemData.model_validate(entity, from_attributes=True)
+    def build_item(cls, entity: Log.EntityPathNode) -> LogEntityResponse:
+        return LogEntityResponse.model_validate(entity, from_attributes=True)
 
 
 class BaseLogSearchParams(BaseModel):
