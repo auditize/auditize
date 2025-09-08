@@ -21,7 +21,6 @@ from auditize.permissions.models import (
     PermissionsInput,
     ReadWritePermissionsInput,
     RepoLogPermissions,
-    RepoLogPermissionsInput,
 )
 from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey

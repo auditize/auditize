@@ -2,7 +2,6 @@ fastapi
 pydantic[email]
 python-multipart
 uvicorn[standard]
-motor
 aiocache
 certifi
 bcrypt

@@ -14,7 +14,6 @@ from pydantic import (
 
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import validate_datetime
-from auditize.log.sql_models import LogEntity
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.models import HasId
 from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse

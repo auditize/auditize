@@ -1,13 +1,10 @@
 from datetime import datetime
 from typing import Awaitable, Callable
-from uuid import UUID
 
 import callee
 import pytest
 from icecream import ic
-from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import get_core_db
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper

@@ -6,10 +6,9 @@ from functools import partialmethod
 from typing import Any, Self
 from uuid import UUID
 
-import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,9 +28,6 @@ from auditize.repo.sql_models import Repo, RepoStatus
 from auditize.resource.pagination.cursor.serialization import (
     load_pagination_cursor,
     serialize_pagination_cursor,
-)
-from auditize.resource.service import (
-    has_resource_document,
 )
 from auditize.resource.sql_service import get_sql_model
 

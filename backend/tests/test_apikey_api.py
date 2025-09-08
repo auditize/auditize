@@ -1,10 +1,8 @@
-import uuid
 
 import callee
 import pytest
 from httpx import Response
 
-from auditize.database import get_core_db
 from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
@@ -235,9 +233,6 @@ class TestPermissions(BasePermissionTests):
     @property
     def base_path(self):
         return "/apikeys"
-
-    def get_principal_collection(self):
-        return get_core_db().apikeys
 
     async def inject_grantor(self, permissions=None) -> PreparedUser:
         return await PreparedUser.inject_into_db(

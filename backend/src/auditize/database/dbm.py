@@ -1,17 +1,12 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Self
+from typing import Self
 
-import certifi
 from elasticsearch import AsyncElasticsearch
-from fastapi.params import Depends
-from motor.motor_asyncio import AsyncIOMotorClient
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from starlette.requests import Request
 
 from auditize.config import get_config
-from auditize.database import CoreDatabase
 from auditize.database.elastic import get_elastic_client
 
 _NAMING_CONVENTION = {
@@ -32,12 +27,12 @@ class DatabaseManager:
 
     def __init__(
         self,
+        name: str,
         *,
-        core_db: CoreDatabase,
         db_engine: AsyncEngine,
         elastic_client: AsyncElasticsearch,
     ):
-        self.core_db: CoreDatabase = core_db
+        self.name: str = name
         self.db_engine: AsyncEngine = db_engine
         self.elastic_client: AsyncElasticsearch = elastic_client
 
@@ -49,13 +44,7 @@ class DatabaseManager:
         if not name:
             name = config.db_name
         cls._dbm = cls(
-            core_db=CoreDatabase(
-                name,
-                AsyncIOMotorClient(
-                    config.mongodb_uri,
-                    tlsCAFile=certifi.where() if config.mongodb_tls else None,
-                ),
-            ),
+            name=name,
             db_engine=create_async_engine(
                 "postgresql+asyncpg://%s:%s@%s:5432/%s"
                 % (
@@ -83,11 +72,6 @@ def init_dbm(name=None, *, force_init=False, debug=False) -> DatabaseManager:
 
 def get_dbm() -> DatabaseManager:
     return DatabaseManager.get()
-
-
-def get_core_db() -> CoreDatabase:
-    dbm = get_dbm()
-    return dbm.core_db
 
 
 @asynccontextmanager

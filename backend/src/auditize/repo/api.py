@@ -28,7 +28,6 @@ from auditize.permissions.assertions import (
 from auditize.permissions.models import (
     LogPermissionsInput,
     PermissionsInput,
-    RepoLogPermissions,
     RepoLogPermissionsInput,
 )
 from auditize.repo import service

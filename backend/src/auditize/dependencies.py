@@ -1,10 +1,8 @@
-from contextlib import asynccontextmanager
-from typing import Annotated, AsyncGenerator
+from typing import AsyncGenerator
 
-from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.database.dbm import get_dbm, open_db_session
+from auditize.database.dbm import open_db_session
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

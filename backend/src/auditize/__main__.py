@@ -7,11 +7,12 @@ import sys
 from uuid import UUID
 
 import uvicorn
-from pymongo.errors import PyMongoError
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import get_core_db, get_dbm, init_dbm
+from auditize.database import get_dbm, init_dbm
 from auditize.database.dbm import SqlModel, open_db_session
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
@@ -67,11 +68,11 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
     _lazy_init()
 
     # Make sure we can connect to the database before asking for the password
-    db = get_core_db()
-    try:
-        await db.ping()
-    except PyMongoError as exc:
-        sys.exit(f"Error: could not connect to MongoDB: {exc}")
+    async with open_db_session() as session:
+        try:
+            await session.execute(text("SELECT 1"))
+        except OperationalError as exc:
+            sys.exit(f"Error: could not connect to the PostgreSQL database: {exc}")
 
     password = _get_password()
 

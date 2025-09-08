@@ -2,11 +2,10 @@ from typing import Any, Generator, Sequence
 from uuid import UUID, uuid4
 
 import elasticsearch
-from motor.motor_asyncio import AsyncIOMotorClientSession
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.database import get_core_db
+from auditize.database.dbm import get_dbm
 from auditize.exceptions import (
     ConstraintViolation,
     UnknownModelException,
@@ -14,32 +13,18 @@ from auditize.exceptions import (
 )
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import LogLabels
-from auditize.log_i18n_profile.service import (
-    get_log_i18n_profile_translation,
-    has_log_i18n_profile,
-)
+from auditize.log_i18n_profile.service import get_log_i18n_profile_translation
 from auditize.permissions.assertions import (
     can_read_logs_from_all_repos,
     can_write_logs_to_all_repos,
     permissions_and,
 )
-from auditize.permissions.models import (
-    Permissions,
-    PermissionsInput,
-    RepoLogPermissions,
-)
+from auditize.permissions.models import Permissions, RepoLogPermissions
 from auditize.permissions.service import is_authorized
 from auditize.repo.models import RepoCreate, RepoStats, RepoUpdate
 from auditize.repo.sql_models import Repo, RepoStatus
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
-from auditize.resource.service import (
-    create_resource_document2,
-    delete_resource_document,
-    get_resource_document,
-    has_resource_document,
-    update_resource_document,
-)
 from auditize.resource.sql_service import (
     delete_sql_model,
     get_sql_model,
@@ -67,7 +52,7 @@ async def create_repo(
 ) -> Repo:
     from auditize.log.service import LogService
 
-    db = get_core_db()
+    db_name = get_dbm().name
     repo_id = uuid4()
 
     repo = Repo(
@@ -76,7 +61,7 @@ async def create_repo(
         status=repo_create.status,
         retention_period=repo_create.retention_period,
         log_i18n_profile_id=repo_create.log_i18n_profile_id,
-        log_db_name=(log_db_name if log_db_name else f"{db.name}_logs_{repo_id}"),
+        log_db_name=(log_db_name if log_db_name else f"{db_name}_logs_{repo_id}"),
     )
     await save_sql_model(
         session, repo, constraint_rules=_build_repo_constraint_rules(repo_create)
@@ -151,11 +136,6 @@ async def get_repos(
     return await _get_repos(
         session, Repo.name.ilike(f"%{query}%") if query else None, page, page_size
     )
-
-
-async def get_all_repos():
-    results = get_core_db().repos.find({})
-    return [Repo.model_validate(result) async for result in results]
 
 
 def _filter_repo_by_log_permissions(

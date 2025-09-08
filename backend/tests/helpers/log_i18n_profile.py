@@ -1,12 +1,10 @@
 import uuid
-from datetime import datetime
 
 import callee
 
 from auditize.database.dbm import open_db_session
 from auditize.log_i18n_profile.models import LogI18nProfileCreate
 from auditize.log_i18n_profile.service import create_log_i18n_profile
-from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 from .utils import DATETIME_FORMAT
 

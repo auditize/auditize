@@ -1,5 +1,4 @@
 import callee
-import pytest
 from httpx import Response
 
 from conftest import RepoBuilder

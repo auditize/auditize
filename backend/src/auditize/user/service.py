@@ -4,13 +4,11 @@ from typing import Any
 from uuid import UUID
 
 import bcrypt
-from motor.motor_asyncio import AsyncIOMotorClientSession
-from sqlalchemy import delete, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import and_
 
 from auditize.config import get_config
-from auditize.database import get_core_db
 from auditize.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
@@ -22,22 +20,12 @@ from auditize.helpers.datetime import now
 from auditize.helpers.email import send_email
 from auditize.permissions.service import (
     build_permissions,
-    remove_repo_from_permissions,
     update_permissions,
 )
 from auditize.permissions.sql_models import Permissions
-from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
-from auditize.resource.service import (
-    create_resource_document,
-    create_resource_document2,
-    delete_resource_document,
-    get_resource_document,
-    update_resource_document,
-)
 from auditize.resource.sql_service import (
-    delete_sql_model,
     get_sql_model,
     save_sql_model,
     update_sql_model,
@@ -206,12 +194,6 @@ async def delete_user(session: AsyncSession, user_id: UUID):
     await session.delete(user.permissions)
     await session.delete(user)
     await session.commit()
-
-
-async def remove_repo_from_users_permissions(
-    repo_id: UUID, session: AsyncIOMotorClientSession
-):
-    await remove_repo_from_permissions(get_core_db().users, repo_id, session)
 
 
 async def authenticate_user(session: AsyncSession, email: str, password: str) -> User:

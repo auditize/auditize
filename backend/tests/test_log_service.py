@@ -2,19 +2,16 @@ import uuid
 from datetime import datetime, timedelta
 from uuid import UUID
 
-import callee
 import pytest
-from motor.motor_asyncio import AsyncIOMotorCollection
 
 from auditize.database.dbm import open_db_session
 from auditize.exceptions import InvalidPaginationCursor
-from auditize.log.models import CustomField, Log
+from auditize.log.models import Log
 from auditize.log.service import (
     LogService,
     _LogsPaginationCursor,
 )
 from conftest import RepoBuilder
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import PreparedLog
 from helpers.repo import PreparedRepo
@@ -63,17 +60,6 @@ async def test_save_log_db_shape(repo: PreparedRepo):
     assert list(db_log["resource"].keys()) == ["ref", "type", "name", "extra"]
     assert list(db_log["tags"][0].keys()) == ["ref", "type", "name"]
     assert list(db_log["entity_path"][0].keys()) == ["ref", "name"]
-
-
-async def assert_consolidated_data(
-    collection: AsyncIOMotorCollection, expected: dict | list
-):
-    if isinstance(expected, dict):
-        expected = [expected]
-
-    await assert_collection(
-        collection, [{"_id": callee.Any(), **item} for item in expected]
-    )
 
 
 async def test_log_retention_period_disabled(

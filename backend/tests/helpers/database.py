@@ -2,13 +2,11 @@ import os
 import random
 
 import elasticsearch
-from motor.motor_asyncio import AsyncIOMotorCollection
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.testing import future
 
 from auditize.config import get_config
-from auditize.database import Database, DatabaseManager, init_dbm
+from auditize.database import DatabaseManager, init_dbm
 from auditize.database.dbm import SqlModel
 from auditize.log.service import create_indices
 
@@ -23,20 +21,9 @@ def setup_test_dbm() -> DatabaseManager:
 
 
 async def teardown_test_dbm(dbm: DatabaseManager):
-    for index_name in await dbm.elastic_client.indices.get_alias(
-        index=dbm.core_db.name + "*"
-    ):
-        if index_name.startswith(dbm.core_db.name):
+    for index_name in await dbm.elastic_client.indices.get_alias(index=dbm.name + "*"):
+        if index_name.startswith(dbm.name):
             await dbm.elastic_client.indices.delete(index=index_name)
-
-    await dbm.core_db.client.drop_database(dbm.core_db.name)
-
-    dbm.core_db.client.close()
-
-
-async def cleanup_db(db: Database):
-    for collection_name in await db.db.list_collection_names():
-        await db.db[collection_name].delete_many({})
 
 
 async def create_pg_db(dbm: DatabaseManager):
@@ -49,7 +36,7 @@ async def create_pg_db(dbm: DatabaseManager):
     engine = create_async_engine(pg_url)
     async with engine.connect() as conn:
         conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
-        await conn.execute(text(f"CREATE DATABASE {dbm.core_db.name}"))
+        await conn.execute(text(f"CREATE DATABASE {dbm.name}"))
 
     async with dbm.db_engine.begin() as conn:
         await conn.run_sync(SqlModel.metadata.create_all)
@@ -75,7 +62,7 @@ async def drop_pg_db(dbm: DatabaseManager):
     engine = create_async_engine(pg_url)
     async with engine.connect() as conn:
         conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
-        await conn.execute(text(f"DROP DATABASE {dbm.core_db.name}"))
+        await conn.execute(text(f"DROP DATABASE {dbm.name}"))
 
 
 class TestLogDatabasePool:
@@ -89,7 +76,7 @@ class TestLogDatabasePool:
                 self._cache[db_name] = True
                 return db_name
         else:
-            db_name = f"{self.dbm.core_db.name}_logs_{len(self._cache)}"
+            db_name = f"{self.dbm.name}_logs_{len(self._cache)}"
             await create_indices(self.dbm.elastic_client, db_name)
             self._cache[db_name] = True
             return db_name
@@ -114,23 +101,3 @@ class TestLogDatabasePool:
                     pass
                 else:
                     self._cache[db_name] = False
-
-
-async def assert_collection(
-    collection: AsyncIOMotorCollection, expected, *, filter=None
-):
-    results = await collection.find(filter or {}).to_list(None)
-    assert results == expected
-
-
-async def assert_db_indexes(db: Database, expected):
-    assert list(sorted(await db.db.list_collection_names())) == list(
-        sorted(expected.keys())
-    )
-    for collection_name, expected_indexes in expected.items():
-        actual_indexes = [
-            index["name"] async for index in db.db[collection_name].list_indexes()
-        ]
-        assert list(sorted(actual_indexes)) == list(
-            sorted(expected_indexes + ("_id_",))
-        )

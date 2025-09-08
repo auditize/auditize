@@ -11,7 +11,6 @@ from auditize.helpers.datetime import now
 from auditize.permissions.models import PermissionsInput
 from auditize.permissions.service import (
     build_permissions,
-    build_permissions_output,
 )
 from auditize.permissions.sql_models import Permissions
 

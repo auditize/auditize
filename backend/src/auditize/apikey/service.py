@@ -3,30 +3,19 @@ import secrets
 from typing import Any
 from uuid import UUID
 
-from motor.motor_asyncio import AsyncIOMotorClientSession
-from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.apikey.models import ApikeyCreate, ApikeyUpdate
 from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
-from auditize.database import get_core_db
-from auditize.exceptions import (
-    ConstraintViolation,
-    ValidationError,
-)
+from auditize.exceptions import ConstraintViolation, ValidationError
 from auditize.permissions.service import (
     build_permissions,
-    normalize_permissions,
-    remove_repo_from_permissions,
     update_permissions,
 )
-from auditize.permissions.sql_models import Permissions
-from auditize.repo.service import ensure_repos_in_permissions_exist
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
 from auditize.resource.sql_service import (
-    delete_sql_model,
     get_sql_model,
     save_sql_model,
 )
@@ -127,9 +116,3 @@ async def delete_apikey(session: AsyncSession, apikey_id: UUID):
     await session.delete(apikey.permissions)
     await session.delete(apikey)
     await session.commit()
-
-
-async def remove_repo_from_apikeys_permissions(
-    repo_id: UUID, session: AsyncIOMotorClientSession
-):
-    await remove_repo_from_permissions(get_core_db().apikeys, repo_id, session)

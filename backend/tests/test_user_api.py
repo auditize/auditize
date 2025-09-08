@@ -6,7 +6,6 @@ import callee
 import pytest
 from httpx import Response
 
-from auditize.database import get_core_db
 from auditize.database.dbm import open_db_session
 from auditize.exceptions import UnknownModelException
 from auditize.log_filter.service import get_log_filter
@@ -712,9 +711,6 @@ class TestPermissions(BasePermissionTests):
     @property
     def base_path(self):
         return "/users"
-
-    def get_principal_collection(self):
-        return get_core_db().users
 
     async def inject_grantor(self, permissions=None) -> PreparedApikey:
         return await PreparedApikey.inject_into_db(

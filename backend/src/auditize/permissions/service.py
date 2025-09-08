@@ -1,9 +1,7 @@
 from uuid import UUID
 
-from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorCollection
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.exceptions import PermissionDenied, UnknownModelException, ValidationError
+from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import PermissionAssertion
 from auditize.permissions.models import (
     ApplicableLogPermissions,
@@ -22,18 +20,6 @@ from auditize.permissions.models import (
     RepoLogPermissionsOutput,
 )
 from auditize.permissions.sql_models import ReadableLogEntityPermission
-
-
-async def remove_repo_from_permissions(
-    collection: AsyncIOMotorCollection,
-    repo_id: UUID,
-    session: AsyncIOMotorClientSession,
-):
-    await collection.update_many(
-        {"permissions.logs.repos.repo_id": repo_id},
-        {"$pull": {"permissions.logs.repos": {"repo_id": repo_id}}},
-        session=session,
-    )
 
 
 def _normalize_repo_log_permissions(
