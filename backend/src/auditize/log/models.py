@@ -15,7 +15,6 @@ from pydantic import (
 from auditize.helpers.api.validators import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import validate_datetime
 from auditize.resource.api_models import HasDatetimeSerialization, IdField
-from auditize.resource.models import HasId
 from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
 
 
@@ -28,7 +27,7 @@ class CustomField(BaseModel):
     value: str
 
 
-class Log(BaseModel, HasId):
+class Log(BaseModel):
     """
     Pydantic model for a log that is intended to be stored in Elasticsearch.
     """
@@ -67,6 +66,7 @@ class Log(BaseModel, HasId):
         ref: str
         name: str
 
+    id: Optional[UUID] = Field(default=None, alias="_id")
     action: Action
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: list[CustomField] = Field(default_factory=list)
