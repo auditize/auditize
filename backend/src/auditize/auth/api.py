@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
+from auditize.api.exception import error_responses
 from auditize.apikey.models import AccessTokenRequest, AccessTokenResponse
 from auditize.auth.authorizer import (
     AuthorizedApikey,
@@ -13,7 +14,6 @@ from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
 from auditize.dependencies import get_db_session
-from auditize.helpers.api.errors import error_responses
 from auditize.permissions.service import authorize_grant
 from auditize.user import service
 from auditize.user.models import UserAuthenticationRequest, UserMeResponse

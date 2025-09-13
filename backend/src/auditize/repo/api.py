@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.exception import error_responses
 from auditize.apikey.models import ApikeyUpdate
 from auditize.apikey.service import update_apikey
 from auditize.auth.authorizer import (
@@ -13,7 +14,6 @@ from auditize.auth.authorizer import (
     AuthorizedUser,
 )
 from auditize.dependencies import get_db_session
-from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import LogLabels
 from auditize.permissions.assertions import (

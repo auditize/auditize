@@ -4,9 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.exception import error_responses
 from auditize.auth.authorizer import Authorized
 from auditize.dependencies import get_db_session
-from auditize.helpers.api.errors import error_responses
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile import service
 from auditize.log_i18n_profile.models import (

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Form, Path, Query, Request, Response, Up
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.exception import error_responses
 from auditize.auth.authorizer import (
     AuthorizedForLogRead,
     AuthorizedForLogWrite,
@@ -12,7 +13,6 @@ from auditize.auth.authorizer import (
 from auditize.config import get_config
 from auditize.dependencies import get_db_session
 from auditize.exceptions import PayloadTooLarge, ValidationError
-from auditize.helpers.api.errors import error_responses
 from auditize.helpers.api.validators import (
     IDENTIFIER_PATTERN_STRING,
 )
