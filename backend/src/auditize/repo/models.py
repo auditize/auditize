@@ -4,13 +4,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from auditize.repo.sql_models import Repo, RepoStatus
-from auditize.resource.api_models import (
+from auditize.api.models.common import IdField
+from auditize.api.models.dates import (
     CreatedAtField,
     HasDatetimeSerialization,
-    IdField,
     UpdatedAtField,
 )
+from auditize.repo.sql_models import Repo, RepoStatus
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 

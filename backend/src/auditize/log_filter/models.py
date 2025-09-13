@@ -14,10 +14,10 @@ from auditize.log.models import BaseLogSearchParams
 
 if TYPE_CHECKING:
     from auditize.log_filter.sql_models import LogFilter
-from auditize.resource.api_models import (
+from auditize.api.models.common import IdField
+from auditize.api.models.dates import (
     CreatedAtField,
     HasDatetimeSerialization,
-    IdField,
     UpdatedAtField,
 )
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse

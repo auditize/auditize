@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
+from auditize.api.models.search import ResourceSearchParams
 from auditize.auth.authorizer import (
     Authenticated,
     Authorized,
@@ -14,7 +15,6 @@ from auditize.dependencies import get_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_user, can_write_user
 from auditize.permissions.service import authorize_grant
-from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.user import service
 from auditize.user.models import (

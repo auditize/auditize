@@ -12,9 +12,10 @@ from pydantic import (
     model_validator,
 )
 
+from auditize.api.models.common import IdField
+from auditize.api.models.dates import HasDatetimeSerialization
 from auditize.api.validation import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import validate_datetime
-from auditize.resource.api_models import HasDatetimeSerialization, IdField
 from auditize.resource.pagination.cursor.api_models import CursorPaginatedResponse
 
 

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
+from auditize.api.models.search import ResourceSearchParams
 from auditize.apikey import service
 from auditize.apikey.models import (
     ApikeyCreate,
@@ -22,7 +23,6 @@ from auditize.permissions.assertions import (
     can_write_apikey,
 )
 from auditize.permissions.service import authorize_grant
-from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 
 router = APIRouter(responses=error_responses(401, 403))

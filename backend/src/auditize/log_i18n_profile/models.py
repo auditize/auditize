@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from auditize.i18n.lang import Lang
-from auditize.resource.api_models import (
+from auditize.api.models.common import IdField
+from auditize.api.models.dates import (
     CreatedAtField,
     HasDatetimeSerialization,
-    IdField,
     UpdatedAtField,
 )
+from auditize.i18n.lang import Lang
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 if TYPE_CHECKING:

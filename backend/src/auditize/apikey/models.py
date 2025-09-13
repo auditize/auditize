@@ -3,15 +3,15 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
+from auditize.api.models.common import IdField
+from auditize.api.models.dates import (
+    CreatedAtField,
+    HasDatetimeSerialization,
+    UpdatedAtField,
+)
 from auditize.apikey.sql_models import Apikey
 from auditize.permissions.models import Permissions, PermissionsInput, PermissionsOutput
 from auditize.permissions.service import build_permissions_output
-from auditize.resource.api_models import (
-    CreatedAtField,
-    HasDatetimeSerialization,
-    IdField,
-    UpdatedAtField,
-)
 from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 

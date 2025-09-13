@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
+from auditize.api.models.search import ResourceSearchParams
 from auditize.auth.authorizer import AuthorizedUser
 from auditize.dependencies import get_db_session
 from auditize.log_filter import service
@@ -15,7 +16,6 @@ from auditize.log_filter.models import (
     LogFilterUpdate,
 )
 from auditize.permissions.assertions import can_read_logs_from_any_repo
-from auditize.resource.api_models import ResourceSearchParams
 from auditize.resource.pagination.page.api_models import PagePaginationParams
 
 router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
