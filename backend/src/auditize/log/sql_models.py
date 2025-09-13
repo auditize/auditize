@@ -4,7 +4,7 @@ from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, literal_co
 from sqlalchemy.orm import Mapped, column_property, mapped_column
 
 from auditize.database.dbm import SqlModel
-from auditize.resource.sql_models import HasId
+from auditize.database.sql.models import HasId
 
 
 class LogEntity(SqlModel, HasId):

@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Mapped, mapped_column
 
 from auditize.database.dbm import SqlModel
+from auditize.database.sql.models import HasDates, HasId
 from auditize.permissions.sql_models import HasPermissions
-from auditize.resource.sql_models import HasDates, HasId
 
 
 class Apikey(SqlModel, HasId, HasDates, HasPermissions):

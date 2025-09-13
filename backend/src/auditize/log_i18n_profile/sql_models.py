@@ -4,9 +4,9 @@ from sqlalchemy import JSON, ForeignKey, TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.dbm import SqlModel
+from auditize.database.sql.models import HasDates, HasId
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import LogLabels
-from auditize.resource.sql_models import HasDates, HasId
 
 
 class LogLabelsAsJSON(TypeDecorator):
