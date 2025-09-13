@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from auditize.helpers.api.validators import (
+from auditize.api.validation import (
     FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN,
     FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING,
 )

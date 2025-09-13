@@ -6,6 +6,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
+from auditize.api.validation import (
+    IDENTIFIER_PATTERN_STRING,
+)
 from auditize.auth.authorizer import (
     AuthorizedForLogRead,
     AuthorizedForLogWrite,
@@ -13,9 +16,6 @@ from auditize.auth.authorizer import (
 from auditize.config import get_config
 from auditize.dependencies import get_db_session
 from auditize.exceptions import PayloadTooLarge, ValidationError
-from auditize.helpers.api.validators import (
-    IDENTIFIER_PATTERN_STRING,
-)
 from auditize.helpers.datetime import now
 from auditize.i18n import get_request_lang
 from auditize.log.csv import (
