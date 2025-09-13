@@ -4,6 +4,12 @@ from uuid import UUID
 from sqlalchemy import and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.database.sql.service import (
+    delete_sql_model,
+    get_sql_model,
+    save_sql_model,
+    update_sql_model,
+)
 from auditize.exceptions import (
     ConstraintViolation,
     ValidationError,
@@ -12,12 +18,6 @@ from auditize.log_filter.models import LogFilterCreate, LogFilterUpdate
 from auditize.log_filter.sql_models import LogFilter
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
-from auditize.resource.sql_service import (
-    delete_sql_model,
-    get_sql_model,
-    save_sql_model,
-    update_sql_model,
-)
 
 
 def _build_log_filter_constraint_rules(

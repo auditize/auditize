@@ -8,6 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auditize.apikey.models import ApikeyCreate, ApikeyUpdate
 from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
+from auditize.database.sql.service import (
+    get_sql_model,
+    save_sql_model,
+)
 from auditize.exceptions import ConstraintViolation, ValidationError
 from auditize.permissions.service import (
     build_permissions,
@@ -15,10 +19,6 @@ from auditize.permissions.service import (
 )
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
-from auditize.resource.sql_service import (
-    get_sql_model,
-    save_sql_model,
-)
 
 
 def _hash_key(key: str) -> str:

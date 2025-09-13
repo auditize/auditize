@@ -6,6 +6,12 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database.dbm import get_dbm
+from auditize.database.sql.service import (
+    delete_sql_model,
+    get_sql_model,
+    save_sql_model,
+    update_sql_model,
+)
 from auditize.exceptions import (
     ConstraintViolation,
     UnknownModelException,
@@ -25,12 +31,6 @@ from auditize.repo.models import RepoCreate, RepoStats, RepoUpdate
 from auditize.repo.sql_models import Repo, RepoStatus
 from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.resource.pagination.page.sql_service import find_paginated_by_page
-from auditize.resource.sql_service import (
-    delete_sql_model,
-    get_sql_model,
-    save_sql_model,
-    update_sql_model,
-)
 from auditize.user.sql_models import User
 
 

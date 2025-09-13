@@ -1,6 +1,5 @@
 from uuid import UUID
 
-
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import PermissionAssertion
 from auditize.permissions.models import (

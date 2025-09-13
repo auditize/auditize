@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager
+from auditize.database.sql.service import get_sql_model
 from auditize.exceptions import (
     ConstraintViolation,
     InvalidPaginationCursor,
@@ -29,7 +30,6 @@ from auditize.resource.pagination.cursor.serialization import (
     load_pagination_cursor,
     serialize_pagination_cursor,
 )
-from auditize.resource.sql_service import get_sql_model
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
