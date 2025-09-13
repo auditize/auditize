@@ -9,6 +9,7 @@ from auditize.apikey.models import ApikeyCreate, ApikeyUpdate
 from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
 from auditize.database.sql.service import (
+    find_paginated_by_page,
     get_sql_model,
     save_sql_model,
 )
@@ -18,7 +19,6 @@ from auditize.permissions.service import (
     update_permissions,
 )
 from auditize.resource.pagination.page.models import PagePaginationInfo
-from auditize.resource.pagination.page.sql_service import find_paginated_by_page
 
 
 def _hash_key(key: str) -> str:

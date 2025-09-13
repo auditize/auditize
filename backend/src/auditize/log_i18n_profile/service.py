@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database.sql.service import (
     delete_sql_model,
+    find_paginated_by_page,
     get_sql_model,
     save_sql_model,
 )
@@ -22,7 +23,6 @@ from auditize.log_i18n_profile.sql_models import (
     LogTranslation,
 )
 from auditize.resource.pagination.page.models import PagePaginationInfo
-from auditize.resource.pagination.page.sql_service import find_paginated_by_page
 
 
 def build_log_i18n_profile_constraint_rules(

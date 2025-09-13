@@ -2,12 +2,13 @@ import uuid
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database.dbm import SqlModel
 from auditize.exceptions import UnknownModelException
+from auditize.resource.pagination.page.models import PagePaginationInfo
 
 
 async def save_sql_model(
@@ -62,3 +63,34 @@ async def delete_sql_model[T: SqlModel](
     await session.commit()
     if result.rowcount == 0:
         raise UnknownModelException()
+
+
+async def find_paginated_by_page[T: SqlModel](
+    session: AsyncSession,
+    model_class: type[T],
+    *,
+    filter=None,
+    order_by: list | tuple | None | Any = None,
+    page=1,
+    page_size=10,
+) -> tuple[list[T], PagePaginationInfo]:
+    # Get results
+    query = select(model_class)
+    if filter is not None:
+        query = query.where(filter)
+    if order_by is not None:
+        query = query.order_by(
+            *(order_by if isinstance(order_by, (list, tuple)) else [order_by])
+        )
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    result = await session.execute(query)
+    models = list(result.scalars().all())
+
+    # Get the total number of results
+    count_query = select(func.count()).select_from(model_class)
+    if filter is not None:
+        count_query = count_query.where(filter)
+    total_result = await session.execute(count_query)
+    total = total_result.scalar()
+
+    return models, PagePaginationInfo.build(page=page, page_size=page_size, total=total)
