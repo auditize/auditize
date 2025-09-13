@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
+from auditize.api.models.cursor_pagination import CursorPaginationParams
 from auditize.api.validation import (
     IDENTIFIER_PATTERN_STRING,
 )
@@ -35,7 +36,6 @@ from auditize.log.models import (
     NameListResponse,
 )
 from auditize.log.service import LogService
-from auditize.resource.pagination.cursor.api_models import CursorPaginationParams
 
 router = APIRouter(
     responses=error_responses(401, 403, 404),

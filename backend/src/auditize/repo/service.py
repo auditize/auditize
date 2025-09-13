@@ -5,6 +5,7 @@ import elasticsearch
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.models.page_pagination import PagePaginationInfo
 from auditize.database.dbm import get_dbm
 from auditize.database.sql.service import (
     delete_sql_model,
@@ -30,7 +31,6 @@ from auditize.permissions.models import Permissions, RepoLogPermissions
 from auditize.permissions.service import is_authorized
 from auditize.repo.models import RepoCreate, RepoStats, RepoUpdate
 from auditize.repo.sql_models import Repo, RepoStatus
-from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.user.sql_models import User
 
 

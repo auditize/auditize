@@ -12,6 +12,10 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.models.cursor_pagination import (
+    load_pagination_cursor,
+    serialize_pagination_cursor,
+)
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.database.sql.service import get_sql_model
@@ -26,10 +30,6 @@ from auditize.log.models import Log, LogCreate, LogSearchParams
 from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
-from auditize.resource.pagination.cursor.serialization import (
-    load_pagination_cursor,
-    serialize_pagination_cursor,
-)
 
 # Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
 _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}

@@ -6,9 +6,9 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.models.page_pagination import PagePaginationInfo
 from auditize.database.dbm import SqlModel
 from auditize.exceptions import UnknownModelException
-from auditize.resource.pagination.page.models import PagePaginationInfo
 
 
 async def save_sql_model(

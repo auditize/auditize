@@ -20,7 +20,7 @@ from auditize.api.models.dates import (
     HasDatetimeSerialization,
     UpdatedAtField,
 )
-from auditize.resource.pagination.page.api_models import PagePaginatedResponse
+from auditize.api.models.page_pagination import PagePaginatedResponse
 
 _BUILTIN_FILTER_COLUMNS = (
     "saved_at",

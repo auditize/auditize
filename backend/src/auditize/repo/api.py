@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
+from auditize.api.models.page_pagination import PagePaginationParams
 from auditize.api.models.search import ResourceSearchParams
 from auditize.apikey.models import ApikeyUpdate
 from auditize.apikey.service import update_apikey
@@ -42,7 +43,6 @@ from auditize.repo.models import (
     UserRepoListResponse,
     UserRepoPermissions,
 )
-from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.user.models import UserUpdate
 from auditize.user.service import update_user
 

@@ -10,8 +10,8 @@ from auditize.api.models.dates import (
     HasDatetimeSerialization,
     UpdatedAtField,
 )
+from auditize.api.models.page_pagination import PagePaginatedResponse
 from auditize.repo.sql_models import Repo, RepoStatus
-from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 def _RepoLogI18nProfileIdField(**kwargs):  # noqa

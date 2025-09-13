@@ -9,10 +9,10 @@ from auditize.api.models.dates import (
     HasDatetimeSerialization,
     UpdatedAtField,
 )
+from auditize.api.models.page_pagination import PagePaginatedResponse
 from auditize.apikey.sql_models import Apikey
 from auditize.permissions.models import Permissions, PermissionsInput, PermissionsOutput
 from auditize.permissions.service import build_permissions_output
-from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 
 def _ApikeyNameField(**kwargs):  # noqa

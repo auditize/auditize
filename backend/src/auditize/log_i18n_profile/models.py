@@ -12,8 +12,8 @@ from auditize.api.models.dates import (
     HasDatetimeSerialization,
     UpdatedAtField,
 )
+from auditize.api.models.page_pagination import PagePaginatedResponse
 from auditize.i18n.lang import Lang
-from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 
 if TYPE_CHECKING:
     from auditize.log_i18n_profile.sql_models import LogI18nProfile

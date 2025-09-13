@@ -9,6 +9,7 @@ from auditize.api.models.dates import (
     HasDatetimeSerialization,
     UpdatedAtField,
 )
+from auditize.api.models.page_pagination import PagePaginatedResponse
 from auditize.i18n.lang import Lang
 from auditize.permissions.models import (
     ApplicablePermissions,
@@ -20,7 +21,6 @@ from auditize.permissions.service import (
     build_permissions_output,
     compute_applicable_permissions,
 )
-from auditize.resource.pagination.page.api_models import PagePaginatedResponse
 from auditize.user.sql_models import User
 
 USER_PASSWORD_MIN_LENGTH = 8

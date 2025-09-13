@@ -8,6 +8,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import and_
 
+from auditize.api.models.page_pagination import PagePaginationInfo
 from auditize.config import get_config
 from auditize.database.sql.service import (
     find_paginated_by_page,
@@ -29,7 +30,6 @@ from auditize.permissions.service import (
     update_permissions,
 )
 from auditize.permissions.sql_models import Permissions
-from auditize.resource.pagination.page.models import PagePaginationInfo
 from auditize.user.models import UserCreate, UserUpdate
 from auditize.user.sql_models import User
 

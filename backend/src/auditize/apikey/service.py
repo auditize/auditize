@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.models.page_pagination import PagePaginationInfo
 from auditize.apikey.models import ApikeyCreate, ApikeyUpdate
 from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import APIKEY_SECRET_PREFIX
@@ -18,7 +19,6 @@ from auditize.permissions.service import (
     build_permissions,
     update_permissions,
 )
-from auditize.resource.pagination.page.models import PagePaginationInfo
 
 
 def _hash_key(key: str) -> str:
