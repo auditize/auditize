@@ -11,12 +11,6 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-from auditize.log_filter.sql_models import (
-    LogFilterColumnsAsList,
-    LogFilterSearchParamsAsJSON,
-)
-from auditize.log_i18n_profile.sql_models import LogLabelsAsJSON
-
 # revision identifiers, used by Alembic.
 revision: str = "30a9e8657024"
 down_revision: Union[str, None] = None
@@ -89,11 +83,11 @@ def upgrade() -> None:
     op.create_table(
         "log_i18n_profile_translation",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("lang", sa.Enum("EN", "FR", name="lang"), nullable=False),
+        sa.Column("lang", sa.String(), nullable=False),
         sa.Column("profile_id", sa.Uuid(), nullable=False),
         sa.Column(
             "labels",
-            LogLabelsAsJSON(),
+            sa.JSON(),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
@@ -123,7 +117,7 @@ def upgrade() -> None:
         sa.Column("log_db_name", sa.String(), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("enabled", "readonly", "disabled", name="repostatus"),
+            sa.String(),
             nullable=False,
         ),
         sa.Column("retention_period", sa.Integer(), nullable=True),
@@ -212,12 +206,12 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Uuid(), nullable=False),
         sa.Column(
             "search_params",
-            LogFilterSearchParamsAsJSON(),
+            sa.JSON(),
             nullable=False,
         ),
         sa.Column(
             "columns",
-            LogFilterColumnsAsList(),
+            sa.String(),
             nullable=False,
         ),
         sa.Column("is_favorite", sa.Boolean(), nullable=False),
