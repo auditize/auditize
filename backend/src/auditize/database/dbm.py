@@ -45,16 +45,7 @@ class DatabaseManager:
             name = config.db_name
         cls._dbm = cls(
             name=name,
-            db_engine=create_async_engine(
-                "postgresql+asyncpg://%s:%s@%s:5432/%s"
-                % (
-                    config.postgres_user,
-                    config.postgres_user_password,
-                    config.postgres_host,
-                    name,
-                ),
-                echo=debug,
-            ),
+            db_engine=create_async_engine(config.get_db_url(name), echo=debug),
             elastic_client=get_elastic_client(),
         )
         return cls._dbm

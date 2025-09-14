@@ -206,6 +206,16 @@ class Config:
     def is_smtp_enabled(self):
         return self.smtp_sender is not None
 
+    def get_db_url(self, db_name=None):
+        if db_name is None:
+            db_name = self.db_name
+        return "postgresql+asyncpg://%s:%s@%s:5432/%s" % (
+            self.postgres_user,
+            self.postgres_user_password,
+            self.postgres_host,
+            db_name,
+        )
+
     def to_dict(self):
         return dataclasses.asdict(self)
 
