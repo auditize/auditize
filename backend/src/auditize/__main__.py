@@ -12,8 +12,8 @@ from sqlalchemy.exc import OperationalError
 
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import get_dbm, init_dbm
-from auditize.database.dbm import SqlModel, open_db_session
+from auditize.database import init_dbm
+from auditize.database.dbm import SqlModel, create_database, open_db_session
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -141,9 +141,7 @@ async def dump_openapi():
 
 async def create_db():
     _lazy_init()
-    dbm = get_dbm()
-    async with dbm.db_engine.begin() as conn:
-        await conn.run_sync(SqlModel.metadata.create_all)
+    await create_database()
 
 
 async def version():

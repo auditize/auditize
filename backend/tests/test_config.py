@@ -35,7 +35,9 @@ def test_get_config():
     assert config.csv_max_rows == 10
     assert config.mongodb_uri is None
     assert config.mongodb_tls is False
-    assert config.db_name == "auditize"
+    # NB: don't check the actual value, since it can be changed
+    # when pytest-xdist is used
+    assert config.db_name
     assert config.smtp_server is None
     assert config.smtp_port is None
     assert config.smtp_username is None

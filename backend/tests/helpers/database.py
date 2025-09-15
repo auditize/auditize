@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager, init_dbm
-from auditize.database.dbm import SqlModel
+from auditize.database.dbm import SqlModel, create_database
 from auditize.log.service import create_indices
 
 
@@ -17,7 +17,9 @@ def setup_test_dbm() -> DatabaseManager:
         db_name += "_" + os.environ["PYTEST_XDIST_WORKER"]
     except KeyError:
         pass
-    return init_dbm(db_name, force_init=True, debug=False)
+    config = get_config()
+    config.db_name = db_name
+    return init_dbm(force_init=True, debug=False)
 
 
 async def teardown_test_dbm(dbm: DatabaseManager):
@@ -28,18 +30,13 @@ async def teardown_test_dbm(dbm: DatabaseManager):
 
 async def create_pg_db(dbm: DatabaseManager):
     config = get_config()
-    pg_url = "postgresql+asyncpg://%s:%s@%s:5432/postgres" % (
-        config.postgres_user,
-        config.postgres_user_password,
-        config.postgres_host,
-    )
+    pg_url = config.get_db_url("postgres")
     engine = create_async_engine(pg_url)
     async with engine.connect() as conn:
         conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
         await conn.execute(text(f"CREATE DATABASE {dbm.name}"))
 
-    async with dbm.db_engine.begin() as conn:
-        await conn.run_sync(SqlModel.metadata.create_all)
+    await create_database()
 
 
 async def truncate_pg_db(dbm: DatabaseManager):

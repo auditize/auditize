@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from auditize.config import init_config
+from auditize.config import get_config, init_config
 from auditize.database.dbm import SqlModel
 
 # this is the Alembic Config object, which provides
@@ -68,7 +68,7 @@ async def run_async_migrations() -> None:
 
     """
 
-    auditize_config = init_config()
+    auditize_config = get_config()
 
     engine_config = {
         "sqlalchemy.url": auditize_config.get_db_url(),

@@ -1,6 +1,10 @@
+import asyncio
+import os.path as osp
 from contextlib import asynccontextmanager
 from typing import Self
 
+from alembic import command
+from alembic.config import Config
 from elasticsearch import AsyncElasticsearch
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
@@ -78,3 +82,18 @@ async def open_db_session():
             raise e
         finally:
             await session.close()
+
+
+async def create_database():
+    current_dir = osp.dirname(__file__)
+    alembic_config = Config(osp.join(current_dir, "alembic.ini"))
+    alembic_config.set_section_option(
+        "alembic", "script_location", osp.join(current_dir, "alembic")
+    )
+
+    # This is needed because alembic run async migrations using
+    # asyncio.run() later
+    def upgrade_sync():
+        command.upgrade(alembic_config, "head")
+
+    await asyncio.to_thread(upgrade_sync)
