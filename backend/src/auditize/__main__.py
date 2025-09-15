@@ -13,7 +13,8 @@ from sqlalchemy.exc import OperationalError
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
-from auditize.database.dbm import SqlModel, create_database, open_db_session
+from auditize.database.dbm import create_database, open_db_session
+from auditize.database.sql.models import SqlModel
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,

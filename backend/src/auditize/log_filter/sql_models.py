@@ -3,8 +3,7 @@ from uuid import UUID
 from sqlalchemy import JSON, ForeignKey, Text, TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column
 
-from auditize.database.dbm import SqlModel
-from auditize.database.sql.models import HasDates, HasId
+from auditize.database.sql.models import HasDates, HasId, SqlModel
 from auditize.log_filter.models import LogFilterSearchParams
 
 

@@ -6,24 +6,10 @@ from typing import Self
 from alembic import command
 from alembic.config import Config
 from elasticsearch import AsyncElasticsearch
-from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
 
 from auditize.config import get_config
 from auditize.database.elastic import get_elastic_client
-
-_NAMING_CONVENTION = {
-    "pk": "pk_%(table_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_name)s",
-    "uq": "uq_%(table_name)s_%(column_0_name)s",
-    "ix": "ix_%(table_name)s_%(column_0_name)s",
-    "ck": "ck_%(table_name)s_%(constraint_name)s",
-}
-
-
-class SqlModel(DeclarativeBase):
-    metadata = MetaData(naming_convention=_NAMING_CONVENTION)
 
 
 class DatabaseManager:

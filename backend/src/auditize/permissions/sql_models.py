@@ -9,7 +9,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from auditize.database.dbm import SqlModel
+from auditize.database.sql.models import SqlModel
 
 
 class ReadableLogEntityPermission(SqlModel):

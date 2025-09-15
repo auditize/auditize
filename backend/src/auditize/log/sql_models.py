@@ -3,8 +3,7 @@ from uuid import UUID
 from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, literal_column
 from sqlalchemy.orm import Mapped, column_property, mapped_column
 
-from auditize.database.dbm import SqlModel
-from auditize.database.sql.models import HasId
+from auditize.database.sql.models import HasId, SqlModel
 
 
 class LogEntity(SqlModel, HasId):

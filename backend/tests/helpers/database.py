@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from auditize.config import get_config
 from auditize.database import DatabaseManager, init_dbm
-from auditize.database.dbm import SqlModel, create_database
+from auditize.database.dbm import create_database
+from auditize.database.sql.models import SqlModel
 from auditize.log.service import create_indices
 
 

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.models.page_pagination import PagePaginationInfo
-from auditize.database.dbm import SqlModel
+from auditize.database.sql.models import SqlModel
 from auditize.exceptions import UnknownModelException
 
 

@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 
-from auditize.database.dbm import SqlModel
-from auditize.database.sql.models import HasDates, HasId
+from auditize.database.sql.models import HasDates, HasId, SqlModel
 from auditize.permissions.sql_models import HasPermissions
 
 

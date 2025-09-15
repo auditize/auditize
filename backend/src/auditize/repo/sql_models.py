@@ -4,8 +4,7 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from auditize.database.dbm import SqlModel
-from auditize.database.sql.models import HasDates, HasId
+from auditize.database.sql.models import HasDates, HasId, SqlModel
 
 
 class RepoStatus(str, Enum):
