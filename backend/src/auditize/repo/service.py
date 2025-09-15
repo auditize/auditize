@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 import elasticsearch
 from sqlalchemy import and_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.models.page_pagination import PagePaginationInfo
@@ -15,6 +16,7 @@ from auditize.database.sql.service import (
     update_sql_model,
 )
 from auditize.exceptions import (
+    AuditizeException,
     ConstraintViolation,
     UnknownModelException,
     ValidationError,
@@ -54,7 +56,6 @@ async def create_repo(
 
     db_name = get_dbm().name
     repo_id = uuid4()
-
     repo = Repo(
         id=repo_id,
         name=repo_create.name,
@@ -63,13 +64,20 @@ async def create_repo(
         log_i18n_profile_id=repo_create.log_i18n_profile_id,
         log_db_name=(log_db_name if log_db_name else f"{db_name}_logs_{repo_id}"),
     )
-    await save_sql_model(
-        session, repo, constraint_rules=_build_repo_constraint_rules(repo_create)
-    )
-
+    log_service = None
     if not log_db_name:
         log_service = await LogService.for_maintenance(session, repo)
         await log_service.create_log_db()
+
+    try:
+        await save_sql_model(
+            session, repo, constraint_rules=_build_repo_constraint_rules(repo_create)
+        )
+    except (AuditizeException, SQLAlchemyError):
+        if log_service:
+            await log_service.delete_log_db()
+        raise
+
     return repo
 
 
