@@ -106,7 +106,6 @@ async def get_repo_stats(session: AsyncSession, repo_id: UUID) -> RepoStats:
         stats.log_count = await log_service.get_log_count()
         stats.storage_size = await log_service.get_storage_size()
     except (elasticsearch.NotFoundError, elasticsearch.BadRequestError) as exc:
-        # FIXME: handle the case where the log db is a MongoDB database
         print(f"Got an error while fetching stats for repo {repo_id}: {exc}")
         pass
 

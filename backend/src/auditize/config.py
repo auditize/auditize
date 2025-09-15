@@ -28,8 +28,6 @@ class Config:
     postgres_host: str
     postgres_user: str
     postgres_user_password: str
-    mongodb_uri: str
-    mongodb_tls: bool
     elastic_url: str
     elastic_user: str
     elastic_user_password: str
@@ -130,10 +128,6 @@ class Config:
                 postgres_host=optional("AUDITIZE_PG_HOST", default="localhost"),
                 postgres_user=required("AUDITIZE_PG_USER"),
                 postgres_user_password=required("AUDITIZE_PG_USER_PASSWORD"),
-                mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
-                mongodb_tls=optional(
-                    "AUDITIZE_MONGODB_TLS", validator=cls._validate_bool, default=False
-                ),
                 elastic_url=required("AUDITIZE_ELASTIC_URL"),
                 elastic_user=required("AUDITIZE_ELASTIC_USER"),
                 elastic_user_password=required("AUDITIZE_ELASTIC_USER_PASSWORD"),

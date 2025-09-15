@@ -33,8 +33,6 @@ def test_get_config():
     assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 1024
     assert config.csv_max_rows == 10
-    assert config.mongodb_uri is None
-    assert config.mongodb_tls is False
     # NB: don't check the actual value, since it can be changed
     # when pytest-xdist is used
     assert config.db_name
@@ -71,8 +69,6 @@ def test_config_minimum_viable_config():
     assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 5242880  # 5MB
     assert config.csv_max_rows == 10_000
-    assert config.mongodb_uri is None
-    assert config.mongodb_tls is False
     assert config.db_name == "auditize"
     assert config.smtp_server is None
     assert config.smtp_port is None
@@ -85,20 +81,6 @@ def test_config_minimum_viable_config():
     assert config.cookie_secure is False
     assert config.test_mode is False
     assert config.online_doc is False
-
-
-def test_config_var_mongodb_uri():
-    config = Config.load_from_env(
-        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_MONGODB_URI": "mongodb://localhost:27017"}
-    )
-    assert config.mongodb_uri == "mongodb://localhost:27017"
-
-
-def test_config_var_mongodb_tls():
-    config = Config.load_from_env(
-        {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_MONGODB_TLS": "true"}
-    )
-    assert config.mongodb_tls is True
 
 
 def test_config_var_db_name():
