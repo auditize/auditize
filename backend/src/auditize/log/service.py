@@ -37,31 +37,6 @@ _EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 _CONSOLIDATED_LOG_ENTITIES = Cache(Cache.MEMORY)
 
 
-class _LogsPaginationCursor:
-    def __init__(self, date: datetime, id: uuid.UUID):
-        self.date = date
-        self.id = id
-
-    @classmethod
-    def load(cls, value: str) -> Self:
-        decoded = load_pagination_cursor(value)
-
-        try:
-            return cls(
-                datetime.fromisoformat(decoded["date"]), uuid.UUID(decoded["id"])
-            )
-        except (KeyError, ValueError):
-            raise InvalidPaginationCursor(value)
-
-    def serialize(self) -> str:
-        return serialize_pagination_cursor(
-            {
-                "date": serialize_datetime(self.date, with_milliseconds=True),
-                "id": str(self.id),
-            }
-        )
-
-
 class _OffsetPaginationCursor:
     def __init__(self, offset: int):
         self.offset = offset

@@ -7,10 +7,7 @@ import pytest
 from auditize.database.dbm import open_db_session
 from auditize.exceptions import InvalidPaginationCursor
 from auditize.log.models import Log
-from auditize.log.service import (
-    LogService,
-    _LogsPaginationCursor,
-)
+from auditize.log.service import LogService
 from conftest import RepoBuilder
 from helpers.http import HttpTestHelper
 from helpers.log import PreparedLog
@@ -273,24 +270,3 @@ async def test_log_retention_period_purge_log_entities_2(
             },
         },
     )
-
-
-def test_pagination_cursor():
-    # build initial cursor
-    obj_id = uuid.UUID("cc12c9bb-0b33-43cd-a410-e3f9c848a62b")
-    date = datetime.fromisoformat("2021-07-19T00:00:00Z")
-    cursor = _LogsPaginationCursor(id=obj_id, date=date)
-
-    # test cursor serialization
-    serialized = cursor.serialize()
-    assert type(serialized) is str
-
-    # test cursor deserialization
-    new_cursor = _LogsPaginationCursor.load(serialized)
-    assert new_cursor.id == obj_id
-    assert new_cursor.date == date
-
-
-def test_pagination_cursor_invalid_string():
-    with pytest.raises(InvalidPaginationCursor):
-        _LogsPaginationCursor.load("invalid_cursor_string")
