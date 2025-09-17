@@ -1,13 +1,14 @@
 import base64
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from functools import partialmethod
 from typing import Any, Self
 from uuid import UUID
 
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
+from elasticsearch.exceptions import NotFoundError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,9 +31,6 @@ from auditize.log.models import Log, LogCreate, LogSearchParams
 from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
-
-# Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
-_EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
 
 _CONSOLIDATED_LOG_ENTITIES = Cache(Cache.MEMORY)
 
@@ -145,21 +143,22 @@ class LogService:
         return log
 
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
-        resp = await self.es.update_by_query(
-            index=self.index,
-            query=self._log_query(log_id),
-            script={
-                "source": "ctx._source.attachments.add(params.attachment)",
-                "params": {
-                    "attachment": {
-                        **attachment.model_dump(exclude={"data"}),
-                        "data": base64.b64encode(attachment.data).decode(),
-                    }
+        try:
+            await self.es.update(
+                index=self.index,
+                id=str(log_id),
+                script={
+                    "source": "ctx._source.attachments.add(params.attachment)",
+                    "params": {
+                        "attachment": {
+                            **attachment.model_dump(exclude={"data"}),
+                            "data": base64.b64encode(attachment.data).decode(),
+                        }
+                    },
                 },
-            },
-            refresh=self._refresh,
-        )
-        if resp["updated"] == 0:
+                refresh=self._refresh,
+            )
+        except NotFoundError:
             raise UnknownModelException()
 
     @staticmethod
@@ -178,46 +177,45 @@ class LogService:
         }
 
     @staticmethod
-    def _log_query(log_id: UUID, authorized_entities: set[str] = None):
-        query: dict = {"bool": {"filter": [{"term": {"_id": str(log_id)}}]}}
-        if authorized_entities:
-            query["bool"]["filter"].append(
-                LogService._authorized_entity_filter(authorized_entities)
-            )
-        return query
-
-    async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
-        print(
-            "LOG QUERY: %s" % json.dumps(self._log_query(log_id, authorized_entities))
-        )
-        resp = await self.es.search(
-            index=self.index,
-            query=self._log_query(log_id, authorized_entities),
-            source_excludes=["attachments.data"],
-        )
-        documents = resp["hits"]["hits"]
-        if not documents:
+    def _check_log_visibility(log: Log, authorized_entities: set[str]):
+        if (
+            authorized_entities
+            and not set(entity.ref for entity in log.entity_path) & authorized_entities
+        ):
             raise UnknownModelException()
 
-        model = Log.model_validate({**documents[0]["_source"], "_id": log_id})
-        return model
+    async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
+        try:
+            resp = await self.es.get(
+                index=self.index,
+                id=str(log_id),
+                source_excludes=["attachments.data"],
+            )
+        except NotFoundError:
+            raise UnknownModelException()
+
+        log = Log.model_validate({**resp["_source"], "_id": log_id})
+        self._check_log_visibility(log, authorized_entities)
+
+        return log
 
     async def get_log_attachment(
         self, log_id: UUID, attachment_idx: int, authorized_entities: set[str]
     ) -> Log.Attachment:
-        # NB: we retrieve all attachments here, which is not really efficient is the log contains
+        # NB: we retrieve all attachments here, which is not really efficient if the log contains
         # more than 1 log, unfortunately ES does not a let us retrieve a nested object to a specific
         # array index unless adding an extra metadata such as "index" to the stored document
-        resp = await self.es.search(
-            index=self.index,
-            query=self._log_query(log_id, authorized_entities),
-            source_includes=["attachments"],
+        try:
+            resp = await self.es.get(index=self.index, id=str(log_id))
+        except NotFoundError:
+            raise UnknownModelException()
+
+        self._check_log_visibility(
+            Log.model_validate({**resp["_source"], "_id": log_id}), authorized_entities
         )
 
         try:
-            attachment = resp["hits"]["hits"][0]["_source"]["attachments"][
-                attachment_idx
-            ]
+            attachment = resp["_source"]["attachments"][attachment_idx]
         except IndexError:
             raise UnknownModelException()
 
