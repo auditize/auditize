@@ -9,7 +9,7 @@ from auditize.config import get_config
 from auditize.database import DatabaseManager, init_dbm
 from auditize.database.dbm import create_database
 from auditize.database.sql.models import SqlModel
-from auditize.log.service import create_indices
+from auditize.log.service import create_index
 
 
 def setup_test_dbm() -> DatabaseManager:
@@ -75,7 +75,7 @@ class TestLogDatabasePool:
                 return db_name
         else:
             db_name = f"{self.dbm.name}_logs_{len(self._cache)}"
-            await create_indices(self.dbm.elastic_client, db_name)
+            await create_index(self.dbm.elastic_client, db_name)
             self._cache[db_name] = True
             return db_name
 

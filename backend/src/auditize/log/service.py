@@ -761,14 +761,13 @@ class LogService:
         return await self._get_log_entity(entity_ref)
 
     async def create_log_db(self):
-        await create_indices(self.es, self.index)
+        await create_index(self.es, self.index)
 
     async def delete_log_db(self):
         await self.es.indices.delete(index=self.index)
-        await self.es.indices.delete(index=f"{self.index}_entities")
 
 
-async def create_indices(elastic_client: AsyncElasticsearch, index_name: str):
+async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
     await elastic_client.indices.create(
         index=index_name,
         mappings={
@@ -881,25 +880,6 @@ async def create_indices(elastic_client: AsyncElasticsearch, index_name: str):
             "index": {
                 "sort.field": ["saved_at", "log_id"],
                 "sort.order": ["desc", "desc"],
-            }
-        },
-    )
-    await elastic_client.indices.create(
-        index=f"{index_name}_entities",
-        mappings={
-            "properties": {
-                "ref": {"type": "keyword"},
-                "name": {
-                    "type": "text",
-                    "fields": {"keyword": {"type": "keyword"}},
-                },
-                "parent_entity_ref": {"type": "keyword"},
-            }
-        },
-        settings={
-            "index": {
-                "sort.field": "name.keyword",
-                "sort.order": "asc",
             }
         },
     )
