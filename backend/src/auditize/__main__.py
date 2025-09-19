@@ -14,7 +14,6 @@ from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
 from auditize.database.dbm import create_database, open_db_session
-from auditize.database.sql.models import SqlModel
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -109,6 +108,13 @@ async def purge_expired_logs(repo: UUID = None):
         await LogService.apply_log_retention_period(session, repo)
 
 
+async def empty_repo(repo: UUID):
+    _lazy_init()
+    async with open_db_session() as session:
+        log_service = await LogService.for_maintenance(session, repo)
+        await log_service.empty_log_db()
+
+
 async def schedule():
     _lazy_init()
     scheduler = build_scheduler()
@@ -182,10 +188,22 @@ async def async_main(args=None):
     purge_expired_logs_parser = sub_parsers.add_parser(
         "purge-expired-logs", help="Purge expired logs"
     )
-    purge_expired_logs_parser.add_argument("repo", type=UUID, nargs="?")
+    purge_expired_logs_parser.add_argument(
+        "repo",
+        type=UUID,
+        nargs="?",
+        help="Optional repository ID to limit the purge to",
+    )
     purge_expired_logs_parser.set_defaults(
         func=lambda cmd_args: purge_expired_logs(cmd_args.repo)
     )
+
+    # CMD empty-repo
+    empty_repo_parser = sub_parsers.add_parser(
+        "empty-repo", help="Empty a log repository"
+    )
+    empty_repo_parser.add_argument("repo", type=UUID, help="Repository ID")
+    empty_repo_parser.set_defaults(func=lambda cmd_args: empty_repo(cmd_args.repo))
 
     # CMD schedule
     schedule_parser = sub_parsers.add_parser(

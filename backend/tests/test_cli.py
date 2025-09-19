@@ -151,3 +151,15 @@ async def test_purge_expired_logs_single(
 
     assert (await repo_1.get_log_count()) == 0
     assert (await repo_2.get_log_count()) == 1
+
+
+async def test_empty_repo(superadmin_client: HttpTestHelper, repo_builder: RepoBuilder):
+    repo = await repo_builder({})
+    await repo.create_log(superadmin_client)
+    await async_main(["empty-repo", repo.id])
+    assert (await superadmin_client.get(f"/api/repos/{repo.id}/logs")).json()[
+        "items"
+    ] == []
+    assert (await superadmin_client.get(f"/api/repos/{repo.id}/logs/entities")).json()[
+        "items"
+    ] == []

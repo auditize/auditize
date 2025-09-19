@@ -9,7 +9,7 @@ from uuid import UUID
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.exceptions import NotFoundError
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -765,6 +765,18 @@ class LogService:
 
     async def delete_log_db(self):
         await self.es.indices.delete(index=self.index)
+
+    async def empty_log_db(self):
+        await self.es.delete_by_query(
+            index=self.index,
+            query={"match_all": {}},
+            wait_for_completion=self._refresh,
+            refresh=self._refresh,
+        )
+        await self.session.execute(
+            delete(LogEntity).where(LogEntity.repo_id == self.repo.id)
+        )
+        await self.session.commit()
 
 
 async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
