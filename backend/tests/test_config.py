@@ -9,8 +9,6 @@ MINIMUM_VIABLE_CONFIG = {
     "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
     "AUDITIZE_JWT_SIGNING_KEY": "DUMMYKEY",
     "AUDITIZE_ES_URL": "http://localhost:9200",
-    "AUDITIZE_ES_USER": "elastic",
-    "AUDITIZE_ES_PASSWORD": "password",
     "AUDITIZE_PG_USER": "postgres",
     "AUDITIZE_PG_PASSWORD": "password",
 }
@@ -62,8 +60,8 @@ def test_config_minimum_viable_config():
     assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key == MINIMUM_VIABLE_CONFIG["AUDITIZE_JWT_SIGNING_KEY"]
     assert config.elastic_url == "http://localhost:9200"
-    assert config.elastic_user == "elastic"
-    assert config.elastic_password == "password"
+    assert config.elastic_user is None
+    assert config.elastic_password is None
     assert config.elastic_ssl_verify is True
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.access_token_lifetime == 600  # 10 minutes
@@ -95,6 +93,11 @@ def test_config_elastic_disable_ssl_verify():
         {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_ES_SSL_VERIFY": "false"}
     )
     assert config.elastic_ssl_verify is False
+
+
+def test_config_elastic_user_and_password_incomplete():
+    with pytest.raises(ConfigError, match="incomplete"):
+        Config.load_from_env({**MINIMUM_VIABLE_CONFIG, "AUDITIZE_ES_USER": "elastic"})
 
 
 def test_config_var_user_session_token_lifetime():

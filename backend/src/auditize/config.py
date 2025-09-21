@@ -29,8 +29,8 @@ class Config:
     postgres_user: str
     postgres_password: str
     elastic_url: str
-    elastic_user: str
-    elastic_password: str
+    elastic_user: str | None
+    elastic_password: str | None
     elastic_ssl_verify: bool
     db_name: str
     smtp_server: str
@@ -82,6 +82,11 @@ class Config:
                 "- AUDITIZE_SMTP_PASSWORD\n"
             )
 
+        if bool(self.elastic_user) ^ bool(self.elastic_password):
+            raise ConfigError(
+                "ElasticSearch configuration is incomplete, please provide both AUDITIZE_ES_USER and AUDITIZE_ES_PASSWORD"
+            )
+
     @classmethod
     def _load_from_env(cls, env):
         def required(key, validator=None):
@@ -129,8 +134,8 @@ class Config:
                 postgres_user=required("AUDITIZE_PG_USER"),
                 postgres_password=required("AUDITIZE_PG_PASSWORD"),
                 elastic_url=required("AUDITIZE_ES_URL"),
-                elastic_user=required("AUDITIZE_ES_USER"),
-                elastic_password=required("AUDITIZE_ES_PASSWORD"),
+                elastic_user=optional("AUDITIZE_ES_USER", default=None),
+                elastic_password=optional("AUDITIZE_ES_PASSWORD", default=None),
                 elastic_ssl_verify=optional(
                     "AUDITIZE_ES_SSL_VERIFY", validator=cls._validate_bool, default=True
                 ),
