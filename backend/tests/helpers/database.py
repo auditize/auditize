@@ -53,7 +53,7 @@ async def drop_pg_db(dbm: DatabaseManager):
     config = get_config()
     pg_url = "postgresql+asyncpg://%s:%s@%s:5432/postgres" % (
         config.postgres_user,
-        config.postgres_user_password,
+        config.postgres_password,
         config.postgres_host,
     )
     await dbm.db_engine.dispose()

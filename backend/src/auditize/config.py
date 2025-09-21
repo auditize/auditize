@@ -27,10 +27,10 @@ class Config:
     csv_max_rows: int
     postgres_host: str
     postgres_user: str
-    postgres_user_password: str
+    postgres_password: str
     elastic_url: str
     elastic_user: str
-    elastic_user_password: str
+    elastic_password: str
     elastic_ssl_verify: bool
     db_name: str
     smtp_server: str
@@ -127,14 +127,12 @@ class Config:
                 ),
                 postgres_host=optional("AUDITIZE_PG_HOST", default="localhost"),
                 postgres_user=required("AUDITIZE_PG_USER"),
-                postgres_user_password=required("AUDITIZE_PG_USER_PASSWORD"),
-                elastic_url=required("AUDITIZE_ELASTIC_URL"),
-                elastic_user=required("AUDITIZE_ELASTIC_USER"),
-                elastic_user_password=required("AUDITIZE_ELASTIC_USER_PASSWORD"),
+                postgres_password=required("AUDITIZE_PG_PASSWORD"),
+                elastic_url=required("AUDITIZE_ES_URL"),
+                elastic_user=required("AUDITIZE_ES_USER"),
+                elastic_password=required("AUDITIZE_ES_PASSWORD"),
                 elastic_ssl_verify=optional(
-                    "AUDITIZE_ELASTIC_SSL_VERIFY",
-                    validator=cls._validate_bool,
-                    default=True,
+                    "AUDITIZE_ES_SSL_VERIFY", validator=cls._validate_bool, default=True
                 ),
                 db_name=optional("AUDITIZE_DB_NAME", default="auditize"),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
@@ -170,7 +168,7 @@ class Config:
         except KeyError as e:
             var_name = str(e)
             raise ConfigError(
-                f"Could not load configuration, variable {var_name} is missing"
+                f"Could not load configuration, variable {var_name!r} is missing"
             )
 
         config._validate()
@@ -205,7 +203,7 @@ class Config:
             db_name = self.db_name
         return "postgresql+asyncpg://%s:%s@%s:5432/%s" % (
             self.postgres_user,
-            self.postgres_user_password,
+            self.postgres_password,
             self.postgres_host,
             db_name,
         )
