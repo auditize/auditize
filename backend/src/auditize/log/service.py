@@ -642,6 +642,7 @@ class LogService:
             .returning(LogEntity.id)
         )
         entity_id = result.scalar_one()
+        await self.session.commit()
 
         await _CONSOLIDATED_LOG_ENTITIES.set(cache_key, entity_id)
         return entity_id
@@ -652,7 +653,6 @@ class LogService:
             parent_entity_id = await self._consolidate_log_entity(
                 entity, parent_entity_id
             )
-        await self.session.commit()
 
     async def _has_entity_children(self, entity_ref: str) -> bool:
         return (
