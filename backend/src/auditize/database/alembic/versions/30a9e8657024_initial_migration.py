@@ -167,11 +167,11 @@ def upgrade() -> None:
     op.create_index(op.f("ix_user_last_name"), "user", ["last_name"], unique=False)
     op.create_table(
         "log_entity",
-        sa.Column("repo_id", sa.Uuid(), nullable=False),
-        sa.Column("ref", sa.String(), nullable=False),
-        sa.Column("name", sa.String(), nullable=False),
-        sa.Column("parent_entity_id", sa.Uuid(), nullable=True),
         sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("repo_id", sa.Uuid(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("ref", sa.String(), nullable=False),
+        sa.Column("parent_entity_id", sa.Uuid(), nullable=True),
         sa.ForeignKeyConstraint(
             ["parent_entity_id"],
             ["log_entity.id"],
