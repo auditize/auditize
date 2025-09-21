@@ -38,7 +38,7 @@ optional-dependencies.dev = { file = ["requirements-dev.txt"] }
 version = {attr = "auditize.version.__version__"}
 
 [tool.setuptools.package-data]
-"auditize" = ["data/**", "i18n/translations/*.json"]
+"auditize" = ["data/**", "i18n/translations/*.json", "database/alembic.ini"]
 
 [tool.ruff]
 src = ["src", "tests", "scripts"]
