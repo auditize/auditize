@@ -70,7 +70,7 @@ async def open_db_session():
             await session.close()
 
 
-async def create_database():
+async def migrate_database():
     current_dir = osp.dirname(__file__)
     alembic_config = Config(osp.join(current_dir, "alembic.ini"))
     alembic_config.set_section_option(

@@ -13,7 +13,7 @@ from sqlalchemy.exc import OperationalError
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
-from auditize.database.dbm import create_database, open_db_session
+from auditize.database.dbm import migrate_database, open_db_session
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -146,9 +146,9 @@ async def dump_openapi():
     )
 
 
-async def create_db():
+async def migrate_db():
     _lazy_init()
-    await create_database()
+    await migrate_database()
 
 
 async def version():
@@ -164,6 +164,12 @@ async def async_main(args=None):
         "--version", "-v", action="store_true", help="Print version information"
     )
     sub_parsers = parser.add_subparsers()
+
+    # CMD migrate-db
+    migrate_db_parser = sub_parsers.add_parser(
+        "migrate-db", help="Create or update the Auditize database"
+    )
+    migrate_db_parser.set_defaults(func=lambda _: migrate_db())
 
     # CMD bootstrap-superadmin
     bootstrap_superadmin_parser = sub_parsers.add_parser(
@@ -220,12 +226,6 @@ async def async_main(args=None):
     # CMD openapi
     openapi_parser = sub_parsers.add_parser("openapi", help="Dump the OpenAPI schema")
     openapi_parser.set_defaults(func=lambda _: dump_openapi())
-
-    # CMD create-db
-    create_db_parser = sub_parsers.add_parser(
-        "create-db", help="Create the Auditize database"
-    )
-    create_db_parser.set_defaults(func=lambda _: create_db())
 
     # CMD version
     version_parser = sub_parsers.add_parser("version", help="Print version information")
