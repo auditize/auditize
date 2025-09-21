@@ -639,8 +639,13 @@ class LogProvider:
                 yield log, attachments
 
 
-def jsonify(data):
-    return json.dumps(data, indent=4, ensure_ascii=False)
+def jsonify(text: str):
+    try:
+        data = json.loads(text)
+    except ValueError:
+        return text
+    else:
+        return json.dumps(data, indent=4, ensure_ascii=False)
 
 
 class ApiInjector:
@@ -659,7 +664,7 @@ class ApiInjector:
         if resp.is_error:
             sys.exit(
                 "Error %s while pushing log:\n%s"
-                % (resp.status_code, jsonify(resp.json()))
+                % (resp.status_code, jsonify(resp.text))
             )
         log_id = resp.json()["id"]
         for attachment in attachments:
@@ -674,7 +679,7 @@ class ApiInjector:
             if resp.is_error:
                 sys.exit(
                     "Error %s while pushing attachment: %s"
-                    % (resp.status_code, jsonify(resp.json()))
+                    % (resp.status_code, jsonify(resp.text))
                 )
 
 
