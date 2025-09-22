@@ -29,8 +29,11 @@ logs-web:
 logs-scheduler:
 	docker compose -p $(NAME) logs -f scheduler
 
-logs-mongo:
-	docker compose -p $(NAME) logs -f mongo
+logs-postgres:
+	docker compose -p $(NAME) logs -f postgres
+
+logs-elastic:
+	docker compose -p $(NAME) logs -f elastic
 
 logs:
 	docker compose -p $(NAME) logs -f web scheduler

@@ -1,34 +1,48 @@
+x-auditize-variables: &auditize-variables
+  AUDITIZE_PG_HOST: postgres
+  AUDITIZE_PG_USER: auditize
+  AUDITIZE_PG_PASSWORD: auditize
+  AUDITIZE_ES_URL: http://elastic:9200
+
 services:
-  mongo:
-    image: mongo
-    hostname: mongo # we need a static hostname for MongoDB replication
-    command: ["--replSet", "rs0"]
-    # Initialization of the replica set is needed the very first time:
-    # docker exec -it auditize-mongo-1 mongosh --eval "rs.initiate()"
+  postgres:
+    image: postgres:17
     restart: always
+    environment:
+      POSTGRES_USER: auditize
+      POSTGRES_PASSWORD: auditize
+      POSTGRES_DB: auditize
     volumes:
-      - mongo-data:/data/db
-    ports:
-      - "27018:27017" # for debugging purposes
+      - pgdata:/var/lib/postgresql/data
+  elastic:
+    image: elasticsearch:8.19.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
   web:
     image: auditize
     depends_on:
-      - mongo
+      - postgres
+      - elastic
     command: ["serve", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8080:8000"
     env_file: ".env"
     environment:
-      - AUDITIZE_MONGODB_URI=mongodb://mongo:27017/
+      <<: *auditize-variables
   scheduler:
     image: auditize
     depends_on:
-      - mongo
+      - postgres
+      - elastic
     command: ["schedule"]
     env_file: ".env"
     environment:
-      - AUDITIZE_MONGODB_URI=mongodb://mongo:27017/
+      <<: *auditize-variables
       # we set PYTHONUNBUFFERED, otherwise the print() from "schedule" are not shown
-      - PYTHONUNBUFFERED=1
+      PYTHONUNBUFFERED: 1
 volumes:
-  mongo-data:
+  pgdata:
+  esdata:
