@@ -232,3 +232,10 @@ def get_config() -> Config:
     if not _config:
         raise ConfigNotInitialized()
     return _config
+
+
+def get_or_init_config() -> Config:
+    try:
+        return get_config()
+    except ConfigNotInitialized:
+        return init_config()
