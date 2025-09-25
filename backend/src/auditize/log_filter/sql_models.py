@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import JSON, ForeignKey, Text, TypeDecorator
+from sqlalchemy import JSON, ForeignKey, String, TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column
 
 from auditize.database.sql.models import HasDates, HasId, SqlModel
@@ -20,7 +20,7 @@ class LogFilterSearchParamsAsJSON(TypeDecorator):
 
 
 class LogFilterColumnsAsList(TypeDecorator):
-    impl = Text
+    impl = String
 
     def process_bind_param(self, value: list[str], _) -> str:
         return ",".join(value)

@@ -85,11 +85,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("lang", sa.String(), nullable=False),
         sa.Column("profile_id", sa.Uuid(), nullable=False),
-        sa.Column(
-            "labels",
-            sa.JSON(),
-            nullable=False,
-        ),
+        sa.Column("labels", sa.JSON(), nullable=False),
         sa.ForeignKeyConstraint(
             ["profile_id"],
             ["log_i18n_profile.id"],
