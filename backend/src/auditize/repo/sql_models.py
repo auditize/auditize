@@ -1,7 +1,8 @@
 from enum import Enum
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from auditize.database.sql.models import HasDates, HasId, SqlModel
@@ -20,7 +21,9 @@ class Repo(SqlModel, HasId, HasDates):
 
     name: Mapped[str] = mapped_column(unique=True, index=True)
     log_db_name: Mapped[str] = mapped_column(unique=True)
-    status: Mapped[RepoStatus] = mapped_column(String(), default=RepoStatus.enabled)
+    status: Mapped[RepoStatus] = mapped_column(
+        SqlEnum(RepoStatus, native_enum=False), default=RepoStatus.enabled
+    )
     retention_period: Mapped[int | None] = mapped_column()
     log_i18n_profile_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("log_i18n_profile.id")
