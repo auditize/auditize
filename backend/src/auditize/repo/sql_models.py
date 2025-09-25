@@ -1,4 +1,4 @@
-from enum import Enum
+import enum
 from uuid import UUID
 
 from sqlalchemy import Enum as SqlEnum
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from auditize.database.sql.models import HasDates, HasId, SqlModel
 
 
-class RepoStatus(str, Enum):
+class RepoStatus(enum.StrEnum):
     ENABLED = "enabled"
     READONLY = "readonly"
     DISABLED = "disabled"
