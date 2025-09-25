@@ -93,12 +93,12 @@ class LogService:
     @classmethod
     async def for_reading(cls, session: AsyncSession, repo: Repo | UUID):
         return await cls._for_statuses(
-            session, repo, [RepoStatus.enabled, RepoStatus.readonly]
+            session, repo, [RepoStatus.ENABLED, RepoStatus.READONLY]
         )
 
     @classmethod
     async def for_writing(cls, session: AsyncSession, repo: Repo | UUID):
-        return await cls._for_statuses(session, repo, [RepoStatus.enabled])
+        return await cls._for_statuses(session, repo, [RepoStatus.ENABLED])
 
     @classmethod
     async def for_config(cls, session: AsyncSession, repo: Repo | UUID):

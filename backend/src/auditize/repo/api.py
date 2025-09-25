@@ -237,13 +237,13 @@ async def list_user_repos(
     for repo_read, repo in zip(repo_list.items, repos):
         repo_read.permissions = UserRepoPermissions(
             read=(
-                repo.status in (RepoStatus.enabled, RepoStatus.readonly)
+                repo.status in (RepoStatus.ENABLED, RepoStatus.READONLY)
                 and authorized.comply(
                     can_read_logs_from_repo(repo_read.id, on_all_entities=True)
                 )
             ),
             write=(
-                repo.status == RepoStatus.enabled
+                repo.status == RepoStatus.ENABLED
                 and authorized.comply(can_write_logs_to_repo(repo_read.id))
             ),
             readable_entities=list(

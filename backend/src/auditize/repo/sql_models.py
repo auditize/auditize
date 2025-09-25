@@ -9,9 +9,9 @@ from auditize.database.sql.models import HasDates, HasId, SqlModel
 
 
 class RepoStatus(str, Enum):
-    enabled = "enabled"
-    readonly = "readonly"
-    disabled = "disabled"
+    ENABLED = "enabled"
+    READONLY = "readonly"
+    DISABLED = "disabled"
 
 
 class Repo(SqlModel, HasId, HasDates):
@@ -22,7 +22,7 @@ class Repo(SqlModel, HasId, HasDates):
     name: Mapped[str] = mapped_column(unique=True, index=True)
     log_db_name: Mapped[str] = mapped_column(unique=True)
     status: Mapped[RepoStatus] = mapped_column(
-        SqlEnum(RepoStatus, native_enum=False), default=RepoStatus.enabled
+        SqlEnum(RepoStatus, native_enum=False), default=RepoStatus.ENABLED
     )
     retention_period: Mapped[int | None] = mapped_column()
     log_i18n_profile_id: Mapped[UUID | None] = mapped_column(

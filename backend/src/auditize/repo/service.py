@@ -200,9 +200,9 @@ async def get_user_repos(
     page_size: int,
 ) -> tuple[list[Repo], PagePaginationInfo]:
     if user_can_write:
-        filter = Repo.status == RepoStatus.enabled
+        filter = Repo.status == RepoStatus.ENABLED
     else:
-        filter = Repo.status.in_([RepoStatus.enabled, RepoStatus.readonly])
+        filter = Repo.status.in_([RepoStatus.ENABLED, RepoStatus.READONLY])
 
     repo_ids = _get_authorized_repo_ids_for_user(user, user_can_read, user_can_write)
     if repo_ids is not None:

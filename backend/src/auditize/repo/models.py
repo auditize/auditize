@@ -56,7 +56,7 @@ def _RepoRetentionPeriodField(**kwargs):  # noqa
 
 class RepoCreate(BaseModel):
     name: str = _RepoNameField()
-    status: RepoStatus = _RepoStatusField(default=RepoStatus.enabled)
+    status: RepoStatus = _RepoStatusField(default=RepoStatus.ENABLED)
     retention_period: Optional[int] = _RepoRetentionPeriodField(default=None)
     log_i18n_profile_id: Optional[UUID] = _RepoLogI18nProfileIdField(default=None)
 
