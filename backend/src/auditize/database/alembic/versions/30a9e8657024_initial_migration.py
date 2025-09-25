@@ -111,11 +111,7 @@ def upgrade() -> None:
         ),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("log_db_name", sa.String(), nullable=False),
-        sa.Column(
-            "status",
-            sa.String(),
-            nullable=False,
-        ),
+        sa.Column("status", sa.String(), nullable=False),
         sa.Column("retention_period", sa.Integer(), nullable=True),
         sa.Column("log_i18n_profile_id", sa.Uuid(), nullable=True),
         sa.ForeignKeyConstraint(
@@ -145,7 +141,7 @@ def upgrade() -> None:
         sa.Column("first_name", sa.String(), nullable=False),
         sa.Column("last_name", sa.String(), nullable=False),
         sa.Column("email", sa.String(), nullable=False),
-        sa.Column("lang", sa.Enum("EN", "FR", name="lang"), nullable=False),
+        sa.Column("lang", sa.String(), nullable=False),
         sa.Column("password_hash", sa.String(), nullable=True),
         sa.Column("password_reset_token", sa.String(), nullable=True),
         sa.Column(

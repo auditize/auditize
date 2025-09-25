@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from auditize.database.sql.models import HasDates, HasId, SqlModel
@@ -14,7 +14,7 @@ class User(SqlModel, HasId, HasDates, HasPermissions):
     first_name: Mapped[str] = mapped_column(index=True)
     last_name: Mapped[str] = mapped_column(index=True)
     email: Mapped[str] = mapped_column(unique=True, index=True)
-    lang: Mapped[Lang] = mapped_column(default=Lang.EN)
+    lang: Mapped[Lang] = mapped_column(Enum(Lang, native_enum=False), default=Lang.EN)
     password_hash: Mapped[str | None] = mapped_column()
     password_reset_token: Mapped[str | None] = mapped_column()
     password_reset_token_expires_at: Mapped[datetime | None] = mapped_column(
