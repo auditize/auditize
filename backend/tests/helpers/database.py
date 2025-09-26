@@ -1,7 +1,6 @@
 import os
 import random
 
-import elasticsearch
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -51,13 +50,8 @@ async def truncate_pg_db(dbm: DatabaseManager):
 
 async def drop_pg_db(dbm: DatabaseManager):
     config = get_config()
-    pg_url = "postgresql+asyncpg://%s:%s@%s:5432/postgres" % (
-        config.postgres_user,
-        config.postgres_password,
-        config.postgres_host,
-    )
     await dbm.db_engine.dispose()
-    engine = create_async_engine(pg_url)
+    engine = create_async_engine(config.get_db_url("postgres"))
     async with engine.connect() as conn:
         conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
         await conn.execute(text(f"DROP DATABASE {dbm.name}"))
