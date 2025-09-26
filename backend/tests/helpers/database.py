@@ -82,15 +82,7 @@ class TestLogDatabasePool:
     async def release(self):
         for db_name, is_used in self._cache.items():
             if is_used:
-                es_client = self.dbm.elastic_client
-                try:
-                    await es_client.delete_by_query(
-                        index=db_name, query={"match_all": {}}, refresh=True
-                    )
-                except elasticsearch.NotFoundError:
-                    # The index has been deleted. As an index with the same name
-                    # may be created and could lead to a conflict since it may be
-                    # not yet available, we let this index marked as used.
-                    pass
-                else:
-                    self._cache[db_name] = False
+                await self.dbm.elastic_client.delete_by_query(
+                    index=db_name, query={"match_all": {}}, refresh=True
+                )
+                self._cache[db_name] = False
