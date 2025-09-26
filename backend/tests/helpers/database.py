@@ -87,11 +87,6 @@ class TestLogDatabasePool:
                     await es_client.delete_by_query(
                         index=db_name, query={"match_all": {}}, refresh=True
                     )
-                    await es_client.delete_by_query(
-                        index=f"{db_name}_entities",
-                        query={"match_all": {}},
-                        refresh=True,
-                    )
                 except elasticsearch.NotFoundError:
                     # The index has been deleted. As an index with the same name
                     # may be created and could lead to a conflict since it may be
