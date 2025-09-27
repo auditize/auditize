@@ -1,3 +1,5 @@
+name: auditize
+
 x-auditize-variables: &auditize-variables
   AUDITIZE_PG_HOST: postgres
   AUDITIZE_PG_USER: auditize
