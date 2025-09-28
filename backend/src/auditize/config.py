@@ -133,9 +133,13 @@ class Config:
                 ),
                 postgres_host=optional("AUDITIZE_PG_HOST", default="localhost"),
                 postgres_port=optional("AUDITIZE_PG_PORT", validator=int, default=5432),
-                postgres_user=required("AUDITIZE_PG_USER"),
-                postgres_password=required("AUDITIZE_PG_PASSWORD"),
-                elastic_url=required("AUDITIZE_ES_URL"),
+                postgres_user=optional(
+                    "AUDITIZE_PG_USER", default=os.environ.get("USER", "")
+                ),
+                postgres_password=optional("AUDITIZE_PG_PASSWORD", default=""),
+                elastic_url=optional(
+                    "AUDITIZE_ES_URL", default="http://localhost:9200"
+                ),
                 elastic_user=optional("AUDITIZE_ES_USER", default=None),
                 elastic_password=optional("AUDITIZE_ES_PASSWORD", default=None),
                 elastic_ssl_verify=optional(

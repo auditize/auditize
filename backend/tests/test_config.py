@@ -8,9 +8,6 @@ from auditize.exceptions import ConfigError
 MINIMUM_VIABLE_CONFIG = {
     "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
     "AUDITIZE_JWT_SIGNING_KEY": "DUMMYKEY",
-    "AUDITIZE_ES_URL": "http://localhost:9200",
-    "AUDITIZE_PG_USER": "postgres",
-    "AUDITIZE_PG_PASSWORD": "password",
 }
 
 
@@ -66,8 +63,7 @@ def test_config_minimum_viable_config():
     assert config.elastic_ssl_verify is True
     assert config.postgres_host == "localhost"
     assert config.postgres_port == 5432
-    assert config.postgres_user == "postgres"
-    assert config.postgres_password == "password"
+    assert not config.postgres_password
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 5242880  # 5MB
@@ -91,6 +87,22 @@ def test_config_var_db_name():
         {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_DB_NAME": "my_db"}
     )
     assert config.db_name == "my_db"
+
+
+def test_config_custom_postgres():
+    config = Config.load_from_env(
+        {
+            **MINIMUM_VIABLE_CONFIG,
+            "AUDITIZE_PG_HOST": "db.example.com",
+            "AUDITIZE_PG_PORT": "6543",
+            "AUDITIZE_PG_USER": "myuser",
+            "AUDITIZE_PG_PASSWORD": "mypassword",
+        }
+    )
+    assert config.postgres_host == "db.example.com"
+    assert config.postgres_port == 6543
+    assert config.postgres_user == "myuser"
+    assert config.postgres_password == "mypassword"
 
 
 def test_config_elastic_disable_ssl_verify():
