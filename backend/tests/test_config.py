@@ -21,6 +21,7 @@ def test_get_config():
     assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key is not None
     assert config.postgres_host == "localhost"
+    assert config.postgres_port == 5432
     assert config.postgres_user is not None
     assert config.postgres_password is not None
     assert config.elastic_url == "https://localhost:9200"
@@ -64,6 +65,7 @@ def test_config_minimum_viable_config():
     assert config.elastic_password is None
     assert config.elastic_ssl_verify is True
     assert config.postgres_host == "localhost"
+    assert config.postgres_port == 5432
     assert config.postgres_user == "postgres"
     assert config.postgres_password == "password"
     assert config.user_session_token_lifetime == 43200  # 12 hours

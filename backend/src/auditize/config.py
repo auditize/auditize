@@ -26,6 +26,7 @@ class Config:
     attachment_max_size: int
     csv_max_rows: int
     postgres_host: str
+    postgres_port: int
     postgres_user: str
     postgres_password: str
     elastic_url: str
@@ -131,6 +132,7 @@ class Config:
                     validator=int,
                 ),
                 postgres_host=optional("AUDITIZE_PG_HOST", default="localhost"),
+                postgres_port=optional("AUDITIZE_PG_PORT", validator=int, default=5432),
                 postgres_user=required("AUDITIZE_PG_USER"),
                 postgres_password=required("AUDITIZE_PG_PASSWORD"),
                 elastic_url=required("AUDITIZE_ES_URL"),
@@ -206,10 +208,11 @@ class Config:
     def get_db_url(self, db_name=None):
         if db_name is None:
             db_name = self.db_name
-        return "postgresql+asyncpg://%s:%s@%s:5432/%s" % (
+        return "postgresql+asyncpg://%s:%s@%s:%s/%s" % (
             self.postgres_user,
             self.postgres_password,
             self.postgres_host,
+            self.postgres_port,
             db_name,
         )
 
