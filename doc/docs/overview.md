@@ -2,13 +2,13 @@
 
 Auditize aims to deliver powerful audit log management capabilities to your software without the burden of developing an in-house solution.
 
-It is written in Python, it provides a REST API written in [FastAPI](https://fastapi.tiangolo.com/) and a web interface written in [React](https://react.dev/). It uses [MongoDB](https://www.mongodb.com/) as a database.
+It is written in Python, it provides a REST API written in [FastAPI](https://fastapi.tiangolo.com) and a web interface written in [React](https://react.dev). It uses [PostgresQL](https://www.postgresql.org/) as a database and [Elasticsearch](https://www.elastic.co/elasticsearch) for log storage and search.
 
 Here are the core concepts of Auditize:
 
 ## Log Repositories
 
-Log Repositories (also referred to as "Repositories" or "Repos") serve as containers for logs. Each Log Repository is associated with a **dedicated MongoDB database**, ensuring strong isolation between logs. They allow you to set up specific permissions and settings, such as a retention periods or statuses.
+Log Repositories (also referred to as "Repositories" or "Repos") serve as containers for logs. Each Log Repository is associated with a **dedicated Elasticsearch index**, ensuring strong isolation between logs. They allow you to set up specific permissions and settings, such as a retention periods or statuses.
 
 You can set up one or more repositories based on your needs. However, to ensure logs consistency you should make sure that a given log repository only contains logs from the same application running in the same environment. You should for instance avoid mixing logs from a pre-production and production environment or logs from different unrelated applications in the same repository.
 
