@@ -368,7 +368,6 @@ class LogService:
         )
 
         query = {"bool": {"filter": filter}}
-        print("QUERY: %s" % json.dumps(query, default=str))
         resp = await self.es.search(
             index=self.index,
             query=query,
@@ -378,7 +377,6 @@ class LogService:
             size=limit + 1,
             track_total_hits=False,
         )
-        print("RESPONSE: %s" % json.dumps(dict(resp), default=str))
         hits = list(resp["hits"]["hits"])
 
         # we previously fetched one extra log to check if there are more logs to fetch
@@ -455,15 +453,12 @@ class LogService:
                 },
             }
 
-        print("REQUEST: %s" % json.dumps(aggregations))
         resp = await self.es.search(
             index=self.index,
             query=query,
             aggregations=aggregations,
             size=0,
         )
-
-        print("RESPONSE: %s" % json.dumps(dict(resp)))
 
         if nested:
             group_by_result = resp["aggregations"]["nested_group_by"]["group_by"]
@@ -540,7 +535,6 @@ class LogService:
         associated_logs, _ = await self.get_logs(
             search_params=LogSearchParams(entity_ref=entity.ref), limit=1
         )
-        print("HAS ASSOCIATED LOGS: %s" % bool(associated_logs))
         if not associated_logs:
             await self.session.delete(entity)
             await self.session.flush()
@@ -588,7 +582,6 @@ class LogService:
             },
             refresh=self._refresh,
         )
-        print("RESPONSE: %s" % json.dumps(dict(resp)))
         if resp["deleted"] > 0:
             print(
                 f"Deleted {resp["deleted"]} logs older than {self.repo.retention_period} days "
