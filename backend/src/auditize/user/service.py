@@ -137,7 +137,7 @@ def hash_user_password(password: str) -> str:
     # NB: we use a different number of rounds in test mode to speed up tests
     # With default rounds (12), POST /auth/user/login takes about 0.2s vs 0.001s with 4 rounds
     return bcrypt.hashpw(
-        password.encode(), bcrypt.gensalt(rounds=4 if get_config().test_mode else None)
+        password.encode(), bcrypt.gensalt(rounds=4 if get_config().test_mode else 12)
     ).decode()
 
 
