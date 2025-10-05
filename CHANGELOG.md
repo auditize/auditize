@@ -1,3 +1,11 @@
+# 0.7.0 (2025-10-05)
+
+- **Breaking changes**:
+  - Switch from MongoDB to PostgreSQL (main database) and Elasticsearch (log storage)
+  - Use cursor pagination for all `GET /api/repos/{repo_id}/logs/...` list endpoints such as `/api/repos/{repo_id}/logs/actions/types`
+- Add CLI command `auditize empty-repo` to delete all logs from a repository
+- Upgrade back & front dependencies
+
 # 0.6.0 (2024-12-24)
 
 - The database name can now be chosen through the `AUDITIZE_DB_NAME` env variable
