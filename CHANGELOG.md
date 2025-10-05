@@ -1,3 +1,7 @@
+# 0.7.1 (2025-10-05)
+
+- Fix regression in 0.7.0 that forbid user creation after last `bcrypt` upgrade
+
 # 0.7.0 (2025-10-05)
 
 - **Breaking changes**:
