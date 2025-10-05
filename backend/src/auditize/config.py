@@ -179,7 +179,7 @@ class Config:
         except KeyError as e:
             var_name = str(e)
             raise ConfigError(
-                f"Could not load configuration, variable {var_name!r} is missing"
+                f"Could not load configuration, variable {var_name} is missing"
             )
 
         config._validate()
