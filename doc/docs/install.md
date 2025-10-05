@@ -71,14 +71,14 @@ services:
       POSTGRES_PASSWORD: auditize
       POSTGRES_DB: auditize
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
   elastic:
     image: elasticsearch:8.19.4
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - ./data/elastic:/usr/share/elasticsearch/data
   web:
     image: auditize
     depends_on:
@@ -101,9 +101,6 @@ services:
       <<: *auditize-variables
       # we set PYTHONUNBUFFERED, otherwise the print() from "schedule" are not shown
       PYTHONUNBUFFERED: 1
-volumes:
-  pgdata:
-  esdata:
 ```
 
 This `docker-compose.yml` uses a `.env` file for the Auditize base-configuration, so let's create a `.env` file in the same directory with at least the following configuration elements:
