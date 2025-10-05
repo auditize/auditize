@@ -17,18 +17,40 @@ jobs:
     strategy:
       matrix:
         python: ["3.12", "3.13"]
-        mongodb: ["7.0"]
         include:
           - python: "3.12"
-            mongodb: "8.0"
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - uses: supercharge/mongodb-github-action@1.11.0
+      - name: Configure sysctl limits for Elasticsearch
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      - name: Runs Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
         with:
-          mongodb-version: ${{ matrix.mongodb }}
-          mongodb-replica-set: rs0
+          stack-version: 8.16.2
       - run: pip install tox
-      - run: tox -e py # Run tox using the version of Python in `PATH`
+      - name: Run tests
+        env:
+          PG_USER: "postgres"
+          PG_PASSWORD: "postgres"
+          ES_PASSWORD: "changeme"
+        run: tox -e py # Run tox using the version of Python in `PATH`

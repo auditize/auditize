@@ -3,6 +3,7 @@ import re
 import pytest
 
 from auditize.auth.authorizer import get_authenticated
+from auditize.database.dbm import open_db_session
 from auditize.i18n import get_request_lang, t
 from conftest import UserBuilder
 from helpers.http import HttpTestHelper, make_http_request
@@ -30,7 +31,8 @@ async def test_i18n_detect_user(user_builder: UserBuilder, client: HttpTestHelpe
     session_token = await user.get_session_token(client)
 
     request = make_http_request(headers={"Cookie": f"session={session_token}"})
-    await get_authenticated(request)
+    async with open_db_session() as session:
+        await get_authenticated(session, request)
     lang = get_request_lang(request)
     assert lang == "fr"
 
@@ -42,7 +44,8 @@ async def test_i18n_detect_priority(user_builder: UserBuilder, client: HttpTestH
     request = make_http_request(
         headers={"Cookie": f"session={session_token}"}, query_params={"lang": "en"}
     )
-    await get_authenticated(request)
+    async with open_db_session() as session:
+        await get_authenticated(session, request)
     assert get_request_lang(request) == "en"
 
 

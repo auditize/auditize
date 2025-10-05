@@ -1,8 +1,13 @@
+from enum import Enum
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.api.exception import error_responses
+from auditize.api.models.page_pagination import PagePaginationParams
+from auditize.api.models.search import ResourceSearchParams
 from auditize.apikey.models import ApikeyUpdate
 from auditize.apikey.service import update_apikey
 from auditize.auth.authorizer import (
@@ -10,9 +15,9 @@ from auditize.auth.authorizer import (
     AuthorizedForLogRead,
     AuthorizedUser,
 )
-from auditize.helpers.api.errors import error_responses
+from auditize.dependencies import get_db_session
 from auditize.i18n.lang import Lang
-from auditize.log_i18n_profile.api_models import LogTranslation
+from auditize.log_i18n_profile.models import LogLabels
 from auditize.permissions.assertions import (
     can_read_logs_from_all_repos,
     can_read_logs_from_repo,
@@ -23,27 +28,28 @@ from auditize.permissions.assertions import (
     permissions_and,
 )
 from auditize.permissions.models import (
-    LogPermissions,
-    Permissions,
-    RepoLogPermissions,
+    LogPermissionsInput,
+    PermissionsInput,
+    RepoLogPermissionsInput,
 )
 from auditize.repo import service
-from auditize.repo.api_models import (
-    RepoCreationRequest,
-    RepoCreationResponse,
-    RepoIncludeOptions,
+from auditize.repo.models import (
+    RepoCreate,
     RepoListResponse,
-    RepoLogPermissionsData,
-    RepoReadingResponse,
-    RepoStatsData,
-    RepoUpdateRequest,
+    RepoResponse,
+    RepoStats,
+    RepoStatus,
+    RepoUpdate,
     UserRepoListResponse,
+    UserRepoPermissions,
 )
-from auditize.repo.models import Repo, RepoStatus, RepoUpdate
-from auditize.resource.api_models import ResourceSearchParams
-from auditize.resource.pagination.page.api_models import PagePaginationParams
 from auditize.user.models import UserUpdate
 from auditize.user.service import update_user
+
+
+class RepoIncludeOptions(Enum):
+    STATS = "stats"
+
 
 router = APIRouter(responses=error_responses(401, 403))
 
@@ -58,31 +64,34 @@ router = APIRouter(responses=error_responses(401, 403))
     responses=error_responses(400, 409),
 )
 async def create_repo(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Authorized(can_write_repo()),
-    repo: RepoCreationRequest,
-) -> RepoCreationResponse:
-    repo_id = await service.create_repo(Repo.model_validate(repo.model_dump()))
+    repo_create: RepoCreate,
+) -> RepoResponse:
+    repo = await service.create_repo(session, repo_create)
 
     # Ensure that authorized will have read & write logs permissions on the repo he created
     if not authorized.comply(
         permissions_and(can_read_logs_from_all_repos(), can_write_logs_to_all_repos())
     ):
-        grant_rw_on_repo_logs = Permissions(
-            logs=LogPermissions(
-                repos=[RepoLogPermissions(repo_id=repo_id, read=True, write=True)]
+        grant_rw_on_repo_logs = PermissionsInput(
+            logs=LogPermissionsInput(
+                repos=[RepoLogPermissionsInput(repo_id=repo.id, read=True, write=True)]
             ),
         )
         if authorized.apikey:
             await update_apikey(
+                session,
                 authorized.apikey.id,
                 ApikeyUpdate(permissions=grant_rw_on_repo_logs),
             )
         if authorized.user:
             await update_user(
+                session,
                 authorized.user.id,
                 UserUpdate(permissions=grant_rw_on_repo_logs),
             )
-    return RepoCreationResponse(id=repo_id)
+    return repo
 
 
 @router.patch(
@@ -91,27 +100,24 @@ async def create_repo(
     description="Requires `repo:write` permission.",
     operation_id="update_repo",
     tags=["repo"],
-    status_code=204,
+    status_code=200,
     responses=error_responses(400, 404, 409),
 )
 async def update_repo(
-    authorized: Authorized(can_write_repo()),
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Authorized(can_write_repo()),
     repo_id: UUID,
-    update: RepoUpdateRequest,
-):
-    await service.update_repo(
-        repo_id, RepoUpdate.model_validate(update.model_dump(exclude_unset=True))
-    )
-    return None
+    update: RepoUpdate,
+) -> RepoResponse:
+    return await service.update_repo(session, repo_id, update)
 
 
 async def _handle_repo_include_options(
-    repo_response: RepoReadingResponse,
-    include: list[RepoIncludeOptions],
+    session: AsyncSession, repo_read: RepoResponse, include: list[RepoIncludeOptions]
 ):
     if RepoIncludeOptions.STATS in include:
-        stats = await service.get_repo_stats(repo_response.id)
-        repo_response.stats = RepoStatsData.model_validate(stats.model_dump())
+        stats = await service.get_repo_stats(session, repo_read.id)
+        repo_read.stats = RepoStats.model_validate(stats.model_dump())
 
 
 @router.get(
@@ -122,13 +128,14 @@ async def _handle_repo_include_options(
     responses=error_responses(404),
 )
 async def get_repo(
-    authorized: Authorized(can_read_repo()),
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Authorized(can_read_repo()),
     repo_id: UUID,
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
-) -> RepoReadingResponse:
-    repo = await service.get_repo(repo_id)
-    response = RepoReadingResponse.from_repo(repo)
-    await _handle_repo_include_options(response, include)
+) -> RepoResponse:
+    repo = await service.get_repo(session, repo_id)
+    response = RepoResponse.from_repo(repo)
+    await _handle_repo_include_options(session, response, include)
     return response
 
 
@@ -141,12 +148,12 @@ async def get_repo(
     responses=error_responses(404),
 )
 async def get_repo_translation_for_user(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedForLogRead(),
     repo_id: UUID,
-) -> LogTranslation:
+) -> LogLabels:
     authorized.ensure_user()
-    translation = await service.get_repo_translation(repo_id, authorized.user.lang)
-    return LogTranslation.model_validate(translation.model_dump())
+    return await service.get_repo_translation(session, repo_id, authorized.user.lang)
 
 
 @router.get(
@@ -158,12 +165,12 @@ async def get_repo_translation_for_user(
     responses=error_responses(404),
 )
 async def get_repo_translation(
-    authorized: AuthorizedForLogRead(),
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: AuthorizedForLogRead(),
     repo_id: UUID,
     lang: Lang,
-) -> LogTranslation:
-    translation = await service.get_repo_translation(repo_id, lang)
-    return LogTranslation.model_validate(translation.model_dump())
+) -> LogLabels:
+    return await service.get_repo_translation(session, repo_id, lang)
 
 
 @router.get(
@@ -174,21 +181,23 @@ async def get_repo_translation(
     tags=["repo"],
 )
 async def list_repos(
-    authorized: Authorized(can_read_repo()),
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Authorized(can_read_repo()),
     search_params: Annotated[ResourceSearchParams, Depends()],
     include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> RepoListResponse:
     repos, page_info = await service.get_repos(
+        session,
         query=search_params.query,
         page=page_params.page,
         page_size=page_params.page_size,
     )
-    response = RepoListResponse.build(repos, page_info)
+    repo_list = RepoListResponse.build(repos, page_info)
     if include:
-        for repo in response.items:
-            await _handle_repo_include_options(repo, include)
-    return response
+        for repo_read in repo_list.items:
+            await _handle_repo_include_options(session, repo_read, include)
+    return repo_list
 
 
 @router.get(
@@ -199,6 +208,7 @@ async def list_repos(
     tags=["user", "internal"],
 )
 async def list_user_repos(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: AuthorizedUser(),
     has_read_permission: Annotated[
         bool,
@@ -215,6 +225,7 @@ async def list_user_repos(
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
 ) -> UserRepoListResponse:
     repos, page_info = await service.get_user_repos(
+        session,
         user=authorized.user,
         user_can_read=has_read_permission,
         user_can_write=has_write_permission,
@@ -222,25 +233,25 @@ async def list_user_repos(
         page_size=page_params.page_size,
     )
 
-    response = UserRepoListResponse.build(repos, page_info)
-    for repo_response, repo in zip(response.items, repos):
-        repo_response.permissions = RepoLogPermissionsData(
+    repo_list = UserRepoListResponse.build(repos, page_info)
+    for repo_read, repo in zip(repo_list.items, repos):
+        repo_read.permissions = UserRepoPermissions(
             read=(
-                repo.status in (RepoStatus.enabled, RepoStatus.readonly)
+                repo.status in (RepoStatus.ENABLED, RepoStatus.READONLY)
                 and authorized.comply(
-                    can_read_logs_from_repo(repo_response.id, on_all_entities=True)
+                    can_read_logs_from_repo(repo_read.id, on_all_entities=True)
                 )
             ),
             write=(
-                repo.status == RepoStatus.enabled
-                and authorized.comply(can_write_logs_to_repo(repo_response.id))
+                repo.status == RepoStatus.ENABLED
+                and authorized.comply(can_write_logs_to_repo(repo_read.id))
             ),
             readable_entities=list(
-                authorized.permissions.logs.get_repo_readable_entities(repo_response.id)
+                authorized.permissions.get_repo_readable_entities(repo_read.id)
             ),
         )
 
-    return response
+    return repo_list
 
 
 @router.delete(
@@ -253,7 +264,8 @@ async def list_user_repos(
     responses=error_responses(404),
 )
 async def delete_repo(
-    authorized: Authorized(can_write_repo()),
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Authorized(can_write_repo()),
     repo_id: UUID,
 ):
-    await service.delete_repo(repo_id)
+    await service.delete_repo(session, repo_id)

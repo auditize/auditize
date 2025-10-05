@@ -25,8 +25,14 @@ class Config:
     access_token_lifetime: int
     attachment_max_size: int
     csv_max_rows: int
-    mongodb_uri: str
-    mongodb_tls: bool
+    postgres_host: str
+    postgres_port: int
+    postgres_user: str
+    postgres_password: str
+    elastic_url: str
+    elastic_user: str | None
+    elastic_password: str | None
+    elastic_ssl_verify: bool
     db_name: str
     smtp_server: str
     smtp_port: int
@@ -77,6 +83,11 @@ class Config:
                 "- AUDITIZE_SMTP_PASSWORD\n"
             )
 
+        if bool(self.elastic_user) ^ bool(self.elastic_password):
+            raise ConfigError(
+                "ElasticSearch configuration is incomplete, please provide both AUDITIZE_ES_USER and AUDITIZE_ES_PASSWORD"
+            )
+
     @classmethod
     def _load_from_env(cls, env):
         def required(key, validator=None):
@@ -120,9 +131,19 @@ class Config:
                     default=_DEFAULT_CSV_MAX_ROWS,
                     validator=int,
                 ),
-                mongodb_uri=optional("AUDITIZE_MONGODB_URI"),
-                mongodb_tls=optional(
-                    "AUDITIZE_MONGODB_TLS", validator=cls._validate_bool, default=False
+                postgres_host=optional("AUDITIZE_PG_HOST", default="localhost"),
+                postgres_port=optional("AUDITIZE_PG_PORT", validator=int, default=5432),
+                postgres_user=optional(
+                    "AUDITIZE_PG_USER", default=os.environ.get("USER", "")
+                ),
+                postgres_password=optional("AUDITIZE_PG_PASSWORD", default=""),
+                elastic_url=optional(
+                    "AUDITIZE_ES_URL", default="http://localhost:9200"
+                ),
+                elastic_user=optional("AUDITIZE_ES_USER", default=None),
+                elastic_password=optional("AUDITIZE_ES_PASSWORD", default=None),
+                elastic_ssl_verify=optional(
+                    "AUDITIZE_ES_SSL_VERIFY", validator=cls._validate_bool, default=True
                 ),
                 db_name=optional("AUDITIZE_DB_NAME", default="auditize"),
                 smtp_server=optional("AUDITIZE_SMTP_SERVER"),
@@ -188,6 +209,17 @@ class Config:
     def is_smtp_enabled(self):
         return self.smtp_sender is not None
 
+    def get_db_url(self, db_name=None):
+        if db_name is None:
+            db_name = self.db_name
+        return "postgresql+asyncpg://%s:%s@%s:%s/%s" % (
+            self.postgres_user,
+            self.postgres_password,
+            self.postgres_host,
+            self.postgres_port,
+            db_name,
+        )
+
     def to_dict(self):
         return dataclasses.asdict(self)
 
@@ -207,3 +239,10 @@ def get_config() -> Config:
     if not _config:
         raise ConfigNotInitialized()
     return _config
+
+
+def get_or_init_config() -> Config:
+    try:
+        return get_config()
+    except ConfigNotInitialized:
+        return init_config()

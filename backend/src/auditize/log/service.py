@@ -1,13 +1,25 @@
+import base64
+import json
 import uuid
 from datetime import datetime, timedelta
 from functools import partialmethod
 from typing import Any, Self
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from aiocache import Cache
-from motor.motor_asyncio import AsyncIOMotorCollection
+from elasticsearch import AsyncElasticsearch
+from elasticsearch.exceptions import NotFoundError
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from auditize.database import get_core_db
+from auditize.api.models.cursor_pagination import (
+    load_pagination_cursor,
+    serialize_pagination_cursor,
+)
+from auditize.config import get_config
+from auditize.database import DatabaseManager
+from auditize.database.sql.service import get_sql_model
 from auditize.exceptions import (
     ConstraintViolation,
     InvalidPaginationCursor,
@@ -15,51 +27,12 @@ from auditize.exceptions import (
     UnknownModelException,
 )
 from auditize.helpers.datetime import now, serialize_datetime
-from auditize.log.db import LogDatabase
-from auditize.log.models import CustomField, Entity, Log, LogSearchParams
-from auditize.repo.models import Repo, RepoStatus
+from auditize.log.models import Log, LogCreate, LogSearchParams
+from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
-from auditize.resource.pagination.cursor.serialization import (
-    load_pagination_cursor,
-    serialize_pagination_cursor,
-)
-from auditize.resource.service import (
-    create_resource_document,
-    delete_resource_document,
-    get_resource_document,
-    has_resource_document,
-    update_resource_document,
-)
+from auditize.repo.sql_models import Repo, RepoStatus
 
-# Exclude attachments data as they can be large and are not mapped in the AttachmentMetadata model
-_EXCLUDE_ATTACHMENT_DATA = {"attachments.data": 0}
-
-_CONSOLIDATED_DATA_CACHE = Cache(Cache.MEMORY)
-
-
-class _LogsPaginationCursor:
-    def __init__(self, date: datetime, id: uuid.UUID):
-        self.date = date
-        self.id = id
-
-    @classmethod
-    def load(cls, value: str) -> Self:
-        decoded = load_pagination_cursor(value)
-
-        try:
-            return cls(
-                datetime.fromisoformat(decoded["date"]), uuid.UUID(decoded["id"])
-            )
-        except (KeyError, ValueError):
-            raise InvalidPaginationCursor(value)
-
-    def serialize(self) -> str:
-        return serialize_pagination_cursor(
-            {
-                "date": serialize_datetime(self.date, with_milliseconds=True),
-                "id": str(self.id),
-            }
-        )
+_CONSOLIDATED_LOG_ENTITIES = Cache(Cache.MEMORY)
 
 
 class _OffsetPaginationCursor:
@@ -92,13 +65,19 @@ class _OffsetPaginationCursor:
 
 
 class LogService:
-    def __init__(self, repo: Repo, log_db: LogDatabase):
+    def __init__(self, repo: Repo, es: AsyncElasticsearch, session: AsyncSession):
         self.repo = repo
-        self.log_db = log_db
+        self.es = es
+        self.session = session
+        self.index = repo.log_db_name
+        self._refresh = get_config().test_mode
 
     @classmethod
     async def _for_statuses(
-        cls, repo: Repo | UUID | str, statuses: list[RepoStatus] = None
+        cls,
+        session: AsyncSession,
+        repo: Repo | UUID | str,
+        statuses: list[RepoStatus] = None,
     ) -> Self:
         from auditize.repo.service import get_repo  # avoid circular import
 
@@ -106,7 +85,7 @@ class LogService:
             repo = UUID(repo)
 
         if isinstance(repo, UUID):
-            repo = await get_repo(repo)
+            repo = await get_repo(session, repo)
 
         if statuses:
             if repo.status not in statuses:
@@ -115,213 +94,271 @@ class LogService:
                     "The repository status does not allow the requested operation"
                 )
 
-        return cls(repo, LogDatabase.from_repo(repo))
+        return cls(repo, DatabaseManager.get().elastic_client, session)
 
     @classmethod
-    async def for_reading(cls, repo: Repo | UUID | str):
-        return await cls._for_statuses(repo, [RepoStatus.enabled, RepoStatus.readonly])
+    async def for_reading(cls, session: AsyncSession, repo: Repo | UUID | str):
+        return await cls._for_statuses(
+            session, repo, [RepoStatus.ENABLED, RepoStatus.READONLY]
+        )
 
     @classmethod
-    async def for_writing(cls, repo: Repo | UUID | str):
-        return await cls._for_statuses(repo, [RepoStatus.enabled])
+    async def for_writing(cls, session: AsyncSession, repo: Repo | UUID | str):
+        return await cls._for_statuses(session, repo, [RepoStatus.ENABLED])
 
     @classmethod
-    async def for_config(cls, repo: Repo | UUID | str):
-        return await cls._for_statuses(repo, [RepoStatus.enabled])
+    async def for_config(cls, session: AsyncSession, repo: Repo | UUID | str):
+        return await cls._for_statuses(session, repo)
 
     for_maintenance = for_config
 
-    async def check_log(self, log: Log):
+    async def check_log(self, log: LogCreate):
         parent_entity_ref = None
         for entity in log.entity_path:
-            if await has_resource_document(
-                self.log_db.log_entities,
-                {
-                    "parent_entity_ref": parent_entity_ref,
-                    "name": entity.name,
-                    "ref": {"$ne": entity.ref},
-                },
-            ):
+            existing_entity = await self.session.scalar(
+                select(LogEntity).where(
+                    LogEntity.parent_entity_ref == parent_entity_ref,
+                    LogEntity.name == entity.name,
+                    LogEntity.ref != entity.ref,
+                )
+            )
+            if existing_entity:
                 raise ConstraintViolation(
                     f"Entity {entity.ref!r} is invalid, there are other logs with "
                     f"the same entity name but with another ref at the same level (same parent)"
                 )
             parent_entity_ref = entity.ref
 
-    async def save_log(self, log: Log) -> UUID:
-        await self.check_log(log)
+    async def save_log(
+        self, log_create: LogCreate, *, saved_at: datetime | None = None
+    ) -> Log:
+        await self.check_log(log_create)
 
-        # NB: do not use transaction here to avoid possible WriteConflict errors
-        # on consolidated data documents
-        log_id = await create_resource_document(self.log_db.logs, log)
-        await self._consolidate_log(log)
+        log = Log.model_validate(log_create.model_dump())
+        log.id = uuid.uuid4()
+        if saved_at:
+            log.saved_at = saved_at
+        await self.es.index(
+            index=self.index,
+            id=str(log.id),
+            document={
+                "log_id": log.id,
+                "saved_at": serialize_datetime(log.saved_at, with_milliseconds=True),
+                **log.model_dump(exclude={"id"}),
+            },
+            refresh=self._refresh,
+        )
+        await self._consolidate_log_entity_path(log.entity_path)
 
-        return log_id
+        return log
 
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
-        # NB: do not use transaction here to avoid possible WriteConflict errors
-        # on consolidated data documents
-        await update_resource_document(
-            self.log_db.logs,
-            log_id,
-            {"attachments": attachment.model_dump()},
-            operator="$push",
-        )
-        await self._consolidate_log_attachment(attachment)
+        try:
+            await self.es.update(
+                index=self.index,
+                id=str(log_id),
+                script={
+                    "source": "ctx._source.attachments.add(params.attachment)",
+                    "params": {
+                        "attachment": {
+                            **attachment.model_dump(exclude={"data"}),
+                            "data": base64.b64encode(attachment.data).decode(),
+                        }
+                    },
+                },
+                refresh=self._refresh,
+            )
+        except NotFoundError:
+            raise UnknownModelException()
 
     @staticmethod
-    def _log_filter(log_id: UUID, authorized_entities: set[str]):
-        filter = {"_id": log_id}
-        if authorized_entities:
-            filter["entity_path.ref"] = {"$in": list(authorized_entities)}
-        return filter
+    def _authorized_entity_filter(authorized_entities: set[str]):
+        return {
+            "nested": {
+                "path": "entity_path",
+                "query": {
+                    "bool": {
+                        "filter": {
+                            "terms": {"entity_path.ref": list(authorized_entities)}
+                        }
+                    }
+                },
+            }
+        }
+
+    @staticmethod
+    def _check_log_visibility(log: Log, authorized_entities: set[str]):
+        if (
+            authorized_entities
+            and not set(entity.ref for entity in log.entity_path) & authorized_entities
+        ):
+            raise UnknownModelException()
 
     async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
-        document = await get_resource_document(
-            self.log_db.logs,
-            filter=self._log_filter(log_id, authorized_entities),
-            projection=_EXCLUDE_ATTACHMENT_DATA,
-        )
-        return Log.model_validate(document)
+        try:
+            resp = await self.es.get(
+                index=self.index,
+                id=str(log_id),
+                source_excludes=["attachments.data"],
+            )
+        except NotFoundError:
+            raise UnknownModelException()
+
+        log = Log.model_validate({**resp["_source"], "_id": log_id})
+        self._check_log_visibility(log, authorized_entities)
+
+        return log
 
     async def get_log_attachment(
         self, log_id: UUID, attachment_idx: int, authorized_entities: set[str]
     ) -> Log.Attachment:
-        doc = await get_resource_document(
-            self.log_db.logs,
-            filter=self._log_filter(log_id, authorized_entities),
-            projection={"attachments": {"$slice": [attachment_idx, 1]}},
-        )
-        if len(doc["attachments"]) == 0:
+        # NB: we retrieve all attachments here, which is not really efficient if the log contains
+        # more than 1 log, unfortunately ES does not a let us retrieve a nested object to a specific
+        # array index unless adding an extra metadata such as "index" to the stored document
+        try:
+            resp = await self.es.get(index=self.index, id=str(log_id))
+        except NotFoundError:
             raise UnknownModelException()
-        return Log.Attachment.model_validate(doc["attachments"][0])
+
+        self._check_log_visibility(
+            Log.model_validate({**resp["_source"], "_id": log_id}), authorized_entities
+        )
+
+        try:
+            attachment = resp["_source"]["attachments"][attachment_idx]
+        except IndexError:
+            raise UnknownModelException()
+
+        return Log.Attachment.model_validate(
+            {**attachment, "data": base64.b64decode(attachment["data"])}
+        )
 
     @staticmethod
-    def _custom_field_search_filter(params: dict[str, str]) -> dict:
+    def _custom_field_search_filter(type: str, fields: dict[str, str]):
+        return [
+            {
+                "nested": {
+                    "path": type,
+                    "query": {
+                        "bool": {
+                            "must": [
+                                {"term": {f"{type}.name": name}},
+                                {"term": {f"{type}.value.keyword": value}},
+                            ]
+                        }
+                    },
+                }
+            }
+            for name, value in fields.items()
+        ]
+
+    @staticmethod
+    def _nested_filter_term(path, name, value):
         return {
-            "$all": [
-                {"$elemMatch": {"name": name, "value": value}}
-                for name, value in params.items()
-            ]
+            "nested": {
+                "path": path,
+                "query": {"bool": {"filter": [{"term": {name: value}}]}},
+            }
         }
 
-    @staticmethod
-    def _get_criteria_from_search_params(
+    @classmethod
+    def _prepare_es_query(
+        cls,
         search_params: LogSearchParams,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict]:
         sp = search_params
-        criteria = []
+        filter = []
         if sp.action_type:
-            criteria.append({"action.type": sp.action_type})
+            filter.append({"term": {"action.type": sp.action_type}})
         if sp.action_category:
-            criteria.append({"action.category": sp.action_category})
+            filter.append({"term": {"action.category": sp.action_category}})
         if sp.source:
-            criteria.append(
-                {"source": LogService._custom_field_search_filter(sp.source)}
-            )
+            filter.extend(cls._custom_field_search_filter("source", sp.source))
         if sp.actor_type:
-            criteria.append({"actor.type": sp.actor_type})
+            filter.append({"term": {"actor.type": sp.actor_type}})
         if sp.actor_name:
-            criteria.append({"actor.name": sp.actor_name})
+            filter.append({"term": {"actor.name.keyword": sp.actor_name}})
         if sp.actor_ref:
-            criteria.append({"actor.ref": sp.actor_ref})
+            filter.append({"term": {"actor.ref": sp.actor_ref}})
         if sp.actor_extra:
-            criteria.append(
-                {"actor.extra": LogService._custom_field_search_filter(sp.actor_extra)}
+            filter.extend(
+                cls._custom_field_search_filter("actor.extra", sp.actor_extra)
             )
         if sp.resource_type:
-            criteria.append({"resource.type": sp.resource_type})
+            filter.append({"term": {"resource.type": sp.resource_type}})
         if sp.resource_name:
-            criteria.append({"resource.name": sp.resource_name})
+            filter.append({"term": {"resource.name.keyword": sp.resource_name}})
         if sp.resource_ref:
-            criteria.append({"resource.ref": sp.resource_ref})
+            filter.append({"term": {"resource.ref": sp.resource_ref}})
         if sp.resource_extra:
-            criteria.append(
-                {
-                    "resource.extra": LogService._custom_field_search_filter(
-                        sp.resource_extra
-                    )
-                }
+            filter.extend(
+                cls._custom_field_search_filter("resource.extra", sp.resource_extra)
             )
         if sp.details:
-            criteria.append(
-                {"details": LogService._custom_field_search_filter(sp.details)}
-            )
+            filter.extend(cls._custom_field_search_filter("details", sp.details))
         if sp.tag_ref:
-            criteria.append({"tags.ref": sp.tag_ref})
+            filter.append(cls._nested_filter_term("tags", "tags.ref", sp.tag_ref))
         if sp.tag_type:
-            criteria.append({"tags.type": sp.tag_type})
+            filter.append(cls._nested_filter_term("tags", "tags.type", sp.tag_type))
         if sp.tag_name:
-            criteria.append({"tags.name": sp.tag_name})
+            filter.append(
+                cls._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
+            )
         if sp.has_attachment is not None:
             if sp.has_attachment:
-                criteria.append({"attachments": {"$not": {"$size": 0}}})
+                filter.append(
+                    {
+                        "nested": {
+                            "path": "attachments",
+                            "query": {"exists": {"field": "attachments"}},
+                        }
+                    }
+                )
             else:
-                criteria.append({"attachments": {"$size": 0}})
+                filter.append(
+                    {
+                        "bool": {
+                            "must_not": {
+                                "nested": {
+                                    "path": "attachments",
+                                    "query": {"exists": {"field": "attachments"}},
+                                }
+                            }
+                        }
+                    }
+                )
+
         if sp.attachment_name:
-            criteria.append({"attachments.name": sp.attachment_name})
+            filter.append(
+                cls._nested_filter_term(
+                    "attachments", "attachments.name.keyword", sp.attachment_name
+                )
+            )
         if sp.attachment_type:
-            criteria.append({"attachments.type": sp.attachment_type})
+            filter.append(
+                cls._nested_filter_term(
+                    "attachments", "attachments.type", sp.attachment_type
+                )
+            )
         if sp.attachment_mime_type:
-            criteria.append({"attachments.mime_type": sp.attachment_mime_type})
+            filter.append(
+                cls._nested_filter_term(
+                    "attachments", "attachments.mime_type", sp.attachment_mime_type
+                )
+            )
         if sp.entity_ref:
-            criteria.append({"entity_path.ref": sp.entity_ref})
+            filter.append(
+                cls._nested_filter_term("entity_path", "entity_path.ref", sp.entity_ref)
+            )
         if sp.since:
-            criteria.append({"saved_at": {"$gte": sp.since}})
+            filter.append({"range": {"saved_at": {"gte": sp.since}}})
         if sp.until:
             # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
             # will also include logs saved at 23:59:59.500 for instance
-            criteria.append(
-                {"saved_at": {"$lte": sp.until.replace(microsecond=999999)}}
+            filter.append(
+                {"range": {"saved_at": {"lte": sp.until.replace(microsecond=999999)}}}
             )
-        return criteria
-
-    async def _get_logs_paginated(
-        self,
-        *,
-        id_field,
-        date_field,
-        filter=None,
-        projection=None,
-        limit: int = 10,
-        pagination_cursor: str = None,
-    ) -> tuple[list[Log], str | None]:
-        if filter is None:
-            filter = {}
-
-        if pagination_cursor:
-            cursor = _LogsPaginationCursor.load(pagination_cursor)
-            filter = {  # noqa
-                "$and": [
-                    filter,
-                    {"saved_at": {"$lte": cursor.date}},
-                    {
-                        "$or": [
-                            {"saved_at": {"$lt": cursor.date}},
-                            {"_id": {"$lt": cursor.id}},
-                        ]
-                    },
-                ]
-            }
-
-        results = await self.log_db.logs.find(
-            filter, projection, sort=[(date_field, -1), (id_field, -1)], limit=limit + 1
-        ).to_list(None)
-
-        # we previously fetched one extra log to check if there are more logs to fetch
-        if len(results) == limit + 1:
-            # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
-            # limit range
-            next_cursor_obj = _LogsPaginationCursor(
-                results[-2][date_field], results[-2][id_field]
-            )
-            next_cursor = next_cursor_obj.serialize()
-            # remove the extra log
-            results.pop(-1)
-        else:
-            next_cursor = None
-
-        return [Log(**result) for result in results], next_cursor
+        return filter
 
     async def get_logs(
         self,
@@ -331,292 +368,326 @@ class LogService:
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
-        criteria: list[dict[str, Any]] = []
-        if authorized_entities:
-            criteria.append({"entity_path.ref": {"$in": list(authorized_entities)}})
-        if search_params:
-            criteria.extend(self._get_criteria_from_search_params(search_params))
+        filter = self._prepare_es_query(search_params)
 
-        return await self._get_logs_paginated(
-            id_field="_id",
-            date_field="saved_at",
-            projection=_EXCLUDE_ATTACHMENT_DATA,
-            filter={"$and": criteria} if criteria else None,
+        if authorized_entities:
+            filter.append(self._authorized_entity_filter(authorized_entities))
+
+        search_after = (
+            load_pagination_cursor(pagination_cursor) if pagination_cursor else None
+        )
+
+        query = {"bool": {"filter": filter}}
+        resp = await self.es.search(
+            index=self.index,
+            query=query,
+            search_after=search_after,
+            source_excludes=["attachments.data"],
+            sort=[{"saved_at": "desc", "log_id": "desc"}],
+            size=limit + 1,
+            track_total_hits=False,
+        )
+        hits = list(resp["hits"]["hits"])
+
+        # we previously fetched one extra log to check if there are more logs to fetch
+        if len(hits) == limit + 1:
+            # there is still more logs to fetch, so we need to return a next_cursor based on the last log WITHIN the
+            # limit range
+            next_cursor = serialize_pagination_cursor(hits[-2]["sort"])
+            hits.pop(-1)
+        else:
+            next_cursor = None
+
+        logs = [
+            Log.model_validate({**hit["_source"], "_id": hit["_id"]}) for hit in hits
+        ]
+
+        return logs, next_cursor
+
+    async def _get_sorted_log(self, sort) -> Log | None:
+        resp = await self.es.search(
+            index=self.index,
+            query={"match_all": {}},
+            sort=sort,
+            size=1,
+        )
+        hits = resp["hits"]["hits"]
+        if not hits:
+            return None
+        return Log.model_validate({**hits[0]["_source"], "_id": hits[0]["_id"]})
+
+    async def get_oldest_log(self) -> Log | None:
+        return await self._get_sorted_log([{"saved_at": "asc", "log_id": "asc"}])
+
+    async def get_newest_log(self) -> Log | None:
+        return await self._get_sorted_log([{"saved_at": "desc", "log_id": "desc"}])
+
+    async def get_log_count(self) -> int:
+        resp = await self.es.count(
+            index=self.index,
+            query={"match_all": {}},
+        )
+        return resp["count"]
+
+    async def get_storage_size(self) -> int:
+        resp = await self.es.indices.stats(index=self.index)
+        return resp["_all"]["primaries"]["store"]["size_in_bytes"]
+
+    async def _get_paginated_agg(
+        self,
+        *,
+        nested: str = None,
+        field: str,
+        query: dict = None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str]:
+        after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
+
+        aggregations = {
+            "group_by": {
+                "composite": {
+                    "size": limit,
+                    "sources": [{field: {"terms": {"field": field, "order": "asc"}}}],
+                    **({"after": after} if after else {}),
+                }
+            },
+        }
+        if nested:
+            aggregations = {
+                "nested_group_by": {
+                    "nested": {
+                        "path": nested,
+                    },
+                    "aggs": aggregations,
+                },
+            }
+
+        resp = await self.es.search(
+            index=self.index,
+            query=query,
+            aggregations=aggregations,
+            size=0,
+        )
+
+        if nested:
+            group_by_result = resp["aggregations"]["nested_group_by"]["group_by"]
+        else:
+            group_by_result = resp["aggregations"]["group_by"]
+
+        if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
+            next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
+        else:
+            next_cursor = None
+
+        values = [bucket["key"][field] for bucket in group_by_result["buckets"]]
+
+        return values, next_cursor
+
+    get_log_action_categories = partialmethod(
+        _get_paginated_agg, field="action.category"
+    )
+
+    async def get_log_action_types(
+        self,
+        action_category: str | None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str]:
+        return await self._get_paginated_agg(
+            field="action.type",
+            query=(
+                {"bool": {"filter": {"term": {"action.category": action_category}}}}
+                if action_category
+                else None
+            ),
             limit=limit,
             pagination_cursor=pagination_cursor,
         )
+
+    get_log_tag_types = partialmethod(
+        _get_paginated_agg, nested="tags", field="tags.type"
+    )
+
+    get_log_actor_types = partialmethod(_get_paginated_agg, field="actor.type")
+
+    get_log_actor_extra_fields = partialmethod(
+        _get_paginated_agg, nested="actor.extra", field="actor.extra.name"
+    )
+
+    get_log_resource_types = partialmethod(_get_paginated_agg, field="resource.type")
+
+    get_log_resource_extra_fields = partialmethod(
+        _get_paginated_agg, nested="resource.extra", field="resource.extra.name"
+    )
+
+    get_log_source_fields = partialmethod(
+        _get_paginated_agg, nested="source", field="source.name"
+    )
+
+    get_log_detail_fields = partialmethod(
+        _get_paginated_agg, nested="details", field="details.name"
+    )
+
+    get_log_attachment_types = partialmethod(
+        _get_paginated_agg, nested="attachments", field="attachments.type"
+    )
+
+    get_log_attachment_mime_types = partialmethod(
+        _get_paginated_agg, nested="attachments", field="attachments.mime_type"
+    )
+
+    async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
+        """
+        This function assumes that the entity has no children and delete it if it has no associated logs.
+        It performs the same operation recursively on its ancestors.
+        """
+        associated_logs, _ = await self.get_logs(
+            search_params=LogSearchParams(entity_ref=entity.ref), limit=1
+        )
+        if not associated_logs:
+            await self.session.delete(entity)
+            await self.session.flush()
+            print(
+                f"Deleted orphan log entity {entity!r} from log repository {self.repo.log_db_name!r}"
+            )
+            parent_entity = await self.session.scalar(
+                select(LogEntity).where(LogEntity.id == entity.parent_entity_id)
+            )
+            if parent_entity and not parent_entity.has_children:
+                await self._purge_orphan_log_entity_if_needed(parent_entity)
+
+    async def _purge_orphan_log_entities(self):
+        result = await self.session.execute(
+            select(LogEntity).where(LogEntity.has_children == False)
+        )
+        leaf_entities = result.scalars().all()
+
+        for entity in leaf_entities:
+            await self._purge_orphan_log_entity_if_needed(entity)
+
+        await self.session.commit()
 
     async def _apply_log_retention_period(self):
         if not self.repo.retention_period:
             return
 
-        result = await self.log_db.logs.delete_many(
-            {"saved_at": {"$lt": now() - timedelta(days=self.repo.retention_period)}}
+        resp = await self.es.delete_by_query(
+            index=self.index,
+            query={
+                "bool": {
+                    "filter": [
+                        {
+                            "range": {
+                                "saved_at": {
+                                    "lt": (
+                                        now()
+                                        - timedelta(days=self.repo.retention_period)
+                                    )
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            refresh=self._refresh,
         )
-        if result.deleted_count > 0:
+        if resp["deleted"] > 0:
             print(
-                f"Deleted {result.deleted_count} logs older than {self.repo.retention_period} days "
+                f"Deleted {resp["deleted"]} logs older than {self.repo.retention_period} days "
                 f"in log repository {self.repo.name!r}"
             )
+            await self._purge_orphan_log_entities()
 
     @classmethod
-    async def apply_log_retention_period(cls, repo: UUID | Repo = None):
+    async def apply_log_retention_period(
+        cls, session: AsyncSession, repo: UUID | Repo = None
+    ):
         if repo:
-            repos = [await get_repo(repo)]
+            repos = [await get_repo(session, repo)]
         else:
-            repos = await get_retention_period_enabled_repos()
+            repos = await get_retention_period_enabled_repos(session)
 
         for repo in repos:
-            service = await cls.for_maintenance(repo)
+            service = await cls.for_maintenance(session, repo)
             await service._apply_log_retention_period()
-            await service.purge_orphan_consolidated_log_data()
+            # FIXME: we should also delete the consolidated entities that are not referenced by any log
 
-    async def _consolidate_data(
-        self,
-        collection: AsyncIOMotorCollection,
-        data: dict[str, str],
-        *,
-        update: dict[str, str] = None,
-    ):
-        if update is None:
-            update = {}
-        cache_key = "%s:%s:%s" % (
-            self.log_db.name,
-            collection.name,
-            ":".join(val or "" for val in {**data, **update}.values()),
-        )
-        if await _CONSOLIDATED_DATA_CACHE.exists(cache_key):
-            return
-        await collection.update_one(
-            data,
-            {"$set": update, "$setOnInsert": {"_id": uuid4()}},
-            upsert=True,
-        )
-        await _CONSOLIDATED_DATA_CACHE.set(cache_key, True)
-
-    async def _consolidate_log_action(self, action: Log.Action):
-        await self._consolidate_data(
-            self.log_db.log_actions,
-            {"category": action.category, "type": action.type},
-        )
-
-    async def _consolidate_log_source(self, source: list[CustomField]):
-        for field in source:
-            await self._consolidate_data(
-                self.log_db.log_source_fields, {"name": field.name}
+    async def _consolidate_log_entity(
+        self, entity: Log.EntityPathNode, parent_entity_id: UUID | None
+    ) -> UUID:
+        cache_key = "\t".join(
+            (
+                str(self.repo.id),
+                entity.ref,
+                entity.name,
+                str(parent_entity_id) if parent_entity_id else "",
             )
-
-    async def _consolidate_log_actor(self, actor: Log.Actor):
-        await self._consolidate_data(self.log_db.log_actor_types, {"type": actor.type})
-        for field in actor.extra:
-            await self._consolidate_data(
-                self.log_db.log_actor_extra_fields, {"name": field.name}
-            )
-
-    async def _consolidate_log_resource(self, resource: Log.Resource):
-        await self._consolidate_data(
-            self.log_db.log_resource_types, {"type": resource.type}
         )
-        for field in resource.extra:
-            await self._consolidate_data(
-                self.log_db.log_resource_extra_fields, {"name": field.name}
+        if entity_id := await _CONSOLIDATED_LOG_ENTITIES.get(cache_key):
+            return entity_id
+
+        result = await self.session.execute(
+            insert(LogEntity)
+            .values(
+                repo_id=self.repo.id,
+                ref=entity.ref,
+                name=entity.name,
+                parent_entity_id=parent_entity_id,
             )
-
-    async def _consolidate_log_tags(self, tags: list[Log.Tag]):
-        for tag in tags:
-            await self._consolidate_data(self.log_db.log_tag_types, {"type": tag.type})
-
-    async def _consolidate_log_details(self, details: list[CustomField]):
-        for field in details:
-            await self._consolidate_data(
-                self.log_db.log_detail_fields, {"name": field.name}
+            .on_conflict_do_update(
+                index_elements=[LogEntity.repo_id, LogEntity.ref],
+                set_=dict(
+                    name=entity.name,
+                    parent_entity_id=parent_entity_id,
+                ),
             )
+            .returning(LogEntity.id)
+        )
+        entity_id = result.scalar_one()
+        await self.session.commit()
 
-    async def _consolidate_log_entity_path(self, entity_path: list[Log.Entity]):
-        parent_entity_ref = None
+        await _CONSOLIDATED_LOG_ENTITIES.set(cache_key, entity_id)
+        return entity_id
+
+    async def _consolidate_log_entity_path(self, entity_path: list[Log.EntityPathNode]):
+        parent_entity_id = None
         for entity in entity_path:
-            await self._consolidate_data(
-                self.log_db.log_entities,
-                {"ref": entity.ref},
-                update={"parent_entity_ref": parent_entity_ref, "name": entity.name},
+            parent_entity_id = await self._consolidate_log_entity(
+                entity, parent_entity_id
             )
-            parent_entity_ref = entity.ref
 
-    async def _consolidate_log_attachment(self, attachment: Log.AttachmentMetadata):
-        await self._consolidate_data(
-            self.log_db.log_attachment_types,
-            {
-                "type": attachment.type,
-            },
-        )
-        await self._consolidate_data(
-            self.log_db.log_attachment_mime_types,
-            {
-                "mime_type": attachment.mime_type,
-            },
-        )
+    async def _has_entity_children(self, entity_ref: str) -> bool:
+        return (
+            await self.session.execute(
+                select(LogEntity)
+                .where(LogEntity.parent_entity_ref == entity_ref)
+                .limit(1)
+            )
+        ).scalar() is not None
 
-    async def _consolidate_log(self, log: Log):
-        await self._consolidate_log_action(log.action)
-        await self._consolidate_log_source(log.source)
-        if log.actor:
-            await self._consolidate_log_actor(log.actor)
-        if log.resource:
-            await self._consolidate_log_resource(log.resource)
-        await self._consolidate_log_details(log.details)
-        await self._consolidate_log_tags(log.tags)
-        await self._consolidate_log_entity_path(log.entity_path)
-
-    async def _get_consolidated_data_aggregated_field(
-        self,
-        collection_name: str,
-        field_name: str,
-        *,
-        match=None,
-        limit=10,
-        pagination_cursor: str = None,
-    ) -> tuple[list[str], str | None]:
-        pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
-
-        # Get all unique aggregated data field
-        collection = self.log_db.get_collection(collection_name)
-        results = collection.aggregate(
-            ([{"$match": match}] if match else [])
-            + [
-                {"$group": {"_id": "$" + field_name}},
-                {"$sort": {"_id": 1}},
-                {"$skip": pagination_cursor_obj.offset},
-                {"$limit": limit + 1},
-            ]
-        )
-        values = [result["_id"] async for result in results]
-
-        next_cursor = pagination_cursor_obj.get_next_cursor(values, limit)
-        return values, next_cursor
-
-    async def _get_consolidated_data_field(
-        self,
-        collection_name,
-        field_name: str,
-        *,
-        limit=10,
-        pagination_cursor: str = None,
-    ) -> tuple[list[str], str | None]:
-        pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
-
-        collection = self.log_db.get_collection(collection_name)
-        results = await collection.find(
-            projection=[field_name],
-            sort={field_name: 1},
-            skip=pagination_cursor_obj.offset,
-            limit=limit + 1,
-        ).to_list(None)
-
-        next_cursor = pagination_cursor_obj.get_next_cursor(results, limit)
-        return [result[field_name] for result in results], next_cursor
-
-    get_log_action_categories = partialmethod(
-        _get_consolidated_data_aggregated_field,
-        collection_name="log_actions",
-        field_name="category",
-    )
-
-    async def get_log_action_types(
+    async def _get_log_entities(
         self,
         *,
-        action_category: str = None,
-        limit=10,
-        pagination_cursor: str = None,
-    ) -> tuple[list[str], str | None]:
-        return await self._get_consolidated_data_aggregated_field(
-            collection_name="log_actions",
-            field_name="type",
-            limit=limit,
-            pagination_cursor=pagination_cursor,
-            match={"category": action_category} if action_category else None,
+        filters: list[Any],
+        pagination_cursor: str | None = None,
+        limit: int = 10,
+    ) -> tuple[list[LogEntity], str | None]:
+        cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
+        result = await self.session.execute(
+            select(LogEntity)
+            .where(*filters)
+            .order_by(LogEntity.name)
+            .offset(cursor_obj.offset)
+            .limit(limit + 1)
         )
-
-    get_log_actor_types = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_actor_types",
-        field_name="type",
-    )
-
-    get_log_actor_extra_fields = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_actor_extra_fields",
-        field_name="name",
-    )
-
-    get_log_resource_types = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_resource_types",
-        field_name="type",
-    )
-
-    get_log_resource_extra_fields = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_resource_extra_fields",
-        field_name="name",
-    )
-
-    get_log_tag_types = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_tag_types",
-        field_name="type",
-    )
-
-    get_log_source_fields = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_source_fields",
-        field_name="name",
-    )
-
-    get_log_detail_fields = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_detail_fields",
-        field_name="name",
-    )
-
-    get_log_attachment_types = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_attachment_types",
-        field_name="type",
-    )
-
-    get_log_attachment_mime_types = partialmethod(
-        _get_consolidated_data_field,
-        collection_name="log_attachment_mime_types",
-        field_name="mime_type",
-    )
-
-    async def _get_log_entities(self, *, match, pipeline_extra=None):
-        return self.log_db.log_entities.aggregate(
-            [
-                {"$match": match},
-                {
-                    "$lookup": {
-                        "from": "log_entities",
-                        "let": {"ref": "$ref"},
-                        "pipeline": [
-                            {
-                                "$match": {
-                                    "$expr": {"$eq": ["$parent_entity_ref", "$$ref"]}
-                                }
-                            },
-                            {"$limit": 1},
-                        ],
-                        "as": "first_child_if_any",
-                    }
-                },
-                {
-                    "$addFields": {
-                        "has_children": {"$eq": [{"$size": "$first_child_if_any"}, 1]}
-                    }
-                },
-            ]
-            + (pipeline_extra or [])
-        )
+        entities = result.scalars().all()
+        if len(entities) == limit + 1:
+            next_cursor = _OffsetPaginationCursor(cursor_obj.offset + limit).serialize()
+            entities.pop(-1)
+        else:
+            next_cursor = None
+        return entities, next_cursor
 
     async def _get_entity_hierarchy(self, entity_ref: str) -> set[str]:
         entity = await self._get_log_entity(entity_ref)
@@ -647,13 +718,12 @@ class LogService:
         parent_entity_ref=NotImplemented,
         limit: int = 10,
         pagination_cursor: str = None,
-    ) -> tuple[list[Log.Entity], str | None]:
+    ) -> tuple[list[LogEntity], str | None]:
         # please note that we use NotImplemented instead of None because None is a valid value for parent_entity_ref
         # (it means filtering on top entities)
-        if parent_entity_ref is NotImplemented:
-            filter = {}
-        else:
-            filter = {"parent_entity_ref": parent_entity_ref}
+        filters = []
+        if parent_entity_ref is not NotImplemented:
+            filters.append(LogEntity.parent_entity_ref == parent_entity_ref)
 
         if authorized_entities:
             # get the complete hierarchy of the entity from the entity itself to the top entity
@@ -670,39 +740,17 @@ class LogService:
                 visible_entities = await self._get_entities_hierarchy(
                     authorized_entities
                 )
-                filter["ref"] = {"$in": list(visible_entities)}
+                filters.append(LogEntity.ref.in_(visible_entities))
+        return await self._get_log_entities(
+            filters=filters, pagination_cursor=pagination_cursor, limit=limit
+        )
 
-        pagination_cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
-
-        results = [
-            result
-            async for result in await self._get_log_entities(
-                match=filter,
-                pipeline_extra=[
-                    {"$sort": {"name": 1}},
-                    {"$skip": pagination_cursor_obj.offset},
-                    {"$limit": limit + 1},
-                ],
-            )
-        ]
-
-        next_cursor = pagination_cursor_obj.get_next_cursor(results, limit)
-        return [Entity(**result) for result in results], next_cursor
-
-    async def _get_log_entity(self, entity_ref: str) -> Log.Entity:
-        results = await (
-            await self._get_log_entities(match={"ref": entity_ref})
-        ).to_list(None)
-        try:
-            result = results[0]
-        except IndexError:
-            raise UnknownModelException(entity_ref)
-
-        return Entity(**result)
+    async def _get_log_entity(self, entity_ref: str) -> LogEntity:
+        return await get_sql_model(self.session, LogEntity, LogEntity.ref == entity_ref)
 
     async def get_log_entity(
         self, entity_ref: str, authorized_entities: set[str]
-    ) -> Log.Entity:
+    ) -> Log.EntityPathNode:
         if authorized_entities:
             entity_ref_hierarchy = await self._get_entity_hierarchy(entity_ref)
             authorized_entities_hierarchy = await self._get_entities_hierarchy(
@@ -715,122 +763,138 @@ class LogService:
                 raise UnknownModelException()
         return await self._get_log_entity(entity_ref)
 
-    async def _purge_orphan_consolidated_data_collection(
-        self, collection: AsyncIOMotorCollection, filter: callable
-    ):
-        docs = collection.find({})
-        async for doc in docs:
-            has_associated_logs = await has_resource_document(
-                self.log_db.logs,
-                filter(doc),
-            )
-            if not has_associated_logs:
-                await collection.delete_one({"_id": doc["_id"]})
-                print(
-                    f"Deleted orphan consolidated {collection.name} item "
-                    f"{doc!r} from log repository {self.log_db.name!r}"
-                )
+    async def create_log_db(self):
+        await create_index(self.es, self.index)
 
-    async def _purge_orphan_consolidated_log_actions(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_actions,
-            lambda data: {
-                "action.type": data["type"],
-                "action.category": data["category"],
-            },
+    async def delete_log_db(self):
+        await self.es.indices.delete(index=self.index)
+
+    async def empty_log_db(self):
+        await self.es.delete_by_query(
+            index=self.index,
+            query={"match_all": {}},
+            wait_for_completion=self._refresh,
+            refresh=self._refresh,
         )
-
-    async def _purge_orphan_consolidated_log_source_fields(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_source_fields,
-            lambda data: {"source.name": data["name"]},
+        await self.session.execute(
+            delete(LogEntity).where(LogEntity.repo_id == self.repo.id)
         )
+        await self.session.commit()
 
-    async def _purge_orphan_consolidated_log_actor_types(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_actor_types,
-            lambda data: {"actor.type": data["type"]},
-        )
 
-    async def _purge_orphan_consolidated_log_actor_custom_fields(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_actor_extra_fields,
-            lambda data: {"actor.extra.name": data["name"]},
-        )
-
-    async def _purge_orphan_consolidated_log_resource_types(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_resource_types,
-            lambda data: {"resource.type": data["type"]},
-        )
-
-    async def _purge_orphan_consolidated_log_resource_custom_fields(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_resource_extra_fields,
-            lambda data: {"resource.extra.name": data["name"]},
-        )
-
-    async def _purge_orphan_consolidated_log_tag_types(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_tag_types,
-            lambda data: {"tags.type": data["type"]},
-        )
-
-    async def _purge_orphan_consolidated_log_detail_fields(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_detail_fields,
-            lambda data: {"details.name": data["name"]},
-        )
-
-    async def _purge_orphan_consolidated_log_attachment_types(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_attachment_types,
-            lambda data: {"attachments.type": data["type"]},
-        )
-
-    async def _purge_orphan_consolidated_log_attachment_mime_types(self):
-        await self._purge_orphan_consolidated_data_collection(
-            self.log_db.log_attachment_mime_types,
-            lambda data: {"attachments.mime_type": data["mime_type"]},
-        )
-
-    async def _purge_orphan_consolidated_log_entity_if_needed(self, entity: Entity):
-        """
-        This function assumes that the entity has no children and delete it if it has no associated logs.
-        It performs the same operation recursively on its ancestors.
-        """
-        has_associated_logs = await has_resource_document(
-            self.log_db.logs, {"entity_path.ref": entity.ref}
-        )
-        if not has_associated_logs:
-            await delete_resource_document(self.log_db.log_entities, entity.id)
-            print(
-                f"Deleted orphan log entity {entity!r} from log repository {self.log_db.name!r}"
-            )
-            if entity.parent_entity_ref:
-                parent_entity = await self._get_log_entity(entity.parent_entity_ref)
-                if not parent_entity.has_children:
-                    await self._purge_orphan_consolidated_log_entity_if_needed(
-                        parent_entity
-                    )
-
-    async def _purge_orphan_consolidated_log_entities(self):
-        docs = await self._get_log_entities(
-            match={}, pipeline_extra=[{"$match": {"has_children": False}}]
-        )
-        async for doc in docs:
-            entity = Entity.model_validate(doc)
-            await self._purge_orphan_consolidated_log_entity_if_needed(entity)
-
-    async def purge_orphan_consolidated_log_data(self):
-        await self._purge_orphan_consolidated_log_actions()
-        await self._purge_orphan_consolidated_log_source_fields()
-        await self._purge_orphan_consolidated_log_actor_types()
-        await self._purge_orphan_consolidated_log_actor_custom_fields()
-        await self._purge_orphan_consolidated_log_resource_types()
-        await self._purge_orphan_consolidated_log_resource_custom_fields()
-        await self._purge_orphan_consolidated_log_tag_types()
-        await self._purge_orphan_consolidated_log_detail_fields()
-        await self._purge_orphan_consolidated_log_attachment_types()
-        await self._purge_orphan_consolidated_log_attachment_mime_types()
-        await self._purge_orphan_consolidated_log_entities()
+async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
+    await elastic_client.indices.create(
+        index=index_name,
+        mappings={
+            "properties": {
+                "log_id": {"type": "keyword"},
+                "saved_at": {"type": "date"},
+                "action": {
+                    "properties": {
+                        "type": {"type": "keyword"},
+                        "category": {"type": "keyword"},
+                    }
+                },
+                "source": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {"type": "keyword"},
+                        "value": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                    },
+                },
+                "actor": {
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                        "extra": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {"type": "keyword"},
+                                "value": {
+                                    "type": "text",
+                                    "fields": {"keyword": {"type": "keyword"}},
+                                },
+                            },
+                        },
+                    }
+                },
+                "resource": {
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                        "extra": {
+                            "type": "nested",
+                            "properties": {
+                                "name": {"type": "keyword"},
+                                "value": {
+                                    "type": "text",
+                                    "fields": {"keyword": {"type": "keyword"}},
+                                },
+                            },
+                        },
+                    }
+                },
+                "details": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {"type": "keyword"},
+                        "value": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                    },
+                },
+                "tags": {
+                    "type": "nested",
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                    },
+                },
+                "attachments": {
+                    "type": "nested",
+                    "properties": {
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                        "type": {"type": "keyword"},
+                        "mime_type": {"type": "keyword"},
+                        "saved_at": {"type": "date"},
+                        "data": {"type": "binary"},
+                    },
+                },
+                "entity_path": {
+                    "type": "nested",
+                    "properties": {
+                        "ref": {"type": "keyword"},
+                        "name": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
+                    },
+                },
+            }
+        },
+        settings={
+            "index": {
+                "sort.field": ["saved_at", "log_id"],
+                "sort.order": ["desc", "desc"],
+            }
+        },
+    )

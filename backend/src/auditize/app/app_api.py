@@ -1,13 +1,13 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.exceptions import RequestValidationError
 
+from auditize.api.exception import (
+    make_response_from_exception,
+)
 from auditize.apikey.api import router as apikey_api_router
 from auditize.app.cors import setup_cors
 from auditize.auth.api import router as auth_api_router
 from auditize.exceptions import AuditizeException
-from auditize.helpers.api.errors import (
-    make_response_from_exception,
-)
 from auditize.i18n import get_request_lang
 from auditize.info.api import router as info_api_router
 from auditize.log.api import router as log_api_router

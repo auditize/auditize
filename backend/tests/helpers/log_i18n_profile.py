@@ -1,10 +1,12 @@
 import uuid
-from datetime import datetime
 
 import callee
 
-from auditize.log_i18n_profile.models import LogI18nProfile
+from auditize.database.dbm import open_db_session
+from auditize.log_i18n_profile.models import LogI18nProfileCreate
 from auditize.log_i18n_profile.service import create_log_i18n_profile
+
+from .utils import DATETIME_FORMAT
 
 
 class PreparedLogI18nProfile:
@@ -97,26 +99,33 @@ class PreparedLogI18nProfile:
     async def create(cls, data=None):
         if not data:
             data = cls.prepare_data()
-        profile_id = await create_log_i18n_profile(LogI18nProfile(**data))
-        return cls(str(profile_id), data)
+        async with open_db_session() as session:
+            profile = await create_log_i18n_profile(
+                session, LogI18nProfileCreate(**data)
+            )
+        return cls(str(profile.id), data)
 
-    def expected_document(self, extra=None):
+    @classmethod
+    def build_expected_api_response(cls, extra=None):
+        if extra is None:
+            extra = {}
         return {
-            "_id": uuid.UUID(self.id),
-            "created_at": callee.IsA(datetime),
-            "name": self.data["name"],
+            "id": callee.IsA(str),
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
+            **extra,
             "translations": {
-                lang: {**self.EMPTY_TRANSLATION, **translation}
-                for lang, translation in self.data.get("translations", {}).items()
+                lang: {**cls.EMPTY_TRANSLATION, **translation}
+                for lang, translation in extra.get("translations", {}).items()
             },
-            **(extra or {}),
         }
 
     def expected_api_response(self, extra=None) -> dict:
-        return {
-            "id": self.id,
-            "created_at": callee.IsA(str),
-            "name": self.data["name"],
-            "translations": self.data.get("translations", {}),
-            **(extra or {}),
-        }
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "name": self.data["name"],
+                "translations": self.data.get("translations", {}),
+                **(extra or {}),
+            }
+        )

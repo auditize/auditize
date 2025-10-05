@@ -1,74 +1,82 @@
 import os
 import random
 
-from motor.motor_asyncio import AsyncIOMotorCollection
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
-from auditize.database import CoreDatabase, Database, init_core_db
-from auditize.log.db import LogDatabase, migrate_log_db
+from auditize.config import get_config
+from auditize.database import DatabaseManager, init_dbm
+from auditize.database.dbm import migrate_database
+from auditize.database.sql.models import SqlModel
+from auditize.log.service import create_index
 
 
-def setup_test_core_db() -> CoreDatabase:
+def setup_test_dbm() -> DatabaseManager:
     db_name = "test_%04d" % int(random.random() * 10000)
     try:
         db_name += "_" + os.environ["PYTEST_XDIST_WORKER"]
     except KeyError:
         pass
-    return init_core_db(db_name, force_init=True)
+    config = get_config()
+    config.db_name = db_name
+    return init_dbm(force_init=True, debug=False)
 
 
-async def teardown_test_core_db(core_db: CoreDatabase):
-    for db_name in await core_db.client.list_database_names():
-        if db_name.startswith(core_db.name):
-            await core_db.client.drop_database(db_name)
-
-    core_db.client.close()
+async def teardown_test_dbm(dbm: DatabaseManager):
+    for index_name in await dbm.elastic_client.indices.get_alias(index=dbm.name + "*"):
+        if index_name.startswith(dbm.name):
+            await dbm.elastic_client.indices.delete(index=index_name)
 
 
-async def cleanup_db(db: Database):
-    for collection_name in await db.db.list_collection_names():
-        await db.db[collection_name].delete_many({})
+async def create_pg_db(dbm: DatabaseManager):
+    config = get_config()
+    pg_url = config.get_db_url("postgres")
+    engine = create_async_engine(pg_url)
+    async with engine.connect() as conn:
+        conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+        await conn.execute(text(f"CREATE DATABASE {dbm.name}"))
+
+    await migrate_database()
+
+
+async def truncate_pg_db(dbm: DatabaseManager):
+    async with dbm.db_engine.begin() as conn:
+        table_names = [table.name for table in SqlModel.metadata.sorted_tables]
+        table_names_as_str = ", ".join(f'"{name}"' for name in table_names)
+        await conn.execute(
+            text(f"TRUNCATE TABLE {table_names_as_str} RESTART IDENTITY CASCADE")
+        )
+
+
+async def drop_pg_db(dbm: DatabaseManager):
+    config = get_config()
+    await dbm.db_engine.dispose()
+    engine = create_async_engine(config.get_db_url("postgres"))
+    async with engine.connect() as conn:
+        conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+        await conn.execute(text(f"DROP DATABASE {dbm.name}"))
 
 
 class TestLogDatabasePool:
-    def __init__(self, core_db: CoreDatabase):
-        self.core_db = core_db
+    def __init__(self, dbm: DatabaseManager):
+        self.dbm = dbm
         self._cache = {}
 
-    async def get_db(self) -> LogDatabase:
-        for log_db, is_used in self._cache.items():
+    async def get_db_name(self) -> str:
+        for db_name, is_used in self._cache.items():
             if not is_used:
-                self._cache[log_db] = True
-                return log_db
+                self._cache[db_name] = True
+                return db_name
         else:
-            log_db = LogDatabase(
-                f"{self.core_db.name}_logs_{len(self._cache)}", self.core_db.client
-            )
-            await migrate_log_db(log_db)
-            self._cache[log_db] = True
-            return log_db
+            db_name = f"{self.dbm.name}_logs_{len(self._cache)}"
+            await create_index(self.dbm.elastic_client, db_name)
+            self._cache[db_name] = True
+            return db_name
 
     async def release(self):
-        for log_db, is_used in self._cache.items():
+        for db_name, is_used in self._cache.items():
             if is_used:
-                await cleanup_db(log_db)
-                self._cache[log_db] = False
-
-
-async def assert_collection(
-    collection: AsyncIOMotorCollection, expected, *, filter=None
-):
-    results = await collection.find(filter or {}).to_list(None)
-    assert results == expected
-
-
-async def assert_db_indexes(db: Database, expected):
-    assert list(sorted(await db.db.list_collection_names())) == list(
-        sorted(expected.keys())
-    )
-    for collection_name, expected_indexes in expected.items():
-        actual_indexes = [
-            index["name"] async for index in db.db[collection_name].list_indexes()
-        ]
-        assert list(sorted(actual_indexes)) == list(
-            sorted(expected_indexes + ("_id_",))
-        )
+                await self.dbm.elastic_client.delete_by_query(
+                    index=db_name, query={"match_all": {}}, refresh=True
+                )
+                self._cache[db_name] = False

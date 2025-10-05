@@ -1,12 +1,11 @@
+import os
 from typing import Awaitable, Callable, Optional, Protocol
 
 import pytest
 from icecream import ic
 
 from auditize.config import init_config
-from auditize.database import CoreDatabase, Database, migrate_core_db
-from auditize.log.db import LogDatabase
-from auditize.log.service import _CONSOLIDATED_DATA_CACHE
+from auditize.database import DatabaseManager
 
 ic.configureOutput(includeContext=True)
 
@@ -14,9 +13,11 @@ pytest.register_assert_rewrite("helpers")
 from helpers.apikey import PreparedApikey
 from helpers.database import (
     TestLogDatabasePool,
-    cleanup_db,
-    setup_test_core_db,
-    teardown_test_core_db,
+    create_pg_db,
+    drop_pg_db,
+    setup_test_dbm,
+    teardown_test_dbm,
+    truncate_pg_db,
 )
 from helpers.http import HttpTestHelper
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -34,6 +35,13 @@ def anyio_backend():
 def _config(anyio_backend):
     init_config(
         {
+            "AUDITIZE_ES_URL": "https://localhost:9200",
+            "AUDITIZE_ES_USER": "elastic",
+            "AUDITIZE_ES_PASSWORD": os.environ["ES_PASSWORD"],
+            "AUDITIZE_ES_SSL_VERIFY": "false",
+            "AUDITIZE_PG_HOST": os.environ.get("PG_HOST", "localhost"),
+            "AUDITIZE_PG_USER": os.environ.get("PG_USER", os.environ.get("USER", "")),
+            "AUDITIZE_PG_PASSWORD": os.environ.get("PG_PASSWORD", ""),
             "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
             "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
             "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
@@ -44,11 +52,10 @@ def _config(anyio_backend):
 
 
 @pytest.fixture(scope="session")
-async def _core_db():
-    test_db = setup_test_core_db()
-    await migrate_core_db()
-    yield test_db
-    await teardown_test_core_db(test_db)
+async def _dbm():
+    dbm = setup_test_dbm()
+    yield dbm
+    await teardown_test_dbm(dbm)
 
 
 @pytest.fixture(scope="function")
@@ -79,39 +86,33 @@ async def anon_client():
 
 
 @pytest.fixture(scope="session")
-async def _log_db(_core_db: CoreDatabase):
-    log_db = LogDatabase(_core_db.name + "_logs", _core_db.client)
-    await log_db.setup()
-    return log_db
+async def _log_db_pool(_dbm: DatabaseManager):
+    return TestLogDatabasePool(_dbm)
 
 
 @pytest.fixture(scope="session")
-async def _log_db_pool(_core_db: CoreDatabase):
-    return TestLogDatabasePool(_core_db)
+async def _pg_db(_dbm: DatabaseManager):
+    await create_pg_db(_dbm)
+    print("Created PostgreSQL database:", _dbm.name)
+    yield
+    await drop_pg_db(_dbm)
 
 
 @pytest.fixture(scope="function", autouse=True)
-async def core_db(_core_db, anyio_backend):
-    yield _core_db
-    await cleanup_db(_core_db)
-    await _CONSOLIDATED_DATA_CACHE.clear()
-
-
-@pytest.fixture(scope="function")
-async def tmp_db(_core_db: CoreDatabase):
-    db = Database(_core_db.name + "_tmp", _core_db.client)
-    yield db
-    await db.client.drop_database(db.name)
+async def pg_db(_dbm: DatabaseManager, _pg_db):
+    yield
+    await truncate_pg_db(_dbm)
 
 
 RepoBuilder = Callable[[dict], Awaitable[PreparedRepo]]
 
 
 @pytest.fixture(scope="function")
-async def repo_builder(core_db, _log_db_pool) -> RepoBuilder:
+async def repo_builder(_dbm: DatabaseManager, _log_db_pool) -> RepoBuilder:
     async def func(extra):
         return await PreparedRepo.create(
-            PreparedRepo.prepare_data(extra), log_db=await _log_db_pool.get_db()
+            PreparedRepo.prepare_data(extra),
+            log_db_name=await _log_db_pool.get_db_name(),
         )
 
     yield func
@@ -142,7 +143,7 @@ ApikeyBuilder = Callable[[dict], Awaitable[PreparedApikey]]
 
 
 @pytest.fixture(scope="function")
-def apikey_builder(core_db) -> ApikeyBuilder:
+def apikey_builder() -> ApikeyBuilder:
     async def func(permissions):
         return await PreparedApikey.inject_into_db_with_permissions(permissions)
 
@@ -156,12 +157,10 @@ class UserBuilder(Protocol):
 
 
 @pytest.fixture(scope="function")
-def user_builder(core_db) -> UserBuilder:
+def user_builder() -> UserBuilder:
     async def func(permissions, lang=None):
         return await PreparedUser.inject_into_db(
-            user=PreparedUser.prepare_model(
-                password="dummypassword", permissions=permissions, lang=lang
-            ),
+            user=PreparedUser.prepare_model(permissions=permissions, lang=lang),
             password="dummypassword",
         )
 

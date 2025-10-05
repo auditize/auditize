@@ -1,13 +1,8 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
-
-
-class ResourceSearchParams(BaseModel):
-    query: Optional[str] = Field(alias="q", description="Search query", default=None)
 
 
 class HasDatetimeSerialization:
@@ -19,9 +14,17 @@ class HasDatetimeSerialization:
             return default_serializer(value)
 
 
-def IdField(description, **kwargs):
+def CreatedAtField(**kwargs):
     return Field(
-        description=description,
-        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+        description="The creation date",
+        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
+        **kwargs,
+    )
+
+
+def UpdatedAtField(**kwargs):
+    return Field(
+        description="The last update date",
+        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
         **kwargs,
     )

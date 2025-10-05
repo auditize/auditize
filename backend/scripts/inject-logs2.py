@@ -12,10 +12,12 @@ from datetime import datetime, timezone
 from typing import Iterator
 
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.config import init_config
-from auditize.database import init_core_db
-from auditize.log.models import Log
+from auditize.database import init_dbm
+from auditize.database.dbm import get_dbm, open_db_session
+from auditize.log.models import Log, LogCreate
 from auditize.log.service import LogService
 
 # fmt: off
@@ -639,8 +641,13 @@ class LogProvider:
                 yield log, attachments
 
 
-def jsonify(data):
-    return json.dumps(data, indent=4, ensure_ascii=False)
+def jsonify(text: str):
+    try:
+        data = json.loads(text)
+    except ValueError:
+        return text
+    else:
+        return json.dumps(data, indent=4, ensure_ascii=False)
 
 
 class ApiInjector:
@@ -659,7 +666,7 @@ class ApiInjector:
         if resp.is_error:
             sys.exit(
                 "Error %s while pushing log:\n%s"
-                % (resp.status_code, jsonify(resp.json()))
+                % (resp.status_code, jsonify(resp.text))
             )
         log_id = resp.json()["id"]
         for attachment in attachments:
@@ -674,39 +681,41 @@ class ApiInjector:
             if resp.is_error:
                 sys.exit(
                     "Error %s while pushing attachment: %s"
-                    % (resp.status_code, jsonify(resp.json()))
+                    % (resp.status_code, jsonify(resp.text))
                 )
 
 
 class ServiceInjector:
-    def __init__(self, log_service: LogService, log_count: int):
-        self.service = log_service
+    def __init__(self, repo_id: str, log_count: int):
+        self.repo_id = repo_id
         # create a time span for 1000 logs / day
         self.time_end = int(time.time())
         self.time_start = self.time_end - ((log_count / 1000) * 24 * 60 * 60)
 
     @classmethod
-    async def load(cls, repo_id: str, log_count: int):
+    async def spawn(cls, repo_id: str, log_count: int):
         init_config()
-        init_core_db()
-        return cls(await LogService.for_maintenance(repo_id), log_count)
+        init_dbm()
+        return cls(repo_id, log_count)
 
     async def __call__(self, log, attachments):
-        log_model = Log.model_validate(log)
-        log_model.saved_at = datetime.fromtimestamp(
+        log_model = LogCreate.model_validate(log)
+        saved_at = datetime.fromtimestamp(
             random.uniform(self.time_start, self.time_end), timezone.utc
         )
-        log_id = await self.service.save_log(log_model)
-        for attachment in attachments:
-            await self.service.save_log_attachment(
-                log_id,
-                Log.Attachment(
-                    name=attachment["name"],
-                    type=attachment["type"],
-                    mime_type="text/plain",
-                    data=attachment["data"],
-                ),
-            )
+        async with open_db_session() as db_session:
+            log_service = await LogService.for_maintenance(db_session, self.repo_id)
+            log = await log_service.save_log(log_model, saved_at=saved_at)
+            for attachment in attachments:
+                await log_service.save_log_attachment(
+                    log.id,
+                    Log.Attachment(
+                        name=attachment["name"],
+                        type=attachment["type"],
+                        mime_type="text/plain",
+                        data=attachment["data"],
+                    ),
+                )
 
 
 # Adapted from https://death.andgravity.com/limit-concurrency#asyncio-wait
@@ -747,7 +756,7 @@ async def main(argv):
     if base_url and api_key:
         injector = ApiInjector(base_url, repo_id, api_key)
     else:
-        injector = await ServiceInjector.load(repo_id, count)
+        injector = await ServiceInjector.spawn(repo_id, count)
 
     provider = LogProvider.prepare()
 

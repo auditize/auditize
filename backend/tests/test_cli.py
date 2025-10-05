@@ -120,7 +120,7 @@ async def test_purge_expired_logs_none(
     repo = await repo_builder({})
     await repo.create_log(superadmin_client)
     await async_main(["purge-expired-logs"])
-    assert (await repo.db.logs.count_documents({})) == 1
+    assert (await repo.get_log_count()) == 1
 
 
 async def test_purge_expired_logs_all(
@@ -131,7 +131,7 @@ async def test_purge_expired_logs_all(
         superadmin_client, saved_at=datetime.now() - timedelta(days=90)
     )
     await async_main(["purge-expired-logs"])
-    assert (await repo.db.logs.count_documents({})) == 0
+    assert (await repo.get_log_count()) == 0
 
 
 async def test_purge_expired_logs_single(
@@ -149,5 +149,17 @@ async def test_purge_expired_logs_single(
 
     await async_main(["purge-expired-logs", repo_1.id])
 
-    assert (await repo_1.db.logs.count_documents({})) == 0
-    assert (await repo_2.db.logs.count_documents({})) == 1
+    assert (await repo_1.get_log_count()) == 0
+    assert (await repo_2.get_log_count()) == 1
+
+
+async def test_empty_repo(superadmin_client: HttpTestHelper, repo_builder: RepoBuilder):
+    repo = await repo_builder({})
+    await repo.create_log(superadmin_client)
+    await async_main(["empty-repo", repo.id])
+    assert (await superadmin_client.get(f"/api/repos/{repo.id}/logs")).json()[
+        "items"
+    ] == []
+    assert (await superadmin_client.get(f"/api/repos/{repo.id}/logs/entities")).json()[
+        "items"
+    ] == []

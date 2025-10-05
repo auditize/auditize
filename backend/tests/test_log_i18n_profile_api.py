@@ -1,15 +1,10 @@
-import callee
 import pytest
 
-from auditize.database import get_core_db
 from auditize.i18n import Lang
-from auditize.log_i18n_profile.models import (
-    LogI18nProfile,
-    LogTranslation,
-    get_log_value_translation,
-)
+from auditize.log_i18n_profile.models import LogLabels
+from auditize.log_i18n_profile.service import translate
+from auditize.log_i18n_profile.sql_models import LogI18nProfile, LogTranslation
 from conftest import RepoBuilder
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -19,14 +14,10 @@ pytestmark = pytest.mark.anyio
 
 
 async def _test_create_log_i18n_profile(client: HttpTestHelper, data: dict):
-    resp = await client.assert_post_created(
+    await client.assert_post_created(
         "/log-i18n-profiles",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    profile = PreparedLogI18nProfile(resp.json()["id"], data)
-    await assert_collection(
-        get_core_db().log_i18n_profiles, [profile.expected_document()]
+        expected_json=PreparedLogI18nProfile.build_expected_api_response(data),
     )
 
 
@@ -143,15 +134,12 @@ async def test_log_i18n_profile_update_name(repo_write_client: HttpTestHelper):
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "name": "i18n updated",
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [profile.expected_document({"name": "i18n updated"})],
+        expected_json=profile.expected_api_response({"name": "i18n updated"}),
     )
 
 
@@ -166,26 +154,21 @@ async def test_log_i18n_profile_update_add_translation(
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "translations": {
                 "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
             },
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [
-            profile.expected_document(
-                {
-                    "translations": {
-                        "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
-                        "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
-                    }
+        expected_json=profile.expected_api_response(
+            {
+                "translations": {
+                    "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                    "fr": PreparedLogI18nProfile.FRENCH_TRANSLATION,
                 }
-            )
-        ],
+            }
+        ),
     )
 
 
@@ -201,23 +184,19 @@ async def test_log_i18n_profile_update_remove_translation(
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "translations": {"fr": None},
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [
-            profile.expected_document(
-                {
-                    "translations": {
-                        "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
-                    }
+        expected_json=profile.expected_api_response(
+            {
+                "translations": {
+                    "en": PreparedLogI18nProfile.ENGLISH_TRANSLATION,
+                    # French translation must be removed
                 }
-            )
-        ],
+            }
+        ),
     )
 
 
@@ -248,7 +227,7 @@ async def test_log_i18n_profile_update_existing_translation(
             },
         },
     )
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/log-i18n-profiles/{profile.id}",
         json={
             "translations": {
@@ -260,32 +239,25 @@ async def test_log_i18n_profile_update_existing_translation(
                 },
             },
         },
-    )
-    await assert_collection(
-        get_core_db().log_i18n_profiles,
-        [
-            profile.expected_document(
-                {
-                    "translations": {
-                        "en": {
-                            **PreparedLogI18nProfile.EMPTY_TRANSLATION,
-                            "action_type": {
-                                "action_type_1": "action_type_1 EN updated"
-                            },
+        expected_json=profile.expected_api_response(
+            {
+                "translations": {
+                    "en": {
+                        **PreparedLogI18nProfile.EMPTY_TRANSLATION,
+                        "action_type": {"action_type_1": "action_type_1 EN updated"},
+                    },
+                    "fr": {
+                        **PreparedLogI18nProfile.EMPTY_TRANSLATION,
+                        "action_type": {
+                            "action_type_1": "action_type_1 FR",
                         },
-                        "fr": {
-                            **PreparedLogI18nProfile.EMPTY_TRANSLATION,
-                            "action_type": {
-                                "action_type_1": "action_type_1 FR",
-                            },
-                            "action_category": {
-                                "action_1": "action_1 FR",
-                            },
+                        "action_category": {
+                            "action_1": "action_1 FR",
                         },
-                    }
+                    },
                 }
-            )
-        ],
+            }
+        ),
     )
 
 
@@ -454,12 +426,14 @@ async def test_log_i18n_profile_list_forbidden(repo_write_client: HttpTestHelper
 async def test_log_i18n_profile_delete(
     repo_write_client: HttpTestHelper,
     log_i18n_profile: PreparedLogI18nProfile,
+    superadmin_client,
 ):
     await repo_write_client.assert_delete_no_content(
         f"/log-i18n-profiles/{log_i18n_profile.id}"
     )
-
-    await assert_collection(get_core_db().log_i18n_profiles, [])
+    await superadmin_client.assert_get_not_found(
+        f"/log-i18n-profiles/{log_i18n_profile.id}"
+    )
 
 
 async def test_log_i18n_profile_delete_while_used_by_repo(
@@ -491,43 +465,47 @@ async def test_log_i18n_profile_delete_forbidden(
 
 def test_get_log_value_translation():
     profile = LogI18nProfile(name="test")
-    profile.translations[Lang.FR] = LogTranslation(
-        action_type={"user-login": "Authentification utilisateur"},
+    profile.translations.append(
+        LogTranslation(
+            lang=Lang.EN,
+            labels=LogLabels(
+                action_type={"user-login": "Authentification utilisateur"},
+            ),
+        )
     )
     assert (
-        get_log_value_translation(profile, Lang.FR, "action_type", "user-login")
+        translate(profile, Lang.FR, "action_type", "user-login")
         == "Authentification utilisateur"
     )
 
 
 def test_get_log_value_translation_without_log_i18n_profile():
-    assert (
-        get_log_value_translation(None, Lang.FR, "action_type", "user-login")
-        == "User Login"
-    )
+    assert translate(None, Lang.FR, "action_type", "user-login") == "User Login"
 
 
 def test_get_log_value_translation_unknown_key_type():
     profile = LogI18nProfile(name="test")
-    profile.translations[Lang.FR] = LogTranslation()
+    profile.translations.append(LogTranslation(lang=Lang.FR, labels=LogLabels()))
     with pytest.raises(ValueError):
-        get_log_value_translation(profile, Lang.FR, "unknown_key_type", "user-login")
+        translate(profile, Lang.FR, "unknown_key_type", "user-login")
 
 
 async def test_get_log_value_translation_unknown_key():
     profile = LogI18nProfile(name="test")
-    assert (
-        get_log_value_translation(profile, Lang.FR, "action_type", "user-login")
-        == "User Login"
-    )
+    assert translate(profile, Lang.FR, "action_type", "user-login") == "User Login"
 
 
 async def test_get_log_value_translation_english_fallback():
     profile = LogI18nProfile(name="test")
-    profile.translations[Lang.EN] = LogTranslation(
-        action_type={"user-login": "User Authentication"},
+    profile.translations.append(
+        LogTranslation(
+            lang=Lang.EN,
+            labels=LogLabels(
+                action_type={"user-login": "User Authentication"},
+            ),
+        )
     )
     assert (
-        get_log_value_translation(profile, Lang.FR, "action_type", "user-login")
+        translate(profile, Lang.FR, "action_type", "user-login")
         == "User Authentication"
     )

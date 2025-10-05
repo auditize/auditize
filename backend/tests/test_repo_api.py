@@ -1,15 +1,12 @@
 from datetime import datetime
-from uuid import UUID
+from typing import Awaitable, Callable
 
 import callee
 import pytest
 from icecream import ic
-from motor.motor_asyncio import AsyncIOMotorCollection
 
-from auditize.database import get_core_db
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
 from helpers.apikey import PreparedApikey
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
 from helpers.log_i18n_profile import PreparedLogI18nProfile
@@ -22,41 +19,58 @@ from helpers.utils import strip_dict_keys
 pytestmark = pytest.mark.anyio
 
 
-async def _test_repo_create(client: HttpTestHelper, collection: AsyncIOMotorCollection):
+async def _test_repo_create(
+    client: HttpTestHelper, permissions_getter: Callable[[], Awaitable]
+):
     data = {"name": "myrepo"}
 
-    resp = await client.assert_post(
+    resp = await client.assert_post_created(
         "/repos",
         json=data,
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str)},
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
     repo_id = resp.json()["id"]
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(repo_id, data)],
-    )
 
     # check that the authenticated user has read & write permissions on the new repo
-    permission_holder = await collection.find_one({})
-    assert permission_holder["permissions"]["logs"]["repos"] == [
-        {"repo_id": UUID(repo_id), "read": True, "write": True, "readable_entities": []}
+
+    permissions = await permissions_getter()
+    assert permissions["logs"]["repos"] == [
+        {"repo_id": repo_id, "read": True, "write": True, "readable_entities": []}
     ]
 
 
-async def test_repo_create_as_apikey(apikey_builder: ApikeyBuilder):
-    apikey_builder = await apikey_builder({"management": {"repos": {"write": True}}})
-
-    async with apikey_builder.client() as client:
-        await _test_repo_create(client, get_core_db().apikeys)
+async def _get_apikey_permissions(client: HttpTestHelper, user_id: str):
+    resp = await client.assert_get_ok(f"/apikeys/{user_id}")
+    return resp.json()["permissions"]
 
 
-async def test_repo_create_as_user(user_builder: UserBuilder):
-    user_builder = await user_builder({"management": {"repos": {"write": True}}})
+async def test_repo_create_as_apikey(
+    apikey_builder: ApikeyBuilder, superadmin_client: HttpTestHelper
+):
+    apikey = await apikey_builder({"management": {"repos": {"write": True}}})
 
-    async with user_builder.client() as client:
+    async with apikey.client() as client:
+        await _test_repo_create(
+            client,
+            lambda: _get_apikey_permissions(superadmin_client, apikey.id),
+        )
+
+
+async def _get_user_permissions(client: HttpTestHelper, user_id: str):
+    resp = await client.assert_get_ok(f"/users/{user_id}")
+    return resp.json()["permissions"]
+
+
+async def test_repo_create_as_user(
+    user_builder: UserBuilder, superadmin_client: HttpTestHelper
+):
+    user = await user_builder({"management": {"repos": {"write": True}}})
+
+    async with user.client() as client:
         client: HttpTestHelper  # make pycharm happy
-        await _test_repo_create(client, get_core_db().users)
+        await _test_repo_create(
+            client, lambda: _get_user_permissions(superadmin_client, user.id)
+        )
 
 
 @pytest.mark.parametrize("status", ["enabled", "readonly", "disabled"])
@@ -65,14 +79,10 @@ async def test_repo_create_with_explicit_status(
 ):
     data = {"name": "myrepo", "status": status}
 
-    resp = await superadmin_client.assert_post_created(
+    await superadmin_client.assert_post_created(
         "/repos",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
 
 
@@ -82,33 +92,23 @@ async def test_repo_create_with_log_i18n_profile(
 ):
     data = {"name": "myrepo", "log_i18n_profile_id": log_i18n_profile.id}
 
-    resp = await superadmin_client.assert_post_created(
+    await superadmin_client.assert_post_created(
         "/repos",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
 
 
-async def test_repo_create_with_retention_period(
-    superadmin_client: HttpTestHelper,
-):
+async def test_repo_create_with_retention_period(superadmin_client: HttpTestHelper):
     data = {
         "name": "myrepo",
         "retention_period": 30,
     }
 
-    resp = await superadmin_client.assert_post_created(
+    await superadmin_client.assert_post_created(
         "/repos",
         json=data,
-        expected_json={"id": callee.IsA(str)},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [PreparedRepo.build_expected_document(resp.json()["id"], data)],
+        expected_json=PreparedRepo.build_expected_api_response(data),
     )
 
 
@@ -157,12 +157,10 @@ async def test_repo_update(
     field: str,
     value: str,
 ):
-    await repo_write_client.assert_patch(
-        f"/repos/{repo.id}", json={field: value}, expected_status_code=204
-    )
-
-    await assert_collection(
-        get_core_db().repos, [repo.expected_document({field: value})]
+    await repo_write_client.assert_patch_ok(
+        f"/repos/{repo.id}",
+        json={field: value},
+        expected_json=repo.expected_api_response({field: value}),
     )
 
 
@@ -171,13 +169,12 @@ async def test_repo_update_set_log_i18n_profile_id(
     repo: PreparedRepo,
     log_i18n_profile: PreparedLogI18nProfile,
 ):
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"log_i18n_profile_id": log_i18n_profile.id},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"log_i18n_profile_id": UUID(log_i18n_profile.id)})],
+        expected_json=repo.expected_api_response(
+            {"log_i18n_profile_id": log_i18n_profile.id}
+        ),
     )
 
 
@@ -187,13 +184,10 @@ async def test_repo_update_unset_log_i18n_profile_id(
     repo_builder: RepoBuilder,
 ):
     repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"log_i18n_profile_id": None},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"log_i18n_profile_id": None})],
+        expected_json=repo.expected_api_response({"log_i18n_profile_id": None}),
     )
 
 
@@ -201,13 +195,10 @@ async def test_repo_update_set_retention_period(
     repo_write_client: HttpTestHelper,
     repo: PreparedRepo,
 ):
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"retention_period": 30},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"retention_period": 30})],
+        expected_json=repo.expected_api_response({"retention_period": 30}),
     )
 
 
@@ -216,13 +207,10 @@ async def test_repo_update_unset_retention_period(
     repo_builder: RepoBuilder,
 ):
     repo = await repo_builder({"retention_period": 30})
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={"retention_period": None},
-    )
-    await assert_collection(
-        get_core_db().repos,
-        [repo.expected_document({"retention_period": None})],
+        expected_json=repo.expected_api_response({"retention_period": None}),
     )
 
 
@@ -232,11 +220,11 @@ async def test_repo_update_empty_with_log_i18n_profile_id_already_set(
     repo_builder: RepoBuilder,
 ):
     repo = await repo_builder({"log_i18n_profile_id": log_i18n_profile.id})
-    await repo_write_client.assert_patch_no_content(
+    await repo_write_client.assert_patch_ok(
         f"/repos/{repo.id}",
         json={},
+        expected_json=repo.expected_api_response(),
     )
-    await assert_collection(get_core_db().repos, [repo.expected_document()])
 
 
 async def test_repo_update_unknown_id(repo_write_client: HttpTestHelper):
@@ -337,6 +325,13 @@ async def test_repo_get_with_stats(
             }
         ),
     )
+
+
+async def test_repo_get_with_stats_disabled_repo(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
+):
+    await repo.update_status(superadmin_client, "disabled")
+    await superadmin_client.assert_get_ok(f"/repos/{repo.id}?include=stats")
 
 
 async def test_repo_get_unknown_id(repo_read_client: HttpTestHelper):
@@ -597,6 +592,7 @@ async def test_repo_list_user_repos_simple(
                         ),
                         "status",
                         "created_at",
+                        "updated_at",
                         "retention_period",
                         "stats",
                         "log_i18n_profile_id",
@@ -794,17 +790,17 @@ async def test_repo_list_user_repos_as_apikey(apikey_builder: ApikeyBuilder):
         await client.assert_get_forbidden("/users/me/repos")
 
 
-async def test_repo_delete(repo_write_client: HttpTestHelper):
+async def test_repo_delete(repo_write_client: HttpTestHelper, superadmin_client):
     resp = await repo_write_client.assert_post_created("/repos", json={"name": "repo"})
     repo_id = resp.json()["id"]
     await repo_write_client.assert_delete_no_content(f"/repos/{repo_id}")
-
-    await assert_collection(get_core_db().repos, [])
+    await superadmin_client.assert_get_not_found(f"/repos/{repo_id}")
 
 
 async def test_repo_delete_with_related_resources(
     user_builder: UserBuilder, repo: PreparedRepo
 ):
+    remaining_repo = repo  # repo that will not be deleted
     superadmin = await user_builder({"is_superadmin": True})
 
     async with superadmin.client() as client:
@@ -822,7 +818,7 @@ async def test_repo_delete_with_related_resources(
                     "logs": {
                         "repos": [
                             {"repo_id": to_be_deleted_repo_id, "read": True},
-                            {"repo_id": repo.id, "read": True},
+                            {"repo_id": remaining_repo.id, "read": True},
                         ]
                     }
                 },
@@ -838,7 +834,7 @@ async def test_repo_delete_with_related_resources(
                         "logs": {
                             "repos": [
                                 {"repo_id": to_be_deleted_repo_id, "read": True},
-                                {"repo_id": repo.id, "read": True},
+                                {"repo_id": remaining_repo.id, "read": True},
                             ]
                         }
                     },
@@ -857,21 +853,25 @@ async def test_repo_delete_with_related_resources(
         )
         log_filter = await superadmin.create_log_filter(
             {
-                "name": "filter",
-                "repo_id": repo.id,
+                "name": "filter_to_keep",
+                "repo_id": remaining_repo.id,
                 "search_params": {},
                 "columns": [],
             },
         )
 
+        # Delete the repo
         await client.assert_delete_no_content(f"/repos/{to_be_deleted_repo_id}")
 
+    ###
     # Check that the related resources have been deleted
-    await assert_collection(get_core_db().repos, [repo.expected_document()])
-    await assert_collection(
-        get_core_db().apikeys,
-        [
-            apikey.expected_document(
+    ###
+
+    async with superadmin.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/apikeys/{apikey.id}",
+            expected_json=apikey.expected_api_response(
                 {
                     "permissions": {
                         **DEFAULT_PERMISSIONS,
@@ -880,7 +880,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": UUID(repo.id),
+                                    "repo_id": remaining_repo.id,
                                     "read": True,
                                     "write": False,
                                     "readable_entities": [],
@@ -889,13 +889,14 @@ async def test_repo_delete_with_related_resources(
                         },
                     }
                 }
-            )
-        ],
-    )
-    await assert_collection(
-        get_core_db().users,
-        [
-            user.expected_document(
+            ),
+        )
+
+    async with superadmin.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/users/{user.id}",
+            expected_json=user.expected_api_response(
                 {
                     "permissions": {
                         **DEFAULT_PERMISSIONS,
@@ -904,7 +905,7 @@ async def test_repo_delete_with_related_resources(
                             "write": False,
                             "repos": [
                                 {
-                                    "repo_id": UUID(repo.id),
+                                    "repo_id": remaining_repo.id,
                                     "read": True,
                                     "write": False,
                                     "readable_entities": [],
@@ -913,14 +914,23 @@ async def test_repo_delete_with_related_resources(
                         },
                     }
                 }
-            )
-        ],
-        filter={"email": user.email},
-    )
-    await assert_collection(
-        get_core_db().log_filters,
-        [log_filter.expected_document({"user_id": UUID(superadmin.id)})],
-    )
+            ),
+        )
+
+    async with superadmin.client() as client:
+        client: HttpTestHelper
+        await client.assert_get_ok(
+            f"/users/me/logs/filters",
+            expected_json={
+                "items": [log_filter.expected_api_response()],
+                "pagination": {
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                    "total_pages": 1,
+                },
+            },
+        )
 
 
 async def test_repo_delete_unknown_id(repo_write_client: HttpTestHelper):

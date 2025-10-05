@@ -6,20 +6,21 @@ from uuid import UUID, uuid4
 import callee
 from httpx import Response
 
-from auditize.database import get_core_db
+from auditize.database.dbm import open_db_session
 from auditize.i18n.lang import Lang
-from auditize.permissions.models import Permissions
-from auditize.resource.service import create_resource_document
-from auditize.user.models import User
+from auditize.permissions.models import PermissionsInput
+from auditize.user.models import UserCreate, UserUpdate
 from auditize.user.service import (
-    build_document_from_user,
+    create_user,
     get_user,
-    hash_user_password,
+    update_user,
 )
+from auditize.user.sql_models import User
 
 from .http import HttpTestHelper, get_cookie_by_name
 from .log_filter import PreparedLogFilter
 from .permissions.constants import DEFAULT_PERMISSIONS
+from .utils import DATETIME_FORMAT
 
 
 class PreparedUser:
@@ -50,17 +51,16 @@ class PreparedUser:
         return cls(resp.json()["id"], data)
 
     @staticmethod
-    def prepare_model(*, password="dummypassword", permissions=None, lang=None) -> User:
+    def prepare_model(*, permissions=None, lang=None) -> UserCreate:
         rand = str(uuid4())
-        model = User(
+        model = UserCreate(
             first_name=f"John {rand}",
             last_name=f"Doe {rand}",
-            email=f"john.doe_{rand}@example.net",
-            password_hash=hash_user_password(password),
+            email=f"john.doe_{rand}@example.net",  # noqa
             lang=lang or Lang.EN,
         )
         if permissions is not None:
-            model.permissions = Permissions.model_validate(permissions)
+            model.permissions = PermissionsInput.model_validate(permissions)
         return model
 
     @classmethod
@@ -68,13 +68,12 @@ class PreparedUser:
         cls, user: User = None, password="dummypassword"
     ) -> "PreparedUser":
         if user is None:
-            user = cls.prepare_model(password=password)
-        # FIXME: auditize.users.service.save_user should be used here
-        user_id = await create_resource_document(
-            get_core_db().users, build_document_from_user(user)
-        )
+            user = cls.prepare_model()
+        async with open_db_session() as session:
+            user = await create_user(session, user)
+            await update_user(session, user.id, UserUpdate(password=password))
         return cls(
-            id=str(user_id),
+            id=str(user.id),
             data={
                 "first_name": user.first_name,
                 "last_name": user.last_name,
@@ -84,15 +83,12 @@ class PreparedUser:
         )
 
     async def expire_password_reset_token(self):
-        await get_core_db().users.update_one(
-            {"_id": UUID(self.id)},
-            {
-                "$set": {
-                    "password_reset_token.expires_at": datetime.now(timezone.utc)
-                    - timedelta(days=1)
-                }
-            },
-        )
+        async with open_db_session() as session:
+            user_model = await get_user(session, UUID(self.id))
+            user_model.password_reset_token_expires_at = datetime.now(
+                timezone.utc
+            ) - timedelta(days=1)
+            await session.commit()
 
     @property
     def email(self) -> str:
@@ -100,12 +96,9 @@ class PreparedUser:
 
     @property
     async def password_reset_token(self) -> str | None:
-        user_model = await get_user(UUID(self.id))
-        return (
-            user_model.password_reset_token.token
-            if user_model.password_reset_token
-            else None
-        )
+        async with open_db_session() as session:
+            user_model = await get_user(session, UUID(self.id))
+            return user_model.password_reset_token
 
     async def log_in(self, client: HttpTestHelper) -> Response:
         return await client.assert_post(
@@ -124,36 +117,29 @@ class PreparedUser:
         resp = await self.log_in(client)
         return get_cookie_by_name(resp, "session").value
 
-    def expected_document(self, extra=None) -> dict:
-        password_reset_token = {
-            "token": callee.Regex(r"^[0-9a-f]{64}$"),
-            "expires_at": callee.IsA(datetime),
-        }
+    @staticmethod
+    def build_expected_api_response(extra=None) -> dict:
         return {
-            "_id": UUID(self.id),
-            "first_name": self.data["first_name"],
-            "last_name": self.data["last_name"],
-            "email": self.data["email"],
-            "lang": self.data.get("lang", "en"),
+            "id": callee.IsA(str),
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
+            "lang": "en",
             "permissions": DEFAULT_PERMISSIONS,
-            "password_hash": callee.IsA(str) if self.password else None,
-            "created_at": callee.IsA(datetime),
-            "password_reset_token": None if self.password else password_reset_token,
             "authenticated_at": None,
             **(extra or {}),
         }
 
     def expected_api_response(self, extra=None) -> dict:
-        return {
-            "id": self.id,
-            "first_name": self.data["first_name"],
-            "last_name": self.data["last_name"],
-            "email": self.data["email"],
-            "lang": self.data.get("lang", "en"),
-            "permissions": DEFAULT_PERMISSIONS,
-            "authenticated_at": None,
-            **(extra or {}),
-        }
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "first_name": self.data["first_name"],
+                "last_name": self.data["last_name"],
+                "email": self.data["email"],
+                "lang": self.data.get("lang", "en"),
+                **(extra or {}),
+            }
+        )
 
     async def create_log_filter(self, data):
         async with self.client() as client:

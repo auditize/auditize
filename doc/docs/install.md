@@ -1,6 +1,6 @@
 # Installation
 
-Auditize is a Python 3.12+ application that uses MongoDB as a database and do not use the filesystem to persist data. It's base configuration is 100% environment variables based, making it easy and flexible to configure, especially in a Docker environment.
+Auditize is a Python 3.12+ application that uses PostgreSQL and Elasticsearch as databases and do not use the filesystem to persist data. It's base configuration is 100% environment variables based, making it easy and flexible to configure, especially in a Docker environment.
 
 Auditize is composed of two distinct services:
 
@@ -9,20 +9,16 @@ Auditize is composed of two distinct services:
 
 It is delivered as a [Python package on PyPI](https://pypi.org/project/auditize/) that can be installed with `pip` (the package installer for Python). Please note that the Auditize package dependencies are pinned to ensure a stable and reproducible installation.
 
+By default, Auditze uses `auditize` as PostgreSQL database name and also use `auditize` as an Elasticsearch index prefix: `auditize_logs_{repo_id}`. This can be changed through the `AUDITIZE_DB_NAME` configuration variable.
+
 The following sections will guide you through the installation of Auditize in two different contexts:
 
 - a [Docker Compose environment](#docker-compose)
 - a [standalone environment](#standalone)
 
-!!! info "MongoDB"
-
-    Auditize requires MongoDB 7.0+ to run. It uses transactions for certain operations, meaning that your MongoDB server must be [configured with a replica set](https://www.mongodb.com/docs/manual/replication/#transactions). Please note that a replicat set can be configured with a single MongoDB instance.
-
-    Auditize creates a main database named `auditize` in charge of storing the configuration data. For each new log repository, a dedicated database will be created with a name prefixed by `auditize_logs_`.
-
 ## Docker Compose
 
-The Docker Compose environment described here provides a complete Auditize setup including MongoDB.
+The Docker Compose environment described here provides a complete Auditize setup including PostgreSQL and Elasticsearch.
 
 First, create an `auditize-docker` directory where you will store the various files related to your Auditize's Docker setup, and go to this directory:
 
@@ -58,40 +54,56 @@ This image will be used to run both the web application and the scheduler Docker
 Next, create a `docker-compose.yml` file in the same directory with the following content:
 
 ```yaml
+name: auditize
+
+x-auditize-variables: &auditize-variables
+  AUDITIZE_PG_HOST: postgres
+  AUDITIZE_PG_USER: auditize
+  AUDITIZE_PG_PASSWORD: auditize
+  AUDITIZE_ES_URL: http://elastic:9200
+
 services:
-  mongo:
-    image: mongo
-    hostname: mongo # we need a static hostname for MongoDB replication
-    command: ["--replSet", "rs0"]
+  postgres:
+    image: postgres:17
     restart: always
+    environment:
+      POSTGRES_USER: auditize
+      POSTGRES_PASSWORD: auditize
+      POSTGRES_DB: auditize
     volumes:
-      - mongo-data:/data/db
+      - pgdata:/var/lib/postgresql/data
+  elastic:
+    image: elasticsearch:8.19.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
   web:
     image: auditize
-    build: .
-    pull_policy: never
     depends_on:
-      - mongo
-    command: ["serve", "--host", "0.0.0.0", "--port", "80"]
+      - postgres
+      - elastic
+    command: ["serve", "--host", "0.0.0.0", "--port", "8000"]
     ports:
-      - "8000:80"
+      - "8000:8000"
     env_file: ".env"
     environment:
-      - AUDITIZE_MONGODB_URI=mongodb://mongo:27017/
+      <<: *auditize-variables
   scheduler:
     image: auditize
-    build: .
-    pull_policy: never
     depends_on:
-      - mongo
+      - postgres
+      - elastic
     command: ["schedule"]
     env_file: ".env"
     environment:
-      - AUDITIZE_MONGODB_URI=mongodb://mongo:27017/
+      <<: *auditize-variables
       # we set PYTHONUNBUFFERED, otherwise the print() from "schedule" are not shown
-      - PYTHONUNBUFFERED=1
+      PYTHONUNBUFFERED: 1
 volumes:
-  mongo-data:
+  pgdata:
+  esdata:
 ```
 
 This `docker-compose.yml` uses a `.env` file for the Auditize base-configuration, so let's create a `.env` file in the same directory with at least the following configuration elements:
@@ -106,33 +118,27 @@ AUDITIZE_JWT_SIGNING_KEY=YOUR_AUDITIZE_JWT_SIGNING_KEY
 
 Please refer to the [configuration documentation](config.md) for more details.
 
-Before running Auditize services, you need to start the MongoDB service first and initialize the replica set:
-
-```bash
-docker compose up -d mongo
-docker exec -it auditize-docker-mongo-1 mongosh --eval "rs.initiate()"
-```
-
-Then, you can run all other services:
+Run the services:
 
 ```bash
 docker compose up -d
 ```
 
-!!! note
+Then, create the database schema for PostgreSQL:
 
-    As you only need to initialize the MongoDB replicat set once, the docker environment can be run using
-    `docker compose up -d` all subsequent times.
+```bash
+docker exec -it auditize-web-1 auditize migrate-db
+```
 
 In order to login on Auditize, you need to create a superadmin user. You can do this by running the following command:
 
 ```bash
-docker exec -it auditize-docker-web-1 auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME
+docker exec -it auditize-web-1 auditize bootstrap-superadmin YOUR_EMAIL YOUR_FIRST_NAME YOUR_LAST_NAME
 ```
 
 Where:
 
-- `auditize-docker-web-1` is the name of the web container to run the command from
+- `auditize-web-1` is the name of the web container to run the command from
 - `YOUR_EMAIL`, `YOUR_FIRST_NAME`, and `YOUR_LAST_NAME` must be replaced by your actual user information
 
 The command will prompt you for a password and then create the superadmin user.
@@ -200,7 +206,7 @@ In this section, we will build a standalone Auditize environment using:
 - Gunicorn with ASGI workers
 - Nginx as a reverse proxy
 
-**We assume that you have a working MongoDB instance available [configured with a replica set](https://www.mongodb.com/docs/manual/replication/#transactions) and the corresponding MongoDB URI to connect to it.**
+We assume that you have **working PostgreSQL and Elasticsearch instances available**, a database created for Auditize and the corresponding connection details.
 
 Here, we take Ubuntu 24.04 as an example, but the steps should be similar for other Linux distributions (especially Debian-based ones and distros using `systemd`).
 
@@ -214,12 +220,12 @@ sudo virtualenv /opt/auditize
 sudo /opt/auditize/bin/pip install auditize gunicorn
 ```
 
-Create a `/opt/auditize/env` file containing your [Auditize configuration](config.md). It should contain at least the required fields `AUDITIZE_PUBLIC_URL`, `AUDITIZE_JWT_SIGNING_KEY`, and `AUDITIZE_MONGODB_URI` if your MongoDB server is not running locally:
+Create a `/opt/auditize/env` file containing your [Auditize configuration](config.md). It should contain at least the required fields `AUDITIZE_PUBLIC_URL`, `AUDITIZE_JWT_SIGNING_KEY`, and also `AUDITIZE_PG_*` and `AUDITIZE_ES_*` according to your PostgreSQL and Elasticsearch setup.
 
 ```bash
 AUDITIZE_PUBLIC_URL=...
 AUDITIZE_JWT_SIGNING_KEY=...
-AUDITIZE_MONGODB_URI=...
+...
 ```
 
 Then, ensure appropriate permissions and ownership on this file:
@@ -227,6 +233,12 @@ Then, ensure appropriate permissions and ownership on this file:
 ```bash
 sudo chown www-data:www-data /opt/auditize/env
 sudo chmod 660 /opt/auditize/env
+```
+
+Create the database schema for PostgreSQL:
+
+```bash
+sudo AUDITIZE_CONFIG=/opt/auditize/env /opt/auditize/bin/auditize migrate-db
 ```
 
 Bootstrap the superadmin user:

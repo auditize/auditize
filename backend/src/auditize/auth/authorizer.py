@@ -3,12 +3,14 @@ from typing import Annotated, Callable, Type
 from uuid import UUID
 
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
-from auditize.apikey.models import Apikey
 from auditize.apikey.service import get_apikey, get_apikey_by_key
+from auditize.apikey.sql_models import Apikey
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX, APIKEY_SECRET_PREFIX
 from auditize.auth.jwt import get_access_token_data, get_user_email_from_session_token
+from auditize.dependencies import get_db_session
 from auditize.exceptions import (
     AuthenticationFailure,
     PermissionDenied,
@@ -19,10 +21,10 @@ from auditize.permissions.assertions import (
     can_read_logs_from_repo,
     can_write_logs_to_repo,
 )
-from auditize.permissions.models import Permissions
-from auditize.permissions.operations import authorize_grant
-from auditize.user.models import User
+from auditize.permissions.service import authorize_grant
+from auditize.permissions.sql_models import Permissions
 from auditize.user.service import get_user_by_email
+from auditize.user.sql_models import User
 
 _BEARER_PREFIX = "Bearer "
 
@@ -88,20 +90,22 @@ def _get_authorization_bearer(request: Request) -> str | None:
     return authorization[len(_BEARER_PREFIX) :]
 
 
-async def authenticate_apikey(key: str) -> Authenticated:
+async def authenticate_apikey(session: AsyncSession, key: str) -> Authenticated:
     try:
-        apikey = await get_apikey_by_key(key)
+        apikey = await get_apikey_by_key(session, key)
     except UnknownModelException:
         raise AuthenticationFailure("Invalid API key")
 
     return Authenticated.from_apikey(apikey)
 
 
-async def authenticate_access_token(access_token: str) -> Authenticated:
+async def authenticate_access_token(
+    session: AsyncSession, access_token: str
+) -> Authenticated:
     jwt_token = access_token[len(ACCESS_TOKEN_PREFIX) :]
     apikey_id, permissions = get_access_token_data(jwt_token)
     try:
-        apikey = await get_apikey(apikey_id)
+        apikey = await get_apikey(session, apikey_id)
     except UnknownModelException:
         raise AuthenticationFailure(
             "Invalid API key corresponding to access token is no longer valid"
@@ -120,7 +124,7 @@ async def authenticate_access_token(access_token: str) -> Authenticated:
     )
 
 
-async def authenticate_user(request: Request) -> Authenticated:
+async def authenticate_user(session: AsyncSession, request: Request) -> Authenticated:
     if not request.cookies:
         raise AuthenticationFailure()
 
@@ -130,7 +134,7 @@ async def authenticate_user(request: Request) -> Authenticated:
 
     user_email = get_user_email_from_session_token(session_token)
     try:
-        user = await get_user_by_email(user_email)
+        user = await get_user_by_email(session, user_email)
     except UnknownModelException:
         raise AuthenticationFailure("User does no longer exist")
 
@@ -140,16 +144,18 @@ async def authenticate_user(request: Request) -> Authenticated:
     return Authenticated.from_user(user)
 
 
-async def get_authenticated(request: Request) -> Authenticated:
+async def get_authenticated(
+    session: Annotated[AsyncSession, Depends(get_db_session)], request: Request
+) -> Authenticated:
     bearer = _get_authorization_bearer(request)
     if bearer:
         if bearer.startswith(APIKEY_SECRET_PREFIX):
-            return await authenticate_apikey(bearer)
+            return await authenticate_apikey(session, bearer)
         if bearer.startswith(ACCESS_TOKEN_PREFIX):
-            return await authenticate_access_token(bearer)
+            return await authenticate_access_token(session, bearer)
         raise AuthenticationFailure("Invalid bearer token")
 
-    return await authenticate_user(request)
+    return await authenticate_user(session, request)
 
 
 class _Authorized:

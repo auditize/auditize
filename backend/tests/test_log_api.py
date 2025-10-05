@@ -7,7 +7,6 @@ import callee
 import pytest
 
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
-from helpers.database import assert_collection
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
@@ -54,11 +53,11 @@ async def test_log_repo_access_control(
 async def test_create_log_minimal_fields(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    await log_write_client.assert_post(
+    log_data = PreparedLog.prepare_data()
+    await log_write_client.assert_post_created(
         f"/repos/{repo.id}/logs",
-        json=PreparedLog.prepare_data(),
-        expected_status_code=201,
-        expected_json={"id": callee.IsA(str)},
+        json=log_data,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
     )
 
 
@@ -73,7 +72,7 @@ async def test_create_log_forbidden(
 async def test_create_log_all_fields(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    data = PreparedLog.prepare_data(
+    log_data = PreparedLog.prepare_data(
         {
             "source": [
                 {"name": "ip", "value": "1.1.1.1"},
@@ -106,9 +105,9 @@ async def test_create_log_all_fields(
 
     await log_write_client.assert_post(
         f"/repos/{repo.id}/logs",
-        json=data,
+        json=log_data,
         expected_status_code=201,
-        expected_json={"id": callee.IsA(str)},
+        expected_json=PreparedLog.build_expected_api_response(log_data),
     )
 
 
@@ -1397,7 +1396,7 @@ async def test_get_logs_filter_no_result(
 async def _test_get_logs_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
-    authorized_entities: list[str] | None,
+    authorized_entities: list[str],
     search_params: dict[str, str],
     expected_logs: list[PreparedLog],
 ):
@@ -1407,7 +1406,7 @@ async def _test_get_logs_visibility(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True if authorized_entities is None else False,
+                        "read": False if authorized_entities else True,
                         "readable_entities": authorized_entities,
                     }
                 ]
@@ -1436,7 +1435,7 @@ async def test_get_logs_with_limited_entity_visibility_1(
 
     await _test_get_logs_visibility(apikey_builder, repo, ["A"], {}, [log1])
     await _test_get_logs_visibility(apikey_builder, repo, ["B"], {}, [log2])
-    await _test_get_logs_visibility(apikey_builder, repo, None, {}, [log2, log1])
+    await _test_get_logs_visibility(apikey_builder, repo, [], {}, [log2, log1])
 
 
 async def test_get_logs_with_limited_entity_visibility_2(
@@ -1537,7 +1536,7 @@ async def test_get_log_visibility(
 async def _test_get_log_entities_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
-    authorized_entities: list[str] | None,
+    authorized_entities: list[str],
     search_params: dict[str, str],
     expected: list[str],
 ):
@@ -1547,7 +1546,7 @@ async def _test_get_log_entities_visibility(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True if authorized_entities is None else False,
+                        "read": False if authorized_entities else True,
                         "readable_entities": authorized_entities,
                     }
                 ]
@@ -1601,22 +1600,22 @@ async def test_get_log_entities_visibility(
 
     # Test with a user without entity restriction
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, None, {"root": "1"}, ["A", "B"]
+        apikey_builder, repo, [], {"root": "1"}, ["A", "B"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, None, {"parent_entity_ref": "A"}, ["AA", "AB"]
+        apikey_builder, repo, [], {"parent_entity_ref": "A"}, ["AA", "AB"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, None, {"parent_entity_ref": "AA"}, ["AAA", "AAB"]
+        apikey_builder, repo, [], {"parent_entity_ref": "AA"}, ["AAA", "AAB"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, None, {"parent_entity_ref": "AB"}, ["ABA", "ABB"]
+        apikey_builder, repo, [], {"parent_entity_ref": "AB"}, ["ABA", "ABB"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, None, {"parent_entity_ref": "B"}, ["BA"]
+        apikey_builder, repo, [], {"parent_entity_ref": "B"}, ["BA"]
     )
     await _test_get_log_entities_visibility(
-        apikey_builder, repo, None, {"parent_entity_ref": "BA"}, ["BAA", "BAB"]
+        apikey_builder, repo, [], {"parent_entity_ref": "BA"}, ["BAA", "BAB"]
     )
 
     # Test with a user with entity permission on entity "A"
@@ -1677,7 +1676,7 @@ async def test_get_log_entities_visibility(
 async def _test_get_log_entity_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
-    authorized_entities: list[str] | None,
+    authorized_entities: list[str],
     entity_ref: str,
     expected_status_code: int,
 ):
@@ -1687,7 +1686,7 @@ async def _test_get_log_entity_visibility(
                 "repos": [
                     {
                         "repo_id": repo.id,
-                        "read": True if authorized_entities is None else False,
+                        "read": False if authorized_entities else True,
                         "readable_entities": authorized_entities,
                     }
                 ]
@@ -1730,9 +1729,9 @@ async def test_get_log_entity_visibility(
     await repo.create_log_with_entity_path(superadmin_client, ["A", "AB", "ABA"])
     await repo.create_log_with_entity_path(superadmin_client, ["A", "AB", "ABB"])
 
-    await _test_get_log_entity_visibility(apikey_builder, repo, None, "A", 200)
-    await _test_get_log_entity_visibility(apikey_builder, repo, None, "AA", 200)
-    await _test_get_log_entity_visibility(apikey_builder, repo, None, "AAA", 200)
+    await _test_get_log_entity_visibility(apikey_builder, repo, [], "A", 200)
+    await _test_get_log_entity_visibility(apikey_builder, repo, [], "AA", 200)
+    await _test_get_log_entity_visibility(apikey_builder, repo, [], "AAA", 200)
 
     await _test_get_log_entity_visibility(apikey_builder, repo, ["A"], "A", 200)
     await _test_get_log_entity_visibility(apikey_builder, repo, ["A"], "AA", 200)
@@ -2113,22 +2112,23 @@ async def test_log_entity_consolidation_rename_entity(
             ]
         },
     )
-    await assert_collection(
-        repo.db.log_entities,
-        [
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": None,
-                "ref": "A",
-                "name": "Name of A",
-            },
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": "A",
-                "ref": "AA",
-                "name": "New name of AA",
-            },
-        ],
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/entities/ref:A",
+        expected_json={
+            "ref": "A",
+            "name": "Name of A",
+            "parent_entity_ref": None,
+            "has_children": True,
+        },
+    )
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/entities/ref:AA",
+        expected_json={
+            "ref": "AA",
+            "name": "New name of AA",
+            "parent_entity_ref": "A",
+            "has_children": False,
+        },
     )
 
 
@@ -2139,28 +2139,32 @@ async def test_log_entity_consolidation_move_entity(
     await repo.create_log_with_entity_path(superadmin_client, ["B"])
     await repo.create_log_with_entity_path(superadmin_client, ["B", "AA"])
 
-    await assert_collection(
-        repo.db.log_entities,
-        [
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": None,
-                "ref": "A",
-                "name": "A",
-            },
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": "B",
-                "ref": "AA",
-                "name": "AA",
-            },
-            {
-                "_id": callee.Any(),
-                "parent_entity_ref": None,
-                "ref": "B",
-                "name": "B",
-            },
-        ],
+    # Check that the entity AA is now a child of B
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/entities",
+        expected_json={
+            "items": [
+                {
+                    "ref": "A",
+                    "name": "A",
+                    "parent_entity_ref": None,
+                    "has_children": False,
+                },
+                {
+                    "ref": "AA",
+                    "name": "AA",
+                    "parent_entity_ref": "B",
+                    "has_children": False,
+                },
+                {
+                    "ref": "B",
+                    "name": "B",
+                    "parent_entity_ref": None,
+                    "has_children": True,
+                },
+            ],
+            "pagination": {"next_cursor": None},
+        },
     )
 
 
@@ -2260,12 +2264,6 @@ async def test_get_log_entities_empty(
     await do_test_cursor_pagination_empty_data(
         log_read_client, f"/repos/{repo.id}/logs/entities?root=true"
     )
-
-
-async def test_get_log_entities_no_root_or_parent_entity_ref_params(
-    log_read_client: HttpTestHelper, repo: PreparedRepo
-):
-    await log_read_client.assert_get_bad_request(f"/repos/{repo.id}/logs/entities")
 
 
 async def test_get_log_entities_both_root_or_parent_entity_ref_params(

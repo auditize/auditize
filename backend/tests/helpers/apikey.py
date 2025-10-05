@@ -1,14 +1,16 @@
 import uuid
-from datetime import datetime
 
 import callee
 
-from auditize.apikey.models import Apikey
+from auditize.apikey.models import ApikeyCreate
 from auditize.apikey.service import create_apikey
-from auditize.permissions.models import Permissions
+from auditize.apikey.sql_models import Apikey
+from auditize.database.dbm import open_db_session
+from auditize.permissions.models import PermissionsInput
 
 from .http import HttpTestHelper
 from .permissions.constants import DEFAULT_PERMISSIONS
+from .utils import DATETIME_FORMAT
 
 
 class PreparedApikey:
@@ -33,23 +35,23 @@ class PreparedApikey:
         return cls(resp.json()["id"], resp.json()["key"], data)
 
     @staticmethod
-    def prepare_model(*, permissions=None) -> Apikey:
-        model = Apikey(name=f"Apikey {uuid.uuid4()}")
+    def prepare_model(*, permissions=None) -> ApikeyCreate:
+        model = ApikeyCreate(name=f"Apikey {uuid.uuid4()}")
         if permissions is not None:
-            model.permissions = Permissions.model_validate(permissions)
+            model.permissions = PermissionsInput.model_validate(permissions)
         return model
 
     @classmethod
     async def inject_into_db(cls, apikey: Apikey = None) -> "PreparedApikey":
         if apikey is None:
             apikey = cls.prepare_model()
-        apikey_id, key = await create_apikey(apikey)
+
+        async with open_db_session() as session:
+            apikey, key = await create_apikey(session, apikey)
         return cls(
-            id=str(apikey_id),
+            id=str(apikey.id),
             key=key,
-            data={
-                "name": apikey.name,
-            },
+            data={"name": apikey.name},
         )
 
     @classmethod
@@ -58,23 +60,24 @@ class PreparedApikey:
     ) -> "PreparedApikey":
         return await cls.inject_into_db(cls.prepare_model(permissions=permissions))
 
-    def expected_document(self, extra=None):
+    @staticmethod
+    def build_expected_api_response(extra=None):
         return {
-            "_id": uuid.UUID(self.id),
-            "name": self.data["name"],
-            "key_hash": callee.IsA(str),
-            "created_at": callee.IsA(datetime),
+            "id": callee.IsA(str),
             "permissions": DEFAULT_PERMISSIONS,
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
             **(extra or {}),
         }
 
     def expected_api_response(self, extra=None):
-        return {
-            "id": self.id,
-            "name": self.data["name"],
-            "permissions": DEFAULT_PERMISSIONS,
-            **(extra or {}),
-        }
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "name": self.data["name"],
+                **(extra or {}),
+            }
+        )
 
     def client(self) -> HttpTestHelper:
         c = HttpTestHelper.spawn()

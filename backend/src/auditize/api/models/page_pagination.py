@@ -2,7 +2,29 @@ from typing import Generic, Self, TypeVar
 
 from pydantic import BaseModel, Field
 
-from auditize.resource.pagination.page.models import PagePaginationInfo
+
+class PagePaginationInfo(BaseModel):
+    page: int = Field(
+        description="The current page number", json_schema_extra={"example": 1}
+    )
+    page_size: int = Field(
+        description="The number of items per page", json_schema_extra={"example": 10}
+    )
+    total: int = Field(
+        description="The total number of items", json_schema_extra={"example": 50}
+    )
+    total_pages: int = Field(
+        description="The total number of pages", json_schema_extra={"example": 5}
+    )
+
+    @classmethod
+    def build(cls, page: int, page_size: int, total: int) -> "PagePaginationInfo":
+        return cls(
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=(total + page_size - 1) // page_size,
+        )
 
 
 class PagePaginationParams(BaseModel):
@@ -21,37 +43,19 @@ class PagePaginationParams(BaseModel):
     )
 
 
-class PagePaginationData(BaseModel):
-    page: int = Field(
-        description="The current page number", json_schema_extra={"example": 1}
-    )
-    page_size: int = Field(
-        description="The number of items per page", json_schema_extra={"example": 10}
-    )
-    total: int = Field(
-        description="The total number of items", json_schema_extra={"example": 50}
-    )
-    total_pages: int = Field(
-        description="The total number of pages", json_schema_extra={"example": 5}
-    )
-
-
 ModelItemT = TypeVar("ModelItemT")
 ApiItemT = TypeVar("ApiItemT")
 
 
 class PagePaginatedResponse(BaseModel, Generic[ModelItemT, ApiItemT]):
-    pagination: PagePaginationData = Field(
+    pagination: PagePaginationInfo = Field(
         description="Page-based pagination information"
     )
     items: list[ApiItemT] = Field(description="List of items")
 
     @classmethod
     def build(cls, items: list[ModelItemT], pagination: PagePaginationInfo) -> Self:
-        return cls(
-            items=list(map(cls.build_item, items)),
-            pagination=PagePaginationData.model_validate(pagination.model_dump()),
-        )
+        return cls(items=list(map(cls.build_item, items)), pagination=pagination)
 
     @classmethod
     def build_item(cls, item: ModelItemT) -> ApiItemT:

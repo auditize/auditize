@@ -1,7 +1,11 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
-from auditize.apikey.api_models import AccessTokenRequest, AccessTokenResponse
+from auditize.api.exception import error_responses
+from auditize.apikey.models import AccessTokenRequest, AccessTokenResponse
 from auditize.auth.authorizer import (
     AuthorizedApikey,
     AuthorizedUser,
@@ -9,11 +13,10 @@ from auditize.auth.authorizer import (
 from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
-from auditize.helpers.api.errors import error_responses
-from auditize.permissions.models import Permissions
-from auditize.permissions.operations import authorize_grant
+from auditize.dependencies import get_db_session
+from auditize.permissions.service import authorize_grant
 from auditize.user import service
-from auditize.user.api_models import UserAuthenticationRequest, UserMeResponse
+from auditize.user.models import UserAuthenticationRequest, UserMeResponse
 
 router = APIRouter()
 
@@ -27,11 +30,12 @@ router = APIRouter()
     responses=error_responses(400, 401),
 )
 async def login_user(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     request: UserAuthenticationRequest,
     response: Response,
 ) -> UserMeResponse:
     config = get_config()
-    user = await service.authenticate_user(request.email, request.password)
+    user = await service.authenticate_user(session, request.email, request.password)
     token, expires_at = generate_session_token(user.email)
 
     response.set_cookie(
@@ -54,10 +58,7 @@ async def login_user(
     status_code=204,
     responses=error_responses(401),
 )
-async def logout_user(
-    authorized: AuthorizedUser(),
-    response: Response,
-):
+async def logout_user(_: AuthorizedUser(), response: Response):
     config = get_config()
     response.delete_cookie(
         "session", httponly=True, samesite="strict", secure=config.cookie_secure
@@ -73,12 +74,12 @@ async def logout_user(
     responses=error_responses(401, 403),
 )
 async def auth_access_token(
-    authorized: AuthorizedApikey(),
-    request: AccessTokenRequest,
+    authorized: AuthorizedApikey(), request: AccessTokenRequest
 ) -> AccessTokenResponse:
-    permissions = Permissions.model_validate(request.permissions.model_dump())
-    authorize_grant(authorized.permissions, permissions)
-    access_token, expires_at = generate_access_token(authorized.apikey.id, permissions)
+    authorize_grant(authorized.permissions, request.permissions)
+    access_token, expires_at = generate_access_token(
+        authorized.apikey.id, request.permissions
+    )
 
     return AccessTokenResponse(
         access_token=ACCESS_TOKEN_PREFIX + access_token, expires_at=expires_at

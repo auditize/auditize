@@ -1,8 +1,10 @@
-import uuid
-from datetime import datetime
+import base64
+from typing import Any
 
 import callee
 from icecream import ic
+
+from auditize.database import get_dbm
 
 from .http import HttpTestHelper
 from .utils import DATETIME_FORMAT
@@ -64,16 +66,17 @@ class PreparedLog:
             }
         )
 
-    def expected_api_response(self, extra=None) -> dict:
-        expected: dict[str, any] = {
+    @staticmethod
+    def build_expected_api_response(data=None) -> dict:
+        expected: dict[str, Any] = {
             "source": [],
             "actor": None,
             "resource": None,
             "details": [],
             "tags": [],
-            "attachments": self._attachments,
-            "id": self.id,
-            **self.data,
+            "attachments": [],
+            "id": callee.IsA(str),
+            **(data or {}),
             "saved_at": DATETIME_FORMAT,
         }
         for tag in expected["tags"]:
@@ -85,17 +88,35 @@ class PreparedLog:
             expected["resource"].setdefault("extra", [])
         for attachment in expected["attachments"]:
             attachment["saved_at"] = DATETIME_FORMAT
-        return {**expected, **(extra or {})}
+        return expected
+
+    def expected_api_response(self, extra=None) -> dict:
+        return self.build_expected_api_response(
+            {
+                "id": self.id,
+                "attachments": self._attachments,
+                **self.data,
+                **(extra or {}),
+            }
+        )
+
+    def expected_db_document(self, extra=None) -> dict:
+        expected = self.expected_api_response(extra)
+        expected["saved_at"] = callee.IsA(str)
+        for expected_attachment in expected["attachments"]:
+            expected_attachment["data"] = base64.b64encode(
+                expected_attachment["data"]
+            ).decode()
+            expected_attachment["saved_at"] = callee.IsA(str)
+        expected["log_id"] = self.id
+        del expected["id"]
+        return expected
 
     async def assert_db(self, extra=None):
-        expected = self.expected_api_response(extra)
+        expected = self.expected_db_document(extra)
 
-        # from expected API response, make data suitable for db comparison
-        expected["saved_at"] = callee.IsA(datetime)
-        del expected["id"]
-
-        db_log = await self.repo.db.logs.find_one(
-            {"_id": uuid.UUID(self.id)}, {"_id": 0}
-        )
+        dbm = get_dbm()
+        resp = await dbm.elastic_client.get(index=self.repo.log_db_name, id=self.id)
+        db_log = resp["_source"]
         ic(db_log)
         assert db_log == expected

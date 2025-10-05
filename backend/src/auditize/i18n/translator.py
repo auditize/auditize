@@ -31,8 +31,10 @@ class Translator:
         self, key: str, values: dict = None, *, lang: Lang = DEFAULT_LANG
     ) -> str:
         try:
-            return self._translations[lang][key].format(**(values or {}))
+            message_template = self._translations[lang][key]
         except KeyError:
-            raise LookupError(
-                f"Missing translation or variable for {key!r} in {lang!r}"
-            )
+            raise LookupError(f"Missing translation for key {key!r} in {lang!r}")
+        try:
+            return message_template.format(**(values or {}))
+        except KeyError as exc:
+            raise LookupError(f"Missing variable {exc} for key {key!r} in {lang!r}")

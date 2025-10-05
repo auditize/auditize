@@ -4,13 +4,13 @@ build:
 	cd .. && docker build . -f docker/Dockerfile -t $(NAME)
 
 up:
-	docker compose -p $(NAME) up
+	docker compose up
 
 upd:
-	docker compose -p $(NAME) up -d
+	docker compose up -d
 
 down:
-	docker compose -p $(NAME) down
+	docker compose down
 
 shell-web:
 	docker exec -it $(NAME)-web-1 /bin/bash
@@ -21,16 +21,19 @@ shell-scheduler:
 shell: shell-web
 
 ps:
-	docker compose -p $(NAME) ps
+	docker compose ps
 
 logs-web:
-	docker compose -p $(NAME) logs -f web
+	docker compose logs -f web
 
 logs-scheduler:
-	docker compose -p $(NAME) logs -f scheduler
+	docker compose logs -f scheduler
 
-logs-mongo:
-	docker compose -p $(NAME) logs -f mongo
+logs-postgres:
+	docker compose logs -f postgres
+
+logs-elastic:
+	docker compose logs -f elastic
 
 logs:
-	docker compose -p $(NAME) logs -f web scheduler
+	docker compose logs -f web scheduler

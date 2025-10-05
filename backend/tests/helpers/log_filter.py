@@ -1,9 +1,9 @@
 import uuid
-from datetime import datetime
 
 import callee
 
 from .log import UNKNOWN_UUID
+from .utils import DATETIME_FORMAT
 
 DEFAULT_SEARCH_PARAMETERS = {
     "action_category": None,
@@ -28,7 +28,7 @@ DEFAULT_SEARCH_PARAMETERS = {
 
 
 class PreparedLogFilter:
-    def __init__(self, id: str, data: dict):
+    def __init__(self, id: str | None, data: dict):
         self.id = id
         self.data = data
 
@@ -42,45 +42,21 @@ class PreparedLogFilter:
             **(extra or {}),
         }
 
-    def expected_document(self, extra=None):
-        repo_id = (
-            extra["repo_id"] if extra and "repo_id" in extra else self.data["repo_id"]
-        )
-        return {
-            "_id": uuid.UUID(self.id),
-            "name": self.data["name"],
-            "created_at": callee.IsA(datetime),
-            "search_params": {
-                **DEFAULT_SEARCH_PARAMETERS,
-                **self.data["search_params"],
-                "since": (
-                    datetime.fromisoformat(self.data["search_params"]["since"])
-                    if "since" in self.data["search_params"]
-                    else None
-                ),
-                "until": (
-                    datetime.fromisoformat(self.data["search_params"]["until"])
-                    if "until" in self.data["search_params"]
-                    else None
-                ),
-            },
-            "columns": self.data["columns"],
-            "is_favorite": self.data.get("is_favorite", False),
-            **(extra or {}),
-            "repo_id": uuid.UUID(repo_id),
-        }
-
     def expected_api_response(self, extra=None) -> dict:
+        if extra is None:
+            extra = {}
+        search_params = extra.get("search_params", self.data.get("search_params", {}))
         return {
-            "id": self.id,
+            "id": self.id if self.id else callee.IsA(str),
             "name": self.data["name"],
-            "created_at": callee.IsA(str),
+            "created_at": DATETIME_FORMAT,
+            "updated_at": DATETIME_FORMAT,
             "repo_id": self.data["repo_id"],
-            "search_params": {
-                **DEFAULT_SEARCH_PARAMETERS,
-                **self.data["search_params"],
-            },
             "columns": self.data["columns"],
             "is_favorite": self.data.get("is_favorite", False),
             **(extra or {}),
+            "search_params": {
+                **DEFAULT_SEARCH_PARAMETERS,
+                **search_params,
+            },
         }

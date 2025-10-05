@@ -18,7 +18,8 @@ from auditize.permissions.assertions import (
     permissions_and,
     permissions_or,
 )
-from auditize.permissions.models import Permissions
+from auditize.permissions.models import PermissionsInput
+from auditize.permissions.service import build_permissions
 
 REPO_1 = UUID("8276de01-c6f2-4174-bbbf-cadb8e9832e6")
 REPO_2 = UUID("4b3a4f91-8131-4d06-8edb-7d9d1353217b")
@@ -29,7 +30,10 @@ def assert_permission(perms, assertions, result):
         assertions = [assertions]
     for assertion in assertions:
         ic(assertion)
-        assert assertion(Permissions.model_validate(perms)) is result
+        assert (
+            assertion(build_permissions(PermissionsInput.model_validate(perms)))
+            is result
+        )
 
 
 def assert_authorized(perms, *assertions):

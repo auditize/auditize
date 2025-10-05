@@ -7,11 +7,13 @@ import sys
 from uuid import UUID
 
 import uvicorn
-from pymongo.errors import PyMongoError
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from auditize.app import build_api_app, build_app
 from auditize.config import get_config, init_config
-from auditize.database import get_core_db, init_core_db
+from auditize.database import init_dbm
+from auditize.database.dbm import migrate_database, open_db_session
 from auditize.exceptions import (
     ConfigAlreadyInitialized,
     ConfigError,
@@ -19,13 +21,14 @@ from auditize.exceptions import (
 )
 from auditize.log.service import LogService
 from auditize.openapi import get_customized_openapi_schema
-from auditize.permissions.models import Permissions
+from auditize.permissions.sql_models import Permissions
 from auditize.scheduler import build_scheduler
-from auditize.user.models import USER_PASSWORD_MIN_LENGTH, User
+from auditize.user.models import USER_PASSWORD_MIN_LENGTH
 from auditize.user.service import (
     hash_user_password,
     save_user,
 )
+from auditize.user.sql_models import User
 from auditize.version import __version__
 
 
@@ -39,7 +42,7 @@ def _lazy_init(*, skip_db_init=False):
         sys.exit("ERROR: " + str(exc))
 
     if not skip_db_init:
-        init_core_db()
+        init_dbm()
 
 
 def _get_password() -> str:
@@ -65,25 +68,28 @@ async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
     _lazy_init()
 
     # Make sure we can connect to the database before asking for the password
-    db = get_core_db()
-    try:
-        await db.ping()
-    except PyMongoError as exc:
-        sys.exit(f"Error: could not connect to MongoDB: {exc}")
+    async with open_db_session() as session:
+        try:
+            await session.execute(text("SELECT 1"))
+        except OperationalError as exc:
+            sys.exit(f"Error: could not connect to the PostgreSQL database: {exc}")
 
     password = _get_password()
 
     try:
-        await save_user(
-            User(
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                password_hash=hash_user_password(password),
-                permissions=Permissions(is_superadmin=True),
+        async with open_db_session() as session:
+            await save_user(
+                session,
+                User(
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    password_hash=hash_user_password(password),
+                    permissions=Permissions(is_superadmin=True),
+                ),
             )
-        )
     except ConstraintViolation:
+        # FIXME: we could get a ConstraintViolation for other reasons
         sys.exit(f"Error: user with email {email} already exists")
     print(f"User with email {email} has been successfully created")
 
@@ -98,7 +104,15 @@ async def serve(host: str, port: int):
 
 async def purge_expired_logs(repo: UUID = None):
     _lazy_init()
-    await LogService.apply_log_retention_period(repo)
+    async with open_db_session() as session:
+        await LogService.apply_log_retention_period(session, repo)
+
+
+async def empty_repo(repo: UUID):
+    _lazy_init()
+    async with open_db_session() as session:
+        log_service = await LogService.for_maintenance(session, repo)
+        await log_service.empty_log_db()
 
 
 async def schedule():
@@ -132,6 +146,11 @@ async def dump_openapi():
     )
 
 
+async def migrate_db():
+    _lazy_init()
+    await migrate_database()
+
+
 async def version():
     print(
         "auditize version %s (using Python %s - %s)"
@@ -145,6 +164,12 @@ async def async_main(args=None):
         "--version", "-v", action="store_true", help="Print version information"
     )
     sub_parsers = parser.add_subparsers()
+
+    # CMD migrate-db
+    migrate_db_parser = sub_parsers.add_parser(
+        "migrate-db", help="Create or update the Auditize database"
+    )
+    migrate_db_parser.set_defaults(func=lambda _: migrate_db())
 
     # CMD bootstrap-superadmin
     bootstrap_superadmin_parser = sub_parsers.add_parser(
@@ -169,10 +194,22 @@ async def async_main(args=None):
     purge_expired_logs_parser = sub_parsers.add_parser(
         "purge-expired-logs", help="Purge expired logs"
     )
-    purge_expired_logs_parser.add_argument("repo", type=UUID, nargs="?")
+    purge_expired_logs_parser.add_argument(
+        "repo",
+        type=UUID,
+        nargs="?",
+        help="Optional repository ID to limit the purge to",
+    )
     purge_expired_logs_parser.set_defaults(
         func=lambda cmd_args: purge_expired_logs(cmd_args.repo)
     )
+
+    # CMD empty-repo
+    empty_repo_parser = sub_parsers.add_parser(
+        "empty-repo", help="Empty a log repository"
+    )
+    empty_repo_parser.add_argument("repo", type=UUID, help="Repository ID")
+    empty_repo_parser.set_defaults(func=lambda cmd_args: empty_repo(cmd_args.repo))
 
     # CMD schedule
     schedule_parser = sub_parsers.add_parser(
