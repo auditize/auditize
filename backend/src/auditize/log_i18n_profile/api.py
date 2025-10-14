@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auditize.api.exception import error_responses
 from auditize.api.models.page_pagination import PagePaginationParams
 from auditize.api.models.search import ResourceSearchParams
-from auditize.auth.authorizer import Authorized
+from auditize.auth.authorizer import Authenticated, Require
 from auditize.dependencies import get_db_session
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile import service
@@ -38,7 +38,7 @@ router = APIRouter(responses=error_responses(401, 403))
 )
 async def create_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_write_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     profile_create: LogI18nProfileCreate,
 ):
     return await service.create_log_i18n_profile(session, profile_create)
@@ -56,7 +56,7 @@ async def create_profile(
 )
 async def update_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_write_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     profile_id: UUID,
     update: LogI18nProfileUpdate,
 ):
@@ -74,7 +74,7 @@ async def update_profile(
 )
 async def get_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
     profile_id: UUID,
 ):
     return await service.get_log_i18n_profile(session, profile_id)
@@ -91,7 +91,7 @@ async def get_profile(
 )
 async def get_profile_translation(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
     profile_id: UUID,
     lang: Lang,
 ):
@@ -107,7 +107,7 @@ async def get_profile_translation(
 )
 async def list_profiles(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> LogI18nProfileListResponse:
@@ -131,7 +131,7 @@ async def list_profiles(
 )
 async def delete_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_write_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     profile_id: UUID,
 ):
     await service.delete_log_i18n_profile(session, profile_id)

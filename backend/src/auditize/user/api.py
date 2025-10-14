@@ -9,8 +9,8 @@ from auditize.api.models.page_pagination import PagePaginationParams
 from auditize.api.models.search import ResourceSearchParams
 from auditize.auth.authorizer import (
     Authenticated,
-    Authorized,
-    AuthorizedUser,
+    Require,
+    RequireUser,
 )
 from auditize.dependencies import get_db_session
 from auditize.exceptions import PermissionDenied
@@ -40,7 +40,7 @@ def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
 
 async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
     session: AsyncSession,
-    authorized: Authorized,
+    authorized: Authenticated,
     user_id: UUID,
     update: UserUpdateRequest,
 ):
@@ -66,7 +66,7 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
 )
 async def create_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_user()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_user()))],
     user_create: UserCreate,
 ) -> UserResponse:
     authorize_grant(authorized.permissions, user_create.permissions)
@@ -83,7 +83,7 @@ async def create_user(
 )
 async def update_user_me(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedUser(),
+    authorized: Annotated[Authenticated, Depends(RequireUser())],
     user_me_update: UserMeUpdateRequest,
 ) -> UserMeResponse:
     user_update = UserUpdate.model_validate(
@@ -103,7 +103,7 @@ async def update_user_me(
 )
 async def update_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_user()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_user()))],
     user_id: UUID,
     user_update: UserUpdateRequest,
 ) -> UserResponse:
@@ -128,7 +128,7 @@ async def update_user(
     tags=["user", "internal"],
 )
 async def get_user_me(
-    authorized: AuthorizedUser(),
+    authorized: Annotated[Authenticated, Depends(RequireUser())],
 ) -> UserMeResponse:
     return UserMeResponse.from_user(authorized.user)
 
@@ -143,7 +143,7 @@ async def get_user_me(
 )
 async def get_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_user()),
+    _: Annotated[Authenticated, Depends(Require(can_read_user()))],
     user_id: UUID,
 ) -> UserResponse:
     return await service.get_user(session, user_id)
@@ -158,7 +158,7 @@ async def get_user(
 )
 async def list_users(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_user()),
+    _: Annotated[Authenticated, Depends(Require(can_read_user()))],
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> UserListResponse:
@@ -182,7 +182,7 @@ async def list_users(
 )
 async def delete_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_user()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_user()))],
     user_id: UUID,
 ):
     _ensure_cannot_alter_own_user(authorized, user_id)

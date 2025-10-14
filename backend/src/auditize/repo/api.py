@@ -11,9 +11,10 @@ from auditize.api.models.search import ResourceSearchParams
 from auditize.apikey.models import ApikeyUpdate
 from auditize.apikey.service import update_apikey
 from auditize.auth.authorizer import (
-    Authorized,
-    AuthorizedForLogRead,
-    AuthorizedUser,
+    Authenticated,
+    Require,
+    RequireLogReadPermission,
+    RequireUser,
 )
 from auditize.dependencies import get_db_session
 from auditize.i18n.lang import Lang
@@ -65,7 +66,7 @@ router = APIRouter(responses=error_responses(401, 403))
 )
 async def create_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_repo()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     repo_create: RepoCreate,
 ) -> RepoResponse:
     repo = await service.create_repo(session, repo_create)
@@ -105,7 +106,7 @@ async def create_repo(
 )
 async def update_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_write_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     repo_id: UUID,
     update: RepoUpdate,
 ) -> RepoResponse:
@@ -129,7 +130,7 @@ async def _handle_repo_include_options(
 )
 async def get_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
     repo_id: UUID,
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
 ) -> RepoResponse:
@@ -149,7 +150,7 @@ async def get_repo(
 )
 async def get_repo_translation_for_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedForLogRead(),
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
 ) -> LogLabels:
     authorized.ensure_user()
@@ -166,7 +167,7 @@ async def get_repo_translation_for_user(
 )
 async def get_repo_translation(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     lang: Lang,
 ) -> LogLabels:
@@ -182,7 +183,7 @@ async def get_repo_translation(
 )
 async def list_repos(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
     search_params: Annotated[ResourceSearchParams, Depends()],
     include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
     page_params: Annotated[PagePaginationParams, Depends()],
@@ -209,7 +210,7 @@ async def list_repos(
 )
 async def list_user_repos(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedUser(),
+    authorized: Annotated[Authenticated, Depends(RequireUser())],
     has_read_permission: Annotated[
         bool,
         Query(
@@ -265,7 +266,7 @@ async def list_user_repos(
 )
 async def delete_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_write_repo()),
+    _: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     repo_id: UUID,
 ):
     await service.delete_repo(session, repo_id)

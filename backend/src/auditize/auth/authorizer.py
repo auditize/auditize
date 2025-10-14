@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Annotated, Callable, Type
+from typing import Annotated, Callable
 from uuid import UUID
 
 from fastapi import Depends
@@ -158,8 +158,8 @@ async def get_authenticated(
     return await authenticate_user(session, request)
 
 
-class _Authorized:
-    def __init__(self, assertion: PermissionAssertion = None):
+class Require:
+    def __init__(self, assertion: PermissionAssertion | None):
         self.assertion = assertion
 
     def __call__(self, authenticated: Authenticated = Depends(get_authenticated)):
@@ -168,13 +168,24 @@ class _Authorized:
         return authenticated
 
 
-class _AuthorizedUser(_Authorized):
+class RequireAuthentication(Require):
+    def __init__(self):
+        super().__init__(assertion=None)
+
+
+class RequireUser(Require):
+    def __init__(self, assertion: PermissionAssertion | None = None):
+        super().__init__(assertion)
+
     def __call__(self, authenticated: Authenticated = Depends(get_authenticated)):
         authenticated.ensure_user()
         return super().__call__(authenticated)
 
 
-class _AuthorizedApikey(_Authorized):
+class RequireApikey(Require):
+    def __init__(self, assertion: PermissionAssertion | None = None):
+        super().__init__(assertion)
+
     def __call__(self, authenticated: Authenticated = Depends(get_authenticated)):
         authenticated.ensure_apikey()
         return super().__call__(authenticated)
@@ -190,25 +201,23 @@ def _authorized_on_logs(assertion_func: Callable[[UUID], PermissionAssertion]):
     return func
 
 
-def Authorized(assertion: PermissionAssertion = None) -> Type[Authenticated]:  # noqa
-    return Annotated[Authenticated, Depends(_Authorized(assertion))]
+class _RequireLogPermission:
+    def _get_assertion(self, repo_id: UUID) -> PermissionAssertion:
+        raise NotImplementedError()
+
+    def __call__(
+        self, repo_id: UUID, authenticated: Authenticated = Depends(get_authenticated)
+    ) -> Authenticated:
+        if not authenticated.comply(self._get_assertion(repo_id)):
+            raise PermissionDenied()
+        return authenticated
 
 
-def AuthorizedUser(assertion: PermissionAssertion = None) -> Type[Authenticated]:  # noqa
-    return Annotated[Authenticated, Depends(_AuthorizedUser(assertion))]
+class RequireLogReadPermission(_RequireLogPermission):
+    def _get_assertion(self, repo_id: UUID) -> PermissionAssertion:
+        return can_read_logs_from_repo(repo_id)
 
 
-def AuthorizedApikey(assertion: PermissionAssertion = None) -> Type[Authenticated]:  # noqa
-    return Annotated[Authenticated, Depends(_AuthorizedApikey(assertion))]
-
-
-def AuthorizedForLogRead() -> Type[Authenticated]:  # noqa
-    return Annotated[
-        Authenticated, Depends(_authorized_on_logs(can_read_logs_from_repo))
-    ]
-
-
-def AuthorizedForLogWrite() -> Type[Authenticated]:  # noqa
-    return Annotated[
-        Authenticated, Depends(_authorized_on_logs(can_write_logs_to_repo))
-    ]
+class RequireLogWritePermission(_RequireLogPermission):
+    def _get_assertion(self, repo_id: UUID) -> PermissionAssertion:
+        return can_write_logs_to_repo(repo_id)

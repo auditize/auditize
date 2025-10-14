@@ -11,8 +11,9 @@ from auditize.api.validation import (
     IDENTIFIER_PATTERN_STRING,
 )
 from auditize.auth.authorizer import (
-    AuthorizedForLogRead,
-    AuthorizedForLogWrite,
+    Authenticated,
+    RequireLogReadPermission,
+    RequireLogWritePermission,
 )
 from auditize.config import get_config
 from auditize.dependencies import get_db_session
@@ -68,7 +69,7 @@ async def _get_consolidated_data(
 )
 async def get_log_action_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
     category: str = None,
@@ -91,7 +92,7 @@ async def get_log_action_types(
 )
 async def get_log_action_categories(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -112,7 +113,7 @@ async def get_log_action_categories(
 )
 async def get_log_actor_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -134,7 +135,7 @@ async def get_log_actor_types(
 )
 async def get_log_actor_extras(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -155,7 +156,7 @@ async def get_log_actor_extras(
 )
 async def get_log_resource_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -177,7 +178,7 @@ async def get_log_resource_types(
 )
 async def get_log_resource_extras(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -198,7 +199,7 @@ async def get_log_resource_extras(
 )
 async def get_log_tag_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -220,7 +221,7 @@ async def get_log_tag_types(
 )
 async def get_log_source_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -242,7 +243,7 @@ async def get_log_source_fields(
 )
 async def get_log_detail_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -264,7 +265,7 @@ async def get_log_detail_fields(
 )
 async def get_log_attachment_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -286,7 +287,7 @@ async def get_log_attachment_types(
 )
 async def get_log_attachment_mime_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogRead(),
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
 ) -> NameListResponse:
@@ -307,7 +308,7 @@ async def get_log_attachment_mime_types(
 )
 async def get_log_entities(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedForLogRead(),
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
     root: bool = False,
@@ -345,7 +346,7 @@ async def get_log_entities(
 )
 async def get_log_entity(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedForLogRead(),
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     entity_ref: Annotated[str, Path(description="Entity ref")],
 ) -> LogEntityResponse:
@@ -367,7 +368,7 @@ async def get_log_entity(
 )
 async def create_log(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogWrite(),
+    _: Annotated[Authenticated, Depends(RequireLogWritePermission())],
     repo_id: UUID,
     log_create: LogCreate,
 ) -> LogResponse:
@@ -387,7 +388,7 @@ async def create_log(
 )
 async def add_attachment(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: AuthorizedForLogWrite(),
+    _: Annotated[Authenticated, Depends(RequireLogWritePermission())],
     repo_id: UUID,
     log_id: Annotated[
         UUID,
@@ -476,7 +477,7 @@ _CUSTOM_FIELDS_DESCRIPTION = (
 async def get_logs_as_csv(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     request: Request,
-    authorized: AuthorizedForLogRead(),
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     columns: Annotated[str, Query(description=_COLUMNS_DESCRIPTION)] = ",".join(
@@ -516,7 +517,7 @@ async def get_logs_as_csv(
 )
 async def get_log(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedForLogRead(),
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     log_id: Annotated[UUID, Path(description="Log ID")],
 ) -> LogResponse:
@@ -550,7 +551,7 @@ async def get_log(
 )
 async def get_log_attachment(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedForLogRead(),
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     log_id: UUID = Path(description="Log ID"),
     attachment_idx: int = Path(
@@ -579,7 +580,7 @@ async def get_log_attachment(
 )
 async def get_logs(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: AuthorizedForLogRead(),
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     page_params: Annotated[CursorPaginationParams, Depends()],

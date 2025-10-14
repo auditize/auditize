@@ -16,7 +16,7 @@ from auditize.apikey.models import (
     ApikeyResponse,
     ApikeyUpdate,
 )
-from auditize.auth.authorizer import Authenticated, Authorized
+from auditize.auth.authorizer import Authenticated, Require
 from auditize.dependencies import get_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import (
@@ -44,7 +44,7 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
 )
 async def create_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_apikey()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_apikey()))],
     apikey_create: ApikeyCreate,
 ) -> ApikeyCreateResponse:
     authorize_grant(authorized.permissions, apikey_create.permissions)
@@ -70,7 +70,7 @@ async def create_apikey(
 )
 async def update_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_apikey()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_apikey()))],
     apikey_id: UUID,
     apikey_update: ApikeyUpdate,
 ) -> ApikeyResponse:
@@ -90,7 +90,7 @@ async def update_apikey(
 )
 async def get_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_apikey()),
+    _: Annotated[Authenticated, Depends(Require(can_read_apikey()))],
     apikey_id: UUID,
 ) -> ApikeyResponse:
     return await service.get_apikey(session, apikey_id)
@@ -105,7 +105,7 @@ async def get_apikey(
 )
 async def list_apikeys(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Authorized(can_read_apikey()),
+    _: Annotated[Authenticated, Depends(Require(can_read_apikey()))],
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
 ) -> ApikeyListResponse:
@@ -129,7 +129,7 @@ async def list_apikeys(
 )
 async def delete_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_apikey()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_apikey()))],
     apikey_id: UUID,
 ):
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
@@ -147,7 +147,7 @@ async def delete_apikey(
 )
 async def regenerate_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    authorized: Authorized(can_write_apikey()),
+    authorized: Annotated[Authenticated, Depends(Require(can_write_apikey()))],
     apikey_id: UUID,
 ) -> ApikeyRegenerationResponse:
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
