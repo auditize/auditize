@@ -28,13 +28,14 @@ router = APIRouter()
     operation_id="user_login",
     tags=["auth", "internal"],
     status_code=200,
+    response_model=UserMeResponse,
     responses=error_responses(400, 401),
 )
 async def login_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     request: UserAuthenticationRequest,
     response: Response,
-) -> UserMeResponse:
+):
     config = get_config()
     user = await service.authenticate_user(session, request.email, request.password)
     token, expires_at = generate_session_token(user.email)
@@ -74,12 +75,13 @@ async def logout_user(
     operation_id="generate_access_token",
     tags=["auth"],
     status_code=200,
+    response_model=AccessTokenResponse,
     responses=error_responses(401, 403),
 )
 async def auth_access_token(
     authorized: Annotated[Authenticated, Depends(RequireApikey())],
     request: AccessTokenRequest,
-) -> AccessTokenResponse:
+):
     authorize_grant(authorized.permissions, request.permissions)
     access_token, expires_at = generate_access_token(
         authorized.apikey.id, request.permissions

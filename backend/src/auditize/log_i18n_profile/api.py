@@ -104,13 +104,14 @@ async def get_profile_translation(
     description="Requires `repo:read` permission.",
     operation_id="list_log_i18n_profiles",
     tags=["log-i18n-profile"],
+    response_model=LogI18nProfileListResponse,
 )
 async def list_profiles(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> LogI18nProfileListResponse:
+):
     profiles, page_info = await service.get_log_i18n_profiles(
         session,
         query=search_params.query,

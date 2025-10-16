@@ -16,9 +16,10 @@ router = APIRouter()
     operation_id="info",
     tags=["info"],
     status_code=200,
+    response_model=InfoResponse,
     responses=error_responses(401),
 )
 async def info(
     _: Annotated[Authenticated, Depends(RequireAuthentication())],
-) -> InfoResponse:
+):
     return InfoResponse(auditize_version=__version__)

@@ -62,13 +62,14 @@ router = APIRouter(responses=error_responses(401, 403))
     operation_id="create_repo",
     tags=["repo"],
     status_code=201,
+    response_model=RepoResponse,
     responses=error_responses(400, 409),
 )
 async def create_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     repo_create: RepoCreate,
-) -> RepoResponse:
+):
     repo = await service.create_repo(session, repo_create)
 
     # Ensure that authorized will have read & write logs permissions on the repo he created
@@ -102,6 +103,7 @@ async def create_repo(
     operation_id="update_repo",
     tags=["repo"],
     status_code=200,
+    response_model=RepoResponse,
     responses=error_responses(400, 404, 409),
 )
 async def update_repo(
@@ -109,7 +111,7 @@ async def update_repo(
     _: Annotated[Authenticated, Depends(Require(can_write_repo()))],
     repo_id: UUID,
     update: RepoUpdate,
-) -> RepoResponse:
+):
     return await service.update_repo(session, repo_id, update)
 
 
@@ -126,6 +128,7 @@ async def _handle_repo_include_options(
     summary="Get log repository",
     description="Requires `repo:read` permission.",
     tags=["repo"],
+    response_model=RepoResponse,
     responses=error_responses(404),
 )
 async def get_repo(
@@ -133,7 +136,7 @@ async def get_repo(
     _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
     repo_id: UUID,
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
-) -> RepoResponse:
+):
     repo = await service.get_repo(session, repo_id)
     response = RepoResponse.from_repo(repo)
     await _handle_repo_include_options(session, response, include)
@@ -146,13 +149,14 @@ async def get_repo(
     description="Requires `log:read` permission.",
     operation_id="get_repo_translation_for_user",
     tags=["repo", "internal"],
+    response_model=LogLabels,
     responses=error_responses(404),
 )
 async def get_repo_translation_for_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-) -> LogLabels:
+):
     authorized.ensure_user()
     return await service.get_repo_translation(session, repo_id, authorized.user.lang)
 
@@ -163,6 +167,7 @@ async def get_repo_translation_for_user(
     description="Requires `log:read` permission.",
     operation_id="get_repo_translation",
     tags=["repo"],
+    response_model=LogLabels,
     responses=error_responses(404),
 )
 async def get_repo_translation(
@@ -170,7 +175,7 @@ async def get_repo_translation(
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     lang: Lang,
-) -> LogLabels:
+):
     return await service.get_repo_translation(session, repo_id, lang)
 
 
@@ -180,6 +185,7 @@ async def get_repo_translation(
     description="Requires `repo:read` permission.",
     operation_id="list_repos",
     tags=["repo"],
+    response_model=RepoListResponse,
 )
 async def list_repos(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -187,7 +193,7 @@ async def list_repos(
     search_params: Annotated[ResourceSearchParams, Depends()],
     include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> RepoListResponse:
+):
     repos, page_info = await service.get_repos(
         session,
         query=search_params.query,
@@ -207,6 +213,7 @@ async def list_repos(
     description="Requires `repo:read` permission.",
     operation_id="list_user_repos",
     tags=["user", "internal"],
+    response_model=UserRepoListResponse,
 )
 async def list_user_repos(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -224,7 +231,7 @@ async def list_user_repos(
         ),
     ] = False,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
-) -> UserRepoListResponse:
+):
     repos, page_info = await service.get_user_repos(
         session,
         user=authorized.user,

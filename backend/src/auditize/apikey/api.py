@@ -40,13 +40,14 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
     operation_id="create_apikey",
     tags=["apikey"],
     status_code=201,
+    response_model=ApikeyCreateResponse,
     responses=error_responses(400, 409),
 )
 async def create_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(Require(can_write_apikey()))],
     apikey_create: ApikeyCreate,
-) -> ApikeyCreateResponse:
+):
     authorize_grant(authorized.permissions, apikey_create.permissions)
     apikey, key = await service.create_apikey(session, apikey_create)
     return ApikeyCreateResponse(
@@ -66,6 +67,7 @@ async def create_apikey(
     operation_id="update_apikey",
     tags=["apikey"],
     status_code=200,
+    response_model=ApikeyResponse,
     responses=error_responses(400, 404, 409),
 )
 async def update_apikey(
@@ -73,7 +75,7 @@ async def update_apikey(
     authorized: Annotated[Authenticated, Depends(Require(can_write_apikey()))],
     apikey_id: UUID,
     apikey_update: ApikeyUpdate,
-) -> ApikeyResponse:
+):
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
     if apikey_update.permissions:
         authorize_grant(authorized.permissions, apikey_update.permissions)
@@ -86,13 +88,14 @@ async def update_apikey(
     description="Requires `apikey:read` permission.",
     operation_id="get_apikey",
     tags=["apikey"],
+    response_model=ApikeyResponse,
     responses=error_responses(404),
 )
 async def get_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_apikey()))],
     apikey_id: UUID,
-) -> ApikeyResponse:
+):
     return await service.get_apikey(session, apikey_id)
 
 
@@ -102,13 +105,14 @@ async def get_apikey(
     description="Requires `apikey:read` permission.",
     operation_id="list_apikeys",
     tags=["apikey"],
+    response_model=ApikeyListResponse,
 )
 async def list_apikeys(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_apikey()))],
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> ApikeyListResponse:
+):
     apikeys, page_info = await service.get_apikeys(
         session,
         query=search_params.query,
@@ -143,13 +147,14 @@ async def delete_apikey(
     operation_id="generate_apikey_new_secret",
     tags=["apikey"],
     status_code=200,
+    response_model=ApikeyRegenerationResponse,
     responses=error_responses(404),
 )
 async def regenerate_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(Require(can_write_apikey()))],
     apikey_id: UUID,
-) -> ApikeyRegenerationResponse:
+):
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
     key = await service.regenerate_apikey(session, apikey_id)
     return ApikeyRegenerationResponse(key=key)

@@ -31,6 +31,7 @@ router = APIRouter(responses=error_responses(401, 403), tags=["internal"])
     operation_id="create_log_filter",
     tags=["log-filter"],
     status_code=201,
+    response_model=LogFilterResponse,
     responses=error_responses(400, 409),
 )
 async def create_filter(
@@ -39,7 +40,7 @@ async def create_filter(
         Authenticated, Depends(RequireUser(can_read_logs_from_any_repo()))
     ],
     log_filter: LogFilterCreate,
-) -> LogFilterResponse:
+):
     return await service.create_log_filter(session, authorized.user.id, log_filter)
 
 
@@ -49,6 +50,7 @@ async def create_filter(
     operation_id="update_log_filter",
     tags=["log-filter"],
     status_code=200,
+    response_model=LogFilterResponse,
     responses=error_responses(400, 404, 409),
 )
 async def update_filter(
@@ -58,7 +60,7 @@ async def update_filter(
     ],
     update: LogFilterUpdate,
     filter_id: UUID,
-) -> LogFilterResponse:
+):
     return await service.update_log_filter(
         session, authorized.user.id, filter_id, update
     )
@@ -70,6 +72,7 @@ async def update_filter(
     operation_id="get_log_filter",
     tags=["log-filter"],
     status_code=200,
+    response_model=LogFilterResponse,
     responses=error_responses(404),
 )
 async def get_filter(
@@ -78,7 +81,7 @@ async def get_filter(
         Authenticated, Depends(Require(can_read_logs_from_any_repo()))
     ],
     filter_id: UUID,
-) -> LogFilterResponse:
+):
     return await service.get_log_filter(session, authorized.user.id, filter_id)
 
 
@@ -87,6 +90,7 @@ async def get_filter(
     summary="List log filters",
     operation_id="list_log_filters",
     tags=["log-filter"],
+    response_model=LogFilterListResponse,
 )
 async def list_log_filters(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -96,7 +100,7 @@ async def list_log_filters(
     search_params: Annotated[ResourceSearchParams, Depends()],
     is_favorite: bool = None,
     page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
-) -> LogFilterListResponse:
+):
     log_filters, page_info = await service.get_log_filters(
         session,
         user_id=authorized.user.id,

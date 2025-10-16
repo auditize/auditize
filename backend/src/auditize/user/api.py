@@ -62,13 +62,14 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
     operation_id="create_user",
     tags=["user"],
     status_code=201,
+    response_model=UserResponse,
     responses=error_responses(400, 409),
 )
 async def create_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(Require(can_write_user()))],
     user_create: UserCreate,
-) -> UserResponse:
+):
     authorize_grant(authorized.permissions, user_create.permissions)
     return await service.create_user(session, user_create)
 
@@ -79,13 +80,14 @@ async def create_user(
     operation_id="update_user_me",
     tags=["user", "internal"],
     status_code=200,
+    response_model=UserMeResponse,
     responses=error_responses(400),
 )
 async def update_user_me(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireUser())],
     user_me_update: UserMeUpdateRequest,
-) -> UserMeResponse:
+):
     user_update = UserUpdate.model_validate(
         user_me_update.model_dump(exclude_unset=True)
     )
@@ -99,6 +101,7 @@ async def update_user_me(
     operation_id="update_user",
     tags=["user"],
     status_code=200,
+    response_model=UserResponse,
     responses=error_responses(400, 404, 409),
 )
 async def update_user(
@@ -106,7 +109,7 @@ async def update_user(
     authorized: Annotated[Authenticated, Depends(Require(can_write_user()))],
     user_id: UUID,
     user_update: UserUpdateRequest,
-) -> UserResponse:
+):
     _ensure_cannot_alter_own_user(authorized, user_id)
     await _ensure_cannot_update_email_of_user_with_non_grantable_permission(
         session, authorized, user_id, user_update
@@ -126,10 +129,11 @@ async def update_user(
     summary="Get authorized user",
     operation_id="get_user_me",
     tags=["user", "internal"],
+    response_model=UserMeResponse,
 )
 async def get_user_me(
     authorized: Annotated[Authenticated, Depends(RequireUser())],
-) -> UserMeResponse:
+):
     return UserMeResponse.from_user(authorized.user)
 
 
@@ -139,13 +143,14 @@ async def get_user_me(
     description="Requires `user:read` permission.",
     operation_id="get_user",
     tags=["user"],
+    response_model=UserResponse,
     responses=error_responses(404),
 )
 async def get_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_user()))],
     user_id: UUID,
-) -> UserResponse:
+):
     return await service.get_user(session, user_id)
 
 
@@ -155,13 +160,14 @@ async def get_user(
     description="Requires `user:read` permission.",
     operation_id="list_users",
     tags=["user"],
+    response_model=UserListResponse,
 )
 async def list_users(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_user()))],
     search_params: Annotated[ResourceSearchParams, Depends()],
     page_params: Annotated[PagePaginationParams, Depends()],
-) -> UserListResponse:
+):
     users, page_info = await service.get_users(
         session,
         query=search_params.query,
@@ -194,12 +200,13 @@ async def delete_user(
     summary="Get user password-reset info",
     operation_id="get_user_password_reset_info",
     tags=["user", "internal"],
+    response_model=UserPasswordResetInfoResponse,
     responses=error_responses(404),
 )
 async def get_user_password_reset_info(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     token: Annotated[str, Path(description="Password-reset token")],
-) -> UserPasswordResetInfoResponse:
+):
     user = await service.get_user_by_password_reset_token(session, token)
     return UserPasswordResetInfoResponse.model_validate(user, from_attributes=True)
 

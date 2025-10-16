@@ -66,6 +66,7 @@ async def _get_consolidated_data(
     operation_id="list_log_action_types",
     responses=error_responses(401, 403, 404),
     tags=["log"],
+    response_model=NameListResponse,
 )
 async def get_log_action_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -73,7 +74,7 @@ async def get_log_action_types(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
     category: str = None,
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -89,13 +90,14 @@ async def get_log_action_types(
     description="Requires `log:read` permission.",
     operation_id="list_log_action_categories",
     tags=["log"],
+    response_model=NameListResponse,
 )
 async def get_log_action_categories(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -110,13 +112,14 @@ async def get_log_action_categories(
     description="Requires `log:read` permission.",
     operation_id="list_log_actor_types",
     tags=["log"],
+    response_model=NameListResponse,
 )
 async def get_log_actor_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -138,7 +141,7 @@ async def get_log_actor_extras(
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -153,13 +156,14 @@ async def get_log_actor_extras(
     description="Requires `log:read` permission.",
     operation_id="list_log_resource_types",
     tags=["log"],
+    response_model=NameListResponse,
 )
 async def get_log_resource_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -181,7 +185,7 @@ async def get_log_resource_extras(
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -196,13 +200,14 @@ async def get_log_resource_extras(
     description="Requires `log:read` permission.",
     operation_id="list_log_tag_types",
     tags=["log"],
+    response_model=NameListResponse,
 )
 async def get_log_tag_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -224,7 +229,7 @@ async def get_log_source_fields(
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -246,7 +251,7 @@ async def get_log_detail_fields(
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -268,7 +273,7 @@ async def get_log_attachment_types(
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -290,7 +295,7 @@ async def get_log_attachment_mime_types(
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> NameListResponse:
+):
     return await _get_consolidated_data(
         session,
         repo_id,
@@ -305,6 +310,7 @@ async def get_log_attachment_mime_types(
     description="Requires `log:read` permission.",
     operation_id="list_log_entities",
     tags=["log"],
+    response_model=LogEntityListResponse,
 )
 async def get_log_entities(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -313,7 +319,7 @@ async def get_log_entities(
     page_params: Annotated[CursorPaginationParams, Depends()],
     root: bool = False,
     parent_entity_ref: str = None,
-) -> LogEntityListResponse:
+):
     if root and parent_entity_ref:
         raise ValidationError(
             "Parameters 'root' and 'parent_entity_ref' are mutually exclusive"
@@ -343,13 +349,14 @@ async def get_log_entities(
     description="Requires `log:read` permission.",
     operation_id="get_log_entity",
     tags=["log"],
+    response_model=LogEntityResponse,
 )
 async def get_log_entity(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     entity_ref: Annotated[str, Path(description="Entity ref")],
-) -> LogEntityResponse:
+):
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log_entity(
         entity_ref,
@@ -365,13 +372,14 @@ async def get_log_entity(
     operation_id="create_log",
     responses=error_responses(400),
     tags=["log"],
+    response_model=LogResponse,
 )
 async def create_log(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogWritePermission())],
     repo_id: UUID,
     log_create: LogCreate,
-) -> LogResponse:
+):
     service = await LogService.for_writing(session, repo_id)
     return await service.save_log(log_create)
 
@@ -514,13 +522,14 @@ async def get_logs_as_csv(
     operation_id="get_log",
     tags=["log"],
     status_code=200,
+    response_model=LogResponse,
 )
 async def get_log(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     log_id: Annotated[UUID, Path(description="Log ID")],
-) -> LogResponse:
+):
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log(
         log_id,
@@ -577,6 +586,7 @@ async def get_log_attachment(
     description=_CUSTOM_FIELDS_DESCRIPTION,
     operation_id="list_logs",
     tags=["log"],
+    response_model=LogListResponse,
 )
 async def get_logs(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -584,7 +594,7 @@ async def get_logs(
     repo_id: UUID,
     search_params: Annotated[LogSearchQueryParams, Depends()],
     page_params: Annotated[CursorPaginationParams, Depends()],
-) -> LogListResponse:
+):
     # FIXME: we must check that "until" is greater than "since"
     service = await LogService.for_reading(session, repo_id)
     logs, next_cursor = await service.get_logs(
