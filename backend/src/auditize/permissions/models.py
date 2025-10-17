@@ -49,30 +49,28 @@ def _LogPermissionsField(**kwargs):  # noqa
 
 
 _PERMISSIONS_EXAMPLE = {
-    "example": {
-        "is_superadmin": False,
-        "logs": {
-            "read": True,
-            "write": False,
-            "repos": [
-                {
-                    "repo_id": "DCFB6049-3BB7-49C5-94A9-64FC9226AE30",
-                    "read": False,
-                    "write": False,
-                },
-                {
-                    "repo_id": "E3D38457-670B-42EE-AF1B-10FA90597E68",
-                    "read": False,
-                    "write": True,
-                },
-            ],
-        },
-        "management": {
-            "repos": {"read": True, "write": False},
-            "users": {"read": True, "write": True},
-            "apikeys": {"read": False, "write": False},
-        },
-    }
+    "is_superadmin": False,
+    "logs": {
+        "read": True,
+        "write": False,
+        "repos": [
+            {
+                "repo_id": "DCFB6049-3BB7-49C5-94A9-64FC9226AE30",
+                "read": False,
+                "write": False,
+            },
+            {
+                "repo_id": "E3D38457-670B-42EE-AF1B-10FA90597E68",
+                "read": False,
+                "write": True,
+            },
+        ],
+    },
+    "management": {
+        "repos": {"read": True, "write": False},
+        "users": {"read": True, "write": True},
+        "apikeys": {"read": False, "write": False},
+    },
 }
 
 
