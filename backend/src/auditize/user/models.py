@@ -54,10 +54,9 @@ def _UserEmailField(**kwargs):  # noqa
     )
 
 
-def _UserLangField(default: Lang | None = Lang.EN, **kwargs):  # noqa
+def _UserLangField(**kwargs):  # noqa
     return Field(
         description="The user language",
-        default=default,
         json_schema_extra={"example": "en"},
         **kwargs,
     )
@@ -95,7 +94,7 @@ class UserCreate(BaseModel):
     first_name: str = _UserFirstNameField()
     last_name: str = _UserLastNameField()
     email: EmailStr = _UserEmailField()
-    lang: Lang = _UserLangField()
+    lang: Lang = _UserLangField(default=Lang.EN)
     permissions: PermissionsInput = _UserPermissionsField(
         default_factory=PermissionsInput
     )
