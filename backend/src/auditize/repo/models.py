@@ -131,17 +131,16 @@ class UserRepoPermissions(BaseModel):
 
 
 class UserRepoResponse(_BaseRepoResponse):
-    permissions: UserRepoPermissions = Field(
-        description="The repository permissions",
-        # NB: we have to use a default value here because the permissions field will be
-        # set after the model initialization
-        default_factory=lambda: UserRepoPermissions(
-            read=False, write=False, readable_entities=[]
-        ),
-    )
+    permissions: UserRepoPermissions = Field(description="The repository permissions")
 
 
 class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoResponse]):
     @classmethod
     def build_item(cls, repo: Repo) -> UserRepoResponse:
-        return UserRepoResponse.model_validate(repo, from_attributes=True)
+        return UserRepoResponse(
+            id=repo.id,
+            name=repo.name,
+            permissions=UserRepoPermissions(
+                read=False, write=False, readable_entities=[]
+            ),
+        )
