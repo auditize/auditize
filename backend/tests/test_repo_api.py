@@ -258,7 +258,7 @@ async def test_repo_get(repo_read_client: HttpTestHelper, repo: PreparedRepo):
     await repo_read_client.assert_get(
         f"/repos/{repo.id}",
         expected_status_code=200,
-        expected_json=repo.expected_api_response(),
+        expected_json=repo.expected_api_response({"stats": None}),
     )
 
 
@@ -278,7 +278,7 @@ async def test_repo_get_with_all_fields(
     await superadmin_client.assert_get(
         f"/repos/{repo.id}",
         expected_status_code=200,
-        expected_json=repo.expected_api_response(),
+        expected_json=repo.expected_api_response({"stats": None}),
     )
 
 
@@ -496,7 +496,7 @@ async def test_repo_list(repo_read_client: HttpTestHelper, repo_builder: RepoBui
         repo_read_client,
         "/repos",
         [
-            repo.expected_api_response()
+            repo.expected_api_response({"stats": None})
             for repo in sorted(repos, key=lambda r: r.data["name"])
         ],
     )
@@ -510,7 +510,7 @@ async def test_repo_list_with_search(
     await repo_read_client.assert_get_ok(
         "/repos?q=repo_1",
         expected_json={
-            "items": [repos[1].expected_api_response()],
+            "items": [repos[1].expected_api_response({"stats": None})],
             "pagination": {"page": 1, "page_size": 10, "total": 1, "total_pages": 1},
         },
     )
@@ -556,7 +556,7 @@ async def test_repo_list_all_statuses(
     await superadmin_client.assert_get_ok(
         "/repos",
         expected_json={
-            "items": [repo.expected_api_response() for repo in repos],
+            "items": [repo.expected_api_response({"stats": None}) for repo in repos],
             "pagination": {"page": 1, "page_size": 10, "total": 3, "total_pages": 1},
         },
     )

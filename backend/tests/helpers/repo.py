@@ -51,7 +51,6 @@ class PreparedRepo:
             "status": "enabled",
             "log_i18n_profile_id": None,
             "retention_period": None,
-            "stats": None,
             **(extra or {}),
         }
 

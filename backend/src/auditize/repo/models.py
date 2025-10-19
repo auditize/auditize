@@ -69,14 +69,10 @@ class RepoUpdate(BaseModel):
 
 
 class RepoStats(BaseModel, HasDatetimeSerialization):
-    first_log_date: datetime | None = Field(
-        default=None, description="The first log date"
-    )
-    last_log_date: datetime | None = Field(
-        default=None, description="The last log date"
-    )
-    log_count: int = Field(default=0, description="The log count")
-    storage_size: int = Field(default=0, description="The database storage size")
+    first_log_date: datetime | None = Field(description="The first log date")
+    last_log_date: datetime | None = Field(description="The last log date")
+    log_count: int = Field(description="The log count")
+    storage_size: int = Field(description="The database storage size")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -102,20 +98,30 @@ class RepoResponse(_BaseRepoResponse, HasDatetimeSerialization):
     retention_period: int | None = _RepoRetentionPeriodField()
     log_i18n_profile_id: UUID | None = _RepoLogI18nProfileIdField()
 
+
+class RepoWithStatsResponse(RepoResponse):
     stats: RepoStats | None = Field(
-        default=None,
-        description="The repository stats (available if `include=stats` has been set in query parameters)",
+        description="The repository stats (available if `include=stats` has been set in query parameters)"
     )
 
     @classmethod
     def from_repo(cls, repo: Repo):
-        return cls.model_validate(repo, from_attributes=True)
+        return cls(
+            id=repo.id,
+            name=repo.name,
+            created_at=repo.created_at,
+            updated_at=repo.updated_at,
+            status=repo.status,
+            retention_period=repo.retention_period,
+            log_i18n_profile_id=repo.log_i18n_profile_id,
+            stats=None,
+        )
 
 
-class RepoListResponse(PagePaginatedResponse[Repo, RepoResponse]):
+class RepoListResponse(PagePaginatedResponse[Repo, RepoWithStatsResponse]):
     @classmethod
-    def build_item(cls, repo: Repo) -> RepoResponse:
-        return RepoResponse.from_repo(repo)
+    def build_item(cls, repo: Repo) -> RepoWithStatsResponse:
+        return RepoWithStatsResponse.from_repo(repo)
 
 
 class UserRepoPermissions(BaseModel):

@@ -41,6 +41,7 @@ from auditize.repo.models import (
     RepoStats,
     RepoStatus,
     RepoUpdate,
+    RepoWithStatsResponse,
     UserRepoListResponse,
     UserRepoPermissions,
 )
@@ -128,7 +129,7 @@ async def _handle_repo_include_options(
     summary="Get log repository",
     description="Requires `repo:read` permission.",
     tags=["repo"],
-    response_model=RepoResponse,
+    response_model=RepoWithStatsResponse,
     responses=error_responses(404),
 )
 async def get_repo(
@@ -138,7 +139,7 @@ async def get_repo(
     include: Annotated[list[RepoIncludeOptions], Query()] = (),
 ):
     repo = await service.get_repo(session, repo_id)
-    response = RepoResponse.from_repo(repo)
+    response = RepoWithStatsResponse.from_repo(repo)
     await _handle_repo_include_options(session, response, include)
     return response
 

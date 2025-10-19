@@ -104,7 +104,9 @@ async def get_repo_stats(session: AsyncSession, repo_id: UUID) -> RepoStats:
 
     repo = await _get_repo(session, repo_id)
     log_service = await LogService.for_maintenance(session, repo)
-    stats = RepoStats()
+    stats = RepoStats(
+        first_log_date=None, last_log_date=None, log_count=0, storage_size=0
+    )
 
     try:
         first_log = await log_service.get_oldest_log()
