@@ -101,7 +101,12 @@ class LogI18nProfileUpdate(BaseModel):
 
 
 class LogI18nProfileResponse(BaseModel, HasDatetimeSerialization):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "required": ["id", "created_at", "updated_at", "name", "translations"]
+        },
+    )
 
     id: uuid.UUID = _ProfileIdField()
     created_at: datetime = CreatedAtField()
