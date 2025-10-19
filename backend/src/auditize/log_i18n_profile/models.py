@@ -20,7 +20,23 @@ if TYPE_CHECKING:
 
 
 class LogLabels(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        json_schema_extra={
+            "required": [
+                "action_type",
+                "action_category",
+                "actor_type",
+                "actor_custom_field",
+                "source_field",
+                "detail_field",
+                "resource_type",
+                "resource_custom_field",
+                "tag_type",
+                "attachment_type",
+            ]
+        },
+        extra="forbid",
+    )
 
     # FIXME: check that dict keys are identifiers
     action_type: dict[str, str] = Field(default_factory=dict)
