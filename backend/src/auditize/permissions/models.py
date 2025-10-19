@@ -130,15 +130,9 @@ class ReadWritePermissionsOutput(BaseModel):
 
 
 class ManagementPermissionsOutput(BaseModel):
-    repos: ReadWritePermissionsOutput = Field(
-        default_factory=ReadWritePermissionsOutput
-    )
-    users: ReadWritePermissionsOutput = Field(
-        default_factory=ReadWritePermissionsOutput
-    )
-    apikeys: ReadWritePermissionsOutput = Field(
-        default_factory=ReadWritePermissionsOutput
-    )
+    repos: ReadWritePermissionsOutput
+    users: ReadWritePermissionsOutput
+    apikeys: ReadWritePermissionsOutput
 
 
 class RepoLogPermissionsOutput(ReadWritePermissionsOutput):
@@ -162,16 +156,14 @@ ApplicableLogPermissionScope = Literal["all", "partial", "none"]
 
 
 class ApplicableLogPermissions(BaseModel):
-    read: ApplicableLogPermissionScope = Field(default="none")
-    write: ApplicableLogPermissionScope = Field(default="none")
+    read: ApplicableLogPermissionScope
+    write: ApplicableLogPermissionScope
 
 
 class ApplicablePermissions(BaseModel):
     is_superadmin: bool
-    logs: ApplicableLogPermissions = Field(default_factory=ApplicableLogPermissions)
-    management: ManagementPermissionsOutput = Field(
-        default_factory=ManagementPermissionsOutput
-    )
+    logs: ApplicableLogPermissions
+    management: ManagementPermissionsOutput
 
     model_config = ConfigDict(
         json_schema_extra={
