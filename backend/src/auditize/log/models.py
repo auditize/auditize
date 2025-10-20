@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from typing import Annotated, Optional
 from uuid import UUID
 
-from fastapi import Request
 from pydantic import (
     BaseModel,
     BeforeValidator,
@@ -496,16 +495,15 @@ class BaseLogSearchParams(BaseModel):
 
 
 class LogSearchQueryParams(BaseLogSearchParams):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    request: Request
+    model_config = ConfigDict(extra="allow")
 
     def _get_custom_field_search_params(self, prefix: str) -> dict[str, str]:
         params = {}
-        for param_name, param_value in self.request.query_params.items():
-            parts = param_name.split(".")
-            if len(parts) == 2 and parts[0] == prefix:
-                params[parts[1]] = param_value
+        if self.__pydantic_extra__:
+            for param_name, param_value in self.__pydantic_extra__.items():
+                parts = param_name.split(".")
+                if len(parts) == 2 and parts[0] == prefix:
+                    params[parts[1]] = param_value
         return params
 
     @model_serializer(mode="wrap")
@@ -518,3 +516,47 @@ class LogSearchQueryParams(BaseLogSearchParams):
             "actor_extra": self._get_custom_field_search_params("actor"),
             "resource_extra": self._get_custom_field_search_params("resource"),
         }
+
+
+class LogListParams(CursorPaginationParams, LogSearchQueryParams):
+    pass
+
+
+LOG_CSV_BUILTIN_COLUMNS = (
+    "log_id",
+    "saved_at",
+    "action_type",
+    "action_category",
+    "actor_ref",
+    "actor_type",
+    "actor_name",
+    "resource_ref",
+    "resource_type",
+    "resource_name",
+    "tag_ref",
+    "tag_type",
+    "tag_name",
+    "attachment_name",
+    "attachment_type",
+    "attachment_mime_type",
+    "entity_path:ref",
+    "entity_path:name",
+)
+
+_COLUMNS_DESCRIPTION = f"""
+Comma-separated list of columns to include in the CSV output. Available columns are:
+{"\n".join(f"- `{col}`" for col in LOG_CSV_BUILTIN_COLUMNS)}
+- `source.<custom-field>`
+- `actor.<custom-field>`
+- `resource.<custom-field>`
+- `details.<custom-field>`
+
+Example of column name if you have a "role" custom field for the actor: `actor.role`.
+
+"""
+
+
+class LogsAsCsvParams(LogSearchQueryParams):
+    columns: str = Field(
+        description=_COLUMNS_DESCRIPTION, default=",".join(LOG_CSV_BUILTIN_COLUMNS)
+    )

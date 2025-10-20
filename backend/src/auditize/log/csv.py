@@ -8,31 +8,15 @@ from auditize.config import get_config
 from auditize.exceptions import ValidationError
 from auditize.helpers.datetime import serialize_datetime
 from auditize.i18n import Lang, t
-from auditize.log.models import CustomField, Log, LogSearchParams
+from auditize.log.models import (
+    LOG_CSV_BUILTIN_COLUMNS,
+    CustomField,
+    Log,
+    LogSearchParams,
+)
 from auditize.log.service import LogService
 from auditize.log_i18n_profile.service import translate
 from auditize.log_i18n_profile.sql_models import LogI18nProfile
-
-LOG_CSV_BUILTIN_COLUMNS = (
-    "log_id",
-    "saved_at",
-    "action_type",
-    "action_category",
-    "actor_ref",
-    "actor_type",
-    "actor_name",
-    "resource_ref",
-    "resource_type",
-    "resource_name",
-    "tag_ref",
-    "tag_type",
-    "tag_name",
-    "attachment_name",
-    "attachment_type",
-    "attachment_mime_type",
-    "entity_path:ref",
-    "entity_path:name",
-)
 
 
 def _custom_fields_to_dict(custom_fields: list[CustomField], prefix: str) -> dict:

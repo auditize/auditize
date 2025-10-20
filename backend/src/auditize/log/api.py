@@ -32,8 +32,10 @@ from auditize.log.models import (
     LogEntityListParams,
     LogEntityListResponse,
     LogEntityResponse,
+    LogListParams,
     LogListResponse,
     LogResponse,
+    LogsAsCsvParams,
     LogSearchParams,
     LogSearchQueryParams,
     NameListResponse,
@@ -448,19 +450,7 @@ class _CsvResponse(Response):
     media_type = "text/csv"
 
 
-_COLUMNS_DESCRIPTION = f"""
-Comma-separated list of columns to include in the CSV output. Available columns are:
-{"\n".join(f"- `{col}`" for col in LOG_CSV_BUILTIN_COLUMNS)}
-- `source.<custom-field>`
-- `actor.<custom-field>`
-- `resource.<custom-field>`
-- `details.<custom-field>`
-
-Example of column name if you have a "role" custom field for the actor: `actor.role`.
-
-"""
-
-_CUSTOM_FIELDS_DESCRIPTION = (
+_GET_LOGS_DESCRIPTION = (
     "Requires `log:read` permission.\n"
     "\n"
     "This endpoint also accepts search on custom fields through the extra parameters:\n"
@@ -476,7 +466,7 @@ _CUSTOM_FIELDS_DESCRIPTION = (
 @router.get(
     "/repos/{repo_id}/logs/csv",
     summary="List logs as CSV file",
-    description=_CUSTOM_FIELDS_DESCRIPTION,
+    description=_GET_LOGS_DESCRIPTION,
     operation_id="list_logs_csv",
     tags=["log"],
     response_class=_CsvResponse,
@@ -486,15 +476,12 @@ async def get_logs_as_csv(
     request: Request,
     authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    search_params: Annotated[LogSearchQueryParams, Depends()],
-    columns: Annotated[str, Query(description=_COLUMNS_DESCRIPTION)] = ",".join(
-        LOG_CSV_BUILTIN_COLUMNS
-    ),
+    params: Annotated[LogsAsCsvParams, Query()],
 ):
     # NB: as we cannot properly handle an error in a StreamingResponse,
     # we perform as much validation as possible before calling get_logs_as_csv
     service = await LogService.for_reading(session, repo_id)
-    columns = columns.split(",")  # convert columns string to a list
+    columns = params.columns.split(",")  # convert columns string to a list
     validate_log_csv_columns(columns)
 
     filename = f"auditize-logs_{repo_id}_{now().strftime("%Y%m%d%H%M%S")}.csv"
@@ -505,7 +492,7 @@ async def get_logs_as_csv(
             authorized_entities=authorized.permissions.get_repo_readable_entities(
                 repo_id
             ),
-            search_params=LogSearchParams.model_validate(search_params.model_dump()),
+            search_params=LogSearchParams.model_validate(params.model_dump()),
             columns=columns,
             lang=get_request_lang(request),
         ),
@@ -582,7 +569,7 @@ async def get_log_attachment(
 @router.get(
     "/repos/{repo_id}/logs",
     summary="List logs",
-    description=_CUSTOM_FIELDS_DESCRIPTION,
+    description=_GET_LOGS_DESCRIPTION,
     operation_id="list_logs",
     tags=["log"],
     response_model=LogListResponse,
@@ -591,15 +578,14 @@ async def get_logs(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    search_params: Annotated[LogSearchQueryParams, Depends()],
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    params: Annotated[LogListParams, Query()],
 ):
     # FIXME: we must check that "until" is greater than "since"
     service = await LogService.for_reading(session, repo_id)
     logs, next_cursor = await service.get_logs(
         authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
-        search_params=LogSearchParams.model_validate(search_params.model_dump()),
-        limit=page_params.limit,
-        pagination_cursor=page_params.cursor,
+        search_params=LogSearchParams.model_validate(params.model_dump()),
+        limit=params.limit,
+        pagination_cursor=params.cursor,
     )
     return LogListResponse.build(logs, next_cursor)
