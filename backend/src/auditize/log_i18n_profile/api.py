@@ -1,12 +1,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
-from auditize.api.models.page_pagination import PagePaginationParams
-from auditize.api.models.search import ResourceSearchParams
+from auditize.api.models.search import PagePaginatedSearchParams
 from auditize.auth.authorizer import Authenticated, Require
 from auditize.dependencies import get_db_session
 from auditize.i18n.lang import Lang
@@ -109,14 +108,10 @@ async def get_profile_translation(
 async def list_profiles(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
-    search_params: Annotated[ResourceSearchParams, Depends()],
-    page_params: Annotated[PagePaginationParams, Depends()],
+    params: Annotated[PagePaginatedSearchParams, Query()],
 ):
     profiles, page_info = await service.get_log_i18n_profiles(
-        session,
-        query=search_params.query,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        session, params.query, params.page, params.page_size
     )
     return LogI18nProfileListResponse.build(profiles, page_info)
 

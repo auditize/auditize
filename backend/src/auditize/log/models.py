@@ -13,7 +13,10 @@ from pydantic import (
 )
 
 from auditize.api.models.common import IdField
-from auditize.api.models.cursor_pagination import CursorPaginatedResponse
+from auditize.api.models.cursor_pagination import (
+    CursorPaginatedResponse,
+    CursorPaginationParams,
+)
 from auditize.api.models.dates import HasDatetimeSerialization
 from auditize.api.validation import IDENTIFIER_PATTERN
 from auditize.helpers.datetime import validate_datetime
@@ -372,6 +375,12 @@ class LogListResponse(CursorPaginatedResponse[Log, LogResponse]):
         return LogResponse.model_validate(log.model_dump())
 
 
+class LogActionTypeListParams(CursorPaginationParams):
+    category: Optional[str] = Field(
+        default=None, description="The action category to filter by"
+    )
+
+
 class NameData(BaseModel):
     name: str
 
@@ -408,6 +417,15 @@ class LogEntityResponse(_EntityPathNodeData):
                 "has_children": True,
             }
         }
+    )
+
+
+class LogEntityListParams(CursorPaginationParams):
+    root: bool = Field(
+        default=False, description="Whether to list top-level entities or not"
+    )
+    parent_entity_ref: Optional[str] = Field(
+        default=None, description="The ref of the parent entity to filter by"
     )
 
 

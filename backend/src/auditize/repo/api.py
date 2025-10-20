@@ -6,8 +6,6 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
-from auditize.api.models.page_pagination import PagePaginationParams
-from auditize.api.models.search import ResourceSearchParams
 from auditize.apikey.models import ApikeyUpdate
 from auditize.apikey.service import update_apikey
 from auditize.auth.authorizer import (
@@ -36,22 +34,20 @@ from auditize.permissions.models import (
 from auditize.repo import service
 from auditize.repo.models import (
     RepoCreate,
+    RepoIncludeOptions,
+    RepoListParams,
     RepoListResponse,
     RepoResponse,
     RepoStats,
     RepoStatus,
     RepoUpdate,
     RepoWithStatsResponse,
+    UserRepoListParams,
     UserRepoListResponse,
     UserRepoPermissions,
 )
 from auditize.user.models import UserUpdate
 from auditize.user.service import update_user
-
-
-class RepoIncludeOptions(Enum):
-    STATS = "stats"
-
 
 router = APIRouter(responses=error_responses(401, 403))
 
@@ -191,20 +187,17 @@ async def get_repo_translation(
 async def list_repos(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
-    search_params: Annotated[ResourceSearchParams, Depends()],
-    include: Annotated[list[RepoIncludeOptions], Query(default_factory=list)],
-    page_params: Annotated[PagePaginationParams, Depends()],
+    params: Annotated[RepoListParams, Query()],
 ):
     repos, page_info = await service.get_repos(
         session,
-        query=search_params.query,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        query=params.query,
+        page=params.page,
+        page_size=params.page_size,
     )
     repo_list = RepoListResponse.build(repos, page_info)
-    if include:
-        for repo_read in repo_list.items:
-            await _handle_repo_include_options(session, repo_read, include)
+    for repo_read in repo_list.items:
+        await _handle_repo_include_options(session, repo_read, params.include)
     return repo_list
 
 
@@ -219,27 +212,15 @@ async def list_repos(
 async def list_user_repos(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireUser())],
-    has_read_permission: Annotated[
-        bool,
-        Query(
-            description="Set to true to filter repositories on which user can read logs",
-        ),
-    ] = False,
-    has_write_permission: Annotated[
-        bool,
-        Query(
-            description="Set to true to filter repositories on which user can write logs",
-        ),
-    ] = False,
-    page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
+    params: Annotated[UserRepoListParams, Query()],
 ):
     repos, page_info = await service.get_user_repos(
         session,
         user=authorized.user,
-        user_can_read=has_read_permission,
-        user_can_write=has_write_permission,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        user_can_read=params.has_read_permission,
+        user_can_write=params.has_write_permission,
+        page=params.page,
+        page_size=params.page_size,
     )
 
     repo_list = UserRepoListResponse.build(repos, page_info)

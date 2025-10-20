@@ -1,12 +1,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
-from auditize.api.models.page_pagination import PagePaginationParams
-from auditize.api.models.search import ResourceSearchParams
+from auditize.api.models.search import PagePaginatedSearchParams
 from auditize.apikey import service
 from auditize.apikey.models import (
     ApikeyCreate,
@@ -110,14 +109,13 @@ async def get_apikey(
 async def list_apikeys(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_apikey()))],
-    search_params: Annotated[ResourceSearchParams, Depends()],
-    page_params: Annotated[PagePaginationParams, Depends()],
+    params: Annotated[PagePaginatedSearchParams, Query()],
 ):
     apikeys, page_info = await service.get_apikeys(
         session,
-        query=search_params.query,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        query=params.query,
+        page=params.page,
+        page_size=params.page_size,
     )
     return ApikeyListResponse.build(apikeys, page_info)
 

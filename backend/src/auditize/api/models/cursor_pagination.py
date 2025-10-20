@@ -10,7 +10,7 @@ from auditize.exceptions import InvalidPaginationCursor
 
 class CursorPaginationParams(BaseModel):
     cursor: Optional[str] = Field(
-        description="The cursor value previously returned in 'next_cursor' "
+        description="The cursor value previously returned in `next_cursor` "
         "field of the response or no value for the first page.",
         default=None,
     )
@@ -25,8 +25,8 @@ class CursorPaginationParams(BaseModel):
 
 class CursorPaginationData(BaseModel):
     next_cursor: str | None = Field(
-        description="The cursor to the next page of results. It must be passed as the 'cursor' parameter to the "
-        "next query to get the next page of results. 'next_cursor' will be null if there "
+        description="The cursor to the next page of results. It must be passed as the `cursor` parameter to the "
+        "next query to get the next page of results. `next_cursor` will be null if there "
         "are no more results to fetch."
     )
 

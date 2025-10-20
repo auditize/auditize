@@ -21,6 +21,7 @@ from auditize.api.models.dates import (
     UpdatedAtField,
 )
 from auditize.api.models.page_pagination import PagePaginatedResponse
+from auditize.api.models.search import PagePaginatedSearchParams
 
 _BUILTIN_FILTER_COLUMNS = (
     "saved_at",
@@ -183,6 +184,13 @@ class LogFilterResponse(BaseModel, HasDatetimeSerialization):
     search_params: LogFilterSearchParams = _SearchParamsField()
     columns: list[str] = _ColumnsField()
     is_favorite: bool = _IsFavoriteField()
+
+
+class LogFilterListParams(PagePaginatedSearchParams):
+    is_favorite: bool = Field(
+        description="Whether the filter is marked as favorite",
+        default=None,
+    )
 
 
 class LogFilterListResponse(

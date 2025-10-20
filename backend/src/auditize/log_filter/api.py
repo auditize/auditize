@@ -1,12 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
-from auditize.api.models.page_pagination import PagePaginationParams
-from auditize.api.models.search import ResourceSearchParams
 from auditize.auth.authorizer import (
     Authenticated,
     Require,
@@ -16,6 +14,7 @@ from auditize.dependencies import get_db_session
 from auditize.log_filter import service
 from auditize.log_filter.models import (
     LogFilterCreate,
+    LogFilterListParams,
     LogFilterListResponse,
     LogFilterResponse,
     LogFilterUpdate,
@@ -97,17 +96,15 @@ async def list_log_filters(
     authorized: Annotated[
         Authenticated, Depends(Require(can_read_logs_from_any_repo()))
     ],
-    search_params: Annotated[ResourceSearchParams, Depends()],
-    is_favorite: bool = None,
-    page_params: Annotated[PagePaginationParams, Depends()] = PagePaginationParams(),
+    params: Annotated[LogFilterListParams, Query()],
 ):
     log_filters, page_info = await service.get_log_filters(
         session,
         user_id=authorized.user.id,
-        query=search_params.query,
-        is_favorite=is_favorite,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        query=params.query,
+        is_favorite=params.is_favorite,
+        page=params.page,
+        page_size=params.page_size,
     )
     return LogFilterListResponse.build(log_filters, page_info)
 

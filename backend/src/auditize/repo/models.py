@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Optional
 from uuid import UUID
 
@@ -10,7 +11,11 @@ from auditize.api.models.dates import (
     HasDatetimeSerialization,
     UpdatedAtField,
 )
-from auditize.api.models.page_pagination import PagePaginatedResponse
+from auditize.api.models.page_pagination import (
+    PagePaginatedResponse,
+    PagePaginationParams,
+)
+from auditize.api.models.search import PagePaginatedSearchParams
 from auditize.repo.sql_models import Repo, RepoStatus
 
 
@@ -118,6 +123,16 @@ class RepoWithStatsResponse(RepoResponse):
         )
 
 
+class RepoIncludeOptions(StrEnum):
+    STATS = "stats"
+
+
+class RepoListParams(PagePaginatedSearchParams):
+    include: list[RepoIncludeOptions] = Field(
+        default_factory=list, description="The extra fields to include in the response"
+    )
+
+
 class RepoListResponse(PagePaginatedResponse[Repo, RepoWithStatsResponse]):
     @classmethod
     def build_item(cls, repo: Repo) -> RepoWithStatsResponse:
@@ -138,6 +153,17 @@ class UserRepoPermissions(BaseModel):
 
 class UserRepoResponse(_BaseRepoResponse):
     permissions: UserRepoPermissions = Field(description="The repository permissions")
+
+
+class UserRepoListParams(PagePaginationParams):
+    has_read_permission: bool = Field(
+        description="Set to true to filter repositories on which user can read logs",
+        default=False,
+    )
+    has_write_permission: bool = Field(
+        description="Set to true to filter repositories on which user can write logs",
+        default=False,
+    )
 
 
 class UserRepoListResponse(PagePaginatedResponse[Repo, UserRepoResponse]):

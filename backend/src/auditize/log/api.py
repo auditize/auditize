@@ -27,7 +27,9 @@ from auditize.log.csv import (
 )
 from auditize.log.models import (
     Log,
+    LogActionTypeListParams,
     LogCreate,
+    LogEntityListParams,
     LogEntityListResponse,
     LogEntityResponse,
     LogListResponse,
@@ -72,15 +74,14 @@ async def get_log_action_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
-    category: str = None,
+    params: Annotated[LogActionTypeListParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
         repo_id,
         "get_log_action_types",
-        page_params,
-        action_category=category,
+        params,
+        action_category=params.category,
     )
 
 
@@ -96,7 +97,7 @@ async def get_log_action_categories(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -118,7 +119,7 @@ async def get_log_actor_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -140,7 +141,7 @@ async def get_log_actor_extras(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -162,7 +163,7 @@ async def get_log_resource_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -184,7 +185,7 @@ async def get_log_resource_extras(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -206,7 +207,7 @@ async def get_log_tag_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -228,7 +229,7 @@ async def get_log_source_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -250,7 +251,7 @@ async def get_log_detail_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -272,7 +273,7 @@ async def get_log_attachment_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -294,7 +295,7 @@ async def get_log_attachment_mime_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
+    page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_consolidated_data(
         session,
@@ -316,19 +317,17 @@ async def get_log_entities(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Depends()],
-    root: bool = False,
-    parent_entity_ref: str = None,
+    params: Annotated[LogEntityListParams, Query()],
 ):
-    if root and parent_entity_ref:
+    if params.root and params.parent_entity_ref:
         raise ValidationError(
             "Parameters 'root' and 'parent_entity_ref' are mutually exclusive"
         )
 
-    if root:
+    if params.root:
         filter_args = {"parent_entity_ref": None}
-    elif parent_entity_ref:
-        filter_args = {"parent_entity_ref": parent_entity_ref}
+    elif params.parent_entity_ref:
+        filter_args = {"parent_entity_ref": params.parent_entity_ref}
     else:
         filter_args = {}
 
@@ -336,8 +335,8 @@ async def get_log_entities(
 
     entities, pagination = await service.get_log_entities(
         authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
-        limit=page_params.limit,
-        pagination_cursor=page_params.cursor,
+        limit=params.limit,
+        pagination_cursor=params.cursor,
         **filter_args,
     )
     return LogEntityListResponse.build(entities, pagination)

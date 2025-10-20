@@ -1,17 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
-from auditize.api.models.page_pagination import PagePaginationParams
-from auditize.api.models.search import ResourceSearchParams
-from auditize.auth.authorizer import (
-    Authenticated,
-    Require,
-    RequireUser,
-)
+from auditize.api.models.search import PagePaginatedSearchParams
+from auditize.auth.authorizer import Authenticated, Require, RequireUser
 from auditize.dependencies import get_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_user, can_write_user
@@ -165,14 +160,13 @@ async def get_user(
 async def list_users(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(Require(can_read_user()))],
-    search_params: Annotated[ResourceSearchParams, Depends()],
-    page_params: Annotated[PagePaginationParams, Depends()],
+    params: Annotated[PagePaginatedSearchParams, Query()],
 ):
     users, page_info = await service.get_users(
         session,
-        query=search_params.query,
-        page=page_params.page,
-        page_size=page_params.page_size,
+        params.query,
+        params.page,
+        params.page_size,
     )
     return UserListResponse.build(users, page_info)
 
