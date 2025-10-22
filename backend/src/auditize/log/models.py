@@ -442,27 +442,95 @@ class BaseLogSearchParams(BaseModel):
     # That triggers a pydantic validation error because None is not explicitly allowed.
     # The Optional[] is also needed because (among others) this model is used in GET /users/me/logs/filters
     # for the search_params field (where field values can be None).
-    action_type: Optional[str] = Field(default=None)
-    action_category: Optional[str] = Field(default=None)
-    actor_type: Optional[str] = Field(default=None)
-    actor_name: Optional[str] = Field(default=None)
-    actor_ref: Optional[str] = Field(default=None)
-    resource_type: Optional[str] = Field(default=None)
-    resource_name: Optional[str] = Field(default=None)
-    resource_ref: Optional[str] = Field(default=None)
-    tag_ref: Optional[str] = Field(default=None)
-    tag_type: Optional[str] = Field(default=None)
-    tag_name: Optional[str] = Field(default=None)
-    has_attachment: Optional[bool] = Field(default=None)
-    attachment_name: Optional[str] = Field(default=None)
-    attachment_type: Optional[str] = Field(default=None)
-    attachment_mime_type: Optional[str] = Field(default=None)
-    entity_ref: Optional[str] = Field(default=None)
+    action_type: Optional[str] = Field(
+        description="Filter logs by action type",
+        json_schema_extra={"example": "create-configuration-profile"},
+        default=None,
+    )
+    action_category: Optional[str] = Field(
+        description="Filter logs by action category",
+        json_schema_extra={"example": "configuration"},
+        default=None,
+    )
+    actor_type: Optional[str] = Field(
+        description="Filter logs by actor type",
+        json_schema_extra={"example": "user"},
+        default=None,
+    )
+    actor_name: Optional[str] = Field(
+        description="Filter logs by actor name",
+        json_schema_extra={"example": "John Doe"},
+        default=None,
+    )
+    actor_ref: Optional[str] = Field(
+        description="Filter logs by actor reference",
+        json_schema_extra={"example": "user:123"},
+        default=None,
+    )
+    resource_type: Optional[str] = Field(
+        description="Filter logs by resource type",
+        json_schema_extra={"example": "config-profile"},
+        default=None,
+    )
+    resource_name: Optional[str] = Field(
+        description="Filter logs by resource name",
+        json_schema_extra={"example": "Config Profile 123"},
+        default=None,
+    )
+    resource_ref: Optional[str] = Field(
+        description="Filter logs by resource reference",
+        json_schema_extra={"example": "config-profile:123"},
+        default=None,
+    )
+    tag_ref: Optional[str] = Field(
+        description="Filter logs by tag reference",
+        json_schema_extra={"example": "config-profile:123"},
+        default=None,
+    )
+    tag_type: Optional[str] = Field(
+        description="Filter logs by tag type",
+        json_schema_extra={"example": "security"},
+        default=None,
+    )
+    tag_name: Optional[str] = Field(
+        description="Filter logs by tag name",
+        json_schema_extra={"example": "Config Profile 123"},
+        default=None,
+    )
+    has_attachment: Optional[bool] = Field(
+        description="Filter logs by presence of attachments",
+        json_schema_extra={"example": True},
+        default=None,
+    )
+    attachment_name: Optional[str] = Field(
+        description="Filter logs by attachment name",
+        json_schema_extra={"example": "document.pdf"},
+        default=None,
+    )
+    attachment_type: Optional[str] = Field(
+        description="Filter logs by attachment type",
+        json_schema_extra={"example": "document"},
+        default=None,
+    )
+    attachment_mime_type: Optional[str] = Field(
+        description="Filter logs by attachment MIME type",
+        json_schema_extra={"example": "application/pdf"},
+        default=None,
+    )
+    entity_ref: Optional[str] = Field(
+        description="Filter logs by entity reference",
+        json_schema_extra={"example": "entity:123"},
+        default=None,
+    )
     since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
-        default=None
+        description="Filter logs created after this datetime",
+        json_schema_extra={"example": "2024-01-01T00:00:00Z"},
+        default=None,
     )
     until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
-        default=None
+        description="Filter logs created before this datetime",
+        json_schema_extra={"example": "2024-12-31T23:59:59Z"},
+        default=None,
     )
 
 
