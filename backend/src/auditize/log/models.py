@@ -437,34 +437,6 @@ class LogEntityListResponse(
 
 
 class BaseLogSearchParams(BaseModel):
-    action_type: Optional[str] = None
-    action_category: Optional[str] = None
-    actor_type: Optional[str] = None
-    actor_name: Optional[str] = None
-    actor_ref: Optional[str] = None
-    resource_type: Optional[str] = None
-    resource_name: Optional[str] = None
-    resource_ref: Optional[str] = None
-    tag_ref: Optional[str] = None
-    tag_type: Optional[str] = None
-    tag_name: Optional[str] = None
-    has_attachment: Optional[bool] = None
-    attachment_name: Optional[str] = None
-    attachment_type: Optional[str] = None
-    attachment_mime_type: Optional[str] = None
-    entity_ref: Optional[str] = None
-    since: Optional[datetime] = None
-    until: Optional[datetime] = None
-
-
-class LogSearchParams(BaseLogSearchParams):
-    actor_extra: Optional[dict] = None
-    resource_extra: Optional[dict] = None
-    source: Optional[dict] = None
-    details: Optional[dict] = None
-
-
-class BaseLogSearchParams(BaseModel):
     # All those fields are left Optional[] because FastAPI seems to explicitly pass None
     # (the default value) to the class constructor instead of not passing the value at all.
     # That triggers a pydantic validation error because None is not explicitly allowed.
@@ -492,6 +464,13 @@ class BaseLogSearchParams(BaseModel):
     until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
         default=None
     )
+
+
+class LogSearchParams(BaseLogSearchParams):
+    actor_extra: Optional[dict] = None
+    resource_extra: Optional[dict] = None
+    source: Optional[dict] = None
+    details: Optional[dict] = None
 
 
 class LogSearchQueryParams(BaseLogSearchParams):
