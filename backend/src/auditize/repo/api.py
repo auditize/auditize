@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
@@ -49,7 +49,9 @@ from auditize.repo.models import (
 from auditize.user.models import UserUpdate
 from auditize.user.service import update_user
 
-router = APIRouter(responses=error_responses(401, 403))
+router = APIRouter(
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+)
 
 
 @router.post(
@@ -58,9 +60,9 @@ router = APIRouter(responses=error_responses(401, 403))
     description="Requires `repo:write` permission.",
     operation_id="create_repo",
     tags=["repo"],
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     response_model=RepoResponse,
-    responses=error_responses(400, 409),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),
 )
 async def create_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -99,9 +101,11 @@ async def create_repo(
     description="Requires `repo:write` permission.",
     operation_id="update_repo",
     tags=["repo"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=RepoResponse,
-    responses=error_responses(400, 404, 409),
+    responses=error_responses(
+        status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT
+    ),
 )
 async def update_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -126,7 +130,7 @@ async def _handle_repo_include_options(
     description="Requires `repo:read` permission.",
     tags=["repo"],
     response_model=RepoWithStatsResponse,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -147,7 +151,7 @@ async def get_repo(
     operation_id="get_repo_translation_for_user",
     tags=["repo", "internal"],
     response_model=LogLabels,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_repo_translation_for_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -165,7 +169,7 @@ async def get_repo_translation_for_user(
     operation_id="get_repo_translation",
     tags=["repo"],
     response_model=LogLabels,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_repo_translation(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -250,8 +254,8 @@ async def list_user_repos(
     description="Requires `repo:write` permission.",
     operation_id="delete_repo",
     tags=["repo"],
-    status_code=204,
-    responses=error_responses(404),
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def delete_repo(
     session: Annotated[AsyncSession, Depends(get_db_session)],

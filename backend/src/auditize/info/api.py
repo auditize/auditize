@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
 from auditize.api.exception import error_responses
 from auditize.auth.authorizer import Authenticated, RequireAuthentication
@@ -15,9 +15,9 @@ router = APIRouter()
     summary="Get Auditize information",
     operation_id="info",
     tags=["info"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=InfoResponse,
-    responses=error_responses(401),
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
 )
 async def info(
     _: Annotated[Authenticated, Depends(RequireAuthentication())],

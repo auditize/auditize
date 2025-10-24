@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
@@ -25,7 +25,9 @@ from auditize.user.models import (
     UserUpdateRequest,
 )
 
-router = APIRouter(responses=error_responses(401, 403))
+router = APIRouter(
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+)
 
 
 def _ensure_cannot_alter_own_user(authorized: Authenticated, user_id: UUID):
@@ -56,9 +58,9 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
     description="Requires `user:write` permission.",
     operation_id="create_user",
     tags=["user"],
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     response_model=UserResponse,
-    responses=error_responses(400, 409),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),
 )
 async def create_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -74,9 +76,9 @@ async def create_user(
     summary="Update authenticated user",
     operation_id="update_user_me",
     tags=["user", "internal"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=UserMeResponse,
-    responses=error_responses(400),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST),
 )
 async def update_user_me(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -95,9 +97,11 @@ async def update_user_me(
     summary="Update user",
     operation_id="update_user",
     tags=["user"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=UserResponse,
-    responses=error_responses(400, 404, 409),
+    responses=error_responses(
+        status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT
+    ),
 )
 async def update_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -139,7 +143,7 @@ async def get_user_me(
     operation_id="get_user",
     tags=["user"],
     response_model=UserResponse,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -177,8 +181,8 @@ async def list_users(
     description="Requires `user:write` permission.",
     operation_id="delete_user",
     tags=["user"],
-    status_code=204,
-    responses=error_responses(404, 409),
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT),
 )
 async def delete_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -195,7 +199,7 @@ async def delete_user(
     operation_id="get_user_password_reset_info",
     tags=["user", "internal"],
     response_model=UserPasswordResetInfoResponse,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_user_password_reset_info(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -210,8 +214,8 @@ async def get_user_password_reset_info(
     summary="Set user password",
     operation_id="set_user_password",
     tags=["user", "internal"],
-    status_code=204,
-    responses=error_responses(400, 404),
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND),
 )
 async def set_user_password(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -230,8 +234,8 @@ async def set_user_password(
     description="For security reasons, this endpoint will always return a 204 status code"
     "whether the provided email exists or not.",
     tags=["user", "internal"],
-    status_code=204,
-    responses=error_responses(400),
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(status.HTTP_400_BAD_REQUEST),
 )
 async def forgot_password(
     session: Annotated[AsyncSession, Depends(get_db_session)],

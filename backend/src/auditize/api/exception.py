@@ -1,5 +1,6 @@
 from typing import TypeVar
 
+from fastapi import status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -110,25 +111,49 @@ class ApiValidationErrorResponse(ApiErrorResponse):
 
 
 _EXCEPTION_RESPONSES = {
-    ValidationError: (400, "Invalid request", ApiValidationErrorResponse),
-    RequestValidationError: (400, "Invalid request", ApiValidationErrorResponse),
-    AuthenticationFailure: (401, "Unauthorized", ApiErrorResponse),
-    PermissionDenied: (403, "Forbidden", ApiErrorResponse),
-    UnknownModelException: (404, "Not found", ApiErrorResponse),
-    ConstraintViolation: (409, "Resource already exists", ApiErrorResponse),
-    PayloadTooLarge: (413, "Payload too large", ApiErrorResponse),
+    ValidationError: (
+        status.HTTP_400_BAD_REQUEST,
+        "Invalid request",
+        ApiValidationErrorResponse,
+    ),
+    RequestValidationError: (
+        status.HTTP_400_BAD_REQUEST,
+        "Invalid request",
+        ApiValidationErrorResponse,
+    ),
+    AuthenticationFailure: (
+        status.HTTP_401_UNAUTHORIZED,
+        "Unauthorized",
+        ApiErrorResponse,
+    ),
+    PermissionDenied: (status.HTTP_403_FORBIDDEN, "Forbidden", ApiErrorResponse),
+    UnknownModelException: (status.HTTP_404_NOT_FOUND, "Not found", ApiErrorResponse),
+    ConstraintViolation: (
+        status.HTTP_409_CONFLICT,
+        "Resource already exists",
+        ApiErrorResponse,
+    ),
+    PayloadTooLarge: (
+        status.HTTP_413_CONTENT_TOO_LARGE,
+        "Payload too large",
+        ApiErrorResponse,
+    ),
 }
-_DEFAULT_EXCEPTION_RESPONSE = (500, "Internal server error", ApiErrorResponse)
+_DEFAULT_EXCEPTION_RESPONSE = (
+    status.HTTP_500_INTERNAL_SERVER_ERROR,
+    "Internal server error",
+    ApiErrorResponse,
+)
 
 E = TypeVar("E", bound=Exception)
 
 _STATUS_CODE_TO_RESPONSE = {
-    400: (ApiValidationErrorResponse, "Bad request"),
-    401: (ApiErrorResponse, "Unauthorized"),
-    403: (ApiErrorResponse, "Forbidden"),
-    404: (ApiErrorResponse, "Not found"),
-    409: (ApiErrorResponse, "Constraint violation"),
-    413: (ApiErrorResponse, "Payload too large"),
+    status.HTTP_400_BAD_REQUEST: (ApiValidationErrorResponse, "Bad request"),
+    status.HTTP_401_UNAUTHORIZED: (ApiErrorResponse, "Unauthorized"),
+    status.HTTP_403_FORBIDDEN: (ApiErrorResponse, "Forbidden"),
+    status.HTTP_404_NOT_FOUND: (ApiErrorResponse, "Not found"),
+    status.HTTP_409_CONFLICT: (ApiErrorResponse, "Constraint violation"),
+    status.HTTP_413_CONTENT_TOO_LARGE: (ApiErrorResponse, "Payload too large"),
 }
 
 
@@ -144,7 +169,7 @@ def error_responses(*status_codes: int):
 
 def make_response_from_exception(exc: E, lang: Lang) -> JSONResponse:
     if exc.__class__ not in _EXCEPTION_RESPONSES:
-        status_code = 500
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         error = ApiErrorResponse(message="Internal server error")
     else:
         status_code, default_error_message, error_response_class = _EXCEPTION_RESPONSES[

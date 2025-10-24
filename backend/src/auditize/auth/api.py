@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
@@ -27,9 +27,11 @@ router = APIRouter()
     summary="User login",
     operation_id="user_login",
     tags=["auth", "internal"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=UserMeResponse,
-    responses=error_responses(400, 401),
+    responses=error_responses(
+        status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED
+    ),
 )
 async def login_user(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -57,8 +59,8 @@ async def login_user(
     summary="User logout",
     operation_id="user_logout",
     tags=["auth", "internal"],
-    status_code=204,
-    responses=error_responses(401),
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED),
 )
 async def logout_user(
     _: Annotated[Authenticated, Depends(RequireUser())], response: Response
@@ -74,9 +76,9 @@ async def logout_user(
     summary="Generate access token",
     operation_id="generate_access_token",
     tags=["auth"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=AccessTokenResponse,
-    responses=error_responses(401, 403),
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN),
 )
 async def auth_access_token(
     authorized: Annotated[Authenticated, Depends(RequireApikey())],

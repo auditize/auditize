@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
@@ -24,7 +24,9 @@ from auditize.permissions.assertions import (
 )
 from auditize.permissions.service import authorize_grant
 
-router = APIRouter(responses=error_responses(401, 403))
+router = APIRouter(
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+)
 
 
 def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
@@ -38,9 +40,9 @@ def _ensure_cannot_alter_own_apikey(authorized: Authenticated, apikey_id: UUID):
     description="Requires `apikey:write` permission.",
     operation_id="create_apikey",
     tags=["apikey"],
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     response_model=ApikeyCreateResponse,
-    responses=error_responses(400, 409),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),
 )
 async def create_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -65,9 +67,11 @@ async def create_apikey(
     description="Requires `apikey:write` permission.",
     operation_id="update_apikey",
     tags=["apikey"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=ApikeyResponse,
-    responses=error_responses(400, 404, 409),
+    responses=error_responses(
+        status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND, status.HTTP_409_CONFLICT
+    ),
 )
 async def update_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -88,7 +92,7 @@ async def update_apikey(
     operation_id="get_apikey",
     tags=["apikey"],
     response_model=ApikeyResponse,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -126,8 +130,8 @@ async def list_apikeys(
     description="Requires `apikey:write` permission.",
     operation_id="delete_apikey",
     tags=["apikey"],
-    status_code=204,
-    responses=error_responses(404),
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def delete_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -144,9 +148,9 @@ async def delete_apikey(
     description="Requires `apikey:write` permission.",
     operation_id="generate_apikey_new_secret",
     tags=["apikey"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=ApikeyRegenerationResponse,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def regenerate_apikey(
     session: Annotated[AsyncSession, Depends(get_db_session)],

@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
@@ -22,7 +22,9 @@ from auditize.permissions.assertions import (
     can_write_repo,
 )
 
-router = APIRouter(responses=error_responses(401, 403))
+router = APIRouter(
+    responses=error_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+)
 
 
 @router.post(
@@ -31,9 +33,9 @@ router = APIRouter(responses=error_responses(401, 403))
     description="Requires `repo:write` permission.",
     operation_id="create_log_i18n_profile",
     tags=["log-i18n-profile"],
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     response_model=LogI18nProfileResponse,
-    responses=error_responses(400, 409),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),
 )
 async def create_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -49,9 +51,9 @@ async def create_profile(
     description="Requires `repo:write` permission.",
     operation_id="update_log_i18n_profile",
     tags=["log-i18n-profile"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=LogI18nProfileResponse,
-    responses=error_responses(400, 409),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),
 )
 async def update_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -69,7 +71,7 @@ async def update_profile(
     operation_id="get_log_i18n_profile",
     tags=["log-i18n-profile"],
     response_model=LogI18nProfileResponse,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -86,7 +88,7 @@ async def get_profile(
     operation_id="get_log_i18n_profile_translation",
     tags=["log-i18n-profile"],
     response_model=LogLabels,
-    responses=error_responses(404),
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def get_profile_translation(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -122,8 +124,8 @@ async def list_profiles(
     description="Requires `repo:write` permission.",
     operation_id="delete_log_i18n_profile",
     tags=["log-i18n-profile"],
-    status_code=204,
-    responses=error_responses(404),
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
 )
 async def delete_profile(
     session: Annotated[AsyncSession, Depends(get_db_session)],

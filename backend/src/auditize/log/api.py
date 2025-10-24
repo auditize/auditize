@@ -1,7 +1,17 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, Path, Query, Request, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    Form,
+    Path,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,7 +53,11 @@ from auditize.log.models import (
 from auditize.log.service import LogService
 
 router = APIRouter(
-    responses=error_responses(401, 403, 404),
+    responses=error_responses(
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN,
+        status.HTTP_404_NOT_FOUND,
+    ),
 )
 
 
@@ -68,7 +82,11 @@ async def _get_consolidated_data(
     summary="List log action types",
     description="Requires `log:read` permission.",
     operation_id="list_log_action_types",
-    responses=error_responses(401, 403, 404),
+    responses=error_responses(
+        status.HTTP_401_UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN,
+        status.HTTP_404_NOT_FOUND,
+    ),
     tags=["log"],
     response_model=NameListResponse,
 )
@@ -367,11 +385,11 @@ async def get_log_entity(
 
 @router.post(
     "/repos/{repo_id}/logs",
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     summary="Create a log",
     description="Requires `log:write` permission.",
     operation_id="create_log",
-    responses=error_responses(400),
+    responses=error_responses(status.HTTP_400_BAD_REQUEST),
     tags=["log"],
     response_model=LogResponse,
 )
@@ -391,9 +409,11 @@ async def create_log(
     description="Requires `log:write` permission.",
     operation_id="add_log_attachment",
     tags=["log"],
-    status_code=204,
+    status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
-    responses=error_responses(400, 413),
+    responses=error_responses(
+        status.HTTP_400_BAD_REQUEST, status.HTTP_413_CONTENT_TOO_LARGE
+    ),
 )
 async def add_attachment(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -507,7 +527,7 @@ async def get_logs_as_csv(
     description="Requires `log:read` permission.",
     operation_id="get_log",
     tags=["log"],
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     response_model=LogResponse,
 )
 async def get_log(
@@ -531,7 +551,7 @@ async def get_log(
     tags=["log"],
     response_class=Response,
     responses={
-        200: {
+        status.HTTP_200_OK: {
             "description": (
                 "Attachment content. The actual MIME type will be the MIME type "
                 "of the attachment when it was uploaded."
