@@ -111,8 +111,6 @@ async def stream_logs_as_csv(
 ) -> AsyncGenerator[str, None]:
     max_rows = get_config().csv_max_rows
     returned_rows = 0
-    # NB: we instantiate the session here because StreamingResponse and router dependencies
-    # do not work play well together.
     cursor = None
     for i in count(0):
         csv_buffer = StringIO()
