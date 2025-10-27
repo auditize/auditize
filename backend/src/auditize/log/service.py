@@ -26,7 +26,7 @@ from auditize.exceptions import (
     PermissionDenied,
     UnknownModelException,
 )
-from auditize.helpers.datetime import now, serialize_datetime
+from auditize.helpers.datetime import now
 from auditize.log.models import Log, LogCreate, LogSearchParams
 from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
@@ -143,7 +143,6 @@ class LogService:
             id=str(log.id),
             document={
                 "log_id": log.id,
-                "saved_at": serialize_datetime(log.saved_at, with_milliseconds=True),
                 **log.model_dump(exclude={"id"}),
             },
             refresh=self._refresh,

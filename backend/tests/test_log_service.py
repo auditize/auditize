@@ -42,8 +42,8 @@ async def test_save_log_db_shape(repo: PreparedRepo):
     db_log = await repo.get_log(log.id)
     assert list(db_log.keys()) == [
         "log_id",
-        "saved_at",
         "action",
+        "saved_at",
         "source",
         "actor",
         "resource",
