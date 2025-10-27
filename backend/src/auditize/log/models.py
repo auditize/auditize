@@ -18,7 +18,7 @@ from auditize.api.models.cursor_pagination import (
 )
 from auditize.api.models.dates import HasDatetimeSerialization
 from auditize.api.validation import IDENTIFIER_PATTERN
-from auditize.helpers.datetime import validate_datetime
+from auditize.helpers.string import validate_empty_string_as_none
 
 
 class CustomField(BaseModel):
@@ -522,14 +522,18 @@ class BaseLogSearchParams(BaseModel):
         json_schema_extra={"example": "entity:123"},
         default=None,
     )
-    since: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
+    since: Annotated[
+        Optional[datetime], BeforeValidator(validate_empty_string_as_none)
+    ] = Field(
         description="Filter logs created after this datetime",
-        json_schema_extra={"example": "2024-01-01T00:00:00Z"},
+        json_schema_extra={"example": "2024-01-01T00:00:00.000Z"},
         default=None,
     )
-    until: Annotated[Optional[datetime], BeforeValidator(validate_datetime)] = Field(
+    until: Annotated[
+        Optional[datetime], BeforeValidator(validate_empty_string_as_none)
+    ] = Field(
         description="Filter logs created before this datetime",
-        json_schema_extra={"example": "2024-12-31T23:59:59Z"},
+        json_schema_extra={"example": "2024-12-31T23:59:59.999Z"},
         default=None,
     )
 

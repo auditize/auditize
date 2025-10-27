@@ -1251,7 +1251,7 @@ async def test_get_logs_filter_since(log_rw_client: HttpTestHelper, repo: Prepar
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        {"since": "2024-01-01T12:00:00Z"},
+        {"since": "2024-01-01T12:00:00.000Z"},
         log2,
         extra_log=False,
     )
@@ -1268,7 +1268,7 @@ async def test_get_logs_filter_until(log_rw_client: HttpTestHelper, repo: Prepar
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        {"until": "2024-01-01T12:00:00Z"},
+        {"until": "2024-01-01T12:00:00.000Z"},
         log1,
         extra_log=False,
     )
@@ -1287,7 +1287,7 @@ async def test_get_logs_filter_until_milliseconds(
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        {"until": "2023-12-31T23:59:59Z"},
+        {"until": "2023-12-31T23:59:59.999Z"},
         log1,
         extra_log=False,
     )
@@ -1309,7 +1309,7 @@ async def test_get_logs_filter_between_since_and_until(
     await _test_get_logs_filter(
         log_rw_client,
         repo,
-        {"since": "2024-01-01T12:00:00Z", "until": "2024-01-02T12:00:00Z"},
+        {"since": "2024-01-01T12:00:00.000Z", "until": "2024-01-02T12:00:00.000Z"},
         log2,
         extra_log=False,
     )
