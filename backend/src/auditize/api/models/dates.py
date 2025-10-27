@@ -17,7 +17,7 @@ class HasDatetimeSerialization:
 def CreatedAtField(**kwargs):
     return Field(
         description="The creation date",
-        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
+        json_schema_extra={"example": "2021-10-12T09:00:00.000Z"},
         **kwargs,
     )
 
@@ -25,6 +25,6 @@ def CreatedAtField(**kwargs):
 def UpdatedAtField(**kwargs):
     return Field(
         description="The last update date",
-        json_schema_extra={"example": "2021-10-12T09:00:00Z"},
+        json_schema_extra={"example": "2021-10-12T09:00:00.000Z"},
         **kwargs,
     )

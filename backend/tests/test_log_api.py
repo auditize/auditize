@@ -2366,7 +2366,7 @@ async def test_get_logs_as_csv_minimal_log(
     assert (
         resp.text
         == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,User Login,Authentication,,,,,,,,,,,,,entity,Entity\r\n"
+        f"{log.id},2024-01-01T00:00:00.000Z,User Login,Authentication,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
@@ -2412,7 +2412,7 @@ async def test_get_logs_as_csv_log_with_all_fields(
     assert (
         resp.text
         == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
-        f"{log.id},2024-01-01T00:00:00Z,User Login,Authentication,user:123,User,User 123,core,Module,Core Module,|rich_tag:1,Simple Tag|Rich Tag,|Rich tag,attachment.txt,Attachment Type,text/plain,entity,Entity\r\n"
+        f"{log.id},2024-01-01T00:00:00.000Z,User Login,Authentication,user:123,User,User 123,core,Module,Core Module,|rich_tag:1,Simple Tag|Rich Tag,|Rich tag,attachment.txt,Attachment Type,text/plain,entity,Entity\r\n"
     )
 
 
@@ -2432,7 +2432,7 @@ async def test_get_logs_as_csv_with_columns_param(
     )
     assert (
         resp.text == "Date,Action Type,Action Category\r\n"
-        f"2024-01-01T00:00:00Z,User Login,Authentication\r\n"
+        f"2024-01-01T00:00:00.000Z,User Login,Authentication\r\n"
     )
 
 
@@ -2472,7 +2472,7 @@ async def test_get_logs_as_csv_with_filter(
     assert (
         resp.text
         == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
-        f"{log1.id},2024-01-01T00:00:00Z,Action Type 1,Action Category 1,,,,,,,,,,,,,entity,Entity\r\n"
+        f"{log1.id},2024-01-01T00:00:00.000Z,Action Type 1,Action Category 1,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 

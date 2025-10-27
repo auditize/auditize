@@ -82,8 +82,8 @@ class RepoStats(BaseModel, HasDatetimeSerialization):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "first_log_date": "2024-01-01T00:00:00Z",
-                "last_log_date": "2024-01-03T00:00:00Z",
+                "first_log_date": "2024-01-01T00:00:00.000Z",
+                "last_log_date": "2024-01-03T00:00:00.000Z",
                 "log_count": 1000,
                 "storage_size": 100889890,
             }
