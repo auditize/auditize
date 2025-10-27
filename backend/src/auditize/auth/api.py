@@ -15,7 +15,10 @@ from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
 from auditize.dependencies import get_db_session
+from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.permissions.models import PermissionsInput
 from auditize.permissions.service import authorize_grant
+from auditize.repo.service import get_repo
 from auditize.user import service
 from auditize.user.models import UserAuthenticationRequest, UserMeResponse
 
@@ -71,6 +74,14 @@ async def logout_user(
     )
 
 
+async def _validate_permissions(session: AsyncSession, permissions: PermissionsInput):
+    for repo in permissions.logs.repos:
+        try:
+            await get_repo(session, repo.repo_id)
+        except UnknownModelException as exc:
+            raise ValidationError(f"Repo {repo.repo_id} does not exist") from exc
+
+
 @router.post(
     "/auth/access-token",
     summary="Generate access token",
@@ -81,9 +92,11 @@ async def logout_user(
     responses=error_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN),
 )
 async def auth_access_token(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
     authorized: Annotated[Authenticated, Depends(RequireApikey())],
     request: AccessTokenRequest,
 ):
+    await _validate_permissions(session, request.permissions)
     authorize_grant(authorized.permissions, request.permissions)
     access_token, expires_at = generate_access_token(
         authorized.apikey.id, request.permissions

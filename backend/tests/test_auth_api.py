@@ -7,6 +7,7 @@ from icecream import ic
 
 from conftest import ApikeyBuilder, UserBuilder
 from helpers.http import HttpTestHelper, get_cookie_by_name
+from helpers.log import UNKNOWN_UUID
 from helpers.permissions.constants import DEFAULT_APPLICABLE_PERMISSIONS
 from helpers.user import PreparedUser
 from helpers.utils import DATETIME_FORMAT
@@ -151,4 +152,17 @@ async def test_access_token_as_user(user_builder: ApikeyBuilder):
         await client.assert_post_forbidden(
             "/auth/access-token",
             json={"permissions": {}},
+        )
+
+
+async def test_access_token_with_invalid_repo_id(apikey_builder: ApikeyBuilder):
+    apikey = await apikey_builder({})
+    async with apikey.client() as client:
+        await client.assert_post_bad_request(
+            "/auth/access-token",
+            json={
+                "permissions": {
+                    "logs": {"repos": [{"repo_id": UNKNOWN_UUID, "read": True}]}
+                }
+            },
         )
