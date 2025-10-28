@@ -49,5 +49,7 @@ export function PermissionSummary({
   lst.push(formatRwPermissions(t("permission.users"), p.management.users));
   lst.push(formatRwPermissions(t("permission.apikeys"), p.management.apikeys));
 
-  return lst.filter(Boolean).join(", ") || undefined;
+  return (
+    lst.filter(Boolean).join(", ") || <i>{t("permission.summary.none")}</i>
+  );
 }

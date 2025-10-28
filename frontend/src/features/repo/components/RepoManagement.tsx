@@ -1,6 +1,6 @@
 import { Code, CopyButton, Tooltip, UnstyledButton } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
-import { IconArchive } from "@tabler/icons-react";
+import { IconArchive, IconInfinity } from "@tabler/icons-react";
 import { filesize } from "filesize";
 import { useTranslation } from "react-i18next";
 
@@ -79,11 +79,19 @@ export function RepoManagement() {
         [
           t("repo.list.column.retentionPeriod"),
           (repo: Repo) =>
-            repo.retentionPeriod
-              ? t("repo.list.column.retentionPeriodValue", {
-                  days: repo.retentionPeriod,
-                })
-              : undefined,
+            repo.retentionPeriod ? (
+              t("repo.list.column.retentionPeriodValue", {
+                days: repo.retentionPeriod,
+              })
+            ) : (
+              <IconInfinity
+                stroke={1.5}
+                style={{
+                  position: "relative",
+                  top: "1px",
+                }}
+              />
+            ),
           { textAlign: "right" },
         ],
         [
@@ -106,7 +114,9 @@ export function RepoManagement() {
           (repo: Repo) =>
             repo.stats!.lastLogDate ? (
               <DateTime value={repo.stats!.lastLogDate} />
-            ) : undefined,
+            ) : (
+              <i>n/a</i>
+            ),
           { textAlign: "right" },
         ],
       ]}

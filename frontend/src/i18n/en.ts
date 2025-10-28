@@ -93,6 +93,7 @@ export default {
         name: "Name",
         langs: "Languages",
       },
+      noLangs: "none",
     },
     delete: {
       confirm:
@@ -335,6 +336,7 @@ export default {
       readwrite: "rw",
       partial: "partial",
       superadmin: "Superadmin",
+      none: "none",
     },
   },
   common: {

@@ -2,6 +2,7 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { IconLanguage } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
+import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { iconBesideText } from "@/utils/ui";
@@ -12,7 +13,6 @@ import {
   LogI18nProfileCreation,
   LogI18nProfileEdition,
 } from "./LogI18nProfileEditor";
-import { DateTime } from "@/components/DateTime";
 
 export function LogI18nProfileManagement() {
   const { currentUser } = useAuthenticatedUser();
@@ -47,7 +47,7 @@ export function LogI18nProfileManagement() {
           (profile: LogI18nProfile) =>
             Object.entries(profile.translations)
               .map(([lang, _]) => t("language." + lang))
-              .join(", "),
+              .join(", ") || <i>{t("logi18nprofile.list.noLangs")}</i>,
         ],
         [
           t("common.createdAt"),

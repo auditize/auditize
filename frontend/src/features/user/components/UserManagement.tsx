@@ -58,7 +58,9 @@ export function UsersManagement() {
           (user: User) =>
             user.authenticatedAt ? (
               <DateTime value={user.authenticatedAt} />
-            ) : undefined,
+            ) : (
+              <i>n/a</i>
+            ),
           { textAlign: "right" },
         ],
       ]}
