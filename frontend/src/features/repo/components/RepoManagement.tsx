@@ -1,23 +1,55 @@
-import { Code, CopyButton, Tooltip, UnstyledButton } from "@mantine/core";
+import {
+  Anchor,
+  Code,
+  CopyButton,
+  Tooltip,
+  UnstyledButton,
+} from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconArchive, IconInfinity } from "@tabler/icons-react";
 import { filesize } from "filesize";
 import { useTranslation } from "react-i18next";
+import { NavLink } from "react-router-dom";
 
 import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { iconBesideText } from "@/utils/ui";
 
-import { getRepos, Repo } from "../api";
+import { getRepos, Repo, useLogRepoListQuery } from "../api";
 import { RepoDeletion } from "./RepoDeletion";
 import { RepoCreation, RepoEdition } from "./RepoEditor";
 
-function RepoId({ value }: { value: string }) {
+function RepoName({ repo }: { repo: Repo }) {
+  const { t } = useTranslation();
+  const query = useLogRepoListQuery();
+
+  const isAvailableForLogView = query.data?.some((r) => r.id === repo.id);
+  if (isAvailableForLogView) {
+    return (
+      <Tooltip label={t("repo.list.column.viewLogs")} withArrow>
+        <Anchor
+          component={NavLink}
+          to={`/logs?repoId=${repo.id}`}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+          size="sm"
+        >
+          {repo.name}
+        </Anchor>
+      </Tooltip>
+    );
+  } else {
+    return repo.name;
+  }
+}
+
+function RepoId({ repo }: { repo: Repo }) {
   const { t } = useTranslation();
 
   return (
-    <CopyButton value={value} timeout={2000}>
+    <CopyButton value={repo.id} timeout={2000}>
       {({ copied, copy }) => (
         <Tooltip
           label={copied ? t("common.copied") : t("common.copy")}
@@ -30,7 +62,7 @@ function RepoId({ value }: { value: string }) {
               event.stopPropagation();
             }}
           >
-            <Code>{value}</Code>
+            <Code>{repo.id}</Code>
           </UnstyledButton>
         </Tooltip>
       )}
@@ -70,8 +102,8 @@ export function RepoManagement() {
         getRepos(search, page, { includeStats: true })
       }
       columnDefinitions={[
-        [t("repo.list.column.name"), (repo: Repo) => repo.name],
-        [t("repo.list.column.id"), (repo: Repo) => <RepoId value={repo.id} />],
+        [t("repo.list.column.name"), (repo: Repo) => <RepoName repo={repo} />],
+        [t("repo.list.column.id"), (repo: Repo) => <RepoId repo={repo} />],
         [
           t("repo.list.column.status"),
           (repo: Repo) => t("repo.form.status.value." + repo.status),

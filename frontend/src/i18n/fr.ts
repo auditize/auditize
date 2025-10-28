@@ -59,6 +59,7 @@ export default {
         logs: "Journaux",
         storage: "Stockage",
         lastLog: "Dernier journal",
+        viewLogs: "Voir les journaux",
       },
     },
     delete: {

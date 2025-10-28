@@ -59,6 +59,7 @@ export default {
         logs: "Logs",
         storage: "Storage",
         lastLog: "Last log",
+        viewLogs: "View logs",
       },
     },
     delete: {
