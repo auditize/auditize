@@ -49,6 +49,11 @@ export function UsersManagement() {
           (user: User) => <PermissionSummary permissions={user.permissions} />,
         ],
         [
+          t("common.createdAt"),
+          (user: User) => <DateTime value={user.createdAt} />,
+          { textAlign: "right" },
+        ],
+        [
           t("user.list.column.authenticatedAt"),
           (user: User) =>
             user.authenticatedAt ? (
