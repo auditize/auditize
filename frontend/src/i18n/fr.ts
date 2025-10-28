@@ -58,7 +58,6 @@ export default {
         retentionPeriodValue: "{{days}}j",
         logs: "Journaux",
         storage: "Stockage",
-        createdAt: "Date de création",
         lastLog: "Dernier journal",
       },
     },
@@ -92,7 +91,6 @@ export default {
       title: "Traduction des journaux",
       column: {
         name: "Nom",
-        createdAt: "Date de création",
         langs: "Langues",
       },
     },
@@ -347,6 +345,7 @@ export default {
     id: "ID",
     status: "Statut",
     createdAt: "Date de création",
+    updatedAt: "Date de modification",
     copy: "Copier",
     copied: "Copié !",
     enabled: "Activé",

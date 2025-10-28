@@ -97,7 +97,7 @@ export function RepoManagement() {
           { textAlign: "right" },
         ],
         [
-          t("repo.list.column.createdAt"),
+          t("common.createdAt"),
           (repo: Repo) => <DateTime value={repo.createdAt} />,
           { textAlign: "right" },
         ],

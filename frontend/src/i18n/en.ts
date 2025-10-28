@@ -58,8 +58,7 @@ export default {
         retentionPeriodValue: "{{days}}d",
         logs: "Logs",
         storage: "Storage",
-        createdAt: "Created At",
-        lastLog: "Last Log",
+        lastLog: "Last log",
       },
     },
     delete: {
@@ -92,7 +91,6 @@ export default {
       title: "Log Translations",
       column: {
         name: "Name",
-        createdAt: "Created at",
         langs: "Languages",
       },
     },
@@ -344,6 +342,7 @@ export default {
     id: "ID",
     status: "Status",
     createdAt: "Created at",
+    updatedAt: "Updated at",
     copy: "Copy",
     copied: "Copied !",
     enabled: "Enabled",

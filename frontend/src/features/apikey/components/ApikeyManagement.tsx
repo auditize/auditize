@@ -10,6 +10,7 @@ import { iconBesideText } from "@/utils/ui";
 import { Apikey, getApikeys } from "../api";
 import { ApikeyDeletion } from "./ApikeyDeletion";
 import { ApikeyCreation, ApikeyEdition } from "./ApikeyEditor";
+import { DateTime } from "@/components/DateTime";
 
 export function ApikeysManagement() {
   const { t } = useTranslation();
@@ -41,6 +42,16 @@ export function ApikeysManagement() {
           (apikey: Apikey) => (
             <PermissionSummary permissions={apikey.permissions} />
           ),
+        ],
+        [
+          t("common.createdAt"),
+          (apikey: Apikey) => <DateTime value={apikey.createdAt} />,
+          { textAlign: "right" },
+        ],
+        [
+          t("common.updatedAt"),
+          (apikey: Apikey) => <DateTime value={apikey.updatedAt} />,
+          { textAlign: "right" },
         ],
       ]}
       resourceCreationComponentBuilder={

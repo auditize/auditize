@@ -16,6 +16,7 @@ export interface LogI18nProfileCreation {
 export interface LogI18nProfile extends LogI18nProfileCreation {
   id: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export type LogI18nProfileUpdate = {

@@ -15,6 +15,8 @@ export interface ApikeyCreation {
 
 export interface Apikey extends ApikeyCreation {
   id: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ApikeyUpdate = {

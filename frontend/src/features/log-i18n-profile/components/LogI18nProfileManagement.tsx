@@ -12,6 +12,7 @@ import {
   LogI18nProfileCreation,
   LogI18nProfileEdition,
 } from "./LogI18nProfileEditor";
+import { DateTime } from "@/components/DateTime";
 
 export function LogI18nProfileManagement() {
   const { currentUser } = useAuthenticatedUser();
@@ -47,6 +48,16 @@ export function LogI18nProfileManagement() {
             Object.entries(profile.translations)
               .map(([lang, _]) => t("language." + lang))
               .join(", "),
+        ],
+        [
+          t("common.createdAt"),
+          (profile: LogI18nProfile) => <DateTime value={profile.createdAt} />,
+          { textAlign: "right" },
+        ],
+        [
+          t("common.updatedAt"),
+          (profile: LogI18nProfile) => <DateTime value={profile.updatedAt} />,
+          { textAlign: "right" },
         ],
       ]}
       resourceCreationComponentBuilder={
