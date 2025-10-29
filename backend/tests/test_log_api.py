@@ -1715,6 +1715,45 @@ async def test_get_log_entities_visibility(
     )
 
 
+async def test_get_log_entities_multiple_repos(
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
+):
+    repo1 = await repo_builder({"name": "Repo 1"})
+    repo2 = await repo_builder({"name": "Repo 2"})
+
+    await repo1.create_log_with_entity_path(superadmin_client, ["Entity A"])
+    await repo2.create_log_with_entity_path(superadmin_client, ["Entity B"])
+
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo1.id}/logs/entities",
+        expected_json={
+            "items": [
+                {
+                    "ref": "Entity A",
+                    "name": "Entity A",
+                    "parent_entity_ref": None,
+                    "has_children": False,
+                },
+            ],
+            "pagination": {"next_cursor": None},
+        },
+    )
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo2.id}/logs/entities",
+        expected_json={
+            "items": [
+                {
+                    "ref": "Entity B",
+                    "name": "Entity B",
+                    "parent_entity_ref": None,
+                    "has_children": False,
+                },
+            ],
+            "pagination": {"next_cursor": None},
+        },
+    )
+
+
 async def _test_get_log_entity_visibility(
     builder: ApikeyBuilder | UserBuilder,
     repo: PreparedRepo,
@@ -1791,6 +1830,46 @@ async def test_get_log_entity_visibility(
     await _test_get_log_entity_visibility(apikey_builder, repo, ["AAA"], "AAB", 404)
     await _test_get_log_entity_visibility(apikey_builder, repo, ["AAA"], "AB", 404)
     await _test_get_log_entity_visibility(apikey_builder, repo, ["AAA"], "ABA", 404)
+
+
+async def test_get_log_entity_multiple_repos(
+    superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
+):
+    # Create two repos with different entities
+
+    repo1 = await repo_builder({"name": "Repo 1"})
+    repo2 = await repo_builder({"name": "Repo 2"})
+
+    await repo1.create_log_with_entity_path(superadmin_client, ["Entity A"])
+    await repo2.create_log_with_entity_path(superadmin_client, ["Entity B"])
+
+    # Make sure that Entity A is only visible in Repo 1
+    # and Entity B is only visible in Repo 2
+
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo1.id}/logs/entities/ref:Entity A",
+        expected_json={
+            "ref": "Entity A",
+            "name": "Entity A",
+            "parent_entity_ref": None,
+            "has_children": False,
+        },
+    )
+    await superadmin_client.assert_get_not_found(
+        f"/repos/{repo2.id}/logs/entities/ref:Entity A",
+    )
+    await superadmin_client.assert_get_ok(
+        f"/repos/{repo2.id}/logs/entities/ref:Entity B",
+        expected_json={
+            "ref": "Entity B",
+            "name": "Entity B",
+            "parent_entity_ref": None,
+            "has_children": False,
+        },
+    )
+    await superadmin_client.assert_get_not_found(
+        f"/repos/{repo1.id}/logs/entities/ref:Entity B",
+    )
 
 
 class _ConsolidatedDataTest:

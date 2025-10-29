@@ -10,7 +10,7 @@ import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.exceptions import NotFoundError
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -568,14 +568,20 @@ class LogService:
                 f"Deleted orphan log entity {entity!r} from log repository {self.repo.log_db_name!r}"
             )
             parent_entity = await self.session.scalar(
-                select(LogEntity).where(LogEntity.id == entity.parent_entity_id)
+                select(LogEntity).where(
+                    LogEntity.repo_id == self.repo.id,
+                    LogEntity.id == entity.parent_entity_id,
+                )
             )
             if parent_entity and not parent_entity.has_children:
                 await self._purge_orphan_log_entity_if_needed(parent_entity)
 
     async def _purge_orphan_log_entities(self):
         result = await self.session.execute(
-            select(LogEntity).where(LogEntity.has_children == False)
+            select(LogEntity).where(
+                LogEntity.repo_id == self.repo.id,
+                LogEntity.has_children == False,
+            )
         )
         leaf_entities = result.scalars().all()
 
@@ -610,7 +616,7 @@ class LogService:
         )
         if resp["deleted"] > 0:
             print(
-                f"Deleted {resp["deleted"]} logs older than {self.repo.retention_period} days "
+                f"Deleted {resp['deleted']} logs older than {self.repo.retention_period} days "
                 f"in log repository {self.repo.name!r}"
             )
             await self._purge_orphan_log_entities()
@@ -677,7 +683,10 @@ class LogService:
         return (
             await self.session.execute(
                 select(LogEntity)
-                .where(LogEntity.parent_entity_ref == entity_ref)
+                .where(
+                    LogEntity.repo_id == self.repo.id,
+                    LogEntity.parent_entity_ref == entity_ref,
+                )
                 .limit(1)
             )
         ).scalar() is not None
@@ -689,6 +698,7 @@ class LogService:
         pagination_cursor: str | None = None,
         limit: int = 10,
     ) -> tuple[list[LogEntity], str | None]:
+        filters = [LogEntity.repo_id == self.repo.id] + filters
         cursor_obj = _OffsetPaginationCursor.load(pagination_cursor)
         result = await self.session.execute(
             select(LogEntity)
@@ -762,7 +772,11 @@ class LogService:
         )
 
     async def _get_log_entity(self, entity_ref: str) -> LogEntity:
-        return await get_sql_model(self.session, LogEntity, LogEntity.ref == entity_ref)
+        return await get_sql_model(
+            self.session,
+            LogEntity,
+            and_(LogEntity.repo_id == self.repo.id, LogEntity.ref == entity_ref),
+        )
 
     async def get_log_entity(
         self, entity_ref: str, authorized_entities: set[str]
