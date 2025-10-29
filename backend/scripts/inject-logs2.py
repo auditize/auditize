@@ -705,7 +705,7 @@ class ServiceInjector:
         )
         async with open_db_session() as db_session:
             log_service = await LogService.for_maintenance(db_session, self.repo_id)
-            log = await log_service.save_log(log_model, saved_at=saved_at)
+            log = await log_service.create_log(log_model, saved_at=saved_at)
             for attachment in attachments:
                 await log_service.save_log_attachment(
                     log.id,

@@ -356,6 +356,48 @@ async def test_create_log_from_openapi_example(
     await repo.create_log(log_write_client, log)
 
 
+async def test_import_log_no_extra_fields(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data()
+    await log_write_client.assert_post_created(
+        f"/repos/{repo.id}/logs/import",
+        json=log_data,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
+async def test_import_log_with_extra_fields(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data(
+        {
+            "id": UNKNOWN_UUID,
+            "saved_at": "2021-01-01T00:00:00.000Z",
+        }
+    )
+    await log_write_client.assert_post_created(
+        f"/repos/{repo.id}/logs/import",
+        json=log_data,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
+async def test_import_log_id_already_used(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    existing_log = await repo.create_log(log_write_client)
+    imported_log_data = PreparedLog.prepare_data(
+        {
+            "id": existing_log.id,
+        }
+    )
+    await log_write_client.assert_post_constraint_violation(
+        f"/repos/{repo.id}/logs/import",
+        json=imported_log_data,
+    )
+
+
 async def test_add_attachment_binary_and_all_fields(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):

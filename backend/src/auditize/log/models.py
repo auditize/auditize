@@ -69,7 +69,7 @@ class Log(BaseModel):
         ref: str
         name: str
 
-    id: Optional[UUID] = Field(default=None, alias="_id")
+    id: Optional[UUID] = Field(default=None)
     action: Action
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: list[CustomField] = Field(default_factory=list)
@@ -342,6 +342,17 @@ class LogCreate(BaseModel):
         if len(self.entity_path) == 0:
             raise ValueError("Entity path must be at least one entity deep")
         return self
+
+
+class _LogImport(BaseModel):
+    id: UUID = Field(default=None)
+    saved_at: datetime = Field(default=None)
+
+
+class LogImport(LogCreate, _LogImport):
+    # NB: we create two model classes _LogImport and LogImport to force the id and saved_at
+    # fields to be at the top of the model in OpenAPI schema.
+    pass
 
 
 class LogCreationResponse(BaseModel):

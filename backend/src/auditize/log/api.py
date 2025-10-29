@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Annotated
 from uuid import UUID
 
@@ -42,6 +43,7 @@ from auditize.log.models import (
     LogEntityListParams,
     LogEntityListResponse,
     LogEntityResponse,
+    LogImport,
     LogListParams,
     LogListResponse,
     LogResponse,
@@ -400,7 +402,33 @@ async def create_log(
     log_create: LogCreate,
 ):
     service = await LogService.for_writing(session, repo_id)
-    return await service.save_log(log_create)
+    return await service.create_log(log_create)
+
+
+@router.post(
+    "/repos/{repo_id}/logs/import",
+    status_code=status.HTTP_201_CREATED,
+    summary="Import a log",
+    description=dedent("""
+    Requires `log:write` permission.
+
+    This endpoint acts like a create_log operation,
+    except that extra fields such as `id` and `saved_at` may be provided.
+    For classic use cases, it is recommended to use the create_log operation instead.
+    """),
+    operation_id="import_log",
+    responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),
+    tags=["log"],
+    response_model=LogResponse,
+)
+async def import_log(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogWritePermission())],
+    repo_id: UUID,
+    log_import: LogImport,
+):
+    service = await LogService.for_writing(session, repo_id)
+    return await service.import_log(log_import)
 
 
 @router.post(

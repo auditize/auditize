@@ -76,8 +76,8 @@ class PreparedLog:
             "tags": [],
             "attachments": [],
             "id": callee.IsA(str),
-            **(data or {}),
             "saved_at": DATETIME_FORMAT,
+            **(data or {}),
         }
         for tag in expected["tags"]:
             tag.setdefault("ref", None)

@@ -38,7 +38,7 @@ async def test_save_log_db_shape(repo: PreparedRepo):
 
     async with open_db_session() as session:
         log_service = await LogService.for_writing(session, UUID(repo.id))
-        log = await log_service.save_log(log)
+        log = await log_service.create_log(log)
     db_log = await repo.get_log(log.id)
     assert list(db_log.keys()) == [
         "log_id",

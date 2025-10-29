@@ -6,6 +6,7 @@ from functools import partialmethod
 from typing import Any, Self
 from uuid import UUID
 
+import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.exceptions import NotFoundError
@@ -27,7 +28,7 @@ from auditize.exceptions import (
     UnknownModelException,
 )
 from auditize.helpers.datetime import now
-from auditize.log.models import Log, LogCreate, LogSearchParams
+from auditize.log.models import Log, LogCreate, LogImport, LogSearchParams
 from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
@@ -112,7 +113,7 @@ class LogService:
 
     for_maintenance = for_config
 
-    async def check_log(self, log: LogCreate):
+    async def check_log(self, log: LogCreate | LogImport):
         parent_entity_ref = None
         for entity in log.entity_path:
             existing_entity = await self.session.scalar(
@@ -129,7 +130,25 @@ class LogService:
                 )
             parent_entity_ref = entity.ref
 
-    async def save_log(
+    async def _save_log(self, log: Log) -> Log:
+        try:
+            await self.es.create(
+                index=self.index,
+                id=str(log.id),
+                document={
+                    "log_id": log.id,
+                    **log.model_dump(exclude={"id"}),
+                },
+                refresh=self._refresh,
+            )
+        except elasticsearch.ConflictError:
+            # NB: this should only happen in case of log import where the id
+            # is provided and already exists
+            raise ConstraintViolation(f"Log {log.id} already exists")
+        await self._consolidate_log_entity_path(log.entity_path)
+        return log
+
+    async def create_log(
         self, log_create: LogCreate, *, saved_at: datetime | None = None
     ) -> Log:
         await self.check_log(log_create)
@@ -138,18 +157,16 @@ class LogService:
         log.id = uuid.uuid4()
         if saved_at:
             log.saved_at = saved_at
-        await self.es.index(
-            index=self.index,
-            id=str(log.id),
-            document={
-                "log_id": log.id,
-                **log.model_dump(exclude={"id"}),
-            },
-            refresh=self._refresh,
-        )
-        await self._consolidate_log_entity_path(log.entity_path)
+        return await self._save_log(log)
 
-        return log
+    async def import_log(self, log_import: LogImport) -> Log:
+        await self.check_log(log_import)
+
+        log = Log.model_validate(log_import.model_dump(exclude_unset=True))
+        if not log.id:
+            log.id = uuid.uuid4()
+
+        return await self._save_log(log)
 
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
         try:
@@ -203,7 +220,7 @@ class LogService:
         except NotFoundError:
             raise UnknownModelException()
 
-        log = Log.model_validate({**resp["_source"], "_id": log_id})
+        log = Log.model_validate({**resp["_source"], "id": log_id})
         self._check_log_visibility(log, authorized_entities)
 
         return log
@@ -220,7 +237,7 @@ class LogService:
             raise UnknownModelException()
 
         self._check_log_visibility(
-            Log.model_validate({**resp["_source"], "_id": log_id}), authorized_entities
+            Log.model_validate({**resp["_source"], "id": log_id}), authorized_entities
         )
 
         try:
@@ -398,7 +415,7 @@ class LogService:
             next_cursor = None
 
         logs = [
-            Log.model_validate({**hit["_source"], "_id": hit["_id"]}) for hit in hits
+            Log.model_validate({**hit["_source"], "id": hit["_id"]}) for hit in hits
         ]
 
         return logs, next_cursor
@@ -413,7 +430,7 @@ class LogService:
         hits = resp["hits"]["hits"]
         if not hits:
             return None
-        return Log.model_validate({**hits[0]["_source"], "_id": hits[0]["_id"]})
+        return Log.model_validate({**hits[0]["_source"], "id": hits[0]["_id"]})
 
     async def get_oldest_log(self) -> Log | None:
         return await self._get_sorted_log([{"saved_at": "asc", "log_id": "asc"}])
