@@ -6,7 +6,7 @@
 #
 babel==2.16.0
     # via mkdocs-material
-certifi==2025.8.3
+certifi==2025.10.5
     # via
     #   -c ../backend/requirements-dev.txt
     #   -c ../backend/requirements.txt
@@ -24,7 +24,7 @@ colorama==0.4.6
     #   mkdocs-material
 ghp-import==2.1.0
     # via mkdocs
-idna==3.10
+idna==3.11
     # via
     #   -c ../backend/requirements-dev.txt
     #   -c ../backend/requirements.txt
@@ -63,7 +63,7 @@ paginate==0.5.7
     # via mkdocs-material
 pathspec==0.12.1
     # via mkdocs
-platformdirs==4.4.0
+platformdirs==4.5.0
     # via
     #   -c ../backend/requirements-dev.txt
     #   mkdocs-get-deps
