@@ -449,22 +449,25 @@ class LogService:
         resp = await self.es.indices.stats(index=self.index)
         return resp["_all"]["primaries"]["store"]["size_in_bytes"]
 
-    async def _get_paginated_agg(
+    async def _get_paginated_agg_multi_fields(
         self,
         *,
         nested: str = None,
-        field: str,
+        fields: list[str],
         query: dict = None,
         limit: int,
         pagination_cursor: str | None,
-    ) -> tuple[list[str], str]:
+    ) -> tuple[list[list[str]], str]:
         after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
 
         aggregations = {
             "group_by": {
                 "composite": {
                     "size": limit,
-                    "sources": [{field: {"terms": {"field": field, "order": "asc"}}}],
+                    "sources": [
+                        {field: {"terms": {"field": field, "order": "asc"}}}
+                        for field in fields
+                    ],
                     **({"after": after} if after else {}),
                 }
             },
@@ -496,12 +499,33 @@ class LogService:
         else:
             next_cursor = None
 
-        values = [bucket["key"][field] for bucket in group_by_result["buckets"]]
+        values = [
+            [bucket["key"][field] for field in fields]
+            for bucket in group_by_result["buckets"]
+        ]
 
         return values, next_cursor
 
+    async def _get_paginated_agg_single_field(
+        self,
+        *,
+        nested: str = None,
+        field: str,
+        query: dict = None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str]:
+        values, next_cursor = await self._get_paginated_agg_multi_fields(
+            nested=nested,
+            fields=[field],
+            query=query,
+            limit=limit,
+            pagination_cursor=pagination_cursor,
+        )
+        return [value[0] for value in values], next_cursor
+
     get_log_action_categories = partialmethod(
-        _get_paginated_agg, field="action.category"
+        _get_paginated_agg_single_field, field="action.category"
     )
 
     async def get_log_action_types(
@@ -510,7 +534,7 @@ class LogService:
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str]:
-        return await self._get_paginated_agg(
+        return await self._get_paginated_agg_single_field(
             field="action.type",
             query=(
                 {"bool": {"filter": {"term": {"action.category": action_category}}}}
@@ -522,36 +546,62 @@ class LogService:
         )
 
     get_log_tag_types = partialmethod(
-        _get_paginated_agg, nested="tags", field="tags.type"
+        _get_paginated_agg_single_field, nested="tags", field="tags.type"
     )
 
-    get_log_actor_types = partialmethod(_get_paginated_agg, field="actor.type")
+    get_log_actor_types = partialmethod(
+        _get_paginated_agg_single_field, field="actor.type"
+    )
 
     get_log_actor_extra_fields = partialmethod(
-        _get_paginated_agg, nested="actor.extra", field="actor.extra.name"
+        _get_paginated_agg_single_field, nested="actor.extra", field="actor.extra.name"
     )
 
-    get_log_resource_types = partialmethod(_get_paginated_agg, field="resource.type")
+    get_log_resource_types = partialmethod(
+        _get_paginated_agg_single_field, field="resource.type"
+    )
 
     get_log_resource_extra_fields = partialmethod(
-        _get_paginated_agg, nested="resource.extra", field="resource.extra.name"
+        _get_paginated_agg_single_field,
+        nested="resource.extra",
+        field="resource.extra.name",
     )
 
     get_log_source_fields = partialmethod(
-        _get_paginated_agg, nested="source", field="source.name"
+        _get_paginated_agg_single_field, nested="source", field="source.name"
     )
 
     get_log_detail_fields = partialmethod(
-        _get_paginated_agg, nested="details", field="details.name"
+        _get_paginated_agg_single_field, nested="details", field="details.name"
     )
 
     get_log_attachment_types = partialmethod(
-        _get_paginated_agg, nested="attachments", field="attachments.type"
+        _get_paginated_agg_single_field, nested="attachments", field="attachments.type"
     )
 
     get_log_attachment_mime_types = partialmethod(
-        _get_paginated_agg, nested="attachments", field="attachments.mime_type"
+        _get_paginated_agg_single_field,
+        nested="attachments",
+        field="attachments.mime_type",
     )
+
+    async def _get_aggregated_name_ref_pairs(
+        self,
+        *,
+        prefix: str,
+        query: str | None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[tuple[str, str]], str]:
+        values, next_cursor = await self._get_paginated_agg_multi_fields(
+            query={"wildcard": {f"{prefix}.name": f"*{query}*"}} if query else None,
+            fields=[f"{prefix}.name.keyword", f"{prefix}.ref"],
+            limit=limit,
+            pagination_cursor=pagination_cursor,
+        )
+        return [tuple(value) for value in values], next_cursor
+
+    get_log_actor_names = partialmethod(_get_aggregated_name_ref_pairs, prefix="actor")
 
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """

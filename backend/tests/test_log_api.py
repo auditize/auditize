@@ -2212,6 +2212,129 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
         return [f"text/plain{val}" for val in values]
 
 
+class _ConsolidatedNameRefPairsTest:
+    @property
+    def data_type(self) -> str:
+        raise NotImplementedError()
+
+    def get_path(self, repo_id: str) -> str:
+        return f"/repos/{repo_id}/logs/{self.data_type}s/names"
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        # A: create 3 logs with the same ref but different names
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data A", "ref": "data:A", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data A", "ref": "data:A", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data A bis", "ref": "data:A", "type": "data"},
+            },
+        )
+
+        # B: create a single log
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data B", "ref": "data:B", "type": "data"},
+            },
+        )
+
+        # C: create two logs with the same name but different refs
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data C", "ref": "data:C", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {
+                    "name": "Data C bis",
+                    "ref": "data:C:bis",
+                    "type": "data",
+                },
+            },
+        )
+
+        # Assert that data names and refs are correctly returned
+        expected_items = [
+            {"name": "Data A", "ref": "data:A"},
+            {"name": "Data A bis", "ref": "data:A"},
+            {"name": "Data B", "ref": "data:B"},
+            {"name": "Data C", "ref": "data:C"},
+            {"name": "Data C bis", "ref": "data:C:bis"},
+        ]
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id),
+            items=expected_items,
+        )
+
+    async def test_query(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "foo", "ref": "A", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "bar", "ref": "B", "type": "data"},
+            },
+        )
+        await log_read_client.assert_get_ok(
+            self.get_path(repo.id),
+            params={"q": "oo"},
+            expected_json={
+                "items": [
+                    {"name": "foo", "ref": "A"},
+                ],
+                "pagination": {"next_cursor": None},
+            },
+        )
+
+    async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await do_test_cursor_pagination_empty_data(
+            log_read_client, self.get_path(repo.id)
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper):
+        await log_read_client.assert_get_not_found(self.get_path(UNKNOWN_UUID))
+
+    async def test_forbidden(
+        self, no_permission_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await no_permission_client.assert_get_forbidden(self.get_path(repo.id))
+
+
+class TestLogActorNames(_ConsolidatedNameRefPairsTest):
+    @property
+    def data_type(self) -> str:
+        return "actor"
+
+
 async def test_log_entity_consolidation_rename_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
