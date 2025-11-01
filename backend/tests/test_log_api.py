@@ -2330,9 +2330,11 @@ class _ConsolidatedNameRefPairsTest:
 
 
 class TestLogActorNames(_ConsolidatedNameRefPairsTest):
-    @property
-    def data_type(self) -> str:
-        return "actor"
+    data_type = "actor"
+
+
+class TestLogResourceNames(_ConsolidatedNameRefPairsTest):
+    data_type = "resource"
 
 
 async def test_log_entity_consolidation_rename_entity(

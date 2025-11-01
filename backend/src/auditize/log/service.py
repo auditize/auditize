@@ -603,6 +603,10 @@ class LogService:
 
     get_log_actor_names = partialmethod(_get_aggregated_name_ref_pairs, prefix="actor")
 
+    get_log_resource_names = partialmethod(
+        _get_aggregated_name_ref_pairs, prefix="resource"
+    )
+
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """
         This function assumes that the entity has no children and delete it if it has no associated logs.
