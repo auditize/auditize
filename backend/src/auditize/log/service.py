@@ -589,12 +589,32 @@ class LogService:
         self,
         *,
         prefix: str,
+        nested: bool = False,
         query: str | None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[tuple[str, str]], str]:
+        query_for_agg = None
+        if query:
+            if nested:
+                query_for_agg = {
+                    "nested": {
+                        "path": prefix,
+                        "query": {
+                            "bool": {
+                                "filter": [
+                                    {"wildcard": {f"{prefix}.name": f"*{query}*"}}
+                                ]
+                            }
+                        },
+                    }
+                }
+            else:
+                query_for_agg = {"wildcard": {f"{prefix}.name": f"*{query}*"}}
+
         values, next_cursor = await self._get_paginated_agg_multi_fields(
-            query={"wildcard": {f"{prefix}.name": f"*{query}*"}} if query else None,
+            nested=prefix if nested else None,
+            query=query_for_agg,
             fields=[f"{prefix}.name.keyword", f"{prefix}.ref"],
             limit=limit,
             pagination_cursor=pagination_cursor,
@@ -605,6 +625,10 @@ class LogService:
 
     get_log_resource_names = partialmethod(
         _get_aggregated_name_ref_pairs, prefix="resource"
+    )
+
+    get_log_tag_names = partialmethod(
+        _get_aggregated_name_ref_pairs, prefix="tags", nested=True
     )
 
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):

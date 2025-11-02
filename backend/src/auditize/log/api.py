@@ -382,6 +382,25 @@ async def get_log_resource_names(
 
 
 @router.get(
+    "/repos/{repo_id}/logs/tags/names",
+    summary="Get aggregated list of log tag names and refs",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_tag_names",
+    tags=["log"],
+    response_model=NameRefPairListResponse,
+)
+async def get_log_tag_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[CursorPaginatedSearchParams, Query()],
+):
+    return await _get_aggregated_name_ref_pairs(
+        session, repo_id, "get_log_tag_names", params
+    )
+
+
+@router.get(
     "/repos/{repo_id}/logs/entities",
     summary="List log entities",
     description="Requires `log:read` permission.",

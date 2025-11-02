@@ -2337,6 +2337,112 @@ class TestLogResourceNames(_ConsolidatedNameRefPairsTest):
     data_type = "resource"
 
 
+class TestLogTagNames(_ConsolidatedNameRefPairsTest):
+    data_type = "tag"
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        # A: create 3 logs with the same ref but different names
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "Data A", "ref": "data:A", "type": "data"}],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "Data A", "ref": "data:A", "type": "data"}],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "Data A bis", "ref": "data:A", "type": "data"}],
+            },
+        )
+
+        # B: create a single log
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {"name": "Data B", "ref": "data:B", "type": "data"},
+                    {"name": "Data A", "ref": "data:A", "type": "data"},
+                ],
+            },
+        )
+
+        # C: create two logs with the same name but different refs
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {"name": "Data C", "ref": "data:C", "type": "data"},
+                    {"name": "Data B", "ref": "data:B", "type": "data"},
+                    {"name": "Data A", "ref": "data:A", "type": "data"},
+                ],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {"name": "Data C bis", "ref": "data:C:bis", "type": "data"},
+                    {"name": "Data B", "ref": "data:B", "type": "data"},
+                    {"name": "Data A", "ref": "data:A", "type": "data"},
+                ],
+            },
+        )
+
+        # Assert that data names and refs are correctly returned
+        expected_items = [
+            {"name": "Data A", "ref": "data:A"},
+            {"name": "Data A bis", "ref": "data:A"},
+            {"name": "Data B", "ref": "data:B"},
+            {"name": "Data C", "ref": "data:C"},
+            {"name": "Data C bis", "ref": "data:C:bis"},
+        ]
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id),
+            items=expected_items,
+        )
+
+    async def test_query(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "foo", "ref": "A", "type": "data"}],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "bar", "ref": "B", "type": "data"}],
+            },
+        )
+        await log_read_client.assert_get_ok(
+            self.get_path(repo.id),
+            params={"q": "oo"},
+            expected_json={
+                "items": [
+                    {"name": "foo", "ref": "A"},
+                ],
+                "pagination": {"next_cursor": None},
+            },
+        )
+
+
 async def test_log_entity_consolidation_rename_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
