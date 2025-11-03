@@ -32,7 +32,7 @@ export function CustomDateTimePicker({
       placeholder={placeholder}
       value={value}
       valueFormat="YYYY-MM-DD HH:mm"
-      onChange={onChange}
+      onChange={(val) => onChange(val ? new Date(val) : null)}
       clearable
       w="14rem"
       highlightToday

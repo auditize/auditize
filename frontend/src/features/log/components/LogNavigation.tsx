@@ -455,7 +455,8 @@ function DateInterval({
           initToEndOfDay
           dateTimePickerProps={{
             error: untilError ?? undefined,
-            excludeDate: (until) => !isIntervalValid(searchParams.since, until),
+            excludeDate: (until) =>
+              !isIntervalValid(searchParams.since, new Date(until)),
           }}
         />
       </Stack>
