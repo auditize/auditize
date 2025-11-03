@@ -30,10 +30,10 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { notifyError, notifySuccess } from "@/components/notifications";
+import { SearchableSelectWithoutDropdown } from "@/components/SearchableSelectWithoutDropdown";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import {
   getLogFilters,
-  LogFilter,
   LogFilterCreation,
   LogFilterDrawer,
   normalizeFilterColumnsForApi,
@@ -45,6 +45,8 @@ import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
 import { iconSize } from "@/utils/ui";
 
 import {
+  getActor,
+  getActorNames,
   getAllAttachmentMimeTypes,
   getAllAttachmentTypes,
   getAllLogActionCategories,
@@ -53,6 +55,7 @@ import {
   getAllLogEntities,
   getAllLogResourceTypes,
   getAllLogTagTypes,
+  NameRefPair,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
 import { EntitySelector } from "./EntitySelector";
@@ -63,6 +66,7 @@ import { useLogTranslator } from "./LogTranslation";
 
 const FIXED_SEARCH_PARAM_NAMES = new Set([
   "savedAt",
+  "actorRef",
   "actionCategory",
   "actionType",
   "entity",
@@ -285,6 +289,92 @@ function SelectSearchParamField({
               ? t("common.chooseAValue")
               : t("common.noData")
         }
+      />
+    </SearchParamFieldPopover>
+  );
+}
+
+function SearchableSearchParamField({
+  label,
+  searchParams,
+  searchParamName,
+  items,
+  itemLabel,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  label: string;
+  searchParams: LogSearchParams;
+  searchParamName: string;
+  items: (repoId: string, query: string) => Promise<NameRefPair[]>;
+  itemLabel: (repoId: string, value: string) => Promise<string>;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const searchQuery = useQuery({
+    queryKey: ["logFieldNames", searchParamName, searchParams.repoId, search],
+    queryFn: () => items(searchParams.repoId, search),
+    enabled: !!searchParams.repoId && !!search,
+  });
+  const value = searchParams[
+    searchParamName as keyof LogSearchParams
+  ] as string;
+  const labelQuery = useQuery({
+    queryKey: [
+      "logFieldNameFromRef",
+      searchParamName,
+      searchParams.repoId,
+      value,
+    ],
+    queryFn: () => itemLabel(searchParams.repoId, value),
+    enabled: !!searchParams.repoId && !!value,
+  });
+  const [opened, { toggle }] = useDisclosure(openedByDefault);
+
+  // On repository change, reset the selected value if a corresponding
+  // label cannot be found.
+  useEffect(() => {
+    if (value && labelQuery.data === "") {
+      onChange(searchParamName, "");
+    }
+  }, [labelQuery.data]);
+
+  // Build the available options from the search query if any (example: the user is performing a search)
+  // or from the label query if any (example: the page is loaded with the selected value already in the URL).
+  const data =
+    searchQuery.isEnabled && searchQuery.data
+      ? searchQuery.data.map((item) => ({
+          label: item.name,
+          value: item.ref,
+        }))
+      : labelQuery.isEnabled && labelQuery.data
+        ? [
+            {
+              label: labelQuery.data,
+              value: value,
+            },
+          ]
+        : undefined;
+
+  return (
+    <SearchParamFieldPopover
+      title={label}
+      opened={opened}
+      isSet={!!value}
+      onChange={toggle}
+      removable={!FIXED_SEARCH_PARAM_NAMES.has(searchParamName)}
+      onRemove={() => onRemove(searchParamName)}
+      loading={searchQuery.isEnabled && searchQuery.isPending}
+    >
+      <SearchableSelectWithoutDropdown
+        data={data}
+        value={value}
+        onChange={(value) => onChange(searchParamName, value)}
+        onSearchChange={setSearch}
+        opened={opened}
       />
     </SearchParamFieldPopover>
   );
@@ -561,6 +651,25 @@ function SearchParamField({
     );
   }
 
+  if (name === "actorRef") {
+    return (
+      <SearchableSearchParamField
+        label={t("log.actor")}
+        searchParams={searchParams}
+        searchParamName="actorRef"
+        items={getActorNames}
+        itemLabel={(repoId, value) =>
+          getActor(repoId, value)
+            .then((actor) => actor.name)
+            .catch(() => "")
+        }
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
   if (name === "actorType") {
     return (
       <SelectSearchParamField
@@ -569,32 +678,6 @@ function SearchParamField({
         searchParamName="actorType"
         items={getAllLogActorTypes}
         itemLabel={(value) => logTranslator("actor_type", value)}
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
-  if (name === "actorName") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.actorName")}
-        searchParams={searchParams}
-        searchParamName="actorName"
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
-  if (name === "actorRef") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.actorRef")}
-        searchParams={searchParams}
-        searchParamName="actorRef"
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -961,9 +1044,6 @@ function searchParamsToSearchParamNames(
   }
   if (searchParams.actorType) {
     names.add("actorType");
-  }
-  if (searchParams.actorName) {
-    names.add("actorName");
   }
   searchParams.actorExtra!.forEach((_, name) => {
     names.add("actor." + name);

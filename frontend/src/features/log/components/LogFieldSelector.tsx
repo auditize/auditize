@@ -62,10 +62,12 @@ export function useLogFields(
         group: "Actor",
         items: [
           ...(mode === "columns"
-            ? [_({ value: "actor", label: t("log.actor") + " *" })]
+            ? [_({ value: "actor", label: t("log.actor") })]
             : []),
           _({ value: "actorType", label: t("log.actorType") }),
-          _({ value: "actorName", label: t("log.actorName") }),
+          ...(mode === "columns"
+            ? [_({ value: "actorName", label: t("log.actorName") })]
+            : []),
           _({ value: "actorRef", label: t("log.actorRef") }),
           ...(actorCustomFieldListQuery.data ?? []).map((field) =>
             _({

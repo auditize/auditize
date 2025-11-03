@@ -11,6 +11,11 @@ export type Named = {
   name: string;
 };
 
+export type NameRefPair = {
+  name: string;
+  ref: string;
+};
+
 export type CustomField = {
   name: string;
   value: string;
@@ -28,6 +33,13 @@ type Attachment = {
   mimeType: string;
 };
 
+export type Actor = {
+  ref: string;
+  type: string;
+  name: string;
+  extra: CustomField[];
+};
+
 export type Log = {
   id: string;
   savedAt: string;
@@ -36,12 +48,7 @@ export type Log = {
     category: string;
   };
   source: CustomField[];
-  actor?: {
-    ref: string;
-    type: string;
-    name: string;
-    extra: CustomField[];
-  };
+  actor?: Actor;
   resource?: {
     ref: string;
     type: string;
@@ -188,6 +195,16 @@ export async function getAllAttachmentMimeTypes(
   );
 }
 
+export async function getActorNames(
+  repoId: string,
+  query: string,
+): Promise<NameRefPair[]> {
+  const { items } = await reqGet(`/repos/${repoId}/logs/actors/names`, {
+    q: query,
+  });
+  return items;
+}
+
 export async function getAllLogEntities(
   repoId: string,
   parentEntityRef?: string | null,
@@ -203,4 +220,11 @@ export async function getLogEntity(
   entityRef: string,
 ): Promise<LogEntity> {
   return await reqGet(`/repos/${repoId}/logs/entities/ref:${entityRef}`);
+}
+
+export async function getActor(
+  repoId: string,
+  actorRef: string,
+): Promise<Actor> {
+  return await reqGet(`/repos/${repoId}/logs/actors/${actorRef}`);
 }
