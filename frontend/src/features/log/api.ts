@@ -97,7 +97,7 @@ async function getNames(promise: Promise<Named[]>): Promise<string[]> {
   return promise.then((named) => named.map((n) => n.name));
 }
 
-export async function getAllLogActionCategories(
+export async function getAllActionCategories(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
@@ -108,7 +108,7 @@ export async function getAllLogActionCategories(
   );
 }
 
-export async function getAllLogActionTypes(
+export async function getAllActionTypes(
   repoId: string,
   category?: string,
 ): Promise<string[]> {
@@ -120,13 +120,13 @@ export async function getAllLogActionTypes(
   );
 }
 
-export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
+export async function getAllActorTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
   );
 }
 
-export async function getAllLogActorCustomFields(
+export async function getAllActorCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
@@ -137,15 +137,13 @@ export async function getAllLogActorCustomFields(
   );
 }
 
-export async function getAllLogSourceFields(repoId: string): Promise<string[]> {
+export async function getAllSourceFields(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/sources`, {}),
   );
 }
 
-export async function getAllLogResourceTypes(
-  repoId: string,
-): Promise<string[]> {
+export async function getAllResourceTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/resources/types`,
@@ -154,7 +152,7 @@ export async function getAllLogResourceTypes(
   );
 }
 
-export async function getAllLogResourceCustomFields(
+export async function getAllResourceCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
@@ -165,13 +163,13 @@ export async function getAllLogResourceCustomFields(
   );
 }
 
-export async function getAllLogDetailFields(repoId: string): Promise<string[]> {
+export async function getAllDetailFields(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/details`, {}),
   );
 }
 
-export async function getAllLogTagTypes(repoId: string): Promise<string[]> {
+export async function getAllTagTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
   );

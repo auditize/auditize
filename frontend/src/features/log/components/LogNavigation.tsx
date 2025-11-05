@@ -47,14 +47,14 @@ import { iconSize } from "@/utils/ui";
 import {
   getActor,
   getActorNames,
+  getAllActionCategories,
+  getAllActionTypes,
+  getAllActorTypes,
   getAllAttachmentMimeTypes,
   getAllAttachmentTypes,
-  getAllLogActionCategories,
-  getAllLogActionTypes,
-  getAllLogActorTypes,
   getAllLogEntities,
-  getAllLogResourceTypes,
-  getAllLogTagTypes,
+  getAllResourceTypes,
+  getAllTagTypes,
   getResource,
   getResourceNames,
   getTag,
@@ -166,27 +166,27 @@ function RepoSelector({
 function useLogConsolidatedDataPrefetch(repoId: string) {
   const actionCategoriesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actionCategory", repoId],
-    queryFn: () => getAllLogActionCategories(repoId),
+    queryFn: () => getAllActionCategories(repoId),
     enabled: !!repoId,
   });
   const actionTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actionType", repoId],
-    queryFn: () => getAllLogActionTypes(repoId),
+    queryFn: () => getAllActionTypes(repoId),
     enabled: !!repoId,
   });
   const actorTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actorType", repoId],
-    queryFn: () => getAllLogActorTypes(repoId),
+    queryFn: () => getAllActorTypes(repoId),
     enabled: !!repoId,
   });
   const resourceTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "resourceType", repoId],
-    queryFn: () => getAllLogResourceTypes(repoId),
+    queryFn: () => getAllResourceTypes(repoId),
     enabled: !!repoId,
   });
   const tagTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "tagType", repoId],
-    queryFn: () => getAllLogTagTypes(repoId),
+    queryFn: () => getAllTagTypes(repoId),
     enabled: !!repoId,
   });
   const attachmentTypesQuery = useQuery({
@@ -628,7 +628,7 @@ function SearchParamField({
         label={t("log.actionCategory")}
         searchParams={searchParams}
         searchParamName="actionCategory"
-        items={getAllLogActionCategories}
+        items={getAllActionCategories}
         itemLabel={(value) => logTranslator("action_category", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
@@ -644,7 +644,7 @@ function SearchParamField({
         searchParams={searchParams}
         searchParamName="actionType"
         items={(repoId) =>
-          getAllLogActionTypes(repoId, searchParams.actionCategory)
+          getAllActionTypes(repoId, searchParams.actionCategory)
         }
         itemsQueryKeyExtra={searchParams.actionCategory}
         itemLabel={(value) => logTranslator("action_type", value)}
@@ -680,7 +680,7 @@ function SearchParamField({
         label={t("log.actorType")}
         searchParams={searchParams}
         searchParamName="actorType"
-        items={getAllLogActorTypes}
+        items={getAllActorTypes}
         itemLabel={(value) => logTranslator("actor_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
@@ -733,7 +733,7 @@ function SearchParamField({
         label={t("log.resourceType")}
         searchParams={searchParams}
         searchParamName="resourceType"
-        items={getAllLogResourceTypes}
+        items={getAllResourceTypes}
         itemLabel={(value) => logTranslator("resource_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
@@ -805,7 +805,7 @@ function SearchParamField({
         label={t("log.tagType")}
         searchParams={searchParams}
         searchParamName="tagType"
-        items={getAllLogTagTypes}
+        items={getAllTagTypes}
         itemLabel={(value) => logTranslator("tag_type", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}

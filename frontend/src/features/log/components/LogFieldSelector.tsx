@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  getAllLogActorCustomFields,
-  getAllLogDetailFields,
-  getAllLogResourceCustomFields,
-  getAllLogSourceFields,
+  getAllActorCustomFields,
+  getAllDetailFields,
+  getAllResourceCustomFields,
+  getAllSourceFields,
 } from "../api";
 import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
@@ -19,22 +18,22 @@ export function useLogFields(
   const logTranslator = useLogTranslator(repoId);
   const actorCustomFieldListQuery = useQuery({
     queryKey: ["logActorCustomFields", repoId],
-    queryFn: () => getAllLogActorCustomFields(repoId),
+    queryFn: () => getAllActorCustomFields(repoId),
     enabled: !!repoId,
   });
   const resourceCustomFieldListQuery = useQuery({
     queryKey: ["logResourceCustomFields", repoId],
-    queryFn: () => getAllLogResourceCustomFields(repoId),
+    queryFn: () => getAllResourceCustomFields(repoId),
     enabled: !!repoId,
   });
   const detailFieldListQuery = useQuery({
     queryKey: ["logDetailFields", repoId],
-    queryFn: () => getAllLogDetailFields(repoId),
+    queryFn: () => getAllDetailFields(repoId),
     enabled: !!repoId,
   });
   const sourceFieldListQuery = useQuery({
     queryKey: ["logSourceFields", repoId],
-    queryFn: () => getAllLogSourceFields(repoId),
+    queryFn: () => getAllSourceFields(repoId),
     enabled: !!repoId,
   });
   const logTranslationQuery = useLogTranslationQuery(repoId);
