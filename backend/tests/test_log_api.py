@@ -2443,7 +2443,11 @@ class TestLogTagNames(_ConsolidatedNameRefPairsTest):
         )
 
 
-class TestLogActor:
+class _TestGetSubElementByRef:
+    @property
+    def data_type(self) -> str:
+        raise NotImplementedError
+
     async def test_nominal(
         self,
         superadmin_client: HttpTestHelper,
@@ -2452,20 +2456,22 @@ class TestLogActor:
     ):
         await repo.create_log_with(
             superadmin_client,
-            {"actor": {"ref": "A", "name": "Name of A", "type": "user"}},
+            {self.data_type: {"ref": "A", "name": "Name of A", "type": "data"}},
         )
         await log_read_client.assert_get_ok(
-            f"/repos/{repo.id}/logs/actors/A",
+            f"/repos/{repo.id}/logs/{self.data_type}s/A",
             expected_json={
                 "ref": "A",
                 "name": "Name of A",
-                "type": "user",
+                "type": "data",
                 "extra": [],
             },
         )
 
     async def test_not_found(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
-        await log_read_client.assert_get_not_found(f"/repos/{repo.id}/logs/actors/A")
+        await log_read_client.assert_get_not_found(
+            f"/repos/{repo.id}/logs/{self.data_type}s/A"
+        )
 
     async def test_forbidden(
         self,
@@ -2475,11 +2481,19 @@ class TestLogActor:
     ):
         await repo.create_log_with(
             superadmin_client,
-            {"actor": {"ref": "A", "name": "Name of A", "type": "user"}},
+            {self.data_type: {"ref": "A", "name": "Name of A", "type": "data"}},
         )
         await no_permission_client.assert_get_forbidden(
-            f"/repos/{repo.id}/logs/actors/UNKNOWN"
+            f"/repos/{repo.id}/logs/{self.data_type}s/UNKNOWN"
         )
+
+
+class TestLogActor(_TestGetSubElementByRef):
+    data_type = "actor"
+
+
+class TestLogResource(_TestGetSubElementByRef):
+    data_type = "resource"
 
 
 async def test_log_entity_consolidation_rename_entity(

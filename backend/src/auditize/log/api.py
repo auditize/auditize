@@ -48,6 +48,7 @@ from auditize.log.models import (
     LogImport,
     LogListParams,
     LogListResponse,
+    LogResourceResponse,
     LogResponse,
     LogsAsCsvParams,
     LogSearchParams,
@@ -413,10 +414,28 @@ async def get_log_actor(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
-    actor_ref: Annotated[str, Path(description="Actor ref")],
+    actor_ref: str,
 ):
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log_actor(actor_ref)
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/{resource_ref}",
+    summary="Get log resource",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_resource",
+    tags=["log"],
+    response_model=LogResourceResponse,
+)
+async def get_log_resource(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    resource_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_resource(resource_ref)
 
 
 @router.get(
