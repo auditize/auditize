@@ -52,6 +52,7 @@ from auditize.log.models import (
     LogResponse,
     LogsAsCsvParams,
     LogSearchParams,
+    LogTagResponse,
     NameListResponse,
     NameRefPairListResponse,
 )
@@ -436,6 +437,24 @@ async def get_log_resource(
 ):
     service = await LogService.for_reading(session, repo_id)
     return await service.get_log_resource(resource_ref)
+
+
+@router.get(
+    "/repos/{repo_id}/logs/tags/{tag_ref}",
+    summary="Get log tag",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_tag",
+    tags=["log"],
+    response_model=LogTagResponse,
+)
+async def get_log_tag(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    tag_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_tag(tag_ref)
 
 
 @router.get(

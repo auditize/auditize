@@ -650,6 +650,14 @@ class LogService:
             raise NotFoundError(f"Resource {resource_ref!r} not found")
         return log.resource
 
+    async def get_log_tag(self, tag_ref: str) -> Log.Tag:
+        log = await self.get_newest_log(LogSearchParams(tag_ref=tag_ref))
+        if log:
+            for tag in log.tags:
+                if tag.ref == tag_ref:
+                    return tag
+        raise NotFoundError(f"Tag {tag_ref!r} not found")
+
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """
         This function assumes that the entity has no children and delete it if it has no associated logs.

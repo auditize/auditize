@@ -2444,8 +2444,15 @@ class TestLogTagNames(_ConsolidatedNameRefPairsTest):
 
 
 class _TestGetSubElementByRef:
-    @property
-    def data_type(self) -> str:
+    def get_path(self, repo_id: str, ref: str) -> str:
+        raise NotImplementedError
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        raise NotImplementedError
+
+    def build_expected_json(self, *, ref: str) -> dict:
         raise NotImplementedError
 
     async def test_nominal(
@@ -2454,24 +2461,14 @@ class _TestGetSubElementByRef:
         log_read_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        await repo.create_log_with(
-            superadmin_client,
-            {self.data_type: {"ref": "A", "name": "Name of A", "type": "data"}},
-        )
+        await self.create_log(superadmin_client, repo, ref="A")
         await log_read_client.assert_get_ok(
-            f"/repos/{repo.id}/logs/{self.data_type}s/A",
-            expected_json={
-                "ref": "A",
-                "name": "Name of A",
-                "type": "data",
-                "extra": [],
-            },
+            self.get_path(repo.id, "A"),
+            expected_json=self.build_expected_json(ref="A"),
         )
 
     async def test_not_found(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
-        await log_read_client.assert_get_not_found(
-            f"/repos/{repo.id}/logs/{self.data_type}s/A"
-        )
+        await log_read_client.assert_get_not_found(self.get_path(repo.id, "A"))
 
     async def test_forbidden(
         self,
@@ -2479,21 +2476,70 @@ class _TestGetSubElementByRef:
         no_permission_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        await repo.create_log_with(
-            superadmin_client,
-            {self.data_type: {"ref": "A", "name": "Name of A", "type": "data"}},
-        )
-        await no_permission_client.assert_get_forbidden(
-            f"/repos/{repo.id}/logs/{self.data_type}s/UNKNOWN"
-        )
+        await self.create_log(superadmin_client, repo, ref="A")
+        await no_permission_client.assert_get_forbidden(self.get_path(repo.id, "A"))
 
 
 class TestLogActor(_TestGetSubElementByRef):
-    data_type = "actor"
+    def get_path(self, repo_id: str, ref: str) -> str:
+        return f"/repos/{repo_id}/logs/actors/{ref}"
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"actor": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
+        )
+
+    def build_expected_json(self, *, ref: str) -> dict:
+        return {
+            "ref": ref,
+            "name": f"Name of {ref}",
+            "type": "data",
+            "extra": [],
+        }
 
 
 class TestLogResource(_TestGetSubElementByRef):
-    data_type = "resource"
+    def get_path(self, repo_id: str, ref: str) -> str:
+        return f"/repos/{repo_id}/logs/resources/{ref}"
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"resource": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
+        )
+
+    def build_expected_json(self, *, ref: str) -> dict:
+        return {
+            "ref": ref,
+            "name": f"Name of {ref}",
+            "type": "data",
+            "extra": [],
+        }
+
+
+class TestLogTag(_TestGetSubElementByRef):
+    def get_path(self, repo_id: str, ref: str) -> str:
+        return f"/repos/{repo_id}/logs/tags/{ref}"
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"tags": [{"ref": ref, "name": f"Name of {ref}", "type": "data"}]},
+        )
+
+    def build_expected_json(self, *, ref: str) -> dict:
+        return {
+            "ref": ref,
+            "name": f"Name of {ref}",
+            "type": "data",
+        }
 
 
 async def test_log_entity_consolidation_rename_entity(

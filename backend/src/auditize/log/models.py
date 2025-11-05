@@ -452,6 +452,10 @@ class LogResourceResponse(_ResourceOutputData):
     pass
 
 
+class LogTagResponse(_TagOutputData):
+    pass
+
+
 class LogEntityListParams(CursorPaginationParams):
     root: bool = Field(
         default=False, description="Whether to list top-level entities or not"
