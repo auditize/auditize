@@ -495,7 +495,7 @@ async def get_log_entities(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/entities/ref:{entity_ref}",
+    "/repos/{repo_id}/logs/entities/{entity_ref}",
     summary="Get log entity",
     description="Requires `log:read` permission.",
     operation_id="get_log_entity",

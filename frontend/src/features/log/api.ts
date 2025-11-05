@@ -239,7 +239,7 @@ export async function getLogEntity(
   repoId: string,
   entityRef: string,
 ): Promise<LogEntity> {
-  return await reqGet(`/repos/${repoId}/logs/entities/ref:${entityRef}`);
+  return await reqGet(`/repos/${repoId}/logs/entities/${entityRef}`);
 }
 
 export async function getActor(
