@@ -11,7 +11,7 @@ from auditize.database.sql.service import (
 )
 from auditize.exceptions import (
     ConstraintViolation,
-    UnknownModelException,
+    NotFoundError,
 )
 from auditize.i18n.lang import Lang
 from auditize.log_i18n_profile.models import (
@@ -130,7 +130,7 @@ async def has_log_i18n_profile(session: AsyncSession, profile_id: UUID) -> bool:
     try:
         await get_sql_model(session, LogI18nProfile, profile_id)
         return True
-    except UnknownModelException:
+    except NotFoundError:
         return False
 
 

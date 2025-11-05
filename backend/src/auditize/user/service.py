@@ -19,7 +19,7 @@ from auditize.database.sql.service import (
 from auditize.exceptions import (
     AuthenticationFailure,
     ConstraintViolation,
-    UnknownModelException,
+    NotFoundError,
     ValidationError,
     enhance_unknown_model_exception,
 )
@@ -199,7 +199,7 @@ async def delete_user(session: AsyncSession, user_id: UUID):
 async def authenticate_user(session: AsyncSession, email: str, password: str) -> User:
     try:
         user = await get_user_by_email(session, email)
-    except UnknownModelException:
+    except NotFoundError:
         raise AuthenticationFailure()
 
     if not user.password_hash:
@@ -227,7 +227,7 @@ def _send_password_reset_link(user: User):
 async def send_user_password_reset_link(session: AsyncSession, email: str):
     try:
         user = await get_user_by_email(session, email)
-    except UnknownModelException:
+    except NotFoundError:
         # in case of unknown email, just do nothing to avoid leaking information
         return
 

@@ -15,7 +15,7 @@ from auditize.auth.constants import ACCESS_TOKEN_PREFIX
 from auditize.auth.jwt import generate_access_token, generate_session_token
 from auditize.config import get_config
 from auditize.dependencies import get_db_session
-from auditize.exceptions import UnknownModelException, ValidationError
+from auditize.exceptions import NotFoundError, ValidationError
 from auditize.permissions.models import PermissionsInput
 from auditize.permissions.service import authorize_grant
 from auditize.repo.service import get_repo
@@ -78,7 +78,7 @@ async def _validate_permissions(session: AsyncSession, permissions: PermissionsI
     for repo in permissions.logs.repos:
         try:
             await get_repo(session, repo.repo_id)
-        except UnknownModelException as exc:
+        except NotFoundError as exc:
             raise ValidationError(f"Repo {repo.repo_id} does not exist") from exc
 
 

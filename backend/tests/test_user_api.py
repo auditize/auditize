@@ -7,7 +7,7 @@ import pytest
 from httpx import Response
 
 from auditize.database.dbm import open_db_session
-from auditize.exceptions import UnknownModelException
+from auditize.exceptions import NotFoundError
 from auditize.log_filter.service import get_log_filter
 from conftest import UserBuilder
 from helpers.apikey import PreparedApikey
@@ -413,7 +413,7 @@ async def test_user_delete_with_log_filter(
     )
     await user_write_client.assert_delete_no_content(f"/users/{log_read_user.id}")
     async with open_db_session() as session:
-        with pytest.raises(UnknownModelException):
+        with pytest.raises(NotFoundError):
             await get_log_filter(session, UUID(log_read_user.id), UUID(log_filter.id))
 
 

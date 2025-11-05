@@ -22,7 +22,7 @@ class ConfigAlreadyInitialized(ConfigError):
     pass
 
 
-class UnknownModelException(AuditizeException):
+class NotFoundError(AuditizeException):
     pass
 
 
@@ -59,4 +59,4 @@ def _enhance_exception(exc_class, trans_key):
         raise exc_class((trans_key,))
 
 
-enhance_unknown_model_exception = partial(_enhance_exception, UnknownModelException)
+enhance_unknown_model_exception = partial(_enhance_exception, NotFoundError)

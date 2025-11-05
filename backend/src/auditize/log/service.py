@@ -1,5 +1,4 @@
 import base64
-import json
 import uuid
 from datetime import datetime, timedelta
 from functools import partialmethod
@@ -9,7 +8,7 @@ from uuid import UUID
 import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
-from elasticsearch.exceptions import NotFoundError
+from elasticsearch import NotFoundError as ElasticNotFoundError
 from sqlalchemy import and_, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,8 +23,8 @@ from auditize.database.sql.service import get_sql_model
 from auditize.exceptions import (
     ConstraintViolation,
     InvalidPaginationCursor,
+    NotFoundError,
     PermissionDenied,
-    UnknownModelException,
 )
 from auditize.helpers.datetime import now
 from auditize.log.models import Log, LogCreate, LogImport, LogSearchParams
@@ -184,8 +183,8 @@ class LogService:
                 },
                 refresh=self._refresh,
             )
-        except NotFoundError:
-            raise UnknownModelException()
+        except ElasticNotFoundError:
+            raise NotFoundError()
 
     @staticmethod
     def _authorized_entity_filter(authorized_entities: set[str]):
@@ -208,7 +207,7 @@ class LogService:
             authorized_entities
             and not set(entity.ref for entity in log.entity_path) & authorized_entities
         ):
-            raise UnknownModelException()
+            raise NotFoundError()
 
     async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
         try:
@@ -217,8 +216,8 @@ class LogService:
                 id=str(log_id),
                 source_excludes=["attachments.data"],
             )
-        except NotFoundError:
-            raise UnknownModelException()
+        except ElasticNotFoundError:
+            raise NotFoundError()
 
         log = Log.model_validate({**resp["_source"], "id": log_id})
         self._check_log_visibility(log, authorized_entities)
@@ -233,8 +232,8 @@ class LogService:
         # array index unless adding an extra metadata such as "index" to the stored document
         try:
             resp = await self.es.get(index=self.index, id=str(log_id))
-        except NotFoundError:
-            raise UnknownModelException()
+        except ElasticNotFoundError:
+            raise NotFoundError()
 
         self._check_log_visibility(
             Log.model_validate({**resp["_source"], "id": log_id}), authorized_entities
@@ -243,7 +242,7 @@ class LogService:
         try:
             attachment = resp["_source"]["attachments"][attachment_idx]
         except IndexError:
-            raise UnknownModelException()
+            raise NotFoundError()
 
         return Log.Attachment.model_validate(
             {**attachment, "data": base64.b64decode(attachment["data"])}
@@ -420,10 +419,13 @@ class LogService:
 
         return logs, next_cursor
 
-    async def _get_sorted_log(self, sort) -> Log | None:
+    async def _get_sorted_log(
+        self, sort, *, search_params: LogSearchParams | None = None
+    ) -> Log | None:
+        filter = self._prepare_es_query(search_params) if search_params else []
         resp = await self.es.search(
             index=self.index,
-            query={"match_all": {}},
+            query={"bool": {"filter": filter}},
             sort=sort,
             size=1,
         )
@@ -435,8 +437,13 @@ class LogService:
     async def get_oldest_log(self) -> Log | None:
         return await self._get_sorted_log([{"saved_at": "asc", "log_id": "asc"}])
 
-    async def get_newest_log(self) -> Log | None:
-        return await self._get_sorted_log([{"saved_at": "desc", "log_id": "desc"}])
+    async def get_newest_log(
+        self, search_params: LogSearchParams | None = None
+    ) -> Log | None:
+        return await self._get_sorted_log(
+            sort=[{"saved_at": "desc", "log_id": "desc"}],
+            search_params=search_params,
+        )
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(
@@ -630,6 +637,12 @@ class LogService:
     get_log_tag_names = partialmethod(
         _get_aggregated_name_ref_pairs, prefix="tags", nested=True
     )
+
+    async def get_log_actor(self, actor_ref: str) -> Log.Actor:
+        log = await self.get_newest_log(LogSearchParams(actor_ref=actor_ref))
+        if not log or not log.actor:
+            raise NotFoundError(f"Actor {actor_ref!r} not found")
+        return log.actor
 
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """
@@ -868,7 +881,7 @@ class LogService:
                 entity_ref_hierarchy & authorized_entities
                 or entity_ref in authorized_entities_hierarchy
             ):
-                raise UnknownModelException()
+                raise NotFoundError()
         return await self._get_log_entity(entity_ref)
 
     async def create_log_db(self):

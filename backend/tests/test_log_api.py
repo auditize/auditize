@@ -2443,6 +2443,45 @@ class TestLogTagNames(_ConsolidatedNameRefPairsTest):
         )
 
 
+class TestLogActor:
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"actor": {"ref": "A", "name": "Name of A", "type": "user"}},
+        )
+        await log_read_client.assert_get_ok(
+            f"/repos/{repo.id}/logs/actors/A",
+            expected_json={
+                "ref": "A",
+                "name": "Name of A",
+                "type": "user",
+                "extra": [],
+            },
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await log_read_client.assert_get_not_found(f"/repos/{repo.id}/logs/actors/A")
+
+    async def test_forbidden(
+        self,
+        superadmin_client: HttpTestHelper,
+        no_permission_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"actor": {"ref": "A", "name": "Name of A", "type": "user"}},
+        )
+        await no_permission_client.assert_get_forbidden(
+            f"/repos/{repo.id}/logs/actors/UNKNOWN"
+        )
+
+
 async def test_log_entity_consolidation_rename_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):

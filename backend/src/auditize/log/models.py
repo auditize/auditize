@@ -444,6 +444,10 @@ class LogEntityResponse(_EntityPathNodeData):
     )
 
 
+class LogActorResponse(_ActorOutputData):
+    pass
+
+
 class LogEntityListParams(CursorPaginationParams):
     root: bool = Field(
         default=False, description="Whether to list top-level entities or not"
