@@ -62,7 +62,7 @@ export function useLogFields(
         group: "Actor",
         items: [
           ...(mode === "columns"
-            ? [_({ value: "actor", label: t("log.actor") })]
+            ? [_({ value: "actor", label: t("log.actor") + " *" })]
             : []),
           _({ value: "actorType", label: t("log.actorType") }),
           ...(mode === "columns"
@@ -96,7 +96,9 @@ export function useLogFields(
             ? [_({ value: "resource", label: t("log.resource") + " *" })]
             : []),
           _({ value: "resourceType", label: t("log.resourceType") }),
-          _({ value: "resourceName", label: t("log.resourceName") }),
+          ...(mode === "columns"
+            ? [_({ value: "resourceName", label: t("log.resourceName") })]
+            : []),
           _({ value: "resourceRef", label: t("log.resourceRef") }),
           ...(resourceCustomFieldListQuery.data ?? []).map((field) =>
             _({

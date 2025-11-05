@@ -40,6 +40,13 @@ export type Actor = {
   extra: CustomField[];
 };
 
+export type Resource = {
+  ref: string;
+  type: string;
+  name: string;
+  extra: CustomField[];
+};
+
 export type Log = {
   id: string;
   savedAt: string;
@@ -49,12 +56,7 @@ export type Log = {
   };
   source: CustomField[];
   actor?: Actor;
-  resource?: {
-    ref: string;
-    type: string;
-    name: string;
-    extra: CustomField[];
-  };
+  resource?: Resource;
   details: CustomField[];
   entityPath: {
     ref: string;
@@ -205,6 +207,16 @@ export async function getActorNames(
   return items;
 }
 
+export async function getResourceNames(
+  repoId: string,
+  query: string,
+): Promise<NameRefPair[]> {
+  const { items } = await reqGet(`/repos/${repoId}/logs/resources/names`, {
+    q: query,
+  });
+  return items;
+}
+
 export async function getAllLogEntities(
   repoId: string,
   parentEntityRef?: string | null,
@@ -227,4 +239,11 @@ export async function getActor(
   actorRef: string,
 ): Promise<Actor> {
   return await reqGet(`/repos/${repoId}/logs/actors/${actorRef}`);
+}
+
+export async function getResource(
+  repoId: string,
+  resourceRef: string,
+): Promise<Resource> {
+  return await reqGet(`/repos/${repoId}/logs/resources/${resourceRef}`);
 }

@@ -55,6 +55,8 @@ import {
   getAllLogEntities,
   getAllLogResourceTypes,
   getAllLogTagTypes,
+  getResource,
+  getResourceNames,
   NameRefPair,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
@@ -738,25 +740,18 @@ function SearchParamField({
     );
   }
 
-  if (name === "resourceName") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.resourceName")}
-        searchParams={searchParams}
-        searchParamName="resourceName"
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
   if (name === "resourceRef") {
     return (
-      <TextInputSearchParamField
-        label={t("log.resourceRef")}
+      <SearchableSearchParamField
+        label={t("log.resource")}
         searchParams={searchParams}
         searchParamName="resourceRef"
+        items={getResourceNames}
+        itemLabel={(repoId, value) =>
+          getResource(repoId, value)
+            .then((resource) => resource.name)
+            .catch(() => "")
+        }
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -1060,9 +1055,6 @@ function searchParamsToSearchParamNames(
   }
   if (searchParams.resourceType) {
     names.add("resourceType");
-  }
-  if (searchParams.resourceName) {
-    names.add("resourceName");
   }
   searchParams.resourceExtra.forEach((_, name) => {
     names.add("resource." + name);
