@@ -217,6 +217,16 @@ export async function getResourceNames(
   return items;
 }
 
+export async function getTagNames(
+  repoId: string,
+  query: string,
+): Promise<NameRefPair[]> {
+  const { items } = await reqGet(`/repos/${repoId}/logs/tags/names`, {
+    q: query,
+  });
+  return items;
+}
+
 export async function getAllLogEntities(
   repoId: string,
   parentEntityRef?: string | null,
@@ -246,4 +256,8 @@ export async function getResource(
   resourceRef: string,
 ): Promise<Resource> {
   return await reqGet(`/repos/${repoId}/logs/resources/${resourceRef}`);
+}
+
+export async function getTag(repoId: string, tagRef: string): Promise<Tag> {
+  return await reqGet(`/repos/${repoId}/logs/tags/${tagRef}`);
 }

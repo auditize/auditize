@@ -127,7 +127,9 @@ export function useLogFields(
             ? [_({ value: "tag", label: t("log.tag") + " *" })]
             : []),
           _({ value: "tagType", label: t("log.tagType") }),
-          _({ value: "tagName", label: t("log.tagName") }),
+          ...(mode === "columns"
+            ? [_({ value: "tagName", label: t("log.tagName") })]
+            : []),
           _({ value: "tagRef", label: t("log.tagRef") }),
         ],
       },

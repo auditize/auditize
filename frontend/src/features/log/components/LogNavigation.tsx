@@ -57,6 +57,8 @@ import {
   getAllLogTagTypes,
   getResource,
   getResourceNames,
+  getTag,
+  getTagNames,
   NameRefPair,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
@@ -812,25 +814,18 @@ function SearchParamField({
     );
   }
 
-  if (name === "tagName") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.tagName")}
-        searchParams={searchParams}
-        searchParamName="tagName"
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
   if (name === "tagRef") {
     return (
-      <TextInputSearchParamField
-        label={t("log.tagRef")}
+      <SearchableSearchParamField
+        label={t("log.tag")}
         searchParams={searchParams}
         searchParamName="tagRef"
+        items={getTagNames}
+        itemLabel={(repoId, value) =>
+          getTag(repoId, value)
+            .then((tag) => tag.name ?? "")
+            .catch(() => "")
+        }
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -1071,9 +1066,6 @@ function searchParamsToSearchParamNames(
   }
   if (searchParams.tagType) {
     names.add("tagType");
-  }
-  if (searchParams.tagName) {
-    names.add("tagName");
   }
 
   // Attachment
