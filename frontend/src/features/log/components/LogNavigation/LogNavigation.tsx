@@ -19,13 +19,13 @@ import {
   normalizeFilterColumnsForApi,
   useLogFilterMutation,
 } from "@/features/log-filter";
-import { useLogNavigationState } from "@/features/log/components/LogNavigation";
 import { sortFields } from "@/features/log/components/LogTable";
 import { useSearchFieldNames } from "@/features/log/components/useLogFields";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
 import { iconSize } from "@/utils/ui";
 
+import { useLogNavigationState } from "./LogNavigationState";
 import { RepoSelector } from "./RepoSelector";
 import {
   FIXED_SEARCH_PARAM_NAMES,
