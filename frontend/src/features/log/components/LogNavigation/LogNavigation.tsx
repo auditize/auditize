@@ -39,11 +39,6 @@ import {
   normalizeFilterColumnsForApi,
   useLogFilterMutation,
 } from "@/features/log-filter";
-import { useLogRepoListQuery } from "@/features/repo";
-import { titlize } from "@/utils/format";
-import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
-import { iconSize } from "@/utils/ui";
-
 import {
   getActor,
   getActorNames,
@@ -60,13 +55,20 @@ import {
   getTag,
   getTagNames,
   NameRefPair,
-} from "../api";
-import { LogSearchParams } from "../LogSearchParams";
-import { EntitySelector } from "./EntitySelector";
-import { useSearchFieldNames, useSearchFields } from "./LogFieldSelector";
-import { useLogNavigationState } from "./LogNavigationState";
-import { sortFields } from "./LogTable";
-import { useLogTranslator } from "./LogTranslation";
+} from "@/features/log/api";
+import { EntitySelector } from "@/features/log/components/EntitySelector";
+import {
+  useSearchFieldNames,
+  useSearchFields,
+} from "@/features/log/components/LogFieldSelector";
+import { useLogNavigationState } from "@/features/log/components/LogNavigationState";
+import { sortFields } from "@/features/log/components/LogTable";
+import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import { LogSearchParams } from "@/features/log/LogSearchParams";
+import { useLogRepoListQuery } from "@/features/repo";
+import { titlize } from "@/utils/format";
+import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
+import { iconSize } from "@/utils/ui";
 
 const FIXED_SEARCH_PARAM_NAMES = new Set([
   "savedAt",
