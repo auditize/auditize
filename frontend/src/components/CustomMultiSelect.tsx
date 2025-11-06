@@ -1,8 +1,6 @@
 import {
   CheckIcon,
   Combobox,
-  ComboboxItem,
-  ComboboxItemGroup,
   ComboboxProps,
   Group,
   ScrollArea,
@@ -11,6 +9,18 @@ import {
 import React, { useRef } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+
+export interface CustomMultiSelectItem {
+  value: string;
+  label: string;
+  renderedLabel?: React.ReactNode;
+  disabled?: boolean;
+}
+
+export interface CustomMultiSelectItemGroup {
+  group: string;
+  items: CustomMultiSelectItem[];
+}
 
 function wordMatches(value: string, search: string) {
   return search
@@ -23,14 +33,14 @@ function wordMatches(value: string, search: string) {
 }
 
 function buildComboboxOptions(
-  data: ComboboxItemGroup<ComboboxItem>[],
+  data: CustomMultiSelectItemGroup[],
   selected: string[],
   search: string,
 ) {
   const { t } = useTranslation();
   const isVisible = (
-    group: ComboboxItemGroup<ComboboxItem>,
-    item: ComboboxItem,
+    group: CustomMultiSelectItemGroup,
+    item: CustomMultiSelectItem,
   ) =>
     !item.disabled
       ? search
@@ -52,7 +62,11 @@ function buildComboboxOptions(
             >
               <Group gap="sm">
                 {selected.includes(item.value) ? <CheckIcon size={12} /> : null}
-                <span>{item.label}</span>
+                {item.renderedLabel ? (
+                  item.renderedLabel
+                ) : (
+                  <span>{item.label}</span>
+                )}
               </Group>
             </Combobox.Option>
           ))}
@@ -87,7 +101,7 @@ export function CustomMultiSelect({
   footer,
   comboboxProps,
 }: {
-  data: ComboboxItemGroup<ComboboxItem>[];
+  data: CustomMultiSelectItemGroup[];
   value: string[];
   comboboxStore: ReturnType<typeof useCombobox>;
   onOptionSubmit: (value: string) => void;
