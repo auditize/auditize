@@ -1,3 +1,4 @@
+import { Text } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -143,10 +144,24 @@ export function useColumnFields(repoId: string) {
     loading: customFieldsLoading,
   } = useCustomFields(repoId);
 
-  const item = (value: string, label?: string) => ({
+  const item = (
+    value: string,
+    label: string,
+    renderedLabel?: React.ReactNode,
+  ) => ({
     value,
-    label: label ?? t(`log.${value}`),
+    label,
+    renderedLabel,
   });
+
+  const strongItem = (value: string, label: string) =>
+    item(
+      value,
+      label,
+      <Text size="sm" fw={650}>
+        {label}
+      </Text>,
+    );
 
   return {
     fields: [
@@ -154,7 +169,7 @@ export function useColumnFields(repoId: string) {
       {
         group: "Action",
         items: [
-          item("action", t("log.action") + " *"),
+          strongItem("action", t("log.action")),
           item("actionCategory", t("common.category")),
           item("actionType", t("common.type")),
         ],
@@ -162,7 +177,7 @@ export function useColumnFields(repoId: string) {
       {
         group: t("log.actor"),
         items: [
-          item("actor", t("log.actor") + " *"),
+          strongItem("actor", t("log.actor")),
           item("actorType", t("common.type")),
           item("actorName", t("common.name")),
           item("actorRef", t("common.ref")),
@@ -180,7 +195,7 @@ export function useColumnFields(repoId: string) {
       {
         group: t("log.resource"),
         items: [
-          item("resource", t("log.resource") + " *"),
+          strongItem("resource", t("log.resource")),
           item("resourceType", t("common.type")),
           item("resourceName", t("common.name")),
           item("resourceRef", t("common.ref")),
@@ -201,7 +216,7 @@ export function useColumnFields(repoId: string) {
       {
         group: t("log.tag"),
         items: [
-          item("tag", t("log.tag") + " *"),
+          strongItem("tag", t("log.tag")),
           item("tagType", t("common.type")),
           item("tagName", t("common.name")),
           item("tagRef", t("common.ref")),
@@ -210,8 +225,8 @@ export function useColumnFields(repoId: string) {
       {
         group: "Attachment",
         items: [
-          item("attachment", t("log.attachment") + " *"),
-          item("hasAttachment"),
+          strongItem("attachment", t("log.attachment")),
+          item("hasAttachment", t("log.hasAttachment")),
           item("attachmentName", t("common.name")),
           item("attachmentType", t("common.type")),
           item("attachmentMimeType", t("common.mimeType")),
@@ -219,7 +234,7 @@ export function useColumnFields(repoId: string) {
       },
       {
         group: t("log.entity"),
-        items: [item("entity")],
+        items: [item("entity", t("log.entity"))],
       },
     ],
     loading: customFieldsLoading || logTranslationQuery.isPending,
