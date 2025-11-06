@@ -33,7 +33,7 @@ import { iconSize } from "@/utils/ui";
 import { CustomField, getLogs, Log } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
 import { LogDetails } from "./LogDetails";
-import { useLogFields } from "./LogFieldSelector";
+import { useColumnFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { useLogTranslator } from "./LogTranslation";
 
@@ -758,7 +758,7 @@ function ColumnSelector({
   onColumnReset: () => void;
 }) {
   const { t } = useTranslation();
-  const { fields, loading: fieldsLoading } = useLogFields(repoId, "columns");
+  const { fields, loading: fieldsLoading } = useColumnFields(repoId);
   const comboboxStore = useCombobox();
   const { logComponentRef } = useLogNavigationState();
 

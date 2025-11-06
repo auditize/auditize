@@ -63,7 +63,7 @@ import {
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
 import { EntitySelector } from "./EntitySelector";
-import { useLogFieldNames, useLogFields } from "./LogFieldSelector";
+import { useSearchFieldNames, useSearchFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigationState";
 import { sortFields } from "./LogTable";
 import { useLogTranslator } from "./LogTranslation";
@@ -941,9 +941,8 @@ function SearchParamFieldSelector({
   onSearchParamAdded: (name: string) => void;
   onSearchParamRemoved: (name: string) => void;
 }) {
-  const { fields, loading: logFieldsLoading } = useLogFields(
+  const { fields, loading: logFieldsLoading } = useSearchFields(
     repoId,
-    "search",
     FIXED_SEARCH_PARAM_NAMES,
   );
   const logConsolidatedDataLoading = useLogConsolidatedDataPrefetch(repoId);
@@ -1444,9 +1443,8 @@ export function LogNavigation({
   const [searchParamNames, setSearchParamNames] = useState<Set<string>>(
     searchParamsToSearchParamNames(params),
   );
-  const availableSearchParamFieldNames = useLogFieldNames(
+  const availableSearchParamFieldNames = useSearchFieldNames(
     editedParams.repoId,
-    "search",
     FIXED_SEARCH_PARAM_NAMES,
   );
   const [addedSearchParamName, setAddedSearchParamName] = useState<

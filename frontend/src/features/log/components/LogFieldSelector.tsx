@@ -43,11 +43,7 @@ function useCustomFields(repoId: string) {
   };
 }
 
-export function useLogFields(
-  repoId: string,
-  mode: "search" | "columns",
-  disabledFields?: Set<string>,
-) {
+export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
   const logTranslationQuery = useLogTranslationQuery(repoId);
@@ -67,31 +63,21 @@ export function useLogFields(
 
   return {
     fields: [
-      { group: "Date", items: [item("savedAt", "Date")] },
+      { group: "Date", items: [item("savedAt", t("log.date"))] },
       {
-        group: "Action",
+        group: t("log.action"),
         items: [
-          ...(mode === "columns"
-            ? [item("action", t("log.action") + " *")]
-            : []),
-          item("actionCategory"),
-          item("actionType"),
+          item("actionCategory", t("common.category")),
+          item("actionType", t("common.type")),
         ],
       },
       {
-        group: "Actor",
+        group: t("log.actor"),
         items: [
-          ...(mode === "columns" ? [item("actor", t("log.actor") + " *")] : []),
-          item("actorType"),
-          ...(mode === "columns" ? [item("actorName")] : []),
-          item("actorRef"),
+          item("actorType", t("common.type")),
+          item("actorRef", t("log.actor")),
           ...actorCustomFields.map((field) =>
-            item(
-              `actor.${field}`,
-              t("log.actor") +
-                ": " +
-                logTranslator("actor_custom_field", field),
-            ),
+            item(`actor.${field}`, logTranslator("actor_custom_field", field)),
           ),
         ],
       },
@@ -104,18 +90,12 @@ export function useLogFields(
       {
         group: t("log.resource"),
         items: [
-          ...(mode === "columns"
-            ? [item("resource", t("log.resource") + " *")]
-            : []),
-          item("resourceType"),
-          ...(mode === "columns" ? [item("resourceName")] : []),
-          item("resourceRef"),
+          item("resourceRef", t("log.resource")),
+          item("resourceType", t("common.type")),
           ...resourceCustomFields.map((field) =>
             item(
               `resource.${field}`,
-              t("log.resource") +
-                ": " +
-                logTranslator("resource_custom_field", field),
+              logTranslator("resource_custom_field", field),
             ),
           ),
         ],
@@ -129,22 +109,17 @@ export function useLogFields(
       {
         group: t("log.tag"),
         items: [
-          ...(mode === "columns" ? [item("tag", t("log.tag") + " *")] : []),
-          item("tagType"),
-          ...(mode === "columns" ? [item("tagName")] : []),
-          item("tagRef"),
+          item("tagRef", t("log.tag")),
+          item("tagType", t("common.type")),
         ],
       },
       {
-        group: "Attachment",
+        group: t("log.attachment"),
         items: [
-          ...(mode === "columns"
-            ? [item("attachment", t("log.attachment") + " *")]
-            : []),
-          ...(mode === "search" ? [item("hasAttachment")] : []),
-          item("attachmentName"),
-          item("attachmentType"),
-          item("attachmentMimeType"),
+          item("hasAttachment"),
+          item("attachmentName", t("common.name")),
+          item("attachmentType", t("common.type")),
+          item("attachmentMimeType", t("common.mimeType")),
         ],
       },
       {
@@ -156,12 +131,106 @@ export function useLogFields(
   };
 }
 
-export function useLogFieldNames(
+export function useColumnFields(repoId: string) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
+  const logTranslationQuery = useLogTranslationQuery(repoId);
+  const {
+    actorCustomFields,
+    resourceCustomFields,
+    detailFields,
+    sourceFields,
+    loading: customFieldsLoading,
+  } = useCustomFields(repoId);
+
+  const item = (value: string, label?: string) => ({
+    value,
+    label: label ?? t(`log.${value}`),
+  });
+
+  return {
+    fields: [
+      { group: t("log.date"), items: [item("savedAt", t("log.date"))] },
+      {
+        group: "Action",
+        items: [
+          item("action", t("log.action") + " *"),
+          item("actionCategory", t("common.category")),
+          item("actionType", t("common.type")),
+        ],
+      },
+      {
+        group: t("log.actor"),
+        items: [
+          item("actor", t("log.actor") + " *"),
+          item("actorType", t("common.type")),
+          item("actorName", t("common.name")),
+          item("actorRef", t("common.ref")),
+          ...actorCustomFields.map((field) =>
+            item(`actor.${field}`, logTranslator("actor_custom_field", field)),
+          ),
+        ],
+      },
+      {
+        group: t("log.source"),
+        items: sourceFields.map((field) =>
+          item(`source.${field}`, logTranslator("source_field", field)),
+        ),
+      },
+      {
+        group: t("log.resource"),
+        items: [
+          item("resource", t("log.resource") + " *"),
+          item("resourceType", t("common.type")),
+          item("resourceName", t("common.name")),
+          item("resourceRef", t("common.ref")),
+          ...resourceCustomFields.map((field) =>
+            item(
+              `resource.${field}`,
+              logTranslator("resource_custom_field", field),
+            ),
+          ),
+        ],
+      },
+      {
+        group: t("log.details"),
+        items: detailFields.map((field) =>
+          item(`details.${field}`, logTranslator("detail_field", field)),
+        ),
+      },
+      {
+        group: t("log.tag"),
+        items: [
+          item("tag", t("log.tag") + " *"),
+          item("tagType", t("common.type")),
+          item("tagName", t("common.name")),
+          item("tagRef", t("common.ref")),
+        ],
+      },
+      {
+        group: "Attachment",
+        items: [
+          item("attachment", t("log.attachment") + " *"),
+          item("hasAttachment"),
+          item("attachmentName", t("common.name")),
+          item("attachmentType", t("common.type")),
+          item("attachmentMimeType", t("common.mimeType")),
+        ],
+      },
+      {
+        group: t("log.entity"),
+        items: [item("entity")],
+      },
+    ],
+    loading: customFieldsLoading || logTranslationQuery.isPending,
+  };
+}
+
+export function useSearchFieldNames(
   repoId: string,
-  mode: "search" | "columns",
   disabledFields?: Set<string>,
 ) {
-  const { fields, loading } = useLogFields(repoId, mode, disabledFields);
+  const { fields, loading } = useSearchFields(repoId, disabledFields);
   return loading
     ? null
     : fields.map((group) => group.items.map((item) => item.value)).flat();
