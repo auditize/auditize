@@ -38,120 +38,97 @@ export function useLogFields(
   });
   const logTranslationQuery = useLogTranslationQuery(repoId);
 
-  const _ = ({ value, label }: { value: string; label: string }) => ({
+  const item = (value: string, label?: string) => ({
     value,
-    label,
+    label: label ?? t(`log.${value}`),
     disabled: disabledFields && disabledFields.has(value),
   });
 
   return {
     fields: [
-      { group: "Date", items: [_({ value: "savedAt", label: "Date" })] },
+      { group: "Date", items: [item("savedAt", "Date")] },
       {
         group: "Action",
         items: [
           ...(mode === "columns"
-            ? [_({ value: "action", label: t("log.action") + " *" })]
+            ? [item("action", t("log.action") + " *")]
             : []),
-          _({ value: "actionCategory", label: t("log.actionCategory") }),
-          _({ value: "actionType", label: t("log.actionType") }),
+          item("actionCategory"),
+          item("actionType"),
         ],
       },
       {
         group: "Actor",
         items: [
-          ...(mode === "columns"
-            ? [_({ value: "actor", label: t("log.actor") + " *" })]
-            : []),
-          _({ value: "actorType", label: t("log.actorType") }),
-          ...(mode === "columns"
-            ? [_({ value: "actorName", label: t("log.actorName") })]
-            : []),
-          _({ value: "actorRef", label: t("log.actorRef") }),
+          ...(mode === "columns" ? [item("actor", t("log.actor") + " *")] : []),
+          item("actorType"),
+          ...(mode === "columns" ? [item("actorName")] : []),
+          item("actorRef"),
           ...(actorCustomFieldListQuery.data ?? []).map((field) =>
-            _({
-              value: `actor.${field}`,
-              label:
-                t("log.actor") +
+            item(
+              `actor.${field}`,
+              t("log.actor") +
                 ": " +
                 logTranslator("actor_custom_field", field),
-            }),
+            ),
           ),
         ],
       },
       {
         group: t("log.source"),
         items: (sourceFieldListQuery.data ?? []).map((field) =>
-          _({
-            value: `source.${field}`,
-            label: logTranslator("source_field", field),
-          }),
+          item(`source.${field}`, logTranslator("source_field", field)),
         ),
       },
       {
         group: t("log.resource"),
         items: [
           ...(mode === "columns"
-            ? [_({ value: "resource", label: t("log.resource") + " *" })]
+            ? [item("resource", t("log.resource") + " *")]
             : []),
-          _({ value: "resourceType", label: t("log.resourceType") }),
-          ...(mode === "columns"
-            ? [_({ value: "resourceName", label: t("log.resourceName") })]
-            : []),
-          _({ value: "resourceRef", label: t("log.resourceRef") }),
+          item("resourceType"),
+          ...(mode === "columns" ? [item("resourceName")] : []),
+          item("resourceRef"),
           ...(resourceCustomFieldListQuery.data ?? []).map((field) =>
-            _({
-              value: `resource.${field}`,
-              label:
-                t("log.resource") +
+            item(
+              `resource.${field}`,
+              t("log.resource") +
                 ": " +
                 logTranslator("resource_custom_field", field),
-            }),
+            ),
           ),
         ],
       },
       {
         group: t("log.details"),
         items: (detailFieldListQuery.data ?? []).map((field) =>
-          _({
-            value: `details.${field}`,
-            label: logTranslator("detail_field", field),
-          }),
+          item(`details.${field}`, logTranslator("detail_field", field)),
         ),
       },
       {
         group: t("log.tag"),
         items: [
-          ...(mode === "columns"
-            ? [_({ value: "tag", label: t("log.tag") + " *" })]
-            : []),
-          _({ value: "tagType", label: t("log.tagType") }),
-          ...(mode === "columns"
-            ? [_({ value: "tagName", label: t("log.tagName") })]
-            : []),
-          _({ value: "tagRef", label: t("log.tagRef") }),
+          ...(mode === "columns" ? [item("tag", t("log.tag") + " *")] : []),
+          item("tagType"),
+          ...(mode === "columns" ? [item("tagName")] : []),
+          item("tagRef"),
         ],
       },
       {
         group: "Attachment",
         items: [
           ...(mode === "columns"
-            ? [_({ value: "attachment", label: t("log.attachment") + " *" })]
+            ? [item("attachment", t("log.attachment") + " *")]
             : []),
-          ...(mode === "search"
-            ? [_({ value: "hasAttachment", label: t("log.hasAttachment") })]
-            : []),
-          _({ value: "attachmentName", label: t("log.attachmentName") }),
-          _({ value: "attachmentType", label: t("log.attachmentType") }),
-          _({
-            value: "attachmentMimeType",
-            label: t("log.attachmentMimeType"),
-          }),
+          ...(mode === "search" ? [item("hasAttachment")] : []),
+          item("attachmentName"),
+          item("attachmentType"),
+          item("attachmentMimeType"),
         ],
       },
       {
         group: t("log.entity"),
-        items: [_({ value: "entity", label: t("log.entity") })],
+        items: [item("entity")],
       },
     ],
     loading:
