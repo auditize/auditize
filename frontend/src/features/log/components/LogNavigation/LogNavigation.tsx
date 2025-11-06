@@ -6,7 +6,6 @@ import {
   Menu,
   Popover,
   rem,
-  Select,
   Stack,
   Switch,
   TextInput,
@@ -65,10 +64,11 @@ import {
   useSearchFields,
 } from "@/features/log/components/useLogFields";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
-import { useLogRepoListQuery } from "@/features/repo";
 import { titlize } from "@/utils/format";
 import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
 import { iconSize } from "@/utils/ui";
+
+import { RepoSelector } from "./RepoSelector";
 
 const FIXED_SEARCH_PARAM_NAMES = new Set([
   "savedAt",
@@ -129,39 +129,6 @@ function SearchParamFieldPopover({
       </Popover.Target>
       <Popover.Dropdown p="0">{children}</Popover.Dropdown>
     </Popover>
-  );
-}
-
-function RepoSelector({
-  repoId,
-  onChange,
-}: {
-  repoId?: string;
-  onChange: (value: string) => void;
-}) {
-  const { t } = useTranslation();
-  const query = useLogRepoListQuery();
-
-  return (
-    <Select
-      data={query.data?.map((repo) => ({
-        label: repo.name,
-        value: repo.id,
-      }))}
-      value={repoId || null}
-      onChange={(value) => onChange(value || "")}
-      placeholder={
-        query.error
-          ? t("common.notCurrentlyAvailable")
-          : query.isPending
-            ? t("common.loading")
-            : undefined
-      }
-      disabled={query.isPending}
-      clearable={false}
-      display="flex"
-      comboboxProps={{ withinPortal: false, shadow: "md" }}
-    />
   );
 }
 
