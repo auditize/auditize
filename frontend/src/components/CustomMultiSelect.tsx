@@ -28,25 +28,34 @@ function buildComboboxOptions(
   search: string,
 ) {
   const { t } = useTranslation();
-  const isVisible = (item: ComboboxItem) =>
-    !item.disabled ? (search ? wordMatches(item.label, search) : true) : false;
+  const isVisible = (
+    group: ComboboxItemGroup<ComboboxItem>,
+    item: ComboboxItem,
+  ) =>
+    !item.disabled
+      ? search
+        ? wordMatches(group.group, search) || wordMatches(item.label, search)
+        : true
+      : false;
 
   const optionGroups = data
-    .filter((group) => group.items.some(isVisible))
+    .filter((group) => group.items.some((item) => isVisible(group, item)))
     .map((group) => (
       <Combobox.Group key={group.group} label={group.group}>
-        {group.items.filter(isVisible).map((item) => (
-          <Combobox.Option
-            key={item.value}
-            value={item.value}
-            disabled={item.disabled}
-          >
-            <Group gap="sm">
-              {selected.includes(item.value) ? <CheckIcon size={12} /> : null}
-              <span>{item.label}</span>
-            </Group>
-          </Combobox.Option>
-        ))}
+        {group.items
+          .filter((item) => isVisible(group, item))
+          .map((item) => (
+            <Combobox.Option
+              key={item.value}
+              value={item.value}
+              disabled={item.disabled}
+            >
+              <Group gap="sm">
+                {selected.includes(item.value) ? <CheckIcon size={12} /> : null}
+                <span>{item.label}</span>
+              </Group>
+            </Combobox.Option>
+          ))}
       </Combobox.Group>
     ));
 
