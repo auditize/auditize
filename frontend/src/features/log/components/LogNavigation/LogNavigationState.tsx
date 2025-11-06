@@ -19,10 +19,9 @@ import {
   useLogFilterMutation,
 } from "@/features/log-filter";
 import { LogFilter } from "@/features/log-filter/api";
+import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { useLogRepoListQuery } from "@/features/repo";
 import { addQueryParamToLocation } from "@/utils/router";
-
-import { LogSearchParams } from "../LogSearchParams";
 
 type LogContextProps = {
   displayedLogId: string | null;

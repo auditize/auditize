@@ -21,8 +21,7 @@ import { useLogRepoListQuery } from "@/features/repo";
 import { iconBesideText } from "@/utils/ui";
 
 import { LogSearchParams } from "../LogSearchParams";
-import { LogNavigation } from "./LogNavigation";
-import { useLogNavigationState } from "./LogNavigationState";
+import { LogNavigation, useLogNavigationState } from "./LogNavigation";
 import { LogTable } from "./LogTable";
 
 export function BaseLogs({

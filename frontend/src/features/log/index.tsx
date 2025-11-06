@@ -3,4 +3,4 @@ export { MultiEntitySelectorPicker } from "./components/EntitySelector";
 export {
   LogNavigationStateProvider,
   useLogNavigationState,
-} from "./components/LogNavigationState";
+} from "./components/LogNavigation";

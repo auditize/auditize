@@ -34,7 +34,7 @@ import { CustomField, getLogs, Log } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
 import { LogDetails } from "./LogDetails";
 import { useColumnFields } from "./LogFieldSelector";
-import { useLogNavigationState } from "./LogNavigationState";
+import { useLogNavigationState } from "./LogNavigation";
 import { useLogTranslator } from "./LogTranslation";
 
 export type TableSearchParamChangeHandler = (

@@ -61,7 +61,7 @@ import {
   useSearchFieldNames,
   useSearchFields,
 } from "@/features/log/components/LogFieldSelector";
-import { useLogNavigationState } from "@/features/log/components/LogNavigationState";
+import { useLogNavigationState } from "@/features/log/components/LogNavigation";
 import { sortFields } from "@/features/log/components/LogTable";
 import { useLogTranslator } from "@/features/log/components/LogTranslation";
 import { LogSearchParams } from "@/features/log/LogSearchParams";

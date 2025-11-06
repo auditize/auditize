@@ -35,7 +35,7 @@ import { humanizeDate } from "@/utils/date";
 import { iconBesideText } from "@/utils/ui";
 
 import { getLog, Log } from "../api";
-import { useLogNavigationState } from "./LogNavigationState";
+import { useLogNavigationState } from "./LogNavigation";
 import { useLogTranslator } from "./LogTranslation";
 
 function KeyValueTable({
