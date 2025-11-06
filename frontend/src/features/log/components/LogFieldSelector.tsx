@@ -9,13 +9,7 @@ import {
 } from "../api";
 import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
-export function useLogFields(
-  repoId: string,
-  mode: "search" | "columns",
-  disabledFields?: Set<string>,
-) {
-  const { t } = useTranslation();
-  const logTranslator = useLogTranslator(repoId);
+function useCustomFields(repoId: string) {
   const actorCustomFieldListQuery = useQuery({
     queryKey: ["logActorCustomFields", repoId],
     queryFn: () => getAllActorCustomFields(repoId),
@@ -36,7 +30,34 @@ export function useLogFields(
     queryFn: () => getAllSourceFields(repoId),
     enabled: !!repoId,
   });
+  return {
+    actorCustomFields: actorCustomFieldListQuery.data ?? [],
+    resourceCustomFields: resourceCustomFieldListQuery.data ?? [],
+    detailFields: detailFieldListQuery.data ?? [],
+    sourceFields: sourceFieldListQuery.data ?? [],
+    loading:
+      actorCustomFieldListQuery.isPending ||
+      resourceCustomFieldListQuery.isPending ||
+      detailFieldListQuery.isPending ||
+      sourceFieldListQuery.isPending,
+  };
+}
+
+export function useLogFields(
+  repoId: string,
+  mode: "search" | "columns",
+  disabledFields?: Set<string>,
+) {
+  const { t } = useTranslation();
+  const logTranslator = useLogTranslator(repoId);
   const logTranslationQuery = useLogTranslationQuery(repoId);
+  const {
+    actorCustomFields,
+    resourceCustomFields,
+    detailFields,
+    sourceFields,
+    loading: customFieldsLoading,
+  } = useCustomFields(repoId);
 
   const item = (value: string, label?: string) => ({
     value,
@@ -64,7 +85,7 @@ export function useLogFields(
           item("actorType"),
           ...(mode === "columns" ? [item("actorName")] : []),
           item("actorRef"),
-          ...(actorCustomFieldListQuery.data ?? []).map((field) =>
+          ...actorCustomFields.map((field) =>
             item(
               `actor.${field}`,
               t("log.actor") +
@@ -76,7 +97,7 @@ export function useLogFields(
       },
       {
         group: t("log.source"),
-        items: (sourceFieldListQuery.data ?? []).map((field) =>
+        items: sourceFields.map((field) =>
           item(`source.${field}`, logTranslator("source_field", field)),
         ),
       },
@@ -89,7 +110,7 @@ export function useLogFields(
           item("resourceType"),
           ...(mode === "columns" ? [item("resourceName")] : []),
           item("resourceRef"),
-          ...(resourceCustomFieldListQuery.data ?? []).map((field) =>
+          ...resourceCustomFields.map((field) =>
             item(
               `resource.${field}`,
               t("log.resource") +
@@ -101,7 +122,7 @@ export function useLogFields(
       },
       {
         group: t("log.details"),
-        items: (detailFieldListQuery.data ?? []).map((field) =>
+        items: detailFields.map((field) =>
           item(`details.${field}`, logTranslator("detail_field", field)),
         ),
       },
@@ -131,12 +152,7 @@ export function useLogFields(
         items: [item("entity")],
       },
     ],
-    loading:
-      actorCustomFieldListQuery.isPending ||
-      resourceCustomFieldListQuery.isPending ||
-      detailFieldListQuery.isPending ||
-      sourceFieldListQuery.isPending ||
-      logTranslationQuery.isPending,
+    loading: customFieldsLoading || logTranslationQuery.isPending,
   };
 }
 
