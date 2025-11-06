@@ -33,9 +33,9 @@ import { iconSize } from "@/utils/ui";
 import { CustomField, getLogs, Log } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
 import { LogDetails } from "./LogDetails";
-import { useColumnFields } from "./LogFieldSelector";
 import { useLogNavigationState } from "./LogNavigation";
 import { useLogTranslator } from "./LogTranslation";
+import { useColumnFields } from "./useLogFields";
 
 export type TableSearchParamChangeHandler = (
   name: string,

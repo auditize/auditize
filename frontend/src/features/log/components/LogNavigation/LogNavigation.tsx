@@ -57,13 +57,13 @@ import {
   NameRefPair,
 } from "@/features/log/api";
 import { EntitySelector } from "@/features/log/components/EntitySelector";
-import {
-  useSearchFieldNames,
-  useSearchFields,
-} from "@/features/log/components/LogFieldSelector";
 import { useLogNavigationState } from "@/features/log/components/LogNavigation";
 import { sortFields } from "@/features/log/components/LogTable";
 import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import {
+  useSearchFieldNames,
+  useSearchFields,
+} from "@/features/log/components/useLogFields";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { useLogRepoListQuery } from "@/features/repo";
 import { titlize } from "@/utils/format";
