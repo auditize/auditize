@@ -343,6 +343,10 @@ export default {
   common: {
     name: "Name",
     id: "ID",
+    type: "Type",
+    mimeType: "MIME type",
+    ref: "Reference",
+    category: "Category",
     status: "Status",
     createdAt: "Created at",
     updatedAt: "Updated at",
