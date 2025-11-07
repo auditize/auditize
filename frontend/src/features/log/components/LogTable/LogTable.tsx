@@ -28,14 +28,13 @@ import { useTranslation } from "react-i18next";
 
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { DateTime } from "@/components/DateTime";
+import { CustomField, getLogs, Log } from "@/features/log/api";
+import { LogDetails } from "@/features/log/components/LogDetails";
+import { useLogNavigationState } from "@/features/log/components/LogNavigation";
+import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import { useColumnFields } from "@/features/log/components/useLogFields";
+import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { iconSize } from "@/utils/ui";
-
-import { CustomField, getLogs, Log } from "../api";
-import { LogSearchParams } from "../LogSearchParams";
-import { LogDetails } from "./LogDetails";
-import { useLogNavigationState } from "./LogNavigation";
-import { useLogTranslator } from "./LogTranslation";
-import { useColumnFields } from "./useLogFields";
 
 export type TableSearchParamChangeHandler = (
   name: string,
