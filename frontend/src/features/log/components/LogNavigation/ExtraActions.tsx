@@ -19,11 +19,11 @@ import {
   normalizeFilterColumnsForApi,
   useLogFilterMutation,
 } from "@/features/log-filter";
+import { sortLogFields } from "@/features/log/components/LogTable";
+import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
 import { iconSize } from "@/utils/ui";
 
-import { LogSearchParams } from "../../LogSearchParams";
-import { sortFields } from "../LogTable";
 import { useLogNavigationState } from "./LogNavigationState";
 
 function columnsToCsvColumns(columns: string[]): string[] {
@@ -32,7 +32,7 @@ function columnsToCsvColumns(columns: string[]): string[] {
     // we use a Set to avoid duplicates
     new Set(
       columns
-        .toSorted(sortFields)
+        .toSorted(sortLogFields)
         .map((column) => {
           if (column === "actor") {
             return ["actor_name"];

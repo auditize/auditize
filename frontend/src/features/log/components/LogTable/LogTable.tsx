@@ -49,7 +49,7 @@ import {
   TagTypesField,
 } from "./Fields";
 
-export function sortFields(a: string, b: string) {
+export function sortLogFields(a: string, b: string) {
   const order: { [key: string]: number } = {
     savedAt: 0,
     "source.": 1,
@@ -92,7 +92,7 @@ export function sortFields(a: string, b: string) {
   return customA.localeCompare(customB);
 }
 
-function fieldToColumn(
+function logFieldToColumn(
   field: string,
   repoId: string,
   onTableSearchParamChange: TableSearchParamChangeHandler,
@@ -490,9 +490,9 @@ function buildDataTableColumns({
   );
 
   return selectedColumns
-    .toSorted(sortFields)
+    .toSorted(sortLogFields)
     .map((column, i) =>
-      fieldToColumn(
+      logFieldToColumn(
         column,
         repoId,
         onTableSearchParamChange,
