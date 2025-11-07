@@ -753,6 +753,8 @@ async def main(argv):
 
     count = int(argv[1])
 
+    print(f"Injecting {count} logs into {repo_id} at {base_url}")
+
     if base_url and api_key:
         injector = ApiInjector(base_url, repo_id, api_key)
     else:
