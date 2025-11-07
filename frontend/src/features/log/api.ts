@@ -11,6 +11,11 @@ export type Named = {
   name: string;
 };
 
+export type NameRefPair = {
+  name: string;
+  ref: string;
+};
+
 export type CustomField = {
   name: string;
   value: string;
@@ -28,6 +33,20 @@ type Attachment = {
   mimeType: string;
 };
 
+export type Actor = {
+  ref: string;
+  type: string;
+  name: string;
+  extra: CustomField[];
+};
+
+export type Resource = {
+  ref: string;
+  type: string;
+  name: string;
+  extra: CustomField[];
+};
+
 export type Log = {
   id: string;
   savedAt: string;
@@ -36,18 +55,8 @@ export type Log = {
     category: string;
   };
   source: CustomField[];
-  actor?: {
-    ref: string;
-    type: string;
-    name: string;
-    extra: CustomField[];
-  };
-  resource?: {
-    ref: string;
-    type: string;
-    name: string;
-    extra: CustomField[];
-  };
+  actor?: Actor;
+  resource?: Resource;
   details: CustomField[];
   entityPath: {
     ref: string;
@@ -88,7 +97,7 @@ async function getNames(promise: Promise<Named[]>): Promise<string[]> {
   return promise.then((named) => named.map((n) => n.name));
 }
 
-export async function getAllLogActionCategories(
+export async function getAllActionCategories(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
@@ -99,7 +108,7 @@ export async function getAllLogActionCategories(
   );
 }
 
-export async function getAllLogActionTypes(
+export async function getAllActionTypes(
   repoId: string,
   category?: string,
 ): Promise<string[]> {
@@ -111,13 +120,13 @@ export async function getAllLogActionTypes(
   );
 }
 
-export async function getAllLogActorTypes(repoId: string): Promise<string[]> {
+export async function getAllActorTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/actors/types`, {}),
   );
 }
 
-export async function getAllLogActorCustomFields(
+export async function getAllActorCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
@@ -128,15 +137,13 @@ export async function getAllLogActorCustomFields(
   );
 }
 
-export async function getAllLogSourceFields(repoId: string): Promise<string[]> {
+export async function getAllSourceFields(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/sources`, {}),
   );
 }
 
-export async function getAllLogResourceTypes(
-  repoId: string,
-): Promise<string[]> {
+export async function getAllResourceTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
       `/repos/${repoId}/logs/resources/types`,
@@ -145,7 +152,7 @@ export async function getAllLogResourceTypes(
   );
 }
 
-export async function getAllLogResourceCustomFields(
+export async function getAllResourceCustomFields(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
@@ -156,13 +163,13 @@ export async function getAllLogResourceCustomFields(
   );
 }
 
-export async function getAllLogDetailFields(repoId: string): Promise<string[]> {
+export async function getAllDetailFields(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/details`, {}),
   );
 }
 
-export async function getAllLogTagTypes(repoId: string): Promise<string[]> {
+export async function getAllTagTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(`/repos/${repoId}/logs/tags/types`, {}),
   );
@@ -188,6 +195,36 @@ export async function getAllAttachmentMimeTypes(
   );
 }
 
+export async function getActorNames(
+  repoId: string,
+  query: string,
+): Promise<NameRefPair[]> {
+  const { items } = await reqGet(`/repos/${repoId}/logs/actors/names`, {
+    q: query,
+  });
+  return items;
+}
+
+export async function getResourceNames(
+  repoId: string,
+  query: string,
+): Promise<NameRefPair[]> {
+  const { items } = await reqGet(`/repos/${repoId}/logs/resources/names`, {
+    q: query,
+  });
+  return items;
+}
+
+export async function getTagNames(
+  repoId: string,
+  query: string,
+): Promise<NameRefPair[]> {
+  const { items } = await reqGet(`/repos/${repoId}/logs/tags/names`, {
+    q: query,
+  });
+  return items;
+}
+
 export async function getAllLogEntities(
   repoId: string,
   parentEntityRef?: string | null,
@@ -202,5 +239,23 @@ export async function getLogEntity(
   repoId: string,
   entityRef: string,
 ): Promise<LogEntity> {
-  return await reqGet(`/repos/${repoId}/logs/entities/ref:${entityRef}`);
+  return await reqGet(`/repos/${repoId}/logs/entities/${entityRef}`);
+}
+
+export async function getActor(
+  repoId: string,
+  actorRef: string,
+): Promise<Actor> {
+  return await reqGet(`/repos/${repoId}/logs/actors/${actorRef}`);
+}
+
+export async function getResource(
+  repoId: string,
+  resourceRef: string,
+): Promise<Resource> {
+  return await reqGet(`/repos/${repoId}/logs/resources/${resourceRef}`);
+}
+
+export async function getTag(repoId: string, tagRef: string): Promise<Tag> {
+  return await reqGet(`/repos/${repoId}/logs/tags/${tagRef}`);
 }

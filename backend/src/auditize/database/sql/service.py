@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.models.page_pagination import PagePaginationInfo
 from auditize.database.sql.models import SqlModel
-from auditize.exceptions import UnknownModelException
+from auditize.exceptions import NotFoundError
 
 
 async def save_sql_model(
@@ -50,7 +50,7 @@ async def get_sql_model[T: SqlModel](
         lookup = model_class.id == lookup
     model = await session.scalar(select(model_class).where(lookup))
     if not model:
-        raise UnknownModelException()
+        raise NotFoundError()
     return model
 
 
@@ -62,7 +62,7 @@ async def delete_sql_model[T: SqlModel](
     result = await session.execute(delete(model_class).where(lookup))
     await session.commit()
     if result.rowcount == 0:
-        raise UnknownModelException()
+        raise NotFoundError()
 
 
 async def find_paginated_by_page[T: SqlModel](

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.api.exception import error_responses
 from auditize.api.models.cursor_pagination import CursorPaginationParams
+from auditize.api.models.search import CursorPaginatedSearchParams
 from auditize.api.validation import (
     IDENTIFIER_PATTERN_STRING,
 )
@@ -39,6 +40,7 @@ from auditize.log.csv import (
 from auditize.log.models import (
     Log,
     LogActionTypeListParams,
+    LogActorResponse,
     LogCreate,
     LogEntityListParams,
     LogEntityListResponse,
@@ -46,11 +48,13 @@ from auditize.log.models import (
     LogImport,
     LogListParams,
     LogListResponse,
+    LogResourceResponse,
     LogResponse,
     LogsAsCsvParams,
     LogSearchParams,
-    LogSearchQueryParams,
+    LogTagResponse,
     NameListResponse,
+    NameRefPairListResponse,
 )
 from auditize.log.service import LogService
 
@@ -63,7 +67,7 @@ router = APIRouter(
 )
 
 
-async def _get_consolidated_data(
+async def _get_aggregated_names(
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
@@ -77,6 +81,21 @@ async def _get_consolidated_data(
         **kwargs,
     )
     return NameListResponse.build(data, next_cursor)
+
+
+async def _get_aggregated_name_ref_pairs(
+    session: AsyncSession,
+    repo_id: UUID,
+    get_data_func_name,
+    params: CursorPaginatedSearchParams,
+) -> NameRefPairListResponse:
+    service = await LogService.for_reading(session, repo_id)
+    data, next_cursor = await getattr(service, get_data_func_name)(
+        query=params.query,
+        limit=params.limit,
+        pagination_cursor=params.cursor,
+    )
+    return NameRefPairListResponse.build(data, next_cursor)
 
 
 @router.get(
@@ -98,7 +117,7 @@ async def get_log_action_types(
     repo_id: UUID,
     params: Annotated[LogActionTypeListParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_action_types",
@@ -121,7 +140,7 @@ async def get_log_action_categories(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_action_categories",
@@ -143,7 +162,7 @@ async def get_log_actor_types(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_actor_types",
@@ -165,7 +184,7 @@ async def get_log_actor_extras(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_actor_extra_fields",
@@ -187,7 +206,7 @@ async def get_log_resource_types(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_resource_types",
@@ -209,7 +228,7 @@ async def get_log_resource_extras(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_resource_extra_fields",
@@ -231,7 +250,7 @@ async def get_log_tag_types(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_tag_types",
@@ -253,7 +272,7 @@ async def get_log_source_fields(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_source_fields",
@@ -275,7 +294,7 @@ async def get_log_detail_fields(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_detail_fields",
@@ -297,7 +316,7 @@ async def get_log_attachment_types(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_attachment_types",
@@ -319,12 +338,123 @@ async def get_log_attachment_mime_types(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_consolidated_data(
+    return await _get_aggregated_names(
         session,
         repo_id,
         "get_log_attachment_mime_types",
         page_params,
     )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/actors/names",
+    summary="Get aggregated list of log actor names and refs",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_actor_names",
+    tags=["log"],
+    response_model=NameRefPairListResponse,
+)
+async def get_log_actor_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[CursorPaginatedSearchParams, Query()],
+):
+    return await _get_aggregated_name_ref_pairs(
+        session, repo_id, "get_log_actor_names", params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/names",
+    summary="Get aggregated list of log resource names and refs",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_resource_names",
+    tags=["log"],
+    response_model=NameRefPairListResponse,
+)
+async def get_log_resource_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[CursorPaginatedSearchParams, Query()],
+):
+    return await _get_aggregated_name_ref_pairs(
+        session, repo_id, "get_log_resource_names", params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/tags/names",
+    summary="Get aggregated list of log tag names and refs",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_tag_names",
+    tags=["log"],
+    response_model=NameRefPairListResponse,
+)
+async def get_log_tag_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[CursorPaginatedSearchParams, Query()],
+):
+    return await _get_aggregated_name_ref_pairs(
+        session, repo_id, "get_log_tag_names", params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/actors/{actor_ref}",
+    summary="Get log actor",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_actor",
+    tags=["log"],
+    response_model=LogActorResponse,
+)
+async def get_log_actor(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    actor_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_actor(actor_ref)
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/{resource_ref}",
+    summary="Get log resource",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_resource",
+    tags=["log"],
+    response_model=LogResourceResponse,
+)
+async def get_log_resource(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    resource_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_resource(resource_ref)
+
+
+@router.get(
+    "/repos/{repo_id}/logs/tags/{tag_ref}",
+    summary="Get log tag",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_tag",
+    tags=["log"],
+    response_model=LogTagResponse,
+)
+async def get_log_tag(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    tag_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_tag(tag_ref)
 
 
 @router.get(
@@ -365,7 +495,7 @@ async def get_log_entities(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/entities/ref:{entity_ref}",
+    "/repos/{repo_id}/logs/entities/{entity_ref}",
     summary="Get log entity",
     description="Requires `log:read` permission.",
     operation_id="get_log_entity",
@@ -532,7 +662,7 @@ async def get_logs_as_csv(
     columns = params.columns.split(",")  # convert columns string to a list
     validate_log_csv_columns(columns)
 
-    filename = f"auditize-logs_{repo_id}_{now().strftime("%Y%m%d%H%M%S")}.csv"
+    filename = f"auditize-logs_{repo_id}_{now().strftime('%Y%m%d%H%M%S')}.csv"
 
     return StreamingResponse(
         stream_logs_as_csv(

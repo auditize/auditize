@@ -30,10 +30,10 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { CustomDateTimePicker } from "@/components";
 import { CustomMultiSelect } from "@/components/CustomMultiSelect";
 import { notifyError, notifySuccess } from "@/components/notifications";
+import { SearchableSelectWithoutDropdown } from "@/components/SearchableSelectWithoutDropdown";
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import {
   getLogFilters,
-  LogFilter,
   LogFilterCreation,
   LogFilterDrawer,
   normalizeFilterColumnsForApi,
@@ -45,14 +45,21 @@ import { camelCaseToSnakeCaseString } from "@/utils/switchCase";
 import { iconSize } from "@/utils/ui";
 
 import {
+  getActor,
+  getActorNames,
+  getAllActionCategories,
+  getAllActionTypes,
+  getAllActorTypes,
   getAllAttachmentMimeTypes,
   getAllAttachmentTypes,
-  getAllLogActionCategories,
-  getAllLogActionTypes,
-  getAllLogActorTypes,
   getAllLogEntities,
-  getAllLogResourceTypes,
-  getAllLogTagTypes,
+  getAllResourceTypes,
+  getAllTagTypes,
+  getResource,
+  getResourceNames,
+  getTag,
+  getTagNames,
+  NameRefPair,
 } from "../api";
 import { LogSearchParams } from "../LogSearchParams";
 import { EntitySelector } from "./EntitySelector";
@@ -63,6 +70,7 @@ import { useLogTranslator } from "./LogTranslation";
 
 const FIXED_SEARCH_PARAM_NAMES = new Set([
   "savedAt",
+  "actorRef",
   "actionCategory",
   "actionType",
   "entity",
@@ -158,27 +166,27 @@ function RepoSelector({
 function useLogConsolidatedDataPrefetch(repoId: string) {
   const actionCategoriesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actionCategory", repoId],
-    queryFn: () => getAllLogActionCategories(repoId),
+    queryFn: () => getAllActionCategories(repoId),
     enabled: !!repoId,
   });
   const actionTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actionType", repoId],
-    queryFn: () => getAllLogActionTypes(repoId),
+    queryFn: () => getAllActionTypes(repoId),
     enabled: !!repoId,
   });
   const actorTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "actorType", repoId],
-    queryFn: () => getAllLogActorTypes(repoId),
+    queryFn: () => getAllActorTypes(repoId),
     enabled: !!repoId,
   });
   const resourceTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "resourceType", repoId],
-    queryFn: () => getAllLogResourceTypes(repoId),
+    queryFn: () => getAllResourceTypes(repoId),
     enabled: !!repoId,
   });
   const tagTypesQuery = useQuery({
     queryKey: ["logConsolidatedData", "tagType", repoId],
-    queryFn: () => getAllLogTagTypes(repoId),
+    queryFn: () => getAllTagTypes(repoId),
     enabled: !!repoId,
   });
   const attachmentTypesQuery = useQuery({
@@ -285,6 +293,92 @@ function SelectSearchParamField({
               ? t("common.chooseAValue")
               : t("common.noData")
         }
+      />
+    </SearchParamFieldPopover>
+  );
+}
+
+function SearchableSearchParamField({
+  label,
+  searchParams,
+  searchParamName,
+  items,
+  itemLabel,
+  openedByDefault,
+  onChange,
+  onRemove,
+}: {
+  label: string;
+  searchParams: LogSearchParams;
+  searchParamName: string;
+  items: (repoId: string, query: string) => Promise<NameRefPair[]>;
+  itemLabel: (repoId: string, value: string) => Promise<string>;
+  openedByDefault: boolean;
+  onChange: (name: string, value: any) => void;
+  onRemove: (name: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const searchQuery = useQuery({
+    queryKey: ["logFieldNames", searchParamName, searchParams.repoId, search],
+    queryFn: () => items(searchParams.repoId, search),
+    enabled: !!searchParams.repoId && !!search,
+  });
+  const value = searchParams[
+    searchParamName as keyof LogSearchParams
+  ] as string;
+  const labelQuery = useQuery({
+    queryKey: [
+      "logFieldNameFromRef",
+      searchParamName,
+      searchParams.repoId,
+      value,
+    ],
+    queryFn: () => itemLabel(searchParams.repoId, value),
+    enabled: !!searchParams.repoId && !!value,
+  });
+  const [opened, { toggle }] = useDisclosure(openedByDefault);
+
+  // On repository change, reset the selected value if a corresponding
+  // label cannot be found.
+  useEffect(() => {
+    if (value && labelQuery.data === "") {
+      onChange(searchParamName, "");
+    }
+  }, [labelQuery.data]);
+
+  // Build the available options from the search query if any (example: the user is performing a search)
+  // or from the label query if any (example: the page is loaded with the selected value already in the URL).
+  const data =
+    searchQuery.isEnabled && searchQuery.data
+      ? searchQuery.data.map((item) => ({
+          label: item.name,
+          value: item.ref,
+        }))
+      : labelQuery.isEnabled && labelQuery.data
+        ? [
+            {
+              label: labelQuery.data,
+              value: value,
+            },
+          ]
+        : undefined;
+
+  return (
+    <SearchParamFieldPopover
+      title={label}
+      opened={opened}
+      isSet={!!value}
+      onChange={toggle}
+      removable={!FIXED_SEARCH_PARAM_NAMES.has(searchParamName)}
+      onRemove={() => onRemove(searchParamName)}
+      loading={searchQuery.isEnabled && searchQuery.isPending}
+    >
+      <SearchableSelectWithoutDropdown
+        data={data}
+        value={value}
+        onChange={(value) => onChange(searchParamName, value)}
+        onSearchChange={setSearch}
+        opened={opened}
       />
     </SearchParamFieldPopover>
   );
@@ -455,7 +549,8 @@ function DateInterval({
           initToEndOfDay
           dateTimePickerProps={{
             error: untilError ?? undefined,
-            excludeDate: (until) => !isIntervalValid(searchParams.since, until),
+            excludeDate: (until) =>
+              !isIntervalValid(searchParams.since, new Date(until)),
           }}
         />
       </Stack>
@@ -533,7 +628,7 @@ function SearchParamField({
         label={t("log.actionCategory")}
         searchParams={searchParams}
         searchParamName="actionCategory"
-        items={getAllLogActionCategories}
+        items={getAllActionCategories}
         itemLabel={(value) => logTranslator("action_category", value)}
         openedByDefault={openedByDefault}
         onChange={onChange}
@@ -549,10 +644,29 @@ function SearchParamField({
         searchParams={searchParams}
         searchParamName="actionType"
         items={(repoId) =>
-          getAllLogActionTypes(repoId, searchParams.actionCategory)
+          getAllActionTypes(repoId, searchParams.actionCategory)
         }
         itemsQueryKeyExtra={searchParams.actionCategory}
         itemLabel={(value) => logTranslator("action_type", value)}
+        openedByDefault={openedByDefault}
+        onChange={onChange}
+        onRemove={onRemove}
+      />
+    );
+  }
+
+  if (name === "actorRef") {
+    return (
+      <SearchableSearchParamField
+        label={t("log.actor")}
+        searchParams={searchParams}
+        searchParamName="actorRef"
+        items={getActorNames}
+        itemLabel={(repoId, value) =>
+          getActor(repoId, value)
+            .then((actor) => actor.name)
+            .catch(() => "")
+        }
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -566,34 +680,8 @@ function SearchParamField({
         label={t("log.actorType")}
         searchParams={searchParams}
         searchParamName="actorType"
-        items={getAllLogActorTypes}
+        items={getAllActorTypes}
         itemLabel={(value) => logTranslator("actor_type", value)}
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
-  if (name === "actorName") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.actorName")}
-        searchParams={searchParams}
-        searchParamName="actorName"
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
-  if (name === "actorRef") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.actorRef")}
-        searchParams={searchParams}
-        searchParamName="actorRef"
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -645,21 +733,8 @@ function SearchParamField({
         label={t("log.resourceType")}
         searchParams={searchParams}
         searchParamName="resourceType"
-        items={getAllLogResourceTypes}
+        items={getAllResourceTypes}
         itemLabel={(value) => logTranslator("resource_type", value)}
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
-  if (name === "resourceName") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.resourceName")}
-        searchParams={searchParams}
-        searchParamName="resourceName"
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -669,10 +744,16 @@ function SearchParamField({
 
   if (name === "resourceRef") {
     return (
-      <TextInputSearchParamField
-        label={t("log.resourceRef")}
+      <SearchableSearchParamField
+        label={t("log.resource")}
         searchParams={searchParams}
         searchParamName="resourceRef"
+        items={getResourceNames}
+        itemLabel={(repoId, value) =>
+          getResource(repoId, value)
+            .then((resource) => resource.name)
+            .catch(() => "")
+        }
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -724,21 +805,8 @@ function SearchParamField({
         label={t("log.tagType")}
         searchParams={searchParams}
         searchParamName="tagType"
-        items={getAllLogTagTypes}
+        items={getAllTagTypes}
         itemLabel={(value) => logTranslator("tag_type", value)}
-        openedByDefault={openedByDefault}
-        onChange={onChange}
-        onRemove={onRemove}
-      />
-    );
-  }
-
-  if (name === "tagName") {
-    return (
-      <TextInputSearchParamField
-        label={t("log.tagName")}
-        searchParams={searchParams}
-        searchParamName="tagName"
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -748,10 +816,16 @@ function SearchParamField({
 
   if (name === "tagRef") {
     return (
-      <TextInputSearchParamField
-        label={t("log.tagRef")}
+      <SearchableSearchParamField
+        label={t("log.tag")}
         searchParams={searchParams}
         searchParamName="tagRef"
+        items={getTagNames}
+        itemLabel={(repoId, value) =>
+          getTag(repoId, value)
+            .then((tag) => tag.name ?? "")
+            .catch(() => "")
+        }
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
@@ -961,9 +1035,6 @@ function searchParamsToSearchParamNames(
   if (searchParams.actorType) {
     names.add("actorType");
   }
-  if (searchParams.actorName) {
-    names.add("actorName");
-  }
   searchParams.actorExtra!.forEach((_, name) => {
     names.add("actor." + name);
   });
@@ -980,9 +1051,6 @@ function searchParamsToSearchParamNames(
   if (searchParams.resourceType) {
     names.add("resourceType");
   }
-  if (searchParams.resourceName) {
-    names.add("resourceName");
-  }
   searchParams.resourceExtra.forEach((_, name) => {
     names.add("resource." + name);
   });
@@ -998,9 +1066,6 @@ function searchParamsToSearchParamNames(
   }
   if (searchParams.tagType) {
     names.add("tagType");
-  }
-  if (searchParams.tagName) {
-    names.add("tagName");
   }
 
   // Attachment

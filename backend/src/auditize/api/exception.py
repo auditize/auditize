@@ -9,9 +9,9 @@ from auditize.exceptions import (
     AuditizeException,
     AuthenticationFailure,
     ConstraintViolation,
+    NotFoundError,
     PayloadTooLarge,
     PermissionDenied,
-    UnknownModelException,
     ValidationError,
 )
 from auditize.i18n import Lang, t
@@ -127,7 +127,7 @@ _EXCEPTION_RESPONSES = {
         ApiErrorResponse,
     ),
     PermissionDenied: (status.HTTP_403_FORBIDDEN, "Forbidden", ApiErrorResponse),
-    UnknownModelException: (status.HTTP_404_NOT_FOUND, "Not found", ApiErrorResponse),
+    NotFoundError: (status.HTTP_404_NOT_FOUND, "Not found", ApiErrorResponse),
     ConstraintViolation: (
         status.HTTP_409_CONFLICT,
         "Resource already exists",

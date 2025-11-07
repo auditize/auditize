@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from auditize.api.models.cursor_pagination import CursorPaginationParams
 from auditize.api.models.page_pagination import PagePaginationParams
 
 
@@ -12,4 +13,8 @@ class SearchParams(BaseModel):
 
 
 class PagePaginatedSearchParams(PagePaginationParams, SearchParams):
+    pass
+
+
+class CursorPaginatedSearchParams(CursorPaginationParams, SearchParams):
     pass

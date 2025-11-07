@@ -13,8 +13,8 @@ from auditize.auth.jwt import get_access_token_data, get_user_email_from_session
 from auditize.dependencies import get_db_session
 from auditize.exceptions import (
     AuthenticationFailure,
+    NotFoundError,
     PermissionDenied,
-    UnknownModelException,
 )
 from auditize.permissions.assertions import (
     PermissionAssertion,
@@ -93,7 +93,7 @@ def _get_authorization_bearer(request: Request) -> str | None:
 async def authenticate_apikey(session: AsyncSession, key: str) -> Authenticated:
     try:
         apikey = await get_apikey_by_key(session, key)
-    except UnknownModelException:
+    except NotFoundError:
         raise AuthenticationFailure("Invalid API key")
 
     return Authenticated.from_apikey(apikey)
@@ -106,7 +106,7 @@ async def authenticate_access_token(
     apikey_id, permissions = get_access_token_data(jwt_token)
     try:
         apikey = await get_apikey(session, apikey_id)
-    except UnknownModelException:
+    except NotFoundError:
         raise AuthenticationFailure(
             "Invalid API key corresponding to access token is no longer valid"
         )
@@ -135,7 +135,7 @@ async def authenticate_user(session: AsyncSession, request: Request) -> Authenti
     user_email = get_user_email_from_session_token(session_token)
     try:
         user = await get_user_by_email(session, user_email)
-    except UnknownModelException:
+    except NotFoundError:
         raise AuthenticationFailure("User does no longer exist")
 
     # to be used by the lang detection mechanism

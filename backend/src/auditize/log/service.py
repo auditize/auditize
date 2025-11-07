@@ -1,5 +1,4 @@
 import base64
-import json
 import uuid
 from datetime import datetime, timedelta
 from functools import partialmethod
@@ -9,7 +8,7 @@ from uuid import UUID
 import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
-from elasticsearch.exceptions import NotFoundError
+from elasticsearch import NotFoundError as ElasticNotFoundError
 from sqlalchemy import and_, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,8 +23,8 @@ from auditize.database.sql.service import get_sql_model
 from auditize.exceptions import (
     ConstraintViolation,
     InvalidPaginationCursor,
+    NotFoundError,
     PermissionDenied,
-    UnknownModelException,
 )
 from auditize.helpers.datetime import now
 from auditize.log.models import Log, LogCreate, LogImport, LogSearchParams
@@ -184,8 +183,8 @@ class LogService:
                 },
                 refresh=self._refresh,
             )
-        except NotFoundError:
-            raise UnknownModelException()
+        except ElasticNotFoundError:
+            raise NotFoundError()
 
     @staticmethod
     def _authorized_entity_filter(authorized_entities: set[str]):
@@ -208,7 +207,7 @@ class LogService:
             authorized_entities
             and not set(entity.ref for entity in log.entity_path) & authorized_entities
         ):
-            raise UnknownModelException()
+            raise NotFoundError()
 
     async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
         try:
@@ -217,8 +216,8 @@ class LogService:
                 id=str(log_id),
                 source_excludes=["attachments.data"],
             )
-        except NotFoundError:
-            raise UnknownModelException()
+        except ElasticNotFoundError:
+            raise NotFoundError()
 
         log = Log.model_validate({**resp["_source"], "id": log_id})
         self._check_log_visibility(log, authorized_entities)
@@ -233,8 +232,8 @@ class LogService:
         # array index unless adding an extra metadata such as "index" to the stored document
         try:
             resp = await self.es.get(index=self.index, id=str(log_id))
-        except NotFoundError:
-            raise UnknownModelException()
+        except ElasticNotFoundError:
+            raise NotFoundError()
 
         self._check_log_visibility(
             Log.model_validate({**resp["_source"], "id": log_id}), authorized_entities
@@ -243,7 +242,7 @@ class LogService:
         try:
             attachment = resp["_source"]["attachments"][attachment_idx]
         except IndexError:
-            raise UnknownModelException()
+            raise NotFoundError()
 
         return Log.Attachment.model_validate(
             {**attachment, "data": base64.b64decode(attachment["data"])}
@@ -420,10 +419,13 @@ class LogService:
 
         return logs, next_cursor
 
-    async def _get_sorted_log(self, sort) -> Log | None:
+    async def _get_sorted_log(
+        self, sort, *, search_params: LogSearchParams | None = None
+    ) -> Log | None:
+        filter = self._prepare_es_query(search_params) if search_params else []
         resp = await self.es.search(
             index=self.index,
-            query={"match_all": {}},
+            query={"bool": {"filter": filter}},
             sort=sort,
             size=1,
         )
@@ -435,8 +437,13 @@ class LogService:
     async def get_oldest_log(self) -> Log | None:
         return await self._get_sorted_log([{"saved_at": "asc", "log_id": "asc"}])
 
-    async def get_newest_log(self) -> Log | None:
-        return await self._get_sorted_log([{"saved_at": "desc", "log_id": "desc"}])
+    async def get_newest_log(
+        self, search_params: LogSearchParams | None = None
+    ) -> Log | None:
+        return await self._get_sorted_log(
+            sort=[{"saved_at": "desc", "log_id": "desc"}],
+            search_params=search_params,
+        )
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(
@@ -449,22 +456,25 @@ class LogService:
         resp = await self.es.indices.stats(index=self.index)
         return resp["_all"]["primaries"]["store"]["size_in_bytes"]
 
-    async def _get_paginated_agg(
+    async def _get_paginated_agg_multi_fields(
         self,
         *,
         nested: str = None,
-        field: str,
+        fields: list[str],
         query: dict = None,
         limit: int,
         pagination_cursor: str | None,
-    ) -> tuple[list[str], str]:
+    ) -> tuple[list[list[str]], str]:
         after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
 
         aggregations = {
             "group_by": {
                 "composite": {
                     "size": limit,
-                    "sources": [{field: {"terms": {"field": field, "order": "asc"}}}],
+                    "sources": [
+                        {field: {"terms": {"field": field, "order": "asc"}}}
+                        for field in fields
+                    ],
                     **({"after": after} if after else {}),
                 }
             },
@@ -496,12 +506,33 @@ class LogService:
         else:
             next_cursor = None
 
-        values = [bucket["key"][field] for bucket in group_by_result["buckets"]]
+        values = [
+            [bucket["key"][field] for field in fields]
+            for bucket in group_by_result["buckets"]
+        ]
 
         return values, next_cursor
 
+    async def _get_paginated_agg_single_field(
+        self,
+        *,
+        nested: str = None,
+        field: str,
+        query: dict = None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str]:
+        values, next_cursor = await self._get_paginated_agg_multi_fields(
+            nested=nested,
+            fields=[field],
+            query=query,
+            limit=limit,
+            pagination_cursor=pagination_cursor,
+        )
+        return [value[0] for value in values], next_cursor
+
     get_log_action_categories = partialmethod(
-        _get_paginated_agg, field="action.category"
+        _get_paginated_agg_single_field, field="action.category"
     )
 
     async def get_log_action_types(
@@ -510,7 +541,7 @@ class LogService:
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str]:
-        return await self._get_paginated_agg(
+        return await self._get_paginated_agg_single_field(
             field="action.type",
             query=(
                 {"bool": {"filter": {"term": {"action.category": action_category}}}}
@@ -522,36 +553,110 @@ class LogService:
         )
 
     get_log_tag_types = partialmethod(
-        _get_paginated_agg, nested="tags", field="tags.type"
+        _get_paginated_agg_single_field, nested="tags", field="tags.type"
     )
 
-    get_log_actor_types = partialmethod(_get_paginated_agg, field="actor.type")
+    get_log_actor_types = partialmethod(
+        _get_paginated_agg_single_field, field="actor.type"
+    )
 
     get_log_actor_extra_fields = partialmethod(
-        _get_paginated_agg, nested="actor.extra", field="actor.extra.name"
+        _get_paginated_agg_single_field, nested="actor.extra", field="actor.extra.name"
     )
 
-    get_log_resource_types = partialmethod(_get_paginated_agg, field="resource.type")
+    get_log_resource_types = partialmethod(
+        _get_paginated_agg_single_field, field="resource.type"
+    )
 
     get_log_resource_extra_fields = partialmethod(
-        _get_paginated_agg, nested="resource.extra", field="resource.extra.name"
+        _get_paginated_agg_single_field,
+        nested="resource.extra",
+        field="resource.extra.name",
     )
 
     get_log_source_fields = partialmethod(
-        _get_paginated_agg, nested="source", field="source.name"
+        _get_paginated_agg_single_field, nested="source", field="source.name"
     )
 
     get_log_detail_fields = partialmethod(
-        _get_paginated_agg, nested="details", field="details.name"
+        _get_paginated_agg_single_field, nested="details", field="details.name"
     )
 
     get_log_attachment_types = partialmethod(
-        _get_paginated_agg, nested="attachments", field="attachments.type"
+        _get_paginated_agg_single_field, nested="attachments", field="attachments.type"
     )
 
     get_log_attachment_mime_types = partialmethod(
-        _get_paginated_agg, nested="attachments", field="attachments.mime_type"
+        _get_paginated_agg_single_field,
+        nested="attachments",
+        field="attachments.mime_type",
     )
+
+    async def _get_aggregated_name_ref_pairs(
+        self,
+        *,
+        prefix: str,
+        nested: bool = False,
+        query: str | None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[tuple[str, str]], str]:
+        query_for_agg = None
+        if query:
+            if nested:
+                query_for_agg = {
+                    "nested": {
+                        "path": prefix,
+                        "query": {
+                            "bool": {
+                                "filter": [
+                                    {"wildcard": {f"{prefix}.name": f"*{query}*"}}
+                                ]
+                            }
+                        },
+                    }
+                }
+            else:
+                query_for_agg = {"wildcard": {f"{prefix}.name": f"*{query}*"}}
+
+        values, next_cursor = await self._get_paginated_agg_multi_fields(
+            nested=prefix if nested else None,
+            query=query_for_agg,
+            fields=[f"{prefix}.name.keyword", f"{prefix}.ref"],
+            limit=limit,
+            pagination_cursor=pagination_cursor,
+        )
+        return [tuple(value) for value in values], next_cursor
+
+    get_log_actor_names = partialmethod(_get_aggregated_name_ref_pairs, prefix="actor")
+
+    get_log_resource_names = partialmethod(
+        _get_aggregated_name_ref_pairs, prefix="resource"
+    )
+
+    get_log_tag_names = partialmethod(
+        _get_aggregated_name_ref_pairs, prefix="tags", nested=True
+    )
+
+    async def get_log_actor(self, actor_ref: str) -> Log.Actor:
+        log = await self.get_newest_log(LogSearchParams(actor_ref=actor_ref))
+        if not log or not log.actor:
+            raise NotFoundError(f"Actor {actor_ref!r} not found")
+        return log.actor
+
+    async def get_log_resource(self, resource_ref: str) -> Log.Resource:
+        log = await self.get_newest_log(LogSearchParams(resource_ref=resource_ref))
+        if not log or not log.resource:
+            raise NotFoundError(f"Resource {resource_ref!r} not found")
+        return log.resource
+
+    async def get_log_tag(self, tag_ref: str) -> Log.Tag:
+        log = await self.get_newest_log(LogSearchParams(tag_ref=tag_ref))
+        if log:
+            for tag in log.tags:
+                if tag.ref == tag_ref:
+                    return tag
+        raise NotFoundError(f"Tag {tag_ref!r} not found")
 
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """
@@ -790,7 +895,7 @@ class LogService:
                 entity_ref_hierarchy & authorized_entities
                 or entity_ref in authorized_entities_hierarchy
             ):
-                raise UnknownModelException()
+                raise NotFoundError()
         return await self._get_log_entity(entity_ref)
 
     async def create_log_db(self):

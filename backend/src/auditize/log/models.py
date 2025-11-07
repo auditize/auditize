@@ -410,6 +410,20 @@ class NameListResponse(CursorPaginatedResponse[str, NameData]):
     )
 
 
+class NameRefPairData(BaseModel):
+    name: str
+    ref: str
+
+
+class NameRefPairListResponse(
+    CursorPaginatedResponse[tuple[str, str], NameRefPairData]
+):
+    @classmethod
+    def build_item(cls, name_ref_pair: tuple[str, str]) -> NameRefPairData:
+        name, ref = name_ref_pair
+        return NameRefPairData(name=name, ref=ref)
+
+
 class LogEntityResponse(_EntityPathNodeData):
     parent_entity_ref: str | None = Field(
         description="The ID of the parent entity. It is null for top-level entities.",
@@ -428,6 +442,18 @@ class LogEntityResponse(_EntityPathNodeData):
             }
         }
     )
+
+
+class LogActorResponse(_ActorOutputData):
+    pass
+
+
+class LogResourceResponse(_ResourceOutputData):
+    pass
+
+
+class LogTagResponse(_TagOutputData):
+    pass
 
 
 class LogEntityListParams(CursorPaginationParams):

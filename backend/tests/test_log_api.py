@@ -1778,7 +1778,7 @@ async def _test_get_log_entity_visibility(
     async with apikey.client() as client:
         if expected_status_code == 200:
             await client.assert_get_ok(
-                f"/repos/{repo.id}/logs/entities/ref:{entity_ref}",
+                f"/repos/{repo.id}/logs/entities/{entity_ref}",
                 expected_json={
                     "ref": entity_ref,
                     "name": entity_ref,
@@ -1788,7 +1788,7 @@ async def _test_get_log_entity_visibility(
             )
         else:
             await client.assert_get(
-                f"/repos/{repo.id}/logs/entities/ref:{entity_ref}",
+                f"/repos/{repo.id}/logs/entities/{entity_ref}",
                 expected_status_code=expected_status_code,
             )
 
@@ -1847,7 +1847,7 @@ async def test_get_log_entity_multiple_repos(
     # and Entity B is only visible in Repo 2
 
     await superadmin_client.assert_get_ok(
-        f"/repos/{repo1.id}/logs/entities/ref:Entity A",
+        f"/repos/{repo1.id}/logs/entities/Entity A",
         expected_json={
             "ref": "Entity A",
             "name": "Entity A",
@@ -1856,10 +1856,10 @@ async def test_get_log_entity_multiple_repos(
         },
     )
     await superadmin_client.assert_get_not_found(
-        f"/repos/{repo2.id}/logs/entities/ref:Entity A",
+        f"/repos/{repo2.id}/logs/entities/Entity A",
     )
     await superadmin_client.assert_get_ok(
-        f"/repos/{repo2.id}/logs/entities/ref:Entity B",
+        f"/repos/{repo2.id}/logs/entities/Entity B",
         expected_json={
             "ref": "Entity B",
             "name": "Entity B",
@@ -1868,7 +1868,7 @@ async def test_get_log_entity_multiple_repos(
         },
     )
     await superadmin_client.assert_get_not_found(
-        f"/repos/{repo1.id}/logs/entities/ref:Entity B",
+        f"/repos/{repo1.id}/logs/entities/Entity B",
     )
 
 
@@ -2212,6 +2212,336 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
         return [f"text/plain{val}" for val in values]
 
 
+class _ConsolidatedNameRefPairsTest:
+    @property
+    def data_type(self) -> str:
+        raise NotImplementedError()
+
+    def get_path(self, repo_id: str) -> str:
+        return f"/repos/{repo_id}/logs/{self.data_type}s/names"
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        # A: create 3 logs with the same ref but different names
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data A", "ref": "data:A", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data A", "ref": "data:A", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data A bis", "ref": "data:A", "type": "data"},
+            },
+        )
+
+        # B: create a single log
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data B", "ref": "data:B", "type": "data"},
+            },
+        )
+
+        # C: create two logs with the same name but different refs
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "Data C", "ref": "data:C", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {
+                    "name": "Data C bis",
+                    "ref": "data:C:bis",
+                    "type": "data",
+                },
+            },
+        )
+
+        # Assert that data names and refs are correctly returned
+        expected_items = [
+            {"name": "Data A", "ref": "data:A"},
+            {"name": "Data A bis", "ref": "data:A"},
+            {"name": "Data B", "ref": "data:B"},
+            {"name": "Data C", "ref": "data:C"},
+            {"name": "Data C bis", "ref": "data:C:bis"},
+        ]
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id),
+            items=expected_items,
+        )
+
+    async def test_query(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "foo", "ref": "A", "type": "data"},
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                self.data_type: {"name": "bar", "ref": "B", "type": "data"},
+            },
+        )
+        await log_read_client.assert_get_ok(
+            self.get_path(repo.id),
+            params={"q": "oo"},
+            expected_json={
+                "items": [
+                    {"name": "foo", "ref": "A"},
+                ],
+                "pagination": {"next_cursor": None},
+            },
+        )
+
+    async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await do_test_cursor_pagination_empty_data(
+            log_read_client, self.get_path(repo.id)
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper):
+        await log_read_client.assert_get_not_found(self.get_path(UNKNOWN_UUID))
+
+    async def test_forbidden(
+        self, no_permission_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await no_permission_client.assert_get_forbidden(self.get_path(repo.id))
+
+
+class TestLogActorNames(_ConsolidatedNameRefPairsTest):
+    data_type = "actor"
+
+
+class TestLogResourceNames(_ConsolidatedNameRefPairsTest):
+    data_type = "resource"
+
+
+class TestLogTagNames(_ConsolidatedNameRefPairsTest):
+    data_type = "tag"
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        # A: create 3 logs with the same ref but different names
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "Data A", "ref": "data:A", "type": "data"}],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "Data A", "ref": "data:A", "type": "data"}],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "Data A bis", "ref": "data:A", "type": "data"}],
+            },
+        )
+
+        # B: create a single log
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {"name": "Data B", "ref": "data:B", "type": "data"},
+                    {"name": "Data A", "ref": "data:A", "type": "data"},
+                ],
+            },
+        )
+
+        # C: create two logs with the same name but different refs
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {"name": "Data C", "ref": "data:C", "type": "data"},
+                    {"name": "Data B", "ref": "data:B", "type": "data"},
+                    {"name": "Data A", "ref": "data:A", "type": "data"},
+                ],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {"name": "Data C bis", "ref": "data:C:bis", "type": "data"},
+                    {"name": "Data B", "ref": "data:B", "type": "data"},
+                    {"name": "Data A", "ref": "data:A", "type": "data"},
+                ],
+            },
+        )
+
+        # Assert that data names and refs are correctly returned
+        expected_items = [
+            {"name": "Data A", "ref": "data:A"},
+            {"name": "Data A bis", "ref": "data:A"},
+            {"name": "Data B", "ref": "data:B"},
+            {"name": "Data C", "ref": "data:C"},
+            {"name": "Data C bis", "ref": "data:C:bis"},
+        ]
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id),
+            items=expected_items,
+        )
+
+    async def test_query(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "foo", "ref": "A", "type": "data"}],
+            },
+        )
+        await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [{"name": "bar", "ref": "B", "type": "data"}],
+            },
+        )
+        await log_read_client.assert_get_ok(
+            self.get_path(repo.id),
+            params={"q": "oo"},
+            expected_json={
+                "items": [
+                    {"name": "foo", "ref": "A"},
+                ],
+                "pagination": {"next_cursor": None},
+            },
+        )
+
+
+class _TestGetSubElementByRef:
+    def get_path(self, repo_id: str, ref: str) -> str:
+        raise NotImplementedError
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        raise NotImplementedError
+
+    def build_expected_json(self, *, ref: str) -> dict:
+        raise NotImplementedError
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await self.create_log(superadmin_client, repo, ref="A")
+        await log_read_client.assert_get_ok(
+            self.get_path(repo.id, "A"),
+            expected_json=self.build_expected_json(ref="A"),
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await log_read_client.assert_get_not_found(self.get_path(repo.id, "A"))
+
+    async def test_forbidden(
+        self,
+        superadmin_client: HttpTestHelper,
+        no_permission_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        await self.create_log(superadmin_client, repo, ref="A")
+        await no_permission_client.assert_get_forbidden(self.get_path(repo.id, "A"))
+
+
+class TestLogActor(_TestGetSubElementByRef):
+    def get_path(self, repo_id: str, ref: str) -> str:
+        return f"/repos/{repo_id}/logs/actors/{ref}"
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"actor": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
+        )
+
+    def build_expected_json(self, *, ref: str) -> dict:
+        return {
+            "ref": ref,
+            "name": f"Name of {ref}",
+            "type": "data",
+            "extra": [],
+        }
+
+
+class TestLogResource(_TestGetSubElementByRef):
+    def get_path(self, repo_id: str, ref: str) -> str:
+        return f"/repos/{repo_id}/logs/resources/{ref}"
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"resource": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
+        )
+
+    def build_expected_json(self, *, ref: str) -> dict:
+        return {
+            "ref": ref,
+            "name": f"Name of {ref}",
+            "type": "data",
+            "extra": [],
+        }
+
+
+class TestLogTag(_TestGetSubElementByRef):
+    def get_path(self, repo_id: str, ref: str) -> str:
+        return f"/repos/{repo_id}/logs/tags/{ref}"
+
+    async def create_log(
+        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
+    ):
+        await repo.create_log_with(
+            superadmin_client,
+            {"tags": [{"ref": ref, "name": f"Name of {ref}", "type": "data"}]},
+        )
+
+    def build_expected_json(self, *, ref: str) -> dict:
+        return {
+            "ref": ref,
+            "name": f"Name of {ref}",
+            "type": "data",
+        }
+
+
 async def test_log_entity_consolidation_rename_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -2234,7 +2564,7 @@ async def test_log_entity_consolidation_rename_entity(
         },
     )
     await superadmin_client.assert_get_ok(
-        f"/repos/{repo.id}/logs/entities/ref:A",
+        f"/repos/{repo.id}/logs/entities/A",
         expected_json={
             "ref": "A",
             "name": "Name of A",
@@ -2243,7 +2573,7 @@ async def test_log_entity_consolidation_rename_entity(
         },
     )
     await superadmin_client.assert_get_ok(
-        f"/repos/{repo.id}/logs/entities/ref:AA",
+        f"/repos/{repo.id}/logs/entities/AA",
         expected_json={
             "ref": "AA",
             "name": "New name of AA",
@@ -2420,7 +2750,7 @@ async def test_get_log_entity(
     )
 
     await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/entities/ref:customer",
+        f"/repos/{repo.id}/logs/entities/customer",
         expected_json={
             "ref": "customer",
             "name": "Customer",
@@ -2430,7 +2760,7 @@ async def test_get_log_entity(
     )
 
     await log_read_client.assert_get(
-        f"/repos/{repo.id}/logs/entities/ref:entity",
+        f"/repos/{repo.id}/logs/entities/entity",
         expected_json={
             "ref": "entity",
             "name": "Entity",
@@ -2444,7 +2774,7 @@ async def test_get_log_entity_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(
-        f"/repos/{repo.id}/logs/entities/ref:some_value"
+        f"/repos/{repo.id}/logs/entities/some_value"
     )
 
 
@@ -2469,7 +2799,7 @@ async def test_get_log_entity_not_enabled_repo_status(
     )
     await repo.update_status(superadmin_client, repo_status)
     await superadmin_client.assert_get(
-        f"/repos/{repo.id}/logs/entities/ref:customer", expected_status_code=status_code
+        f"/repos/{repo.id}/logs/entities/customer", expected_status_code=status_code
     )
 
 

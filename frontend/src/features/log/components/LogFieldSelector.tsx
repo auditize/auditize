@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  getAllLogActorCustomFields,
-  getAllLogDetailFields,
-  getAllLogResourceCustomFields,
-  getAllLogSourceFields,
+  getAllActorCustomFields,
+  getAllDetailFields,
+  getAllResourceCustomFields,
+  getAllSourceFields,
 } from "../api";
 import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
@@ -19,22 +18,22 @@ export function useLogFields(
   const logTranslator = useLogTranslator(repoId);
   const actorCustomFieldListQuery = useQuery({
     queryKey: ["logActorCustomFields", repoId],
-    queryFn: () => getAllLogActorCustomFields(repoId),
+    queryFn: () => getAllActorCustomFields(repoId),
     enabled: !!repoId,
   });
   const resourceCustomFieldListQuery = useQuery({
     queryKey: ["logResourceCustomFields", repoId],
-    queryFn: () => getAllLogResourceCustomFields(repoId),
+    queryFn: () => getAllResourceCustomFields(repoId),
     enabled: !!repoId,
   });
   const detailFieldListQuery = useQuery({
     queryKey: ["logDetailFields", repoId],
-    queryFn: () => getAllLogDetailFields(repoId),
+    queryFn: () => getAllDetailFields(repoId),
     enabled: !!repoId,
   });
   const sourceFieldListQuery = useQuery({
     queryKey: ["logSourceFields", repoId],
-    queryFn: () => getAllLogSourceFields(repoId),
+    queryFn: () => getAllSourceFields(repoId),
     enabled: !!repoId,
   });
   const logTranslationQuery = useLogTranslationQuery(repoId);
@@ -65,7 +64,9 @@ export function useLogFields(
             ? [_({ value: "actor", label: t("log.actor") + " *" })]
             : []),
           _({ value: "actorType", label: t("log.actorType") }),
-          _({ value: "actorName", label: t("log.actorName") }),
+          ...(mode === "columns"
+            ? [_({ value: "actorName", label: t("log.actorName") })]
+            : []),
           _({ value: "actorRef", label: t("log.actorRef") }),
           ...(actorCustomFieldListQuery.data ?? []).map((field) =>
             _({
@@ -94,7 +95,9 @@ export function useLogFields(
             ? [_({ value: "resource", label: t("log.resource") + " *" })]
             : []),
           _({ value: "resourceType", label: t("log.resourceType") }),
-          _({ value: "resourceName", label: t("log.resourceName") }),
+          ...(mode === "columns"
+            ? [_({ value: "resourceName", label: t("log.resourceName") })]
+            : []),
           _({ value: "resourceRef", label: t("log.resourceRef") }),
           ...(resourceCustomFieldListQuery.data ?? []).map((field) =>
             _({
@@ -123,7 +126,9 @@ export function useLogFields(
             ? [_({ value: "tag", label: t("log.tag") + " *" })]
             : []),
           _({ value: "tagType", label: t("log.tagType") }),
-          _({ value: "tagName", label: t("log.tagName") }),
+          ...(mode === "columns"
+            ? [_({ value: "tagName", label: t("log.tagName") })]
+            : []),
           _({ value: "tagRef", label: t("log.tagRef") }),
         ],
       },

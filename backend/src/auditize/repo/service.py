@@ -18,7 +18,7 @@ from auditize.database.sql.service import (
 from auditize.exceptions import (
     AuditizeException,
     ConstraintViolation,
-    UnknownModelException,
+    NotFoundError,
     ValidationError,
 )
 from auditize.i18n.lang import Lang
@@ -242,7 +242,7 @@ async def get_repo_translation(
         return await get_log_i18n_profile_translation(
             session, repo.log_i18n_profile_id, lang
         )
-    except UnknownModelException:  # NB: this should not happen
+    except NotFoundError:  # NB: this should not happen
         return LogLabels()
 
 
@@ -252,7 +252,7 @@ async def ensure_repos_in_permissions_exist(
     for repo_id in permissions.logs.get_repos():
         try:
             await get_repo(session, repo_id)
-        except UnknownModelException:
+        except NotFoundError:
             raise ValidationError(
                 f"Repository {repo_id} cannot be assigned in log permissions as it does not exist"
             )
