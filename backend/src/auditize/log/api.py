@@ -99,8 +99,8 @@ async def _get_aggregated_name_ref_pairs(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/actions/types",
-    summary="List log action types",
+    "/repos/{repo_id}/logs/aggs/action-types",
+    summary="Get aggregated list of action types",
     description="Requires `log:read` permission.",
     operation_id="list_log_action_types",
     responses=error_responses(
@@ -127,8 +127,8 @@ async def get_log_action_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/actions/categories",
-    summary="List log action categories",
+    "/repos/{repo_id}/logs/aggs/action-categories",
+    summary="Get aggregated list of action categories",
     description="Requires `log:read` permission.",
     operation_id="list_log_action_categories",
     tags=["log"],
@@ -149,8 +149,8 @@ async def get_log_action_categories(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/actors/types",
-    summary="List log actor types",
+    "/repos/{repo_id}/logs/aggs/actor-types",
+    summary="Get aggregated list of actor types",
     description="Requires `log:read` permission.",
     operation_id="list_log_actor_types",
     tags=["log"],
@@ -171,8 +171,8 @@ async def get_log_actor_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/actors/extras",
-    summary="List log actor custom field names",
+    "/repos/{repo_id}/logs/aggs/actor-extra-names",
+    summary="Get aggregated list of actor extra names",
     description="Requires `log:read` permission.",
     operation_id="list_log_actor_extras",
     tags=["log"],
@@ -193,8 +193,8 @@ async def get_log_actor_extras(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/resources/types",
-    summary="List log resource types",
+    "/repos/{repo_id}/logs/aggs/resource-types",
+    summary="Get aggregated list of resource types",
     description="Requires `log:read` permission.",
     operation_id="list_log_resource_types",
     tags=["log"],
@@ -215,8 +215,8 @@ async def get_log_resource_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/resources/extras",
-    summary="List log resource custom field names",
+    "/repos/{repo_id}/logs/aggs/resource-extra-names",
+    summary="Get aggregated list of resource extra names",
     description="Requires `log:read` permission.",
     operation_id="list_log_resource_extras",
     tags=["log"],
@@ -237,8 +237,8 @@ async def get_log_resource_extras(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/tags/types",
-    summary="List log tag types",
+    "/repos/{repo_id}/logs/aggs/tag-types",
+    summary="Get aggregated list of tag types",
     description="Requires `log:read` permission.",
     operation_id="list_log_tag_types",
     tags=["log"],
@@ -259,8 +259,8 @@ async def get_log_tag_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/sources",
-    summary="List log source field names",
+    "/repos/{repo_id}/logs/aggs/source-names",
+    summary="Get aggregated list of source names",
     description="Requires `log:read` permission.",
     operation_id="list_log_source_fields",
     tags=["log"],
@@ -281,8 +281,8 @@ async def get_log_source_fields(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/details",
-    summary="List log detail field names",
+    "/repos/{repo_id}/logs/aggs/detail-names",
+    summary="Get aggregated list of detail names",
     description="Requires `log:read` permission.",
     operation_id="list_log_detail_fields",
     tags=["log"],
@@ -303,8 +303,8 @@ async def get_log_detail_fields(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/attachments/types",
-    summary="List log attachment types",
+    "/repos/{repo_id}/logs/aggs/attachment-types",
+    summary="Get aggregated list of attachment types",
     description="Requires `log:read` permission.",
     operation_id="list_log_attachment_types",
     tags=["log"],
@@ -325,8 +325,8 @@ async def get_log_attachment_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/attachments/mime-types",
-    summary="List log attachment MIME types",
+    "/repos/{repo_id}/logs/aggs/attachment-mime-types",
+    summary="Get aggregated list of attachment MIME types",
     description="Requires `log:read` permission.",
     operation_id="list_log_attachment_mime_types",
     tags=["log"],
@@ -347,8 +347,8 @@ async def get_log_attachment_mime_types(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/actors/names",
-    summary="Get aggregated list of log actor names and refs",
+    "/repos/{repo_id}/logs/aggs/actor-names",
+    summary="Get aggregated list of actor names and refs",
     description="Requires `log:read` permission.",
     operation_id="list_log_actor_names",
     tags=["log"],
@@ -366,8 +366,8 @@ async def get_log_actor_names(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/resources/names",
-    summary="Get aggregated list of log resource names and refs",
+    "/repos/{repo_id}/logs/aggs/resource-names",
+    summary="Get aggregated list of resource names and refs",
     description="Requires `log:read` permission.",
     operation_id="list_log_resource_names",
     tags=["log"],
@@ -385,8 +385,8 @@ async def get_log_resource_names(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/tags/names",
-    summary="Get aggregated list of log tag names and refs",
+    "/repos/{repo_id}/logs/aggs/tag-names",
+    summary="Get aggregated list of tag names and refs",
     description="Requires `log:read` permission.",
     operation_id="list_log_tag_names",
     tags=["log"],

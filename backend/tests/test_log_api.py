@@ -1878,7 +1878,7 @@ class _ConsolidatedDataTest:
         raise NotImplementedError()
 
     def get_path(self, repo_id: str) -> str:
-        return f"/repos/{repo_id}/logs/{self.relative_path}"
+        return f"/repos/{repo_id}/logs/aggs/{self.relative_path}"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -1916,7 +1916,7 @@ class _ConsolidatedDataTest:
 class TestLogActionCategories(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "actions/categories"
+        return "action-categories"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -1946,7 +1946,7 @@ class TestLogActionCategories(_ConsolidatedDataTest):
 class TestLogActionTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "actions/types"
+        return "action-types"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -1984,7 +1984,7 @@ class TestLogActionTypes(_ConsolidatedDataTest):
 
         # test category parameter
         await log_read_client.assert_get(
-            f"/repos/{repo.id}/logs/actions/types?category=category-2",
+            f"/repos/{repo.id}/logs/aggs/action-types?category=category-2",
             expected_json={
                 "items": [{"name": f"type-{2}"}],
                 "pagination": {"next_cursor": None},
@@ -1995,7 +1995,7 @@ class TestLogActionTypes(_ConsolidatedDataTest):
 class TestLogActorTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "actors/types"
+        return "actor-types"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2019,7 +2019,7 @@ class TestLogActorTypes(_ConsolidatedDataTest):
 class TestLogActorExtras(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "actors/extras"
+        return "actor-extra-names"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2049,7 +2049,7 @@ class TestLogActorExtras(_ConsolidatedDataTest):
 class TestLogResourceTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "resources/types"
+        return "resource-types"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2073,7 +2073,7 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
 class TestLogResourceExtras(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "resources/extras"
+        return "resource-extra-names"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2103,7 +2103,7 @@ class TestLogResourceExtras(_ConsolidatedDataTest):
 class TestLogTagTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "tags/types"
+        return "tag-types"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2135,7 +2135,7 @@ class TestLogTagTypes(_ConsolidatedDataTest):
 class TestLogSourceFields(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "sources"
+        return "source-names"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[str]
@@ -2161,7 +2161,7 @@ class TestLogSourceFields(_ConsolidatedDataTest):
 class TestLogDetailFields(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "details"
+        return "detail-names"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2187,7 +2187,7 @@ class TestLogDetailFields(_ConsolidatedDataTest):
 class TestLogAttachmentTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "attachments/types"
+        return "attachment-types"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2201,7 +2201,7 @@ class TestLogAttachmentTypes(_ConsolidatedDataTest):
 class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
-        return "attachments/mime-types"
+        return "attachment-mime-types"
 
     async def create_consolidated_data(
         self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
@@ -2218,7 +2218,7 @@ class _ConsolidatedNameRefPairsTest:
         raise NotImplementedError()
 
     def get_path(self, repo_id: str) -> str:
-        return f"/repos/{repo_id}/logs/{self.data_type}s/names"
+        return f"/repos/{repo_id}/logs/aggs/{self.data_type}-names"
 
     async def test_nominal(
         self,
@@ -2623,17 +2623,17 @@ async def test_log_entity_consolidation_move_entity(
     "path",
     [
         "/logs",
-        "/logs/actions/categories",
-        "/logs/actions/types",
-        "/logs/actors/types",
-        "/logs/actors/extras",
-        "/logs/resources/types",
-        "/logs/resources/extras",
-        "/logs/tags/types",
-        "/logs/sources",
-        "/logs/details",
-        "/logs/attachments/types",
-        "/logs/attachments/mime-types",
+        "/logs/aggs/action-categories",
+        "/logs/aggs/action-types",
+        "/logs/aggs/actor-types",
+        "/logs/aggs/actor-extra-names",
+        "/logs/aggs/resource-types",
+        "/logs/aggs/resource-extra-names",
+        "/logs/aggs/tag-types",
+        "/logs/aggs/source-names",
+        "/logs/aggs/detail-names",
+        "/logs/aggs/attachment-types",
+        "/logs/aggs/attachment-mime-types",
         "/logs/entities?root=true",
     ],
 )
