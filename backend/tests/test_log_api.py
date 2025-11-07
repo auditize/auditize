@@ -258,7 +258,7 @@ async def test_create_log_cannot_have_entities_with_same_name_and_parent(
     )
 
 
-async def test_create_log_can_have_have_entities_with_same_name_but_different_parents(
+async def test_create_log_can_have_entities_with_same_name_but_different_parents(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
     """Check that we can create a log with the same entity name as long as they have different parents"""
@@ -280,6 +280,40 @@ async def test_create_log_can_have_have_entities_with_same_name_but_different_pa
                 "entity_path": [
                     {"ref": "Entity C", "name": "Entity C"},
                     {"ref": "Entity B ref 2", "name": "Entity B"},
+                ]
+            }
+        ),
+    )
+
+
+async def test_create_log_can_have_entities_with_same_name_and_parent_in_different_repos(
+    log_write_client: HttpTestHelper,
+    repo_builder: RepoBuilder,
+):
+    """Check that we can create a log with the same entity name (but different refs) twice at the same level in different repos"""
+
+    repo1 = await repo_builder({"name": "Repo 1"})
+    repo2 = await repo_builder({"name": "Repo 2"})
+
+    await log_write_client.assert_post_created(
+        f"/repos/{repo1.id}/logs",
+        json=PreparedLog.prepare_data(
+            {
+                "entity_path": [
+                    {"ref": "Entity A", "name": "Entity A"},
+                    {"ref": "Entity B", "name": "Entity B"},
+                ]
+            }
+        ),
+    )
+
+    await log_write_client.assert_post_created(
+        f"/repos/{repo2.id}/logs",
+        json=PreparedLog.prepare_data(
+            {
+                "entity_path": [
+                    {"ref": "Entity A", "name": "Entity A"},
+                    {"ref": "Another ref for Entity B", "name": "Entity B"},
                 ]
             }
         ),

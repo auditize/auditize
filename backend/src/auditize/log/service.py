@@ -117,6 +117,7 @@ class LogService:
         for entity in log.entity_path:
             existing_entity = await self.session.scalar(
                 select(LogEntity).where(
+                    LogEntity.repo_id == self.repo.id,
                     LogEntity.parent_entity_ref == parent_entity_ref,
                     LogEntity.name == entity.name,
                     LogEntity.ref != entity.ref,
