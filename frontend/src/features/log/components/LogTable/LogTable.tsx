@@ -20,42 +20,34 @@ import { useLogTranslator } from "@/features/log/components/LogTranslation";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { iconSize } from "@/utils/ui";
 
+import { ColumnSelector } from "./ColumnSelector";
 import {
   ActionCategoryField,
   ActionField,
   ActionTypeField,
-} from "./ActionFields";
-import {
   ActorCustomField,
   ActorField,
   ActorNameField,
   ActorRefField,
   ActorTypeField,
-} from "./ActorFields";
-import {
   AttachmentMimeTypesField,
   AttachmentNamesField,
   AttachmentTypesField,
-} from "./AttachmentFields";
-import { ColumnSelector } from "./ColumnSelector";
-import { DateField } from "./DateField";
-import { DetailField } from "./DetailField";
-import { EntityPathField } from "./EntityField";
-import { TableSearchParamChangeHandler } from "./FieldUtils";
-import {
+  DateField,
+  DetailField,
+  EntityPathField,
   ResourceCustomField,
   ResourceField,
   ResourceNameField,
   ResourceRefField,
   ResourceTypeField,
-} from "./ResourceFields";
-import { SourceField } from "./SourceField";
-import {
+  SourceField,
+  TableSearchParamChangeHandler,
   TagNamesField,
   TagRefsField,
   TagsField,
   TagTypesField,
-} from "./TagFields";
+} from "./Fields";
 
 export function sortFields(a: string, b: string) {
   const order: { [key: string]: number } = {
