@@ -896,7 +896,8 @@ async def _test_get_logs_filter(
     *,
     extra_log=True,
 ):
-    # Create a log that is not supposed to be returned
+    # Create a log that is not supposed to be returned, it ensures that the request
+    # does not simply return all logs
     if extra_log:
         await repo.create_log(client)
 

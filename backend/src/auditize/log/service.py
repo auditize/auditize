@@ -259,7 +259,7 @@ class LogService:
                         "bool": {
                             "must": [
                                 {"term": {f"{type}.name": name}},
-                                {"term": {f"{type}.value.keyword": value}},
+                                {"term": {f"{type}.value": value}},
                             ]
                         }
                     },
@@ -293,7 +293,7 @@ class LogService:
         if sp.actor_type:
             filter.append({"term": {"actor.type": sp.actor_type}})
         if sp.actor_name:
-            filter.append({"term": {"actor.name.keyword": sp.actor_name}})
+            filter.append({"term": {"actor.name": sp.actor_name}})
         if sp.actor_ref:
             filter.append({"term": {"actor.ref": sp.actor_ref}})
         if sp.actor_extra:
@@ -303,7 +303,7 @@ class LogService:
         if sp.resource_type:
             filter.append({"term": {"resource.type": sp.resource_type}})
         if sp.resource_name:
-            filter.append({"term": {"resource.name.keyword": sp.resource_name}})
+            filter.append({"term": {"resource.name": sp.resource_name}})
         if sp.resource_ref:
             filter.append({"term": {"resource.ref": sp.resource_ref}})
         if sp.resource_extra:
@@ -317,9 +317,7 @@ class LogService:
         if sp.tag_type:
             filter.append(cls._nested_filter_term("tags", "tags.type", sp.tag_type))
         if sp.tag_name:
-            filter.append(
-                cls._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
-            )
+            filter.append(cls._nested_filter_term("tags", "tags.name", sp.tag_name))
         if sp.has_attachment is not None:
             if sp.has_attachment:
                 filter.append(
@@ -347,7 +345,7 @@ class LogService:
         if sp.attachment_name:
             filter.append(
                 cls._nested_filter_term(
-                    "attachments", "attachments.name.keyword", sp.attachment_name
+                    "attachments", "attachments.name", sp.attachment_name
                 )
             )
         if sp.attachment_type:
