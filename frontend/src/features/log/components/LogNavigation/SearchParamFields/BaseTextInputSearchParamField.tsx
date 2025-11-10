@@ -1,8 +1,8 @@
 import { TextInput } from "@mantine/core";
 import { useState } from "react";
 
-import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
 import { SearchParamFieldPopover } from "./SearchParamFieldPopover";
+import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
 
 export function BaseTextInputSearchParamField({
   label,
@@ -28,7 +28,7 @@ export function BaseTextInputSearchParamField({
       onChange={setOpened}
       removable={!FIXED_SEARCH_PARAM_NAMES.has(name)}
       onRemove={() => onRemove(name)}
-      focusTrap={true}
+      focusTrap
     >
       <TextInput
         placeholder={label}
@@ -48,4 +48,3 @@ export function BaseTextInputSearchParamField({
     </SearchParamFieldPopover>
   );
 }
-

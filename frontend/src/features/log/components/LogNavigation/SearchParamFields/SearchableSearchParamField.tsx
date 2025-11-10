@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { SearchableSelectWithoutDropdown } from "@/components/SearchableSelectWithoutDropdown";
 import { NameRefPair } from "@/features/log/api";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
-import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
+
 import { SearchParamFieldPopover } from "./SearchParamFieldPopover";
+import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
 
 export function SearchableSearchParamField({
   label,
@@ -82,6 +83,7 @@ export function SearchableSearchParamField({
       removable={!FIXED_SEARCH_PARAM_NAMES.has(searchParamName)}
       onRemove={() => onRemove(searchParamName)}
       loading={searchQuery.isEnabled && searchQuery.isPending}
+      focusTrap
     >
       <SearchableSelectWithoutDropdown
         data={data}
@@ -93,4 +95,3 @@ export function SearchableSearchParamField({
     </SearchParamFieldPopover>
   );
 }
-
