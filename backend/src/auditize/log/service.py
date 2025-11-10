@@ -933,10 +933,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                     "type": "nested",
                     "properties": {
                         "name": {"type": "keyword"},
-                        "value": {
-                            "type": "text",
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
+                        "value": {"type": "text"},
                     },
                 },
                 "actor": {
@@ -951,10 +948,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                             "type": "nested",
                             "properties": {
                                 "name": {"type": "keyword"},
-                                "value": {
-                                    "type": "text",
-                                    "fields": {"keyword": {"type": "keyword"}},
-                                },
+                                "value": {"type": "text"},
                             },
                         },
                     }
@@ -971,10 +965,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                             "type": "nested",
                             "properties": {
                                 "name": {"type": "keyword"},
-                                "value": {
-                                    "type": "text",
-                                    "fields": {"keyword": {"type": "keyword"}},
-                                },
+                                "value": {"type": "text"},
                             },
                         },
                     }
@@ -983,10 +974,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                     "type": "nested",
                     "properties": {
                         "name": {"type": "keyword"},
-                        "value": {
-                            "type": "text",
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
+                        "value": {"type": "text"},
                     },
                 },
                 "tags": {
@@ -1003,10 +991,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                 "attachments": {
                     "type": "nested",
                     "properties": {
-                        "name": {
-                            "type": "text",
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
+                        "name": {"type": "text"},
                         "type": {"type": "keyword"},
                         "mime_type": {"type": "keyword"},
                         "saved_at": {"type": "date"},
