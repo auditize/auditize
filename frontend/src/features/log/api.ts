@@ -102,7 +102,7 @@ export async function getAllActionCategories(
 ): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/action-categories`,
+      `/repos/${repoId}/logs/aggs/actions/categories`,
       {},
     ),
   );
@@ -114,7 +114,7 @@ export async function getAllActionTypes(
 ): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/action-types`,
+      `/repos/${repoId}/logs/aggs/actions/types`,
       category ? { category } : {},
     ),
   );
@@ -123,7 +123,7 @@ export async function getAllActionTypes(
 export async function getAllActorTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/actor-types`,
+      `/repos/${repoId}/logs/aggs/actors/types`,
       {},
     ),
   );
@@ -134,7 +134,7 @@ export async function getAllActorCustomFields(
 ): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/actor-extra-names`,
+      `/repos/${repoId}/logs/aggs/actors/extras/names`,
       {},
     ),
   );
@@ -143,7 +143,7 @@ export async function getAllActorCustomFields(
 export async function getAllSourceFields(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/source-names`,
+      `/repos/${repoId}/logs/aggs/sources/names`,
       {},
     ),
   );
@@ -152,7 +152,7 @@ export async function getAllSourceFields(repoId: string): Promise<string[]> {
 export async function getAllResourceTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/resource-types`,
+      `/repos/${repoId}/logs/aggs/resources/types`,
       {},
     ),
   );
@@ -163,7 +163,7 @@ export async function getAllResourceCustomFields(
 ): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/resource-extra-names`,
+      `/repos/${repoId}/logs/aggs/resources/extras/names`,
       {},
     ),
   );
@@ -172,7 +172,7 @@ export async function getAllResourceCustomFields(
 export async function getAllDetailFields(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/detail-names`,
+      `/repos/${repoId}/logs/aggs/details/names`,
       {},
     ),
   );
@@ -181,7 +181,7 @@ export async function getAllDetailFields(repoId: string): Promise<string[]> {
 export async function getAllTagTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/tag-types`,
+      `/repos/${repoId}/logs/aggs/tags/types`,
       {},
     ),
   );
@@ -190,7 +190,7 @@ export async function getAllTagTypes(repoId: string): Promise<string[]> {
 export async function getAllAttachmentTypes(repoId: string): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/attachment-types`,
+      `/repos/${repoId}/logs/aggs/attachments/types`,
       {},
     ),
   );
@@ -201,7 +201,7 @@ export async function getAllAttachmentMimeTypes(
 ): Promise<string[]> {
   return getNames(
     getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/attachment-mime-types`,
+      `/repos/${repoId}/logs/aggs/attachments/mime-types`,
       {},
     ),
   );
@@ -211,7 +211,7 @@ export async function getActorNames(
   repoId: string,
   query: string,
 ): Promise<NameRefPair[]> {
-  const { items } = await reqGet(`/repos/${repoId}/logs/aggs/actor-names`, {
+  const { items } = await reqGet(`/repos/${repoId}/logs/aggs/actors/names`, {
     q: query,
   });
   return items;
@@ -221,7 +221,7 @@ export async function getResourceNames(
   repoId: string,
   query: string,
 ): Promise<NameRefPair[]> {
-  const { items } = await reqGet(`/repos/${repoId}/logs/aggs/resource-names`, {
+  const { items } = await reqGet(`/repos/${repoId}/logs/aggs/resources/names`, {
     q: query,
   });
   return items;
@@ -231,7 +231,7 @@ export async function getTagNames(
   repoId: string,
   query: string,
 ): Promise<NameRefPair[]> {
-  const { items } = await reqGet(`/repos/${repoId}/logs/aggs/tag-names`, {
+  const { items } = await reqGet(`/repos/${repoId}/logs/aggs/tags/names`, {
     q: query,
   });
   return items;
