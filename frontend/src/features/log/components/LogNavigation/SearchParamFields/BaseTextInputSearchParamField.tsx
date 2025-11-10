@@ -34,6 +34,13 @@ export function BaseTextInputSearchParamField({
         placeholder={label}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpened(false);
+          }
+        }}
         p="sm"
         // If the label (and then the placeholder) contains the word "email" for instance,
         // a password manager will try to fill the input with an email address, which is not what we want.
