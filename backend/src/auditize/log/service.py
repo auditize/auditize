@@ -259,7 +259,14 @@ class LogService:
                         "bool": {
                             "must": [
                                 {"term": {f"{type}.name": name}},
-                                {"term": {f"{type}.value": value}},
+                                {
+                                    "match": {
+                                        f"{type}.value": {
+                                            "query": value,
+                                            "operator": "and",
+                                        }
+                                    }
+                                },
                             ]
                         }
                     },
@@ -269,13 +276,17 @@ class LogService:
         ]
 
     @staticmethod
-    def _nested_filter_term(path, name, value):
+    def _nested_filter(path, filter):
         return {
             "nested": {
                 "path": path,
-                "query": {"bool": {"filter": [{"term": {name: value}}]}},
+                "query": {"bool": {"filter": [filter]}},
             }
         }
+
+    @classmethod
+    def _nested_filter_term(cls, path, name, value):
+        return cls._nested_filter(path, {"term": {name: value}})
 
     @classmethod
     def _prepare_es_query(
@@ -344,10 +355,19 @@ class LogService:
 
         if sp.attachment_name:
             filter.append(
-                cls._nested_filter_term(
-                    "attachments", "attachments.name", sp.attachment_name
+                cls._nested_filter(
+                    "attachments",
+                    {
+                        "match": {
+                            "attachments.name": {
+                                "query": sp.attachment_name,
+                                "operator": "and",
+                            }
+                        }
+                    },
                 )
             )
+
         if sp.attachment_type:
             filter.append(
                 cls._nested_filter_term(
@@ -916,6 +936,21 @@ class LogService:
         await self.session.commit()
 
 
+_TYPE_SIMPLE_ANALYZER = {
+    "type": "text",
+    "analyzer": "simple",
+    "search_analyzer": "simple",
+}
+
+_TYPE_CUSTOM_FIELDS = {
+    "type": "nested",
+    "properties": {
+        "name": {"type": "keyword"},
+        "value": _TYPE_SIMPLE_ANALYZER,
+    },
+}
+
+
 async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
     await elastic_client.indices.create(
         index=index_name,
@@ -929,13 +964,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "category": {"type": "keyword"},
                     }
                 },
-                "source": {
-                    "type": "nested",
-                    "properties": {
-                        "name": {"type": "keyword"},
-                        "value": {"type": "text"},
-                    },
-                },
+                "source": _TYPE_CUSTOM_FIELDS,
                 "actor": {
                     "properties": {
                         "ref": {"type": "keyword"},
@@ -944,13 +973,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                             "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
-                        "extra": {
-                            "type": "nested",
-                            "properties": {
-                                "name": {"type": "keyword"},
-                                "value": {"type": "text"},
-                            },
-                        },
+                        "extra": _TYPE_CUSTOM_FIELDS,
                     }
                 },
                 "resource": {
@@ -961,22 +984,10 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                             "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
-                        "extra": {
-                            "type": "nested",
-                            "properties": {
-                                "name": {"type": "keyword"},
-                                "value": {"type": "text"},
-                            },
-                        },
+                        "extra": _TYPE_CUSTOM_FIELDS,
                     }
                 },
-                "details": {
-                    "type": "nested",
-                    "properties": {
-                        "name": {"type": "keyword"},
-                        "value": {"type": "text"},
-                    },
-                },
+                "details": _TYPE_CUSTOM_FIELDS,
                 "tags": {
                     "type": "nested",
                     "properties": {
@@ -991,7 +1002,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                 "attachments": {
                     "type": "nested",
                     "properties": {
-                        "name": {"type": "text"},
+                        "name": _TYPE_SIMPLE_ANALYZER,
                         "type": {"type": "keyword"},
                         "mime_type": {"type": "keyword"},
                         "saved_at": {"type": "date"},
@@ -1014,6 +1025,6 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
             "index": {
                 "sort.field": ["saved_at", "log_id"],
                 "sort.order": ["desc", "desc"],
-            }
+            },
         },
     )

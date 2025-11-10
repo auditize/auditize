@@ -977,8 +977,8 @@ async def test_get_logs_filter_actor_extra(
                 "ref": "user:123",
                 "name": "User 123",
                 "extra": [
-                    {"name": "field-1", "value": "foo"},
-                    {"name": "field-2", "value": "bar"},
+                    {"name": "field-1", "value": "foo something"},
+                    {"name": "field-2", "value": "bar something else"},
                 ],
             }
         },
@@ -991,8 +991,8 @@ async def test_get_logs_filter_actor_extra(
                 "ref": "user:123",
                 "name": "User 123",
                 "extra": [
-                    {"name": "field-1", "value": "bar"},
-                    {"name": "field-2", "value": "foo"},
+                    {"name": "field-1", "value": "bar something"},
+                    {"name": "field-2", "value": "foo something else"},
                 ],
             }
         },
@@ -1002,8 +1002,8 @@ async def test_get_logs_filter_actor_extra(
         log_rw_client,
         repo,
         {
-            "actor.field-1": "foo",
-            "actor.field-2": "bar",
+            "actor.field-1": "something foo",
+            "actor.field-2": "something bar",
         },
         log_1,
         extra_log=False,
@@ -1056,8 +1056,8 @@ async def test_get_logs_filter_resource_extra(
                 "ref": "config-profile:123",
                 "name": "Config Profile 123",
                 "extra": [
-                    {"name": "field-1", "value": "foo"},
-                    {"name": "field-2", "value": "bar"},
+                    {"name": "field-1", "value": "foo something"},
+                    {"name": "field-2", "value": "bar something else"},
                 ],
             }
         },
@@ -1070,8 +1070,8 @@ async def test_get_logs_filter_resource_extra(
                 "ref": "config-profile:123",
                 "name": "Config Profile 123",
                 "extra": [
-                    {"name": "field-1", "value": "bar"},
-                    {"name": "field-2", "value": "foo"},
+                    {"name": "field-1", "value": "bar something"},
+                    {"name": "field-2", "value": "foo something else"},
                 ],
             }
         },
@@ -1081,8 +1081,8 @@ async def test_get_logs_filter_resource_extra(
         log_rw_client,
         repo,
         {
-            "resource.field-1": "foo",
-            "resource.field-2": "bar",
+            "resource.field-1": "something foo",
+            "resource.field-2": "something bar",
         },
         log_1,
         extra_log=False,
@@ -1096,8 +1096,8 @@ async def test_get_logs_filter_details(
         log_rw_client,
         {
             "details": [
-                {"name": "field-1", "value": "foo"},
-                {"name": "field-2", "value": "bar"},
+                {"name": "field-1", "value": "foo something"},
+                {"name": "field-2", "value": "bar something else"},
             ]
         },
     )
@@ -1106,8 +1106,8 @@ async def test_get_logs_filter_details(
         log_rw_client,
         {
             "details": [
-                {"name": "field-1", "value": "bar"},
-                {"name": "field-2", "value": "foo"},
+                {"name": "field-1", "value": "bar something"},
+                {"name": "field-2", "value": "foo something else"},
             ]
         },
     )
@@ -1116,8 +1116,8 @@ async def test_get_logs_filter_details(
         log_rw_client,
         repo,
         {
-            "details.field-1": "foo",
-            "details.field-2": "bar",
+            "details.field-1": "something foo",
+            "details.field-2": "something bar",
         },
         log_1,
         extra_log=False,
@@ -1131,8 +1131,8 @@ async def test_get_logs_filter_source(
         log_rw_client,
         {
             "source": [
-                {"name": "field-1", "value": "foo"},
-                {"name": "field-2", "value": "bar"},
+                {"name": "field-1", "value": "foo something"},
+                {"name": "field-2", "value": "bar something else"},
             ]
         },
     )
@@ -1141,8 +1141,8 @@ async def test_get_logs_filter_source(
         log_rw_client,
         {
             "source": [
-                {"name": "field-1", "value": "bar"},
-                {"name": "field-2", "value": "foo"},
+                {"name": "field-1", "value": "bar something"},
+                {"name": "field-2", "value": "foo something else"},
             ]
         },
     )
@@ -1151,8 +1151,8 @@ async def test_get_logs_filter_source(
         log_rw_client,
         repo,
         {
-            "source.field-1": "foo",
-            "source.field-2": "bar",
+            "source.field-1": "something foo",
+            "source.field-2": "something bar",
         },
         log_1,
         extra_log=False,
@@ -1244,12 +1244,12 @@ async def test_get_logs_filter_attachment_name(
     await log.upload_attachment(
         log_rw_client,
         data=b"test data",
-        name="find_me",
+        name="foo bar something.txt",
         type="text",
         mime_type="text/plain",
     )
     await _test_get_logs_filter(
-        log_rw_client, repo, {"attachment_name": "find_me"}, log
+        log_rw_client, repo, {"attachment_name": "something foo"}, log
     )
 
 
