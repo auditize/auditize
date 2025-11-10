@@ -32,11 +32,7 @@ from auditize.dependencies import get_db_session
 from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.datetime import now
 from auditize.i18n import get_request_lang
-from auditize.log.csv import (
-    LOG_CSV_BUILTIN_COLUMNS,
-    stream_logs_as_csv,
-    validate_log_csv_columns,
-)
+from auditize.log.csv import stream_logs_as_csv, validate_log_csv_columns
 from auditize.log.models import (
     Log,
     LogActionTypeListParams,
@@ -91,7 +87,7 @@ async def _get_aggregated_name_ref_pairs(
 ) -> NameRefPairListResponse:
     service = await LogService.for_reading(session, repo_id)
     data, next_cursor = await getattr(service, get_data_func_name)(
-        query=params.query,
+        search=params.query,
         limit=params.limit,
         pagination_cursor=params.cursor,
     )

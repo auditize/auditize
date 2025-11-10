@@ -2330,21 +2330,29 @@ class _ConsolidatedNameRefPairsTest:
         await repo.create_log_with(
             superadmin_client,
             {
-                self.data_type: {"name": "foo", "ref": "A", "type": "data"},
+                self.data_type: {
+                    "name": "foo bar something",
+                    "ref": "A",
+                    "type": "data",
+                },
             },
         )
         await repo.create_log_with(
             superadmin_client,
             {
-                self.data_type: {"name": "bar", "ref": "B", "type": "data"},
+                self.data_type: {
+                    "name": "bar something else",
+                    "ref": "B",
+                    "type": "data",
+                },
             },
         )
         await log_read_client.assert_get_ok(
             self.get_path(repo.id),
-            params={"q": "oo"},
+            params={"q": "foo some"},
             expected_json={
                 "items": [
-                    {"name": "foo", "ref": "A"},
+                    {"name": "foo bar something", "ref": "A"},
                 ],
                 "pagination": {"next_cursor": None},
             },
@@ -2457,21 +2465,21 @@ class TestLogTagNames(_ConsolidatedNameRefPairsTest):
         await repo.create_log_with(
             superadmin_client,
             {
-                "tags": [{"name": "foo", "ref": "A", "type": "data"}],
+                "tags": [{"name": "foo bar something", "ref": "A", "type": "data"}],
             },
         )
         await repo.create_log_with(
             superadmin_client,
             {
-                "tags": [{"name": "bar", "ref": "B", "type": "data"}],
+                "tags": [{"name": "bar something else", "ref": "B", "type": "data"}],
             },
         )
         await log_read_client.assert_get_ok(
             self.get_path(repo.id),
-            params={"q": "oo"},
+            params={"q": "foo some"},
             expected_json={
                 "items": [
-                    {"name": "foo", "ref": "A"},
+                    {"name": "foo bar something", "ref": "A"},
                 ],
                 "pagination": {"next_cursor": None},
             },
