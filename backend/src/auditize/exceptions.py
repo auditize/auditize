@@ -51,6 +51,10 @@ class PayloadTooLarge(AuditizeException):
     pass
 
 
+class InternalError(AuditizeException):
+    pass
+
+
 @contextmanager
 def _enhance_exception(exc_class, trans_key):
     try:

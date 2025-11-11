@@ -25,6 +25,7 @@ from auditize.database import DatabaseManager
 from auditize.database.sql.service import get_sql_model
 from auditize.exceptions import (
     ConstraintViolation,
+    InternalError,
     InvalidPaginationCursor,
     NotFoundError,
     PermissionDenied,
@@ -72,7 +73,8 @@ class LogService:
         self.repo = repo
         self.es = es
         self.session = session
-        self.index = repo.log_db_name
+        self.read_alias = f"{repo.log_db_name}_read"
+        self.write_alias = f"{repo.log_db_name}_write"
         self._refresh = get_config().test_mode
 
     @classmethod
@@ -136,7 +138,7 @@ class LogService:
     async def _save_log(self, log: Log) -> Log:
         try:
             await self.es.create(
-                index=self.index,
+                index=self.write_alias,
                 id=str(log.id),
                 document={
                     "log_id": log.id,
@@ -174,7 +176,7 @@ class LogService:
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
         try:
             await self.es.update(
-                index=self.index,
+                index=self.write_alias,
                 id=str(log_id),
                 script={
                     "source": "ctx._source.attachments.add(params.attachment)",
@@ -216,7 +218,7 @@ class LogService:
     async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
         try:
             resp = await self.es.get(
-                index=self.index,
+                index=self.read_alias,
                 id=str(log_id),
                 source_excludes=["attachments.data"],
             )
@@ -235,7 +237,7 @@ class LogService:
         # more than 1 log, unfortunately ES does not a let us retrieve a nested object to a specific
         # array index unless adding an extra metadata such as "index" to the stored document
         try:
-            resp = await self.es.get(index=self.index, id=str(log_id))
+            resp = await self.es.get(index=self.read_alias, id=str(log_id))
         except ElasticNotFoundError:
             raise NotFoundError()
 
@@ -418,7 +420,7 @@ class LogService:
 
         query = {"bool": {"filter": filter}}
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             query=query,
             search_after=search_after,
             source_excludes=["attachments.data"],
@@ -448,7 +450,7 @@ class LogService:
     ) -> Log | None:
         filter = self._prepare_es_query(search_params) if search_params else []
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             query={"bool": {"filter": filter}},
             sort=sort,
             size=1,
@@ -471,13 +473,13 @@ class LogService:
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(
-            index=self.index,
+            index=self.read_alias,
             query={"match_all": {}},
         )
         return resp["count"]
 
     async def get_storage_size(self) -> int:
-        resp = await self.es.indices.stats(index=self.index)
+        resp = await self.es.indices.stats(index=self.read_alias)
         return resp["_all"]["primaries"]["store"]["size_in_bytes"]
 
     async def _get_paginated_agg_multi_fields(
@@ -514,7 +516,7 @@ class LogService:
             }
 
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             query=query,
             aggregations=aggregations,
             size=0,
@@ -743,7 +745,7 @@ class LogService:
             return
 
         resp = await self.es.delete_by_query(
-            index=self.index,
+            index=self.write_alias,
             query={
                 "bool": {
                     "filter": [
@@ -942,14 +944,16 @@ class LogService:
         return await self._get_log_entity(entity_ref)
 
     async def create_log_db(self):
-        await create_index(self.es, self.index)
+        await create_index(self.es, self.repo.log_db_name)
 
     async def delete_log_db(self):
-        await self.es.indices.delete(index=self.index)
+        await self.es.indices.delete(
+            index=await _get_alias_index(self.es, self.write_alias)
+        )
 
     async def empty_log_db(self):
         await self.es.delete_by_query(
-            index=self.index,
+            index=self.write_alias,
             query={"match_all": {}},
             wait_for_completion=self._refresh,
             refresh=self._refresh,
@@ -959,6 +963,8 @@ class LogService:
         )
         await self.session.commit()
 
+
+_MAPPING_VERSION = 2
 
 _TYPE_SIMPLE_ANALYZER = {
     "type": "text",
@@ -975,9 +981,12 @@ _TYPE_CUSTOM_FIELDS = {
 }
 
 
-async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
+async def _create_index(
+    elastic_client: AsyncElasticsearch, index: str, *, aliases=None
+):
     await elastic_client.indices.create(
-        index=index_name,
+        index=index,
+        aliases=aliases,
         mappings={
             "properties": {
                 "log_id": {"type": "keyword"},
@@ -1052,3 +1061,147 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
             },
         },
     )
+
+
+async def create_index(elastic_client: AsyncElasticsearch, name: str):
+    await _create_index(
+        elastic_client,
+        index=f"{name}_v{_MAPPING_VERSION}",
+        aliases={
+            f"{name}_read": {"is_write_index": False},
+            f"{name}_write": {"is_write_index": True},
+        },
+    )
+
+
+async def _get_alias_index(elastic_client: AsyncElasticsearch, alias: str) -> str:
+    resp = await elastic_client.indices.get_alias(index=alias)
+    return list(resp.keys())[0]
+
+
+async def _get_index_mapping_version(
+    elastic_client: AsyncElasticsearch, index: str
+) -> int:
+    try:
+        return int(re.search(r"_v(\d+)$", index).group(1))
+    except AttributeError:
+        raise InternalError(
+            f"Failed to determine mapping version of ES index {index!r}"
+        )
+
+
+async def reindex_index(
+    elastic_client: AsyncElasticsearch, name: str, *, target_version: int | None = None
+) -> str | None:
+    """
+    Reindexes the Elasticsearch log index to a new version by:
+    - creating a new index with the desired mapping,
+    - updating the write alias to point to it,
+    - copying data from the old index using Elasticsearch's reindex API,
+
+    Please note that:
+    - the read alias is not updated, so the old index is still available for reading;
+      it means that logs written during the reindex operation are not yet visible,
+    - the process must be completed by calling `complete_reindex()`.
+
+    Returns the task ID of the reindex operation or None if the index is
+    already at the target version.
+    """
+    ###
+    # Check if the index is already at the target version
+    ###
+    if target_version is None:
+        target_version = _MAPPING_VERSION
+
+    write_alias = f"{name}_write"
+    current_write_index = await _get_alias_index(elastic_client, write_alias)
+
+    current_version = await _get_index_mapping_version(
+        elastic_client, current_write_index
+    )
+
+    if current_version >= target_version:
+        print(f"Index {name} is already at version {target_version}")
+        return None
+
+    ###
+    # Create the new index
+    ###
+    target_write_index = f"{name}_v{target_version}"
+    await _create_index(elastic_client, index=target_write_index)
+
+    ###
+    # Point the write alias to the newly created index
+    ###
+    await elastic_client.indices.update_aliases(
+        actions=[
+            {
+                "remove": {
+                    "alias": write_alias,
+                    "index": current_write_index,
+                }
+            },
+            {
+                "add": {
+                    "alias": write_alias,
+                    "index": target_write_index,
+                    "is_write_index": True,
+                },
+            },
+        ]
+    )
+
+    ###
+    # Reindex the data from the current write index to the newly created index
+    ###
+    resp = await elastic_client.reindex(
+        source={"index": [current_write_index]},
+        dest={"index": target_write_index},
+        wait_for_completion=False,
+    )
+    return resp["task"]
+
+
+async def get_reindex_status(elastic_client: AsyncElasticsearch, task_id: str):
+    """
+    Return the result of /_tasks/{task_id}
+    """
+    return await elastic_client.tasks.get(task_id=task_id)
+
+
+async def complete_reindex(elastic_client: AsyncElasticsearch, name: str):
+    """
+    Completes the reindex operation by:
+    - pointing the read alias to the newly created index,
+    - deleting the former index.
+    """
+
+    read_alias = f"{name}_read"
+    current_read_index = await _get_alias_index(elastic_client, read_alias)
+    current_write_index = await _get_alias_index(elastic_client, f"{name}_write")
+
+    ###
+    # Point the read alias to the newly created index
+    ###
+    await elastic_client.indices.update_aliases(
+        actions=[
+            {
+                "remove": {
+                    "alias": read_alias,
+                    "index": current_read_index,
+                }
+            },
+            {
+                "add": {
+                    "alias": read_alias,
+                    "index": current_write_index,
+                    "is_write_index": False,
+                },
+            },
+        ]
+    )
+
+    ###
+    # Delete the former index
+    ###
+    await elastic_client.indices.delete(index=current_read_index)

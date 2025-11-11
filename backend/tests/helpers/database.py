@@ -77,6 +77,6 @@ class TestLogDatabasePool:
         for db_name, is_used in self._cache.items():
             if is_used:
                 await self.dbm.elastic_client.delete_by_query(
-                    index=db_name, query={"match_all": {}}, refresh=True
+                    index=f"{db_name}_write", query={"match_all": {}}, refresh=True
                 )
                 self._cache[db_name] = False
