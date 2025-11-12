@@ -1081,15 +1081,9 @@ async def _get_alias_index(elastic_client: AsyncElasticsearch, alias: str) -> st
     return list(resp.keys())[0]
 
 
-async def _get_index_mapping_version(
-    elastic_client: AsyncElasticsearch, index: str
-) -> int:
-    try:
-        return int(re.search(r"_v(\d+)$", index).group(1))
-    except AttributeError:
-        raise InternalError(
-            f"Failed to determine mapping version of ES index {index!r}"
-        )
+async def _get_index_mapping_version(index: str) -> int:
+    match = re.search(r"_v(\d+)$", index)
+    return int(match.group(1)) if match else 1
 
 
 async def reindex_index(
@@ -1118,9 +1112,7 @@ async def reindex_index(
     write_alias = f"{name}_write"
     current_write_index = await _get_alias_index(elastic_client, write_alias)
 
-    current_version = await _get_index_mapping_version(
-        elastic_client, current_write_index
-    )
+    current_version = await _get_index_mapping_version(current_write_index)
 
     if current_version >= target_version:
         print(f"Index {name} is already at version {target_version}")
