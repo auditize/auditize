@@ -3,6 +3,7 @@ import re
 import string
 import unicodedata
 import uuid
+import warnings
 from datetime import datetime, timedelta
 from functools import partialmethod
 from typing import Any, Self
@@ -12,6 +13,7 @@ import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
 from elasticsearch import NotFoundError as ElasticNotFoundError
+from elasticsearch.exceptions import GeneralAvailabilityWarning
 from sqlalchemy import and_, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1166,7 +1168,11 @@ async def get_reindex_status(elastic_client: AsyncElasticsearch, task_id: str):
     """
     Return the result of /_tasks/{task_id}
     """
-    return await elastic_client.tasks.get(task_id=task_id)
+    # NB: the API seems stable enough and the reindex operation is under test
+    # on our side
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=GeneralAvailabilityWarning)
+        return await elastic_client.tasks.get(task_id=task_id)
 
 
 async def complete_reindex(elastic_client: AsyncElasticsearch, name: str):
