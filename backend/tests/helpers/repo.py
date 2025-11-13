@@ -40,7 +40,7 @@ class PreparedRepo:
             model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
         async with open_db_session() as session:
             repo = await create_repo(
-                session, Repo(**model_data), log_db_name=log_db_name
+                session, Repo(**model_data), existing_log_db_name=log_db_name
             )
         return cls(str(repo.id), data, log_db_name)
 

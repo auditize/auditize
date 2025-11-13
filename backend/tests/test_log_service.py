@@ -5,7 +5,6 @@ from uuid import UUID
 import pytest
 
 from auditize.database.dbm import open_db_session
-from auditize.exceptions import InvalidPaginationCursor
 from auditize.log.models import Log
 from auditize.log.service import LogService
 from conftest import RepoBuilder

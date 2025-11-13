@@ -69,7 +69,7 @@ class TestLogDatabasePool:
                 return db_name
         else:
             db_name = f"{self.dbm.name}_logs_{len(self._cache)}"
-            await create_index(self.dbm.elastic_client, db_name)
+            await create_index(db_name)
             self._cache[db_name] = True
             return db_name
 

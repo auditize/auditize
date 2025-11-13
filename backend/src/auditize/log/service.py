@@ -3,7 +3,6 @@ import re
 import string
 import unicodedata
 import uuid
-import warnings
 from datetime import datetime, timedelta
 from functools import partialmethod
 from typing import Any, Self
@@ -13,7 +12,6 @@ import elasticsearch
 from aiocache import Cache
 from elasticsearch import AsyncElasticsearch
 from elasticsearch import NotFoundError as ElasticNotFoundError
-from elasticsearch.exceptions import GeneralAvailabilityWarning
 from sqlalchemy import and_, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,12 +25,12 @@ from auditize.database import DatabaseManager
 from auditize.database.sql.service import get_sql_model
 from auditize.exceptions import (
     ConstraintViolation,
-    InternalError,
     InvalidPaginationCursor,
     NotFoundError,
     PermissionDenied,
 )
 from auditize.helpers.datetime import now
+from auditize.log.index import create_index, get_read_alias, get_write_alias
 from auditize.log.models import Log, LogCreate, LogImport, LogSearchParams
 from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
@@ -75,8 +73,8 @@ class LogService:
         self.repo = repo
         self.es = es
         self.session = session
-        self.read_alias = f"{repo.log_db_name}_read"
-        self.write_alias = f"{repo.log_db_name}_write"
+        self.read_alias = get_read_alias(repo)
+        self.write_alias = get_write_alias(repo)
         self._refresh = get_config().test_mode
 
     @classmethod
@@ -945,14 +943,6 @@ class LogService:
                 raise NotFoundError()
         return await self._get_log_entity(entity_ref)
 
-    async def create_log_db(self):
-        await create_index(self.es, self.repo.log_db_name)
-
-    async def delete_log_db(self):
-        await self.es.indices.delete(
-            index=await _get_alias_index(self.es, self.write_alias)
-        )
-
     async def empty_log_db(self):
         await self.es.delete_by_query(
             index=self.write_alias,
@@ -964,242 +954,3 @@ class LogService:
             delete(LogEntity).where(LogEntity.repo_id == self.repo.id)
         )
         await self.session.commit()
-
-
-_MAPPING_VERSION = 2
-
-_TYPE_SIMPLE_ANALYZER = {
-    "type": "text",
-    "analyzer": "simple",
-    "search_analyzer": "simple",
-}
-
-_TYPE_CUSTOM_FIELDS = {
-    "type": "nested",
-    "properties": {
-        "name": {"type": "keyword"},
-        "value": _TYPE_SIMPLE_ANALYZER,
-    },
-}
-
-
-async def _create_index(
-    elastic_client: AsyncElasticsearch, index: str, *, aliases=None
-):
-    await elastic_client.indices.create(
-        index=index,
-        aliases=aliases,
-        mappings={
-            "properties": {
-                "log_id": {"type": "keyword"},
-                "saved_at": {"type": "date"},
-                "action": {
-                    "properties": {
-                        "type": {"type": "keyword"},
-                        "category": {"type": "keyword"},
-                    }
-                },
-                "source": _TYPE_CUSTOM_FIELDS,
-                "actor": {
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "type": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                        "extra": _TYPE_CUSTOM_FIELDS,
-                    }
-                },
-                "resource": {
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "type": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                        "extra": _TYPE_CUSTOM_FIELDS,
-                    }
-                },
-                "details": _TYPE_CUSTOM_FIELDS,
-                "tags": {
-                    "type": "nested",
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "type": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                    },
-                },
-                "attachments": {
-                    "type": "nested",
-                    "properties": {
-                        "name": _TYPE_SIMPLE_ANALYZER,
-                        "type": {"type": "keyword"},
-                        "mime_type": {"type": "keyword"},
-                        "saved_at": {"type": "date"},
-                        "data": {"type": "binary"},
-                    },
-                },
-                "entity_path": {
-                    "type": "nested",
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                    },
-                },
-            }
-        },
-        settings={
-            "index": {
-                "sort.field": ["saved_at", "log_id"],
-                "sort.order": ["desc", "desc"],
-            },
-        },
-    )
-
-
-async def create_index(elastic_client: AsyncElasticsearch, name: str):
-    await _create_index(
-        elastic_client,
-        index=f"{name}_v{_MAPPING_VERSION}",
-        aliases={
-            f"{name}_read": {"is_write_index": False},
-            f"{name}_write": {"is_write_index": True},
-        },
-    )
-
-
-async def _get_alias_index(elastic_client: AsyncElasticsearch, alias: str) -> str:
-    resp = await elastic_client.indices.get_alias(index=alias)
-    return list(resp.keys())[0]
-
-
-async def _get_index_mapping_version(index: str) -> int:
-    match = re.search(r"_v(\d+)$", index)
-    return int(match.group(1)) if match else 1
-
-
-async def reindex_index(
-    elastic_client: AsyncElasticsearch, name: str, *, target_version: int | None = None
-) -> str | None:
-    """
-    Reindexes the Elasticsearch log index to a new version by:
-    - creating a new index with the desired mapping,
-    - updating the write alias to point to it,
-    - copying data from the old index using Elasticsearch's reindex API,
-
-    Please note that:
-    - the read alias is not updated, so the old index is still available for reading;
-      it means that logs written during the reindex operation are not yet visible,
-    - the process must be completed by calling `complete_reindex()`.
-
-    Returns the task ID of the reindex operation or None if the index is
-    already at the target version.
-    """
-    ###
-    # Check if the index is already at the target version
-    ###
-    if target_version is None:
-        target_version = _MAPPING_VERSION
-
-    write_alias = f"{name}_write"
-    current_write_index = await _get_alias_index(elastic_client, write_alias)
-
-    current_version = await _get_index_mapping_version(current_write_index)
-
-    if current_version >= target_version:
-        print(f"Index {name} is already at version {target_version}")
-        return None
-
-    ###
-    # Create the new index
-    ###
-    target_write_index = f"{name}_v{target_version}"
-    await _create_index(elastic_client, index=target_write_index)
-
-    ###
-    # Point the write alias to the newly created index
-    ###
-    await elastic_client.indices.update_aliases(
-        actions=[
-            {
-                "remove": {
-                    "alias": write_alias,
-                    "index": current_write_index,
-                }
-            },
-            {
-                "add": {
-                    "alias": write_alias,
-                    "index": target_write_index,
-                    "is_write_index": True,
-                },
-            },
-        ]
-    )
-
-    ###
-    # Reindex the data from the current write index to the newly created index
-    ###
-    resp = await elastic_client.reindex(
-        source={"index": [current_write_index]},
-        dest={"index": target_write_index},
-        wait_for_completion=False,
-    )
-    return resp["task"]
-
-
-async def get_reindex_status(elastic_client: AsyncElasticsearch, task_id: str):
-    """
-    Return the result of /_tasks/{task_id}
-    """
-    # NB: the API seems stable enough and the reindex operation is under test
-    # on our side
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=GeneralAvailabilityWarning)
-        return await elastic_client.tasks.get(task_id=task_id)
-
-
-async def complete_reindex(elastic_client: AsyncElasticsearch, name: str):
-    """
-    Completes the reindex operation by:
-    - pointing the read alias to the newly created index,
-    - deleting the former index.
-    """
-
-    read_alias = f"{name}_read"
-    current_read_index = await _get_alias_index(elastic_client, read_alias)
-    current_write_index = await _get_alias_index(elastic_client, f"{name}_write")
-
-    ###
-    # Point the read alias to the newly created index
-    ###
-    await elastic_client.indices.update_aliases(
-        actions=[
-            {
-                "remove": {
-                    "alias": read_alias,
-                    "index": current_read_index,
-                }
-            },
-            {
-                "add": {
-                    "alias": read_alias,
-                    "index": current_write_index,
-                    "is_write_index": False,
-                },
-            },
-        ]
-    )
-
-    ###
-    # Delete the former index
-    ###
-    await elastic_client.indices.delete(index=current_read_index)

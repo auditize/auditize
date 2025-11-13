@@ -9,7 +9,7 @@ from elasticsearch import AsyncElasticsearch
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from auditize.config import get_config
-from auditize.database.elastic import get_elastic_client
+from auditize.database.elastic import init_elastic_client
 
 
 class DatabaseManager:
@@ -36,7 +36,7 @@ class DatabaseManager:
         cls._dbm = cls(
             name=name,
             db_engine=create_async_engine(config.get_db_url(name), echo=debug),
-            elastic_client=get_elastic_client(),
+            elastic_client=init_elastic_client(),
         )
         return cls._dbm
 
@@ -53,6 +53,10 @@ def init_dbm(name=None, *, force_init=False, debug=False) -> DatabaseManager:
 
 def get_dbm() -> DatabaseManager:
     return DatabaseManager.get()
+
+
+def get_elastic_client() -> AsyncElasticsearch:
+    return get_dbm().elastic_client
 
 
 @asynccontextmanager
