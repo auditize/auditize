@@ -1,4 +1,7 @@
 import base64
+import re
+import string
+import unicodedata
 import uuid
 from datetime import datetime, timedelta
 from functools import partialmethod
@@ -259,7 +262,14 @@ class LogService:
                         "bool": {
                             "must": [
                                 {"term": {f"{type}.name": name}},
-                                {"term": {f"{type}.value.keyword": value}},
+                                {
+                                    "match": {
+                                        f"{type}.value": {
+                                            "query": value,
+                                            "operator": "and",
+                                        }
+                                    }
+                                },
                             ]
                         }
                     },
@@ -269,13 +279,17 @@ class LogService:
         ]
 
     @staticmethod
-    def _nested_filter_term(path, name, value):
+    def _nested_filter(path, filter):
         return {
             "nested": {
                 "path": path,
-                "query": {"bool": {"filter": [{"term": {name: value}}]}},
+                "query": {"bool": {"filter": [filter]}},
             }
         }
+
+    @classmethod
+    def _nested_filter_term(cls, path, name, value):
+        return cls._nested_filter(path, {"term": {name: value}})
 
     @classmethod
     def _prepare_es_query(
@@ -346,10 +360,19 @@ class LogService:
 
         if sp.attachment_name:
             filter.append(
-                cls._nested_filter_term(
-                    "attachments", "attachments.name.keyword", sp.attachment_name
+                cls._nested_filter(
+                    "attachments",
+                    {
+                        "match": {
+                            "attachments.name": {
+                                "query": sp.attachment_name,
+                                "operator": "and",
+                            }
+                        }
+                    },
                 )
             )
+
         if sp.attachment_type:
             filter.append(
                 cls._nested_filter_term(
@@ -593,50 +616,69 @@ class LogService:
         field="attachments.mime_type",
     )
 
+    @staticmethod
+    def _split_words(value: str) -> list[str]:
+        """
+        Elasticsearch "prefix" query does not use the search_analyzer, so we have
+        to implement the equivalent processing in Python.
+        """
+
+        # De-accentuate the value
+        normalized = unicodedata.normalize("NFD", value)
+        unaccented = normalized.encode("ascii", "ignore").decode("utf8")
+
+        # Lowercase
+        lowercased = unaccented.lower()
+
+        # Split by spaces / non-alphanumeric characters, which means
+        # that only actual words are kept
+        words = re.split("[" + string.whitespace + string.punctuation + "]", lowercased)
+
+        # Filter out empty words
+        return list(filter(bool, words))
+
     async def _get_aggregated_name_ref_pairs(
         self,
         *,
-        prefix: str,
+        field_prefix: str,
         nested: bool = False,
-        query: str | None,
+        search: str | None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[tuple[str, str]], str]:
-        query_for_agg = None
-        if query:
-            if nested:
-                query_for_agg = {
-                    "nested": {
-                        "path": prefix,
-                        "query": {
-                            "bool": {
-                                "filter": [
-                                    {"wildcard": {f"{prefix}.name": f"*{query}*"}}
-                                ]
-                            }
-                        },
-                    }
+        if search:
+            query = {
+                "bool": {
+                    "filter": [
+                        {"prefix": {f"{field_prefix}.name": word}}
+                        for word in self._split_words(search)
+                    ]
                 }
-            else:
-                query_for_agg = {"wildcard": {f"{prefix}.name": f"*{query}*"}}
+            }
+            if nested:
+                query = {"nested": {"path": field_prefix, "query": query}}
+        else:
+            query = None
 
         values, next_cursor = await self._get_paginated_agg_multi_fields(
-            nested=prefix if nested else None,
-            query=query_for_agg,
-            fields=[f"{prefix}.name.keyword", f"{prefix}.ref"],
+            nested=field_prefix if nested else None,
+            query=query,
+            fields=[f"{field_prefix}.name.keyword", f"{field_prefix}.ref"],
             limit=limit,
             pagination_cursor=pagination_cursor,
         )
         return [tuple(value) for value in values], next_cursor
 
-    get_log_actor_names = partialmethod(_get_aggregated_name_ref_pairs, prefix="actor")
+    get_log_actor_names = partialmethod(
+        _get_aggregated_name_ref_pairs, field_prefix="actor"
+    )
 
     get_log_resource_names = partialmethod(
-        _get_aggregated_name_ref_pairs, prefix="resource"
+        _get_aggregated_name_ref_pairs, field_prefix="resource"
     )
 
     get_log_tag_names = partialmethod(
-        _get_aggregated_name_ref_pairs, prefix="tags", nested=True
+        _get_aggregated_name_ref_pairs, field_prefix="tags", nested=True
     )
 
     async def get_log_actor(self, actor_ref: str) -> Log.Actor:
@@ -918,6 +960,15 @@ class LogService:
         await self.session.commit()
 
 
+_TYPE_CUSTOM_FIELDS = {
+    "type": "nested",
+    "properties": {
+        "name": {"type": "keyword"},
+        "value": {"type": "text"},
+    },
+}
+
+
 async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
     await elastic_client.indices.create(
         index=index_name,
@@ -931,16 +982,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "category": {"type": "keyword"},
                     }
                 },
-                "source": {
-                    "type": "nested",
-                    "properties": {
-                        "name": {"type": "keyword"},
-                        "value": {
-                            "type": "text",
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                    },
-                },
+                "source": _TYPE_CUSTOM_FIELDS,
                 "actor": {
                     "properties": {
                         "ref": {"type": "keyword"},
@@ -949,16 +991,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                             "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
-                        "extra": {
-                            "type": "nested",
-                            "properties": {
-                                "name": {"type": "keyword"},
-                                "value": {
-                                    "type": "text",
-                                    "fields": {"keyword": {"type": "keyword"}},
-                                },
-                            },
-                        },
+                        "extra": _TYPE_CUSTOM_FIELDS,
                     }
                 },
                 "resource": {
@@ -969,28 +1002,10 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                             "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
-                        "extra": {
-                            "type": "nested",
-                            "properties": {
-                                "name": {"type": "keyword"},
-                                "value": {
-                                    "type": "text",
-                                    "fields": {"keyword": {"type": "keyword"}},
-                                },
-                            },
-                        },
+                        "extra": _TYPE_CUSTOM_FIELDS,
                     }
                 },
-                "details": {
-                    "type": "nested",
-                    "properties": {
-                        "name": {"type": "keyword"},
-                        "value": {
-                            "type": "text",
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                    },
-                },
+                "details": _TYPE_CUSTOM_FIELDS,
                 "tags": {
                     "type": "nested",
                     "properties": {
@@ -1005,10 +1020,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                 "attachments": {
                     "type": "nested",
                     "properties": {
-                        "name": {
-                            "type": "text",
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
+                        "name": {"type": "text"},
                         "type": {"type": "keyword"},
                         "mime_type": {"type": "keyword"},
                         "saved_at": {"type": "date"},
@@ -1031,6 +1043,6 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
             "index": {
                 "sort.field": ["saved_at", "log_id"],
                 "sort.order": ["desc", "desc"],
-            }
+            },
         },
     )
