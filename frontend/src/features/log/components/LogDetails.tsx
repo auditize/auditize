@@ -80,23 +80,25 @@ function KeyValueSection({
 function ExpandableSection({
   title,
   icon,
-  renderNotExpanded,
-  renderExpanded,
+  collapsedContent,
+  expandedContent,
+  expanded,
+  toggle,
 }: {
   title: string;
   icon: React.ReactNode;
-  renderNotExpanded: () => React.ReactNode;
-  renderExpanded: () => React.ReactNode;
+  collapsedContent: React.ReactNode;
+  expandedContent: React.ReactNode;
+  expanded: boolean;
+  toggle: () => void;
 }) {
-  const [expanded, { toggle }] = useDisclosure(false);
-
   return (
     <Section
       title={title}
       icon={icon}
       rightSection={<SectionExpand expanded={expanded} toggle={toggle} />}
     >
-      {expanded ? renderExpanded() : renderNotExpanded()}
+      {expanded ? expandedContent : collapsedContent}
     </Section>
   );
 }
@@ -104,17 +106,22 @@ function ExpandableSection({
 function Tag({
   value,
   repoId,
+  onClick,
 }: {
   value: { type: string; name: string | null; ref: string | null };
   repoId: string;
+  onClick: () => void;
 }) {
+  const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
 
   if (value.name && value.ref) {
     return (
-      <Badge>
-        {logTranslator("tag_type", value.type)}: {value.name}
-      </Badge>
+      <Tooltip label={t("common.moreDetails")} withArrow>
+        <Badge onClick={onClick} style={{ cursor: "pointer" }}>
+          {logTranslator("tag_type", value.type)}: {value.name}
+        </Badge>
+      </Tooltip>
     );
   } else {
     return <Badge>{logTranslator("tag_type", value.type)}</Badge>;
@@ -122,6 +129,7 @@ function Tag({
 }
 
 function LogEntitySection({ log }: { log: Log }) {
+  const [expanded, { toggle }] = useDisclosure(false);
   const { t } = useTranslation();
 
   return (
@@ -130,23 +138,27 @@ function LogEntitySection({ log }: { log: Log }) {
       icon={
         <IconHierarchy style={iconBesideText({ size: "18px", top: "0px" })} />
       }
-      renderNotExpanded={() => (
+      collapsedContent={
         <Breadcrumbs separator=">" p="0px" pl="1.25rem" pt="0.5rem">
           {log.entityPath.map((entity) => (
-            <Text size="sm" key={entity.ref}>
-              {entity.name}
-            </Text>
+            <Tooltip label={t("common.moreDetails")} withArrow>
+              <Anchor size="sm" key={entity.ref} onClick={toggle}>
+                {entity.name}
+              </Anchor>
+            </Tooltip>
           ))}
         </Breadcrumbs>
-      )}
-      renderExpanded={() => (
+      }
+      expandedContent={
         <KeyValueTable
           data={log.entityPath.map((entity) => [
             entity.name,
             <Code>{entity.ref}</Code>,
           ])}
         />
-      )}
+      }
+      expanded={expanded}
+      toggle={toggle}
     />
   );
 }
@@ -154,20 +166,21 @@ function LogEntitySection({ log }: { log: Log }) {
 function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
+  const [expanded, { toggle }] = useDisclosure(false);
 
   return (
     log.tags.length > 0 && (
       <ExpandableSection
         title={t("log.tags")}
         icon={<IconTags style={iconBesideText({ size: "18px", top: "0px" })} />}
-        renderNotExpanded={() => (
+        collapsedContent={
           <Group pl="1.25rem" pt="0.5rem">
             {log.tags.map((tag, index) => (
-              <Tag key={index} value={tag} repoId={repoId} />
+              <Tag key={index} value={tag} repoId={repoId} onClick={toggle} />
             ))}
           </Group>
-        )}
-        renderExpanded={() => (
+        }
+        expandedContent={
           <KeyValueTable
             data={log.tags.map((tag) =>
               tag.name && tag.ref
@@ -185,7 +198,9 @@ function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
                   ],
             )}
           />
-        )}
+        }
+        expanded={expanded}
+        toggle={toggle}
       />
     )
   );
