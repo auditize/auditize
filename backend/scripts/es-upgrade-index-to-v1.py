@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 """
+Upgrade `auditize_logs_*` indices to v1 (custom preparation step for v2 migration).
 Ensure `auditize_logs_*` indices expose the expected read/write aliases.
 """
 
