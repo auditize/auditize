@@ -960,17 +960,11 @@ class LogService:
         await self.session.commit()
 
 
-_TYPE_SIMPLE_ANALYZER = {
-    "type": "text",
-    "analyzer": "simple",
-    "search_analyzer": "simple",
-}
-
 _TYPE_CUSTOM_FIELDS = {
     "type": "nested",
     "properties": {
         "name": {"type": "keyword"},
-        "value": _TYPE_SIMPLE_ANALYZER,
+        "value": {"type": "text"},
     },
 }
 
@@ -994,7 +988,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
                         "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
+                            "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                         "extra": _TYPE_CUSTOM_FIELDS,
@@ -1005,7 +999,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
                         "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
+                            "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                         "extra": _TYPE_CUSTOM_FIELDS,
@@ -1018,7 +1012,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
                         "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
+                            "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                     },
@@ -1026,7 +1020,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                 "attachments": {
                     "type": "nested",
                     "properties": {
-                        "name": _TYPE_SIMPLE_ANALYZER,
+                        "name": {"type": "text"},
                         "type": {"type": "keyword"},
                         "mime_type": {"type": "keyword"},
                         "saved_at": {"type": "date"},
@@ -1038,7 +1032,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                     "properties": {
                         "ref": {"type": "keyword"},
                         "name": {
-                            **_TYPE_SIMPLE_ANALYZER,
+                            "type": "text",
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                     },

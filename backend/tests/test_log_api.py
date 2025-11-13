@@ -1249,7 +1249,7 @@ async def test_get_logs_filter_attachment_name(
         mime_type="text/plain",
     )
     await _test_get_logs_filter(
-        log_rw_client, repo, {"attachment_name": "something foo"}, log
+        log_rw_client, repo, {"attachment_name": "foo bar something.txt"}, log
     )
 
 
