@@ -7,7 +7,6 @@ import {
   Flex,
   Group,
   Modal,
-  ScrollArea,
   Skeleton,
   Stack,
   Table,
@@ -220,8 +219,8 @@ function LogActorSection({ log, repoId }: { log: Log; repoId: string }) {
       icon={<IconUser style={iconBesideText({ size: "18px", top: "-1px" })} />}
       data={
         log.actor && [
-          [t("log.view.name"), <b>{log.actor.name}</b>],
           [t("log.view.type"), logTranslator("actor_type", log.actor.type)],
+          [t("log.view.name"), <b>{log.actor.name}</b>],
           [t("log.view.ref"), <Code>{log.actor.ref}</Code>],
           ...log.actor.extra.map(
             (field) =>
@@ -248,11 +247,11 @@ function LogResourceSection({ log, repoId }: { log: Log; repoId: string }) {
       }
       data={
         log.resource && [
-          [t("log.view.name"), <b>{log.resource.name}</b>],
           [
             t("log.view.type"),
             logTranslator("resource_type", log.resource.type),
           ],
+          [t("log.view.name"), <b>{log.resource.name}</b>],
           [t("log.view.ref"), <Code>{log.resource.ref}</Code>],
           ...log.resource.extra.map(
             (field) =>
