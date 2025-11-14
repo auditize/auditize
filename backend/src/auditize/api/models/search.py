@@ -7,9 +7,14 @@ from auditize.api.models.page_pagination import PagePaginationParams
 
 
 class QuerySearchParam(BaseModel):
-    query: Optional[str] = Field(
-        validation_alias="q", description="Search query", default=None
-    )
+    q: Optional[str] = Field(description="Search query", default=None)
+
+    # NB: using a field named "query" + `validation_alias="q"` would be a cleaner solution,
+    # but FastAPI then shows the field as "query" instead of "q" in the OpenAPI schema.
+    # Also see: https://github.com/fastapi/fastapi/issues/12402
+    @property
+    def query(self) -> Optional[str]:
+        return self.q
 
 
 class PagePaginatedSearchParams(PagePaginationParams, QuerySearchParam):
