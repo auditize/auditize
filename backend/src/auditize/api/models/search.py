@@ -6,15 +6,15 @@ from auditize.api.models.cursor_pagination import CursorPaginationParams
 from auditize.api.models.page_pagination import PagePaginationParams
 
 
-class SearchParams(BaseModel):
+class QuerySearchParam(BaseModel):
     query: Optional[str] = Field(
         validation_alias="q", description="Search query", default=None
     )
 
 
-class PagePaginatedSearchParams(PagePaginationParams, SearchParams):
+class PagePaginatedSearchParams(PagePaginationParams, QuerySearchParam):
     pass
 
 
-class CursorPaginatedSearchParams(CursorPaginationParams, SearchParams):
+class CursorPaginatedSearchParams(CursorPaginationParams, QuerySearchParam):
     pass
