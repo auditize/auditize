@@ -1285,6 +1285,94 @@ async def test_get_logs_filter_attachment_mime_type(
     )
 
 
+class _TestGetLogsFullTextSearchCustomField:
+    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
+        raise NotImplementedError
+
+    async def test_nominal(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        matching_log = await repo.create_log_with(
+            log_rw_client,
+            self.build_payload(
+                [
+                    {
+                        "name": "param1",
+                        "value": "foo",
+                    },
+                    {
+                        "name": "param2",
+                        "value": "bar",
+                    },
+                ]
+            ),
+        )
+        non_matching_log = await repo.create_log_with(
+            log_rw_client,
+            {
+                "source": [
+                    {
+                        "name": "param1",
+                        "value": "foo",
+                    },
+                ],
+            },
+        )
+        await _test_get_logs_filter(log_rw_client, repo, {"q": "foo bar"}, matching_log)
+
+
+class TestGetLogsFullTextSearchSource(_TestGetLogsFullTextSearchCustomField):
+    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
+        return {
+            "source": custom_fields,
+        }
+
+
+class TestGetLogsFullTextSearchActorExtra(_TestGetLogsFullTextSearchCustomField):
+    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
+        return {
+            "actor": {
+                "type": "user",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": custom_fields,
+            }
+        }
+
+
+class TestGetLogsFullTextSearchResourceExtra(_TestGetLogsFullTextSearchCustomField):
+    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
+        return {
+            "resource": {
+                "type": "config-profile",
+                "ref": "config-profile:123",
+                "name": "Config Profile 123",
+                "extra": custom_fields,
+            }
+        }
+
+
+class TestGetLogsFullTextSearchDetails(_TestGetLogsFullTextSearchCustomField):
+    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
+        return {
+            "details": custom_fields,
+        }
+
+
+async def test_get_logs_full_text_search_resource_name(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log_with(
+        log_rw_client,
+        {
+            "resource": {
+                "name": "foo something bar",
+                "ref": "config-profile:123",
+                "type": "config-profile",
+            },
+        },
+    )
+    await _test_get_logs_filter(log_rw_client, repo, {"q": "foo bar"}, log)
+
+
 async def test_get_logs_filter_entity_id_exact_entity(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):

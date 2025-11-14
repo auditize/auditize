@@ -17,6 +17,7 @@ from auditize.api.models.cursor_pagination import (
     CursorPaginationParams,
 )
 from auditize.api.models.dates import HasDatetimeSerialization
+from auditize.api.models.search import QuerySearchParam
 from auditize.api.validation import IDENTIFIER_PATTERN
 from auditize.helpers.string import validate_empty_string_as_none
 
@@ -473,7 +474,7 @@ class LogEntityListResponse(
         return LogEntityResponse.model_validate(entity, from_attributes=True)
 
 
-class BaseLogSearchParams(BaseModel):
+class BaseLogSearchParams(QuerySearchParam):
     # All those fields are left Optional[] because FastAPI seems to explicitly pass None
     # (the default value) to the class constructor instead of not passing the value at all.
     # That triggers a pydantic validation error because None is not explicitly allowed.

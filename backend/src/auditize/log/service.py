@@ -1,4 +1,5 @@
 import base64
+import json
 import re
 import string
 import unicodedata
@@ -292,12 +293,55 @@ class LogService:
         return cls._nested_filter(path, {"term": {name: value}})
 
     @classmethod
+    def _query_filter(cls, query: str):
+        """
+        Build a filter to match words in the query against the searchable fields
+        (source.value, actor.extra.value, resource.extra.value, details.value).
+        Each word must match indifferently of the field they are in the log.
+        """
+        # This is a working but costly implementation of the query filter (which is due
+        # to the fact that we use nested fields).
+        # A more efficient implementation would be to first normalize the searchable plain text fields
+        # in a dedicated text fields and then use a simple "match" query to match the words against the text field.
+
+        words = cls._split_words(query)
+        searchable_fields = {
+            "source": "source.value",
+            "actor.extra": "actor.extra.value",
+            "resource.extra": "resource.extra.value",
+            "details": "details.value",
+        }
+
+        def should_clauses(word):
+            clauses = [
+                {"nested": {"path": path, "query": {"match": {name: word}}}}
+                for path, name in searchable_fields.items()
+            ]
+            clauses.append({"match": {"resource.name": word}})
+            return clauses
+
+        def must_clauses():
+            return [
+                {
+                    "bool": {
+                        "should": should_clauses(word),
+                        "minimum_should_match": 1,
+                    }
+                }
+                for word in words
+            ]
+
+        return {"bool": {"must": must_clauses()}}
+
+    @classmethod
     def _prepare_es_query(
         cls,
         search_params: LogSearchParams,
     ) -> list[dict]:
         sp = search_params
         filter = []
+        if sp.query:
+            filter.append(cls._query_filter(sp.query))
         if sp.action_type:
             filter.append({"term": {"action.type": sp.action_type}})
         if sp.action_category:

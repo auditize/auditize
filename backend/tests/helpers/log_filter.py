@@ -24,6 +24,7 @@ DEFAULT_SEARCH_PARAMETERS = {
     "tag_ref": None,
     "tag_type": None,
     "until": None,
+    "q": None,
 }
 
 
