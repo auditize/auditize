@@ -132,6 +132,7 @@ function removeSearchParam(
 ) {
   // Handle search params whose names are equivalent to search param names
   const equivalentSearchParams = [
+    "q",
     "actionCategory",
     "actionType",
     "actorRef",

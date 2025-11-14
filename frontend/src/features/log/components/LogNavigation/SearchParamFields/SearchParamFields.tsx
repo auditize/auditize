@@ -22,12 +22,14 @@ import { titlize } from "@/utils/format";
 import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
 import { DateInterval } from "./DateInterval";
 import { EntitySearchParamField } from "./EntitySearchParamField";
+import { FullTextSearchParamField } from "./FullTextSearchParamField";
 import { HasAttachmentSearchParamField } from "./HasAttachmentSearchParamField";
 import { SearchableSearchParamField } from "./SearchableSearchParamField";
 import { SelectSearchParamField } from "./SelectSearchParamField";
 import { TextInputSearchParamField } from "./TextInputSearchParamField";
 
 export const FIXED_SEARCH_PARAM_NAMES = new Set([
+  "q",
   "savedAt",
   "actorRef",
   "actionCategory",
@@ -50,6 +52,15 @@ function SearchParamField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(searchParams.repoId);
+
+  if (name === "q") {
+    return (
+      <FullTextSearchParamField
+        searchParams={searchParams}
+        onChange={onChange}
+      />
+    );
+  }
 
   if (name === "savedAt") {
     return (
