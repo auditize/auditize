@@ -1,4 +1,5 @@
 import { LogSearchParams } from "@/features/log/LogSearchParams";
+
 import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
 
 export function TextInputSearchParamField({
@@ -8,6 +9,7 @@ export function TextInputSearchParamField({
   openedByDefault,
   onChange,
   onRemove,
+  onSubmit,
 }: {
   label: string;
   searchParams: LogSearchParams;
@@ -15,6 +17,7 @@ export function TextInputSearchParamField({
   openedByDefault: boolean;
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
+  onSubmit: () => void;
 }) {
   const value = searchParams[
     searchParamName as keyof LogSearchParams
@@ -27,7 +30,7 @@ export function TextInputSearchParamField({
       openedByDefault={openedByDefault}
       onChange={(value) => onChange(searchParamName, value)}
       onRemove={onRemove}
+      onSubmit={onSubmit}
     />
   );
 }
-

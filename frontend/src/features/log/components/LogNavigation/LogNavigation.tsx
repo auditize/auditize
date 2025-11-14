@@ -298,6 +298,7 @@ export function LogNavigation({
               setIsDirty(true);
             }}
             onRemove={removeSearchParamField}
+            onSubmit={() => onChange(editedParams)}
           />
           <SearchParamFieldSelector
             repoId={editedParams.repoId}

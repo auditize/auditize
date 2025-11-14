@@ -11,6 +11,7 @@ export function BaseTextInputSearchParamField({
   openedByDefault,
   onChange,
   onRemove,
+  onSubmit,
 }: {
   label: string;
   name: string;
@@ -18,6 +19,7 @@ export function BaseTextInputSearchParamField({
   openedByDefault: boolean;
   onChange: (value: any) => void;
   onRemove: (name: string) => void;
+  onSubmit: () => void;
 }) {
   const [opened, setOpened] = useState(openedByDefault);
   return (
@@ -36,9 +38,7 @@ export function BaseTextInputSearchParamField({
         onChange={(event) => onChange(event.currentTarget.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
-            event.preventDefault();
-            event.stopPropagation();
-            setOpened(false);
+            onSubmit();
           }
         }}
         p="sm"
