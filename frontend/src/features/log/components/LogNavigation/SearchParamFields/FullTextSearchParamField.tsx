@@ -1,6 +1,4 @@
-import { Input, TextInput } from "@mantine/core";
-import { useTranslation } from "react-i18next";
-
+import { SearchInput } from "@/components/SearchInput";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
 
 export function FullTextSearchParamField({
@@ -12,23 +10,11 @@ export function FullTextSearchParamField({
   onChange: (name: string, value: any) => void;
   onSubmit: () => void;
 }) {
-  const { t } = useTranslation();
   return (
-    <TextInput
+    <SearchInput
       value={searchParams.q}
-      onChange={(event) => onChange("q", event.target.value)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          onSubmit();
-        }
-      }}
-      rightSection={
-        <Input.ClearButton
-          onClick={() => onChange("q", "")}
-          style={{ display: searchParams.q !== "" ? undefined : "none" }}
-        />
-      }
-      placeholder={t("common.search")}
+      onChange={(value) => onChange("q", value)}
+      onSubmit={onSubmit}
       inputSize="15"
     />
   );

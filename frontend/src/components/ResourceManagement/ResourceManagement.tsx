@@ -1,25 +1,22 @@
 import {
   ActionIcon,
   Button,
-  CloseButton,
   Group,
   Pagination,
   Skeleton,
   Stack,
   Table,
-  TextInput,
   Title,
   Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconPlus, IconSearch, IconTrash } from "@tabler/icons-react";
+import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { iconSize } from "@/utils/ui";
-
 import { ApiErrorMessage } from "../ErrorMessage";
+import { SearchInput } from "../SearchInput";
 import cssClasses from "./ResourceManagement.module.css";
 import { useResourceManagementState } from "./ResourceManagementState";
 
@@ -27,10 +24,12 @@ type ResourceCreationComponentBuilder = (
   opened: boolean,
   onClose: () => void,
 ) => React.ReactNode;
+
 type ResourceEditionComponentBuilder = (
   resourceId: string | null,
   onClose: () => void,
 ) => React.ReactNode;
+
 type ResourceDeletionComponentBuilder = (
   resource: any,
   opened: boolean,
@@ -122,25 +121,10 @@ function Search({
 
   return (
     <Group gap="xs">
-      <TextInput
-        placeholder={t("resource.list.search")}
+      <SearchInput
         value={search}
-        onChange={(event) => setSearch(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            handleSearch();
-          }
-        }}
-        rightSection={
-          search ? (
-            <CloseButton
-              onClick={() => setSearch("")}
-              style={{ display: search ? undefined : "none" }}
-            />
-          ) : (
-            <IconSearch style={iconSize(22)} />
-          )
-        }
+        onChange={setSearch}
+        onSubmit={handleSearch}
       />
       <Button onClick={handleSearch} disabled={!search && !value}>
         {t("resource.list.search")}
