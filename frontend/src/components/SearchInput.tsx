@@ -1,4 +1,5 @@
-import { Input, TextInput, TextInputProps } from "@mantine/core";
+import { FocusTrap, Input, TextInput, TextInputProps } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { IconSearch } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
@@ -15,25 +16,36 @@ export function SearchInput({
   onSubmit: () => void;
 } & Omit<TextInputProps, "value" | "onChange" | "onKeyDown">) {
   const { t } = useTranslation();
+  const [isFocused, { open: setFocusActive, close: setFocusInactive }] =
+    useDisclosure(false);
 
   return (
-    <TextInput
-      value={value}
-      onChange={(event) => onChange(event.currentTarget.value)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          onSubmit();
+    <FocusTrap active={isFocused}>
+      <TextInput
+        onFocus={setFocusActive}
+        onBlur={setFocusInactive}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            onSubmit();
+          }
+        }}
+        rightSection={
+          value ? (
+            <Input.ClearButton
+              onClick={() => {
+                onChange("");
+                setFocusActive();
+              }}
+            />
+          ) : (
+            <IconSearch style={iconSize(22)} />
+          )
         }
-      }}
-      rightSection={
-        value ? (
-          <Input.ClearButton onClick={() => onChange("")} />
-        ) : (
-          <IconSearch style={iconSize(22)} />
-        )
-      }
-      placeholder={t("common.search")}
-      {...props}
-    />
+        placeholder={t("common.search")}
+        {...props}
+      />
+    </FocusTrap>
   );
 }
