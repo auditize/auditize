@@ -1,8 +1,8 @@
 import {
   CheckIcon,
-  CloseButton,
   Combobox,
   Group,
+  Input,
   rem,
   ScrollArea,
   Stack,
@@ -33,7 +33,7 @@ export function SelectWithoutDropdown({
             onChange={(event) => onChange(event.currentTarget.value)}
             rightSectionPointerEvents="all"
             rightSection={
-              <CloseButton
+              <Input.ClearButton
                 onClick={() => onChange("")}
                 style={{ display: value ? undefined : "none" }}
               />
