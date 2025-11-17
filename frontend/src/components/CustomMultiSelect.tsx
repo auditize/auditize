@@ -119,10 +119,10 @@ export function CustomMultiSelect({
     <Combobox
       store={comboboxStore}
       onOpen={() => {
+        setSearch("");
         comboboxStore.focusSearchInput();
         viewportRef.current?.scrollTo({ top: 0 });
       }}
-      onClose={() => setSearch("")}
       onOptionSubmit={(changed: string) => {
         if (value.includes(changed)) {
           onRemove(changed);
