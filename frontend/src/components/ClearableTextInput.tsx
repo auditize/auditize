@@ -6,11 +6,13 @@ export function ClearableTextInput({
   value,
   onChange,
   rightSection,
+  component,
   ...props
 }: {
   value: string;
   onChange: (value: string) => void;
   rightSection?: ReactNode;
+  component?: React.ComponentType<TextInputProps>;
 } & Omit<
   TextInputProps,
   "value" | "onChange" | "rightSection" | "onFocus" | "onBlur"
@@ -18,9 +20,11 @@ export function ClearableTextInput({
   const [isFocused, { open: setFocusActive, close: setFocusInactive }] =
     useDisclosure(false);
 
+  const InputComponent = component || TextInput;
+
   return (
     <FocusTrap active={isFocused}>
-      <TextInput
+      <InputComponent
         onFocus={setFocusActive}
         onBlur={setFocusInactive}
         value={value}
@@ -32,9 +36,7 @@ export function ClearableTextInput({
                 onChange("");
                 setFocusActive();
               }}
-              style={{
-                display: value ? undefined : "none",
-              }}
+              style={value ? undefined : { display: "none" }}
             />
           ) : (
             rightSection

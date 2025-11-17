@@ -4,11 +4,14 @@ import {
   ComboboxProps,
   Group,
   ScrollArea,
+  TextInputProps,
   useCombobox,
 } from "@mantine/core";
 import React, { useRef } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+
+import { ClearableTextInput } from "./ClearableTextInput";
 
 export interface CustomMultiSelectItem {
   value: string;
@@ -141,10 +144,11 @@ export function CustomMultiSelect({
       <Combobox.DropdownTarget>{children}</Combobox.DropdownTarget>
 
       <Combobox.Dropdown>
-        <Combobox.Search
+        <ClearableTextInput
           value={search}
-          onChange={(event) => setSearch(event.currentTarget.value)}
+          onChange={setSearch}
           placeholder={t("common.CustomMultiSelect.filterFields")}
+          component={Combobox.Search as React.ComponentType<TextInputProps>}
         />
         <Combobox.Options>
           <ScrollArea.Autosize viewportRef={viewportRef} type="hover" mah={200}>
