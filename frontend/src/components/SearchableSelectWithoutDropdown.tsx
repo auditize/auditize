@@ -1,16 +1,16 @@
 import {
   CheckIcon,
-  CloseButton,
   Combobox,
   Group,
   rem,
   ScrollArea,
   Stack,
-  TextInput,
 } from "@mantine/core";
 import { useDebouncedCallback } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+
+import { ClearableTextInput } from "./ClearableTextInput";
 
 const MIN_SEARCH_LENGTH = 2;
 
@@ -55,19 +55,7 @@ export function SearchableSelectWithoutDropdown({
         withinPortal={false}
       >
         <Combobox.EventsTarget>
-          <TextInput
-            value={search}
-            onChange={(event) => handleSearchChange(event.currentTarget.value)}
-            rightSection={
-              <CloseButton
-                onClick={() => handleSearchChange("")}
-                style={{
-                  display: search ? undefined : "none",
-                }}
-              />
-            }
-            autoFocus={!value}
-          />
+          <ClearableTextInput value={search} onChange={handleSearchChange} />
         </Combobox.EventsTarget>
         <Combobox.Options mt={rem(10)}>
           <ScrollArea.Autosize type="hover" mah={200} scrollbarSize={4}>
