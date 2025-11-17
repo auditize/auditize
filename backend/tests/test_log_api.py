@@ -847,22 +847,6 @@ async def test_get_logs_forbidden(
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs")
 
 
-# Bug coverage
-async def test_get_logs_access_control_without_explicit_entities(
-    superadmin_client: HttpTestHelper, repo: PreparedRepo
-):
-    resp = await superadmin_client.assert_post_ok(
-        "/auth/access-token",
-        json={"permissions": {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}},
-    )
-    access_token = resp.json()["access_token"]
-
-    client = HttpTestHelper.spawn()
-    await client.assert_get_ok(
-        f"/repos/{repo.id}/logs", headers={"Authorization": f"Bearer {access_token}"}
-    )
-
-
 async def test_get_logs_limit(log_rw_client: HttpTestHelper, repo: PreparedRepo):
     await repo.create_log(log_rw_client)
     log2 = await repo.create_log(log_rw_client)

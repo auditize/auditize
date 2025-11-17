@@ -93,7 +93,7 @@ def generate_access_token(
     return _sign_jwt_token(payload), expires_at
 
 
-def get_access_token_data(token: str) -> tuple[UUID, Permissions]:
+def get_access_token_data(token: str) -> tuple[UUID, PermissionsInput]:
     payload = _get_jwt_token_payload(token)
     sub = payload["sub"]
 
@@ -101,8 +101,6 @@ def get_access_token_data(token: str) -> tuple[UUID, Permissions]:
         raise AuthenticationFailure("Invalid 'sub' field in JWT token")
     apikey_id = sub[len(_SUB_PREFIX_ACCESS_TOKEN) :]
 
-    permissions = build_permissions(
-        PermissionsInput.model_validate(payload["permissions"])
-    )
+    permissions = PermissionsInput.model_validate(payload["permissions"])
 
     return UUID(apikey_id), permissions

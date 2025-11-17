@@ -21,7 +21,7 @@ from auditize.permissions.assertions import (
     can_read_logs_from_repo,
     can_write_logs_to_repo,
 )
-from auditize.permissions.service import authorize_grant
+from auditize.permissions.service import authorize_grant, build_permissions
 from auditize.permissions.sql_models import Permissions
 from auditize.user.service import get_user_by_email
 from auditize.user.sql_models import User
@@ -120,7 +120,7 @@ async def authenticate_access_token(
         )
 
     return Authenticated.from_access_token(
-        AccessToken(apikey=apikey, permissions=permissions)
+        AccessToken(apikey=apikey, permissions=build_permissions(permissions))
     )
 
 

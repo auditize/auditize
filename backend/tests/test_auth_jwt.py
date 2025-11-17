@@ -49,4 +49,8 @@ async def test_access_token():
     assert expires_at.timestamp() > now
     actual_apikey_id, actual_permissions = get_access_token_data(token)
     assert actual_apikey_id == apikey_id
-    assert actual_permissions == Permissions(repos_read=True)
+    assert actual_permissions == PermissionsInput(
+        management=ManagementPermissionsInput(
+            repos=ReadWritePermissionsInput(read=True)
+        )
+    )

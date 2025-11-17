@@ -91,6 +91,37 @@ async def test_auth_access_token_with_log_read_permission_on_specific_repo(
     )
 
 
+# Bug coverage
+async def test_auth_access_token_without_explicit_entities(
+    superadmin_client: HttpTestHelper, repo: PreparedRepo
+):
+    resp = await superadmin_client.assert_post_ok(
+        "/auth/access-token",
+        json={"permissions": {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}},
+    )
+    access_token = resp.json()["access_token"]
+
+    client = HttpTestHelper.spawn()
+    await client.assert_get_ok(
+        f"/repos/{repo.id}/logs", headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+
+# Bug coverage
+async def test_auth_access_token_non_superadmin(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    resp = await log_rw_client.assert_post_ok(
+        "/auth/access-token",
+        json={"permissions": {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}},
+    )
+    access_token = resp.json()["access_token"]
+
+    await log_rw_client.assert_get_ok(
+        f"/repos/{repo.id}/logs", headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+
 async def test_auth_access_token_invalid_syntax():
     request = make_http_request(headers={"Authorization": f"Bearer aat-INVALID_TOKEN"})
     with pytest.raises(AuthenticationFailure, match="Cannot decode JWT token"):
