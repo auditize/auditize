@@ -65,6 +65,7 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
   return {
     fields: [
       { group: "Date", items: [item("savedAt", t("log.date"))] },
+      { group: "Search", items: [item("q", t("common.search"))] },
       {
         group: t("log.action"),
         items: [

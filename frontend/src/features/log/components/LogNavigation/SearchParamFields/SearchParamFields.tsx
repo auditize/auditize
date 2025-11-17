@@ -22,12 +22,14 @@ import { titlize } from "@/utils/format";
 import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
 import { DateInterval } from "./DateInterval";
 import { EntitySearchParamField } from "./EntitySearchParamField";
+import { GlobalTextSearchParamField } from "./GlobalTextSearchParamField";
 import { HasAttachmentSearchParamField } from "./HasAttachmentSearchParamField";
 import { SearchableSearchParamField } from "./SearchableSearchParamField";
 import { SelectSearchParamField } from "./SelectSearchParamField";
 import { TextInputSearchParamField } from "./TextInputSearchParamField";
 
 export const FIXED_SEARCH_PARAM_NAMES = new Set([
+  "q",
   "savedAt",
   "actorRef",
   "actionCategory",
@@ -41,15 +43,27 @@ function SearchParamField({
   openedByDefault,
   onChange,
   onRemove,
+  onSubmit,
 }: {
   name: string;
   searchParams: LogSearchParams;
   openedByDefault: boolean;
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
+  onSubmit: () => void;
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(searchParams.repoId);
+
+  if (name === "q") {
+    return (
+      <GlobalTextSearchParamField
+        searchParams={searchParams}
+        onChange={onChange}
+        onSubmit={onSubmit}
+      />
+    );
+  }
 
   if (name === "savedAt") {
     return (
@@ -144,6 +158,7 @@ function SearchParamField({
           )
         }
         onRemove={onRemove}
+        onSubmit={onSubmit}
       />
     );
   }
@@ -163,6 +178,7 @@ function SearchParamField({
           )
         }
         onRemove={onRemove}
+        onSubmit={onSubmit}
       />
     );
   }
@@ -216,6 +232,7 @@ function SearchParamField({
           )
         }
         onRemove={onRemove}
+        onSubmit={onSubmit}
       />
     );
   }
@@ -235,6 +252,7 @@ function SearchParamField({
           )
         }
         onRemove={onRemove}
+        onSubmit={onSubmit}
       />
     );
   }
@@ -293,6 +311,7 @@ function SearchParamField({
         openedByDefault={openedByDefault}
         onChange={onChange}
         onRemove={onRemove}
+        onSubmit={onSubmit}
       />
     );
   }
@@ -347,12 +366,14 @@ export function SearchParamFields({
   searchParams,
   onChange,
   onRemove,
+  onSubmit,
 }: {
   names: Set<string>;
   added: string | null;
   searchParams: LogSearchParams;
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
+  onSubmit: () => void;
 }) {
   return (
     <>
@@ -364,6 +385,7 @@ export function SearchParamFields({
           openedByDefault={name === added}
           onChange={onChange}
           onRemove={onRemove}
+          onSubmit={onSubmit}
         />
       ))}
     </>

@@ -3,6 +3,7 @@ import { camelCaseToSnakeCaseObjectKeys } from "@/utils/switchCase";
 
 export class LogSearchParams {
   repoId: string = "";
+  q: string = "";
   actionCategory: string = "";
   actionType: string = "";
   actorType: string = "";
@@ -30,6 +31,7 @@ export class LogSearchParams {
 
   isEmpty(): boolean {
     return [
+      this.q,
       this.actionCategory,
       this.actionType,
       this.actorType,
@@ -84,6 +86,9 @@ export class LogSearchParams {
       // Dates
       since: this.since ? serializeDate(this.since) : null,
       until: this.until ? serializeDate(this.until) : null,
+
+      // Query (global text search)
+      q: this.q,
 
       // Action
       actionCategory: this.actionCategory,
@@ -156,6 +161,7 @@ export class LogSearchParams {
     params.repoId = obj.repoId ?? "";
     params.since = obj.since ? deserializeDate(obj.since) : null;
     params.until = obj.until ? deserializeDate(obj.until) : null;
+    params.q = obj.q ?? "";
     params.actionCategory = obj.actionCategory ?? "";
     params.actionType = obj.actionType ?? "";
     params.actorType = obj.actorType ?? "";

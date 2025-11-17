@@ -376,6 +376,7 @@ export default {
     lessDetails: "Moins de détails",
     chooseAValue: "Choisissez une valeur",
     noResults: "Pas de résultats",
+    search: "Rechercher",
     typeToSearch: "Tapez pour rechercher...",
     searchInProgress: "Recherche en cours...",
     passwordForm: {

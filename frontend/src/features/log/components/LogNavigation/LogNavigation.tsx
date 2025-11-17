@@ -132,6 +132,7 @@ function removeSearchParam(
 ) {
   // Handle search params whose names are equivalent to search param names
   const equivalentSearchParams = [
+    "q",
     "actionCategory",
     "actionType",
     "actorRef",
@@ -297,6 +298,7 @@ export function LogNavigation({
               setIsDirty(true);
             }}
             onRemove={removeSearchParamField}
+            onSubmit={() => onChange(editedParams)}
           />
           <SearchParamFieldSelector
             repoId={editedParams.repoId}
