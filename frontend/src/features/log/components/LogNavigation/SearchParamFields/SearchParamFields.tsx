@@ -22,7 +22,7 @@ import { titlize } from "@/utils/format";
 import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
 import { DateInterval } from "./DateInterval";
 import { EntitySearchParamField } from "./EntitySearchParamField";
-import { FullTextSearchParamField } from "./FullTextSearchParamField";
+import { GlobalTextSearchParamField } from "./GlobalTextSearchParamField";
 import { HasAttachmentSearchParamField } from "./HasAttachmentSearchParamField";
 import { SearchableSearchParamField } from "./SearchableSearchParamField";
 import { SelectSearchParamField } from "./SelectSearchParamField";
@@ -57,7 +57,7 @@ function SearchParamField({
 
   if (name === "q") {
     return (
-      <FullTextSearchParamField
+      <GlobalTextSearchParamField
         searchParams={searchParams}
         onChange={onChange}
         onSubmit={onSubmit}

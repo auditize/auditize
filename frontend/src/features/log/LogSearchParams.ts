@@ -87,7 +87,7 @@ export class LogSearchParams {
       since: this.since ? serializeDate(this.since) : null,
       until: this.until ? serializeDate(this.until) : null,
 
-      // Query (full text search)
+      // Query (global text search)
       q: this.q,
 
       // Action

@@ -1,7 +1,7 @@
 import { SearchInput } from "@/components/SearchInput";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
 
-export function FullTextSearchParamField({
+export function GlobalTextSearchParamField({
   searchParams,
   onChange,
   onSubmit,
