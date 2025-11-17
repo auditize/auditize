@@ -10,11 +10,13 @@ export function SearchInput({
   value,
   onChange,
   onSubmit,
+  disableSearchIcon = false,
   ...props
 }: {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  disableSearchIcon?: boolean;
 } & Omit<TextInputProps, "value" | "onChange" | "onKeyDown">) {
   const { t } = useTranslation();
 
@@ -27,7 +29,9 @@ export function SearchInput({
           onSubmit();
         }
       }}
-      rightSection={<IconSearch style={iconSize(22)} />}
+      rightSection={
+        disableSearchIcon ? undefined : <IconSearch style={iconSize(22)} />
+      }
       placeholder={t("common.search")}
       {...props}
     />

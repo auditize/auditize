@@ -1,5 +1,6 @@
-import { TextInput } from "@mantine/core";
 import { useState } from "react";
+
+import { SearchInput } from "@/components/SearchInput";
 
 import { SearchParamFieldPopover } from "./SearchParamFieldPopover";
 import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
@@ -32,15 +33,12 @@ export function BaseTextInputSearchParamField({
       onRemove={() => onRemove(name)}
       focusTrap
     >
-      <TextInput
+      <SearchInput
         placeholder={label}
         value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            onSubmit();
-          }
-        }}
+        onChange={onChange}
+        onSubmit={onSubmit}
+        disableSearchIcon
         p="sm"
         // If the label (and then the placeholder) contains the word "email" for instance,
         // a password manager will try to fill the input with an email address, which is not what we want.
