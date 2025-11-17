@@ -1,9 +1,10 @@
-import { FocusTrap, Input, TextInput, TextInputProps } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { TextInputProps } from "@mantine/core";
 import { IconSearch } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
 import { iconSize } from "@/utils/ui";
+
+import { ClearableTextInput } from "./ClearableTextInput";
 
 export function SearchInput({
   value,
@@ -16,36 +17,19 @@ export function SearchInput({
   onSubmit: () => void;
 } & Omit<TextInputProps, "value" | "onChange" | "onKeyDown">) {
   const { t } = useTranslation();
-  const [isFocused, { open: setFocusActive, close: setFocusInactive }] =
-    useDisclosure(false);
 
   return (
-    <FocusTrap active={isFocused}>
-      <TextInput
-        onFocus={setFocusActive}
-        onBlur={setFocusInactive}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            onSubmit();
-          }
-        }}
-        rightSection={
-          value ? (
-            <Input.ClearButton
-              onClick={() => {
-                onChange("");
-                setFocusActive();
-              }}
-            />
-          ) : (
-            <IconSearch style={iconSize(22)} />
-          )
+    <ClearableTextInput
+      value={value}
+      onChange={onChange}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          onSubmit();
         }
-        placeholder={t("common.search")}
-        {...props}
-      />
-    </FocusTrap>
+      }}
+      rightSection={<IconSearch style={iconSize(22)} />}
+      placeholder={t("common.search")}
+      {...props}
+    />
   );
 }
