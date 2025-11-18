@@ -4,7 +4,7 @@
 
 Auditize aims to deliver powerful audit log management capabilities to your software without the burden of developing an in-house solution.
 
-It is a backend & frontend solution based on [Python](https://www.python.org/), [FastAPI](https://fastapi.tiangolo.com/), [React](https://react.dev/), and [Elasticsearch](https://www.elastic.co/elasticsearch/).
+It is a backend & frontend solution based on [Python](https://www.python.org/), [FastAPI](https://fastapi.tiangolo.com/), [React](https://react.dev/), [PostgreSQL](https://www.postgresql.org/) and [Elasticsearch](https://www.elastic.co/elasticsearch/).
 
 Please check the [documentation](https://auditize.org) for more information about features, installation, and usage.
 
