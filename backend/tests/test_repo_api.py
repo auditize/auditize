@@ -291,7 +291,6 @@ async def test_repo_get_with_stats_empty(
         expected_json=repo.expected_api_response(
             {
                 "stats": {
-                    "first_log_date": None,
                     "last_log_date": None,
                     "log_count": 0,
                     "storage_size": callee.IsA(int),
@@ -317,7 +316,6 @@ async def test_repo_get_with_stats(
         expected_json=repo.expected_api_response(
             {
                 "stats": {
-                    "first_log_date": "2024-01-01T00:00:00.000Z",
                     "last_log_date": "2024-01-02T00:00:00.000Z",
                     "log_count": 2,
                     "storage_size": callee.IsA(int),
@@ -532,7 +530,6 @@ async def test_repo_list_with_stats(
                 repo.expected_api_response(
                     {
                         "stats": {
-                            "first_log_date": "2024-01-01T00:00:00.123Z",
                             "last_log_date": "2024-01-01T00:00:00.123Z",
                             "log_count": 1,
                             "storage_size": callee.IsA(int),

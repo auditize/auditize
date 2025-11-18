@@ -23,7 +23,6 @@ export interface Repo extends RepoCreation {
   id: string;
   createdAt: string;
   stats?: {
-    firstLogDate: string;
     lastLogDate: string;
     logCount: number;
     storageSize: number;

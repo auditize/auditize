@@ -487,31 +487,20 @@ class LogService:
 
         return logs, next_cursor
 
-    async def _get_sorted_log(
-        self, sort, *, search_params: LogSearchParams | None = None
+    async def get_newest_log(
+        self, search_params: LogSearchParams | None = None
     ) -> Log | None:
         filter = self._prepare_es_query(search_params) if search_params else []
         resp = await self.es.search(
             index=self.index,
             query={"bool": {"filter": filter}},
-            sort=sort,
+            sort=[{"saved_at": "desc", "log_id": "desc"}],
             size=1,
         )
         hits = resp["hits"]["hits"]
         if not hits:
             return None
         return Log.model_validate({**hits[0]["_source"], "id": hits[0]["_id"]})
-
-    async def get_oldest_log(self) -> Log | None:
-        return await self._get_sorted_log([{"saved_at": "asc", "log_id": "asc"}])
-
-    async def get_newest_log(
-        self, search_params: LogSearchParams | None = None
-    ) -> Log | None:
-        return await self._get_sorted_log(
-            sort=[{"saved_at": "desc", "log_id": "desc"}],
-            search_params=search_params,
-        )
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(

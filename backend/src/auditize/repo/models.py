@@ -74,7 +74,6 @@ class RepoUpdate(BaseModel):
 
 
 class RepoStats(BaseModel, HasDatetimeSerialization):
-    first_log_date: datetime | None = Field(description="The first log date")
     last_log_date: datetime | None = Field(description="The last log date")
     log_count: int = Field(description="The log count")
     storage_size: int = Field(description="The database storage size")
@@ -82,7 +81,6 @@ class RepoStats(BaseModel, HasDatetimeSerialization):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "first_log_date": "2024-01-01T00:00:00.000Z",
                 "last_log_date": "2024-01-03T00:00:00.000Z",
                 "log_count": 1000,
                 "storage_size": 100889890,
