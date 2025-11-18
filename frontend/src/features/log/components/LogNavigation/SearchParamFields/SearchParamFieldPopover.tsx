@@ -41,10 +41,14 @@ export function SearchParamFieldPopover({
                 onClick={onRemove}
                 component="a" // a button cannot be a child of a button
                 variant="transparent"
+                size="sm"
               />
             )
           }
           variant={isSet ? "light" : "outline"}
+          styles={{
+            section: { marginLeft: 0 },
+          }}
         >
           {title}
         </Button>
@@ -53,4 +57,3 @@ export function SearchParamFieldPopover({
     </Popover>
   );
 }
-
