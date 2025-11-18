@@ -1280,11 +1280,13 @@ class _TestGetLogsFullTextSearchCustomField:
                 [
                     {
                         "name": "param1",
-                        "value": "foo",
+                        # NB: ensure case-insensitive search
+                        "value": "FOO",
                     },
                     {
                         "name": "param2",
-                        "value": "bar",
+                        # NB: ensure accent-insensitive search
+                        "value": "barré",
                     },
                 ]
             ),
@@ -1300,7 +1302,9 @@ class _TestGetLogsFullTextSearchCustomField:
                 ],
             },
         )
-        await _test_get_logs_filter(log_rw_client, repo, {"q": "foo bar"}, matching_log)
+        await _test_get_logs_filter(
+            log_rw_client, repo, {"q": "foo barre"}, matching_log
+        )
 
 
 class TestGetLogsFullTextSearchSource(_TestGetLogsFullTextSearchCustomField):

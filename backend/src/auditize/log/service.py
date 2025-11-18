@@ -1004,11 +1004,17 @@ class LogService:
         await self.session.commit()
 
 
+_TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
+    "type": "text",
+    "analyzer": "custom_asciifolding",
+    "search_analyzer": "custom_asciifolding",
+}
+
 _TYPE_CUSTOM_FIELDS = {
     "type": "nested",
     "properties": {
         "name": {"type": "keyword"},
-        "value": {"type": "text"},
+        "value": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
     },
 }
 
@@ -1032,7 +1038,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
                         "name": {
-                            "type": "text",
+                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                         "extra": _TYPE_CUSTOM_FIELDS,
@@ -1043,7 +1049,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
                         "name": {
-                            "type": "text",
+                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                         "extra": _TYPE_CUSTOM_FIELDS,
@@ -1056,7 +1062,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                         "ref": {"type": "keyword"},
                         "type": {"type": "keyword"},
                         "name": {
-                            "type": "text",
+                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                     },
@@ -1064,7 +1070,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                 "attachments": {
                     "type": "nested",
                     "properties": {
-                        "name": {"type": "text"},
+                        "name": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
                         "type": {"type": "keyword"},
                         "mime_type": {"type": "keyword"},
                         "saved_at": {"type": "date"},
@@ -1076,7 +1082,7 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
                     "properties": {
                         "ref": {"type": "keyword"},
                         "name": {
-                            "type": "text",
+                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
                             "fields": {"keyword": {"type": "keyword"}},
                         },
                     },
@@ -1087,6 +1093,14 @@ async def create_index(elastic_client: AsyncElasticsearch, index_name: str):
             "index": {
                 "sort.field": ["saved_at", "log_id"],
                 "sort.order": ["desc", "desc"],
+            },
+            "analysis": {
+                "analyzer": {
+                    "custom_asciifolding": {
+                        "tokenizer": "standard",
+                        "filter": ["lowercase", "asciifolding"],
+                    }
+                }
             },
         },
     )
