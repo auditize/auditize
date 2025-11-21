@@ -111,6 +111,40 @@ async def test_create_log_all_fields(
     )
 
 
+async def test_create_log_enum_fields(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data(
+        {
+            "source": [
+                {"name": "foo", "value": "bar", "type": "enum"},
+            ],
+            "actor": {
+                "type": "user",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [{"name": "foo", "value": "bar", "type": "enum"}],
+            },
+            "resource": {
+                "ref": "core",
+                "type": "module",
+                "name": "Core Module",
+                "extra": [{"name": "foo", "value": "bar", "type": "enum"}],
+            },
+            "details": [
+                {"name": "foo", "value": "bar", "type": "enum"},
+            ],
+        }
+    )
+
+    await log_write_client.assert_post(
+        f"/repos/{repo.id}/logs",
+        json=log_data,
+        expected_status_code=201,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
 @pytest.mark.parametrize("status", ["readonly", "disabled"])
 async def test_create_log_not_allowed_by_repo_status(
     superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, status: str

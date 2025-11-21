@@ -88,6 +88,14 @@ class PreparedLog:
             expected["resource"].setdefault("extra", [])
         for attachment in expected["attachments"]:
             attachment["saved_at"] = DATETIME_FORMAT
+        custom_fields = (
+            expected["source"]
+            + expected["details"]
+            + (expected["actor"]["extra"] if expected["actor"] else [])
+            + (expected["resource"]["extra"] if expected["resource"] else [])
+        )
+        for custom_field in custom_fields:
+            custom_field.setdefault("type", "string")
         return expected
 
     def expected_api_response(self, extra=None) -> dict:

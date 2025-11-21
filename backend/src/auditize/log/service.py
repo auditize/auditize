@@ -1,5 +1,4 @@
 import base64
-import json
 import re
 import string
 import unicodedata
@@ -139,10 +138,7 @@ class LogService:
             await self.es.create(
                 index=self.index,
                 id=str(log.id),
-                document={
-                    "log_id": log.id,
-                    **log.model_dump(exclude={"id"}),
-                },
+                document=log.model_dump(context="es"),
                 refresh=self._refresh,
             )
         except elasticsearch.ConflictError:
@@ -224,7 +220,7 @@ class LogService:
         except ElasticNotFoundError:
             raise NotFoundError()
 
-        log = Log.model_validate({**resp["_source"], "id": log_id})
+        log = Log.model_validate(resp["_source"], context="es")
         self._check_log_visibility(log, authorized_entities)
 
         return log
@@ -241,7 +237,8 @@ class LogService:
             raise NotFoundError()
 
         self._check_log_visibility(
-            Log.model_validate({**resp["_source"], "id": log_id}), authorized_entities
+            Log.model_validate(resp["_source"], context="es"),
+            authorized_entities,
         )
 
         try:
@@ -481,9 +478,7 @@ class LogService:
         else:
             next_cursor = None
 
-        logs = [
-            Log.model_validate({**hit["_source"], "id": hit["_id"]}) for hit in hits
-        ]
+        logs = [Log.model_validate(hit["_source"], context="es") for hit in hits]
 
         return logs, next_cursor
 
@@ -500,7 +495,7 @@ class LogService:
         hits = resp["hits"]["hits"]
         if not hits:
             return None
-        return Log.model_validate({**hits[0]["_source"], "id": hits[0]["_id"]})
+        return Log.model_validate(hits[0]["_source"], context="es")
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(
@@ -1002,8 +997,10 @@ _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
 _TYPE_CUSTOM_FIELDS = {
     "type": "nested",
     "properties": {
+        "type": {"type": "keyword"},
         "name": {"type": "keyword"},
         "value": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+        "value_enum": {"type": "keyword"},
     },
 }
 
