@@ -34,6 +34,7 @@ from auditize.helpers.datetime import now
 from auditize.i18n import get_request_lang
 from auditize.log.csv import stream_logs_as_csv, validate_log_csv_columns
 from auditize.log.models import (
+    CustomFieldListResponse,
     Log,
     LogActionTypeListParams,
     LogActorResponse,
@@ -92,6 +93,20 @@ async def _get_aggregated_name_ref_pairs(
         pagination_cursor=params.cursor,
     )
     return NameRefPairListResponse.build(data, next_cursor)
+
+
+async def _get_custom_fields(
+    session: AsyncSession,
+    repo_id: UUID,
+    get_data_func_name,
+    params: CursorPaginationParams,
+) -> CustomFieldListResponse:
+    service = await LogService.for_reading(session, repo_id)
+    data, next_cursor = await getattr(service, get_data_func_name)(
+        limit=params.limit,
+        pagination_cursor=params.cursor,
+    )
+    return CustomFieldListResponse.build(data, next_cursor)
 
 
 @router.get(
@@ -168,13 +183,13 @@ async def get_log_actor_types(
 
 @router.get(
     "/repos/{repo_id}/logs/aggs/actors/extras/names",
-    summary="Get aggregated list of actor extra names",
+    summary="Get aggregated list of actor extra field names",
     description="Requires `log:read` permission.",
     operation_id="list_log_actor_extras",
     tags=["log"],
     response_model=NameListResponse,
 )
-async def get_log_actor_extras(
+async def get_log_actor_extra_field_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
@@ -183,7 +198,7 @@ async def get_log_actor_extras(
     return await _get_aggregated_names(
         session,
         repo_id,
-        "get_log_actor_extra_fields",
+        "get_log_actor_extra_field_names",
         page_params,
     )
 
@@ -212,13 +227,13 @@ async def get_log_resource_types(
 
 @router.get(
     "/repos/{repo_id}/logs/aggs/resources/extras/names",
-    summary="Get aggregated list of resource extra names",
+    summary="Get aggregated list of resource extra field names",
     description="Requires `log:read` permission.",
     operation_id="list_log_resource_extras",
     tags=["log"],
     response_model=NameListResponse,
 )
-async def get_log_resource_extras(
+async def get_log_resource_extra_field_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
@@ -227,7 +242,7 @@ async def get_log_resource_extras(
     return await _get_aggregated_names(
         session,
         repo_id,
-        "get_log_resource_extra_fields",
+        "get_log_resource_extra_field_names",
         page_params,
     )
 
@@ -256,11 +271,33 @@ async def get_log_tag_types(
 
 @router.get(
     "/repos/{repo_id}/logs/aggs/sources/names",
-    summary="Get aggregated list of source names",
+    summary="Get aggregated list of source field names",
     description="Requires `log:read` permission.",
     operation_id="list_log_source_fields",
     tags=["log"],
     response_model=NameListResponse,
+)
+async def get_log_source_field_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_aggregated_names(
+        session,
+        repo_id,
+        "get_log_source_field_names",
+        page_params,
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/source",
+    summary="Get available source fields",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_source_fields",
+    tags=["log"],
+    response_model=CustomFieldListResponse,
 )
 async def get_log_source_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
@@ -268,23 +305,20 @@ async def get_log_source_fields(
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
-    return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_source_fields",
-        page_params,
+    return await _get_custom_fields(
+        session, repo_id, "get_log_source_fields", page_params
     )
 
 
 @router.get(
     "/repos/{repo_id}/logs/aggs/details/names",
-    summary="Get aggregated list of detail names",
+    summary="Get aggregated list of detail field names",
     description="Requires `log:read` permission.",
-    operation_id="list_log_detail_fields",
+    operation_id="list_log_detail_field_names",
     tags=["log"],
     response_model=NameListResponse,
 )
-async def get_log_detail_fields(
+async def get_log_detail_field_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
@@ -293,8 +327,27 @@ async def get_log_detail_fields(
     return await _get_aggregated_names(
         session,
         repo_id,
-        "get_log_detail_fields",
+        "get_log_detail_field_names",
         page_params,
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/details",
+    summary="Get available details fields",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_details_fields",
+    tags=["log"],
+    response_model=CustomFieldListResponse,
+)
+async def get_log_details_fields(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_fields(
+        session, repo_id, "get_log_details_fields", page_params
     )
 
 
@@ -362,6 +415,25 @@ async def get_log_actor_names(
 
 
 @router.get(
+    "/repos/{repo_id}/logs/actors/extras",
+    summary="Get available actor extra fields",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_actor_extra_fields",
+    tags=["log"],
+    response_model=CustomFieldListResponse,
+)
+async def get_log_actor_extra_fields(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_fields(
+        session, repo_id, "get_log_actor_extra_fields", page_params
+    )
+
+
+@router.get(
     "/repos/{repo_id}/logs/aggs/resources/names",
     summary="Get aggregated list of resource names and refs",
     description="Requires `log:read` permission.",
@@ -377,6 +449,25 @@ async def get_log_resource_names(
 ):
     return await _get_aggregated_name_ref_pairs(
         session, repo_id, "get_log_resource_names", params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/extras",
+    summary="Get available resource extra fields",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_resource_extra_fields",
+    tags=["log"],
+    response_model=CustomFieldListResponse,
+)
+async def get_log_resource_extra_fields(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_fields(
+        session, repo_id, "get_log_resource_extra_fields", page_params
     )
 
 

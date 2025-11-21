@@ -2695,6 +2695,129 @@ class TestLogTag(_TestGetSubElementByRef):
         }
 
 
+class _ConsolidatedCustomFieldsTest:
+    @property
+    def relative_path(self) -> str:
+        raise NotImplementedError()
+
+    def get_path(self, repo_id: str) -> str:
+        return f"/repos/{repo_id}/logs/{self.relative_path}"
+
+    def prepare_log_data(self, field: dict) -> dict:
+        raise NotImplementedError()
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        fields = [
+            {
+                "name": "field-1",
+                "value": "Value 1",
+                "type": "string",
+            },
+            {
+                "name": "field-2",
+                "value": "Value 2",
+                "type": "string",
+            },
+            {
+                "name": "field-3",
+                "value": "Value 3",
+                "type": "string",
+            },
+            {
+                "name": "field-4",
+                "value": "Value 2",
+                "type": "enum",
+            },
+            {
+                "name": "field-5",
+                "value": "Value 3",
+                "type": "enum",
+            },
+        ]
+        for field in fields:
+            await repo.create_log(
+                superadmin_client,
+                self.prepare_log_data(field),
+            )
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id),
+            items=[{"name": field["name"], "type": field["type"]} for field in fields],
+        )
+
+    async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await do_test_cursor_pagination_empty_data(
+            log_read_client, self.get_path(repo.id)
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper):
+        await log_read_client.assert_get_not_found(self.get_path(UNKNOWN_UUID))
+
+    async def test_forbidden(
+        self, no_permission_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await no_permission_client.assert_get_forbidden(self.get_path(repo.id))
+
+
+class TestLogDetailsFields(_ConsolidatedCustomFieldsTest):
+    @property
+    def relative_path(self) -> str:
+        return "details"
+
+    def prepare_log_data(self, field: dict) -> dict:
+        return PreparedLog.prepare_data({"details": [field]})
+
+
+class TestLogSourceFields(_ConsolidatedCustomFieldsTest):
+    @property
+    def relative_path(self) -> str:
+        return "source"
+
+    def prepare_log_data(self, field: dict) -> dict:
+        return PreparedLog.prepare_data({"source": [field]})
+
+
+class TestLogActorExtraFields(_ConsolidatedCustomFieldsTest):
+    @property
+    def relative_path(self) -> str:
+        return "actors/extras"
+
+    def prepare_log_data(self, field: dict) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "12345",
+                    "name": "John Doe",
+                    "extra": [field],
+                }
+            }
+        )
+
+
+class TestLogResourceExtraFields(_ConsolidatedCustomFieldsTest):
+    @property
+    def relative_path(self) -> str:
+        return "resources/extras"
+
+    def prepare_log_data(self, field: dict) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "resource": {
+                    "type": "config-profile",
+                    "ref": "config-profile:123",
+                    "name": "Config Profile 123",
+                    "extra": [field],
+                }
+            }
+        )
+
+
 async def test_log_entity_consolidation_rename_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):

@@ -505,6 +505,32 @@ class NameRefPairListResponse(
         return NameRefPairData(name=name, ref=ref)
 
 
+class CustomFieldData(BaseModel):
+    name: str = Field(description="Custom field name")
+    type: CustomFieldType = Field(description="Custom field type")
+
+
+class CustomFieldListResponse(
+    CursorPaginatedResponse[tuple[str, CustomFieldType], CustomFieldData]
+):
+    @classmethod
+    def build_item(cls, custom_field: tuple[str, CustomFieldType]) -> CustomFieldData:
+        name, type = custom_field
+        return CustomFieldData(name=name, type=type)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "items": [
+                    {"name": "profile-name", "type": "string"},
+                    {"name": "status", "type": "enum"},
+                ],
+                "pagination": {"next_cursor": None},
+            }
+        }
+    )
+
+
 class LogEntityResponse(_EntityPathNodeData):
     parent_entity_ref: str | None = Field(
         description="The ID of the parent entity. It is null for top-level entities.",

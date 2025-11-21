@@ -30,7 +30,13 @@ from auditize.exceptions import (
     PermissionDenied,
 )
 from auditize.helpers.datetime import now
-from auditize.log.models import Log, LogCreate, LogImport, LogSearchParams
+from auditize.log.models import (
+    CustomFieldType,
+    Log,
+    LogCreate,
+    LogImport,
+    LogSearchParams,
+)
 from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
@@ -612,7 +618,7 @@ class LogService:
         _get_paginated_agg_single_field, field="actor.type"
     )
 
-    get_log_actor_extra_fields = partialmethod(
+    get_log_actor_extra_field_names = partialmethod(
         _get_paginated_agg_single_field, nested="actor.extra", field="actor.extra.name"
     )
 
@@ -620,17 +626,17 @@ class LogService:
         _get_paginated_agg_single_field, field="resource.type"
     )
 
-    get_log_resource_extra_fields = partialmethod(
+    get_log_resource_extra_field_names = partialmethod(
         _get_paginated_agg_single_field,
         nested="resource.extra",
         field="resource.extra.name",
     )
 
-    get_log_source_fields = partialmethod(
+    get_log_source_field_names = partialmethod(
         _get_paginated_agg_single_field, nested="source", field="source.name"
     )
 
-    get_log_detail_fields = partialmethod(
+    get_log_detail_field_names = partialmethod(
         _get_paginated_agg_single_field, nested="details", field="details.name"
     )
 
@@ -668,7 +674,7 @@ class LogService:
     async def _get_aggregated_name_ref_pairs(
         self,
         *,
-        field_prefix: str,
+        path: str,
         nested: bool = False,
         search: str | None,
         limit: int,
@@ -678,35 +684,33 @@ class LogService:
             query = {
                 "bool": {
                     "filter": [
-                        {"prefix": {f"{field_prefix}.name": word}}
+                        {"prefix": {f"{path}.name": word}}
                         for word in self._split_words(search)
                     ]
                 }
             }
             if nested:
-                query = {"nested": {"path": field_prefix, "query": query}}
+                query = {"nested": {"path": path, "query": query}}
         else:
             query = None
 
         values, next_cursor = await self._get_paginated_agg_multi_fields(
-            nested=field_prefix if nested else None,
+            nested=path if nested else None,
             query=query,
-            fields=[f"{field_prefix}.name.keyword", f"{field_prefix}.ref"],
+            fields=[f"{path}.name.keyword", f"{path}.ref"],
             limit=limit,
             pagination_cursor=pagination_cursor,
         )
         return [tuple(value) for value in values], next_cursor
 
-    get_log_actor_names = partialmethod(
-        _get_aggregated_name_ref_pairs, field_prefix="actor"
-    )
+    get_log_actor_names = partialmethod(_get_aggregated_name_ref_pairs, path="actor")
 
     get_log_resource_names = partialmethod(
-        _get_aggregated_name_ref_pairs, field_prefix="resource"
+        _get_aggregated_name_ref_pairs, path="resource"
     )
 
     get_log_tag_names = partialmethod(
-        _get_aggregated_name_ref_pairs, field_prefix="tags", nested=True
+        _get_aggregated_name_ref_pairs, path="tags", nested=True
     )
 
     async def get_log_actor(self, actor_ref: str) -> Log.Actor:
@@ -728,6 +732,103 @@ class LogService:
                 if tag.ref == tag_ref:
                     return tag
         raise NotFoundError(f"Tag {tag_ref!r} not found")
+
+    async def _get_custom_fields(
+        self,
+        *,
+        path: str,
+        nested: bool = False,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[tuple[str, CustomFieldType]], str | None]:
+        after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
+
+        aggregations = {
+            "group_by": {
+                "nested": {"path": path},
+                "aggs": {
+                    "by_name": {
+                        "composite": {
+                            "size": limit,
+                            "sources": [
+                                {
+                                    "name": {
+                                        "terms": {
+                                            "field": f"{path}.name",
+                                            "order": "asc",
+                                        }
+                                    }
+                                }
+                            ],
+                            **({"after": after} if after else {}),
+                        },
+                        "aggs": {
+                            "latest_type": {
+                                "top_hits": {
+                                    "size": 1,
+                                    "sort": [{"saved_at": {"order": "desc"}}],
+                                    "_source": {
+                                        "includes": [
+                                            f"{path}.type",
+                                        ]
+                                    },
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+        if nested:
+            aggregations = {
+                "nested_group_by": {
+                    "nested": {
+                        "path": path,
+                    },
+                    "aggs": aggregations,
+                },
+            }
+
+        resp = await self.es.search(
+            index=self.index,
+            aggregations=aggregations,
+            size=0,
+        )
+
+        if nested:
+            group_by_result = resp["aggregations"]["nested_group_by"]["group_by"][
+                "by_name"
+            ]
+        else:
+            group_by_result = resp["aggregations"]["group_by"]["by_name"]
+
+        results = []
+        for bucket in group_by_result["buckets"]:
+            custom_field_name = bucket["key"]["name"]
+            hits = bucket["latest_type"]["hits"]["hits"]
+
+            if hits:
+                source = hits[0]["_source"]
+                custom_field_type = source.get("type", CustomFieldType.STRING)
+                results.append((custom_field_name, custom_field_type))
+
+        if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
+            next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
+        else:
+            next_cursor = None
+
+        return results, next_cursor
+
+    get_log_details_fields = partialmethod(_get_custom_fields, path="details")
+
+    get_log_source_fields = partialmethod(_get_custom_fields, path="source")
+
+    get_log_actor_extra_fields = partialmethod(_get_custom_fields, path="actor.extra")
+
+    get_log_resource_extra_fields = partialmethod(
+        _get_custom_fields, path="resource.extra"
+    )
 
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """
