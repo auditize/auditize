@@ -16,9 +16,17 @@ export type NameRefPair = {
   ref: string;
 };
 
+export type CustomFieldType = "string" | "enum";
+
 export type CustomField = {
   name: string;
   value: string;
+  type: CustomFieldType;
+};
+
+export type AvailableCustomField = {
+  name: string;
+  type: CustomFieldType;
 };
 
 type Tag = {
@@ -131,21 +139,17 @@ export async function getAllActorTypes(repoId: string): Promise<string[]> {
 
 export async function getAllActorCustomFields(
   repoId: string,
-): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/actors/extras/names`,
-      {},
-    ),
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/actors/extras`,
   );
 }
 
-export async function getAllSourceFields(repoId: string): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/sources/names`,
-      {},
-    ),
+export async function getAllSourceFields(
+  repoId: string,
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/source`,
   );
 }
 
@@ -160,21 +164,17 @@ export async function getAllResourceTypes(repoId: string): Promise<string[]> {
 
 export async function getAllResourceCustomFields(
   repoId: string,
-): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/resources/extras/names`,
-      {},
-    ),
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/resources/extras`,
   );
 }
 
-export async function getAllDetailFields(repoId: string): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/details/names`,
-      {},
-    ),
+export async function getAllDetailFields(
+  repoId: string,
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/details`,
   );
 }
 

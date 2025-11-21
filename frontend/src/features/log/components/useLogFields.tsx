@@ -79,14 +79,20 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
           item("actorType", t("common.type")),
           item("actorRef", t("log.actor")),
           ...actorCustomFields.map((field) =>
-            item(`actor.${field}`, logTranslator("actor_custom_field", field)),
+            item(
+              `actor.${field.name}`,
+              logTranslator("actor_custom_field", field.name),
+            ),
           ),
         ],
       },
       {
         group: t("log.source"),
         items: sourceFields.map((field) =>
-          item(`source.${field}`, logTranslator("source_field", field)),
+          item(
+            `source.${field.name}`,
+            logTranslator("source_field", field.name),
+          ),
         ),
       },
       {
@@ -96,8 +102,8 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
           item("resourceType", t("common.type")),
           ...resourceCustomFields.map((field) =>
             item(
-              `resource.${field}`,
-              logTranslator("resource_custom_field", field),
+              `resource.${field.name}`,
+              logTranslator("resource_custom_field", field.name),
             ),
           ),
         ],
@@ -105,7 +111,10 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
       {
         group: t("log.details"),
         items: detailFields.map((field) =>
-          item(`details.${field}`, logTranslator("detail_field", field)),
+          item(
+            `details.${field.name}`,
+            logTranslator("detail_field", field.name),
+          ),
         ),
       },
       {
@@ -183,14 +192,20 @@ export function useColumnFields(repoId: string) {
           item("actorName", t("common.name")),
           item("actorRef", t("common.ref")),
           ...actorCustomFields.map((field) =>
-            item(`actor.${field}`, logTranslator("actor_custom_field", field)),
+            item(
+              `actor.${field.name}`,
+              logTranslator("actor_custom_field", field.name),
+            ),
           ),
         ],
       },
       {
         group: t("log.source"),
         items: sourceFields.map((field) =>
-          item(`source.${field}`, logTranslator("source_field", field)),
+          item(
+            `source.${field.name}`,
+            logTranslator("source_field", field.name),
+          ),
         ),
       },
       {
@@ -202,8 +217,8 @@ export function useColumnFields(repoId: string) {
           item("resourceRef", t("common.ref")),
           ...resourceCustomFields.map((field) =>
             item(
-              `resource.${field}`,
-              logTranslator("resource_custom_field", field),
+              `resource.${field.name}`,
+              logTranslator("resource_custom_field", field.name),
             ),
           ),
         ],
@@ -211,7 +226,10 @@ export function useColumnFields(repoId: string) {
       {
         group: t("log.details"),
         items: detailFields.map((field) =>
-          item(`details.${field}`, logTranslator("detail_field", field)),
+          item(
+            `details.${field.name}`,
+            logTranslator("detail_field", field.name),
+          ),
         ),
       },
       {
