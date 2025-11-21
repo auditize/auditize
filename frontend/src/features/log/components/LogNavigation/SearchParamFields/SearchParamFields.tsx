@@ -20,6 +20,7 @@ import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { titlize } from "@/utils/format";
 
 import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
+import { CustomFieldSearchParamField } from "./CustomFieldSearchParamField";
 import { DateInterval } from "./DateInterval";
 import { EntitySearchParamField } from "./EntitySearchParamField";
 import { GlobalTextSearchParamField } from "./GlobalTextSearchParamField";
@@ -144,41 +145,27 @@ function SearchParamField({
   }
 
   if (name.startsWith("actor.")) {
-    const fieldName = name.replace("actor.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={t("log.actor") + ": " + titlize(fieldName)}
+      <CustomFieldSearchParamField
         name={name}
-        value={searchParams.actorExtra.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
-          onChange(
-            "actorExtra",
-            new Map([...searchParams.actorExtra, [fieldName, value]]),
-          )
-        }
+        values={searchParams.actorExtra}
+        onChange={(values) => onChange("actorExtra", values)}
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }
 
   if (name.startsWith("source.")) {
-    const fieldName = name.replace("source.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={titlize(fieldName)}
+      <CustomFieldSearchParamField
         name={name}
-        value={searchParams.source.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
-          onChange(
-            "source",
-            new Map([...searchParams.source, [fieldName, value]]),
-          )
-        }
+        values={searchParams.source}
+        onChange={(values) => onChange("source", values)}
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }
@@ -218,41 +205,27 @@ function SearchParamField({
   }
 
   if (name.startsWith("resource.")) {
-    const fieldName = name.replace("resource.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={t("log.resource") + ": " + titlize(fieldName)}
+      <CustomFieldSearchParamField
         name={name}
-        value={searchParams.resourceExtra.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
-          onChange(
-            "resourceExtra",
-            new Map([...searchParams.resourceExtra, [fieldName, value]]),
-          )
-        }
+        values={searchParams.resourceExtra}
+        onChange={(values) => onChange("resourceExtra", values)}
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }
 
   if (name.startsWith("details.")) {
-    const fieldName = name.replace("details.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={titlize(fieldName)}
+      <CustomFieldSearchParamField
         name={name}
-        value={searchParams.details!.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
-          onChange(
-            "details",
-            new Map([...searchParams.details!, [fieldName, value]]),
-          )
-        }
+        values={searchParams.details!}
+        onChange={(values) => onChange("details", values)}
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }
