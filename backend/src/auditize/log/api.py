@@ -273,7 +273,7 @@ async def get_log_tag_types(
     "/repos/{repo_id}/logs/aggs/sources/names",
     summary="Get aggregated list of source field names",
     description="Requires `log:read` permission.",
-    operation_id="list_log_source_fields",
+    operation_id="list_log_source_field_names",
     tags=["log"],
     response_model=NameListResponse,
 )

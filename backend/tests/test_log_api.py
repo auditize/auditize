@@ -984,50 +984,6 @@ async def test_get_logs_filter_actor_ref(
     await _test_get_logs_filter(log_rw_client, repo, {"actor_ref": "user:123"}, log)
 
 
-async def test_get_logs_filter_actor_extra(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "actor": {
-                "type": "user",
-                "ref": "user:123",
-                "name": "User 123",
-                "extra": [
-                    {"name": "field-1", "value": "foo something"},
-                    {"name": "field-2", "value": "bar something else"},
-                ],
-            }
-        },
-    )
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "actor": {
-                "type": "user",
-                "ref": "user:123",
-                "name": "User 123",
-                "extra": [
-                    {"name": "field-1", "value": "bar something"},
-                    {"name": "field-2", "value": "foo something else"},
-                ],
-            }
-        },
-    )
-
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "actor.field-1": "something foo",
-            "actor.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
-    )
-
-
 async def test_get_logs_filter_resource_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -1063,118 +1019,115 @@ async def test_get_logs_filter_resource_ref(
     await _test_get_logs_filter(log_rw_client, repo, {"resource_ref": "core"}, log)
 
 
-async def test_get_logs_filter_resource_extra(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "resource": {
-                "type": "config-profile",
-                "ref": "config-profile:123",
-                "name": "Config Profile 123",
-                "extra": [
+class _TestGetLogsFilterCustomField:
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
+        raise NotImplementedError
+
+    @property
+    def field_prefix(self) -> str:
+        raise NotImplementedError
+
+    async def test_string(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [
                     {"name": "field-1", "value": "foo something"},
                     {"name": "field-2", "value": "bar something else"},
-                ],
-            }
-        },
-    )
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "resource": {
-                "type": "config-profile",
-                "ref": "config-profile:123",
-                "name": "Config Profile 123",
-                "extra": [
+                ]
+            ),
+        )
+        non_matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [
                     {"name": "field-1", "value": "bar something"},
                     {"name": "field-2", "value": "foo something else"},
-                ],
+                ]
+            ),
+        )
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {
+                f"{self.field_prefix}.field-1": "something foo",
+                f"{self.field_prefix}.field-2": "something bar",
+            },
+            matching_log,
+            extra_log=False,
+        )
+
+    async def test_enum(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [
+                    {"name": "status", "value": "enabled", "type": "enum"},
+                ]
+            ),
+        )
+        non_matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [
+                    {"name": "status", "value": "disabled", "type": "enum"},
+                ]
+            ),
+        )
+
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {f"{self.field_prefix}.status": "enabled"},
+            matching_log,
+            extra_log=False,
+        )
+
+
+class TestGetLogsFilterSource(_TestGetLogsFilterCustomField):
+    field_prefix = "source"
+
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
+        return PreparedLog.prepare_data({"source": custom_fields})
+
+
+class TestGetLogsFilterDetails(_TestGetLogsFilterCustomField):
+    field_prefix = "details"
+
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
+        return PreparedLog.prepare_data({"details": custom_fields})
+
+
+class TestGetLogsFilterResourceExtra(_TestGetLogsFilterCustomField):
+    field_prefix = "resource"
+
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "resource": {
+                    "type": "config-profile",
+                    "ref": "config-profile:123",
+                    "name": "Config Profile 123",
+                    "extra": custom_fields,
+                }
             }
-        },
-    )
-
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "resource.field-1": "something foo",
-            "resource.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
-    )
+        )
 
 
-async def test_get_logs_filter_details(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "details": [
-                {"name": "field-1", "value": "foo something"},
-                {"name": "field-2", "value": "bar something else"},
-            ]
-        },
-    )
+class TestGetLogsFilterActorExtra(_TestGetLogsFilterCustomField):
+    field_prefix = "actor"
 
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "details": [
-                {"name": "field-1", "value": "bar something"},
-                {"name": "field-2", "value": "foo something else"},
-            ]
-        },
-    )
-
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "details.field-1": "something foo",
-            "details.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
-    )
-
-
-async def test_get_logs_filter_source(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "source": [
-                {"name": "field-1", "value": "foo something"},
-                {"name": "field-2", "value": "bar something else"},
-            ]
-        },
-    )
-
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "source": [
-                {"name": "field-1", "value": "bar something"},
-                {"name": "field-2", "value": "foo something else"},
-            ]
-        },
-    )
-
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "source.field-1": "something foo",
-            "source.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
-    )
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "user:123",
+                    "name": "User 123",
+                    "extra": custom_fields,
+                }
+            }
+        )
 
 
 async def test_get_logs_filter_tag_type(

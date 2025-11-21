@@ -257,32 +257,6 @@ class LogService:
         )
 
     @staticmethod
-    def _custom_field_search_filter(type: str, fields: dict[str, str]):
-        return [
-            {
-                "nested": {
-                    "path": type,
-                    "query": {
-                        "bool": {
-                            "must": [
-                                {"term": {f"{type}.name": name}},
-                                {
-                                    "match": {
-                                        f"{type}.value": {
-                                            "query": value,
-                                            "operator": "and",
-                                        }
-                                    }
-                                },
-                            ]
-                        }
-                    },
-                }
-            }
-            for name, value in fields.items()
-        ]
-
-    @staticmethod
     def _nested_filter(path, filter):
         return {
             "nested": {
@@ -336,21 +310,97 @@ class LogService:
 
         return {"bool": {"must": must_clauses()}}
 
-    @classmethod
-    def _prepare_es_query(
-        cls,
+    async def _get_custom_field_type(
+        self, path: str, field_name: str
+    ) -> CustomFieldType:
+        aggregations = {
+            "custom_fields": {
+                "nested": {"path": path},
+                "aggs": {
+                    "filter_field": {
+                        "filter": {"term": {f"{path}.name": field_name}},
+                        "aggs": {
+                            "latest_type": {
+                                "top_hits": {
+                                    "size": 1,
+                                    "sort": [{"saved_at": {"order": "desc"}}],
+                                    "_source": {"includes": [f"{path}.type"]},
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+        resp = await self.es.search(
+            index=self.index,
+            aggregations=aggregations,
+            size=0,
+        )
+
+        hits = resp["aggregations"]["custom_fields"]["filter_field"]["latest_type"]["hits"]["hits"]  # fmt: skip
+        if hits:
+            return CustomFieldType(hits[0]["_source"]["type"])
+        # NB: fallback to string type, this should never happen
+        return CustomFieldType.STRING
+
+    async def _custom_field_search_filter(
+        self, path: str, field_name: str, field_value: str
+    ) -> dict:
+        match await self._get_custom_field_type(path, field_name):
+            case CustomFieldType.ENUM:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_enum": field_value,
+                    }
+                }
+            case _:
+                field_value_filter = {
+                    "match": {
+                        f"{path}.value": {
+                            "query": field_value,
+                            "operator": "and",
+                        }
+                    }
+                }
+
+        return {
+            "nested": {
+                "path": path,
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"term": {f"{path}.name": field_name}},
+                            field_value_filter,
+                        ]
+                    }
+                },
+            }
+        }
+
+    async def _custom_fields_search_filter(
+        self, path: str, fields: dict[str, str]
+    ) -> list[dict]:
+        return [
+            await self._custom_field_search_filter(path, name, value)
+            for name, value in fields.items()
+        ]
+
+    async def _prepare_es_query(
+        self,
         search_params: LogSearchParams,
     ) -> list[dict]:
         sp = search_params
         filter = []
         if sp.query:
-            filter.append(cls._query_filter(sp.query))
+            filter.append(self._query_filter(sp.query))
         if sp.action_type:
             filter.append({"term": {"action.type": sp.action_type}})
         if sp.action_category:
             filter.append({"term": {"action.category": sp.action_category}})
         if sp.source:
-            filter.extend(cls._custom_field_search_filter("source", sp.source))
+            filter.extend(await self._custom_fields_search_filter("source", sp.source))
         if sp.actor_type:
             filter.append({"term": {"actor.type": sp.actor_type}})
         if sp.actor_name:
@@ -359,7 +409,7 @@ class LogService:
             filter.append({"term": {"actor.ref": sp.actor_ref}})
         if sp.actor_extra:
             filter.extend(
-                cls._custom_field_search_filter("actor.extra", sp.actor_extra)
+                await self._custom_fields_search_filter("actor.extra", sp.actor_extra)
             )
         if sp.resource_type:
             filter.append({"term": {"resource.type": sp.resource_type}})
@@ -369,17 +419,21 @@ class LogService:
             filter.append({"term": {"resource.ref": sp.resource_ref}})
         if sp.resource_extra:
             filter.extend(
-                cls._custom_field_search_filter("resource.extra", sp.resource_extra)
+                await self._custom_fields_search_filter(
+                    "resource.extra", sp.resource_extra
+                )
             )
         if sp.details:
-            filter.extend(cls._custom_field_search_filter("details", sp.details))
+            filter.extend(
+                await self._custom_fields_search_filter("details", sp.details)
+            )
         if sp.tag_ref:
-            filter.append(cls._nested_filter_term("tags", "tags.ref", sp.tag_ref))
+            filter.append(self._nested_filter_term("tags", "tags.ref", sp.tag_ref))
         if sp.tag_type:
-            filter.append(cls._nested_filter_term("tags", "tags.type", sp.tag_type))
+            filter.append(self._nested_filter_term("tags", "tags.type", sp.tag_type))
         if sp.tag_name:
             filter.append(
-                cls._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
+                self._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
             )
         if sp.has_attachment is not None:
             if sp.has_attachment:
@@ -407,7 +461,7 @@ class LogService:
 
         if sp.attachment_name:
             filter.append(
-                cls._nested_filter(
+                self._nested_filter(
                     "attachments",
                     {
                         "match": {
@@ -422,19 +476,21 @@ class LogService:
 
         if sp.attachment_type:
             filter.append(
-                cls._nested_filter_term(
+                self._nested_filter_term(
                     "attachments", "attachments.type", sp.attachment_type
                 )
             )
         if sp.attachment_mime_type:
             filter.append(
-                cls._nested_filter_term(
+                self._nested_filter_term(
                     "attachments", "attachments.mime_type", sp.attachment_mime_type
                 )
             )
         if sp.entity_ref:
             filter.append(
-                cls._nested_filter_term("entity_path", "entity_path.ref", sp.entity_ref)
+                self._nested_filter_term(
+                    "entity_path", "entity_path.ref", sp.entity_ref
+                )
             )
         if sp.since:
             filter.append({"range": {"saved_at": {"gte": sp.since}}})
@@ -454,7 +510,7 @@ class LogService:
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
-        filter = self._prepare_es_query(search_params)
+        filter = await self._prepare_es_query(search_params)
 
         if authorized_entities:
             filter.append(self._authorized_entity_filter(authorized_entities))
@@ -491,7 +547,7 @@ class LogService:
     async def get_newest_log(
         self, search_params: LogSearchParams | None = None
     ) -> Log | None:
-        filter = self._prepare_es_query(search_params) if search_params else []
+        filter = await self._prepare_es_query(search_params) if search_params else []
         resp = await self.es.search(
             index=self.index,
             query={"bool": {"filter": filter}},
