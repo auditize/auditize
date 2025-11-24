@@ -5,10 +5,14 @@ import {
   getActorNames,
   getAllActionCategories,
   getAllActionTypes,
+  getAllActorCustomFieldEnumValues,
   getAllActorTypes,
   getAllAttachmentMimeTypes,
   getAllAttachmentTypes,
+  getAllDetailFieldEnumValues,
+  getAllResourceCustomFieldEnumValues,
   getAllResourceTypes,
+  getAllSourceFieldEnumValues,
   getAllTagTypes,
   getResource,
   getResourceNames,
@@ -17,9 +21,7 @@ import {
 } from "@/features/log/api";
 import { useLogTranslator } from "@/features/log/components/LogTranslation";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
-import { titlize } from "@/utils/format";
 
-import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
 import { CustomFieldSearchParamField } from "./CustomFieldSearchParamField";
 import { DateInterval } from "./DateInterval";
 import { EntitySearchParamField } from "./EntitySearchParamField";
@@ -145,11 +147,18 @@ function SearchParamField({
   }
 
   if (name.startsWith("actor.")) {
+    const fieldName = name.replace("actor.", "");
     return (
       <CustomFieldSearchParamField
-        name={name}
-        values={searchParams.actorExtra}
-        onChange={(values) => onChange("actorExtra", values)}
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllActorCustomFieldEnumValues}
+        onChange={(_, value) =>
+          onChange(
+            "actorExtra",
+            new Map([...searchParams.actorExtra, [fieldName, value]]),
+          )
+        }
         onRemove={onRemove}
         onSubmit={onSubmit}
         openedByDefault={openedByDefault}
@@ -158,11 +167,18 @@ function SearchParamField({
   }
 
   if (name.startsWith("source.")) {
+    const fieldName = name.replace("source.", "");
     return (
       <CustomFieldSearchParamField
-        name={name}
-        values={searchParams.source}
-        onChange={(values) => onChange("source", values)}
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllSourceFieldEnumValues}
+        onChange={(_, value) =>
+          onChange(
+            "source",
+            new Map([...searchParams.source, [fieldName, value]]),
+          )
+        }
         onRemove={onRemove}
         onSubmit={onSubmit}
         openedByDefault={openedByDefault}
@@ -205,11 +221,18 @@ function SearchParamField({
   }
 
   if (name.startsWith("resource.")) {
+    const fieldName = name.replace("resource.", "");
     return (
       <CustomFieldSearchParamField
-        name={name}
-        values={searchParams.resourceExtra}
-        onChange={(values) => onChange("resourceExtra", values)}
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllResourceCustomFieldEnumValues}
+        onChange={(_, value) =>
+          onChange(
+            "resourceExtra",
+            new Map([...searchParams.resourceExtra, [fieldName, value]]),
+          )
+        }
         onRemove={onRemove}
         onSubmit={onSubmit}
         openedByDefault={openedByDefault}
@@ -218,11 +241,18 @@ function SearchParamField({
   }
 
   if (name.startsWith("details.")) {
+    const fieldName = name.replace("details.", "");
     return (
       <CustomFieldSearchParamField
-        name={name}
-        values={searchParams.details!}
-        onChange={(values) => onChange("details", values)}
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllDetailFieldEnumValues}
+        onChange={(_, value) =>
+          onChange(
+            "details",
+            new Map([...searchParams.details, [fieldName, value]]),
+          )
+        }
         onRemove={onRemove}
         onSubmit={onSubmit}
         openedByDefault={openedByDefault}

@@ -44,6 +44,32 @@ function useCustomFields(repoId: string) {
   };
 }
 
+export function useCustomFieldTypes(repoId: string) {
+  const {
+    actorCustomFields,
+    resourceCustomFields,
+    detailFields,
+    sourceFields,
+  } = useCustomFields(repoId);
+  return {
+    ...Object.fromEntries(
+      actorCustomFields.map((field) => [`actor.${field.name}`, field.type]),
+    ),
+    ...Object.fromEntries(
+      sourceFields.map((field) => [`source.${field.name}`, field.type]),
+    ),
+    ...Object.fromEntries(
+      resourceCustomFields.map((field) => [
+        `resource.${field.name}`,
+        field.type,
+      ]),
+    ),
+    ...Object.fromEntries(
+      detailFields.map((field) => [`details.${field.name}`, field.type]),
+    ),
+  };
+}
+
 export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);

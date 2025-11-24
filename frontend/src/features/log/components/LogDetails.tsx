@@ -31,9 +31,10 @@ import { useTranslation } from "react-i18next";
 import { Section } from "@/components/Section";
 import { SectionExpand } from "@/components/Section/Section";
 import { humanizeDate } from "@/utils/date";
+import { titlize } from "@/utils/format";
 import { iconBesideText } from "@/utils/ui";
 
-import { getLog, Log } from "../api";
+import { CustomFieldType, getLog, Log } from "../api";
 import { useLogNavigationState } from "./LogNavigation";
 import { useLogTranslator } from "./LogTranslation";
 
@@ -293,10 +294,12 @@ function LogDetailsSection({ log, repoId }: { log: Log; repoId: string }) {
       }
       data={log.details.map(
         (field) =>
-          [logTranslator("detail_field", field.name), field.value] as [
-            React.ReactNode,
-            React.ReactNode,
-          ],
+          [
+            logTranslator("detail_field", field.name),
+            field.type === CustomFieldType.Enum
+              ? titlize(field.value)
+              : field.value,
+          ] as [React.ReactNode, React.ReactNode],
       )}
     />
   );

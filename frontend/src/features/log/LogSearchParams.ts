@@ -29,6 +29,22 @@ export class LogSearchParams {
 
   constructor() {}
 
+  get(name: string): any {
+    if (name in this) {
+      return (this as any)[name];
+    } else if (name.startsWith("actor.")) {
+      return this.actorExtra.get(name.replace("actor.", ""));
+    } else if (name.startsWith("source.")) {
+      return this.source.get(name.replace("source.", ""));
+    } else if (name.startsWith("resource.")) {
+      return this.resourceExtra.get(name.replace("resource.", ""));
+    } else if (name.startsWith("details.")) {
+      return this.details.get(name.replace("details.", ""));
+    } else {
+      throw new Error(`Invalid search param name: ${name}`);
+    }
+  }
+
   isEmpty(): boolean {
     return [
       this.q,

@@ -5,8 +5,9 @@ import { useTranslation } from "react-i18next";
 
 import { SelectWithoutDropdown } from "@/components/SelectWithoutDropdown";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
-import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
+
 import { SearchParamFieldPopover } from "./SearchParamFieldPopover";
+import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
 
 export function SelectSearchParamField({
   label,
@@ -41,9 +42,7 @@ export function SelectSearchParamField({
     enabled: !!searchParams.repoId,
   });
   const [opened, { toggle }] = useDisclosure(openedByDefault);
-  const value = searchParams[
-    searchParamName as keyof LogSearchParams
-  ] as string;
+  const value = searchParams.get(searchParamName);
 
   useEffect(() => {
     // on repository change, reset the selected value if it's not in the new data
@@ -89,4 +88,3 @@ export function SelectSearchParamField({
     </SearchParamFieldPopover>
   );
 }
-
