@@ -34,6 +34,7 @@ from auditize.helpers.datetime import now
 from auditize.i18n import get_request_lang
 from auditize.log.csv import stream_logs_as_csv, validate_log_csv_columns
 from auditize.log.models import (
+    CustomFieldEnumValueListResponse,
     CustomFieldListResponse,
     Log,
     LogActionTypeListParams,
@@ -107,6 +108,22 @@ async def _get_custom_fields(
         pagination_cursor=params.cursor,
     )
     return CustomFieldListResponse.build(data, next_cursor)
+
+
+async def _get_custom_field_enum_values(
+    session: AsyncSession,
+    repo_id: UUID,
+    field_name: str,
+    get_data_func_name,
+    params: CursorPaginationParams,
+) -> CustomFieldEnumValueListResponse:
+    service = await LogService.for_reading(session, repo_id)
+    data, next_cursor = await getattr(service, get_data_func_name)(
+        field_name=field_name,
+        limit=params.limit,
+        pagination_cursor=params.cursor,
+    )
+    return CustomFieldEnumValueListResponse.build(data, next_cursor)
 
 
 @router.get(
@@ -348,6 +365,86 @@ async def get_log_details_fields(
 ):
     return await _get_custom_fields(
         session, repo_id, "get_log_details_fields", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/details/{field_name}/values",
+    summary="Get available detail field values given an enum field",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_detail_field_values",
+    tags=["log"],
+    response_model=CustomFieldEnumValueListResponse,
+)
+async def get_log_detail_field_values(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    field_name: str,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_field_enum_values(
+        session, repo_id, field_name, "get_details_enum_values", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/source/{field_name}/values",
+    summary="Get available source field values given an enum field",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_source_field_values",
+    tags=["log"],
+    response_model=CustomFieldEnumValueListResponse,
+)
+async def get_log_source_field_values(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    field_name: str,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_field_enum_values(
+        session, repo_id, field_name, "get_source_enum_values", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/actors/extras/{field_name}/values",
+    summary="Get available actor extra field values given an enum field",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_actor_extra_field_values",
+    tags=["log"],
+    response_model=CustomFieldEnumValueListResponse,
+)
+async def get_log_actor_extra_field_values(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    field_name: str,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_field_enum_values(
+        session, repo_id, field_name, "get_actor_extra_enum_values", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/extras/{field_name}/values",
+    summary="Get available resource extra field values given an enum field",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_resource_extra_field_values",
+    tags=["log"],
+    response_model=CustomFieldEnumValueListResponse,
+)
+async def get_log_resource_extra_field_values(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    field_name: str,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_field_enum_values(
+        session, repo_id, field_name, "get_resource_extra_enum_values", page_params
     )
 
 

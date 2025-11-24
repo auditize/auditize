@@ -531,6 +531,27 @@ class CustomFieldListResponse(
     )
 
 
+class CustomFieldEnumValueData(BaseModel):
+    value: str
+
+
+class CustomFieldEnumValueListResponse(
+    CursorPaginatedResponse[str, CustomFieldEnumValueData]
+):
+    @classmethod
+    def build_item(cls, value: str) -> CustomFieldEnumValueData:
+        return CustomFieldEnumValueData(value=value)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "items": [{"value": "enabled"}, {"value": "disabled"}],
+                "pagination": {"next_cursor": None},
+            }
+        }
+    )
+
+
 class LogEntityResponse(_EntityPathNodeData):
     parent_entity_ref: str | None = Field(
         description="The ID of the parent entity. It is null for top-level entities.",

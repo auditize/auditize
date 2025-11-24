@@ -2717,7 +2717,7 @@ class _ConsolidatedCustomFieldsTest:
         await no_permission_client.assert_get_forbidden(self.get_path(repo.id))
 
 
-class TestLogDetailsFields(_ConsolidatedCustomFieldsTest):
+class _DetailsCustomFieldsMixin:
     @property
     def relative_path(self) -> str:
         return "details"
@@ -2726,7 +2726,11 @@ class TestLogDetailsFields(_ConsolidatedCustomFieldsTest):
         return PreparedLog.prepare_data({"details": [field]})
 
 
-class TestLogSourceFields(_ConsolidatedCustomFieldsTest):
+class TestLogDetailsFields(_DetailsCustomFieldsMixin, _ConsolidatedCustomFieldsTest):
+    pass
+
+
+class _SourceCustomFieldsMixin:
     @property
     def relative_path(self) -> str:
         return "source"
@@ -2735,7 +2739,11 @@ class TestLogSourceFields(_ConsolidatedCustomFieldsTest):
         return PreparedLog.prepare_data({"source": [field]})
 
 
-class TestLogActorExtraFields(_ConsolidatedCustomFieldsTest):
+class TestLogSourceFields(_SourceCustomFieldsMixin, _ConsolidatedCustomFieldsTest):
+    pass
+
+
+class _ActorExtraCustomFieldsMixin:
     @property
     def relative_path(self) -> str:
         return "actors/extras"
@@ -2753,7 +2761,13 @@ class TestLogActorExtraFields(_ConsolidatedCustomFieldsTest):
         )
 
 
-class TestLogResourceExtraFields(_ConsolidatedCustomFieldsTest):
+class TestLogActorExtraFields(
+    _ActorExtraCustomFieldsMixin, _ConsolidatedCustomFieldsTest
+):
+    pass
+
+
+class _ResourceExtraCustomFieldsMixin:
     @property
     def relative_path(self) -> str:
         return "resources/extras"
@@ -2769,6 +2783,87 @@ class TestLogResourceExtraFields(_ConsolidatedCustomFieldsTest):
                 }
             }
         )
+
+
+class TestLogResourceExtraFields(
+    _ResourceExtraCustomFieldsMixin, _ConsolidatedCustomFieldsTest
+):
+    pass
+
+
+class _CustomFieldsEnumValuesTest:
+    @property
+    def relative_path(self) -> str:
+        raise NotImplementedError()
+
+    def get_path(self, repo_id: str, field_name: str) -> str:
+        return f"/repos/{repo_id}/logs/{self.relative_path}/{field_name}/values"
+
+    def prepare_log_data(self, field: dict) -> dict:
+        raise NotImplementedError()
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        field_values = [f"Value {i + 1}" for i in range(5)]
+        for value in field_values:
+            for _ in range(2):
+                # Create two logs for each value to ensure we get the distinct values
+                await repo.create_log(
+                    superadmin_client,
+                    self.prepare_log_data(
+                        {"name": "my-field", "value": value, "type": "enum"}
+                    ),
+                )
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id, "my-field"),
+            items=[{"value": value} for value in field_values],
+        )
+
+    async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await do_test_cursor_pagination_empty_data(
+            log_read_client, self.get_path(repo.id, "my-field")
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper):
+        await log_read_client.assert_get_not_found(
+            self.get_path(UNKNOWN_UUID, "my-field")
+        )
+
+    async def test_forbidden(
+        self, no_permission_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await no_permission_client.assert_get_forbidden(
+            self.get_path(repo.id, "my-field")
+        )
+
+
+class TestLogDetailsFieldsEnumValues(
+    _DetailsCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
+
+
+class TestLogSourceFieldsEnumValues(
+    _SourceCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
+
+
+class TestLogResourceExtraFieldsEnumValues(
+    _ResourceExtraCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
+
+
+class TestLogActorExtraFieldsEnumValues(
+    _ActorExtraCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
 
 
 async def test_log_entity_consolidation_rename_entity(

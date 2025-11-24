@@ -793,7 +793,6 @@ class LogService:
         self,
         *,
         path: str,
-        nested: bool = False,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[tuple[str, CustomFieldType]], str | None]:
@@ -836,28 +835,13 @@ class LogService:
             }
         }
 
-        if nested:
-            aggregations = {
-                "nested_group_by": {
-                    "nested": {
-                        "path": path,
-                    },
-                    "aggs": aggregations,
-                },
-            }
-
         resp = await self.es.search(
             index=self.index,
             aggregations=aggregations,
             size=0,
         )
 
-        if nested:
-            group_by_result = resp["aggregations"]["nested_group_by"]["group_by"][
-                "by_name"
-            ]
-        else:
-            group_by_result = resp["aggregations"]["group_by"]["by_name"]
+        group_by_result = resp["aggregations"]["group_by"]["by_name"]
 
         results = []
         for bucket in group_by_result["buckets"]:
@@ -884,6 +868,75 @@ class LogService:
 
     get_log_resource_extra_fields = partialmethod(
         _get_custom_fields, path="resource.extra"
+    )
+
+    async def _get_custom_field_enum_values(
+        self,
+        *,
+        path: str,
+        field_name: str,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str | None]:
+        after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
+
+        aggregations = {
+            "group_by": {
+                "nested": {"path": path},
+                "aggs": {
+                    "by_value_enum": {
+                        "filter": {"term": {f"{path}.name": field_name}},
+                        "aggs": {
+                            "distinct_values": {
+                                "composite": {
+                                    "size": limit,
+                                    "sources": [
+                                        {
+                                            "value_enum": {
+                                                "terms": {
+                                                    "field": f"{path}.value_enum",
+                                                    "order": "asc",
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    **({"after": after} if after else {}),
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+        resp = await self.es.search(
+            index=self.index,
+            aggregations=aggregations,
+            size=0,
+        )
+
+        group_by_result = resp["aggregations"]["group_by"]["by_value_enum"]['distinct_values']  # fmt: skip
+
+        if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
+            next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
+        else:
+            next_cursor = None
+
+        enum_values = [
+            bucket["key"]["value_enum"] for bucket in group_by_result["buckets"]
+        ]
+
+        return enum_values, next_cursor
+
+    get_details_enum_values = partialmethod(
+        _get_custom_field_enum_values, path="details"
+    )
+    get_source_enum_values = partialmethod(_get_custom_field_enum_values, path="source")
+    get_resource_extra_enum_values = partialmethod(
+        _get_custom_field_enum_values, path="resource.extra"
+    )
+    get_actor_extra_enum_values = partialmethod(
+        _get_custom_field_enum_values, path="actor.extra"
     )
 
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
