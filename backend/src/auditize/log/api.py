@@ -199,6 +199,44 @@ async def get_log_actor_types(
 
 
 @router.get(
+    "/repos/{repo_id}/logs/aggs/actors/names",
+    summary="Get aggregated list of actor names and refs",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_actor_names",
+    tags=["log"],
+    response_model=NameRefPairListResponse,
+)
+async def get_log_actor_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[CursorPaginatedSearchParams, Query()],
+):
+    return await _get_aggregated_name_ref_pairs(
+        session, repo_id, "get_log_actor_names", params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/actors/extras",
+    summary="Get available actor extra fields",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_actor_extra_fields",
+    tags=["log"],
+    response_model=CustomFieldListResponse,
+)
+async def get_log_actor_extra_fields(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_fields(
+        session, repo_id, "get_log_actor_extra_fields", page_params
+    )
+
+
+@router.get(
     "/repos/{repo_id}/logs/aggs/actors/extras/names",
     summary="Get aggregated list of actor extra field names",
     description="Requires `log:read` permission.",
@@ -217,6 +255,63 @@ async def get_log_actor_extra_field_names(
         repo_id,
         "get_log_actor_extra_field_names",
         page_params,
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/actors/extras/{field_name}/values",
+    summary="Get available actor extra field values given an enum field",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_actor_extra_field_values",
+    tags=["log"],
+    response_model=CustomFieldEnumValueListResponse,
+)
+async def get_log_actor_extra_field_values(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    field_name: str,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_field_enum_values(
+        session, repo_id, field_name, "get_actor_extra_enum_values", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/actors/{actor_ref}",
+    summary="Get log actor",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_actor",
+    tags=["log"],
+    response_model=LogActorResponse,
+)
+async def get_log_actor(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    actor_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_actor(actor_ref)
+
+
+@router.get(
+    "/repos/{repo_id}/logs/aggs/resources/names",
+    summary="Get aggregated list of resource names and refs",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_resource_names",
+    tags=["log"],
+    response_model=NameRefPairListResponse,
+)
+async def get_log_resource_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[CursorPaginatedSearchParams, Query()],
+):
+    return await _get_aggregated_name_ref_pairs(
+        session, repo_id, "get_log_resource_names", params
     )
 
 
@@ -265,6 +360,63 @@ async def get_log_resource_extra_field_names(
 
 
 @router.get(
+    "/repos/{repo_id}/logs/resources/extras/{field_name}/values",
+    summary="Get available resource extra field values given an enum field",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_resource_extra_field_values",
+    tags=["log"],
+    response_model=CustomFieldEnumValueListResponse,
+)
+async def get_log_resource_extra_field_values(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    field_name: str,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_field_enum_values(
+        session, repo_id, field_name, "get_resource_extra_enum_values", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/extras",
+    summary="Get available resource extra fields",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_resource_extra_fields",
+    tags=["log"],
+    response_model=CustomFieldListResponse,
+)
+async def get_log_resource_extra_fields(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_fields(
+        session, repo_id, "get_log_resource_extra_fields", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/resources/{resource_ref}",
+    summary="Get log resource",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_resource",
+    tags=["log"],
+    response_model=LogResourceResponse,
+)
+async def get_log_resource(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    resource_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_resource(resource_ref)
+
+
+@router.get(
     "/repos/{repo_id}/logs/aggs/tags/types",
     summary="Get aggregated list of tag types",
     description="Requires `log:read` permission.",
@@ -284,6 +436,43 @@ async def get_log_tag_types(
         "get_log_tag_types",
         page_params,
     )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/aggs/tags/names",
+    summary="Get aggregated list of tag names and refs",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_tag_names",
+    tags=["log"],
+    response_model=NameRefPairListResponse,
+)
+async def get_log_tag_names(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[CursorPaginatedSearchParams, Query()],
+):
+    return await _get_aggregated_name_ref_pairs(
+        session, repo_id, "get_log_tag_names", params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/tags/{tag_ref}",
+    summary="Get log tag",
+    description="Requires `log:read` permission.",
+    operation_id="get_log_tag",
+    tags=["log"],
+    response_model=LogTagResponse,
+)
+async def get_log_tag(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    tag_ref: str,
+):
+    service = await LogService.for_reading(session, repo_id)
+    return await service.get_log_tag(tag_ref)
 
 
 @router.get(
@@ -324,6 +513,26 @@ async def get_log_source_fields(
 ):
     return await _get_custom_fields(
         session, repo_id, "get_log_source_fields", page_params
+    )
+
+
+@router.get(
+    "/repos/{repo_id}/logs/source/{field_name}/values",
+    summary="Get available source field values given an enum field",
+    description="Requires `log:read` permission.",
+    operation_id="list_log_source_field_values",
+    tags=["log"],
+    response_model=CustomFieldEnumValueListResponse,
+)
+async def get_log_source_field_values(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    field_name: str,
+    page_params: Annotated[CursorPaginationParams, Query()],
+):
+    return await _get_custom_field_enum_values(
+        session, repo_id, field_name, "get_source_enum_values", page_params
     )
 
 
@@ -389,66 +598,6 @@ async def get_log_detail_field_values(
 
 
 @router.get(
-    "/repos/{repo_id}/logs/source/{field_name}/values",
-    summary="Get available source field values given an enum field",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_source_field_values",
-    tags=["log"],
-    response_model=CustomFieldEnumValueListResponse,
-)
-async def get_log_source_field_values(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    field_name: str,
-    page_params: Annotated[CursorPaginationParams, Query()],
-):
-    return await _get_custom_field_enum_values(
-        session, repo_id, field_name, "get_source_enum_values", page_params
-    )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/actors/extras/{field_name}/values",
-    summary="Get available actor extra field values given an enum field",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_actor_extra_field_values",
-    tags=["log"],
-    response_model=CustomFieldEnumValueListResponse,
-)
-async def get_log_actor_extra_field_values(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    field_name: str,
-    page_params: Annotated[CursorPaginationParams, Query()],
-):
-    return await _get_custom_field_enum_values(
-        session, repo_id, field_name, "get_actor_extra_enum_values", page_params
-    )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/resources/extras/{field_name}/values",
-    summary="Get available resource extra field values given an enum field",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_resource_extra_field_values",
-    tags=["log"],
-    response_model=CustomFieldEnumValueListResponse,
-)
-async def get_log_resource_extra_field_values(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    field_name: str,
-    page_params: Annotated[CursorPaginationParams, Query()],
-):
-    return await _get_custom_field_enum_values(
-        session, repo_id, field_name, "get_resource_extra_enum_values", page_params
-    )
-
-
-@router.get(
     "/repos/{repo_id}/logs/aggs/attachments/types",
     summary="Get aggregated list of attachment types",
     description="Requires `log:read` permission.",
@@ -490,155 +639,6 @@ async def get_log_attachment_mime_types(
         "get_log_attachment_mime_types",
         page_params,
     )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/aggs/actors/names",
-    summary="Get aggregated list of actor names and refs",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_actor_names",
-    tags=["log"],
-    response_model=NameRefPairListResponse,
-)
-async def get_log_actor_names(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    params: Annotated[CursorPaginatedSearchParams, Query()],
-):
-    return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_actor_names", params
-    )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/actors/extras",
-    summary="Get available actor extra fields",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_actor_extra_fields",
-    tags=["log"],
-    response_model=CustomFieldListResponse,
-)
-async def get_log_actor_extra_fields(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Query()],
-):
-    return await _get_custom_fields(
-        session, repo_id, "get_log_actor_extra_fields", page_params
-    )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/aggs/resources/names",
-    summary="Get aggregated list of resource names and refs",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_resource_names",
-    tags=["log"],
-    response_model=NameRefPairListResponse,
-)
-async def get_log_resource_names(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    params: Annotated[CursorPaginatedSearchParams, Query()],
-):
-    return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_resource_names", params
-    )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/resources/extras",
-    summary="Get available resource extra fields",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_resource_extra_fields",
-    tags=["log"],
-    response_model=CustomFieldListResponse,
-)
-async def get_log_resource_extra_fields(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    page_params: Annotated[CursorPaginationParams, Query()],
-):
-    return await _get_custom_fields(
-        session, repo_id, "get_log_resource_extra_fields", page_params
-    )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/aggs/tags/names",
-    summary="Get aggregated list of tag names and refs",
-    description="Requires `log:read` permission.",
-    operation_id="list_log_tag_names",
-    tags=["log"],
-    response_model=NameRefPairListResponse,
-)
-async def get_log_tag_names(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    params: Annotated[CursorPaginatedSearchParams, Query()],
-):
-    return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_tag_names", params
-    )
-
-
-@router.get(
-    "/repos/{repo_id}/logs/actors/{actor_ref}",
-    summary="Get log actor",
-    description="Requires `log:read` permission.",
-    operation_id="get_log_actor",
-    tags=["log"],
-    response_model=LogActorResponse,
-)
-async def get_log_actor(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    actor_ref: str,
-):
-    service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_actor(actor_ref)
-
-
-@router.get(
-    "/repos/{repo_id}/logs/resources/{resource_ref}",
-    summary="Get log resource",
-    description="Requires `log:read` permission.",
-    operation_id="get_log_resource",
-    tags=["log"],
-    response_model=LogResourceResponse,
-)
-async def get_log_resource(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    resource_ref: str,
-):
-    service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_resource(resource_ref)
-
-
-@router.get(
-    "/repos/{repo_id}/logs/tags/{tag_ref}",
-    summary="Get log tag",
-    description="Requires `log:read` permission.",
-    operation_id="get_log_tag",
-    tags=["log"],
-    response_model=LogTagResponse,
-)
-async def get_log_tag(
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
-    repo_id: UUID,
-    tag_ref: str,
-):
-    service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_tag(tag_ref)
 
 
 @router.get(
