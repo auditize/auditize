@@ -3184,6 +3184,57 @@ async def test_get_logs_as_csv_custom_fields(
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
 
+async def test_get_logs_as_csv_custom_fields_enum(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {
+                "source": [
+                    {"name": "source-field", "value": "source-value", "type": "enum"}
+                ],
+                "actor": {
+                    "ref": "actor_ref",
+                    "type": "actor",
+                    "name": "Actor",
+                    "extra": [
+                        {"name": "actor-field", "value": "actor-value", "type": "enum"}
+                    ],
+                },
+                "resource": {
+                    "ref": "resource_ref",
+                    "type": "resource",
+                    "name": "Resource",
+                    "extra": [
+                        {
+                            "name": "resource-field",
+                            "value": "resource-value",
+                            "type": "enum",
+                        }
+                    ],
+                },
+                "details": [
+                    {"name": "detail-field", "value": "detail-value", "type": "enum"}
+                ],
+            }
+        ),
+    )
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+        params={
+            "columns": "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field",
+        },
+    )
+    assert (
+        resp.text
+        == "Log ID,Source: Source Field,Actor: Actor Field,Resource: Resource Field,Details: Detail Field\r\n"
+        f"{log.id},Source Value,Actor Value,Resource Value,Detail Value\r\n"
+    )
+    assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
+
+
 async def test_get_logs_as_csv_with_csv_max_rows(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):

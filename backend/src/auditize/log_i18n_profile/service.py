@@ -139,9 +139,17 @@ def _build_default_translation(value: str) -> str:
 
 
 def translate(
-    profile: LogI18nProfile | None, lang: Lang | str, category: str, key: str
+    profile: LogI18nProfile | None,
+    lang: Lang | str,
+    category: str,
+    key: str,
+    enum_value: str | None = None,
 ) -> str:
     label = None
     if profile:
-        label = profile.translate(lang, category, key)
-    return label if label else _build_default_translation(key)
+        label = profile.translate(lang, category, key, enum_value)
+    return (
+        label
+        if label
+        else _build_default_translation(enum_value if enum_value is not None else key)
+    )

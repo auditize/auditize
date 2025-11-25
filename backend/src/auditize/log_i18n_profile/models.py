@@ -27,9 +27,13 @@ class LogLabels(BaseModel):
                 "action_category",
                 "actor_type",
                 "actor_custom_field",
+                "actor_custom_field_enum_value",
                 "source_field",
+                "source_field_enum_value",
                 "detail_field",
+                "detail_field_enum_value",
                 "resource_type",
+                "resource_custom_field_enum_value",
                 "resource_custom_field",
                 "tag_type",
                 "attachment_type",
@@ -43,37 +47,60 @@ class LogLabels(BaseModel):
     action_category: dict[str, str] = Field(default_factory=dict)
     actor_type: dict[str, str] = Field(default_factory=dict)
     actor_custom_field: dict[str, str] = Field(default_factory=dict)
+    actor_custom_field_enum_value: dict[str, dict[str, str]] = Field(
+        default_factory=dict
+    )
     source_field: dict[str, str] = Field(default_factory=dict)
+    source_field_enum_value: dict[str, dict[str, str]] = Field(default_factory=dict)
     detail_field: dict[str, str] = Field(default_factory=dict)
+    detail_field_enum_value: dict[str, dict[str, str]] = Field(default_factory=dict)
     resource_type: dict[str, str] = Field(default_factory=dict)
     resource_custom_field: dict[str, str] = Field(default_factory=dict)
+    resource_custom_field_enum_value: dict[str, dict[str, str]] = Field(
+        default_factory=dict
+    )
     tag_type: dict[str, str] = Field(default_factory=dict)
     attachment_type: dict[str, str] = Field(default_factory=dict)
 
-    def translate(self, category: str, key: str) -> str | None:
-        if category == "action_type":
-            translations = self.action_type
-        elif category == "action_category":
-            translations = self.action_category
-        elif category == "actor_type":
-            translations = self.actor_type
-        elif category == "actor":
-            translations = self.actor_custom_field
-        elif category == "source":
-            translations = self.source_field
-        elif category == "details":
-            translations = self.detail_field
-        elif category == "resource_type":
-            translations = self.resource_type
-        elif category == "resource":
-            translations = self.resource_custom_field
-        elif category == "tag_type":
-            translations = self.tag_type
-        elif category == "attachment_type":
-            translations = self.attachment_type
-        else:
-            raise ValueError(f"Unknown label category: {category!r}")
-        return translations.get(key, None)
+    def translate(
+        self, category: str, key: str, enum_value: str | None = None
+    ) -> str | None:
+        match category:
+            case "action_type":
+                translations = self.action_type
+            case "action_category":
+                translations = self.action_category
+            case "actor_type":
+                translations = self.actor_type
+            case "actor":
+                if enum_value:
+                    translations = self.actor_custom_field_enum_value[key]
+                else:
+                    translations = self.actor_custom_field
+            case "source":
+                if enum_value:
+                    translations = self.source_field_enum_value[key]
+                else:
+                    translations = self.source_field
+            case "details":
+                if enum_value:
+                    translations = self.detail_field_enum_value[key]
+                else:
+                    translations = self.detail_field
+            case "resource_type":
+                translations = self.resource_type
+            case "resource":
+                if enum_value:
+                    translations = self.resource_custom_field_enum_value[key]
+                else:
+                    translations = self.resource_custom_field
+            case "tag_type":
+                translations = self.tag_type
+            case "attachment_type":
+                translations = self.attachment_type
+            case _:
+                raise ValueError(f"Unknown label category: {category!r}")
+        return translations.get(enum_value if enum_value else key, None)
 
 
 def _ProfileTranslationsField(**kwargs):  # noqa

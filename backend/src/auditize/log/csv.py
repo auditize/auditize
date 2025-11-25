@@ -2,7 +2,7 @@ import csv
 from functools import partial
 from io import StringIO
 from itertools import count
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Callable
 
 from auditize.config import get_config
 from auditize.exceptions import ValidationError
@@ -11,6 +11,7 @@ from auditize.i18n import Lang, t
 from auditize.log.models import (
     LOG_CSV_BUILTIN_COLUMNS,
     CustomField,
+    CustomFieldType,
     Log,
     LogSearchParams,
 )
@@ -19,8 +20,19 @@ from auditize.log_i18n_profile.service import translate
 from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 
-def _custom_fields_to_dict(custom_fields: list[CustomField], prefix: str) -> dict:
-    return {f"{prefix}.{field.name}": field.value for field in custom_fields}
+def _custom_fields_to_dict(
+    translator: Callable[[str, str, str], str],
+    prefix: str,
+    custom_fields: list[CustomField],
+) -> dict:
+    return {
+        f"{prefix}.{field.name}": (
+            translator(prefix, field.name, field.value)
+            if field.type == CustomFieldType.ENUM
+            else field.value
+        )
+        for field in custom_fields
+    }
 
 
 def _log_to_dict(
@@ -31,18 +43,18 @@ def _log_to_dict(
     data["log_id"] = str(log.id)
     data["action_category"] = translator("action_category", log.action.category)
     data["action_type"] = translator("action_type", log.action.type)
-    data.update(_custom_fields_to_dict(log.source, "source"))
+    data.update(_custom_fields_to_dict(translator, "source", log.source))
     if log.actor:
         data["actor_type"] = translator("actor_type", log.actor.type)
         data["actor_name"] = log.actor.name
         data["actor_ref"] = log.actor.ref
-        data.update(_custom_fields_to_dict(log.actor.extra, "actor"))
+        data.update(_custom_fields_to_dict(translator, "actor", log.actor.extra))
     if log.resource:
         data["resource_type"] = translator("resource_type", log.resource.type)
         data["resource_name"] = log.resource.name
         data["resource_ref"] = log.resource.ref
-        data.update(_custom_fields_to_dict(log.resource.extra, "resource"))
-    data.update(_custom_fields_to_dict(log.details, "details"))
+        data.update(_custom_fields_to_dict(translator, "resource", log.resource.extra))
+    data.update(_custom_fields_to_dict(translator, "details", log.details))
     data["tag_ref"] = "|".join(tag.ref or "" for tag in log.tags)
     data["tag_type"] = "|".join(translator("tag_type", tag.type) for tag in log.tags)
     data["tag_name"] = "|".join(tag.name or "" for tag in log.tags)
