@@ -674,26 +674,8 @@ class LogService:
         _get_paginated_agg_single_field, field="actor.type"
     )
 
-    get_log_actor_extra_field_names = partialmethod(
-        _get_paginated_agg_single_field, nested="actor.extra", field="actor.extra.name"
-    )
-
     get_log_resource_types = partialmethod(
         _get_paginated_agg_single_field, field="resource.type"
-    )
-
-    get_log_resource_extra_field_names = partialmethod(
-        _get_paginated_agg_single_field,
-        nested="resource.extra",
-        field="resource.extra.name",
-    )
-
-    get_log_source_field_names = partialmethod(
-        _get_paginated_agg_single_field, nested="source", field="source.name"
-    )
-
-    get_log_detail_field_names = partialmethod(
-        _get_paginated_agg_single_field, nested="details", field="details.name"
     )
 
     get_log_attachment_types = partialmethod(

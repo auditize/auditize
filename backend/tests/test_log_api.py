@@ -2114,36 +2114,6 @@ class TestLogActorTypes(_ConsolidatedDataTest):
         return [f"type-{val}" for val in values]
 
 
-class TestLogActorExtras(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "actors/extras/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "actor": {
-                            "type": f"type-{val}",
-                            "ref": f"id_{val}",
-                            "name": f"name_{val}",
-                            "extra": [
-                                {
-                                    "name": f"field-{val}",
-                                    "value": f"value",
-                                }
-                            ],
-                        }
-                    }
-                ),
-            )
-        return [f"field-{val}" for val in values]
-
-
 class TestLogResourceTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
@@ -2166,36 +2136,6 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
                 ),
             )
         return [f"type-{val}" for val in values]
-
-
-class TestLogResourceExtras(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "resources/extras/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "resource": {
-                            "ref": f"ref_{val}",
-                            "type": f"type-{val}",
-                            "name": f"name_{val}",
-                            "extra": [
-                                {
-                                    "name": f"field-{val}",
-                                    "value": f"value",
-                                }
-                            ],
-                        }
-                    }
-                ),
-            )
-        return [f"field-{val}" for val in values]
 
 
 class TestLogTagTypes(_ConsolidatedDataTest):
@@ -2228,58 +2168,6 @@ class TestLogTagTypes(_ConsolidatedDataTest):
         )
 
         return [f"type-{val}" for val in values[:-1]] + ["simple-tag"]
-
-
-class TestLogSourceFields(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "sources/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[str]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "source": [
-                            {
-                                "name": f"field-{val}",
-                                "value": f"value_{val}",
-                            }
-                        ]
-                    }
-                ),
-            )
-
-        return [f"field-{val}" for val in values]
-
-
-class TestLogDetailFields(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "details/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "details": [
-                            {
-                                "name": f"field-{val}",
-                                "value": f"value_{val}",
-                            }
-                        ]
-                    }
-                ),
-            )
-
-        return [f"field-{val}" for val in values]
 
 
 class TestLogAttachmentTypes(_ConsolidatedDataTest):
@@ -2950,14 +2838,18 @@ async def test_log_entity_consolidation_move_entity(
         "/logs/aggs/actions/categories",
         "/logs/aggs/actions/types",
         "/logs/aggs/actors/types",
-        "/logs/aggs/actors/extras/names",
         "/logs/aggs/resources/types",
-        "/logs/aggs/resources/extras/names",
         "/logs/aggs/tags/types",
-        "/logs/aggs/sources/names",
-        "/logs/aggs/details/names",
         "/logs/aggs/attachments/types",
         "/logs/aggs/attachments/mime-types",
+        "/logs/details",
+        "/logs/source",
+        "/logs/resources/extras",
+        "/logs/actors/extras",
+        "/logs/details/my-field/values",
+        "/logs/source/my-field/values",
+        "/logs/resources/extras/my-field/values",
+        "/logs/actors/extras/my-field/values",
         "/logs/entities?root=true",
     ],
 )
