@@ -12,6 +12,7 @@ export function CustomFieldSearchParamField({
   searchParams,
   searchParamName,
   enumValues,
+  enumLabel,
   onChange,
   onRemove,
   onSubmit,
@@ -20,6 +21,7 @@ export function CustomFieldSearchParamField({
   searchParams: LogSearchParams;
   searchParamName: string;
   enumValues: (repoId: string, fieldName: string) => Promise<string[]>;
+  enumLabel: (value: string) => string;
   onChange: (name: string, value: any) => void;
   onRemove: (name: string) => void;
   onSubmit: () => void;
@@ -37,7 +39,7 @@ export function CustomFieldSearchParamField({
         searchParams={searchParams}
         searchParamName={searchParamName}
         items={(repoId) => enumValues(repoId, fieldName)}
-        itemLabel={(value) => titlize(value)}
+        itemLabel={enumLabel}
         onChange={onChange}
         onRemove={onRemove}
         openedByDefault={openedByDefault}

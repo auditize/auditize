@@ -19,7 +19,10 @@ import {
   getTag,
   getTagNames,
 } from "@/features/log/api";
-import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import {
+  useCustomFieldEnumValueTranslator,
+  useLogTranslator,
+} from "@/features/log/components/LogTranslation";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
 
 import { CustomFieldSearchParamField } from "./CustomFieldSearchParamField";
@@ -57,6 +60,9 @@ function SearchParamField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(searchParams.repoId);
+  const customFieldEnumValueTranslator = useCustomFieldEnumValueTranslator(
+    searchParams.repoId,
+  );
 
   if (name === "q") {
     return (
@@ -153,6 +159,9 @@ function SearchParamField({
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllActorCustomFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator("actor_custom_field", fieldName, value)
+        }
         onChange={(_, value) =>
           onChange(
             "actorExtra",
@@ -173,6 +182,9 @@ function SearchParamField({
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllSourceFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator("source_field", fieldName, value)
+        }
         onChange={(_, value) =>
           onChange(
             "source",
@@ -227,6 +239,13 @@ function SearchParamField({
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllResourceCustomFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator(
+            "resource_custom_field",
+            fieldName,
+            value,
+          )
+        }
         onChange={(_, value) =>
           onChange(
             "resourceExtra",
@@ -247,6 +266,9 @@ function SearchParamField({
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllDetailFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator("detail_field", fieldName, value)
+        }
         onChange={(_, value) =>
           onChange(
             "details",

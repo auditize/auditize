@@ -90,7 +90,7 @@ export async function getRepo(repoId: string): Promise<Repo> {
 export async function getRepoTranslation(
   repoId: string,
   lang: string,
-): Promise<Record<string, Record<string, string>>> {
+): Promise<Record<string, any>> {
   return await reqGet(
     `/repos/${repoId}/translations/${lang}`,
     {},
