@@ -1,10 +1,8 @@
 import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
-import {
-  SourceFieldValue,
-  useLogTranslator,
-} from "@/features/log/components/LogTranslation";
+import { SourceFieldValue } from "@/features/log/components/CustomFieldValues";
+import { useLogTranslator } from "@/features/log/components/LogTranslation";
 
 import {
   getCustomField,

@@ -34,14 +34,14 @@ import { humanizeDate } from "@/utils/date";
 import { iconBesideText } from "@/utils/ui";
 
 import { getLog, Log } from "../api";
-import { useLogNavigationState } from "./LogNavigation";
 import {
   ActorExtraFieldValue,
   DetailFieldValue,
   ResourceExtraFieldValue,
   SourceFieldValue,
-  useLogTranslator,
-} from "./LogTranslation";
+} from "./CustomFieldValues";
+import { useLogNavigationState } from "./LogNavigation";
+import { useLogTranslator } from "./LogTranslation";
 
 function KeyValueTable({
   data,
