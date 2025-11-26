@@ -1,3 +1,4 @@
+import { CodeHighlight } from "@mantine/code-highlight";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -41,7 +42,7 @@ export function useCustomFieldEnumValueTranslator(repoId?: string) {
   };
 }
 
-export function useCustomFieldValueTranslator(
+function useCustomFieldValueTranslator(
   repoId: string | undefined,
   fieldType: string,
 ) {
@@ -58,6 +59,49 @@ export function useCustomFieldValueTranslator(
   };
 }
 
+function JsonFieldValue({ field }: { field: CustomField }) {
+  const { t } = useTranslation();
+  let formattedJson = field.value;
+  try {
+    const parsed = JSON.parse(field.value);
+    formattedJson = JSON.stringify(parsed, null, 2);
+  } catch {
+    // ignore
+  }
+  return (
+    <CodeHighlight
+      code={formattedJson}
+      language="json"
+      withExpandButton
+      defaultExpanded={false}
+      collapseCodeLabel={t("common.lessDetails")}
+      expandCodeLabel={t("common.moreDetails")}
+      copyLabel={t("common.copy")}
+      copiedLabel={t("common.copied")}
+      styles={{
+        code: { padding: "5px 8px 5px 8px" },
+        scrollarea: { maxWidth: "400px" },
+      }}
+    />
+  );
+}
+
+export function CustomFieldValue({
+  repoId,
+  field,
+  fieldTypeKey,
+}: {
+  repoId: string;
+  field: CustomField;
+  fieldTypeKey: string;
+}) {
+  const translator = useCustomFieldValueTranslator(repoId, fieldTypeKey);
+  if (field.type === CustomFieldType.Json) {
+    return <JsonFieldValue field={field} />;
+  }
+  return translator(field);
+}
+
 export function DetailFieldValue({
   repoId,
   field,
@@ -65,8 +109,13 @@ export function DetailFieldValue({
   repoId: string;
   field: CustomField;
 }) {
-  const translator = useCustomFieldValueTranslator(repoId, "detail_field");
-  return translator(field);
+  return (
+    <CustomFieldValue
+      repoId={repoId}
+      field={field}
+      fieldTypeKey="detail_field"
+    />
+  );
 }
 
 export function ResourceExtraFieldValue({
@@ -76,11 +125,13 @@ export function ResourceExtraFieldValue({
   repoId: string;
   field: CustomField;
 }) {
-  const translator = useCustomFieldValueTranslator(
-    repoId,
-    "resource_custom_field",
+  return (
+    <CustomFieldValue
+      repoId={repoId}
+      field={field}
+      fieldTypeKey="resource_custom_field"
+    />
   );
-  return translator(field);
 }
 
 export function ActorExtraFieldValue({
@@ -90,11 +141,13 @@ export function ActorExtraFieldValue({
   repoId: string;
   field: CustomField;
 }) {
-  const translator = useCustomFieldValueTranslator(
-    repoId,
-    "actor_custom_field",
+  return (
+    <CustomFieldValue
+      repoId={repoId}
+      field={field}
+      fieldTypeKey="actor_custom_field"
+    />
   );
-  return translator(field);
 }
 
 export function SourceFieldValue({
@@ -104,6 +157,11 @@ export function SourceFieldValue({
   repoId: string;
   field: CustomField;
 }) {
-  const translator = useCustomFieldValueTranslator(repoId, "source_field");
-  return translator(field);
+  return (
+    <CustomFieldValue
+      repoId={repoId}
+      field={field}
+      fieldTypeKey="source_field"
+    />
+  );
 }
