@@ -27,16 +27,26 @@ def create_log(counter: int):
             "name": create_value("user", counter, 1000),
             "extra": [
                 {
-                    "name": create_value("actor-extra-name", counter, 3),
-                    "value": create_value("actor-extra-value", counter, 10),
-                }
+                    "name": create_value("plain-value-name", counter, 3),
+                    "value": create_value("plain value", counter, 10),
+                },
+                {
+                    "name": create_value("enum-value-name", counter, 3),
+                    "value": create_value("enum_value", counter, 3),
+                    "type": "enum",
+                },
             ],
         },
         "source": [
             {
-                "name": create_value("source-name", counter, 5),
-                "value": create_value("source-value", counter, 50),
-            }
+                "name": create_value("plain-value-name", counter, 5),
+                "value": create_value("plain value", counter, 50),
+            },
+            {
+                "name": create_value("enum-value-name", counter, 5),
+                "value": create_value("enum_value", counter, 3),
+                "type": "enum",
+            },
         ],
         "resource": {
             "ref": create_value("resource", counter, 1000),
@@ -44,16 +54,26 @@ def create_log(counter: int):
             "name": create_value("resource", counter, 1000),
             "extra": [
                 {
-                    "name": create_value("resource-extra-name", counter, 3),
-                    "value": create_value("resource-extra-value", counter, 10),
-                }
+                    "name": create_value("plain-value-name", counter, 3),
+                    "value": create_value("plain value", counter, 10),
+                },
+                {
+                    "name": create_value("enum-value-name", counter, 3),
+                    "value": create_value("enum_value", counter, 3),
+                    "type": "enum",
+                },
             ],
         },
         "details": [
             {
-                "name": create_value("detail-name", counter, 10),
-                "value": create_value("detail-value", counter, 100),
-            }
+                "name": create_value("plain-value-name", counter, 10),
+                "value": create_value("plain value", counter, 100),
+            },
+            {
+                "name": create_value("enum-value-name", counter, 10),
+                "value": create_value("enum_value", counter, 3),
+                "type": "enum",
+            },
         ],
         "tags": [
             {

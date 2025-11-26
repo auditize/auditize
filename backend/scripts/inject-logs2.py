@@ -674,9 +674,7 @@ class ApiInjector:
                 f"{self.base_url}/api/repos/{self.repo_id}/logs/{log_id}/attachments",
                 headers={"Authorization": f"Bearer " + self.api_key},
                 files={"file": (attachment["name"], attachment["data"])},
-                data={
-                    "type": attachment["type"],
-                },
+                data={"type": attachment["type"]},
             )
             if resp.is_error:
                 sys.exit(
