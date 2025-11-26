@@ -35,6 +35,11 @@ def create_log(counter: int):
                     "value": create_value("enum_value", counter, 3),
                     "type": "enum",
                 },
+                {
+                    "name": create_value("boolean-value-name", counter, 3),
+                    "value": True if counter % 2 == 0 else False,
+                    "type": "boolean",
+                },
             ],
         },
         "source": [
@@ -46,6 +51,11 @@ def create_log(counter: int):
                 "name": create_value("enum-value-name", counter, 5),
                 "value": create_value("enum_value", counter, 3),
                 "type": "enum",
+            },
+            {
+                "name": create_value("boolean-value-name", counter, 5),
+                "value": True if counter % 2 == 0 else False,
+                "type": "boolean",
             },
         ],
         "resource": {
@@ -62,6 +72,11 @@ def create_log(counter: int):
                     "value": create_value("enum_value", counter, 3),
                     "type": "enum",
                 },
+                {
+                    "name": create_value("boolean-value-name", counter, 5),
+                    "value": True if counter % 2 == 0 else False,
+                    "type": "boolean",
+                },
             ],
         },
         "details": [
@@ -73,6 +88,11 @@ def create_log(counter: int):
                 "name": create_value("enum-value-name", counter, 10),
                 "value": create_value("enum_value", counter, 3),
                 "type": "enum",
+            },
+            {
+                "name": create_value("boolean-value-name", counter, 10),
+                "value": True if counter % 2 == 0 else False,
+                "type": "boolean",
             },
         ],
         "tags": [
