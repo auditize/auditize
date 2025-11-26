@@ -47,7 +47,6 @@ export function useCustomFieldValueTranslator(
   const enumTranslator = useCustomFieldEnumValueTranslator(repoId);
 
   return (field: CustomField) => {
-    console.log("useCustomFieldValueTranslator", fieldType, field);
     if (field.type === CustomFieldType.Enum) {
       return enumTranslator(fieldType, field.name, field.value);
     }
@@ -55,14 +54,52 @@ export function useCustomFieldValueTranslator(
   };
 }
 
-export const useDetailFieldValueTranslator = (repoId: string) =>
-  useCustomFieldValueTranslator(repoId, "detail_field");
+export function DetailFieldValue({
+  repoId,
+  field,
+}: {
+  repoId: string;
+  field: CustomField;
+}) {
+  const translator = useCustomFieldValueTranslator(repoId, "detail_field");
+  return translator(field);
+}
 
-export const useResourceExtraFieldValueTranslator = (repoId: string) =>
-  useCustomFieldValueTranslator(repoId, "resource_custom_field");
+export function ResourceExtraFieldValue({
+  repoId,
+  field,
+}: {
+  repoId: string;
+  field: CustomField;
+}) {
+  const translator = useCustomFieldValueTranslator(
+    repoId,
+    "resource_custom_field",
+  );
+  return translator(field);
+}
 
-export const useActorExtraFieldValueTranslator = (repoId: string) =>
-  useCustomFieldValueTranslator(repoId, "actor_custom_field");
+export function ActorExtraFieldValue({
+  repoId,
+  field,
+}: {
+  repoId: string;
+  field: CustomField;
+}) {
+  const translator = useCustomFieldValueTranslator(
+    repoId,
+    "actor_custom_field",
+  );
+  return translator(field);
+}
 
-export const useSourceFieldValueTranslator = (repoId: string) =>
-  useCustomFieldValueTranslator(repoId, "source_field");
+export function SourceFieldValue({
+  repoId,
+  field,
+}: {
+  repoId: string;
+  field: CustomField;
+}) {
+  const translator = useCustomFieldValueTranslator(repoId, "source_field");
+  return translator(field);
+}

@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
 import {
-  useDetailFieldValueTranslator,
+  DetailFieldValue,
   useLogTranslator,
 } from "@/features/log/components/LogTranslation";
 
@@ -25,7 +25,6 @@ export function DetailField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const fieldValueTranslator = useDetailFieldValueTranslator(repoId);
   const field = getCustomField(log?.details, fieldName);
   if (!field) {
     return null;
@@ -43,7 +42,7 @@ export function DetailField({
         )
       }
     >
-      {fieldValueTranslator(field)}
+      <DetailFieldValue repoId={repoId} field={field} />
     </InlineSearchParamLink>
   );
 }

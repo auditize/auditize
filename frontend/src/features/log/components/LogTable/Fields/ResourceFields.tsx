@@ -2,13 +2,12 @@ import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
 import {
+  ResourceExtraFieldValue,
   useLogTranslator,
-  useResourceExtraFieldValueTranslator,
 } from "@/features/log/components/LogTranslation";
 
 import {
   getCustomField,
-  getCustomFieldValue,
   InlineSearchParamLink,
   TableSearchParamChangeHandler,
 } from "./FieldUtils";
@@ -126,7 +125,6 @@ export function ResourceCustomField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const fieldValueTranslator = useResourceExtraFieldValueTranslator(repoId);
   const field = getCustomField(log.resource?.extra, fieldName);
   if (!field) {
     return null;
@@ -144,7 +142,7 @@ export function ResourceCustomField({
         )
       }
     >
-      {fieldValueTranslator(field)}
+      <ResourceExtraFieldValue repoId={repoId} field={field} />
     </InlineSearchParamLink>
   );
 }

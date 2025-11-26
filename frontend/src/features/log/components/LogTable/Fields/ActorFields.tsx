@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
 import {
-  useActorExtraFieldValueTranslator,
+  ActorExtraFieldValue,
   useLogTranslator,
 } from "@/features/log/components/LogTranslation";
 
@@ -112,7 +112,6 @@ export function ActorCustomField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const fieldValueTranslator = useActorExtraFieldValueTranslator(repoId);
   const field = getCustomField(log.actor?.extra, fieldName);
   if (!field) {
     return null;
@@ -130,7 +129,7 @@ export function ActorCustomField({
         )
       }
     >
-      {fieldValueTranslator(field)}
+      <ActorExtraFieldValue repoId={repoId} field={field} />
     </InlineSearchParamLink>
   );
 }

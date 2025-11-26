@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
 import {
+  SourceFieldValue,
   useLogTranslator,
-  useSourceFieldValueTranslator,
 } from "@/features/log/components/LogTranslation";
 
 import {
@@ -25,7 +25,6 @@ export function SourceField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-  const fieldValueTranslator = useSourceFieldValueTranslator(repoId);
   const field = getCustomField(log.source, fieldName);
   if (!field) {
     return null;
@@ -40,7 +39,7 @@ export function SourceField({
         onTableSearchParamChange("source", new Map([[field.name, field.value]]))
       }
     >
-      {fieldValueTranslator(field)}
+      <SourceFieldValue repoId={repoId} field={field} />
     </InlineSearchParamLink>
   );
 }
