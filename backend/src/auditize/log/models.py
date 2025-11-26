@@ -26,14 +26,9 @@ from auditize.helpers.string import validate_empty_string_as_none
 
 
 class CustomFieldType(enum.StrEnum):
-    STRING = "string", str
-    ENUM = "enum", str
-
-    def __new__(cls, value: str, python_type: type) -> Self:
-        obj = str.__new__(cls, value)
-        obj._value_ = value
-        obj.python_type = python_type
-        return obj
+    STRING = "string"
+    ENUM = "enum"
+    BOOLEAN = "boolean"
 
 
 class CustomField(BaseModel):
@@ -43,7 +38,7 @@ class CustomField(BaseModel):
 
     type: CustomFieldType = Field(default=CustomFieldType.STRING)
     name: str
-    value: str
+    value: str | bool
 
     @model_serializer(mode="wrap")
     def serialize_model(
@@ -56,6 +51,8 @@ class CustomField(BaseModel):
         match self.type:
             case CustomFieldType.ENUM:
                 serialized["value_enum"] = serialized.pop("value")
+            case CustomFieldType.BOOLEAN:
+                serialized["value_boolean"] = serialized.pop("value")
 
         return serialized
 
@@ -69,6 +66,8 @@ class CustomField(BaseModel):
         match pre_validated.get("type", CustomFieldType.STRING):
             case CustomFieldType.ENUM:
                 pre_validated["value"] = pre_validated.pop("value_enum")
+            case CustomFieldType.BOOLEAN:
+                pre_validated["value"] = pre_validated.pop("value_boolean")
 
         return pre_validated
 
@@ -156,15 +155,34 @@ def _CustomFieldValueField(**kwargs):  # noqa
 
 
 class _CustomFieldInputData(BaseModel):
-    type: CustomFieldType = _CustomFieldTypeField(default=CustomFieldType.STRING)
+    type: CustomFieldType = _CustomFieldTypeField(default=None)
     name: str = _CustomFieldNameField()
-    value: str = _CustomFieldValueField()
+    value: str | bool = _CustomFieldValueField()
+
+    @model_validator(mode="after")
+    def post_validate(self) -> Self:
+        if self.type:
+            match self.type:
+                case CustomFieldType.STRING | CustomFieldType.ENUM:
+                    if not isinstance(self.value, str):
+                        raise ValueError("Value must be a string")
+                case CustomFieldType.BOOLEAN:
+                    if not isinstance(self.value, bool):
+                        raise ValueError("Value must be a boolean")
+        else:
+            self.type = (
+                CustomFieldType.BOOLEAN
+                if isinstance(self.value, bool)
+                else CustomFieldType.STRING
+            )
+
+        return self
 
 
 class _CustomFieldOutputData(BaseModel):
     type: CustomFieldType = _CustomFieldTypeField()
     name: str = _CustomFieldNameField()
-    value: str = _CustomFieldValueField()
+    value: str | bool = _CustomFieldValueField()
 
 
 def _LogIdField(**kwargs):  # noqa

@@ -145,6 +145,36 @@ async def test_create_log_enum_fields(
     )
 
 
+async def test_create_log_boolean_fields(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data(
+        {
+            "source": [{"name": "enabled", "value": True, "type": "boolean"}],
+            "actor": {
+                "type": "user",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [{"name": "enabled", "value": True, "type": "boolean"}],
+            },
+            "resource": {
+                "ref": "core",
+                "type": "module",
+                "name": "Core Module",
+                "extra": [{"name": "enabled", "value": True, "type": "boolean"}],
+            },
+            "details": [{"name": "enabled", "value": True, "type": "boolean"}],
+        }
+    )
+
+    await log_write_client.assert_post(
+        f"/repos/{repo.id}/logs",
+        json=log_data,
+        expected_status_code=201,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
 @pytest.mark.parametrize("status", ["readonly", "disabled"])
 async def test_create_log_not_allowed_by_repo_status(
     superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, status: str
@@ -1081,6 +1111,45 @@ class _TestGetLogsFilterCustomField:
             {f"{self.field_prefix}.status": "enabled"},
             matching_log,
             extra_log=False,
+        )
+
+    async def test_boolean(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        never_matching_log = await repo.create_log(log_rw_client)
+
+        true_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "enabled", "value": True, "type": "boolean"}],
+            ),
+        )
+        false_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "enabled", "value": False, "type": "boolean"}],
+            ),
+        )
+
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {f"{self.field_prefix}.enabled": True},
+            true_log,
+            extra_log=False,
+        )
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {f"{self.field_prefix}.enabled": False},
+            false_log,
+            extra_log=False,
+        )
+
+        # also check that invalid boolean values are rejected
+        await log_rw_client.assert_get_bad_request(
+            f"/repos/{repo.id}/logs",
+            params={
+                f"{self.field_prefix}.enabled": "not a boolean",
+            },
         )
 
 

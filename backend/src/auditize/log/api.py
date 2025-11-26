@@ -733,7 +733,9 @@ _GET_LOGS_DESCRIPTION = (
     "- `resource.<custom-field>`\n"
     "- `details.<custom-field>`\n"
     "\n"
-    "Example: `/repos/{repo_id}/logs?actor.role=admin`"
+    "Example: `/repos/{repo_id}/logs?actor.role=admin`\n"
+    "\n"
+    "Example for a boolean custom field: `/repos/{repo_id}/logs?actor.enabled=true`"
 )
 
 

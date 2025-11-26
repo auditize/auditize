@@ -20,6 +20,7 @@ from auditize.api.models.cursor_pagination import (
     load_pagination_cursor,
     serialize_pagination_cursor,
 )
+from auditize.api.validation import validate_bool
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.database.sql.service import get_sql_model
@@ -353,6 +354,12 @@ class LogService:
                 field_value_filter = {
                     "term": {
                         f"{path}.value_enum": field_value,
+                    }
+                }
+            case CustomFieldType.BOOLEAN:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_boolean": validate_bool(field_value),
                     }
                 }
             case _:
@@ -1193,6 +1200,7 @@ _TYPE_CUSTOM_FIELDS = {
         "name": {"type": "keyword"},
         "value": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
         "value_enum": {"type": "keyword"},
+        "value_boolean": {"type": "boolean"},
     },
 }
 
