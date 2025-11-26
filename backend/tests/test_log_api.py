@@ -3304,6 +3304,54 @@ async def test_get_logs_as_csv_custom_fields_enum(
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
 
+async def test_get_logs_as_csv_boolean_fields(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {
+                "source": [{"name": "source-field", "value": True, "type": "boolean"}],
+                "actor": {
+                    "ref": "actor_ref",
+                    "type": "actor",
+                    "name": "Actor",
+                    "extra": [
+                        {"name": "actor-field", "value": True, "type": "boolean"}
+                    ],
+                },
+                "resource": {
+                    "ref": "resource_ref",
+                    "type": "resource",
+                    "name": "Resource",
+                    "extra": [
+                        {
+                            "name": "resource-field",
+                            "value": False,
+                            "type": "boolean",
+                        }
+                    ],
+                },
+                "details": [
+                    {"name": "detail-field", "value": False, "type": "boolean"}
+                ],
+            }
+        ),
+    )
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+        params={
+            "columns": "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field",
+        },
+    )
+    assert (
+        resp.text
+        == "Log ID,Source: Source Field,Actor: Actor Field,Resource: Resource Field,Details: Detail Field\r\n"
+        f"{log.id},Yes,Yes,No,No\r\n"
+    )
+    assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
+
+
 async def test_get_logs_as_csv_with_csv_max_rows(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
