@@ -40,6 +40,11 @@ def create_log(counter: int):
                     "value": True if counter % 2 == 0 else False,
                     "type": "boolean",
                 },
+                {
+                    "name": create_value("json-value-name", counter, 3),
+                    "value": '{"foo": "bar"}',
+                    "type": "json",
+                },
             ],
         },
         "source": [
@@ -56,6 +61,11 @@ def create_log(counter: int):
                 "name": create_value("boolean-value-name", counter, 5),
                 "value": True if counter % 2 == 0 else False,
                 "type": "boolean",
+            },
+            {
+                "name": create_value("json-value-name", counter, 5),
+                "value": '{"foo": "bar"}',
+                "type": "json",
             },
         ],
         "resource": {
@@ -77,6 +87,11 @@ def create_log(counter: int):
                     "value": True if counter % 2 == 0 else False,
                     "type": "boolean",
                 },
+                {
+                    "name": create_value("json-value-name", counter, 5),
+                    "value": '{"foo": "bar"}',
+                    "type": "json",
+                },
             ],
         },
         "details": [
@@ -93,6 +108,11 @@ def create_log(counter: int):
                 "name": create_value("boolean-value-name", counter, 10),
                 "value": True if counter % 2 == 0 else False,
                 "type": "boolean",
+            },
+            {
+                "name": create_value("json-value-name", counter, 10),
+                "value": '{"foo": "bar"}',
+                "type": "json",
             },
         ],
         "tags": [
