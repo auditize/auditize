@@ -31,12 +31,17 @@ import { useTranslation } from "react-i18next";
 import { Section } from "@/components/Section";
 import { SectionExpand } from "@/components/Section/Section";
 import { humanizeDate } from "@/utils/date";
-import { titlize } from "@/utils/format";
 import { iconBesideText } from "@/utils/ui";
 
-import { CustomFieldType, getLog, Log } from "../api";
+import { getLog, Log } from "../api";
 import { useLogNavigationState } from "./LogNavigation";
-import { useLogTranslator } from "./LogTranslation";
+import {
+  useActorExtraFieldValueTranslator,
+  useDetailFieldValueTranslator,
+  useLogTranslator,
+  useResourceExtraFieldValueTranslator,
+  useSourceFieldValueTranslator,
+} from "./LogTranslation";
 
 function KeyValueTable({
   data,
@@ -210,16 +215,18 @@ function LogTagSection({ log, repoId }: { log: Log; repoId: string }) {
 function LogSourceSection({ log, repoId }: { log: Log; repoId: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
+  const fieldValueTranslator = useSourceFieldValueTranslator(repoId);
+
   return (
     <KeyValueSection
       title={t("log.source")}
       icon={<IconRoute style={iconBesideText({ size: "18px", top: "0px" })} />}
       data={log.source.map(
         (field) =>
-          [logTranslator("source_field", field.name), field.value] as [
-            React.ReactNode,
-            React.ReactNode,
-          ],
+          [
+            logTranslator("source_field", field.name),
+            fieldValueTranslator(field),
+          ] as [React.ReactNode, React.ReactNode],
       )}
     />
   );
@@ -228,6 +235,7 @@ function LogSourceSection({ log, repoId }: { log: Log; repoId: string }) {
 function LogActorSection({ log, repoId }: { log: Log; repoId: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
+  const fieldValueTranslator = useActorExtraFieldValueTranslator(repoId);
 
   return (
     <KeyValueSection
@@ -242,7 +250,7 @@ function LogActorSection({ log, repoId }: { log: Log; repoId: string }) {
             (field) =>
               [
                 logTranslator("actor_custom_field", field.name),
-                field.value,
+                fieldValueTranslator(field),
               ] as [React.ReactNode, React.ReactNode],
           ),
         ]
@@ -254,6 +262,7 @@ function LogActorSection({ log, repoId }: { log: Log; repoId: string }) {
 function LogResourceSection({ log, repoId }: { log: Log; repoId: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
+  const fieldValueTranslator = useResourceExtraFieldValueTranslator(repoId);
 
   return (
     <KeyValueSection
@@ -273,7 +282,7 @@ function LogResourceSection({ log, repoId }: { log: Log; repoId: string }) {
             (field) =>
               [
                 logTranslator("resource_custom_field", field.name),
-                field.value,
+                fieldValueTranslator(field),
               ] as [React.ReactNode, React.ReactNode],
           ),
         ]
@@ -285,6 +294,7 @@ function LogResourceSection({ log, repoId }: { log: Log; repoId: string }) {
 function LogDetailsSection({ log, repoId }: { log: Log; repoId: string }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator();
+  const fieldValueTranslator = useDetailFieldValueTranslator(repoId);
 
   return (
     <KeyValueSection
@@ -296,9 +306,7 @@ function LogDetailsSection({ log, repoId }: { log: Log; repoId: string }) {
         (field) =>
           [
             logTranslator("detail_field", field.name),
-            field.type === CustomFieldType.Enum
-              ? titlize(field.value)
-              : field.value,
+            fieldValueTranslator(field),
           ] as [React.ReactNode, React.ReactNode],
       )}
     />

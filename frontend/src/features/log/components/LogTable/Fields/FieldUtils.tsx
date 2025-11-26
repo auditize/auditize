@@ -50,15 +50,20 @@ export function InlineSearchParamLink({
   );
 }
 
+export function getCustomField(
+  fields: CustomField[] | undefined,
+  fieldName: string,
+): CustomField | undefined {
+  if (!fields) {
+    return undefined;
+  }
+  return fields.find((f) => f.name === fieldName);
+}
+
 export function getCustomFieldValue(
   fields: CustomField[] | undefined,
   fieldName: string,
 ): string | null {
-  if (!fields) {
-    return null;
-  }
-
-  const field = fields.find((f) => f.name === fieldName);
+  const field = getCustomField(fields, fieldName);
   return field ? field.value : null;
 }
-

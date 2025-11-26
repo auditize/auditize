@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { CustomField, CustomFieldType } from "@/features/log/api";
 import { getRepoTranslation } from "@/features/repo";
 import { useI18nContext } from "@/i18n";
 import { titlize } from "@/utils/format";
@@ -38,3 +39,30 @@ export function useCustomFieldEnumValueTranslator(repoId?: string) {
     );
   };
 }
+
+export function useCustomFieldValueTranslator(
+  repoId: string | undefined,
+  fieldType: string,
+) {
+  const enumTranslator = useCustomFieldEnumValueTranslator(repoId);
+
+  return (field: CustomField) => {
+    console.log("useCustomFieldValueTranslator", fieldType, field);
+    if (field.type === CustomFieldType.Enum) {
+      return enumTranslator(fieldType, field.name, field.value);
+    }
+    return field.value;
+  };
+}
+
+export const useDetailFieldValueTranslator = (repoId: string) =>
+  useCustomFieldValueTranslator(repoId, "detail_field");
+
+export const useResourceExtraFieldValueTranslator = (repoId: string) =>
+  useCustomFieldValueTranslator(repoId, "resource_custom_field");
+
+export const useActorExtraFieldValueTranslator = (repoId: string) =>
+  useCustomFieldValueTranslator(repoId, "actor_custom_field");
+
+export const useSourceFieldValueTranslator = (repoId: string) =>
+  useCustomFieldValueTranslator(repoId, "source_field");

@@ -1,9 +1,13 @@
 import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
-import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import {
+  useLogTranslator,
+  useResourceExtraFieldValueTranslator,
+} from "@/features/log/components/LogTranslation";
 
 import {
+  getCustomField,
   getCustomFieldValue,
   InlineSearchParamLink,
   TableSearchParamChangeHandler,
@@ -122,28 +126,25 @@ export function ResourceCustomField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-
-  if (!log.resource) {
-    return null;
-  }
-  const fieldValue = getCustomFieldValue(log.resource.extra, fieldName);
-  if (!fieldValue) {
+  const fieldValueTranslator = useResourceExtraFieldValueTranslator(repoId);
+  const field = getCustomField(log.resource?.extra, fieldName);
+  if (!field) {
     return null;
   }
 
   return (
     <InlineSearchParamLink
       fieldLabel={t("log.inlineFilter.field.resourceCustomField", {
-        field: logTranslator("resource_custom_field", fieldName).toLowerCase(),
+        field: logTranslator("resource_custom_field", field.name).toLowerCase(),
       })}
       onClick={() =>
         onTableSearchParamChange(
           "resourceExtra",
-          new Map([[fieldName, fieldValue]]),
+          new Map([[field.name, field.value]]),
         )
       }
     >
-      {fieldValue}
+      {fieldValueTranslator(field)}
     </InlineSearchParamLink>
   );
 }
