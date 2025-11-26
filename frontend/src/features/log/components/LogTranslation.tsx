@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { CustomField, CustomFieldType } from "@/features/log/api";
 import { getRepoTranslation } from "@/features/repo";
@@ -44,11 +45,14 @@ export function useCustomFieldValueTranslator(
   repoId: string | undefined,
   fieldType: string,
 ) {
+  const { t } = useTranslation();
   const enumTranslator = useCustomFieldEnumValueTranslator(repoId);
 
   return (field: CustomField) => {
     if (field.type === CustomFieldType.Enum) {
       return enumTranslator(fieldType, field.name, field.value);
+    } else if (field.type === CustomFieldType.Boolean) {
+      return t(`common.${field.value ? "yes" : "no"}`);
     }
     return field.value;
   };

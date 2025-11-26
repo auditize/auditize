@@ -23,6 +23,7 @@ export type NameRefPair = {
 export enum CustomFieldType {
   String = "string",
   Enum = "enum",
+  Boolean = "boolean",
 }
 
 export type CustomField = {
