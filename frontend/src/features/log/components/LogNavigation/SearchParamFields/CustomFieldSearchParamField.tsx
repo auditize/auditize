@@ -6,7 +6,16 @@ import { LogSearchParams } from "@/features/log/LogSearchParams";
 import { titlize } from "@/utils/format";
 
 import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
+import { BooleanSearchParamField } from "./BooleanSearchParamField";
 import { SelectSearchParamField } from "./SelectSearchParamField";
+
+function booleanToString(value: boolean | undefined): string | undefined {
+  return value === undefined ? undefined : value ? "true" : "false";
+}
+
+function stringToBoolean(value: string | undefined): boolean | undefined {
+  return value === undefined ? undefined : value === "true" ? true : false;
+}
 
 export function CustomFieldSearchParamField({
   searchParams,
@@ -31,11 +40,12 @@ export function CustomFieldSearchParamField({
   const fieldTypes = useCustomFieldTypes(searchParams.repoId);
   const fieldType = fieldTypes[searchParamName] ?? CustomFieldType.String;
   const [groupName, fieldName] = searchParamName.split(".");
+  const label = t(`log.${groupName}`) + ": " + titlize(fieldName);
 
   if (fieldType === CustomFieldType.Enum) {
     return (
       <SelectSearchParamField
-        label={t(`log.${groupName}`) + ": " + titlize(fieldName)}
+        label={label}
         searchParams={searchParams}
         searchParamName={searchParamName}
         items={(repoId) => enumValues(repoId, fieldName)}
@@ -45,10 +55,20 @@ export function CustomFieldSearchParamField({
         openedByDefault={openedByDefault}
       />
     );
+  } else if (fieldType === CustomFieldType.Boolean) {
+    return (
+      <BooleanSearchParamField
+        label={label}
+        value={stringToBoolean(searchParams.get(searchParamName))}
+        onChange={(value) => onChange(searchParamName, booleanToString(value))}
+        onRemove={() => onRemove(searchParamName)}
+        openedByDefault={openedByDefault}
+      />
+    );
   } else {
     return (
       <BaseTextInputSearchParamField
-        label={t(`log.${groupName}`) + ": " + titlize(fieldName)}
+        label={label}
         name={searchParamName}
         value={searchParams.get(searchParamName) ?? ""}
         openedByDefault={openedByDefault}
