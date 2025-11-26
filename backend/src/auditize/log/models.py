@@ -1,4 +1,5 @@
 import enum
+import json
 from datetime import datetime, timezone
 from typing import Annotated, Any, Optional, Self
 from uuid import UUID
@@ -29,6 +30,7 @@ class CustomFieldType(enum.StrEnum):
     STRING = "string"
     ENUM = "enum"
     BOOLEAN = "boolean"
+    JSON = "json"
 
 
 class CustomField(BaseModel):
@@ -169,6 +171,13 @@ class _CustomFieldInputData(BaseModel):
                 case CustomFieldType.BOOLEAN:
                     if not isinstance(self.value, bool):
                         raise ValueError("Value must be a boolean")
+                case CustomFieldType.JSON:
+                    if not isinstance(self.value, str):
+                        raise ValueError("Value must be a valid JSON string")
+                    try:
+                        json.loads(self.value)
+                    except json.JSONDecodeError:
+                        raise ValueError("Value must be a valid JSON string")
         else:
             self.type = (
                 CustomFieldType.BOOLEAN

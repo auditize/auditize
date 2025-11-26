@@ -111,29 +111,41 @@ async def test_create_log_all_fields(
     )
 
 
-async def test_create_log_enum_fields(
-    log_write_client: HttpTestHelper, repo: PreparedRepo
+@pytest.mark.parametrize(
+    "field_name,field_value,field_type",
+    [
+        ("foo", "bar", "enum"),
+        ("enabled", True, "boolean"),
+        ("json", '{"foo": "bar"}', "json"),
+    ],
+)
+async def test_create_log_typed_fields(
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    field_name: str,
+    field_value: str | bool,
+    field_type: str,
 ):
     log_data = PreparedLog.prepare_data(
         {
-            "source": [
-                {"name": "foo", "value": "bar", "type": "enum"},
-            ],
+            "source": [{"name": field_name, "value": field_value, "type": field_type}],
             "actor": {
                 "type": "user",
                 "ref": "user:123",
                 "name": "User 123",
-                "extra": [{"name": "foo", "value": "bar", "type": "enum"}],
+                "extra": [
+                    {"name": field_name, "value": field_value, "type": field_type}
+                ],
             },
             "resource": {
                 "ref": "core",
                 "type": "module",
                 "name": "Core Module",
-                "extra": [{"name": "foo", "value": "bar", "type": "enum"}],
+                "extra": [
+                    {"name": field_name, "value": field_value, "type": field_type}
+                ],
             },
-            "details": [
-                {"name": "foo", "value": "bar", "type": "enum"},
-            ],
+            "details": [{"name": field_name, "value": field_value, "type": field_type}],
         }
     )
 
@@ -145,33 +157,28 @@ async def test_create_log_enum_fields(
     )
 
 
-async def test_create_log_boolean_fields(
-    log_write_client: HttpTestHelper, repo: PreparedRepo
+@pytest.mark.parametrize(
+    "field_name,field_value,field_type",
+    [
+        ("enabled", "true", "boolean"),
+        ("json", '{"foo": "bar"', "json"),
+    ],
+)
+async def test_create_log_invalid_typed_fields(
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    field_name: str,
+    field_value: str | int | dict | None,
+    field_type: str,
 ):
     log_data = PreparedLog.prepare_data(
         {
-            "source": [{"name": "enabled", "value": True, "type": "boolean"}],
-            "actor": {
-                "type": "user",
-                "ref": "user:123",
-                "name": "User 123",
-                "extra": [{"name": "enabled", "value": True, "type": "boolean"}],
-            },
-            "resource": {
-                "ref": "core",
-                "type": "module",
-                "name": "Core Module",
-                "extra": [{"name": "enabled", "value": True, "type": "boolean"}],
-            },
-            "details": [{"name": "enabled", "value": True, "type": "boolean"}],
+            "source": [{"name": field_name, "value": field_value, "type": field_type}],
         }
     )
 
-    await log_write_client.assert_post(
-        f"/repos/{repo.id}/logs",
-        json=log_data,
-        expected_status_code=201,
-        expected_json=PreparedLog.build_expected_api_response(log_data),
+    await log_write_client.assert_post_bad_request(
+        f"/repos/{repo.id}/logs", json=log_data
     )
 
 
@@ -1150,6 +1157,27 @@ class _TestGetLogsFilterCustomField:
             params={
                 f"{self.field_prefix}.enabled": "not a boolean",
             },
+        )
+
+    async def test_json(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "data", "value": '{"foo": "bar"}', "type": "json"}],
+            ),
+        )
+        non_matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "data", "value": '{"foo": "baz"}', "type": "json"}],
+            ),
+        )
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {f"{self.field_prefix}.data": "foo bar"},
+            matching_log,
+            extra_log=False,
         )
 
 
