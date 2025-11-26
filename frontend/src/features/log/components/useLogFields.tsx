@@ -8,6 +8,7 @@ import {
   getAllResourceCustomFields,
   getAllSourceFields,
 } from "../api";
+import { AvailableCustomField, CustomFieldType } from "../api";
 import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
 function useCustomFields(repoId: string) {
@@ -199,6 +200,21 @@ export function useColumnFields(repoId: string) {
       </Text>,
     );
 
+  const customFieldItems = (
+    fields: AvailableCustomField[],
+    prefix: string,
+    translationKey: string,
+  ) => {
+    return fields
+      .filter((field) => field.type !== CustomFieldType.Json)
+      .map((field) =>
+        item(
+          `${prefix}.${field.name}`,
+          logTranslator(translationKey, field.name),
+        ),
+      );
+  };
+
   return {
     fields: [
       { group: t("log.date"), items: [item("savedAt", t("log.date"))] },
@@ -217,22 +233,12 @@ export function useColumnFields(repoId: string) {
           item("actorType", t("common.type")),
           item("actorName", t("common.name")),
           item("actorRef", t("common.ref")),
-          ...actorCustomFields.map((field) =>
-            item(
-              `actor.${field.name}`,
-              logTranslator("actor_custom_field", field.name),
-            ),
-          ),
+          ...customFieldItems(actorCustomFields, "actor", "actor_custom_field"),
         ],
       },
       {
         group: t("log.source"),
-        items: sourceFields.map((field) =>
-          item(
-            `source.${field.name}`,
-            logTranslator("source_field", field.name),
-          ),
-        ),
+        items: customFieldItems(sourceFields, "source", "source_field"),
       },
       {
         group: t("log.resource"),
@@ -241,22 +247,16 @@ export function useColumnFields(repoId: string) {
           item("resourceType", t("common.type")),
           item("resourceName", t("common.name")),
           item("resourceRef", t("common.ref")),
-          ...resourceCustomFields.map((field) =>
-            item(
-              `resource.${field.name}`,
-              logTranslator("resource_custom_field", field.name),
-            ),
+          ...customFieldItems(
+            resourceCustomFields,
+            "resource",
+            "resource_custom_field",
           ),
         ],
       },
       {
         group: t("log.details"),
-        items: detailFields.map((field) =>
-          item(
-            `details.${field.name}`,
-            logTranslator("detail_field", field.name),
-          ),
-        ),
+        items: customFieldItems(detailFields, "details", "detail_field"),
       },
       {
         group: t("log.tag"),
