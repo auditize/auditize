@@ -29,6 +29,7 @@ const BLUE_214: MantineColorsTuple = [
 const INPUT_HEIGHT = rem(32);
 
 export const theme = createTheme({
+  cursorType: "pointer", // https://mantine.dev/core/switch/#pointer-cursor
   colors: {
     blue214: BLUE_214,
   },
