@@ -164,6 +164,8 @@ class _CustomFieldInputData(BaseModel):
     @model_validator(mode="after")
     def post_validate(self) -> Self:
         if self.type:
+            # If the type is set, validate the value against the type
+            # (both Python type and value format)
             match self.type:
                 case CustomFieldType.STRING | CustomFieldType.ENUM:
                     if not isinstance(self.value, str):
@@ -179,6 +181,7 @@ class _CustomFieldInputData(BaseModel):
                     except json.JSONDecodeError:
                         raise ValueError("Value must be a valid JSON string")
         else:
+            # If the type is NOT set, infer it from the value
             self.type = (
                 CustomFieldType.BOOLEAN
                 if isinstance(self.value, bool)

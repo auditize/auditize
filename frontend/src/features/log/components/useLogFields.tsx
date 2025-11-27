@@ -205,14 +205,17 @@ export function useColumnFields(repoId: string) {
     prefix: string,
     translationKey: string,
   ) => {
-    return fields
-      .filter((field) => field.type !== CustomFieldType.Json)
-      .map((field) =>
-        item(
-          `${prefix}.${field.name}`,
-          logTranslator(translationKey, field.name),
-        ),
-      );
+    return (
+      fields
+        // JSON fields won't probably be readable in a table, so we ignore them
+        .filter((field) => field.type !== CustomFieldType.Json)
+        .map((field) =>
+          item(
+            `${prefix}.${field.name}`,
+            logTranslator(translationKey, field.name),
+          ),
+        )
+    );
   };
 
   return {
