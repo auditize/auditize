@@ -30,6 +30,8 @@ class CustomFieldType(enum.StrEnum):
     STRING = "string"
     ENUM = "enum"
     BOOLEAN = "boolean"
+    INTEGER = "integer"
+    FLOAT = "float"
     JSON = "json"
 
 
@@ -40,7 +42,7 @@ class CustomField(BaseModel):
 
     type: CustomFieldType = Field(default=CustomFieldType.STRING)
     name: str
-    value: str | bool
+    value: str | bool | int | float
 
     @model_serializer(mode="wrap")
     def serialize_model(
@@ -55,6 +57,10 @@ class CustomField(BaseModel):
                 serialized["value_enum"] = serialized.pop("value")
             case CustomFieldType.BOOLEAN:
                 serialized["value_boolean"] = serialized.pop("value")
+            case CustomFieldType.INTEGER:
+                serialized["value_integer"] = serialized.pop("value")
+            case CustomFieldType.FLOAT:
+                serialized["value_float"] = serialized.pop("value")
 
         return serialized
 
@@ -70,6 +76,10 @@ class CustomField(BaseModel):
                 pre_validated["value"] = pre_validated.pop("value_enum")
             case CustomFieldType.BOOLEAN:
                 pre_validated["value"] = pre_validated.pop("value_boolean")
+            case CustomFieldType.INTEGER:
+                pre_validated["value"] = pre_validated.pop("value_integer")
+            case CustomFieldType.FLOAT:
+                pre_validated["value"] = pre_validated.pop("value_float")
 
         return pre_validated
 
@@ -159,7 +169,7 @@ def _CustomFieldValueField(**kwargs):  # noqa
 class _CustomFieldInputData(BaseModel):
     type: CustomFieldType = _CustomFieldTypeField(default=None)
     name: str = _CustomFieldNameField()
-    value: str | bool = _CustomFieldValueField()
+    value: str | bool | int | float = _CustomFieldValueField()
 
     @model_validator(mode="after")
     def post_validate(self) -> Self:
@@ -173,6 +183,12 @@ class _CustomFieldInputData(BaseModel):
                 case CustomFieldType.BOOLEAN:
                     if not isinstance(self.value, bool):
                         raise ValueError("Value must be a boolean")
+                case CustomFieldType.INTEGER:
+                    if not isinstance(self.value, int):
+                        raise ValueError("Value must be an integer")
+                case CustomFieldType.FLOAT:
+                    if not isinstance(self.value, float):
+                        raise ValueError("Value must be a float")
                 case CustomFieldType.JSON:
                     if not isinstance(self.value, str):
                         raise ValueError("Value must be a valid JSON string")
@@ -182,11 +198,15 @@ class _CustomFieldInputData(BaseModel):
                         raise ValueError("Value must be a valid JSON string")
         else:
             # If the type is NOT set, infer it from the value
-            self.type = (
-                CustomFieldType.BOOLEAN
-                if isinstance(self.value, bool)
-                else CustomFieldType.STRING
-            )
+            match self.value:
+                case bool():
+                    self.type = CustomFieldType.BOOLEAN
+                case int():
+                    self.type = CustomFieldType.INTEGER
+                case float():
+                    self.type = CustomFieldType.FLOAT
+                case _:
+                    self.type = CustomFieldType.STRING
 
         return self
 
@@ -194,7 +214,7 @@ class _CustomFieldInputData(BaseModel):
 class _CustomFieldOutputData(BaseModel):
     type: CustomFieldType = _CustomFieldTypeField()
     name: str = _CustomFieldNameField()
-    value: str | bool = _CustomFieldValueField()
+    value: str | bool | int | float = _CustomFieldValueField()
 
 
 def _LogIdField(**kwargs):  # noqa

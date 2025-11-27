@@ -22,3 +22,17 @@ def validate_bool(value: str) -> bool:
             raise ValidationError(
                 f"Invalid boolean value: {value!r} (must be 'true' or 'false')"
             )
+
+
+def validate_int(value: str) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        raise ValidationError(f"Invalid integer value: {value!r} (must be an integer)")
+
+
+def validate_float(value: str) -> float:
+    try:
+        return float(value)
+    except ValueError:
+        raise ValidationError(f"Invalid float value: {value!r} (must be a float)")

@@ -20,7 +20,7 @@ from auditize.api.models.cursor_pagination import (
     load_pagination_cursor,
     serialize_pagination_cursor,
 )
-from auditize.api.validation import validate_bool
+from auditize.api.validation import validate_bool, validate_float, validate_int
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.database.sql.service import get_sql_model
@@ -360,6 +360,18 @@ class LogService:
                 field_value_filter = {
                     "term": {
                         f"{path}.value_boolean": validate_bool(field_value),
+                    }
+                }
+            case CustomFieldType.INTEGER:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_integer": validate_int(field_value),
+                    }
+                }
+            case CustomFieldType.FLOAT:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_float": validate_float(field_value),
                     }
                 }
             case _:
@@ -1201,6 +1213,8 @@ _TYPE_CUSTOM_FIELDS = {
         "value": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
         "value_enum": {"type": "keyword"},
         "value_boolean": {"type": "boolean"},
+        "value_integer": {"type": "long"},
+        "value_float": {"type": "double"},
     },
 }
 

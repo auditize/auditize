@@ -112,40 +112,39 @@ async def test_create_log_all_fields(
 
 
 @pytest.mark.parametrize(
-    "field_name,field_value,field_type",
+    "custom_field",
     [
-        ("foo", "bar", "enum"),
-        ("enabled", True, "boolean"),
-        ("json", '{"foo": "bar"}', "json"),
+        {"name": "foo", "value": "bar", "type": "enum"},
+        {"name": "enabled", "value": True, "type": "boolean"},
+        {"name": "enabled", "value": True},
+        {"name": "json", "value": '{"foo": "bar"}', "type": "json"},
+        {"name": "integer", "value": 123, "type": "integer"},
+        {"name": "integer", "value": 123},
+        {"name": "float", "value": 123.45, "type": "float"},
+        {"name": "float", "value": 123.45},
     ],
 )
 async def test_create_log_typed_fields(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
-    field_name: str,
-    field_value: str | bool,
-    field_type: str,
+    custom_field: dict,
 ):
     log_data = PreparedLog.prepare_data(
         {
-            "source": [{"name": field_name, "value": field_value, "type": field_type}],
+            "source": [custom_field],
             "actor": {
                 "type": "user",
                 "ref": "user:123",
                 "name": "User 123",
-                "extra": [
-                    {"name": field_name, "value": field_value, "type": field_type}
-                ],
+                "extra": [custom_field],
             },
             "resource": {
                 "ref": "core",
                 "type": "module",
                 "name": "Core Module",
-                "extra": [
-                    {"name": field_name, "value": field_value, "type": field_type}
-                ],
+                "extra": [custom_field],
             },
-            "details": [{"name": field_name, "value": field_value, "type": field_type}],
+            "details": [custom_field],
         }
     )
 
@@ -160,8 +159,10 @@ async def test_create_log_typed_fields(
 @pytest.mark.parametrize(
     "field_name,field_value,field_type",
     [
-        ("enabled", "true", "boolean"),
         ("json", '{"foo": "bar"', "json"),
+        ("boolean", "true", "boolean"),
+        ("integer", "123", "integer"),
+        ("float", "123.45", "float"),
     ],
 )
 async def test_create_log_invalid_typed_fields(
@@ -1176,6 +1177,48 @@ class _TestGetLogsFilterCustomField:
             log_rw_client,
             repo,
             {f"{self.field_prefix}.data": "foo bar"},
+            matching_log,
+            extra_log=False,
+        )
+
+    async def test_integer(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "data", "value": 123, "type": "integer"}],
+            ),
+        )
+        non_matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "data", "value": 456, "type": "integer"}],
+            ),
+        )
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {f"{self.field_prefix}.data": 123},
+            matching_log,
+            extra_log=False,
+        )
+
+    async def test_float(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "data", "value": 123.45, "type": "float"}],
+            ),
+        )
+        non_matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": "data", "value": 456.78, "type": "float"}],
+            ),
+        )
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {f"{self.field_prefix}.data": 123.45},
             matching_log,
             extra_log=False,
         )
