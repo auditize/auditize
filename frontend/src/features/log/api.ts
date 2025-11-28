@@ -27,6 +27,7 @@ export enum CustomFieldType {
   Json = "json",
   Integer = "integer",
   Float = "float",
+  DateTime = "datetime",
 }
 
 export type CustomField = {

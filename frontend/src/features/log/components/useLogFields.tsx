@@ -88,7 +88,24 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
     label: label ?? t(`log.${value}`),
     disabled: disabledFields && disabledFields.has(value),
   });
-
+  const customFieldItems = (
+    fields: AvailableCustomField[],
+    prefix: string,
+    translationKey: string,
+  ) => {
+    return (
+      fields
+        // Datetime values should be searchable using a range picker, which is not supported yet
+        // so we hide them for now
+        .filter((field) => field.type !== CustomFieldType.DateTime)
+        .map((field) =>
+          item(
+            `${prefix}.${field.name}`,
+            logTranslator(translationKey, field.name),
+          ),
+        )
+    );
+  };
   return {
     fields: [
       { group: "Date", items: [item("savedAt", t("log.date"))] },
@@ -105,44 +122,28 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
         items: [
           item("actorType", t("common.type")),
           item("actorRef", t("log.actor")),
-          ...actorCustomFields.map((field) =>
-            item(
-              `actor.${field.name}`,
-              logTranslator("actor_custom_field", field.name),
-            ),
-          ),
+          ...customFieldItems(actorCustomFields, "actor", "actor_custom_field"),
         ],
       },
       {
         group: t("log.source"),
-        items: sourceFields.map((field) =>
-          item(
-            `source.${field.name}`,
-            logTranslator("source_field", field.name),
-          ),
-        ),
+        items: customFieldItems(sourceFields, "source", "source_field"),
       },
       {
         group: t("log.resource"),
         items: [
           item("resourceRef", t("log.resource")),
           item("resourceType", t("common.type")),
-          ...resourceCustomFields.map((field) =>
-            item(
-              `resource.${field.name}`,
-              logTranslator("resource_custom_field", field.name),
-            ),
+          ...customFieldItems(
+            resourceCustomFields,
+            "resource",
+            "resource_custom_field",
           ),
         ],
       },
       {
         group: t("log.details"),
-        items: detailFields.map((field) =>
-          item(
-            `details.${field.name}`,
-            logTranslator("detail_field", field.name),
-          ),
-        ),
+        items: customFieldItems(detailFields, "details", "detail_field"),
       },
       {
         group: t("log.tag"),

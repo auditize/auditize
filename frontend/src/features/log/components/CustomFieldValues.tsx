@@ -2,6 +2,7 @@ import { CodeHighlight } from "@mantine/code-highlight";
 import { useTranslation } from "react-i18next";
 
 import { CustomField, CustomFieldType } from "@/features/log/api";
+import { humanizeDate } from "@/utils/date";
 
 import { useCustomFieldEnumValueTranslator } from "./LogTranslation";
 
@@ -52,6 +53,10 @@ function JsonFieldValue({ field }: { field: CustomField }) {
   );
 }
 
+function DateTimeFieldValue({ field }: { field: CustomField }) {
+  return humanizeDate(field.value);
+}
+
 export function CustomFieldValue({
   repoId,
   field,
@@ -66,6 +71,9 @@ export function CustomFieldValue({
   }
   if (field.type === CustomFieldType.Json) {
     return <JsonFieldValue field={field} />;
+  }
+  if (field.type === CustomFieldType.DateTime) {
+    return <DateTimeFieldValue field={field} />;
   }
   if (field.type === CustomFieldType.Enum) {
     return (
