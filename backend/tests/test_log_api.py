@@ -1067,168 +1067,62 @@ class _TestGetLogsFilterCustomField:
     def field_prefix(self) -> str:
         raise NotImplementedError
 
-    async def test_string(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
-        matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
+    @pytest.mark.parametrize(
+        "matching_fields,non_matching_fields,filter_params",
+        [
+            # string
+            (
                 [
                     {"name": "field-1", "value": "foo something"},
                     {"name": "field-2", "value": "bar something else"},
-                ]
-            ),
-        )
-        non_matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
+                ],
                 [
                     {"name": "field-1", "value": "bar something"},
                     {"name": "field-2", "value": "foo something else"},
-                ]
+                ],
+                {
+                    "field-1": "something foo",
+                    "field-2": "something bar",
+                },
             ),
-        )
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {
-                f"{self.field_prefix}.field-1": "something foo",
-                f"{self.field_prefix}.field-2": "something bar",
-            },
-            matching_log,
-            extra_log=False,
-        )
-
-    async def test_enum(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
-        matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
-                [
-                    {"name": "status", "value": "enabled", "type": "enum"},
-                ]
+            # enum
+            (
+                [{"name": "status", "value": "enabled", "type": "enum"}],
+                [{"name": "status", "value": "disabled", "type": "enum"}],
+                {"status": "enabled"},
             ),
-        )
-        non_matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
-                [
-                    {"name": "status", "value": "disabled", "type": "enum"},
-                ]
-            ),
-        )
-
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {f"{self.field_prefix}.status": "enabled"},
-            matching_log,
-            extra_log=False,
-        )
-
-    async def test_boolean(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
-        never_matching_log = await repo.create_log(log_rw_client)
-
-        true_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
+            # boolean - True
+            (
                 [{"name": "enabled", "value": True, "type": "boolean"}],
-            ),
-        )
-        false_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
                 [{"name": "enabled", "value": False, "type": "boolean"}],
+                {"enabled": True},
             ),
-        )
-
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {f"{self.field_prefix}.enabled": True},
-            true_log,
-            extra_log=False,
-        )
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {f"{self.field_prefix}.enabled": False},
-            false_log,
-            extra_log=False,
-        )
-
-        # also check that invalid boolean values are rejected
-        await log_rw_client.assert_get_bad_request(
-            f"/repos/{repo.id}/logs",
-            params={
-                f"{self.field_prefix}.enabled": "not a boolean",
-            },
-        )
-
-    async def test_json(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
-        matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
+            # boolean - False
+            (
+                [{"name": "enabled", "value": False, "type": "boolean"}],
+                [{"name": "enabled", "value": True, "type": "boolean"}],
+                {"enabled": False},
+            ),
+            # json
+            (
                 [{"name": "data", "value": '{"foo": "bar"}', "type": "json"}],
-            ),
-        )
-        non_matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
                 [{"name": "data", "value": '{"foo": "baz"}', "type": "json"}],
+                {"data": "foo bar"},
             ),
-        )
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {f"{self.field_prefix}.data": "foo bar"},
-            matching_log,
-            extra_log=False,
-        )
-
-    async def test_integer(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
-        matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
+            # integer
+            (
                 [{"name": "data", "value": 123, "type": "integer"}],
-            ),
-        )
-        non_matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
                 [{"name": "data", "value": 456, "type": "integer"}],
+                {"data": 123},
             ),
-        )
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {f"{self.field_prefix}.data": 123},
-            matching_log,
-            extra_log=False,
-        )
-
-    async def test_float(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
-        matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
+            # float
+            (
                 [{"name": "data", "value": 123.45, "type": "float"}],
-            ),
-        )
-        non_matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
                 [{"name": "data", "value": 456.78, "type": "float"}],
+                {"data": 123.45},
             ),
-        )
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {f"{self.field_prefix}.data": 123.45},
-            matching_log,
-            extra_log=False,
-        )
-
-    async def test_datetime(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
-        matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
+            # datetime
+            (
                 [
                     {
                         "name": "data",
@@ -1236,11 +1130,6 @@ class _TestGetLogsFilterCustomField:
                         "type": "datetime",
                     }
                 ],
-            ),
-        )
-        non_matching_log = await repo.create_log(
-            log_rw_client,
-            self.prepare_log_data(
                 [
                     {
                         "name": "data",
@@ -1248,14 +1137,68 @@ class _TestGetLogsFilterCustomField:
                         "type": "datetime",
                     }
                 ],
+                {"data": "2021-01-01T00:00:00.000Z"},
+            ),
+        ],
+    )
+    async def test_field_types(
+        self,
+        log_rw_client: HttpTestHelper,
+        repo: PreparedRepo,
+        matching_fields: list[dict],
+        non_matching_fields: list[dict],
+        filter_params: dict,
+    ):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(matching_fields),
+        )
+        await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(non_matching_fields),
+        )
+
+        await _test_get_logs_filter(
+            client=log_rw_client,
+            repo=repo,
+            search_params={
+                f"{self.field_prefix}.{key}": value
+                for key, value in filter_params.items()
+            },
+            expected_log=matching_log,
+            extra_log=False,
+        )
+
+    @pytest.mark.parametrize(
+        "field_type,valid_value",
+        [
+            ("boolean", True),
+            ("integer", 123),
+            ("float", 123.45),
+            ("datetime", "2021-01-01T00:00:00.000Z"),
+        ],
+    )
+    async def test_invalid_field_values(
+        self,
+        log_rw_client: HttpTestHelper,
+        repo: PreparedRepo,
+        field_type: str,
+        valid_value: str,
+    ):
+        # Create a log with a valid value so that Auditize knows about the field type
+        await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": field_type, "value": valid_value, "type": field_type}]
             ),
         )
-        await _test_get_logs_filter(
-            log_rw_client,
-            repo,
-            {f"{self.field_prefix}.data": "2021-01-01T00:00:00.000Z"},
-            matching_log,
-            extra_log=False,
+
+        # Check that invalid values are rejected
+        await log_rw_client.assert_get_bad_request(
+            f"/repos/{repo.id}/logs",
+            params={
+                f"{self.field_prefix}.{field_type}": "INVALID VALUE",
+            },
         )
 
 
