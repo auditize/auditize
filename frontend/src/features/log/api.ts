@@ -25,6 +25,8 @@ export enum CustomFieldType {
   Enum = "enum",
   Boolean = "boolean",
   Json = "json",
+  Integer = "integer",
+  Float = "float",
 }
 
 export type CustomField = {

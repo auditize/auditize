@@ -7,6 +7,7 @@ import { titlize } from "@/utils/format";
 
 import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
 import { BooleanSearchParamField } from "./BooleanSearchParamField";
+import { NumberSearchParamField } from "./NumberSearchParamField";
 import { SelectSearchParamField } from "./SelectSearchParamField";
 
 function booleanToString(value: boolean | undefined): string | undefined {
@@ -62,6 +63,22 @@ export function CustomFieldSearchParamField({
         value={stringToBoolean(searchParams.get(searchParamName))}
         onChange={(value) => onChange(searchParamName, booleanToString(value))}
         onRemove={() => onRemove(searchParamName)}
+        openedByDefault={openedByDefault}
+      />
+    );
+  } else if (
+    fieldType === CustomFieldType.Integer ||
+    fieldType === CustomFieldType.Float
+  ) {
+    return (
+      <NumberSearchParamField
+        label={label}
+        name={searchParamName}
+        value={searchParams.get(searchParamName)}
+        allowDecimal={fieldType === CustomFieldType.Float}
+        onChange={onChange}
+        onRemove={onRemove}
+        onSubmit={onSubmit}
         openedByDefault={openedByDefault}
       />
     );
