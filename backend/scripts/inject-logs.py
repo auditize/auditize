@@ -35,16 +35,6 @@ def create_log(counter: int):
                     "value": create_value("enum_value", counter, 3),
                     "type": "enum",
                 },
-                {
-                    "name": create_value("boolean-value-name", counter, 3),
-                    "value": True if counter % 2 == 0 else False,
-                    "type": "boolean",
-                },
-                {
-                    "name": create_value("json-value-name", counter, 3),
-                    "value": '{"foo": "bar"}',
-                    "type": "json",
-                },
             ],
         },
         "source": [
@@ -56,16 +46,6 @@ def create_log(counter: int):
                 "name": create_value("enum-value-name", counter, 5),
                 "value": create_value("enum_value", counter, 3),
                 "type": "enum",
-            },
-            {
-                "name": create_value("boolean-value-name", counter, 5),
-                "value": True if counter % 2 == 0 else False,
-                "type": "boolean",
-            },
-            {
-                "name": create_value("json-value-name", counter, 5),
-                "value": '{"foo": "bar"}',
-                "type": "json",
             },
         ],
         "resource": {
@@ -81,16 +61,6 @@ def create_log(counter: int):
                     "name": create_value("enum-value-name", counter, 3),
                     "value": create_value("enum_value", counter, 3),
                     "type": "enum",
-                },
-                {
-                    "name": create_value("boolean-value-name", counter, 5),
-                    "value": True if counter % 2 == 0 else False,
-                    "type": "boolean",
-                },
-                {
-                    "name": create_value("json-value-name", counter, 5),
-                    "value": '{"foo": "bar"}',
-                    "type": "json",
                 },
             ],
         },
@@ -113,6 +83,21 @@ def create_log(counter: int):
                 "name": create_value("json-value-name", counter, 10),
                 "value": '{"foo": "bar"}',
                 "type": "json",
+            },
+            {
+                "name": create_value("integer-value-name", counter, 10),
+                "value": counter,
+                "type": "integer",
+            },
+            {
+                "name": create_value("float-value-name", counter, 10),
+                "value": counter + 0.1,
+                "type": "float",
+            },
+            {
+                "name": create_value("datetime-value-name", counter, 10),
+                "value": "2021-01-01T00:00:00.000Z",
+                "type": "datetime",
             },
         ],
         "tags": [
