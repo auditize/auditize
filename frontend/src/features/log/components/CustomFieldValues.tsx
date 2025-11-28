@@ -5,21 +5,24 @@ import { CustomField, CustomFieldType } from "@/features/log/api";
 
 import { useCustomFieldEnumValueTranslator } from "./LogTranslation";
 
-function useCustomFieldValueTranslator(
-  repoId: string | undefined,
-  fieldType: string,
-) {
-  const { t } = useTranslation();
-  const enumTranslator = useCustomFieldEnumValueTranslator(repoId);
+function EnumFieldValue({
+  repoId,
+  field,
+  fieldCategoryKey,
+}: {
+  repoId: string;
+  field: CustomField;
+  fieldCategoryKey: string;
+}) {
+  const translator = useCustomFieldEnumValueTranslator(repoId);
 
-  return (field: CustomField) => {
-    if (field.type === CustomFieldType.Enum) {
-      return enumTranslator(fieldType, field.name, field.value);
-    } else if (field.type === CustomFieldType.Boolean) {
-      return t(`common.${field.value ? "yes" : "no"}`);
-    }
-    return field.value;
-  };
+  return translator(fieldCategoryKey, field.name, field.value);
+}
+
+function BooleanFieldValue({ field }: { field: CustomField }) {
+  const { t } = useTranslation();
+
+  return t(`common.${field.value ? "yes" : "no"}`);
 }
 
 function JsonFieldValue({ field }: { field: CustomField }) {
@@ -52,17 +55,28 @@ function JsonFieldValue({ field }: { field: CustomField }) {
 export function CustomFieldValue({
   repoId,
   field,
-  fieldTypeKey,
+  fieldCategoryKey,
 }: {
   repoId: string;
   field: CustomField;
-  fieldTypeKey: string;
+  fieldCategoryKey: string;
 }) {
-  const translator = useCustomFieldValueTranslator(repoId, fieldTypeKey);
+  if (field.type === CustomFieldType.Boolean) {
+    return <BooleanFieldValue field={field} />;
+  }
   if (field.type === CustomFieldType.Json) {
     return <JsonFieldValue field={field} />;
   }
-  return translator(field);
+  if (field.type === CustomFieldType.Enum) {
+    return (
+      <EnumFieldValue
+        repoId={repoId}
+        field={field}
+        fieldCategoryKey={fieldCategoryKey}
+      />
+    );
+  }
+  return field.value;
 }
 
 export function DetailFieldValue({
@@ -76,7 +90,7 @@ export function DetailFieldValue({
     <CustomFieldValue
       repoId={repoId}
       field={field}
-      fieldTypeKey="detail_field"
+      fieldCategoryKey="detail_field"
     />
   );
 }
@@ -92,7 +106,7 @@ export function ResourceExtraFieldValue({
     <CustomFieldValue
       repoId={repoId}
       field={field}
-      fieldTypeKey="resource_custom_field"
+      fieldCategoryKey="resource_custom_field"
     />
   );
 }
@@ -108,7 +122,7 @@ export function ActorExtraFieldValue({
     <CustomFieldValue
       repoId={repoId}
       field={field}
-      fieldTypeKey="actor_custom_field"
+      fieldCategoryKey="actor_custom_field"
     />
   );
 }
@@ -124,8 +138,7 @@ export function SourceFieldValue({
     <CustomFieldValue
       repoId={repoId}
       field={field}
-      fieldTypeKey="source_field"
+      fieldCategoryKey="source_field"
     />
   );
 }
-
