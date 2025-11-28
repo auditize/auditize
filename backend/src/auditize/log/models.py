@@ -1,7 +1,7 @@
 import enum
 import json
 from datetime import datetime, timezone
-from typing import Annotated, Any, Optional, Self
+from typing import Annotated, Any, ClassVar, Optional, Self
 from uuid import UUID
 
 from pydantic import (
@@ -46,6 +46,14 @@ class CustomField(BaseModel):
     name: str
     value: str | bool | int | float
 
+    _ES_MAPPING: ClassVar[dict[CustomFieldType, str]] = {
+        CustomFieldType.ENUM: "value_enum",
+        CustomFieldType.BOOLEAN: "value_boolean",
+        CustomFieldType.INTEGER: "value_integer",
+        CustomFieldType.FLOAT: "value_float",
+        CustomFieldType.DATETIME: "value_datetime",
+    }
+
     @model_serializer(mode="wrap")
     def serialize_model(
         self, handler: SerializerFunctionWrapHandler, info: ValidationInfo
@@ -54,17 +62,8 @@ class CustomField(BaseModel):
         if info.context != "es":
             return serialized
 
-        match self.type:
-            case CustomFieldType.ENUM:
-                serialized["value_enum"] = serialized.pop("value")
-            case CustomFieldType.BOOLEAN:
-                serialized["value_boolean"] = serialized.pop("value")
-            case CustomFieldType.INTEGER:
-                serialized["value_integer"] = serialized.pop("value")
-            case CustomFieldType.FLOAT:
-                serialized["value_float"] = serialized.pop("value")
-            case CustomFieldType.DATETIME:
-                serialized["value_datetime"] = serialized.pop("value")
+        es_field_name = self._ES_MAPPING.get(self.type, "value")
+        serialized[es_field_name] = serialized.pop("value")
 
         return serialized
 
@@ -75,17 +74,11 @@ class CustomField(BaseModel):
             return data
 
         pre_validated = data.copy()
-        match pre_validated.get("type", CustomFieldType.STRING):
-            case CustomFieldType.ENUM:
-                pre_validated["value"] = pre_validated.pop("value_enum")
-            case CustomFieldType.BOOLEAN:
-                pre_validated["value"] = pre_validated.pop("value_boolean")
-            case CustomFieldType.INTEGER:
-                pre_validated["value"] = pre_validated.pop("value_integer")
-            case CustomFieldType.FLOAT:
-                pre_validated["value"] = pre_validated.pop("value_float")
-            case CustomFieldType.DATETIME:
-                pre_validated["value"] = pre_validated.pop("value_datetime")
+
+        es_field_type = pre_validated.get("type", CustomFieldType.STRING)
+        es_field_name = cls._ES_MAPPING.get(es_field_type, "value")
+        pre_validated["value"] = pre_validated.pop(es_field_name)
+
         return pre_validated
 
 
