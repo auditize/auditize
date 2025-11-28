@@ -122,6 +122,7 @@ async def test_create_log_all_fields(
         {"name": "integer", "value": 123},
         {"name": "float", "value": 123.45, "type": "float"},
         {"name": "float", "value": 123.45},
+        {"name": "datetime", "value": "2021-01-01T00:00:00.000Z", "type": "datetime"},
     ],
 )
 async def test_create_log_typed_fields(
@@ -163,6 +164,7 @@ async def test_create_log_typed_fields(
         ("boolean", "true", "boolean"),
         ("integer", "123", "integer"),
         ("float", "123.45", "float"),
+        ("datetime", "not a valid datetime", "datetime"),
     ],
 )
 async def test_create_log_invalid_typed_fields(
@@ -1219,6 +1221,39 @@ class _TestGetLogsFilterCustomField:
             log_rw_client,
             repo,
             {f"{self.field_prefix}.data": 123.45},
+            matching_log,
+            extra_log=False,
+        )
+
+    async def test_datetime(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [
+                    {
+                        "name": "data",
+                        "value": "2021-01-01T00:00:00.000Z",
+                        "type": "datetime",
+                    }
+                ],
+            ),
+        )
+        non_matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [
+                    {
+                        "name": "data",
+                        "value": "2021-01-01T01:00:00.000Z",
+                        "type": "datetime",
+                    }
+                ],
+            ),
+        )
+        await _test_get_logs_filter(
+            log_rw_client,
+            repo,
+            {f"{self.field_prefix}.data": "2021-01-01T00:00:00.000Z"},
             matching_log,
             extra_log=False,
         )

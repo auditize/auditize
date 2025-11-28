@@ -1,15 +1,18 @@
 from datetime import datetime, timezone
 
 
-def serialize_datetime(dt: datetime) -> str:
+def serialize_datetime(dt: datetime | str) -> str:
     """
-    Serialize a datetime object to a string in ISO 8601 format ("YYYY-MM-DDTHH:MM:SS.sssZ" to be specific).
+    Serialize a datetime object (or str in ISO 8601 format)
+    to a string in ISO 8601 format ("YYYY-MM-DDTHH:MM:SS.sssZ" to be specific).
     """
-    # first, make sure we're dealing with an appropriate UTC datetime:
+    if isinstance(dt, str):
+        dt = datetime.fromisoformat(dt)
+    # make sure we're dealing with an appropriate UTC datetime:
     dt = dt.astimezone(timezone.utc)
-    # second, remove timezone info so that isoformat() won't indicate "+00:00":
+    # remove timezone info so that isoformat() won't indicate "+00:00":
     dt = dt.replace(tzinfo=None)
-    # third, format:
+    # format:
     return dt.isoformat(timespec="milliseconds") + "Z"
 
 

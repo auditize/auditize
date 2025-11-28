@@ -23,12 +23,14 @@ from auditize.api.models.cursor_pagination import (
 from auditize.api.models.dates import HasDatetimeSerialization
 from auditize.api.models.search import QuerySearchParam
 from auditize.api.validation import IDENTIFIER_PATTERN
+from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.string import validate_empty_string_as_none
 
 
 class CustomFieldType(enum.StrEnum):
     STRING = "string"
     ENUM = "enum"
+    DATETIME = "datetime"
     BOOLEAN = "boolean"
     INTEGER = "integer"
     FLOAT = "float"
@@ -61,6 +63,8 @@ class CustomField(BaseModel):
                 serialized["value_integer"] = serialized.pop("value")
             case CustomFieldType.FLOAT:
                 serialized["value_float"] = serialized.pop("value")
+            case CustomFieldType.DATETIME:
+                serialized["value_datetime"] = serialized.pop("value")
 
         return serialized
 
@@ -80,7 +84,8 @@ class CustomField(BaseModel):
                 pre_validated["value"] = pre_validated.pop("value_integer")
             case CustomFieldType.FLOAT:
                 pre_validated["value"] = pre_validated.pop("value_float")
-
+            case CustomFieldType.DATETIME:
+                pre_validated["value"] = pre_validated.pop("value_datetime")
         return pre_validated
 
 
@@ -180,6 +185,15 @@ class _CustomFieldInputData(BaseModel):
                 case CustomFieldType.STRING | CustomFieldType.ENUM:
                     if not isinstance(self.value, str):
                         raise ValueError("Value must be a string")
+                case CustomFieldType.DATETIME:
+                    if not isinstance(self.value, str):
+                        raise ValueError("Value must be a string in ISO 8601 format")
+                    try:
+                        self.value = serialize_datetime(self.value)
+                    except ValueError:
+                        raise ValueError(
+                            "Value must be a valid datetime in ISO 8601 format"
+                        )
                 case CustomFieldType.BOOLEAN:
                     if not isinstance(self.value, bool):
                         raise ValueError("Value must be a boolean")

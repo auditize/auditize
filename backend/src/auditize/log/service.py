@@ -20,7 +20,12 @@ from auditize.api.models.cursor_pagination import (
     load_pagination_cursor,
     serialize_pagination_cursor,
 )
-from auditize.api.validation import validate_bool, validate_float, validate_int
+from auditize.api.validation import (
+    validate_bool,
+    validate_datetime,
+    validate_float,
+    validate_int,
+)
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.database.sql.service import get_sql_model
@@ -372,6 +377,14 @@ class LogService:
                 field_value_filter = {
                     "term": {
                         f"{path}.value_float": validate_float(field_value),
+                    }
+                }
+            case CustomFieldType.DATETIME:
+                # NB: search on the precise value does not really make sense for a datetime field,
+                # range search will be implemented in a future version.
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_datetime": validate_datetime(field_value),
                     }
                 }
             case _:
@@ -1215,6 +1228,7 @@ _TYPE_CUSTOM_FIELDS = {
         "value_boolean": {"type": "boolean"},
         "value_integer": {"type": "long"},
         "value_float": {"type": "double"},
+        "value_datetime": {"type": "date"},
     },
 }
 
