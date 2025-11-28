@@ -1059,6 +1059,56 @@ async def test_get_logs_filter_resource_ref(
     await _test_get_logs_filter(log_rw_client, repo, {"resource_ref": "core"}, log)
 
 
+class _DetailsCustomFieldsMixin:
+    field_prefix = "details"
+    relative_path = "details"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data({"details": fields})
+
+
+class _SourceCustomFieldsMixin:
+    field_prefix = "source"
+    relative_path = "source"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data({"source": fields})
+
+
+class _ResourceExtraCustomFieldsMixin:
+    field_prefix = "resource"
+    relative_path = "resources/extras"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "resource": {
+                    "type": "config-profile",
+                    "ref": "config-profile:123",
+                    "name": "Config Profile 123",
+                    "extra": fields,
+                }
+            }
+        )
+
+
+class _ActorExtraCustomFieldsMixin:
+    field_prefix = "actor"
+    relative_path = "actors/extras"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "12345",
+                    "name": "John Doe",
+                    "extra": fields,
+                }
+            }
+        )
+
+
 class _TestGetLogsFilterCustomField:
     def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
         raise NotImplementedError
@@ -1202,50 +1252,26 @@ class _TestGetLogsFilterCustomField:
         )
 
 
-class TestGetLogsFilterSource(_TestGetLogsFilterCustomField):
-    field_prefix = "source"
-
-    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
-        return PreparedLog.prepare_data({"source": custom_fields})
+class TestGetLogsFilterSource(_SourceCustomFieldsMixin, _TestGetLogsFilterCustomField):
+    pass
 
 
-class TestGetLogsFilterDetails(_TestGetLogsFilterCustomField):
-    field_prefix = "details"
-
-    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
-        return PreparedLog.prepare_data({"details": custom_fields})
-
-
-class TestGetLogsFilterResourceExtra(_TestGetLogsFilterCustomField):
-    field_prefix = "resource"
-
-    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
-        return PreparedLog.prepare_data(
-            {
-                "resource": {
-                    "type": "config-profile",
-                    "ref": "config-profile:123",
-                    "name": "Config Profile 123",
-                    "extra": custom_fields,
-                }
-            }
-        )
+class TestGetLogsFilterDetails(
+    _DetailsCustomFieldsMixin, _TestGetLogsFilterCustomField
+):
+    pass
 
 
-class TestGetLogsFilterActorExtra(_TestGetLogsFilterCustomField):
-    field_prefix = "actor"
+class TestGetLogsFilterResourceExtra(
+    _ResourceExtraCustomFieldsMixin, _TestGetLogsFilterCustomField
+):
+    pass
 
-    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
-        return PreparedLog.prepare_data(
-            {
-                "actor": {
-                    "type": "user",
-                    "ref": "user:123",
-                    "name": "User 123",
-                    "extra": custom_fields,
-                }
-            }
-        )
+
+class TestGetLogsFilterActorExtra(
+    _ActorExtraCustomFieldsMixin, _TestGetLogsFilterCustomField
+):
+    pass
 
 
 async def test_get_logs_filter_tag_type(
@@ -1375,13 +1401,13 @@ async def test_get_logs_filter_attachment_mime_type(
 
 
 class _TestGetLogsFullTextSearchCustomField:
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
         raise NotImplementedError
 
     async def test_nominal(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
         matching_log = await repo.create_log_with(
             log_rw_client,
-            self.build_payload(
+            self.prepare_log_data(
                 [
                     {
                         "name": "param1",
@@ -1412,42 +1438,28 @@ class _TestGetLogsFullTextSearchCustomField:
         )
 
 
-class TestGetLogsFullTextSearchSource(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "source": custom_fields,
-        }
+class TestGetLogsFullTextSearchSource(
+    _SourceCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
-class TestGetLogsFullTextSearchActorExtra(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "actor": {
-                "type": "user",
-                "ref": "user:123",
-                "name": "User 123",
-                "extra": custom_fields,
-            }
-        }
+class TestGetLogsFullTextSearchActorExtra(
+    _ActorExtraCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
-class TestGetLogsFullTextSearchResourceExtra(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "resource": {
-                "type": "config-profile",
-                "ref": "config-profile:123",
-                "name": "Config Profile 123",
-                "extra": custom_fields,
-            }
-        }
+class TestGetLogsFullTextSearchResourceExtra(
+    _ResourceExtraCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
-class TestGetLogsFullTextSearchDetails(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "details": custom_fields,
-        }
+class TestGetLogsFullTextSearchDetails(
+    _DetailsCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
 async def test_get_logs_full_text_search_resource_name(
@@ -2662,7 +2674,7 @@ class _ConsolidatedCustomFieldsTest:
     def get_path(self, repo_id: str) -> str:
         return f"/repos/{repo_id}/logs/{self.relative_path}"
 
-    def prepare_log_data(self, field: dict) -> dict:
+    def prepare_log_data(self, fields: list[dict]) -> dict:
         raise NotImplementedError()
 
     async def test_nominal(
@@ -2699,10 +2711,7 @@ class _ConsolidatedCustomFieldsTest:
             },
         ]
         for field in fields:
-            await repo.create_log(
-                superadmin_client,
-                self.prepare_log_data(field),
-            )
+            await repo.create_log(superadmin_client, self.prepare_log_data([field]))
         await do_test_cursor_pagination_common_scenarios(
             log_read_client,
             self.get_path(repo.id),
@@ -2723,72 +2732,18 @@ class _ConsolidatedCustomFieldsTest:
         await no_permission_client.assert_get_forbidden(self.get_path(repo.id))
 
 
-class _DetailsCustomFieldsMixin:
-    @property
-    def relative_path(self) -> str:
-        return "details"
-
-    def prepare_log_data(self, field: dict) -> dict:
-        return PreparedLog.prepare_data({"details": [field]})
-
-
 class TestLogDetailsFields(_DetailsCustomFieldsMixin, _ConsolidatedCustomFieldsTest):
     pass
-
-
-class _SourceCustomFieldsMixin:
-    @property
-    def relative_path(self) -> str:
-        return "source"
-
-    def prepare_log_data(self, field: dict) -> dict:
-        return PreparedLog.prepare_data({"source": [field]})
 
 
 class TestLogSourceFields(_SourceCustomFieldsMixin, _ConsolidatedCustomFieldsTest):
     pass
 
 
-class _ActorExtraCustomFieldsMixin:
-    @property
-    def relative_path(self) -> str:
-        return "actors/extras"
-
-    def prepare_log_data(self, field: dict) -> dict:
-        return PreparedLog.prepare_data(
-            {
-                "actor": {
-                    "type": "user",
-                    "ref": "12345",
-                    "name": "John Doe",
-                    "extra": [field],
-                }
-            }
-        )
-
-
 class TestLogActorExtraFields(
     _ActorExtraCustomFieldsMixin, _ConsolidatedCustomFieldsTest
 ):
     pass
-
-
-class _ResourceExtraCustomFieldsMixin:
-    @property
-    def relative_path(self) -> str:
-        return "resources/extras"
-
-    def prepare_log_data(self, field: dict) -> dict:
-        return PreparedLog.prepare_data(
-            {
-                "resource": {
-                    "type": "config-profile",
-                    "ref": "config-profile:123",
-                    "name": "Config Profile 123",
-                    "extra": [field],
-                }
-            }
-        )
 
 
 class TestLogResourceExtraFields(
@@ -2805,7 +2760,7 @@ class _CustomFieldsEnumValuesTest:
     def get_path(self, repo_id: str, field_name: str) -> str:
         return f"/repos/{repo_id}/logs/{self.relative_path}/{field_name}/values"
 
-    def prepare_log_data(self, field: dict) -> dict:
+    def prepare_log_data(self, fields: list[dict]) -> dict:
         raise NotImplementedError()
 
     async def test_nominal(
@@ -2821,7 +2776,7 @@ class _CustomFieldsEnumValuesTest:
                 await repo.create_log(
                     superadmin_client,
                     self.prepare_log_data(
-                        {"name": "my-field", "value": value, "type": "enum"}
+                        [{"name": "my-field", "value": value, "type": "enum"}]
                     ),
                 )
         await do_test_cursor_pagination_common_scenarios(
