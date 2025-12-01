@@ -36,7 +36,7 @@ from auditize.exceptions import (
     PermissionDenied,
 )
 from auditize.helpers.datetime import now
-from auditize.log.index import create_index
+from auditize.log.index import get_read_alias, get_write_alias
 from auditize.log.models import (
     CustomFieldType,
     Log,
@@ -85,7 +85,8 @@ class LogService:
         self.repo = repo
         self.es = es
         self.session = session
-        self.index = repo.log_db_name
+        self.read_alias = get_read_alias(repo)
+        self.write_alias = get_write_alias(repo)
         self._refresh = get_config().test_mode
 
     @classmethod
@@ -149,7 +150,7 @@ class LogService:
     async def _save_log(self, log: Log) -> Log:
         try:
             await self.es.create(
-                index=self.index,
+                index=self.write_alias,
                 id=str(log.id),
                 document=log.model_dump(context="es"),
                 refresh=self._refresh,
@@ -184,7 +185,7 @@ class LogService:
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
         try:
             await self.es.update(
-                index=self.index,
+                index=self.write_alias,
                 id=str(log_id),
                 script={
                     "source": "ctx._source.attachments.add(params.attachment)",
@@ -226,7 +227,7 @@ class LogService:
     async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
         try:
             resp = await self.es.get(
-                index=self.index,
+                index=self.read_alias,
                 id=str(log_id),
                 source_excludes=["attachments.data"],
             )
@@ -245,7 +246,7 @@ class LogService:
         # more than 1 log, unfortunately ES does not a let us retrieve a nested object to a specific
         # array index unless adding an extra metadata such as "index" to the stored document
         try:
-            resp = await self.es.get(index=self.index, id=str(log_id))
+            resp = await self.es.get(index=self.read_alias, id=str(log_id))
         except ElasticNotFoundError:
             raise NotFoundError()
 
@@ -341,7 +342,7 @@ class LogService:
         }
 
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             aggregations=aggregations,
             size=0,
         )
@@ -543,7 +544,7 @@ class LogService:
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
-        filter = await self._prepare_es_query(search_params)
+        filter = await self._prepare_es_query(search_params) if search_params else []
 
         if authorized_entities:
             filter.append(self._authorized_entity_filter(authorized_entities))
@@ -554,7 +555,7 @@ class LogService:
 
         query = {"bool": {"filter": filter}}
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             query=query,
             search_after=search_after,
             source_excludes=["attachments.data"],
@@ -582,7 +583,7 @@ class LogService:
     ) -> Log | None:
         filter = await self._prepare_es_query(search_params) if search_params else []
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             query={"bool": {"filter": filter}},
             sort=[{"saved_at": "desc", "log_id": "desc"}],
             size=1,
@@ -594,13 +595,13 @@ class LogService:
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(
-            index=self.index,
+            index=self.read_alias,
             query={"match_all": {}},
         )
         return resp["count"]
 
     async def get_storage_size(self) -> int:
-        resp = await self.es.indices.stats(index=self.index)
+        resp = await self.es.indices.stats(index=self.read_alias)
         return resp["_all"]["primaries"]["store"]["size_in_bytes"]
 
     async def _get_paginated_agg_multi_fields(
@@ -637,7 +638,7 @@ class LogService:
             }
 
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             query=query,
             aggregations=aggregations,
             size=0,
@@ -851,7 +852,7 @@ class LogService:
         }
 
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             aggregations=aggregations,
             size=0,
         )
@@ -925,7 +926,7 @@ class LogService:
         }
 
         resp = await self.es.search(
-            index=self.index,
+            index=self.read_alias,
             aggregations=aggregations,
             size=0,
         )
@@ -996,7 +997,7 @@ class LogService:
             return
 
         resp = await self.es.delete_by_query(
-            index=self.index,
+            index=self.write_alias,
             query={
                 "bool": {
                     "filter": [
@@ -1194,15 +1195,9 @@ class LogService:
                 raise NotFoundError()
         return await self._get_log_entity(entity_ref)
 
-    async def create_log_db(self):
-        await create_index(self.es, self.index)
-
-    async def delete_log_db(self):
-        await self.es.indices.delete(index=self.index)
-
     async def empty_log_db(self):
         await self.es.delete_by_query(
-            index=self.index,
+            index=self.write_alias,
             query={"match_all": {}},
             wait_for_completion=self._refresh,
             refresh=self._refresh,

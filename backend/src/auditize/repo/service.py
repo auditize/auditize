@@ -22,6 +22,7 @@ from auditize.exceptions import (
     ValidationError,
 )
 from auditize.i18n.lang import Lang
+from auditize.log.index import create_index, delete_index
 from auditize.log_i18n_profile.models import LogLabels
 from auditize.log_i18n_profile.service import get_log_i18n_profile_translation
 from auditize.permissions.assertions import (
@@ -50,10 +51,8 @@ def _build_repo_constraint_rules(
 
 
 async def create_repo(
-    session: AsyncSession, repo_create: RepoCreate, log_db_name: str = None
+    session: AsyncSession, repo_create: RepoCreate, *, existing_log_db_name: str = None
 ) -> Repo:
-    from auditize.log.service import LogService
-
     db_name = get_dbm().name
     repo_id = uuid4()
     repo = Repo(
@@ -62,20 +61,21 @@ async def create_repo(
         status=repo_create.status,
         retention_period=repo_create.retention_period,
         log_i18n_profile_id=repo_create.log_i18n_profile_id,
-        log_db_name=(log_db_name if log_db_name else f"{db_name}_logs_{repo_id}"),
+        log_db_name=(
+            existing_log_db_name
+            if existing_log_db_name
+            else f"{db_name}_logs_{repo_id}"
+        ),
     )
-    log_service = None
-    if not log_db_name:
-        log_service = await LogService.for_maintenance(session, repo)
-        await log_service.create_log_db()
-
+    if not existing_log_db_name:
+        await create_index(repo)
     try:
         await save_sql_model(
             session, repo, constraint_rules=_build_repo_constraint_rules(repo_create)
         )
     except (AuditizeException, SQLAlchemyError):
-        if log_service:
-            await log_service.delete_log_db()
+        if not existing_log_db_name:
+            await delete_index(repo)
         raise
 
     return repo
@@ -93,9 +93,10 @@ async def _get_repo(session: AsyncSession, repo_id: UUID) -> Repo:
     return await get_sql_model(session, Repo, repo_id)
 
 
-async def get_repo(session: AsyncSession, repo_id: UUID | Repo) -> Repo:
-    if isinstance(repo_id, Repo):
-        return repo_id
+async def get_repo(session: AsyncSession, repo: Repo | UUID | str) -> Repo:
+    if isinstance(repo, Repo):
+        return repo
+    repo_id = repo if isinstance(repo, UUID) else UUID(repo)
     return await _get_repo(session, repo_id)
 
 
@@ -212,12 +213,9 @@ async def get_user_repos(
 
 
 async def delete_repo(session: AsyncSession, repo_id: UUID):
-    # avoid circular imports
-    from auditize.log.service import LogService
-
-    log_service = await LogService.for_maintenance(session, repo_id)
-    await delete_sql_model(session, Repo, repo_id)
-    await log_service.delete_log_db()
+    repo = await get_repo(session, repo_id)
+    await delete_index(repo)
+    await delete_sql_model(session, Repo, repo.id)
 
 
 async def is_log_i18n_profile_used_by_repo(

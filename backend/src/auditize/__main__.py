@@ -19,6 +19,7 @@ from auditize.exceptions import (
     ConfigError,
     ConstraintViolation,
 )
+from auditize.log.index import reindex_index
 from auditize.log.service import LogService
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.sql_models import Permissions
@@ -113,6 +114,12 @@ async def empty_repo(repo: UUID):
     async with open_db_session() as session:
         log_service = await LogService.for_maintenance(session, repo)
         await log_service.empty_log_db()
+
+
+async def reindex_repo(repo: UUID):
+    _lazy_init()
+    async with open_db_session() as session:
+        await reindex_index(session, repo)
 
 
 async def schedule():
@@ -210,6 +217,13 @@ async def async_main(args=None):
     )
     empty_repo_parser.add_argument("repo", type=UUID, help="Repository ID")
     empty_repo_parser.set_defaults(func=lambda cmd_args: empty_repo(cmd_args.repo))
+
+    # CMD reindex-repo
+    reindex_repo_parser = sub_parsers.add_parser(
+        "reindex-repo", help="Reindex a log repository Elasticsearch index"
+    )
+    reindex_repo_parser.add_argument("repo", type=UUID, help="Repository ID")
+    reindex_repo_parser.set_defaults(func=lambda cmd_args: reindex_repo(cmd_args.repo))
 
     # CMD schedule
     schedule_parser = sub_parsers.add_parser(
