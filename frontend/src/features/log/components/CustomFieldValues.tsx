@@ -1,4 +1,5 @@
 import { CodeHighlight } from "@mantine/code-highlight";
+import { rem } from "@mantine/core";
 import { useTranslation } from "react-i18next";
 
 import { CustomField, CustomFieldType } from "@/features/log/api";
@@ -48,6 +49,7 @@ function JsonFieldValue({ field }: { field: CustomField }) {
       styles={{
         code: { padding: "5px 8px 5px 8px" },
         scrollarea: { maxWidth: "400px" },
+        showCodeButton: { fontSize: rem(12) },
       }}
     />
   );
