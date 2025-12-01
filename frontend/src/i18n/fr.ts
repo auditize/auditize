@@ -379,6 +379,8 @@ export default {
     search: "Rechercher",
     typeToSearch: "Tapez pour rechercher...",
     searchInProgress: "Recherche en cours...",
+    yes: "Oui",
+    no: "Non",
     passwordForm: {
       password: {
         label: "Mot de passe",

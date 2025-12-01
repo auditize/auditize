@@ -2,9 +2,10 @@ import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
 import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import { DetailFieldValue } from "@/features/log/components/CustomFieldValues";
 
 import {
-  getCustomFieldValue,
+  getCustomField,
   InlineSearchParamLink,
   TableSearchParamChangeHandler,
 } from "./FieldUtils";
@@ -22,25 +23,24 @@ export function DetailField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-
-  if (!log.details) {
-    return null;
-  }
-  const fieldValue = getCustomFieldValue(log.details, fieldName);
-  if (!fieldValue) {
+  const field = getCustomField(log?.details, fieldName);
+  if (!field) {
     return null;
   }
 
   return (
     <InlineSearchParamLink
       fieldLabel={t("log.inlineFilter.field.detailField", {
-        field: logTranslator("detail_field", fieldName).toLowerCase(),
+        field: logTranslator("detail_field", field.name).toLowerCase(),
       })}
       onClick={() =>
-        onTableSearchParamChange("details", new Map([[fieldName, fieldValue]]))
+        onTableSearchParamChange(
+          "details",
+          new Map([[field.name, field.value]]),
+        )
       }
     >
-      {fieldValue}
+      <DetailFieldValue repoId={repoId} field={field} />
     </InlineSearchParamLink>
   );
 }

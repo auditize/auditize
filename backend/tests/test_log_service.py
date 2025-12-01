@@ -1,11 +1,9 @@
-import uuid
 from datetime import datetime, timedelta
 from uuid import UUID
 
 import pytest
 
 from auditize.database.dbm import open_db_session
-from auditize.exceptions import InvalidPaginationCursor
 from auditize.log.models import Log
 from auditize.log.service import LogService
 from conftest import RepoBuilder
@@ -40,7 +38,7 @@ async def test_save_log_db_shape(repo: PreparedRepo):
         log_service = await LogService.for_writing(session, UUID(repo.id))
         log = await log_service.create_log(log)
     db_log = await repo.get_log(log.id)
-    assert list(db_log.keys()) == [
+    assert set(db_log.keys()) == {
         "log_id",
         "action",
         "saved_at",
@@ -51,12 +49,12 @@ async def test_save_log_db_shape(repo: PreparedRepo):
         "tags",
         "attachments",
         "entity_path",
-    ]
-    assert list(db_log["action"].keys()) == ["type", "category"]
-    assert list(db_log["actor"].keys()) == ["ref", "type", "name", "extra"]
-    assert list(db_log["resource"].keys()) == ["ref", "type", "name", "extra"]
-    assert list(db_log["tags"][0].keys()) == ["ref", "type", "name"]
-    assert list(db_log["entity_path"][0].keys()) == ["ref", "name"]
+    }
+    assert db_log["action"].keys() == {"type", "category"}
+    assert db_log["actor"].keys() == {"ref", "type", "name", "extra"}
+    assert db_log["resource"].keys() == {"ref", "type", "name", "extra"}
+    assert db_log["tags"][0].keys() == {"ref", "type", "name"}
+    assert db_log["entity_path"][0].keys() == {"ref", "name"}
 
 
 async def test_log_retention_period_disabled(

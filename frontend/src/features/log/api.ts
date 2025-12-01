@@ -7,8 +7,12 @@ import { LogSearchParams } from "./LogSearchParams";
 
 dayjs.extend(utc);
 
-export type Named = {
+export type Name = {
   name: string;
+};
+
+export type Value = {
+  value: string;
 };
 
 export type NameRefPair = {
@@ -16,9 +20,25 @@ export type NameRefPair = {
   ref: string;
 };
 
+export enum CustomFieldType {
+  String = "string",
+  Enum = "enum",
+  Boolean = "boolean",
+  Json = "json",
+  Integer = "integer",
+  Float = "float",
+  DateTime = "datetime",
+}
+
 export type CustomField = {
   name: string;
   value: string;
+  type: CustomFieldType;
+};
+
+export type AvailableCustomField = {
+  name: string;
+  type: CustomFieldType;
 };
 
 type Tag = {
@@ -93,15 +113,15 @@ export async function getLog(repoId: string, logId: string): Promise<Log> {
   return await reqGet(`/repos/${repoId}/logs/${logId}`);
 }
 
-async function getNames(promise: Promise<Named[]>): Promise<string[]> {
-  return promise.then((named) => named.map((n) => n.name));
+async function getNames(promise: Promise<Name[]>): Promise<string[]> {
+  return promise.then((names) => names.map((n) => n.name));
 }
 
 export async function getAllActionCategories(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllCursorPaginatedItems<Named>(
+    getAllCursorPaginatedItems<Name>(
       `/repos/${repoId}/logs/aggs/actions/categories`,
       {},
     ),
@@ -113,7 +133,7 @@ export async function getAllActionTypes(
   category?: string,
 ): Promise<string[]> {
   return getNames(
-    getAllCursorPaginatedItems<Named>(
+    getAllCursorPaginatedItems<Name>(
       `/repos/${repoId}/logs/aggs/actions/types`,
       category ? { category } : {},
     ),
@@ -122,7 +142,7 @@ export async function getAllActionTypes(
 
 export async function getAllActorTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllCursorPaginatedItems<Named>(
+    getAllCursorPaginatedItems<Name>(
       `/repos/${repoId}/logs/aggs/actors/types`,
       {},
     ),
@@ -131,27 +151,23 @@ export async function getAllActorTypes(repoId: string): Promise<string[]> {
 
 export async function getAllActorCustomFields(
   repoId: string,
-): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/actors/extras/names`,
-      {},
-    ),
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/actors/extras`,
   );
 }
 
-export async function getAllSourceFields(repoId: string): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/sources/names`,
-      {},
-    ),
+export async function getAllSourceFields(
+  repoId: string,
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/source`,
   );
 }
 
 export async function getAllResourceTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllCursorPaginatedItems<Named>(
+    getAllCursorPaginatedItems<Name>(
       `/repos/${repoId}/logs/aggs/resources/types`,
       {},
     ),
@@ -160,27 +176,23 @@ export async function getAllResourceTypes(repoId: string): Promise<string[]> {
 
 export async function getAllResourceCustomFields(
   repoId: string,
-): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/resources/extras/names`,
-      {},
-    ),
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/resources/extras`,
   );
 }
 
-export async function getAllDetailFields(repoId: string): Promise<string[]> {
-  return getNames(
-    getAllCursorPaginatedItems<Named>(
-      `/repos/${repoId}/logs/aggs/details/names`,
-      {},
-    ),
+export async function getAllDetailFields(
+  repoId: string,
+): Promise<AvailableCustomField[]> {
+  return await getAllCursorPaginatedItems<AvailableCustomField>(
+    `/repos/${repoId}/logs/details`,
   );
 }
 
 export async function getAllTagTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllCursorPaginatedItems<Named>(
+    getAllCursorPaginatedItems<Name>(
       `/repos/${repoId}/logs/aggs/tags/types`,
       {},
     ),
@@ -189,7 +201,7 @@ export async function getAllTagTypes(repoId: string): Promise<string[]> {
 
 export async function getAllAttachmentTypes(repoId: string): Promise<string[]> {
   return getNames(
-    getAllCursorPaginatedItems<Named>(
+    getAllCursorPaginatedItems<Name>(
       `/repos/${repoId}/logs/aggs/attachments/types`,
       {},
     ),
@@ -200,7 +212,7 @@ export async function getAllAttachmentMimeTypes(
   repoId: string,
 ): Promise<string[]> {
   return getNames(
-    getAllCursorPaginatedItems<Named>(
+    getAllCursorPaginatedItems<Name>(
       `/repos/${repoId}/logs/aggs/attachments/mime-types`,
       {},
     ),
@@ -270,4 +282,56 @@ export async function getResource(
 
 export async function getTag(repoId: string, tagRef: string): Promise<Tag> {
   return await reqGet(`/repos/${repoId}/logs/tags/${tagRef}`);
+}
+
+async function getValues(promise: Promise<Value[]>): Promise<string[]> {
+  return promise.then((values) => values.map((v) => v.value));
+}
+
+export async function getAllDetailFieldEnumValues(
+  repoId: string,
+  fieldName: string,
+): Promise<string[]> {
+  return getValues(
+    getAllCursorPaginatedItems(
+      `/repos/${repoId}/logs/details/${fieldName}/values`,
+      {},
+    ),
+  );
+}
+
+export async function getAllSourceFieldEnumValues(
+  repoId: string,
+  fieldName: string,
+): Promise<string[]> {
+  return getValues(
+    getAllCursorPaginatedItems(
+      `/repos/${repoId}/logs/source/${fieldName}/values`,
+      {},
+    ),
+  );
+}
+
+export async function getAllActorCustomFieldEnumValues(
+  repoId: string,
+  fieldName: string,
+): Promise<string[]> {
+  return getValues(
+    getAllCursorPaginatedItems(
+      `/repos/${repoId}/logs/actors/extras/${fieldName}/values`,
+      {},
+    ),
+  );
+}
+
+export async function getAllResourceCustomFieldEnumValues(
+  repoId: string,
+  fieldName: string,
+): Promise<string[]> {
+  return getValues(
+    getAllCursorPaginatedItems(
+      `/repos/${repoId}/logs/resources/extras/${fieldName}/values`,
+      {},
+    ),
+  );
 }

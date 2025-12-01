@@ -100,7 +100,7 @@ function logFieldToColumn(
   columnSelector: React.ReactNode | undefined,
 ) {
   const { t } = i18n;
-  const columnTitle = (name: string, icon?: any, iconStyle?: any) => (
+  const columnTitle = (name: React.ReactNode, icon?: any, iconStyle?: any) => (
     <Group justify="space-between" wrap="nowrap">
       <span>
         {icon &&

@@ -111,6 +111,80 @@ async def test_create_log_all_fields(
     )
 
 
+@pytest.mark.parametrize(
+    "custom_field",
+    [
+        {"name": "foo", "value": "bar", "type": "enum"},
+        {"name": "enabled", "value": True, "type": "boolean"},
+        {"name": "enabled", "value": True},
+        {"name": "json", "value": '{"foo": "bar"}', "type": "json"},
+        {"name": "integer", "value": 123, "type": "integer"},
+        {"name": "integer", "value": 123},
+        {"name": "float", "value": 123.45, "type": "float"},
+        {"name": "float", "value": 123.45},
+        {"name": "datetime", "value": "2021-01-01T00:00:00.000Z", "type": "datetime"},
+    ],
+)
+async def test_create_log_typed_fields(
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    custom_field: dict,
+):
+    log_data = PreparedLog.prepare_data(
+        {
+            "source": [custom_field],
+            "actor": {
+                "type": "user",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [custom_field],
+            },
+            "resource": {
+                "ref": "core",
+                "type": "module",
+                "name": "Core Module",
+                "extra": [custom_field],
+            },
+            "details": [custom_field],
+        }
+    )
+
+    await log_write_client.assert_post(
+        f"/repos/{repo.id}/logs",
+        json=log_data,
+        expected_status_code=201,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
+@pytest.mark.parametrize(
+    "field_name,field_value,field_type",
+    [
+        ("json", '{"foo": "bar"', "json"),
+        ("boolean", "true", "boolean"),
+        ("integer", "123", "integer"),
+        ("float", "123.45", "float"),
+        ("datetime", "not a valid datetime", "datetime"),
+    ],
+)
+async def test_create_log_invalid_typed_fields(
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+    field_name: str,
+    field_value: str | int | dict | None,
+    field_type: str,
+):
+    log_data = PreparedLog.prepare_data(
+        {
+            "source": [{"name": field_name, "value": field_value, "type": field_type}],
+        }
+    )
+
+    await log_write_client.assert_post_bad_request(
+        f"/repos/{repo.id}/logs", json=log_data
+    )
+
+
 @pytest.mark.parametrize("status", ["readonly", "disabled"])
 async def test_create_log_not_allowed_by_repo_status(
     superadmin_client: HttpTestHelper, repo_builder: RepoBuilder, status: str
@@ -950,50 +1024,6 @@ async def test_get_logs_filter_actor_ref(
     await _test_get_logs_filter(log_rw_client, repo, {"actor_ref": "user:123"}, log)
 
 
-async def test_get_logs_filter_actor_extra(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "actor": {
-                "type": "user",
-                "ref": "user:123",
-                "name": "User 123",
-                "extra": [
-                    {"name": "field-1", "value": "foo something"},
-                    {"name": "field-2", "value": "bar something else"},
-                ],
-            }
-        },
-    )
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "actor": {
-                "type": "user",
-                "ref": "user:123",
-                "name": "User 123",
-                "extra": [
-                    {"name": "field-1", "value": "bar something"},
-                    {"name": "field-2", "value": "foo something else"},
-                ],
-            }
-        },
-    )
-
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "actor.field-1": "something foo",
-            "actor.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
-    )
-
-
 async def test_get_logs_filter_resource_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -1029,118 +1059,219 @@ async def test_get_logs_filter_resource_ref(
     await _test_get_logs_filter(log_rw_client, repo, {"resource_ref": "core"}, log)
 
 
-async def test_get_logs_filter_resource_extra(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
-):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "resource": {
-                "type": "config-profile",
-                "ref": "config-profile:123",
-                "name": "Config Profile 123",
-                "extra": [
+class _DetailsCustomFieldsMixin:
+    field_prefix = "details"
+    relative_path = "details"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data({"details": fields})
+
+
+class _SourceCustomFieldsMixin:
+    field_prefix = "source"
+    relative_path = "source"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data({"source": fields})
+
+
+class _ResourceExtraCustomFieldsMixin:
+    field_prefix = "resource"
+    relative_path = "resources/extras"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "resource": {
+                    "type": "config-profile",
+                    "ref": "config-profile:123",
+                    "name": "Config Profile 123",
+                    "extra": fields,
+                }
+            }
+        )
+
+
+class _ActorExtraCustomFieldsMixin:
+    field_prefix = "actor"
+    relative_path = "actors/extras"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "12345",
+                    "name": "John Doe",
+                    "extra": fields,
+                }
+            }
+        )
+
+
+class _TestGetLogsFilterCustomField:
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
+        raise NotImplementedError
+
+    @property
+    def field_prefix(self) -> str:
+        raise NotImplementedError
+
+    @pytest.mark.parametrize(
+        "matching_fields,non_matching_fields,filter_params",
+        [
+            # string
+            (
+                [
                     {"name": "field-1", "value": "foo something"},
                     {"name": "field-2", "value": "bar something else"},
                 ],
-            }
-        },
-    )
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "resource": {
-                "type": "config-profile",
-                "ref": "config-profile:123",
-                "name": "Config Profile 123",
-                "extra": [
+                [
                     {"name": "field-1", "value": "bar something"},
                     {"name": "field-2", "value": "foo something else"},
                 ],
-            }
-        },
+                {
+                    "field-1": "something foo",
+                    "field-2": "something bar",
+                },
+            ),
+            # enum
+            (
+                [{"name": "status", "value": "enabled", "type": "enum"}],
+                [{"name": "status", "value": "disabled", "type": "enum"}],
+                {"status": "enabled"},
+            ),
+            # boolean - True
+            (
+                [{"name": "enabled", "value": True, "type": "boolean"}],
+                [{"name": "enabled", "value": False, "type": "boolean"}],
+                {"enabled": True},
+            ),
+            # boolean - False
+            (
+                [{"name": "enabled", "value": False, "type": "boolean"}],
+                [{"name": "enabled", "value": True, "type": "boolean"}],
+                {"enabled": False},
+            ),
+            # json
+            (
+                [{"name": "data", "value": '{"foo": "bar"}', "type": "json"}],
+                [{"name": "data", "value": '{"foo": "baz"}', "type": "json"}],
+                {"data": "foo bar"},
+            ),
+            # integer
+            (
+                [{"name": "data", "value": 123, "type": "integer"}],
+                [{"name": "data", "value": 456, "type": "integer"}],
+                {"data": 123},
+            ),
+            # float
+            (
+                [{"name": "data", "value": 123.45, "type": "float"}],
+                [{"name": "data", "value": 456.78, "type": "float"}],
+                {"data": 123.45},
+            ),
+            # datetime
+            (
+                [
+                    {
+                        "name": "data",
+                        "value": "2021-01-01T00:00:00.000Z",
+                        "type": "datetime",
+                    }
+                ],
+                [
+                    {
+                        "name": "data",
+                        "value": "2021-01-01T01:00:00.000Z",
+                        "type": "datetime",
+                    }
+                ],
+                {"data": "2021-01-01T00:00:00.000Z"},
+            ),
+        ],
     )
+    async def test_field_types(
+        self,
+        log_rw_client: HttpTestHelper,
+        repo: PreparedRepo,
+        matching_fields: list[dict],
+        non_matching_fields: list[dict],
+        filter_params: dict,
+    ):
+        matching_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(matching_fields),
+        )
+        await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(non_matching_fields),
+        )
 
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "resource.field-1": "something foo",
-            "resource.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
+        await _test_get_logs_filter(
+            client=log_rw_client,
+            repo=repo,
+            search_params={
+                f"{self.field_prefix}.{key}": value
+                for key, value in filter_params.items()
+            },
+            expected_log=matching_log,
+            extra_log=False,
+        )
+
+    @pytest.mark.parametrize(
+        "field_type,valid_value",
+        [
+            ("boolean", True),
+            ("integer", 123),
+            ("float", 123.45),
+            ("datetime", "2021-01-01T00:00:00.000Z"),
+        ],
     )
+    async def test_invalid_field_values(
+        self,
+        log_rw_client: HttpTestHelper,
+        repo: PreparedRepo,
+        field_type: str,
+        valid_value: str,
+    ):
+        # Create a log with a valid value so that Auditize knows about the field type
+        await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data(
+                [{"name": field_type, "value": valid_value, "type": field_type}]
+            ),
+        )
+
+        # Check that invalid values are rejected
+        await log_rw_client.assert_get_bad_request(
+            f"/repos/{repo.id}/logs",
+            params={
+                f"{self.field_prefix}.{field_type}": "INVALID VALUE",
+            },
+        )
 
 
-async def test_get_logs_filter_details(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
+class TestGetLogsFilterSource(_SourceCustomFieldsMixin, _TestGetLogsFilterCustomField):
+    pass
+
+
+class TestGetLogsFilterDetails(
+    _DetailsCustomFieldsMixin, _TestGetLogsFilterCustomField
 ):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "details": [
-                {"name": "field-1", "value": "foo something"},
-                {"name": "field-2", "value": "bar something else"},
-            ]
-        },
-    )
-
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "details": [
-                {"name": "field-1", "value": "bar something"},
-                {"name": "field-2", "value": "foo something else"},
-            ]
-        },
-    )
-
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "details.field-1": "something foo",
-            "details.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
-    )
+    pass
 
 
-async def test_get_logs_filter_source(
-    log_rw_client: HttpTestHelper, repo: PreparedRepo
+class TestGetLogsFilterResourceExtra(
+    _ResourceExtraCustomFieldsMixin, _TestGetLogsFilterCustomField
 ):
-    log_1 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "source": [
-                {"name": "field-1", "value": "foo something"},
-                {"name": "field-2", "value": "bar something else"},
-            ]
-        },
-    )
+    pass
 
-    log_2 = await repo.create_log_with(
-        log_rw_client,
-        {
-            "source": [
-                {"name": "field-1", "value": "bar something"},
-                {"name": "field-2", "value": "foo something else"},
-            ]
-        },
-    )
 
-    await _test_get_logs_filter(
-        log_rw_client,
-        repo,
-        {
-            "source.field-1": "something foo",
-            "source.field-2": "something bar",
-        },
-        log_1,
-        extra_log=False,
-    )
+class TestGetLogsFilterActorExtra(
+    _ActorExtraCustomFieldsMixin, _TestGetLogsFilterCustomField
+):
+    pass
 
 
 async def test_get_logs_filter_tag_type(
@@ -1270,13 +1401,13 @@ async def test_get_logs_filter_attachment_mime_type(
 
 
 class _TestGetLogsFullTextSearchCustomField:
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
+    def prepare_log_data(self, custom_fields: list[dict[str, str]]) -> dict:
         raise NotImplementedError
 
     async def test_nominal(self, log_rw_client: HttpTestHelper, repo: PreparedRepo):
         matching_log = await repo.create_log_with(
             log_rw_client,
-            self.build_payload(
+            self.prepare_log_data(
                 [
                     {
                         "name": "param1",
@@ -1307,42 +1438,28 @@ class _TestGetLogsFullTextSearchCustomField:
         )
 
 
-class TestGetLogsFullTextSearchSource(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "source": custom_fields,
-        }
+class TestGetLogsFullTextSearchSource(
+    _SourceCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
-class TestGetLogsFullTextSearchActorExtra(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "actor": {
-                "type": "user",
-                "ref": "user:123",
-                "name": "User 123",
-                "extra": custom_fields,
-            }
-        }
+class TestGetLogsFullTextSearchActorExtra(
+    _ActorExtraCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
-class TestGetLogsFullTextSearchResourceExtra(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "resource": {
-                "type": "config-profile",
-                "ref": "config-profile:123",
-                "name": "Config Profile 123",
-                "extra": custom_fields,
-            }
-        }
+class TestGetLogsFullTextSearchResourceExtra(
+    _ResourceExtraCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
-class TestGetLogsFullTextSearchDetails(_TestGetLogsFullTextSearchCustomField):
-    def build_payload(self, custom_fields: list[dict[str, str]]) -> dict:
-        return {
-            "details": custom_fields,
-        }
+class TestGetLogsFullTextSearchDetails(
+    _DetailsCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
+):
+    pass
 
 
 async def test_get_logs_full_text_search_resource_name(
@@ -2127,36 +2244,6 @@ class TestLogActorTypes(_ConsolidatedDataTest):
         return [f"type-{val}" for val in values]
 
 
-class TestLogActorExtras(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "actors/extras/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "actor": {
-                            "type": f"type-{val}",
-                            "ref": f"id_{val}",
-                            "name": f"name_{val}",
-                            "extra": [
-                                {
-                                    "name": f"field-{val}",
-                                    "value": f"value",
-                                }
-                            ],
-                        }
-                    }
-                ),
-            )
-        return [f"field-{val}" for val in values]
-
-
 class TestLogResourceTypes(_ConsolidatedDataTest):
     @property
     def relative_path(self) -> str:
@@ -2179,36 +2266,6 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
                 ),
             )
         return [f"type-{val}" for val in values]
-
-
-class TestLogResourceExtras(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "resources/extras/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "resource": {
-                            "ref": f"ref_{val}",
-                            "type": f"type-{val}",
-                            "name": f"name_{val}",
-                            "extra": [
-                                {
-                                    "name": f"field-{val}",
-                                    "value": f"value",
-                                }
-                            ],
-                        }
-                    }
-                ),
-            )
-        return [f"field-{val}" for val in values]
 
 
 class TestLogTagTypes(_ConsolidatedDataTest):
@@ -2241,58 +2298,6 @@ class TestLogTagTypes(_ConsolidatedDataTest):
         )
 
         return [f"type-{val}" for val in values[:-1]] + ["simple-tag"]
-
-
-class TestLogSourceFields(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "sources/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[str]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "source": [
-                            {
-                                "name": f"field-{val}",
-                                "value": f"value_{val}",
-                            }
-                        ]
-                    }
-                ),
-            )
-
-        return [f"field-{val}" for val in values]
-
-
-class TestLogDetailFields(_ConsolidatedDataTest):
-    @property
-    def relative_path(self) -> str:
-        return "details/names"
-
-    async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
-    ) -> list[str]:
-        for val in values:
-            await repo.create_log(
-                client,
-                PreparedLog.prepare_data(
-                    {
-                        "details": [
-                            {
-                                "name": f"field-{val}",
-                                "value": f"value_{val}",
-                            }
-                        ]
-                    }
-                ),
-            )
-
-        return [f"field-{val}" for val in values]
 
 
 class TestLogAttachmentTypes(_ConsolidatedDataTest):
@@ -2661,6 +2666,167 @@ class TestLogTag(_TestGetSubElementByRef):
         }
 
 
+class _ConsolidatedCustomFieldsTest:
+    @property
+    def relative_path(self) -> str:
+        raise NotImplementedError()
+
+    def get_path(self, repo_id: str) -> str:
+        return f"/repos/{repo_id}/logs/{self.relative_path}"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        raise NotImplementedError()
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        fields = [
+            {
+                "name": "field-1",
+                "value": "Value 1",
+                "type": "string",
+            },
+            {
+                "name": "field-2",
+                "value": "Value 2",
+                "type": "string",
+            },
+            {
+                "name": "field-3",
+                "value": "Value 3",
+                "type": "string",
+            },
+            {
+                "name": "field-4",
+                "value": "Value 2",
+                "type": "enum",
+            },
+            {
+                "name": "field-5",
+                "value": "Value 3",
+                "type": "enum",
+            },
+        ]
+        for field in fields:
+            await repo.create_log(superadmin_client, self.prepare_log_data([field]))
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id),
+            items=[{"name": field["name"], "type": field["type"]} for field in fields],
+        )
+
+    async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await do_test_cursor_pagination_empty_data(
+            log_read_client, self.get_path(repo.id)
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper):
+        await log_read_client.assert_get_not_found(self.get_path(UNKNOWN_UUID))
+
+    async def test_forbidden(
+        self, no_permission_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await no_permission_client.assert_get_forbidden(self.get_path(repo.id))
+
+
+class TestLogDetailsFields(_DetailsCustomFieldsMixin, _ConsolidatedCustomFieldsTest):
+    pass
+
+
+class TestLogSourceFields(_SourceCustomFieldsMixin, _ConsolidatedCustomFieldsTest):
+    pass
+
+
+class TestLogActorExtraFields(
+    _ActorExtraCustomFieldsMixin, _ConsolidatedCustomFieldsTest
+):
+    pass
+
+
+class TestLogResourceExtraFields(
+    _ResourceExtraCustomFieldsMixin, _ConsolidatedCustomFieldsTest
+):
+    pass
+
+
+class _CustomFieldsEnumValuesTest:
+    @property
+    def relative_path(self) -> str:
+        raise NotImplementedError()
+
+    def get_path(self, repo_id: str, field_name: str) -> str:
+        return f"/repos/{repo_id}/logs/{self.relative_path}/{field_name}/values"
+
+    def prepare_log_data(self, fields: list[dict]) -> dict:
+        raise NotImplementedError()
+
+    async def test_nominal(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        field_values = [f"Value {i + 1}" for i in range(5)]
+        for value in field_values:
+            for _ in range(2):
+                # Create two logs for each value to ensure we get the distinct values
+                await repo.create_log(
+                    superadmin_client,
+                    self.prepare_log_data(
+                        [{"name": "my-field", "value": value, "type": "enum"}]
+                    ),
+                )
+        await do_test_cursor_pagination_common_scenarios(
+            log_read_client,
+            self.get_path(repo.id, "my-field"),
+            items=[{"value": value} for value in field_values],
+        )
+
+    async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
+        await do_test_cursor_pagination_empty_data(
+            log_read_client, self.get_path(repo.id, "my-field")
+        )
+
+    async def test_not_found(self, log_read_client: HttpTestHelper):
+        await log_read_client.assert_get_not_found(
+            self.get_path(UNKNOWN_UUID, "my-field")
+        )
+
+    async def test_forbidden(
+        self, no_permission_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        await no_permission_client.assert_get_forbidden(
+            self.get_path(repo.id, "my-field")
+        )
+
+
+class TestLogDetailsFieldsEnumValues(
+    _DetailsCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
+
+
+class TestLogSourceFieldsEnumValues(
+    _SourceCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
+
+
+class TestLogResourceExtraFieldsEnumValues(
+    _ResourceExtraCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
+
+
+class TestLogActorExtraFieldsEnumValues(
+    _ActorExtraCustomFieldsMixin, _CustomFieldsEnumValuesTest
+):
+    pass
+
+
 async def test_log_entity_consolidation_rename_entity(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -2745,14 +2911,18 @@ async def test_log_entity_consolidation_move_entity(
         "/logs/aggs/actions/categories",
         "/logs/aggs/actions/types",
         "/logs/aggs/actors/types",
-        "/logs/aggs/actors/extras/names",
         "/logs/aggs/resources/types",
-        "/logs/aggs/resources/extras/names",
         "/logs/aggs/tags/types",
-        "/logs/aggs/sources/names",
-        "/logs/aggs/details/names",
         "/logs/aggs/attachments/types",
         "/logs/aggs/attachments/mime-types",
+        "/logs/details",
+        "/logs/source",
+        "/logs/resources/extras",
+        "/logs/actors/extras",
+        "/logs/details/my-field/values",
+        "/logs/source/my-field/values",
+        "/logs/resources/extras/my-field/values",
+        "/logs/actors/extras/my-field/values",
         "/logs/entities?root=true",
     ],
 )
@@ -3083,6 +3253,105 @@ async def test_get_logs_as_csv_custom_fields(
         resp.text
         == "Log ID,Source: Source Field,Actor: Actor Field,Resource: Resource Field,Details: Detail Field\r\n"
         f"{log.id},source_value,actor_value,resource_value,detail_value\r\n"
+    )
+    assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
+
+
+async def test_get_logs_as_csv_custom_fields_enum(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {
+                "source": [
+                    {"name": "source-field", "value": "source-value", "type": "enum"}
+                ],
+                "actor": {
+                    "ref": "actor_ref",
+                    "type": "actor",
+                    "name": "Actor",
+                    "extra": [
+                        {"name": "actor-field", "value": "actor-value", "type": "enum"}
+                    ],
+                },
+                "resource": {
+                    "ref": "resource_ref",
+                    "type": "resource",
+                    "name": "Resource",
+                    "extra": [
+                        {
+                            "name": "resource-field",
+                            "value": "resource-value",
+                            "type": "enum",
+                        }
+                    ],
+                },
+                "details": [
+                    {"name": "detail-field", "value": "detail-value", "type": "enum"}
+                ],
+            }
+        ),
+    )
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+        params={
+            "columns": "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field",
+        },
+    )
+    assert (
+        resp.text
+        == "Log ID,Source: Source Field,Actor: Actor Field,Resource: Resource Field,Details: Detail Field\r\n"
+        f"{log.id},Source Value,Actor Value,Resource Value,Detail Value\r\n"
+    )
+    assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
+
+
+async def test_get_logs_as_csv_boolean_fields(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {
+                "source": [{"name": "source-field", "value": True, "type": "boolean"}],
+                "actor": {
+                    "ref": "actor_ref",
+                    "type": "actor",
+                    "name": "Actor",
+                    "extra": [
+                        {"name": "actor-field", "value": True, "type": "boolean"}
+                    ],
+                },
+                "resource": {
+                    "ref": "resource_ref",
+                    "type": "resource",
+                    "name": "Resource",
+                    "extra": [
+                        {
+                            "name": "resource-field",
+                            "value": False,
+                            "type": "boolean",
+                        }
+                    ],
+                },
+                "details": [
+                    {"name": "detail-field", "value": False, "type": "boolean"}
+                ],
+            }
+        ),
+    )
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/csv",
+        params={
+            "columns": "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field",
+        },
+    )
+    assert (
+        resp.text
+        == "Log ID,Source: Source Field,Actor: Actor Field,Resource: Resource Field,Details: Detail Field\r\n"
+        f"{log.id},Yes,Yes,No,No\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 

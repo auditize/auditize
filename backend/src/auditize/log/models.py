@@ -1,5 +1,7 @@
+import enum
+import json
 from datetime import datetime, timezone
-from typing import Annotated, Optional
+from typing import Annotated, Any, ClassVar, Optional, Self
 from uuid import UUID
 
 from pydantic import (
@@ -7,6 +9,8 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    SerializerFunctionWrapHandler,
+    ValidationInfo,
     model_serializer,
     model_validator,
 )
@@ -19,7 +23,18 @@ from auditize.api.models.cursor_pagination import (
 from auditize.api.models.dates import HasDatetimeSerialization
 from auditize.api.models.search import QuerySearchParam
 from auditize.api.validation import IDENTIFIER_PATTERN
+from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.string import validate_empty_string_as_none
+
+
+class CustomFieldType(enum.StrEnum):
+    STRING = "string"
+    ENUM = "enum"
+    DATETIME = "datetime"
+    BOOLEAN = "boolean"
+    INTEGER = "integer"
+    FLOAT = "float"
+    JSON = "json"
 
 
 class CustomField(BaseModel):
@@ -27,8 +42,44 @@ class CustomField(BaseModel):
     Pydantic model for a custom field (name / value pair).
     """
 
+    type: CustomFieldType = Field(default=CustomFieldType.STRING)
     name: str
-    value: str
+    value: str | bool | int | float
+
+    _ES_MAPPING: ClassVar[dict[CustomFieldType, str]] = {
+        CustomFieldType.ENUM: "value_enum",
+        CustomFieldType.BOOLEAN: "value_boolean",
+        CustomFieldType.INTEGER: "value_integer",
+        CustomFieldType.FLOAT: "value_float",
+        CustomFieldType.DATETIME: "value_datetime",
+    }
+
+    @model_serializer(mode="wrap")
+    def serialize_model(
+        self, handler: SerializerFunctionWrapHandler, info: ValidationInfo
+    ) -> dict:
+        serialized = handler(self)
+        if info.context != "es":
+            return serialized
+
+        es_field_name = self._ES_MAPPING.get(self.type, "value")
+        serialized[es_field_name] = serialized.pop("value")
+
+        return serialized
+
+    @model_validator(mode="before")
+    @classmethod
+    def pre_validation(cls, data: Any, info: ValidationInfo) -> Any:
+        if info.context != "es":
+            return data
+
+        pre_validated = data.copy()
+
+        es_field_type = pre_validated.get("type", CustomFieldType.STRING)
+        es_field_name = cls._ES_MAPPING.get(es_field_type, "value")
+        pre_validated["value"] = pre_validated.pop(es_field_name)
+
+        return pre_validated
 
 
 class Log(BaseModel):
@@ -81,10 +132,96 @@ class Log(BaseModel):
     attachments: list[AttachmentMetadata] = Field(default_factory=list)
     entity_path: list[EntityPathNode] = Field(default_factory=list)
 
+    @model_serializer(mode="wrap")
+    def serialize_model(
+        self, handler: SerializerFunctionWrapHandler, info: ValidationInfo
+    ) -> dict:
+        serialized = handler(self)
+        if info.context != "es":
+            return serialized
+        serialized["log_id"] = serialized.pop("id")
+        return serialized
 
-class _CustomFieldData(BaseModel):
-    name: str = Field(description="Field name", pattern=IDENTIFIER_PATTERN)
-    value: str = Field(description="Field value")
+    @model_validator(mode="before")
+    @classmethod
+    def pre_validation(cls, data: Any, info: ValidationInfo) -> Any:
+        if info.context != "es":
+            return data
+        pre_validated = data.copy()
+        pre_validated["id"] = pre_validated.pop("log_id")
+        return pre_validated
+
+
+def _CustomFieldTypeField(**kwargs):  # noqa
+    return Field(description="Field type", **kwargs)
+
+
+def _CustomFieldNameField(**kwargs):  # noqa
+    return Field(description="Field name", pattern=IDENTIFIER_PATTERN, **kwargs)
+
+
+def _CustomFieldValueField(**kwargs):  # noqa
+    return Field(description="Field value", **kwargs)
+
+
+class _CustomFieldInputData(BaseModel):
+    type: CustomFieldType = _CustomFieldTypeField(default=None)
+    name: str = _CustomFieldNameField()
+    value: str | bool | int | float = _CustomFieldValueField()
+
+    @model_validator(mode="after")
+    def post_validate(self) -> Self:
+        if self.type:
+            # If the type is set, validate the value against the type
+            # (both Python type and value format)
+            match self.type:
+                case CustomFieldType.STRING | CustomFieldType.ENUM:
+                    if not isinstance(self.value, str):
+                        raise ValueError("Value must be a string")
+                case CustomFieldType.DATETIME:
+                    if not isinstance(self.value, str):
+                        raise ValueError("Value must be a string in ISO 8601 format")
+                    try:
+                        self.value = serialize_datetime(self.value)
+                    except ValueError:
+                        raise ValueError(
+                            "Value must be a valid datetime in ISO 8601 format"
+                        )
+                case CustomFieldType.BOOLEAN:
+                    if not isinstance(self.value, bool):
+                        raise ValueError("Value must be a boolean")
+                case CustomFieldType.INTEGER:
+                    if not isinstance(self.value, int):
+                        raise ValueError("Value must be an integer")
+                case CustomFieldType.FLOAT:
+                    if not isinstance(self.value, float):
+                        raise ValueError("Value must be a float")
+                case CustomFieldType.JSON:
+                    if not isinstance(self.value, str):
+                        raise ValueError("Value must be a valid JSON string")
+                    try:
+                        json.loads(self.value)
+                    except json.JSONDecodeError:
+                        raise ValueError("Value must be a valid JSON string")
+        else:
+            # If the type is NOT set, infer it from the value
+            match self.value:
+                case bool():
+                    self.type = CustomFieldType.BOOLEAN
+                case int():
+                    self.type = CustomFieldType.INTEGER
+                case float():
+                    self.type = CustomFieldType.FLOAT
+                case _:
+                    self.type = CustomFieldType.STRING
+
+        return self
+
+
+class _CustomFieldOutputData(BaseModel):
+    type: CustomFieldType = _CustomFieldTypeField()
+    name: str = _CustomFieldNameField()
+    value: str | bool | int | float = _CustomFieldValueField()
 
 
 def _LogIdField(**kwargs):  # noqa
@@ -162,14 +299,14 @@ class _ActorInputData(BaseModel):
     ref: str = _ActorRefField()
     type: str = _ActorTypeField()
     name: str = _ActorNameField()
-    extra: list[_CustomFieldData] = _ActorExtraField(default_factory=list)
+    extra: list[_CustomFieldInputData] = _ActorExtraField(default_factory=list)
 
 
 class _ActorOutputData(BaseModel):
     ref: str = _ActorRefField()
     type: str = _ActorTypeField()
     name: str = _ActorNameField()
-    extra: list[_CustomFieldData] = _ActorExtraField()
+    extra: list[_CustomFieldOutputData] = _ActorExtraField()
 
 
 def _ActorField(**kwargs):  # noqa
@@ -216,14 +353,14 @@ class _ResourceInputData(BaseModel):
     ref: str = _ResourceRefField()
     type: str = _ResourceTypeField()
     name: str = _ResourceNameField()
-    extra: list[_CustomFieldData] = _ResourceExtraField(default_factory=list)
+    extra: list[_CustomFieldInputData] = _ResourceExtraField(default_factory=list)
 
 
 class _ResourceOutputData(BaseModel):
     ref: str = _ResourceRefField()
     type: str = _ResourceTypeField()
     name: str = _ResourceNameField()
-    extra: list[_CustomFieldData] = _ResourceExtraField()
+    extra: list[_CustomFieldOutputData] = _ResourceExtraField()
 
 
 def _ResourceField(**kwargs):  # noqa
@@ -322,12 +459,12 @@ def _EntityPathField():  # noqa
 
 class LogCreate(BaseModel):
     action: _ActionData = _ActionField()
-    source: list[_CustomFieldData] = _SourceField(default_factory=list)
+    source: list[_CustomFieldInputData] = _SourceField(default_factory=list)
     actor: Optional[_ActorInputData] = _ActorField(default=None)
     resource: Optional[_ResourceInputData] = _ResourceField(
         default=None,
     )
-    details: list[_CustomFieldData] = _DetailsField(default_factory=list)
+    details: list[_CustomFieldInputData] = _DetailsField(default_factory=list)
     tags: list[_TagInputData] = Field(default_factory=list)
     entity_path: list[_EntityPathNodeData] = _EntityPathField()
 
@@ -370,10 +507,10 @@ class _AttachmentData(BaseModel, HasDatetimeSerialization):
 class LogResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _LogIdField()
     action: _ActionData = _ActionField()
-    source: list[_CustomFieldData] = _SourceField()
+    source: list[_CustomFieldOutputData] = _SourceField()
     actor: _ActorOutputData | None = _ActorField()
     resource: _ResourceOutputData | None = _ResourceField()
-    details: list[_CustomFieldData] = _DetailsField()
+    details: list[_CustomFieldOutputData] = _DetailsField()
     tags: list[_TagOutputData] = Field()
     entity_path: list[_EntityPathNodeData] = _EntityPathField()
     attachments: list[_AttachmentData] = Field()
@@ -423,6 +560,53 @@ class NameRefPairListResponse(
     def build_item(cls, name_ref_pair: tuple[str, str]) -> NameRefPairData:
         name, ref = name_ref_pair
         return NameRefPairData(name=name, ref=ref)
+
+
+class CustomFieldData(BaseModel):
+    name: str = Field(description="Custom field name")
+    type: CustomFieldType = Field(description="Custom field type")
+
+
+class CustomFieldListResponse(
+    CursorPaginatedResponse[tuple[str, CustomFieldType], CustomFieldData]
+):
+    @classmethod
+    def build_item(cls, custom_field: tuple[str, CustomFieldType]) -> CustomFieldData:
+        name, type = custom_field
+        return CustomFieldData(name=name, type=type)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "items": [
+                    {"name": "profile-name", "type": "string"},
+                    {"name": "status", "type": "enum"},
+                ],
+                "pagination": {"next_cursor": None},
+            }
+        }
+    )
+
+
+class CustomFieldEnumValueData(BaseModel):
+    value: str
+
+
+class CustomFieldEnumValueListResponse(
+    CursorPaginatedResponse[str, CustomFieldEnumValueData]
+):
+    @classmethod
+    def build_item(cls, value: str) -> CustomFieldEnumValueData:
+        return CustomFieldEnumValueData(value=value)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "items": [{"value": "enabled"}, {"value": "disabled"}],
+                "pagination": {"next_cursor": None},
+            }
+        }
+    )
 
 
 class LogEntityResponse(_EntityPathNodeData):

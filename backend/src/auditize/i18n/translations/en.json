@@ -39,7 +39,9 @@
         "entity_path:ref": "Entity Refs",
         "entity_path:name": "Entity Names",
         "saved_at": "Date"
-      }
+      },
+      "true": "Yes",
+      "false": "No"
     }
   }
 }

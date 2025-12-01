@@ -1,3 +1,4 @@
+// sort-imports-ignore
 import {
   AppShell,
   Avatar,
@@ -10,10 +11,15 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import "@mantine/core/styles.layer.css";
+import "@mantine/code-highlight/styles.css";
 import "@mantine/dates/styles.layer.css";
 import { ContextModalProps, modals, ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import "@mantine/notifications/styles.css";
+import {
+  CodeHighlightAdapterProvider,
+  createShikiAdapter,
+} from "@mantine/code-highlight";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import i18n from "i18next";
 import "mantine-datatable/styles.layer.css";
@@ -330,17 +336,31 @@ function AppRoutes() {
   return <RouterProvider router={router} />;
 }
 
+// Shiki requires async code to load the highlighter
+async function loadShiki() {
+  const { createHighlighter } = await import("shiki");
+  const shiki = await createHighlighter({
+    langs: ["json"],
+    themes: [],
+  });
+
+  return shiki;
+}
+
+const shikiAdapter = createShikiAdapter(loadShiki);
 export default function App() {
   return (
     <MantineProvider theme={theme}>
-      <ModalsProvider modals={{ logout: LogoutModal }}>
-        <Notifications />
-        <QueryClientProvider client={auditizeQueryClient()}>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </QueryClientProvider>
-      </ModalsProvider>
+      <CodeHighlightAdapterProvider adapter={shikiAdapter}>
+        <ModalsProvider modals={{ logout: LogoutModal }}>
+          <Notifications />
+          <QueryClientProvider client={auditizeQueryClient()}>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </QueryClientProvider>
+        </ModalsProvider>
+      </CodeHighlightAdapterProvider>
     </MantineProvider>
   );
 }

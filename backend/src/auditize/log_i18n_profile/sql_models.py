@@ -42,7 +42,9 @@ class LogI18nProfile(SqlModel, HasId, HasDates):
     def get_translation(self, lang: Lang | str) -> LogTranslation | None:
         return next((t for t in self.translations if t.lang == lang), None)
 
-    def translate(self, lang: Lang | str, category: str, key: str) -> str | None:
+    def translate(
+        self, lang: Lang | str, category: str, key: str, enum_value: str | None = None
+    ) -> str | None:
         from auditize.i18n.lang import DEFAULT_LANG
 
         translation = self.get_translation(lang)
@@ -52,4 +54,4 @@ class LogI18nProfile(SqlModel, HasId, HasDates):
         if not translation:
             return None
 
-        return translation.labels.translate(category, key)
+        return translation.labels.translate(category, key, enum_value)

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import Field, field_serializer
 
 from auditize.helpers.datetime import serialize_datetime
 

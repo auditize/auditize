@@ -95,12 +95,7 @@ The `action` object is mandatory.
 
 ### `source`
 
-The `source` object holds information about the source of the action. It is normalized as a list of custom fields and can be used to express any information: the application that triggered the action, the version of the application, an IP address, etc.
-
-A custom field must include the following fields:
-
-- `name`: The source field name. It must respect the `[a-z0-9-]+` format.
-- `value`: The source field value. It can be any string.
+The `source` object holds information about the source of the action. It is normalized as a list of [custom fields](#custom-fields) and can be used to express any information: the application that triggered the action, the version of the application, an IP address, etc.
 
 The `source` field is optional.
 
@@ -111,7 +106,7 @@ The `actor` object identifies the actor behind the action. It includes the follo
 - `ref`: A value that uniquely identifies an actor, regardless of its `type`. This field is required and can be any string.
 - `type`: The type of the actor. This field is required and must respect the `[a-z0-9-]+` format.
 - `name`: The name of the actor. This field is required and can be any string.
-- `extra`: An optional list of custom fields that can be used to express any extra custom information about the actor such as an email, a role, etc.
+- `extra`: An optional list of [custom fields](#custom-fields) that can be used to express any extra custom information about the actor such as an email, a role, etc.
 
 The `actor` object is optional.
 
@@ -123,14 +118,14 @@ The `resource` object identifies the resource being the target of the action. It
 - `ref`: A value that uniquely identifies a resource, regardless of its `type`. This field is required and can be any string.
 - `type`: The type of the resource. This field is required and must respect the `[a-z0-9-]+` format.
 - `name`: The name of the resource. This field is required and can be any string.
-- `extra`: A list of custom fields that can be used to express any extra custom information about the resource. The `name` must respect the `[a-z0-9-]+` format while the `value` can be any string.
+- `extra`: A list of [custom fields](#custom-fields) that can be used to express any extra custom information about the resource.
 
 The `resource` object is optional.
 
 
 ### `details`
 
-The `details` object holds information about the action. It follows the same structure as the `source` object but is used to proovide details about the action itself.
+The `details` object holds information about the action. It is normalized as a list of [custom fields](#custom-fields).
 
 
 ### `tags`
@@ -142,6 +137,30 @@ The `details` object holds information about the action. It follows the same str
     - `type` (must respect the `[a-z0-9-]+` format),
     - `ref` (a value that uniquely identifies a resource, whatever its type)
     - and `name` (can be any string)
+
+### Custom fields
+
+Custom fields are a way to extend the log data model with specific information. A custom field includes the following fields:
+
+- `name`: The custom field name. It must respect the `[a-z0-9-]+` format,
+- `value`: The custom field value, it can be a string, a number, a boolean.
+- `type`: The (optional) custom field type. The following types are supported:
+    - `string` for plain text values
+    - `enum` for values that are part of a closed list of values (they can be translated through [Log i18n Profiles](overview.md#log-i18n-profiles))
+    - `json` for stringified JSON values
+    - `datetime` for datetime values (ISO 8601 format)
+    - `boolean` for boolean values
+    - `integer` for non-decimal number values
+    - `float` for decimal number values
+
+The `type` field is optional. If not provided, it is inferred from the `value` type:
+
+- `string` if the value is a string
+- `boolean` if the value is a boolean
+- `integer` if the value is a non-decimal number
+- `float` if the value is a decimal number
+
+The UI takes advantage of the custom field type to offer appropriate search filters and displays.
 
 ### `entity_path`
 

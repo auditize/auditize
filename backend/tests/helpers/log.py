@@ -1,4 +1,5 @@
 import base64
+from copy import deepcopy
 from typing import Any
 
 import callee
@@ -77,7 +78,7 @@ class PreparedLog:
             "attachments": [],
             "id": callee.IsA(str),
             "saved_at": DATETIME_FORMAT,
-            **(data or {}),
+            **(deepcopy(data) or {}),
         }
         for tag in expected["tags"]:
             tag.setdefault("ref", None)
@@ -88,6 +89,23 @@ class PreparedLog:
             expected["resource"].setdefault("extra", [])
         for attachment in expected["attachments"]:
             attachment["saved_at"] = DATETIME_FORMAT
+        custom_fields = (
+            expected["source"]
+            + expected["details"]
+            + (expected["actor"]["extra"] if expected["actor"] else [])
+            + (expected["resource"]["extra"] if expected["resource"] else [])
+        )
+        for custom_field in custom_fields:
+            if "type" not in custom_field:
+                match custom_field["value"]:
+                    case bool():
+                        custom_field["type"] = "boolean"
+                    case int():
+                        custom_field["type"] = "integer"
+                    case float():
+                        custom_field["type"] = "float"
+                    case _:
+                        custom_field["type"] = "string"
         return expected
 
     def expected_api_response(self, extra=None) -> dict:

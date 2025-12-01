@@ -2,9 +2,10 @@ import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
 import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import { ActorExtraFieldValue } from "@/features/log/components/CustomFieldValues";
 
 import {
-  getCustomFieldValue,
+  getCustomField,
   InlineSearchParamLink,
   TableSearchParamChangeHandler,
 } from "./FieldUtils";
@@ -109,28 +110,24 @@ export function ActorCustomField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
-
-  if (!log.actor) {
-    return null;
-  }
-  const fieldValue = getCustomFieldValue(log.actor.extra, fieldName);
-  if (!fieldValue) {
+  const field = getCustomField(log.actor?.extra, fieldName);
+  if (!field) {
     return null;
   }
 
   return (
     <InlineSearchParamLink
       fieldLabel={t("log.inlineFilter.field.actorCustomField", {
-        field: logTranslator("actor_custom_field", fieldName).toLowerCase(),
+        field: logTranslator("actor_custom_field", field.name).toLowerCase(),
       })}
       onClick={() =>
         onTableSearchParamChange(
           "actorExtra",
-          new Map([[fieldName, fieldValue]]),
+          new Map([[field.name, field.value]]),
         )
       }
     >
-      {fieldValue}
+      <ActorExtraFieldValue repoId={repoId} field={field} />
     </InlineSearchParamLink>
   );
 }

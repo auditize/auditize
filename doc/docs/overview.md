@@ -111,11 +111,15 @@ The log translation applies to log fields whose value is considered to be a key.
 - `action_type`
 - `action_category`
 - `actor_type`
-- `actor_custom_field` (custom field names of the actor)
+- `actor_custom_field` (extra field names of the actor)
+- `actor_custom_field_enum_value` (extra field enum values of the actor)
 - `source_field` (field names within the source)
+- `source_custom_field_enum_value` (extra field enum values of the source)
 - `detail_field` (field names within the details)
+- `detail_custom_field_enum_value` (extra field enum values of the details)
 - `resource_type`
-- `resource_custom_field` (custom field names of the resource)
+- `resource_custom_field` (extra field names of the resource)
+- `resource_custom_field_enum_value` (extra field enum values of the resource)
 - `tag_type`
 - `attachment_type`
 
@@ -141,6 +145,17 @@ Example of a translation file:
     "reason": "Reason",
     "comment": "Comment",
     "status": "Status",
+  },
+  "detail_custom_field_enum_value": {
+    "granted-role": {
+      "admin": "Administrator",
+      "user": "User"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    }
   },
   "source_field": {
     "application": "Application",

@@ -5,21 +5,27 @@ import {
   getActorNames,
   getAllActionCategories,
   getAllActionTypes,
+  getAllActorCustomFieldEnumValues,
   getAllActorTypes,
   getAllAttachmentMimeTypes,
   getAllAttachmentTypes,
+  getAllDetailFieldEnumValues,
+  getAllResourceCustomFieldEnumValues,
   getAllResourceTypes,
+  getAllSourceFieldEnumValues,
   getAllTagTypes,
   getResource,
   getResourceNames,
   getTag,
   getTagNames,
 } from "@/features/log/api";
-import { useLogTranslator } from "@/features/log/components/LogTranslation";
+import {
+  useCustomFieldEnumValueTranslator,
+  useLogTranslator,
+} from "@/features/log/components/LogTranslation";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
-import { titlize } from "@/utils/format";
 
-import { BaseTextInputSearchParamField } from "./BaseTextInputSearchParamField";
+import { CustomFieldSearchParamField } from "./CustomFieldSearchParamField";
 import { DateInterval } from "./DateInterval";
 import { EntitySearchParamField } from "./EntitySearchParamField";
 import { GlobalTextSearchParamField } from "./GlobalTextSearchParamField";
@@ -54,6 +60,9 @@ function SearchParamField({
 }) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(searchParams.repoId);
+  const customFieldEnumValueTranslator = useCustomFieldEnumValueTranslator(
+    searchParams.repoId,
+  );
 
   if (name === "q") {
     return (
@@ -146,12 +155,14 @@ function SearchParamField({
   if (name.startsWith("actor.")) {
     const fieldName = name.replace("actor.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={t("log.actor") + ": " + titlize(fieldName)}
-        name={name}
-        value={searchParams.actorExtra.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
+      <CustomFieldSearchParamField
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllActorCustomFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator("actor_custom_field", fieldName, value)
+        }
+        onChange={(_, value) =>
           onChange(
             "actorExtra",
             new Map([...searchParams.actorExtra, [fieldName, value]]),
@@ -159,6 +170,7 @@ function SearchParamField({
         }
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }
@@ -166,12 +178,14 @@ function SearchParamField({
   if (name.startsWith("source.")) {
     const fieldName = name.replace("source.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={titlize(fieldName)}
-        name={name}
-        value={searchParams.source.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
+      <CustomFieldSearchParamField
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllSourceFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator("source_field", fieldName, value)
+        }
+        onChange={(_, value) =>
           onChange(
             "source",
             new Map([...searchParams.source, [fieldName, value]]),
@@ -179,6 +193,7 @@ function SearchParamField({
         }
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }
@@ -220,12 +235,18 @@ function SearchParamField({
   if (name.startsWith("resource.")) {
     const fieldName = name.replace("resource.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={t("log.resource") + ": " + titlize(fieldName)}
-        name={name}
-        value={searchParams.resourceExtra.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
+      <CustomFieldSearchParamField
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllResourceCustomFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator(
+            "resource_custom_field",
+            fieldName,
+            value,
+          )
+        }
+        onChange={(_, value) =>
           onChange(
             "resourceExtra",
             new Map([...searchParams.resourceExtra, [fieldName, value]]),
@@ -233,6 +254,7 @@ function SearchParamField({
         }
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }
@@ -240,19 +262,22 @@ function SearchParamField({
   if (name.startsWith("details.")) {
     const fieldName = name.replace("details.", "");
     return (
-      <BaseTextInputSearchParamField
-        label={titlize(fieldName)}
-        name={name}
-        value={searchParams.details!.get(fieldName) ?? ""}
-        openedByDefault={openedByDefault}
-        onChange={(value) =>
+      <CustomFieldSearchParamField
+        searchParams={searchParams}
+        searchParamName={name}
+        enumValues={getAllDetailFieldEnumValues}
+        enumLabel={(value) =>
+          customFieldEnumValueTranslator("detail_field", fieldName, value)
+        }
+        onChange={(_, value) =>
           onChange(
             "details",
-            new Map([...searchParams.details!, [fieldName, value]]),
+            new Map([...searchParams.details, [fieldName, value]]),
           )
         }
         onRemove={onRemove}
         onSubmit={onSubmit}
+        openedByDefault={openedByDefault}
       />
     );
   }

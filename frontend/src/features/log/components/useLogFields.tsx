@@ -8,6 +8,7 @@ import {
   getAllResourceCustomFields,
   getAllSourceFields,
 } from "../api";
+import { AvailableCustomField, CustomFieldType } from "../api";
 import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
 function useCustomFields(repoId: string) {
@@ -44,6 +45,32 @@ function useCustomFields(repoId: string) {
   };
 }
 
+export function useCustomFieldTypes(repoId: string) {
+  const {
+    actorCustomFields,
+    resourceCustomFields,
+    detailFields,
+    sourceFields,
+  } = useCustomFields(repoId);
+  return {
+    ...Object.fromEntries(
+      actorCustomFields.map((field) => [`actor.${field.name}`, field.type]),
+    ),
+    ...Object.fromEntries(
+      sourceFields.map((field) => [`source.${field.name}`, field.type]),
+    ),
+    ...Object.fromEntries(
+      resourceCustomFields.map((field) => [
+        `resource.${field.name}`,
+        field.type,
+      ]),
+    ),
+    ...Object.fromEntries(
+      detailFields.map((field) => [`details.${field.name}`, field.type]),
+    ),
+  };
+}
+
 export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
   const { t } = useTranslation();
   const logTranslator = useLogTranslator(repoId);
@@ -61,7 +88,24 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
     label: label ?? t(`log.${value}`),
     disabled: disabledFields && disabledFields.has(value),
   });
-
+  const customFieldItems = (
+    fields: AvailableCustomField[],
+    prefix: string,
+    translationKey: string,
+  ) => {
+    return (
+      fields
+        // Datetime values should be searchable using a range picker, which is not supported yet
+        // so we hide them for now
+        .filter((field) => field.type !== CustomFieldType.DateTime)
+        .map((field) =>
+          item(
+            `${prefix}.${field.name}`,
+            logTranslator(translationKey, field.name),
+          ),
+        )
+    );
+  };
   return {
     fields: [
       { group: "Date", items: [item("savedAt", t("log.date"))] },
@@ -78,35 +122,28 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
         items: [
           item("actorType", t("common.type")),
           item("actorRef", t("log.actor")),
-          ...actorCustomFields.map((field) =>
-            item(`actor.${field}`, logTranslator("actor_custom_field", field)),
-          ),
+          ...customFieldItems(actorCustomFields, "actor", "actor_custom_field"),
         ],
       },
       {
         group: t("log.source"),
-        items: sourceFields.map((field) =>
-          item(`source.${field}`, logTranslator("source_field", field)),
-        ),
+        items: customFieldItems(sourceFields, "source", "source_field"),
       },
       {
         group: t("log.resource"),
         items: [
           item("resourceRef", t("log.resource")),
           item("resourceType", t("common.type")),
-          ...resourceCustomFields.map((field) =>
-            item(
-              `resource.${field}`,
-              logTranslator("resource_custom_field", field),
-            ),
+          ...customFieldItems(
+            resourceCustomFields,
+            "resource",
+            "resource_custom_field",
           ),
         ],
       },
       {
         group: t("log.details"),
-        items: detailFields.map((field) =>
-          item(`details.${field}`, logTranslator("detail_field", field)),
-        ),
+        items: customFieldItems(detailFields, "details", "detail_field"),
       },
       {
         group: t("log.tag"),
@@ -164,6 +201,24 @@ export function useColumnFields(repoId: string) {
       </Text>,
     );
 
+  const customFieldItems = (
+    fields: AvailableCustomField[],
+    prefix: string,
+    translationKey: string,
+  ) => {
+    return (
+      fields
+        // JSON fields won't probably be readable in a table, so we ignore them
+        .filter((field) => field.type !== CustomFieldType.Json)
+        .map((field) =>
+          item(
+            `${prefix}.${field.name}`,
+            logTranslator(translationKey, field.name),
+          ),
+        )
+    );
+  };
+
   return {
     fields: [
       { group: t("log.date"), items: [item("savedAt", t("log.date"))] },
@@ -182,16 +237,12 @@ export function useColumnFields(repoId: string) {
           item("actorType", t("common.type")),
           item("actorName", t("common.name")),
           item("actorRef", t("common.ref")),
-          ...actorCustomFields.map((field) =>
-            item(`actor.${field}`, logTranslator("actor_custom_field", field)),
-          ),
+          ...customFieldItems(actorCustomFields, "actor", "actor_custom_field"),
         ],
       },
       {
         group: t("log.source"),
-        items: sourceFields.map((field) =>
-          item(`source.${field}`, logTranslator("source_field", field)),
-        ),
+        items: customFieldItems(sourceFields, "source", "source_field"),
       },
       {
         group: t("log.resource"),
@@ -200,19 +251,16 @@ export function useColumnFields(repoId: string) {
           item("resourceType", t("common.type")),
           item("resourceName", t("common.name")),
           item("resourceRef", t("common.ref")),
-          ...resourceCustomFields.map((field) =>
-            item(
-              `resource.${field}`,
-              logTranslator("resource_custom_field", field),
-            ),
+          ...customFieldItems(
+            resourceCustomFields,
+            "resource",
+            "resource_custom_field",
           ),
         ],
       },
       {
         group: t("log.details"),
-        items: detailFields.map((field) =>
-          item(`details.${field}`, logTranslator("detail_field", field)),
-        ),
+        items: customFieldItems(detailFields, "details", "detail_field"),
       },
       {
         group: t("log.tag"),

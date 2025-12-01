@@ -1,5 +1,4 @@
 import base64
-import json
 import re
 import string
 import unicodedata
@@ -21,6 +20,12 @@ from auditize.api.models.cursor_pagination import (
     load_pagination_cursor,
     serialize_pagination_cursor,
 )
+from auditize.api.validation import (
+    validate_bool,
+    validate_datetime,
+    validate_float,
+    validate_int,
+)
 from auditize.config import get_config
 from auditize.database import DatabaseManager
 from auditize.database.sql.service import get_sql_model
@@ -31,7 +36,13 @@ from auditize.exceptions import (
     PermissionDenied,
 )
 from auditize.helpers.datetime import now
-from auditize.log.models import Log, LogCreate, LogImport, LogSearchParams
+from auditize.log.models import (
+    CustomFieldType,
+    Log,
+    LogCreate,
+    LogImport,
+    LogSearchParams,
+)
 from auditize.log.sql_models import LogEntity
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
@@ -139,10 +150,7 @@ class LogService:
             await self.es.create(
                 index=self.index,
                 id=str(log.id),
-                document={
-                    "log_id": log.id,
-                    **log.model_dump(exclude={"id"}),
-                },
+                document=log.model_dump(context="es"),
                 refresh=self._refresh,
             )
         except elasticsearch.ConflictError:
@@ -224,7 +232,7 @@ class LogService:
         except ElasticNotFoundError:
             raise NotFoundError()
 
-        log = Log.model_validate({**resp["_source"], "id": log_id})
+        log = Log.model_validate(resp["_source"], context="es")
         self._check_log_visibility(log, authorized_entities)
 
         return log
@@ -241,7 +249,8 @@ class LogService:
             raise NotFoundError()
 
         self._check_log_visibility(
-            Log.model_validate({**resp["_source"], "id": log_id}), authorized_entities
+            Log.model_validate(resp["_source"], context="es"),
+            authorized_entities,
         )
 
         try:
@@ -252,32 +261,6 @@ class LogService:
         return Log.Attachment.model_validate(
             {**attachment, "data": base64.b64decode(attachment["data"])}
         )
-
-    @staticmethod
-    def _custom_field_search_filter(type: str, fields: dict[str, str]):
-        return [
-            {
-                "nested": {
-                    "path": type,
-                    "query": {
-                        "bool": {
-                            "must": [
-                                {"term": {f"{type}.name": name}},
-                                {
-                                    "match": {
-                                        f"{type}.value": {
-                                            "query": value,
-                                            "operator": "and",
-                                        }
-                                    }
-                                },
-                            ]
-                        }
-                    },
-                }
-            }
-            for name, value in fields.items()
-        ]
 
     @staticmethod
     def _nested_filter(path, filter):
@@ -333,21 +316,123 @@ class LogService:
 
         return {"bool": {"must": must_clauses()}}
 
-    @classmethod
-    def _prepare_es_query(
-        cls,
+    async def _get_custom_field_type(
+        self, path: str, field_name: str
+    ) -> CustomFieldType:
+        aggregations = {
+            "custom_fields": {
+                "nested": {"path": path},
+                "aggs": {
+                    "filter_field": {
+                        "filter": {"term": {f"{path}.name": field_name}},
+                        "aggs": {
+                            "latest_type": {
+                                "top_hits": {
+                                    "size": 1,
+                                    "sort": [{"saved_at": {"order": "desc"}}],
+                                    "_source": {"includes": [f"{path}.type"]},
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+        resp = await self.es.search(
+            index=self.index,
+            aggregations=aggregations,
+            size=0,
+        )
+
+        hits = resp["aggregations"]["custom_fields"]["filter_field"]["latest_type"]["hits"]["hits"]  # fmt: skip
+        if hits:
+            return CustomFieldType(hits[0]["_source"]["type"])
+        # NB: fallback to string type, this should never happen
+        return CustomFieldType.STRING
+
+    async def _custom_field_search_filter(
+        self, path: str, field_name: str, field_value: str
+    ) -> dict:
+        match await self._get_custom_field_type(path, field_name):
+            case CustomFieldType.ENUM:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_enum": field_value,
+                    }
+                }
+            case CustomFieldType.BOOLEAN:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_boolean": validate_bool(field_value),
+                    }
+                }
+            case CustomFieldType.INTEGER:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_integer": validate_int(field_value),
+                    }
+                }
+            case CustomFieldType.FLOAT:
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_float": validate_float(field_value),
+                    }
+                }
+            case CustomFieldType.DATETIME:
+                # NB: search on the precise value does not really make sense for a datetime field,
+                # range search will be implemented in a future version.
+                field_value_filter = {
+                    "term": {
+                        f"{path}.value_datetime": validate_datetime(field_value),
+                    }
+                }
+            case _:
+                field_value_filter = {
+                    "match": {
+                        f"{path}.value": {
+                            "query": field_value,
+                            "operator": "and",
+                        }
+                    }
+                }
+
+        return {
+            "nested": {
+                "path": path,
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"term": {f"{path}.name": field_name}},
+                            field_value_filter,
+                        ]
+                    }
+                },
+            }
+        }
+
+    async def _custom_fields_search_filter(
+        self, path: str, fields: dict[str, str]
+    ) -> list[dict]:
+        return [
+            await self._custom_field_search_filter(path, name, value)
+            for name, value in fields.items()
+        ]
+
+    async def _prepare_es_query(
+        self,
         search_params: LogSearchParams,
     ) -> list[dict]:
         sp = search_params
         filter = []
         if sp.query:
-            filter.append(cls._query_filter(sp.query))
+            filter.append(self._query_filter(sp.query))
         if sp.action_type:
             filter.append({"term": {"action.type": sp.action_type}})
         if sp.action_category:
             filter.append({"term": {"action.category": sp.action_category}})
         if sp.source:
-            filter.extend(cls._custom_field_search_filter("source", sp.source))
+            filter.extend(await self._custom_fields_search_filter("source", sp.source))
         if sp.actor_type:
             filter.append({"term": {"actor.type": sp.actor_type}})
         if sp.actor_name:
@@ -356,7 +441,7 @@ class LogService:
             filter.append({"term": {"actor.ref": sp.actor_ref}})
         if sp.actor_extra:
             filter.extend(
-                cls._custom_field_search_filter("actor.extra", sp.actor_extra)
+                await self._custom_fields_search_filter("actor.extra", sp.actor_extra)
             )
         if sp.resource_type:
             filter.append({"term": {"resource.type": sp.resource_type}})
@@ -366,17 +451,21 @@ class LogService:
             filter.append({"term": {"resource.ref": sp.resource_ref}})
         if sp.resource_extra:
             filter.extend(
-                cls._custom_field_search_filter("resource.extra", sp.resource_extra)
+                await self._custom_fields_search_filter(
+                    "resource.extra", sp.resource_extra
+                )
             )
         if sp.details:
-            filter.extend(cls._custom_field_search_filter("details", sp.details))
+            filter.extend(
+                await self._custom_fields_search_filter("details", sp.details)
+            )
         if sp.tag_ref:
-            filter.append(cls._nested_filter_term("tags", "tags.ref", sp.tag_ref))
+            filter.append(self._nested_filter_term("tags", "tags.ref", sp.tag_ref))
         if sp.tag_type:
-            filter.append(cls._nested_filter_term("tags", "tags.type", sp.tag_type))
+            filter.append(self._nested_filter_term("tags", "tags.type", sp.tag_type))
         if sp.tag_name:
             filter.append(
-                cls._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
+                self._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
             )
         if sp.has_attachment is not None:
             if sp.has_attachment:
@@ -404,7 +493,7 @@ class LogService:
 
         if sp.attachment_name:
             filter.append(
-                cls._nested_filter(
+                self._nested_filter(
                     "attachments",
                     {
                         "match": {
@@ -419,19 +508,21 @@ class LogService:
 
         if sp.attachment_type:
             filter.append(
-                cls._nested_filter_term(
+                self._nested_filter_term(
                     "attachments", "attachments.type", sp.attachment_type
                 )
             )
         if sp.attachment_mime_type:
             filter.append(
-                cls._nested_filter_term(
+                self._nested_filter_term(
                     "attachments", "attachments.mime_type", sp.attachment_mime_type
                 )
             )
         if sp.entity_ref:
             filter.append(
-                cls._nested_filter_term("entity_path", "entity_path.ref", sp.entity_ref)
+                self._nested_filter_term(
+                    "entity_path", "entity_path.ref", sp.entity_ref
+                )
             )
         if sp.since:
             filter.append({"range": {"saved_at": {"gte": sp.since}}})
@@ -451,7 +542,7 @@ class LogService:
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
-        filter = self._prepare_es_query(search_params)
+        filter = await self._prepare_es_query(search_params)
 
         if authorized_entities:
             filter.append(self._authorized_entity_filter(authorized_entities))
@@ -481,16 +572,14 @@ class LogService:
         else:
             next_cursor = None
 
-        logs = [
-            Log.model_validate({**hit["_source"], "id": hit["_id"]}) for hit in hits
-        ]
+        logs = [Log.model_validate(hit["_source"], context="es") for hit in hits]
 
         return logs, next_cursor
 
     async def get_newest_log(
         self, search_params: LogSearchParams | None = None
     ) -> Log | None:
-        filter = self._prepare_es_query(search_params) if search_params else []
+        filter = await self._prepare_es_query(search_params) if search_params else []
         resp = await self.es.search(
             index=self.index,
             query={"bool": {"filter": filter}},
@@ -500,7 +589,7 @@ class LogService:
         hits = resp["hits"]["hits"]
         if not hits:
             return None
-        return Log.model_validate({**hits[0]["_source"], "id": hits[0]["_id"]})
+        return Log.model_validate(hits[0]["_source"], context="es")
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(
@@ -617,26 +706,8 @@ class LogService:
         _get_paginated_agg_single_field, field="actor.type"
     )
 
-    get_log_actor_extra_fields = partialmethod(
-        _get_paginated_agg_single_field, nested="actor.extra", field="actor.extra.name"
-    )
-
     get_log_resource_types = partialmethod(
         _get_paginated_agg_single_field, field="resource.type"
-    )
-
-    get_log_resource_extra_fields = partialmethod(
-        _get_paginated_agg_single_field,
-        nested="resource.extra",
-        field="resource.extra.name",
-    )
-
-    get_log_source_fields = partialmethod(
-        _get_paginated_agg_single_field, nested="source", field="source.name"
-    )
-
-    get_log_detail_fields = partialmethod(
-        _get_paginated_agg_single_field, nested="details", field="details.name"
     )
 
     get_log_attachment_types = partialmethod(
@@ -673,7 +744,7 @@ class LogService:
     async def _get_aggregated_name_ref_pairs(
         self,
         *,
-        field_prefix: str,
+        path: str,
         nested: bool = False,
         search: str | None,
         limit: int,
@@ -683,35 +754,33 @@ class LogService:
             query = {
                 "bool": {
                     "filter": [
-                        {"prefix": {f"{field_prefix}.name": word}}
+                        {"prefix": {f"{path}.name": word}}
                         for word in self._split_words(search)
                     ]
                 }
             }
             if nested:
-                query = {"nested": {"path": field_prefix, "query": query}}
+                query = {"nested": {"path": path, "query": query}}
         else:
             query = None
 
         values, next_cursor = await self._get_paginated_agg_multi_fields(
-            nested=field_prefix if nested else None,
+            nested=path if nested else None,
             query=query,
-            fields=[f"{field_prefix}.name.keyword", f"{field_prefix}.ref"],
+            fields=[f"{path}.name.keyword", f"{path}.ref"],
             limit=limit,
             pagination_cursor=pagination_cursor,
         )
         return [tuple(value) for value in values], next_cursor
 
-    get_log_actor_names = partialmethod(
-        _get_aggregated_name_ref_pairs, field_prefix="actor"
-    )
+    get_log_actor_names = partialmethod(_get_aggregated_name_ref_pairs, path="actor")
 
     get_log_resource_names = partialmethod(
-        _get_aggregated_name_ref_pairs, field_prefix="resource"
+        _get_aggregated_name_ref_pairs, path="resource"
     )
 
     get_log_tag_names = partialmethod(
-        _get_aggregated_name_ref_pairs, field_prefix="tags", nested=True
+        _get_aggregated_name_ref_pairs, path="tags", nested=True
     )
 
     async def get_log_actor(self, actor_ref: str) -> Log.Actor:
@@ -733,6 +802,156 @@ class LogService:
                 if tag.ref == tag_ref:
                     return tag
         raise NotFoundError(f"Tag {tag_ref!r} not found")
+
+    async def _get_custom_fields(
+        self,
+        *,
+        path: str,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[tuple[str, CustomFieldType]], str | None]:
+        after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
+
+        aggregations = {
+            "group_by": {
+                "nested": {"path": path},
+                "aggs": {
+                    "by_name": {
+                        "composite": {
+                            "size": limit,
+                            "sources": [
+                                {
+                                    "name": {
+                                        "terms": {
+                                            "field": f"{path}.name",
+                                            "order": "asc",
+                                        }
+                                    }
+                                }
+                            ],
+                            **({"after": after} if after else {}),
+                        },
+                        "aggs": {
+                            "latest_type": {
+                                "top_hits": {
+                                    "size": 1,
+                                    "sort": [{"saved_at": {"order": "desc"}}],
+                                    "_source": {
+                                        "includes": [
+                                            f"{path}.type",
+                                        ]
+                                    },
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+        resp = await self.es.search(
+            index=self.index,
+            aggregations=aggregations,
+            size=0,
+        )
+
+        group_by_result = resp["aggregations"]["group_by"]["by_name"]
+
+        results = []
+        for bucket in group_by_result["buckets"]:
+            custom_field_name = bucket["key"]["name"]
+            hits = bucket["latest_type"]["hits"]["hits"]
+
+            if hits:
+                source = hits[0]["_source"]
+                custom_field_type = source.get("type", CustomFieldType.STRING)
+                results.append((custom_field_name, custom_field_type))
+
+        if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
+            next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
+        else:
+            next_cursor = None
+
+        return results, next_cursor
+
+    get_log_details_fields = partialmethod(_get_custom_fields, path="details")
+
+    get_log_source_fields = partialmethod(_get_custom_fields, path="source")
+
+    get_log_actor_extra_fields = partialmethod(_get_custom_fields, path="actor.extra")
+
+    get_log_resource_extra_fields = partialmethod(
+        _get_custom_fields, path="resource.extra"
+    )
+
+    async def _get_custom_field_enum_values(
+        self,
+        *,
+        path: str,
+        field_name: str,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str | None]:
+        after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
+
+        aggregations = {
+            "group_by": {
+                "nested": {"path": path},
+                "aggs": {
+                    "by_value_enum": {
+                        "filter": {"term": {f"{path}.name": field_name}},
+                        "aggs": {
+                            "distinct_values": {
+                                "composite": {
+                                    "size": limit,
+                                    "sources": [
+                                        {
+                                            "value_enum": {
+                                                "terms": {
+                                                    "field": f"{path}.value_enum",
+                                                    "order": "asc",
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    **({"after": after} if after else {}),
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+        resp = await self.es.search(
+            index=self.index,
+            aggregations=aggregations,
+            size=0,
+        )
+
+        group_by_result = resp["aggregations"]["group_by"]["by_value_enum"]['distinct_values']  # fmt: skip
+
+        if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
+            next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
+        else:
+            next_cursor = None
+
+        enum_values = [
+            bucket["key"]["value_enum"] for bucket in group_by_result["buckets"]
+        ]
+
+        return enum_values, next_cursor
+
+    get_details_enum_values = partialmethod(
+        _get_custom_field_enum_values, path="details"
+    )
+    get_source_enum_values = partialmethod(_get_custom_field_enum_values, path="source")
+    get_resource_extra_enum_values = partialmethod(
+        _get_custom_field_enum_values, path="resource.extra"
+    )
+    get_actor_extra_enum_values = partialmethod(
+        _get_custom_field_enum_values, path="actor.extra"
+    )
 
     async def _purge_orphan_log_entity_if_needed(self, entity: LogEntity):
         """
@@ -1002,8 +1221,14 @@ _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
 _TYPE_CUSTOM_FIELDS = {
     "type": "nested",
     "properties": {
+        "type": {"type": "keyword"},
         "name": {"type": "keyword"},
         "value": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+        "value_enum": {"type": "keyword"},
+        "value_boolean": {"type": "boolean"},
+        "value_integer": {"type": "long"},
+        "value_float": {"type": "double"},
+        "value_datetime": {"type": "date"},
     },
 }
 

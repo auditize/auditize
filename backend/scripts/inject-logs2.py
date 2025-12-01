@@ -12,11 +12,10 @@ from datetime import datetime, timezone
 from typing import Iterator
 
 import httpx
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.config import init_config
 from auditize.database import init_dbm
-from auditize.database.dbm import get_dbm, open_db_session
+from auditize.database.dbm import open_db_session
 from auditize.log.models import Log, LogCreate
 from auditize.log.service import LogService
 
@@ -565,6 +564,7 @@ class LogProvider:
                 {
                     "name": "status",
                     "value": status,
+                    "type": "enum",
                 }
             ],
             "entity_path": job_application_log["entity_path"],
@@ -674,9 +674,7 @@ class ApiInjector:
                 f"{self.base_url}/api/repos/{self.repo_id}/logs/{log_id}/attachments",
                 headers={"Authorization": f"Bearer " + self.api_key},
                 files={"file": (attachment["name"], attachment["data"])},
-                data={
-                    "type": attachment["type"],
-                },
+                data={"type": attachment["type"]},
             )
             if resp.is_error:
                 sys.exit(
