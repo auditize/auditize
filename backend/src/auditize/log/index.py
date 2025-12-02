@@ -205,13 +205,46 @@ async def _copy_logs(session: AsyncSession, repo: Repo, *, target_index: str):
         sys.stdout.flush()
         await update_repo_reindex_progress(
             session,
-            repo.id,
+            repo,
             reindex_cursor=next_cursor,
             reindexed_logs_count=copied_logs if next_cursor else 0,
         )
         if not next_cursor:
             break
         pagination_cursor = next_cursor
+
+
+async def _prepare_reindex(
+    repo: Repo,
+    write_alias: str,
+    current_write_index: str,
+    target_write_index: str,
+):
+    """
+    Creates a new index and switches the write alias to point to it.
+    """
+
+    elastic_client = get_elastic_client()
+
+    await _create_index(elastic_client, target_write_index)
+    await elastic_client.indices.update_aliases(
+        actions=[
+            {
+                "remove": {
+                    "alias": write_alias,
+                    "index": current_write_index,
+                }
+            },
+            {
+                "add": {
+                    "alias": write_alias,
+                    "index": target_write_index,
+                    "is_write_index": True,
+                },
+            },
+        ]
+    )
+    print(f"Created new index {target_write_index} for repository {repo.id}")
 
 
 async def _finalize_reindex(repo: Repo):
@@ -252,6 +285,8 @@ async def _finalize_reindex(repo: Repo):
     # Delete the former index
     ###
     await elastic_client.indices.delete(index=current_read_index)
+
+    print(f"Reindex operation for repository {repo.id} completed")
 
 
 async def reindex_index(
@@ -297,39 +332,17 @@ async def reindex_index(
     if is_reindex_in_progress:
         print(f"Resuming reindex operation for repository {repo.id}")
     else:
-        ###
-        # Create the new index
-        ###
-        await _create_index(elastic_client, target_write_index)
-
-        ###
-        # Point the write alias to the newly created index
-        ###
-        await elastic_client.indices.update_aliases(
-            actions=[
-                {
-                    "remove": {
-                        "alias": write_alias,
-                        "index": current_write_index,
-                    }
-                },
-                {
-                    "add": {
-                        "alias": write_alias,
-                        "index": target_write_index,
-                        "is_write_index": True,
-                    },
-                },
-            ]
-        )
-        print(f"Created new index {target_write_index} for repository {repo.id}")
-        print(
-            f"Reindexing data from index {current_write_index} to {target_write_index}"
+        await _prepare_reindex(
+            repo,
+            write_alias,
+            current_write_index,
+            target_write_index,
         )
 
     ###
     # Reindex the data from the former index to the newly created index
     ###
+    print(f"Reindexing data from index {current_read_index} to {target_write_index}")
     try:
         await _copy_logs(session, repo, target_index=target_write_index)
     except (KeyboardInterrupt, CancelledError):

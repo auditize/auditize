@@ -91,16 +91,14 @@ async def update_repo(session: AsyncSession, repo_id: UUID, update: RepoUpdate) 
 
 async def update_repo_reindex_progress(
     session: AsyncSession,
-    repo_id: UUID,
+    repo: Repo,
     *,
     reindex_cursor: str | None,
     reindexed_logs_count: int,
-) -> Repo:
-    repo = await get_repo(session, repo_id)
+) -> None:
     repo.reindex_cursor = reindex_cursor
     repo.reindexed_logs_count = reindexed_logs_count
     await save_sql_model(session, repo)
-    return repo
 
 
 async def _get_repo(session: AsyncSession, repo_id: UUID) -> Repo:
