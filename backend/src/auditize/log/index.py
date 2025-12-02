@@ -1,5 +1,6 @@
 import re
 import sys
+from asyncio import CancelledError
 from uuid import UUID
 
 from elasticsearch import AsyncElasticsearch, helpers
@@ -178,11 +179,12 @@ async def _get_index_mapping_version(index: str) -> int:
 
 async def _copy_logs(session: AsyncSession, repo: Repo, *, target_index: str):
     from auditize.log.service import LogService
+    from auditize.repo.service import update_repo_reindex_progress
 
     log_service = await LogService.for_maintenance(session, repo)
     total_logs = await log_service.get_log_count()
-    copied_logs = 0
-    pagination_cursor = None
+    copied_logs = repo.reindexed_logs_count
+    pagination_cursor = repo.reindex_cursor
     while True:
         logs, next_cursor = await log_service.get_logs(
             limit=100, pagination_cursor=pagination_cursor
@@ -201,6 +203,12 @@ async def _copy_logs(session: AsyncSession, repo: Repo, *, target_index: str):
         copied_logs += len(logs)
         print(f"Copied {copied_logs} logs out of {total_logs}\r", end="")
         sys.stdout.flush()
+        await update_repo_reindex_progress(
+            session,
+            repo.id,
+            reindex_cursor=next_cursor,
+            reindexed_logs_count=copied_logs if next_cursor else 0,
+        )
         if not next_cursor:
             break
         pagination_cursor = next_cursor
@@ -253,20 +261,18 @@ async def reindex_index(
     Reindexes the Elasticsearch log index to a new version by:
     - creating a new index with the desired mapping,
     - updating the write alias to point to it,
-    - copying data from the old index using Elasticsearch's reindex API,
+    - copying data from the old index to the new index,
+    - point the read alias to the new index,
+    - delete the old index.
 
     Please note that:
-    - the read alias is not updated, so the old index is still available for reading;
-      it means that logs written during the reindex operation are not yet visible,
-    - the process must be completed by calling `complete_reindex()`.
-
-    Returns the task ID of the reindex operation or None if the index is
-    already at the target version.
+    - the read alias is not updated, so the old index is still available for reading.
+      It means that logs written during the reindex operation are not yet visible.
     """
     from auditize.repo.service import get_repo
 
     ###
-    # Check if the index is already at the target version
+    # Check if the index is already at the target version or if the reindex is already in progress.
     ###
     if target_version is None:
         target_version = _MAPPING_VERSION
@@ -275,46 +281,63 @@ async def reindex_index(
 
     repo = await get_repo(session, repo)
 
+    read_alias = get_read_alias(repo)
     write_alias = get_write_alias(repo)
+    current_read_index = await _get_alias_index(elastic_client, read_alias)
     current_write_index = await _get_alias_index(elastic_client, write_alias)
+    current_write_version = await _get_index_mapping_version(current_write_index)
+    is_reindex_in_progress = current_write_index != current_read_index
 
-    current_version = await _get_index_mapping_version(current_write_index)
-
-    if current_version >= target_version:
+    if current_write_version >= target_version and not is_reindex_in_progress:
         print(f"Repository {repo.id} index is already at version {target_version}")
-        return None
+        return
 
-    ###
-    # Create the new index
-    ###
     target_write_index = _get_index_name(repo, target_version)
-    await _create_index(elastic_client, target_write_index)
 
-    ###
-    # Point the write alias to the newly created index
-    ###
-    await elastic_client.indices.update_aliases(
-        actions=[
-            {
-                "remove": {
-                    "alias": write_alias,
-                    "index": current_write_index,
-                }
-            },
-            {
-                "add": {
-                    "alias": write_alias,
-                    "index": target_write_index,
-                    "is_write_index": True,
+    if is_reindex_in_progress:
+        print(f"Resuming reindex operation for repository {repo.id}")
+    else:
+        ###
+        # Create the new index
+        ###
+        await _create_index(elastic_client, target_write_index)
+
+        ###
+        # Point the write alias to the newly created index
+        ###
+        await elastic_client.indices.update_aliases(
+            actions=[
+                {
+                    "remove": {
+                        "alias": write_alias,
+                        "index": current_write_index,
+                    }
                 },
-            },
-        ]
-    )
+                {
+                    "add": {
+                        "alias": write_alias,
+                        "index": target_write_index,
+                        "is_write_index": True,
+                    },
+                },
+            ]
+        )
+        print(f"Created new index {target_write_index} for repository {repo.id}")
+        print(
+            f"Reindexing data from index {current_write_index} to {target_write_index}"
+        )
 
     ###
     # Reindex the data from the former index to the newly created index
     ###
-    await _copy_logs(session, repo, target_index=target_write_index)
+    try:
+        await _copy_logs(session, repo, target_index=target_write_index)
+    except (KeyboardInterrupt, CancelledError):
+        print(
+            "\nReindex operation has been interrupted by user, "
+            "it can be resumed using the same command."
+        )
+        return
 
     ###
     # Finalize the reindex operation

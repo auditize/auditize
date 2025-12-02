@@ -288,3 +288,10 @@ async def test_reindex_from_v1(superadmin_client: HttpTestHelper):
             {"ref": "subentity:1", "name": "Sub-Entity 1"},
         ],
     }
+
+
+async def test_reindex_already_up_to_date(repo: PreparedRepo, capsys):
+    async with open_db_session() as session:
+        await reindex_index(session, repo.id)
+        out, _ = capsys.readouterr()
+        assert "already at version" in out
