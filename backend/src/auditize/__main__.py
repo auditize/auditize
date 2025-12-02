@@ -23,6 +23,7 @@ from auditize.log.index import reindex_index
 from auditize.log.service import LogService
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.sql_models import Permissions
+from auditize.repo.service import get_all_repos, get_repo
 from auditize.scheduler import build_scheduler
 from auditize.user.models import USER_PASSWORD_MIN_LENGTH
 from auditize.user.service import (
@@ -116,10 +117,24 @@ async def empty_repo(repo: UUID):
         await log_service.empty_log_db()
 
 
-async def reindex_repo(repo: UUID):
+async def reindex_repo(repo: UUID | None):
     _lazy_init()
     async with open_db_session() as session:
-        await reindex_index(session, repo)
+        repos = (
+            await get_all_repos(session)
+            if repo is None
+            else [await get_repo(session, repo)]
+        )
+        try:
+            for repo in repos:
+                await reindex_index(session, repo)
+                print()
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            print(
+                "\nReindex operation has been interrupted by user, "
+                "it can be resumed using the same command."
+            )
+            return
 
 
 async def schedule():
@@ -218,11 +233,17 @@ async def async_main(args=None):
     empty_repo_parser.add_argument("repo", type=UUID, help="Repository ID")
     empty_repo_parser.set_defaults(func=lambda cmd_args: empty_repo(cmd_args.repo))
 
-    # CMD reindex-repo
+    # CMD reindex
     reindex_repo_parser = sub_parsers.add_parser(
-        "reindex-repo", help="Reindex a log repository Elasticsearch index"
+        "reindex",
+        help="Reindex Elasticsearch index to the latest version",
     )
-    reindex_repo_parser.add_argument("repo", type=UUID, help="Repository ID")
+    reindex_repo_parser.add_argument(
+        "repo",
+        type=UUID,
+        nargs="?",
+        help="Optional repository ID to limit the reindex to",
+    )
     reindex_repo_parser.set_defaults(func=lambda cmd_args: reindex_repo(cmd_args.repo))
 
     # CMD schedule

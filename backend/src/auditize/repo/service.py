@@ -266,6 +266,10 @@ async def ensure_repos_in_permissions_exist(
             )
 
 
+async def get_all_repos(session: AsyncSession) -> list[Repo]:
+    return (await session.execute(select(Repo))).scalars().all()
+
+
 async def get_retention_period_enabled_repos(session: AsyncSession) -> list[Repo]:
     return (
         (await session.execute(select(Repo).where(Repo.retention_period.isnot(None))))

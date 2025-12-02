@@ -1,13 +1,11 @@
 import re
 import sys
-from asyncio import CancelledError
 from uuid import UUID
 
 from elasticsearch import AsyncElasticsearch, helpers
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database import get_elastic_client
-from auditize.exceptions import ConstraintViolation
 from auditize.repo.sql_models import Repo
 
 _MAPPING_VERSION = 2
@@ -160,11 +158,10 @@ async def delete_index(repo: Repo):
     elastic_client = get_elastic_client()
     read_index = await _get_alias_index(elastic_client, get_read_alias(repo))
     write_index = await _get_alias_index(elastic_client, get_write_alias(repo))
-    if read_index != write_index:
-        raise ConstraintViolation(
-            "Cannot delete index while read and write aliases are not the same"
-        )
     await elastic_client.indices.delete(index=write_index)
+    if read_index != write_index:
+        # we must be in an ongoing or paused reindex operation
+        await elastic_client.indices.delete(index=read_index)
 
 
 async def _get_alias_index(elastic_client: AsyncElasticsearch, alias: str) -> str:
@@ -216,9 +213,9 @@ async def _copy_logs(session: AsyncSession, repo: Repo, *, target_index: str):
 
 async def _prepare_reindex(
     repo: Repo,
-    write_alias: str,
     current_write_index: str,
     target_write_index: str,
+    write_alias: str,
 ):
     """
     Creates a new index and switches the write alias to point to it.
@@ -334,23 +331,16 @@ async def reindex_index(
     else:
         await _prepare_reindex(
             repo,
-            write_alias,
             current_write_index,
             target_write_index,
+            write_alias,
         )
 
     ###
     # Reindex the data from the former index to the newly created index
     ###
     print(f"Reindexing data from index {current_read_index} to {target_write_index}")
-    try:
-        await _copy_logs(session, repo, target_index=target_write_index)
-    except (KeyboardInterrupt, CancelledError):
-        print(
-            "\nReindex operation has been interrupted by user, "
-            "it can be resumed using the same command."
-        )
-        return
+    await _copy_logs(session, repo, target_index=target_write_index)
 
     ###
     # Finalize the reindex operation
