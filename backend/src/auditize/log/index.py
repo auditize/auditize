@@ -286,8 +286,36 @@ async def _finalize_reindex(repo: Repo):
     print(f"Reindex operation for repository {repo.id} completed")
 
 
+async def is_index_up_to_date(
+    repo: Repo, *, target_version: int = _MAPPING_VERSION
+) -> bool:
+    elastic_client = get_elastic_client()
+
+    read_alias = get_read_alias(repo)
+    write_alias = get_write_alias(repo)
+    current_read_index = await _get_alias_index(elastic_client, read_alias)
+    current_write_index = await _get_alias_index(elastic_client, write_alias)
+    current_write_version = await _get_index_mapping_version(current_write_index)
+
+    is_reindex_in_progress = current_write_index != current_read_index
+    return current_write_version >= target_version and not is_reindex_in_progress
+
+
+async def get_reindexable_repos(session: AsyncSession) -> list[Repo]:
+    from auditize.repo.service import get_all_repos
+
+    return [
+        repo
+        for repo in await get_all_repos(session)
+        if not await is_index_up_to_date(repo)
+    ]
+
+
 async def reindex_index(
-    session: AsyncSession, repo: Repo | str | UUID, *, target_version: int | None = None
+    session: AsyncSession,
+    repo: Repo | str | UUID,
+    *,
+    target_version: int = _MAPPING_VERSION,
 ) -> str | None:
     """
     Reindexes the Elasticsearch log index to a new version by:
@@ -306,9 +334,6 @@ async def reindex_index(
     ###
     # Check if the index is already at the target version or if the reindex is already in progress.
     ###
-    if target_version is None:
-        target_version = _MAPPING_VERSION
-
     elastic_client = get_elastic_client()
 
     repo = await get_repo(session, repo)
@@ -317,10 +342,9 @@ async def reindex_index(
     write_alias = get_write_alias(repo)
     current_read_index = await _get_alias_index(elastic_client, read_alias)
     current_write_index = await _get_alias_index(elastic_client, write_alias)
-    current_write_version = await _get_index_mapping_version(current_write_index)
     is_reindex_in_progress = current_write_index != current_read_index
 
-    if current_write_version >= target_version and not is_reindex_in_progress:
+    if await is_index_up_to_date(repo, target_version=target_version):
         print(f"Repository {repo.id} index is already at version {target_version}")
         return
 
@@ -330,10 +354,7 @@ async def reindex_index(
         print(f"Resuming reindex operation for repository {repo.id}")
     else:
         await _prepare_reindex(
-            repo,
-            current_write_index,
-            target_write_index,
-            write_alias,
+            repo, current_write_index, target_write_index, write_alias
         )
 
     ###

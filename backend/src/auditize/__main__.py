@@ -19,7 +19,7 @@ from auditize.exceptions import (
     ConfigError,
     ConstraintViolation,
 )
-from auditize.log.index import reindex_index
+from auditize.log.index import get_reindexable_repos, is_index_up_to_date, reindex_index
 from auditize.log.service import LogService
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.sql_models import Permissions
@@ -64,6 +64,11 @@ def _get_password() -> str:
         return _get_password()
 
     return password
+
+
+def _ask_confirm(message: str) -> bool:
+    confirm = input(f"{message} [y/N]: ")
+    return confirm.lower() == "y"
 
 
 async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
@@ -120,11 +125,27 @@ async def empty_repo(repo: UUID):
 async def reindex_repo(repo: UUID | None):
     _lazy_init()
     async with open_db_session() as session:
-        repos = (
-            await get_all_repos(session)
-            if repo is None
-            else [await get_repo(session, repo)]
-        )
+        if repo:
+            repo = await get_repo(session, repo)
+            if await is_index_up_to_date(repo):
+                print(f"Repository {repo.id} index is already up to date")
+                return
+            if not _ask_confirm(
+                f"Are you sure you want to reindex repository {repo.id}?"
+            ):
+                return
+            repos = [repo]
+        else:
+            repos = await get_reindexable_repos(session)
+            if not repos:
+                print("All repositories are already up to date")
+                return
+            repos_as_str = "\n".join([f"- {repo.id} ({repo.name})" for repo in repos])
+            if not _ask_confirm(
+                f"The following repositories will be reindexed:\n{repos_as_str}"
+                "\nAre you sure you want to continue?"
+            ):
+                return
         try:
             for repo in repos:
                 await reindex_index(session, repo)
