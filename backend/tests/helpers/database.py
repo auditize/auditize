@@ -8,7 +8,7 @@ from auditize.config import get_config
 from auditize.database import DatabaseManager, init_dbm
 from auditize.database.dbm import migrate_database
 from auditize.database.sql.models import SqlModel
-from auditize.log.service import create_index
+from auditize.log.index import create_index
 
 
 def setup_test_dbm() -> DatabaseManager:
@@ -69,7 +69,7 @@ class TestLogDatabasePool:
                 return db_name
         else:
             db_name = f"{self.dbm.name}_logs_{len(self._cache)}"
-            await create_index(self.dbm.elastic_client, db_name)
+            await create_index(db_name)
             self._cache[db_name] = True
             return db_name
 
@@ -77,6 +77,6 @@ class TestLogDatabasePool:
         for db_name, is_used in self._cache.items():
             if is_used:
                 await self.dbm.elastic_client.delete_by_query(
-                    index=db_name, query={"match_all": {}}, refresh=True
+                    index=f"{db_name}_write", query={"match_all": {}}, refresh=True
                 )
                 self._cache[db_name] = False

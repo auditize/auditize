@@ -3,7 +3,7 @@ from elasticsearch import AsyncElasticsearch
 from auditize.config import get_config
 
 
-def get_elastic_client():
+def init_elastic_client():
     config = get_config()
 
     return AsyncElasticsearch(

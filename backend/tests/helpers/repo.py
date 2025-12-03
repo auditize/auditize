@@ -20,6 +20,8 @@ class PreparedRepo:
         self.id = id
         self.data = data
         self.log_db_name = log_db_name
+        self.read_alias = f"{log_db_name}_read"
+        self.write_alias = f"{log_db_name}_write"
 
     @property
     def es(self) -> AsyncElasticsearch:
@@ -38,7 +40,7 @@ class PreparedRepo:
             model_data["log_i18n_profile_id"] = UUID(model_data["log_i18n_profile_id"])
         async with open_db_session() as session:
             repo = await create_repo(
-                session, Repo(**model_data), log_db_name=log_db_name
+                session, Repo(**model_data), existing_log_db_name=log_db_name
             )
         return cls(str(repo.id), data, log_db_name)
 
@@ -77,7 +79,7 @@ class PreparedRepo:
         log_id = resp.json()["id"]
         if saved_at:
             await self.es.update(
-                index=self.log_db_name,
+                index=self.write_alias,
                 id=log_id,
                 doc={"saved_at": saved_at},
                 refresh=True,
@@ -112,12 +114,12 @@ class PreparedRepo:
         await client.assert_patch_ok(f"/repos/{self.id}", json={"status": status})
 
     async def get_log(self, log_id: str | UUID) -> dict | None:
-        resp = await self.es.get(index=self.log_db_name, id=log_id)
+        resp = await self.es.get(index=self.read_alias, id=log_id)
         return resp["_source"]
 
     async def get_log_count(self) -> int:
         resp = await self.es.count(
-            index=self.log_db_name,
+            index=self.read_alias,
             query={"match_all": {}},
         )
         return resp["count"]

@@ -134,7 +134,9 @@ class PreparedLog:
         expected = self.expected_db_document(extra)
 
         dbm = get_dbm()
-        resp = await dbm.elastic_client.get(index=self.repo.log_db_name, id=self.id)
+        resp = await dbm.elastic_client.get(
+            index=f"{self.repo.log_db_name}_read", id=self.id
+        )
         db_log = resp["_source"]
         ic(db_log)
         assert db_log == expected

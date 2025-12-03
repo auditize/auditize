@@ -31,3 +31,5 @@ class Repo(SqlModel, HasId, HasDates):
     log_i18n_profile: Mapped[LogI18nProfile | None] = relationship(
         "LogI18nProfile", lazy="selectin"
     )
+    reindex_cursor: Mapped[str | None] = mapped_column(default=None)
+    reindexed_logs_count: Mapped[int] = mapped_column(default=0)

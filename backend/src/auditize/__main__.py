@@ -19,9 +19,11 @@ from auditize.exceptions import (
     ConfigError,
     ConstraintViolation,
 )
+from auditize.log.index import get_reindexable_repos, is_index_up_to_date, reindex_index
 from auditize.log.service import LogService
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.sql_models import Permissions
+from auditize.repo.service import get_all_repos, get_repo
 from auditize.scheduler import build_scheduler
 from auditize.user.models import USER_PASSWORD_MIN_LENGTH
 from auditize.user.service import (
@@ -62,6 +64,11 @@ def _get_password() -> str:
         return _get_password()
 
     return password
+
+
+def _ask_confirm(message: str) -> bool:
+    confirm = input(f"{message} [y/N]: ")
+    return confirm.lower() == "y"
 
 
 async def bootstrap_superadmin(email: str, first_name: str, last_name: str):
@@ -113,6 +120,42 @@ async def empty_repo(repo: UUID):
     async with open_db_session() as session:
         log_service = await LogService.for_maintenance(session, repo)
         await log_service.empty_log_db()
+
+
+async def reindex_repo(repo: UUID | None):
+    _lazy_init()
+    async with open_db_session() as session:
+        if repo:
+            repo = await get_repo(session, repo)
+            if await is_index_up_to_date(repo):
+                print(f"Repository {repo.id} index is already up to date")
+                return
+            if not _ask_confirm(
+                f"Are you sure you want to reindex repository {repo.id}?"
+            ):
+                return
+            repos = [repo]
+        else:
+            repos = await get_reindexable_repos(session)
+            if not repos:
+                print("All repositories are already up to date")
+                return
+            repos_as_str = "\n".join([f"- {repo.id} ({repo.name})" for repo in repos])
+            if not _ask_confirm(
+                f"The following repositories will be reindexed:\n{repos_as_str}"
+                "\nAre you sure you want to continue?"
+            ):
+                return
+        try:
+            for repo in repos:
+                await reindex_index(session, repo)
+                print()
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            print(
+                "\nReindex operation has been interrupted by user, "
+                "it can be resumed using the same command."
+            )
+            return
 
 
 async def schedule():
@@ -210,6 +253,19 @@ async def async_main(args=None):
     )
     empty_repo_parser.add_argument("repo", type=UUID, help="Repository ID")
     empty_repo_parser.set_defaults(func=lambda cmd_args: empty_repo(cmd_args.repo))
+
+    # CMD reindex
+    reindex_repo_parser = sub_parsers.add_parser(
+        "reindex",
+        help="Reindex Elasticsearch index to the latest version",
+    )
+    reindex_repo_parser.add_argument(
+        "repo",
+        type=UUID,
+        nargs="?",
+        help="Optional repository ID to limit the reindex to",
+    )
+    reindex_repo_parser.set_defaults(func=lambda cmd_args: reindex_repo(cmd_args.repo))
 
     # CMD schedule
     schedule_parser = sub_parsers.add_parser(

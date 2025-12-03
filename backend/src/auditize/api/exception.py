@@ -9,6 +9,7 @@ from auditize.exceptions import (
     AuditizeException,
     AuthenticationFailure,
     ConstraintViolation,
+    InternalError,
     NotFoundError,
     PayloadTooLarge,
     PermissionDenied,
@@ -138,6 +139,11 @@ _EXCEPTION_RESPONSES = {
         "Payload too large",
         ApiErrorResponse,
     ),
+    InternalError: (
+        status.HTTP_500_INTERNAL_SERVER_ERROR,
+        "Internal server error",
+        ApiErrorResponse,
+    ),
 }
 _DEFAULT_EXCEPTION_RESPONSE = (
     status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -154,6 +160,7 @@ _STATUS_CODE_TO_RESPONSE = {
     status.HTTP_404_NOT_FOUND: (ApiErrorResponse, "Not found"),
     status.HTTP_409_CONFLICT: (ApiErrorResponse, "Constraint violation"),
     status.HTTP_413_CONTENT_TOO_LARGE: (ApiErrorResponse, "Payload too large"),
+    status.HTTP_500_INTERNAL_SERVER_ERROR: (ApiErrorResponse, "Internal server error"),
 }
 
 
