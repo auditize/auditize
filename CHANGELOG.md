@@ -1,3 +1,9 @@
+# 0.9.0 (2025-12-03)
+
+- Add types (string, enum, datetime, json, boolean, integer, float) to custom fields
+- Add CLI command `auditize reindex` to reindex the Elasticsearch index to the
+  latest mapping version / log format
+
 # 0.8.0 (2025-11-18)
 
 - Improve search from actor name, resource name and tag name
