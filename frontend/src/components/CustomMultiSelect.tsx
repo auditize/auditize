@@ -25,14 +25,21 @@ export interface CustomMultiSelectItemGroup {
   items: CustomMultiSelectItem[];
 }
 
+// See https://stackoverflow.com/a/37511463
+function unaccentize(value: string) {
+  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+}
+
+function normalize(value: string) {
+  // Remove leading and trailing whitespace, unaccent and convert to lowercase.
+  return unaccentize(value.trim()).toLowerCase();
+}
+
 function wordMatches(value: string, search: string) {
+  value = normalize(value);
   return search
     .split(" ")
-    .every((word) =>
-      word.trim()
-        ? value.toLowerCase().includes(word.trim().toLowerCase())
-        : true,
-    );
+    .every((word) => (word ? value.includes(normalize(word)) : true));
 }
 
 function buildComboboxOptions(
@@ -47,7 +54,7 @@ function buildComboboxOptions(
   ) =>
     !item.disabled
       ? search
-        ? wordMatches(group.group, search) || wordMatches(item.label, search)
+        ? wordMatches(group.group + item.label, search)
         : true
       : false;
 
