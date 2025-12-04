@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
-import { useLogTranslator } from "@/features/log/components/LogTranslation";
 import { ResourceExtraFieldValue } from "@/features/log/components/CustomFieldValues";
+import { useLogTranslator } from "@/features/log/components/LogTranslation";
 
 import {
   getCustomField,
@@ -38,7 +38,7 @@ export function ResourceField({
         onClick={() =>
           onTableSearchParamChange("resourceRef", log.resource!.ref)
         }
-        fontWeight="bold"
+        fontWeight="600"
       >
         {log.resource.name}
       </InlineSearchParamLink>

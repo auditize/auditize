@@ -25,6 +25,7 @@ export function ActionField({
       <InlineSearchParamLink
         fieldLabel={t("log.inlineFilter.field.actionType")}
         onClick={() => onTableSearchParamChange("actionType", log.action.type)}
+        fontWeight="600"
       >
         {logTranslator("action_type", log.action.type)}
       </InlineSearchParamLink>

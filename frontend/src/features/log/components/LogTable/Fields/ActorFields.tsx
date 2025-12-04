@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
-import { useLogTranslator } from "@/features/log/components/LogTranslation";
 import { ActorExtraFieldValue } from "@/features/log/components/CustomFieldValues";
+import { useLogTranslator } from "@/features/log/components/LogTranslation";
 
 import {
   getCustomField,
@@ -24,6 +24,7 @@ export function ActorField({
       <InlineSearchParamLink
         fieldLabel={t("log.inlineFilter.field.actor")}
         onClick={() => onTableSearchParamChange("actorRef", log.actor!.ref)}
+        fontWeight="600"
       >
         {log.actor.name}
       </InlineSearchParamLink>
