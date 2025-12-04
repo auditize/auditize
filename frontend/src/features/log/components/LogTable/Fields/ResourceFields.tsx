@@ -32,7 +32,7 @@ export function ResourceField({
       >
         {logTranslator("resource_type", log.resource.type)}
       </InlineSearchParamLink>
-      {": "}
+      {" › "}
       <InlineSearchParamLink
         fieldLabel={t("log.inlineFilter.field.resource")}
         onClick={() =>
