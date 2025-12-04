@@ -124,13 +124,19 @@ function Tag({
   if (value.name && value.ref) {
     return (
       <Tooltip label={t("common.moreDetails")} withArrow>
-        <Badge onClick={onClick} style={{ cursor: "pointer" }}>
+        <Badge
+          onClick={onClick}
+          variant="default"
+          style={{ cursor: "pointer" }}
+        >
           {logTranslator("tag_type", value.type)}: {value.name}
         </Badge>
       </Tooltip>
     );
   } else {
-    return <Badge>{logTranslator("tag_type", value.type)}</Badge>;
+    return (
+      <Badge variant="default">{logTranslator("tag_type", value.type)}</Badge>
+    );
   }
 }
 

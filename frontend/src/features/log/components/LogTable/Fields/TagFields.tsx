@@ -30,7 +30,7 @@ export function TagsField({
             onClick={() => onTableSearchParamChange("tagRef", tag.ref!)}
             key={i}
           >
-            <Badge size="sm" variant="outline" style={{ cursor: "pointer" }}>
+            <Badge size="sm" variant="default" style={{ cursor: "pointer" }}>
               {logTranslator("tag_type", tag.type) + ": " + tag.name}
             </Badge>
           </InlineSearchParamLink>
@@ -40,7 +40,7 @@ export function TagsField({
             onClick={() => onTableSearchParamChange("tagType", tag.type)}
             key={i}
           >
-            <Badge size="sm" variant="outline" style={{ cursor: "pointer" }}>
+            <Badge size="sm" variant="default" style={{ cursor: "pointer" }}>
               {logTranslator("tag_type", tag.type)}
             </Badge>
           </InlineSearchParamLink>
