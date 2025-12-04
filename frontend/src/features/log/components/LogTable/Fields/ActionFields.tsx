@@ -37,7 +37,7 @@ export function ActionField({
         color="gray"
         fontSize="xs"
       >
-        {"(" + logTranslator("action_category", log.action.category) + ")"}
+        {logTranslator("action_category", log.action.category)}
       </InlineSearchParamLink>
     </>
   );
