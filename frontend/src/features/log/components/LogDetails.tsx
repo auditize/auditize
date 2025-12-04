@@ -145,7 +145,7 @@ function LogEntitySection({ log }: { log: Log }) {
         <IconHierarchy style={iconBesideText({ size: "18px", top: "0px" })} />
       }
       collapsedContent={
-        <Breadcrumbs separator=">" p="0px" pl="1.25rem" pt="0.5rem">
+        <Breadcrumbs separator="›" p="0px" pl="1.25rem" pt="0.5rem">
           {log.entityPath.map((entity) => (
             <Tooltip label={t("common.moreDetails")} withArrow>
               <Anchor size="sm" key={entity.ref} onClick={toggle}>

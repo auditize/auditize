@@ -27,5 +27,5 @@ export function EntityPathField({
         {entity.name}
       </InlineSearchParamLink>
     ))
-    .reduce((prev, curr) => [prev, " > ", curr]);
+    .reduce((prev, curr) => [prev, " › ", curr]);
 }
