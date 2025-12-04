@@ -1,4 +1,4 @@
-import { Anchor, Tooltip } from "@mantine/core";
+import { Anchor, AnchorProps, Tooltip } from "@mantine/core";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -10,26 +10,22 @@ export type TableSearchParamChangeHandler = (
 ) => void;
 
 export function InlineSearchParamLink({
-  fieldLabel,
+  label,
   onClick,
-  fontSize = "sm",
-  fontWeight,
-  color,
   children,
+  anchorProps,
 }: {
-  fieldLabel?: string;
+  label?: string;
   onClick: () => void;
-  fontSize?: string;
-  fontWeight?: string | number;
-  color?: string;
   children: React.ReactNode;
+  anchorProps?: AnchorProps;
 }) {
   const { t } = useTranslation();
 
   return (
     <Tooltip
-      label={t("log.inlineFilter.filterOn", { field: fieldLabel })}
-      disabled={!fieldLabel}
+      label={t("log.inlineFilter.filterOn", { field: label })}
+      disabled={!label}
       withArrow
       withinPortal={false}
     >
@@ -40,9 +36,8 @@ export function InlineSearchParamLink({
         }}
         underline="hover"
         component="span"
-        size={fontSize}
-        fw={fontWeight}
-        c={color}
+        size="sm"
+        {...anchorProps}
       >
         {children}
       </Anchor>

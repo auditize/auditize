@@ -22,9 +22,9 @@ export function ActorField({
   return (
     log.actor && (
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.actor")}
+        label={t("log.inlineFilter.field.actor")}
         onClick={() => onTableSearchParamChange("actorRef", log.actor!.ref)}
-        fontWeight="600"
+        anchorProps={{ fw: "600" }}
       >
         {log.actor.name}
       </InlineSearchParamLink>
@@ -47,7 +47,7 @@ export function ActorTypeField({
   return (
     log.actor && (
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.actorType")}
+        label={t("log.inlineFilter.field.actorType")}
         onClick={() => onTableSearchParamChange("actorType", log.actor!.type)}
       >
         {logTranslator("actor_type", log.actor.type)}
@@ -68,7 +68,7 @@ export function ActorNameField({
   return (
     log.actor && (
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.actorName")}
+        label={t("log.inlineFilter.field.actorName")}
         onClick={() => onTableSearchParamChange("actorName", log.actor!.name)}
       >
         {log.actor.name}
@@ -89,7 +89,7 @@ export function ActorRefField({
   return (
     log.actor && (
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.actorRef")}
+        label={t("log.inlineFilter.field.actorRef")}
         onClick={() => onTableSearchParamChange("actorRef", log.actor!.ref)}
       >
         {log.actor.ref}
@@ -118,7 +118,7 @@ export function ActorCustomField({
 
   return (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.actorCustomField", {
+      label={t("log.inlineFilter.field.actorCustomField", {
         field: logTranslator("actor_custom_field", field.name).toLowerCase(),
       })}
       onClick={() =>

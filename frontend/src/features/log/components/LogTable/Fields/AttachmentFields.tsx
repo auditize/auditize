@@ -22,7 +22,7 @@ export function AttachmentNamesField({
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
         <InlineSearchParamLink
-          fieldLabel={t("log.inlineFilter.field.attachmentName")}
+          label={t("log.inlineFilter.field.attachmentName")}
           onClick={() =>
             onTableSearchParamChange("attachmentName", attachment.name)
           }
@@ -51,7 +51,7 @@ export function AttachmentTypesField({
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
         <InlineSearchParamLink
-          fieldLabel={t("log.inlineFilter.field.attachmentType")}
+          label={t("log.inlineFilter.field.attachmentType")}
           onClick={() =>
             onTableSearchParamChange("attachmentType", attachment.type)
           }
@@ -77,7 +77,7 @@ export function AttachmentMimeTypesField({
     <Breadcrumbs separator=", ">
       {log.attachments.map((attachment, i) => (
         <InlineSearchParamLink
-          fieldLabel={t("log.inlineFilter.field.attachmentMimeType")}
+          label={t("log.inlineFilter.field.attachmentMimeType")}
           onClick={() =>
             onTableSearchParamChange("attachmentMimeType", attachment.mimeType)
           }

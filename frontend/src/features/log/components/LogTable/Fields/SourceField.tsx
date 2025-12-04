@@ -30,7 +30,7 @@ export function SourceField({
 
   return (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.sourceField", {
+      label={t("log.inlineFilter.field.sourceField", {
         field: logTranslator("source_field", field.name).toLowerCase(),
       })}
       onClick={() =>

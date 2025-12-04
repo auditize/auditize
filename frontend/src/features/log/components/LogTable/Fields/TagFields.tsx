@@ -26,7 +26,7 @@ export function TagsField({
       {log.tags.map((tag, i) =>
         tag.ref ? (
           <InlineSearchParamLink
-            fieldLabel={t("log.inlineFilter.field.tag")}
+            label={t("log.inlineFilter.field.tag")}
             onClick={() => onTableSearchParamChange("tagRef", tag.ref!)}
             key={i}
           >
@@ -36,7 +36,7 @@ export function TagsField({
           </InlineSearchParamLink>
         ) : (
           <InlineSearchParamLink
-            fieldLabel={t("log.inlineFilter.field.tag")}
+            label={t("log.inlineFilter.field.tag")}
             onClick={() => onTableSearchParamChange("tagType", tag.type)}
             key={i}
           >
@@ -66,7 +66,7 @@ export function TagTypesField({
     <Breadcrumbs separator=", ">
       {log.tags.map((tag, i) => (
         <InlineSearchParamLink
-          fieldLabel={t("log.inlineFilter.field.tagType")}
+          label={t("log.inlineFilter.field.tagType")}
           onClick={() => onTableSearchParamChange("tagType", tag.type)}
           key={i}
         >
@@ -92,7 +92,7 @@ export function TagNamesField({
         (tag, i) =>
           tag.name && (
             <InlineSearchParamLink
-              fieldLabel={t("log.inlineFilter.field.tagName")}
+              label={t("log.inlineFilter.field.tagName")}
               onClick={() => onTableSearchParamChange("tagName", tag.name!)}
               key={i}
             >
@@ -119,7 +119,7 @@ export function TagRefsField({
         (tag, i) =>
           tag.ref && (
             <InlineSearchParamLink
-              fieldLabel={t("log.inlineFilter.field.tagRef")}
+              label={t("log.inlineFilter.field.tagRef")}
               onClick={() => onTableSearchParamChange("tagRef", tag.ref!)}
               key={i}
             >

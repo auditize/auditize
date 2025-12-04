@@ -25,7 +25,7 @@ export function ResourceField({
   return log.resource ? (
     <>
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.resourceType")}
+        label={t("log.inlineFilter.field.resourceType")}
         onClick={() =>
           onTableSearchParamChange("resourceType", log.resource!.type)
         }
@@ -34,11 +34,11 @@ export function ResourceField({
       </InlineSearchParamLink>
       {" › "}
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.resource")}
+        label={t("log.inlineFilter.field.resource")}
         onClick={() =>
           onTableSearchParamChange("resourceRef", log.resource!.ref)
         }
-        fontWeight="600"
+        anchorProps={{ fw: "600" }}
       >
         {log.resource.name}
       </InlineSearchParamLink>
@@ -60,7 +60,7 @@ export function ResourceTypeField({
 
   return log.resource ? (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.resourceType")}
+      label={t("log.inlineFilter.field.resourceType")}
       onClick={() =>
         onTableSearchParamChange("resourceType", log.resource!.type)
       }
@@ -81,7 +81,7 @@ export function ResourceNameField({
 
   return log.resource ? (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.resourceName")}
+      label={t("log.inlineFilter.field.resourceName")}
       onClick={() =>
         onTableSearchParamChange("resourceName", log.resource!.name)
       }
@@ -102,7 +102,7 @@ export function ResourceRefField({
 
   return log.resource ? (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.resourceRef")}
+      label={t("log.inlineFilter.field.resourceRef")}
       onClick={() => onTableSearchParamChange("resourceRef", log.resource!.ref)}
     >
       {log.resource.ref}
@@ -130,7 +130,7 @@ export function ResourceCustomField({
 
   return (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.resourceCustomField", {
+      label={t("log.inlineFilter.field.resourceCustomField", {
         field: logTranslator("resource_custom_field", field.name).toLowerCase(),
       })}
       onClick={() =>

@@ -20,7 +20,7 @@ export function EntityPathField({
   return log.entityPath
     .map<React.ReactNode>((entity) => (
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.entity")}
+        label={t("log.inlineFilter.field.entity")}
         onClick={() => onTableSearchParamChange("entityRef", entity.ref)}
         key={entity.ref}
       >

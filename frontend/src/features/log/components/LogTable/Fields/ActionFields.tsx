@@ -23,20 +23,19 @@ export function ActionField({
   return (
     <>
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.actionType")}
+        label={t("log.inlineFilter.field.actionType")}
         onClick={() => onTableSearchParamChange("actionType", log.action.type)}
-        fontWeight="600"
+        anchorProps={{ fw: "600" }}
       >
         {logTranslator("action_type", log.action.type)}
       </InlineSearchParamLink>
       <br />
       <InlineSearchParamLink
-        fieldLabel={t("log.inlineFilter.field.actionCategory")}
+        label={t("log.inlineFilter.field.actionCategory")}
         onClick={() =>
           onTableSearchParamChange("actionCategory", log.action.category)
         }
-        color="gray"
-        fontSize="xs"
+        anchorProps={{ c: "gray", size: "xs" }}
       >
         {logTranslator("action_category", log.action.category)}
       </InlineSearchParamLink>
@@ -58,7 +57,7 @@ export function ActionTypeField({
 
   return (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.actionType")}
+      label={t("log.inlineFilter.field.actionType")}
       onClick={() => onTableSearchParamChange("actionType", log.action.type)}
     >
       {logTranslator("action_type", log.action.type)}
@@ -80,7 +79,7 @@ export function ActionCategoryField({
 
   return (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.actionCategory")}
+      label={t("log.inlineFilter.field.actionCategory")}
       onClick={() =>
         onTableSearchParamChange("actionCategory", log.action.category)
       }

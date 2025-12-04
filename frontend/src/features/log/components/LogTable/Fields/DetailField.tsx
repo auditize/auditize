@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
 import { Log } from "@/features/log/api";
-import { useLogTranslator } from "@/features/log/components/LogTranslation";
 import { DetailFieldValue } from "@/features/log/components/CustomFieldValues";
+import { useLogTranslator } from "@/features/log/components/LogTranslation";
 
 import {
   getCustomField,
@@ -30,7 +30,7 @@ export function DetailField({
 
   return (
     <InlineSearchParamLink
-      fieldLabel={t("log.inlineFilter.field.detailField", {
+      label={t("log.inlineFilter.field.detailField", {
         field: logTranslator("detail_field", field.name).toLowerCase(),
       })}
       onClick={() =>
