@@ -128,6 +128,9 @@ function logFieldToColumn(
       accessor: "savedAt",
       title: columnTitle(t("log.date"), IconCalendarClock),
       render: (log: Log) => <DateField log={log} />,
+      cellsStyle: () => ({
+        whiteSpace: "nowrap",
+      }),
     });
 
   if (field.startsWith("source.")) {
