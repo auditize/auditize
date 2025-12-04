@@ -1,4 +1,4 @@
-import { Button, Center, Group, Stack } from "@mantine/core";
+import { Button, Center, Stack } from "@mantine/core";
 import {
   IconCalendarClock,
   IconCornerDownRight,
@@ -97,32 +97,30 @@ function logFieldToColumn(
   repoId: string,
   onTableSearchParamChange: TableSearchParamChangeHandler,
   logTranslator: (type: string, key: string) => string,
-  columnSelector: React.ReactNode | undefined,
-) {
+  isLastColumn: boolean,
+): DataTableColumn<Log> | undefined {
   const { t } = i18n;
   const columnTitle = (name: React.ReactNode, icon?: any, iconStyle?: any) => (
-    <Group justify="space-between" wrap="nowrap">
-      <span>
-        {icon &&
-          React.createElement(icon, {
-            style: {
-              ...iconSize(16),
-              position: "relative",
-              top: "2px",
-              marginRight: "0.25rem",
-              ...(iconStyle || {}),
-            },
-          })}
-        {name}
-      </span>
-      {columnSelector}
-    </Group>
+    <span>
+      {icon &&
+        React.createElement(icon, {
+          style: {
+            ...iconSize(16),
+            position: "relative",
+            top: "2px",
+            marginRight: "0.25rem",
+            ...(iconStyle || {}),
+          },
+        })}
+      {name}
+    </span>
   );
   const column = (props: DataTableColumn<Log>) => ({
     ...props,
     titleStyle: {
       background: "var(--auditize-header-color)",
     },
+    customCellAttributes: isLastColumn ? () => ({ colSpan: 2 }) : undefined,
   });
 
   if (field === "savedAt")
@@ -456,6 +454,8 @@ function logFieldToColumn(
     });
 
   console.error(`Unknown field: ${field}`);
+
+  return undefined;
 }
 
 function buildDataTableColumns({
@@ -488,6 +488,15 @@ function buildDataTableColumns({
       />
     </span>
   );
+  const columnSelectorColumn: DataTableColumn<Log> = {
+    title: columnSelector,
+    accessor: "columnSelector",
+    textAlign: "right",
+    titleStyle: {
+      background: "var(--auditize-header-color)",
+    },
+    hiddenContent: true,
+  };
 
   return selectedColumns
     .toSorted(sortLogFields)
@@ -497,10 +506,11 @@ function buildDataTableColumns({
         repoId,
         onTableSearchParamChange,
         logTranslator,
-        i + 1 == selectedColumns.length ? columnSelector : undefined,
+        i + 1 == selectedColumns.length,
       ),
     )
-    .filter((data) => !!data);
+    .filter((column) => !!column)
+    .concat([columnSelectorColumn]);
 }
 
 function useLogSearchQuery(searchParams: LogSearchParams) {
