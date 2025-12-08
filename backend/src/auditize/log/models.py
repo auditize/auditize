@@ -22,7 +22,7 @@ from auditize.api.models.cursor_pagination import (
 )
 from auditize.api.models.dates import HasDatetimeSerialization
 from auditize.api.models.search import QuerySearchParam
-from auditize.api.validation import IDENTIFIER_PATTERN
+from auditize.api.validation import IDENTIFIER_PATTERN, validate_identifier
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.string import validate_empty_string_as_none
 
@@ -178,6 +178,8 @@ class _CustomFieldInputData(BaseModel):
                 case CustomFieldType.STRING | CustomFieldType.ENUM:
                     if not isinstance(self.value, str):
                         raise ValueError("Value must be a string")
+                    if self.type == CustomFieldType.ENUM:
+                        validate_identifier(self.value)
                 case CustomFieldType.DATETIME:
                     if not isinstance(self.value, str):
                         raise ValueError("Value must be a string in ISO 8601 format")

@@ -13,6 +13,14 @@ FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN = re.compile(
 )
 
 
+def validate_identifier(value: str) -> str:
+    if not IDENTIFIER_PATTERN.match(value):
+        raise ValidationError(
+            f"Invalid identifier: {value!r} (must match {IDENTIFIER_PATTERN_STRING})"
+        )
+    return value
+
+
 def validate_bool(value: str) -> bool:
     match value:
         case "true":

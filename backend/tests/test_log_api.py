@@ -125,7 +125,7 @@ async def test_create_log_all_fields(
         {"name": "datetime", "value": "2021-01-01T00:00:00.000Z", "type": "datetime"},
     ],
 )
-async def test_create_log_typed_fields(
+async def test_create_log_typed_custom_fields(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
     custom_field: dict,
@@ -165,9 +165,10 @@ async def test_create_log_typed_fields(
         ("integer", "123", "integer"),
         ("float", "123.45", "float"),
         ("datetime", "not a valid datetime", "datetime"),
+        ("enum", "not a valid enum", "enum"),
     ],
 )
-async def test_create_log_invalid_typed_fields(
+async def test_create_log_invalid_typed_custom_fields(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
     field_name: str,
@@ -2701,12 +2702,12 @@ class _ConsolidatedCustomFieldsTest:
             },
             {
                 "name": "field_4",
-                "value": "Value 2",
+                "value": "value_2",
                 "type": "enum",
             },
             {
                 "name": "field_5",
-                "value": "Value 3",
+                "value": "value_3",
                 "type": "enum",
             },
         ]
@@ -2769,7 +2770,7 @@ class _CustomFieldsEnumValuesTest:
         log_read_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        field_values = [f"Value {i + 1}" for i in range(5)]
+        field_values = [f"value_{i + 1}" for i in range(5)]
         for value in field_values:
             for _ in range(2):
                 # Create two logs for each value to ensure we get the distinct values
@@ -3266,14 +3267,14 @@ async def test_get_logs_as_csv_custom_fields_enum(
         PreparedLog.prepare_data(
             {
                 "source": [
-                    {"name": "source_field", "value": "source-value", "type": "enum"}
+                    {"name": "source_field", "value": "source_value", "type": "enum"}
                 ],
                 "actor": {
                     "ref": "actor_ref",
                     "type": "actor",
                     "name": "Actor",
                     "extra": [
-                        {"name": "actor_field", "value": "actor-value", "type": "enum"}
+                        {"name": "actor_field", "value": "actor_value", "type": "enum"}
                     ],
                 },
                 "resource": {
@@ -3283,13 +3284,13 @@ async def test_get_logs_as_csv_custom_fields_enum(
                     "extra": [
                         {
                             "name": "resource_field",
-                            "value": "resource-value",
+                            "value": "resource_value",
                             "type": "enum",
                         }
                     ],
                 },
                 "details": [
-                    {"name": "detail_field", "value": "detail-value", "type": "enum"}
+                    {"name": "detail_field", "value": "detail_value", "type": "enum"}
                 ],
             }
         ),
