@@ -21,6 +21,12 @@ def validate_identifier(value: str) -> str:
     return value
 
 
+def normalize_identifier(value: str) -> str:
+    # Ensure backward compatibility with identifiers that used hyphens
+    # (Auditize <= 0.9.0).
+    return value.replace("-", "_")
+
+
 def validate_bool(value: str) -> bool:
     match value:
         case "true":

@@ -159,13 +159,13 @@ async def test_reindex_from_v1(superadmin_client: HttpTestHelper):
             "log_id": log_id,
             "saved_at": "2024-01-15T10:30:00.000Z",
             "action": {
-                "type": "create_configuration_profile",
+                "type": "create-configuration-profile",
                 "category": "configuration",
             },
             "source": [
                 {"name": "ip", "value": "127.0.0.1"},
                 {
-                    "name": "user_agent",
+                    "name": "user-agent",
                     "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
                 },
             ],
@@ -180,7 +180,7 @@ async def test_reindex_from_v1(superadmin_client: HttpTestHelper):
             },
             "resource": {
                 "ref": "config-profile:456",
-                "type": "config_profile",
+                "type": "config-profile",
                 "name": "Production Configuration Profile",
                 "extra": [
                     {"name": "environment", "value": "production"},
@@ -188,8 +188,8 @@ async def test_reindex_from_v1(superadmin_client: HttpTestHelper):
                 ],
             },
             "details": [
-                {"name": "field_name_1", "value": "value 1"},
-                {"name": "field_name_2", "value": "value 2"},
+                {"name": "field-name-1", "value": "value 1"},
+                {"name": "field-name-2", "value": "value 2"},
                 {"name": "status", "value": "success"},
             ],
             "tags": [

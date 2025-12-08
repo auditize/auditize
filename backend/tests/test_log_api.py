@@ -111,6 +111,88 @@ async def test_create_log_all_fields(
     )
 
 
+async def test_create_log_all_fields_v0_9_0_backward_compatibility(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    """Test that we can create a log with identifiers that use hyphens (Auditize <= 0.9.0)"""
+
+    log_data = PreparedLog.prepare_data(
+        {
+            "action": {
+                "type": "user-login",
+                "category": "user-authentication",
+            },
+            "source": [
+                {"name": "ip-address", "value": "1.1.1.1"},
+                {"name": "user-agent", "value": "Mozilla/5.0"},
+            ],
+            "actor": {
+                "type": "user-account",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [{"name": "role", "value": "admin"}],
+            },
+            "resource": {
+                "ref": "core",
+                "type": "core-module",
+                "name": "Core Module",
+                "extra": [{"name": "creator-name", "value": "xyz"}],
+            },
+            "details": [
+                {"name": "some-key", "value": "some_value"},
+                {"name": "other-key", "value": "other_value"},
+            ],
+            "tags": [
+                {
+                    "type": "simple-tag",
+                },
+                {"ref": "rich-tag:1", "type": "rich-tag", "name": "Rich tag"},
+            ],
+        }
+    )
+
+    await log_write_client.assert_post(
+        f"/repos/{repo.id}/logs",
+        json=log_data,
+        expected_status_code=201,
+        expected_json=PreparedLog.build_expected_api_response(
+            {
+                **log_data,
+                "action": {
+                    "type": "user_login",
+                    "category": "user_authentication",
+                },
+                "source": [
+                    {"name": "ip_address", "value": "1.1.1.1"},
+                    {"name": "user_agent", "value": "Mozilla/5.0"},
+                ],
+                "actor": {
+                    "type": "user_account",
+                    "ref": "user:123",
+                    "name": "User 123",
+                    "extra": [{"name": "role", "value": "admin"}],
+                },
+                "resource": {
+                    "ref": "core",
+                    "type": "core_module",
+                    "name": "Core Module",
+                    "extra": [{"name": "creator_name", "value": "xyz"}],
+                },
+                "details": [
+                    {"name": "some_key", "value": "some_value"},
+                    {"name": "other_key", "value": "other_value"},
+                ],
+                "tags": [
+                    {
+                        "type": "simple_tag",
+                    },
+                    {"ref": "rich-tag:1", "type": "rich_tag", "name": "Rich tag"},
+                ],
+            }
+        ),
+    )
+
+
 @pytest.mark.parametrize(
     "custom_field",
     [
@@ -244,7 +326,7 @@ async def test_create_log_invalid_identifiers(
         "foo:bar",
         "foo bar",
         "FOOBAR",
-        "foo-bar",
+        "foo bar",
     ):
         # Action
         await test_invalid_identifier(
