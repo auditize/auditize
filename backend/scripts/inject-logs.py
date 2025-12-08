@@ -12,14 +12,14 @@ def format_number(number: int, total: int) -> str:
 
 
 def create_value(prefix: str, counter: int, total: int) -> str:
-    return "%s-%s" % (prefix, format_number(counter, total))
+    return "%s_%s" % (prefix, format_number(counter, total))
 
 
 def create_log(counter: int):
     log = {
         "action": {
-            "category": create_value("action-category", counter, 10),
-            "type": create_value("action-type", counter, 100),
+            "category": create_value("action_category", counter, 10),
+            "type": create_value("action_type", counter, 100),
         },
         "actor": {
             "ref": create_value("user", counter, 1000),
@@ -27,11 +27,11 @@ def create_log(counter: int):
             "name": create_value("user", counter, 1000),
             "extra": [
                 {
-                    "name": create_value("plain-value-name", counter, 3),
+                    "name": create_value("plain_value_name", counter, 3),
                     "value": create_value("plain value", counter, 10),
                 },
                 {
-                    "name": create_value("enum-value-name", counter, 3),
+                    "name": create_value("enum_value_name", counter, 3),
                     "value": create_value("enum_value", counter, 3),
                     "type": "enum",
                 },
@@ -39,11 +39,11 @@ def create_log(counter: int):
         },
         "source": [
             {
-                "name": create_value("plain-value-name", counter, 5),
+                "name": create_value("plain_value_name", counter, 5),
                 "value": create_value("plain value", counter, 50),
             },
             {
-                "name": create_value("enum-value-name", counter, 5),
+                "name": create_value("enum_value_name", counter, 5),
                 "value": create_value("enum_value", counter, 3),
                 "type": "enum",
             },
@@ -54,11 +54,11 @@ def create_log(counter: int):
             "name": create_value("resource", counter, 1000),
             "extra": [
                 {
-                    "name": create_value("plain-value-name", counter, 3),
+                    "name": create_value("plain_value_name", counter, 3),
                     "value": create_value("plain value", counter, 10),
                 },
                 {
-                    "name": create_value("enum-value-name", counter, 3),
+                    "name": create_value("enum_value_name", counter, 3),
                     "value": create_value("enum_value", counter, 3),
                     "type": "enum",
                 },
@@ -66,48 +66,48 @@ def create_log(counter: int):
         },
         "details": [
             {
-                "name": create_value("plain-value-name", counter, 10),
+                "name": create_value("plain_value_name", counter, 10),
                 "value": create_value("plain value", counter, 100),
             },
             {
-                "name": create_value("enum-value-name", counter, 10),
+                "name": create_value("enum_value_name", counter, 10),
                 "value": create_value("enum_value", counter, 3),
                 "type": "enum",
             },
             {
-                "name": create_value("boolean-value-name", counter, 10),
+                "name": create_value("boolean_value_name", counter, 10),
                 "value": True if counter % 2 == 0 else False,
                 "type": "boolean",
             },
             {
-                "name": create_value("json-value-name", counter, 10),
+                "name": create_value("json_value_name", counter, 10),
                 "value": '{"foo": "bar"}',
                 "type": "json",
             },
             {
-                "name": create_value("integer-value-name", counter, 10),
+                "name": create_value("integer_value_name", counter, 10),
                 "value": counter,
                 "type": "integer",
             },
             {
-                "name": create_value("float-value-name", counter, 10),
+                "name": create_value("float_value_name", counter, 10),
                 "value": counter + 0.1,
                 "type": "float",
             },
             {
-                "name": create_value("datetime-value-name", counter, 10),
+                "name": create_value("datetime_value_name", counter, 10),
                 "value": "2021-01-01T00:00:00.000Z",
                 "type": "datetime",
             },
         ],
         "tags": [
             {
-                "type": create_value("simple-tag-type", counter, 3),
+                "type": create_value("simple_tag", counter, 3),
             },
             {
-                "ref": create_value("rich-tag", counter, 1000),
-                "type": create_value("rich-tag-type", counter, 3),
-                "name": create_value("rich-tag-name", counter, 1000),
+                "ref": create_value("rich_tag", counter, 1000),
+                "type": create_value("rich_tag_type", counter, 3),
+                "name": create_value("rich_tag_name", counter, 1000),
             },
         ],
         "entity_path": [

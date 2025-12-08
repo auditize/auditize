@@ -3,10 +3,10 @@ import re
 from auditize.exceptions import ValidationError
 from auditize.helpers.datetime import serialize_datetime
 
-IDENTIFIER_PATTERN_STRING = r"^[a-z0-9-]+$"
+IDENTIFIER_PATTERN_STRING = r"^[a-z0-9_]+$"
 IDENTIFIER_PATTERN = re.compile(IDENTIFIER_PATTERN_STRING)
 FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING = (
-    r"(?:source|details|actor|resource)\.[a-z0-9-]+"
+    r"(?:source|details|actor|resource)\.[a-z0-9_]+"
 )
 FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN = re.compile(
     FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING

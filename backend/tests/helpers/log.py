@@ -34,7 +34,7 @@ class PreparedLog:
 
         return {
             "action": {
-                "type": "user-login",
+                "type": "user_login",
                 "category": "authentication",
             },
             "entity_path": [{"ref": "entity", "name": "Entity"}],
@@ -47,7 +47,7 @@ class PreparedLog:
         *,
         data: bytes = "some text content",
         name="attachment.txt",
-        type="text-file",
+        type="text_file",
         mime_type=None,
     ):
         await client.assert_post(

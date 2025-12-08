@@ -104,12 +104,19 @@ export async function reqGet(
 export async function reqGetPaginated(
   path: string,
   params = {},
+  {
+    raw = false,
+  }: {
+    raw?: boolean;
+  } = {},
 ): Promise<[any[], PagePaginationInfo]> {
   const response = await axiosInstance.get(path, {
-    params: camelCaseToSnakeCaseObjectKeys(params),
+    params: raw ? params : camelCaseToSnakeCaseObjectKeys(params),
   });
   return [
-    snakeCaseToCamelCaseObjectKeys(response.data.items),
+    raw
+      ? response.data.items
+      : snakeCaseToCamelCaseObjectKeys(response.data.items),
     response.data.pagination,
   ];
 }

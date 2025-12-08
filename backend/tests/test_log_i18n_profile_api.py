@@ -469,30 +469,30 @@ def test_get_log_value_translation():
         LogTranslation(
             lang=Lang.EN,
             labels=LogLabels(
-                action_type={"user-login": "Authentification utilisateur"},
+                action_type={"user_login": "Authentification utilisateur"},
             ),
         )
     )
     assert (
-        translate(profile, Lang.FR, "action_type", "user-login")
+        translate(profile, Lang.FR, "action_type", "user_login")
         == "Authentification utilisateur"
     )
 
 
 def test_get_log_value_translation_without_log_i18n_profile():
-    assert translate(None, Lang.FR, "action_type", "user-login") == "User Login"
+    assert translate(None, Lang.FR, "action_type", "user_login") == "User Login"
 
 
 def test_get_log_value_translation_unknown_key_type():
     profile = LogI18nProfile(name="test")
     profile.translations.append(LogTranslation(lang=Lang.FR, labels=LogLabels()))
     with pytest.raises(ValueError):
-        translate(profile, Lang.FR, "unknown_key_type", "user-login")
+        translate(profile, Lang.FR, "unknown_key_type", "user_login")
 
 
 async def test_get_log_value_translation_unknown_key():
     profile = LogI18nProfile(name="test")
-    assert translate(profile, Lang.FR, "action_type", "user-login") == "User Login"
+    assert translate(profile, Lang.FR, "action_type", "user_login") == "User Login"
 
 
 async def test_get_log_value_translation_english_fallback():
@@ -501,11 +501,11 @@ async def test_get_log_value_translation_english_fallback():
         LogTranslation(
             lang=Lang.EN,
             labels=LogLabels(
-                action_type={"user-login": "User Authentication"},
+                action_type={"user_login": "User Authentication"},
             ),
         )
     )
     assert (
-        translate(profile, Lang.FR, "action_type", "user-login")
+        translate(profile, Lang.FR, "action_type", "user_login")
         == "User Authentication"
     )

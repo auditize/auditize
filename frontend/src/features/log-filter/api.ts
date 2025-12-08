@@ -8,6 +8,7 @@ import {
   reqPatch,
   reqPost,
 } from "@/utils/api";
+import { snakeCaseToCamelCaseObjectKeys } from "@/utils/switchCase";
 
 export interface LogFilterCreation {
   name: string;
@@ -48,16 +49,33 @@ export async function getLogFilters({
   page?: number;
   pageSize?: number;
 } = {}): Promise<[LogFilter[], PagePaginationInfo]> {
-  return await reqGetPaginated("/users/me/logs/filters", {
-    q: search,
-    isFavorite,
-    page,
-    pageSize,
-  });
+  const [items, pagination] = await reqGetPaginated(
+    "/users/me/logs/filters",
+    {
+      q: search,
+      is_favorite: isFavorite,
+      page,
+      page_size: pageSize,
+    },
+    { raw: true },
+  );
+  // see getLogFilter for more details on the manual case conversion
+  const normalizedItems = items.map((item) =>
+    snakeCaseToCamelCaseObjectKeys(item, 1),
+  );
+  return [normalizedItems, pagination];
 }
 
 export async function getLogFilter(logFilterId: string): Promise<LogFilter> {
-  return await reqGet(`/users/me/logs/filters/${logFilterId}`);
+  const data = await reqGet(
+    `/users/me/logs/filters/${logFilterId}`,
+    {},
+    { raw: true },
+  );
+  // the searchParams is an object that can contain custom field parameter names with
+  // underscore that must be preserved, that's why we do a manual case conversion
+  // and only convert the keys at level 1
+  return snakeCaseToCamelCaseObjectKeys(data, 1);
 }
 
 export async function updateLogFilter(

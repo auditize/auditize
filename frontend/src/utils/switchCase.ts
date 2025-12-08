@@ -27,8 +27,11 @@ export function camelCaseToSnakeCaseString(input: string): string {
   return changeCase.snakeCase(input, { split: splitCamelCase });
 }
 
-export function snakeCaseToCamelCaseObjectKeys(obj: object): any {
-  return changeKeys.camelCase(obj, INFINITE_DEPTH, {
+export function snakeCaseToCamelCaseObjectKeys(
+  obj: object,
+  depth = INFINITE_DEPTH,
+): any {
+  return changeKeys.camelCase(obj, depth, {
     split: splitSnakeCase,
   });
 }
