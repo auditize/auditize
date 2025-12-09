@@ -30,15 +30,15 @@ class LogLabels(BaseModel):
                 "action_type",
                 "action_category",
                 "actor_type",
-                "actor_custom_field",
-                "actor_custom_field_enum_value",
-                "source_field",
-                "source_field_enum_value",
-                "detail_field",
-                "detail_field_enum_value",
+                "actor_extra_field_name",
+                "actor_extra_field_value_enum",
+                "source_field_name",
+                "source_field_value_enum",
+                "detail_field_name",
+                "detail_field_value_enum",
                 "resource_type",
-                "resource_custom_field_enum_value",
-                "resource_custom_field",
+                "resource_extra_field_value_enum",
+                "resource_extra_field_name",
                 "tag_type",
                 "attachment_type",
             ]
@@ -46,27 +46,26 @@ class LogLabels(BaseModel):
         extra="forbid",
     )
 
-    # FIXME: check that dict keys are identifiers
     action_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
     action_category: dict[_IdentifierStr, str] = Field(default_factory=dict)
     actor_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
-    actor_custom_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
-    actor_custom_field_enum_value: dict[_IdentifierStr, dict[_IdentifierStr, str]] = (
+    actor_extra_field_name: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    actor_extra_field_value_enum: dict[_IdentifierStr, dict[_IdentifierStr, str]] = (
         Field(default_factory=dict)
     )
-    source_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
-    source_field_enum_value: dict[_IdentifierStr, dict[_IdentifierStr, str]] = Field(
+    source_field_name: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    source_field_value_enum: dict[_IdentifierStr, dict[_IdentifierStr, str]] = Field(
         default_factory=dict
     )
-    detail_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
-    detail_field_enum_value: dict[_IdentifierStr, dict[_IdentifierStr, str]] = Field(
+    detail_field_name: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    detail_field_value_enum: dict[_IdentifierStr, dict[_IdentifierStr, str]] = Field(
         default_factory=dict
     )
     resource_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
-    resource_custom_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
-    resource_custom_field_enum_value: dict[
-        _IdentifierStr, dict[_IdentifierStr, str]
-    ] = Field(default_factory=dict)
+    resource_extra_field_name: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    resource_extra_field_value_enum: dict[_IdentifierStr, dict[_IdentifierStr, str]] = (
+        Field(default_factory=dict)
+    )
     tag_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
     attachment_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
 
@@ -82,26 +81,26 @@ class LogLabels(BaseModel):
                 translations = self.actor_type
             case "actor":
                 if enum_value:
-                    translations = self.actor_custom_field_enum_value[key]
+                    translations = self.actor_extra_field_value_enum[key]
                 else:
-                    translations = self.actor_custom_field
+                    translations = self.actor_extra_field_name
             case "source":
                 if enum_value:
-                    translations = self.source_field_enum_value[key]
+                    translations = self.source_field_value_enum[key]
                 else:
-                    translations = self.source_field
+                    translations = self.source_field_name
             case "details":
                 if enum_value:
-                    translations = self.detail_field_enum_value[key]
+                    translations = self.detail_field_value_enum[key]
                 else:
-                    translations = self.detail_field
+                    translations = self.detail_field_name
             case "resource_type":
                 translations = self.resource_type
             case "resource":
                 if enum_value:
-                    translations = self.resource_custom_field_enum_value[key]
+                    translations = self.resource_extra_field_value_enum[key]
                 else:
-                    translations = self.resource_custom_field
+                    translations = self.resource_extra_field_name
             case "tag_type":
                 translations = self.tag_type
             case "attachment_type":
