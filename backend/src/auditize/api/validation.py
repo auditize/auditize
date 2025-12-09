@@ -3,14 +3,28 @@ import re
 from auditize.exceptions import ValidationError
 from auditize.helpers.datetime import serialize_datetime
 
-IDENTIFIER_PATTERN_STRING = r"^[a-z0-9-]+$"
+IDENTIFIER_PATTERN_STRING = r"^[a-z0-9_]+$"
 IDENTIFIER_PATTERN = re.compile(IDENTIFIER_PATTERN_STRING)
 FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING = (
-    r"(?:source|details|actor|resource)\.[a-z0-9-]+"
+    r"(?:source|details|actor|resource)\.[a-z0-9_]+"
 )
 FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN = re.compile(
     FULLY_QUALIFIED_CUSTOM_FIELD_NAME_PATTERN_STRING
 )
+
+
+def validate_identifier(value: str) -> str:
+    if not IDENTIFIER_PATTERN.match(value):
+        raise ValidationError(
+            f"Invalid identifier: {value!r} (must match {IDENTIFIER_PATTERN_STRING})"
+        )
+    return value
+
+
+def normalize_identifier(value: str) -> str:
+    # Ensure backward compatibility with identifiers that used hyphens
+    # (Auditize <= 0.9.0).
+    return value.replace("-", "_")
 
 
 def validate_bool(value: str) -> bool:

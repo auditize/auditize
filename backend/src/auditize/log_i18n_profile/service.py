@@ -1,3 +1,4 @@
+import re
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -135,7 +136,7 @@ async def has_log_i18n_profile(session: AsyncSession, profile_id: UUID) -> bool:
 
 
 def _build_default_translation(value: str) -> str:
-    return " ".join(s.capitalize() for s in value.split("-"))
+    return " ".join(s.capitalize() for s in re.split(r"[-_]", value))
 
 
 def translate(

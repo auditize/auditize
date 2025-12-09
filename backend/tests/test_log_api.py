@@ -76,7 +76,7 @@ async def test_create_log_all_fields(
         {
             "source": [
                 {"name": "ip", "value": "1.1.1.1"},
-                {"name": "user-agent", "value": "Mozilla/5.0"},
+                {"name": "user_agent", "value": "Mozilla/5.0"},
             ],
             "actor": {
                 "type": "user",
@@ -91,14 +91,14 @@ async def test_create_log_all_fields(
                 "extra": [{"name": "creator", "value": "xyz"}],
             },
             "details": [
-                {"name": "some-key", "value": "some_value"},
-                {"name": "other-key", "value": "other_value"},
+                {"name": "some_key", "value": "some_value"},
+                {"name": "other_key", "value": "other_value"},
             ],
             "tags": [
                 {
-                    "type": "simple-tag",
+                    "type": "simple_tag",
                 },
-                {"ref": "rich_tag:1", "type": "rich-tag", "name": "Rich tag"},
+                {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
             ],
         }
     )
@@ -108,6 +108,88 @@ async def test_create_log_all_fields(
         json=log_data,
         expected_status_code=201,
         expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
+async def test_create_log_all_fields_v0_9_0_backward_compatibility(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    """Test that we can create a log with identifiers that use hyphens (Auditize <= 0.9.0)"""
+
+    log_data = PreparedLog.prepare_data(
+        {
+            "action": {
+                "type": "user-login",
+                "category": "user-authentication",
+            },
+            "source": [
+                {"name": "ip-address", "value": "1.1.1.1"},
+                {"name": "user-agent", "value": "Mozilla/5.0"},
+            ],
+            "actor": {
+                "type": "user-account",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [{"name": "role", "value": "admin"}],
+            },
+            "resource": {
+                "ref": "core",
+                "type": "core-module",
+                "name": "Core Module",
+                "extra": [{"name": "creator-name", "value": "xyz"}],
+            },
+            "details": [
+                {"name": "some-key", "value": "some_value"},
+                {"name": "other-key", "value": "other_value"},
+            ],
+            "tags": [
+                {
+                    "type": "simple-tag",
+                },
+                {"ref": "rich-tag:1", "type": "rich-tag", "name": "Rich tag"},
+            ],
+        }
+    )
+
+    await log_write_client.assert_post(
+        f"/repos/{repo.id}/logs",
+        json=log_data,
+        expected_status_code=201,
+        expected_json=PreparedLog.build_expected_api_response(
+            {
+                **log_data,
+                "action": {
+                    "type": "user_login",
+                    "category": "user_authentication",
+                },
+                "source": [
+                    {"name": "ip_address", "value": "1.1.1.1"},
+                    {"name": "user_agent", "value": "Mozilla/5.0"},
+                ],
+                "actor": {
+                    "type": "user_account",
+                    "ref": "user:123",
+                    "name": "User 123",
+                    "extra": [{"name": "role", "value": "admin"}],
+                },
+                "resource": {
+                    "ref": "core",
+                    "type": "core_module",
+                    "name": "Core Module",
+                    "extra": [{"name": "creator_name", "value": "xyz"}],
+                },
+                "details": [
+                    {"name": "some_key", "value": "some_value"},
+                    {"name": "other_key", "value": "other_value"},
+                ],
+                "tags": [
+                    {
+                        "type": "simple_tag",
+                    },
+                    {"ref": "rich-tag:1", "type": "rich_tag", "name": "Rich tag"},
+                ],
+            }
+        ),
     )
 
 
@@ -125,7 +207,7 @@ async def test_create_log_all_fields(
         {"name": "datetime", "value": "2021-01-01T00:00:00.000Z", "type": "datetime"},
     ],
 )
-async def test_create_log_typed_fields(
+async def test_create_log_typed_custom_fields(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
     custom_field: dict,
@@ -165,9 +247,10 @@ async def test_create_log_typed_fields(
         ("integer", "123", "integer"),
         ("float", "123.45", "float"),
         ("datetime", "not a valid datetime", "datetime"),
+        ("enum", "not a valid enum", "enum"),
     ],
 )
-async def test_create_log_invalid_typed_fields(
+async def test_create_log_invalid_typed_custom_fields(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
     field_name: str,
@@ -243,14 +326,14 @@ async def test_create_log_invalid_identifiers(
         "foo:bar",
         "foo bar",
         "FOOBAR",
-        "foo_bar",
+        "foo bar",
     ):
         # Action
         await test_invalid_identifier(
-            {"action": {"category": "valid-category", "type": invalid_identifier}}
+            {"action": {"category": "valid_category", "type": invalid_identifier}}
         )
         await test_invalid_identifier(
-            {"action": {"category": invalid_identifier, "type": "valid-type"}}
+            {"action": {"category": invalid_identifier, "type": "valid_type"}}
         )
 
         # Actor
@@ -400,7 +483,7 @@ async def test_create_log_from_openapi_example(
     # Payload example generated by Redoc for Auditize 0.3.0
     log = json.loads("""{
   "action": {
-    "type": "create-configuration-profile",
+    "type": "create_configuration_profile",
     "category": "configuration"
   },
   "source": [
@@ -409,7 +492,7 @@ async def test_create_log_from_openapi_example(
       "value": "127.0.0.1"
     },
     {
-      "name": "user-agent",
+      "name": "user_agent",
       "value": "Mozilla/5.0"
     }
   ],
@@ -426,7 +509,7 @@ async def test_create_log_from_openapi_example(
   },
   "resource": {
     "ref": "config-profile:123",
-    "type": "config-profile",
+    "type": "config_profile",
     "name": "Config Profile 123",
     "extra": [
       {
@@ -437,11 +520,11 @@ async def test_create_log_from_openapi_example(
   },
   "details": [
     {
-      "name": "field-name-1",
+      "name": "field_name_1",
       "value": "value 1"
     },
     {
-      "name": "field-name-2",
+      "name": "field_name_2",
       "value": "value 2"
     }
   ],
@@ -623,7 +706,7 @@ async def test_get_log_all_fields(
         {
             "source": [
                 {"name": "ip", "value": "1.1.1.1"},
-                {"name": "user-agent", "value": "Mozilla/5.0"},
+                {"name": "user_agent", "value": "Mozilla/5.0"},
             ],
             "actor": {
                 "type": "user",
@@ -638,14 +721,14 @@ async def test_get_log_all_fields(
                 "extra": [{"name": "creator", "value": "xyz"}],
             },
             "details": [
-                {"name": "some-key", "value": "some_value"},
-                {"name": "other-key", "value": "other_value"},
+                {"name": "some_key", "value": "some_value"},
+                {"name": "other_key", "value": "other_value"},
             ],
             "tags": [
                 {
-                    "type": "simple-tag",
+                    "type": "simple_tag",
                 },
-                {"ref": "rich_tag:1", "type": "rich-tag", "name": "Rich tag"},
+                {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
             ],
         }
     )
@@ -740,7 +823,7 @@ async def test_get_log_attachment_text_and_minimal_fields(
     await log_write_client.assert_post(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
-        data={"type": "text-file"},
+        data={"type": "text_file"},
         expected_status_code=204,
     )
 
@@ -804,7 +887,7 @@ async def test_get_log_attachment_forbidden(
     await log_write_client.assert_post(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
-        data={"type": "text-file"},
+        data={"type": "text_file"},
         expected_status_code=204,
     )
 
@@ -883,7 +966,7 @@ async def test_get_logs_with_attachment(
     await log_rw_client.assert_post(
         f"/repos/{repo.id}/logs/{log.id}/attachments",
         files={"file": ("file.txt", "test data")},
-        data={"type": "text-file"},
+        data={"type": "text_file"},
         expected_status_code=204,
     )
 
@@ -896,7 +979,7 @@ async def test_get_logs_with_attachment(
                         "attachments": [
                             {
                                 "name": "file.txt",
-                                "type": "text-file",
+                                "type": "text_file",
                                 "mime_type": "text/plain",
                                 "saved_at": DATETIME_FORMAT,
                             }
@@ -973,21 +1056,21 @@ async def test_get_logs_filter_action_type(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     log = await repo.create_log_with(
-        log_rw_client, {"action": {"category": "category", "type": "find-me"}}
+        log_rw_client, {"action": {"category": "category", "type": "find_me"}}
     )
 
-    await _test_get_logs_filter(log_rw_client, repo, {"action_type": "find-me"}, log)
+    await _test_get_logs_filter(log_rw_client, repo, {"action_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_action_category(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     log = await repo.create_log_with(
-        log_rw_client, {"action": {"category": "find-me", "type": "type"}}
+        log_rw_client, {"action": {"category": "find_me", "type": "type"}}
     )
 
     await _test_get_logs_filter(
-        log_rw_client, repo, {"action_category": "find-me"}, log
+        log_rw_client, repo, {"action_category": "find_me"}, log
     )
 
 
@@ -996,10 +1079,10 @@ async def test_get_logs_filter_actor_type(
 ):
     log = await repo.create_log_with(
         log_rw_client,
-        {"actor": {"type": "find-me", "ref": "user:123", "name": "User 123"}},
+        {"actor": {"type": "find_me", "ref": "user:123", "name": "User 123"}},
     )
 
-    await _test_get_logs_filter(log_rw_client, repo, {"actor_type": "find-me"}, log)
+    await _test_get_logs_filter(log_rw_client, repo, {"actor_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_actor_name(
@@ -1029,10 +1112,10 @@ async def test_get_logs_filter_resource_type(
 ):
     log = await repo.create_log_with(
         log_rw_client,
-        {"resource": {"ref": "core", "type": "find-me", "name": "Core Module"}},
+        {"resource": {"ref": "core", "type": "find_me", "name": "Core Module"}},
     )
 
-    await _test_get_logs_filter(log_rw_client, repo, {"resource_type": "find-me"}, log)
+    await _test_get_logs_filter(log_rw_client, repo, {"resource_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_resource_name(
@@ -1083,7 +1166,7 @@ class _ResourceExtraCustomFieldsMixin:
         return PreparedLog.prepare_data(
             {
                 "resource": {
-                    "type": "config-profile",
+                    "type": "config_profile",
                     "ref": "config-profile:123",
                     "name": "Config Profile 123",
                     "extra": fields,
@@ -1123,16 +1206,16 @@ class _TestGetLogsFilterCustomField:
             # string
             (
                 [
-                    {"name": "field-1", "value": "foo something"},
-                    {"name": "field-2", "value": "bar something else"},
+                    {"name": "field_1", "value": "foo something"},
+                    {"name": "field_2", "value": "bar something else"},
                 ],
                 [
-                    {"name": "field-1", "value": "bar something"},
-                    {"name": "field-2", "value": "foo something else"},
+                    {"name": "field_1", "value": "bar something"},
+                    {"name": "field_2", "value": "foo something else"},
                 ],
                 {
-                    "field-1": "something foo",
-                    "field-2": "something bar",
+                    "field_1": "something foo",
+                    "field_2": "something bar",
                 },
             ),
             # enum
@@ -1281,13 +1364,13 @@ async def test_get_logs_filter_tag_type(
         log_rw_client,
         {
             "tags": [
-                {"type": "simple-tag"},
-                {"ref": "rich_tag:1", "type": "find-me", "name": "Rich tag"},
+                {"type": "simple_tag"},
+                {"ref": "rich_tag:1", "type": "find_me", "name": "Rich tag"},
             ]
         },
     )
 
-    await _test_get_logs_filter(log_rw_client, repo, {"tag_type": "find-me"}, log)
+    await _test_get_logs_filter(log_rw_client, repo, {"tag_type": "find_me"}, log)
 
 
 async def test_get_logs_filter_tag_name(
@@ -1297,8 +1380,8 @@ async def test_get_logs_filter_tag_name(
         log_rw_client,
         {
             "tags": [
-                {"type": "simple-tag"},
-                {"ref": "rich_tag:1", "type": "rich-tag", "name": "find_me"},
+                {"type": "simple_tag"},
+                {"ref": "rich_tag:1", "type": "rich_tag", "name": "find_me"},
             ]
         },
     )
@@ -1314,8 +1397,8 @@ async def test_get_logs_filter_tag_ref(
         log_rw_client,
         {
             "tags": [
-                {"type": "simple-tag"},
-                {"ref": "find_me", "type": "rich-tag", "name": "Rich tag"},
+                {"type": "simple_tag"},
+                {"ref": "find_me", "type": "rich_tag", "name": "Rich tag"},
             ]
         },
     )
@@ -1376,11 +1459,11 @@ async def test_get_logs_filter_attachment_type(
         log_rw_client,
         data=b"test data",
         name="attachment",
-        type="find-me",
+        type="find_me",
         mime_type="text/plain",
     )
     await _test_get_logs_filter(
-        log_rw_client, repo, {"attachment_type": "find-me"}, log
+        log_rw_client, repo, {"attachment_type": "find_me"}, log
     )
 
 
@@ -1471,7 +1554,7 @@ async def test_get_logs_full_text_search_resource_name(
             "resource": {
                 "name": "foo something bar",
                 "ref": "config-profile:123",
-                "type": "config-profile",
+                "type": "config_profile",
             },
         },
     )
@@ -1591,14 +1674,14 @@ async def test_get_logs_filter_multiple_criteria(
     log_1 = await repo.create_log_with(
         log_rw_client,
         {
-            "action": {"type": "find-me-action-type", "category": "category"},
+            "action": {"type": "find_me_action_type", "category": "category"},
         },
     )
 
     log_2 = await repo.create_log_with(
         log_rw_client,
         {
-            "action": {"type": "type", "category": "find-me-action-category"},
+            "action": {"type": "type", "category": "find_me_action_category"},
         },
     )
 
@@ -1606,8 +1689,8 @@ async def test_get_logs_filter_multiple_criteria(
         log_rw_client,
         {
             "action": {
-                "type": "find-me-action-type",
-                "category": "find-me-action-category",
+                "type": "find_me_action_type",
+                "category": "find_me_action_category",
             },
         },
     )
@@ -1616,8 +1699,8 @@ async def test_get_logs_filter_multiple_criteria(
         log_rw_client,
         repo,
         {
-            "action_type": "find-me-action-type",
-            "action_category": "find-me-action-category",
+            "action_type": "find_me_action_type",
+            "action_category": "find_me_action_category",
         },
         log_3,
         extra_log=False,
@@ -2153,7 +2236,7 @@ class TestLogActionCategories(_ConsolidatedDataTest):
             await repo.create_log(
                 client,
                 PreparedLog.prepare_data(
-                    {"action": {"category": f"category-{val}", "type": f"type-{val}"}}
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
                 ),
             )
             await repo.create_log(
@@ -2161,14 +2244,14 @@ class TestLogActionCategories(_ConsolidatedDataTest):
                 PreparedLog.prepare_data(
                     {
                         "action": {
-                            "category": f"category-{val}",
-                            "type": f"type-{val + 10}",
+                            "category": f"category_{val}",
+                            "type": f"type_{val + 10}",
                         }
                     }
                 ),
             )
 
-        return [f"category-{val}" for val in values]
+        return [f"category_{val}" for val in values]
 
 
 class TestLogActionTypes(_ConsolidatedDataTest):
@@ -2183,7 +2266,7 @@ class TestLogActionTypes(_ConsolidatedDataTest):
             await repo.create_log(
                 client,
                 PreparedLog.prepare_data(
-                    {"action": {"category": f"category-{val}", "type": f"type-{val}"}}
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
                 ),
             )
             await repo.create_log(
@@ -2191,14 +2274,14 @@ class TestLogActionTypes(_ConsolidatedDataTest):
                 PreparedLog.prepare_data(
                     {
                         "action": {
-                            "category": f"category-{val + 10}",
-                            "type": f"type-{val}",
+                            "category": f"category_{val + 10}",
+                            "type": f"type_{val}",
                         }
                     }
                 ),
             )
 
-        return [f"type-{val}" for val in values]
+        return [f"type_{val}" for val in values]
 
     async def test_param_category(
         self,
@@ -2212,9 +2295,9 @@ class TestLogActionTypes(_ConsolidatedDataTest):
 
         # test category parameter
         await log_read_client.assert_get(
-            f"/repos/{repo.id}/logs/aggs/actions/types?category=category-2",
+            f"/repos/{repo.id}/logs/aggs/actions/types?category=category_2",
             expected_json={
-                "items": [{"name": f"type-{2}"}],
+                "items": [{"name": f"type_{2}"}],
                 "pagination": {"next_cursor": None},
             },
         )
@@ -2234,14 +2317,14 @@ class TestLogActorTypes(_ConsolidatedDataTest):
                 PreparedLog.prepare_data(
                     {
                         "actor": {
-                            "type": f"type-{val}",
+                            "type": f"type_{val}",
                             "ref": f"id_{val}",
                             "name": f"name_{val}",
                         }
                     }
                 ),
             )
-        return [f"type-{val}" for val in values]
+        return [f"type_{val}" for val in values]
 
 
 class TestLogResourceTypes(_ConsolidatedDataTest):
@@ -2259,13 +2342,13 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
                     {
                         "resource": {
                             "ref": f"ref_{val}",
-                            "type": f"type-{val}",
+                            "type": f"type_{val}",
                             "name": f"name_{val}",
                         }
                     }
                 ),
             )
-        return [f"type-{val}" for val in values]
+        return [f"type_{val}" for val in values]
 
 
 class TestLogTagTypes(_ConsolidatedDataTest):
@@ -2284,7 +2367,7 @@ class TestLogTagTypes(_ConsolidatedDataTest):
                         "tags": [
                             {
                                 "ref": f"tag_{val}",
-                                "type": f"type-{val}",
+                                "type": f"type_{val}",
                                 "name": f"name_{val}",
                             }
                         ]
@@ -2294,10 +2377,10 @@ class TestLogTagTypes(_ConsolidatedDataTest):
 
         await repo.create_log(
             client,
-            PreparedLog.prepare_data({"tags": [{"type": "simple-tag"}]}),
+            PreparedLog.prepare_data({"tags": [{"type": "simple_tag"}]}),
         )
 
-        return [f"type-{val}" for val in values[:-1]] + ["simple-tag"]
+        return [f"type_{val}" for val in values[:-1]] + ["simple_tag"]
 
 
 class TestLogAttachmentTypes(_ConsolidatedDataTest):
@@ -2310,8 +2393,8 @@ class TestLogAttachmentTypes(_ConsolidatedDataTest):
     ) -> list[str]:
         for val in values:
             log = await repo.create_log(client)
-            await log.upload_attachment(client, type=f"type-{val}")
-        return [f"type-{val}" for val in values]
+            await log.upload_attachment(client, type=f"type_{val}")
+        return [f"type_{val}" for val in values]
 
 
 class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
@@ -2685,28 +2768,28 @@ class _ConsolidatedCustomFieldsTest:
     ):
         fields = [
             {
-                "name": "field-1",
+                "name": "field_1",
                 "value": "Value 1",
                 "type": "string",
             },
             {
-                "name": "field-2",
+                "name": "field_2",
                 "value": "Value 2",
                 "type": "string",
             },
             {
-                "name": "field-3",
+                "name": "field_3",
                 "value": "Value 3",
                 "type": "string",
             },
             {
-                "name": "field-4",
-                "value": "Value 2",
+                "name": "field_4",
+                "value": "value_2",
                 "type": "enum",
             },
             {
-                "name": "field-5",
-                "value": "Value 3",
+                "name": "field_5",
+                "value": "value_3",
                 "type": "enum",
             },
         ]
@@ -2769,37 +2852,37 @@ class _CustomFieldsEnumValuesTest:
         log_read_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        field_values = [f"Value {i + 1}" for i in range(5)]
+        field_values = [f"value_{i + 1}" for i in range(5)]
         for value in field_values:
             for _ in range(2):
                 # Create two logs for each value to ensure we get the distinct values
                 await repo.create_log(
                     superadmin_client,
                     self.prepare_log_data(
-                        [{"name": "my-field", "value": value, "type": "enum"}]
+                        [{"name": "my_field", "value": value, "type": "enum"}]
                     ),
                 )
         await do_test_cursor_pagination_common_scenarios(
             log_read_client,
-            self.get_path(repo.id, "my-field"),
+            self.get_path(repo.id, "my_field"),
             items=[{"value": value} for value in field_values],
         )
 
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
-            log_read_client, self.get_path(repo.id, "my-field")
+            log_read_client, self.get_path(repo.id, "my_field")
         )
 
     async def test_not_found(self, log_read_client: HttpTestHelper):
         await log_read_client.assert_get_not_found(
-            self.get_path(UNKNOWN_UUID, "my-field")
+            self.get_path(UNKNOWN_UUID, "my_field")
         )
 
     async def test_forbidden(
         self, no_permission_client: HttpTestHelper, repo: PreparedRepo
     ):
         await no_permission_client.assert_get_forbidden(
-            self.get_path(repo.id, "my-field")
+            self.get_path(repo.id, "my_field")
         )
 
 
@@ -2919,10 +3002,10 @@ async def test_log_entity_consolidation_move_entity(
         "/logs/source",
         "/logs/resources/extras",
         "/logs/actors/extras",
-        "/logs/details/my-field/values",
-        "/logs/source/my-field/values",
-        "/logs/resources/extras/my-field/values",
-        "/logs/actors/extras/my-field/values",
+        "/logs/details/my_field/values",
+        "/logs/source/my_field/values",
+        "/logs/resources/extras/my_field/values",
+        "/logs/actors/extras/my_field/values",
         "/logs/entities?root=true",
     ],
 )
@@ -3129,13 +3212,13 @@ async def test_get_logs_as_csv_log_with_all_fields(
                     "name": "Core Module",
                 },
                 "details": [
-                    {"name": "some-key", "value": "some_value"},
+                    {"name": "some_key", "value": "some_value"},
                 ],
                 "tags": [
                     {
-                        "type": "simple-tag",
+                        "type": "simple_tag",
                     },
-                    {"ref": "rich_tag:1", "type": "rich-tag", "name": "Rich tag"},
+                    {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
                 ],
             }
         ),
@@ -3145,7 +3228,7 @@ async def test_get_logs_as_csv_log_with_all_fields(
         log_rw_client,
         name="attachment.txt",
         mime_type="text/plain",
-        type="attachment-type",
+        type="attachment_type",
     )
 
     resp = await log_rw_client.assert_get_ok(f"/repos/{repo.id}/logs/csv")
@@ -3193,21 +3276,21 @@ async def test_get_logs_as_csv_with_filter(
     log1 = await repo.create_log(
         log_rw_client,
         PreparedLog.prepare_data(
-            {"action": {"category": "action-category-1", "type": "action-type-1"}}
+            {"action": {"category": "action_category_1", "type": "action_type_1"}}
         ),
         saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
     )
     log2 = await repo.create_log(
         log_rw_client,
         PreparedLog.prepare_data(
-            {"action": {"category": "action-category-2", "type": "action-type-2"}}
+            {"action": {"category": "action_category_2", "type": "action_type_2"}}
         ),
         saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
     )
 
     resp = await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs/csv",
-        params={"action_type": "action-type-1"},
+        params={"action_type": "action_type_1"},
     )
     assert (
         resp.text
@@ -3225,20 +3308,20 @@ async def test_get_logs_as_csv_custom_fields(
         log_rw_client,
         PreparedLog.prepare_data(
             {
-                "source": [{"name": "source-field", "value": "source_value"}],
+                "source": [{"name": "source_field", "value": "source_value"}],
                 "actor": {
                     "ref": "actor_ref",
                     "type": "actor",
                     "name": "Actor",
-                    "extra": [{"name": "actor-field", "value": "actor_value"}],
+                    "extra": [{"name": "actor_field", "value": "actor_value"}],
                 },
                 "resource": {
                     "ref": "resource_ref",
                     "type": "resource",
                     "name": "Resource",
-                    "extra": [{"name": "resource-field", "value": "resource_value"}],
+                    "extra": [{"name": "resource_field", "value": "resource_value"}],
                 },
-                "details": [{"name": "detail-field", "value": "detail_value"}],
+                "details": [{"name": "detail_field", "value": "detail_value"}],
             }
         ),
         saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
@@ -3246,7 +3329,7 @@ async def test_get_logs_as_csv_custom_fields(
     resp = await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs/csv",
         params={
-            "columns": "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field"
+            "columns": "log_id,source.source_field,actor.actor_field,resource.resource_field,details.detail_field"
         },
     )
     assert (
@@ -3266,14 +3349,14 @@ async def test_get_logs_as_csv_custom_fields_enum(
         PreparedLog.prepare_data(
             {
                 "source": [
-                    {"name": "source-field", "value": "source-value", "type": "enum"}
+                    {"name": "source_field", "value": "source_value", "type": "enum"}
                 ],
                 "actor": {
                     "ref": "actor_ref",
                     "type": "actor",
                     "name": "Actor",
                     "extra": [
-                        {"name": "actor-field", "value": "actor-value", "type": "enum"}
+                        {"name": "actor_field", "value": "actor_value", "type": "enum"}
                     ],
                 },
                 "resource": {
@@ -3282,14 +3365,14 @@ async def test_get_logs_as_csv_custom_fields_enum(
                     "name": "Resource",
                     "extra": [
                         {
-                            "name": "resource-field",
-                            "value": "resource-value",
+                            "name": "resource_field",
+                            "value": "resource_value",
                             "type": "enum",
                         }
                     ],
                 },
                 "details": [
-                    {"name": "detail-field", "value": "detail-value", "type": "enum"}
+                    {"name": "detail_field", "value": "detail_value", "type": "enum"}
                 ],
             }
         ),
@@ -3297,7 +3380,7 @@ async def test_get_logs_as_csv_custom_fields_enum(
     resp = await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs/csv",
         params={
-            "columns": "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field",
+            "columns": "log_id,source.source_field,actor.actor_field,resource.resource_field,details.detail_field",
         },
     )
     assert (
@@ -3315,13 +3398,13 @@ async def test_get_logs_as_csv_boolean_fields(
         log_rw_client,
         PreparedLog.prepare_data(
             {
-                "source": [{"name": "source-field", "value": True, "type": "boolean"}],
+                "source": [{"name": "source_field", "value": True, "type": "boolean"}],
                 "actor": {
                     "ref": "actor_ref",
                     "type": "actor",
                     "name": "Actor",
                     "extra": [
-                        {"name": "actor-field", "value": True, "type": "boolean"}
+                        {"name": "actor_field", "value": True, "type": "boolean"}
                     ],
                 },
                 "resource": {
@@ -3330,14 +3413,14 @@ async def test_get_logs_as_csv_boolean_fields(
                     "name": "Resource",
                     "extra": [
                         {
-                            "name": "resource-field",
+                            "name": "resource_field",
                             "value": False,
                             "type": "boolean",
                         }
                     ],
                 },
                 "details": [
-                    {"name": "detail-field", "value": False, "type": "boolean"}
+                    {"name": "detail_field", "value": False, "type": "boolean"}
                 ],
             }
         ),
@@ -3345,7 +3428,7 @@ async def test_get_logs_as_csv_boolean_fields(
     resp = await log_rw_client.assert_get(
         f"/repos/{repo.id}/logs/csv",
         params={
-            "columns": "log_id,source.source-field,actor.actor-field,resource.resource-field,details.detail-field",
+            "columns": "log_id,source.source_field,actor.actor_field,resource.resource_field,details.detail_field",
         },
     )
     assert (

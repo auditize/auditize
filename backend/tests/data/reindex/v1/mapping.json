@@ -1,0 +1,106 @@
+{
+  "properties": {
+    "log_id": { "type": "keyword" },
+    "saved_at": { "type": "date" },
+    "action": {
+      "properties": {
+        "type": { "type": "keyword" },
+        "category": { "type": "keyword" }
+      }
+    },
+    "source": {
+      "type": "nested",
+      "properties": {
+        "name": { "type": "keyword" },
+        "value": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword" } }
+        }
+      }
+    },
+    "actor": {
+      "properties": {
+        "ref": { "type": "keyword" },
+        "type": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword" } }
+        },
+        "extra": {
+          "type": "nested",
+          "properties": {
+            "name": { "type": "keyword" },
+            "value": {
+              "type": "text",
+              "fields": { "keyword": { "type": "keyword" } }
+            }
+          }
+        }
+      }
+    },
+    "resource": {
+      "properties": {
+        "ref": { "type": "keyword" },
+        "type": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword" } }
+        },
+        "extra": {
+          "type": "nested",
+          "properties": {
+            "name": { "type": "keyword" },
+            "value": {
+              "type": "text",
+              "fields": { "keyword": { "type": "keyword" } }
+            }
+          }
+        }
+      }
+    },
+    "details": {
+      "type": "nested",
+      "properties": {
+        "name": { "type": "keyword" },
+        "value": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword" } }
+        }
+      }
+    },
+    "tags": {
+      "type": "nested",
+      "properties": {
+        "ref": { "type": "keyword" },
+        "type": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword" } }
+        }
+      }
+    },
+    "attachments": {
+      "type": "nested",
+      "properties": {
+        "name": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword" } }
+        },
+        "type": { "type": "keyword" },
+        "mime_type": { "type": "keyword" },
+        "saved_at": { "type": "date" },
+        "data": { "type": "binary" }
+      }
+    },
+    "entity_path": {
+      "type": "nested",
+      "properties": {
+        "ref": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "fields": { "keyword": { "type": "keyword" } }
+        }
+      }
+    }
+  }
+}

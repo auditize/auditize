@@ -1,3 +1,4 @@
+import base64
 import enum
 import json
 from datetime import datetime, timezone
@@ -11,6 +12,8 @@ from pydantic import (
     Field,
     SerializerFunctionWrapHandler,
     ValidationInfo,
+    field_serializer,
+    field_validator,
     model_serializer,
     model_validator,
 )
@@ -22,7 +25,11 @@ from auditize.api.models.cursor_pagination import (
 )
 from auditize.api.models.dates import HasDatetimeSerialization
 from auditize.api.models.search import QuerySearchParam
-from auditize.api.validation import IDENTIFIER_PATTERN
+from auditize.api.validation import (
+    IDENTIFIER_PATTERN,
+    normalize_identifier,
+    validate_identifier,
+)
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.string import validate_empty_string_as_none
 
@@ -43,7 +50,7 @@ class CustomField(BaseModel):
     """
 
     type: CustomFieldType = Field(default=CustomFieldType.STRING)
-    name: str
+    name: Annotated[str, BeforeValidator(normalize_identifier)]
     value: str | bool | int | float
 
     _ES_MAPPING: ClassVar[dict[CustomFieldType, str]] = {
@@ -88,34 +95,45 @@ class Log(BaseModel):
     """
 
     class Action(BaseModel):
-        type: str
-        category: str
+        type: Annotated[str, BeforeValidator(normalize_identifier)]
+        category: Annotated[str, BeforeValidator(normalize_identifier)]
 
     class Actor(BaseModel):
         ref: str
-        type: str
+        type: Annotated[str, BeforeValidator(normalize_identifier)]
         name: str
         extra: list[CustomField] = Field(default_factory=list)
 
     class Resource(BaseModel):
         ref: str
-        type: str
+        type: Annotated[str, BeforeValidator(normalize_identifier)]
         name: str
         extra: list[CustomField] = Field(default_factory=list)
 
     class Tag(BaseModel):
         ref: Optional[str] = None
-        type: str
+        type: Annotated[str, BeforeValidator(normalize_identifier)]
         name: Optional[str] = None
 
-    class AttachmentMetadata(BaseModel):
+    class Attachment(BaseModel):
         name: str
-        type: str
+        type: Annotated[str, BeforeValidator(normalize_identifier)]
         mime_type: str
         saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+        # NB: the default is set to None so that we can retrieve a log without attachment data
+        data: bytes | None = Field(default=None)
 
-    class Attachment(AttachmentMetadata):
-        data: bytes
+        @field_validator("data", mode="before")
+        def validate_data(cls, data: Any) -> Any:
+            if isinstance(data, str):
+                return base64.b64decode(data)
+            return data
+
+        @field_serializer("data", mode="plain")
+        def serialize_data(self, data: Any) -> Any:
+            if isinstance(data, bytes):
+                return base64.b64encode(data).decode()
+            return data
 
     class EntityPathNode(BaseModel):
         ref: str
@@ -129,7 +147,7 @@ class Log(BaseModel):
     resource: Optional[Resource] = None
     details: list[CustomField] = Field(default_factory=list)
     tags: list[Tag] = Field(default_factory=list)
-    attachments: list[AttachmentMetadata] = Field(default_factory=list)
+    attachments: list[Attachment] = Field(default_factory=list)
     entity_path: list[EntityPathNode] = Field(default_factory=list)
 
     @model_serializer(mode="wrap")
@@ -166,7 +184,9 @@ def _CustomFieldValueField(**kwargs):  # noqa
 
 class _CustomFieldInputData(BaseModel):
     type: CustomFieldType = _CustomFieldTypeField(default=None)
-    name: str = _CustomFieldNameField()
+    name: Annotated[str, BeforeValidator(normalize_identifier)] = (
+        _CustomFieldNameField()
+    )
     value: str | bool | int | float = _CustomFieldValueField()
 
     @model_validator(mode="after")
@@ -178,6 +198,8 @@ class _CustomFieldInputData(BaseModel):
                 case CustomFieldType.STRING | CustomFieldType.ENUM:
                     if not isinstance(self.value, str):
                         raise ValueError("Value must be a string")
+                    if self.type == CustomFieldType.ENUM:
+                        validate_identifier(self.value)
                 case CustomFieldType.DATETIME:
                     if not isinstance(self.value, str):
                         raise ValueError("Value must be a string in ISO 8601 format")
@@ -245,8 +267,10 @@ def _ActionCategoryField():  # noqa
 
 
 class _ActionData(BaseModel):
-    type: str = _ActionTypeField()
-    category: str = _ActionCategoryField()
+    type: Annotated[str, BeforeValidator(normalize_identifier)] = _ActionTypeField()
+    category: Annotated[str, BeforeValidator(normalize_identifier)] = (
+        _ActionCategoryField()
+    )
 
 
 def _ActionField(**kwargs):  # noqa
@@ -297,7 +321,7 @@ def _ActorExtraField(**kwargs):  # noqa
 
 class _ActorInputData(BaseModel):
     ref: str = _ActorRefField()
-    type: str = _ActorTypeField()
+    type: Annotated[str, BeforeValidator(normalize_identifier)] = _ActorTypeField()
     name: str = _ActorNameField()
     extra: list[_CustomFieldInputData] = _ActorExtraField(default_factory=list)
 
@@ -351,7 +375,7 @@ def _ResourceExtraField(**kwargs):  # noqa
 
 class _ResourceInputData(BaseModel):
     ref: str = _ResourceRefField()
-    type: str = _ResourceTypeField()
+    type: Annotated[str, BeforeValidator(normalize_identifier)] = _ResourceTypeField()
     name: str = _ResourceNameField()
     extra: list[_CustomFieldInputData] = _ResourceExtraField(default_factory=list)
 
@@ -403,7 +427,7 @@ def _TagNameField(**kwargs):  # noqa
 
 class _TagInputData(BaseModel):
     ref: Optional[str] = _TagRefField(default=None)
-    type: str = _TagTypeField()
+    type: Annotated[str, BeforeValidator(normalize_identifier)] = _TagTypeField()
     name: Optional[str] = _TagNameField(default=None)
 
     model_config = {

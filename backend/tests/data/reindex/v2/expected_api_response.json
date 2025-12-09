@@ -1,0 +1,63 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "saved_at": "2024-01-15T10:30:00.000Z",
+  "action": {
+    "type": "create_configuration_profile",
+    "category": "configuration"
+  },
+  "source": [
+    { "name": "ip", "value": "127.0.0.1", "type": "string" },
+    {
+      "name": "user_agent",
+      "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+      "type": "string"
+    }
+  ],
+  "actor": {
+    "ref": "user:123",
+    "type": "user",
+    "name": "John Doe",
+    "extra": [
+      { "name": "role", "value": "admin", "type": "string" },
+      { "name": "department", "value": "IT", "type": "string" }
+    ]
+  },
+  "resource": {
+    "ref": "config-profile:456",
+    "type": "config_profile",
+    "name": "Production Configuration Profile",
+    "extra": [
+      { "name": "environment", "value": "production", "type": "string" },
+      { "name": "version", "value": "1.2.3", "type": "string" }
+    ]
+  },
+  "details": [
+    { "name": "field_name_1", "value": "value 1", "type": "string" },
+    { "name": "field_name_2", "value": "value 2", "type": "string" },
+    { "name": "status", "value": "success", "type": "enum" }
+  ],
+  "tags": [
+    { "type": "security", "name": null, "ref": null },
+    { "ref": "tag:789", "type": "compliance", "name": "GDPR" },
+    { "ref": "tag:101", "type": "audit", "name": "High Priority" }
+  ],
+  "attachments": [
+    {
+      "name": "document.pdf",
+      "type": "document",
+      "mime_type": "application/pdf",
+      "saved_at": "2024-01-15T10:30:05.000Z"
+    },
+    {
+      "name": "screenshot.png",
+      "type": "image",
+      "mime_type": "image/png",
+      "saved_at": "2024-01-15T10:30:10.000Z"
+    }
+  ],
+  "entity_path": [
+    { "ref": "customer:1", "name": "Customer 1" },
+    { "ref": "entity:1", "name": "Entity 1" },
+    { "ref": "subentity:1", "name": "Sub-Entity 1" }
+  ]
+}

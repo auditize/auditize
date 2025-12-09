@@ -1,4 +1,5 @@
 import base64
+import typing
 from copy import deepcopy
 from typing import Any
 
@@ -9,6 +10,9 @@ from auditize.database import get_dbm
 
 from .http import HttpTestHelper
 from .utils import DATETIME_FORMAT
+
+if typing.TYPE_CHECKING:
+    from .repo import PreparedRepo
 
 # A valid UUID, but not existing in the database
 # FIXME: should be moved to a more general module
@@ -34,7 +38,7 @@ class PreparedLog:
 
         return {
             "action": {
-                "type": "user-login",
+                "type": "user_login",
                 "category": "authentication",
             },
             "entity_path": [{"ref": "entity", "name": "Entity"}],
@@ -47,7 +51,7 @@ class PreparedLog:
         *,
         data: bytes = "some text content",
         name="attachment.txt",
-        type="text-file",
+        type="text_file",
         mime_type=None,
     ):
         await client.assert_post(
@@ -140,3 +144,13 @@ class PreparedLog:
         db_log = resp["_source"]
         ic(db_log)
         assert db_log == expected
+
+
+async def assert_elastic_log_document(
+    repo: "PreparedRepo", log_id: str, expected: dict
+):
+    dbm = get_dbm()
+    resp = await dbm.elastic_client.get(index=f"{repo.log_db_name}_read", id=log_id)
+    db_log = resp["_source"]
+    ic(db_log)
+    assert db_log == expected
