@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -13,10 +13,14 @@ from auditize.api.models.dates import (
     UpdatedAtField,
 )
 from auditize.api.models.page_pagination import PagePaginatedResponse
+from auditize.api.validation import IDENTIFIER_PATTERN
 from auditize.i18n.lang import Lang
 
 if TYPE_CHECKING:
     from auditize.log_i18n_profile.sql_models import LogI18nProfile
+
+
+_IdentifierStr = Annotated[str, Field(pattern=IDENTIFIER_PATTERN)]
 
 
 class LogLabels(BaseModel):
@@ -43,24 +47,28 @@ class LogLabels(BaseModel):
     )
 
     # FIXME: check that dict keys are identifiers
-    action_type: dict[str, str] = Field(default_factory=dict)
-    action_category: dict[str, str] = Field(default_factory=dict)
-    actor_type: dict[str, str] = Field(default_factory=dict)
-    actor_custom_field: dict[str, str] = Field(default_factory=dict)
-    actor_custom_field_enum_value: dict[str, dict[str, str]] = Field(
+    action_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    action_category: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    actor_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    actor_custom_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    actor_custom_field_enum_value: dict[_IdentifierStr, dict[_IdentifierStr, str]] = (
+        Field(default_factory=dict)
+    )
+    source_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    source_field_enum_value: dict[_IdentifierStr, dict[_IdentifierStr, str]] = Field(
         default_factory=dict
     )
-    source_field: dict[str, str] = Field(default_factory=dict)
-    source_field_enum_value: dict[str, dict[str, str]] = Field(default_factory=dict)
-    detail_field: dict[str, str] = Field(default_factory=dict)
-    detail_field_enum_value: dict[str, dict[str, str]] = Field(default_factory=dict)
-    resource_type: dict[str, str] = Field(default_factory=dict)
-    resource_custom_field: dict[str, str] = Field(default_factory=dict)
-    resource_custom_field_enum_value: dict[str, dict[str, str]] = Field(
+    detail_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    detail_field_enum_value: dict[_IdentifierStr, dict[_IdentifierStr, str]] = Field(
         default_factory=dict
     )
-    tag_type: dict[str, str] = Field(default_factory=dict)
-    attachment_type: dict[str, str] = Field(default_factory=dict)
+    resource_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    resource_custom_field: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    resource_custom_field_enum_value: dict[
+        _IdentifierStr, dict[_IdentifierStr, str]
+    ] = Field(default_factory=dict)
+    tag_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
+    attachment_type: dict[_IdentifierStr, str] = Field(default_factory=dict)
 
     def translate(
         self, category: str, key: str, enum_value: str | None = None
