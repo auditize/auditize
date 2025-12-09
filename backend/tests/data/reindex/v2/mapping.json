@@ -1,0 +1,143 @@
+{
+  "properties": {
+    "log_id": { "type": "keyword" },
+    "saved_at": { "type": "date" },
+    "action": {
+      "properties": {
+        "type": { "type": "keyword" },
+        "category": { "type": "keyword" }
+      }
+    },
+    "source": {
+      "type": "nested",
+      "properties": {
+        "type": { "type": "keyword" },
+        "name": { "type": "keyword" },
+        "value": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding"
+        },
+        "value_enum": { "type": "keyword" },
+        "value_boolean": { "type": "boolean" },
+        "value_integer": { "type": "long" },
+        "value_float": { "type": "double" },
+        "value_datetime": { "type": "date" }
+      }
+    },
+    "actor": {
+      "properties": {
+        "ref": { "type": "keyword" },
+        "type": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": { "keyword": { "type": "keyword" } }
+        },
+        "extra": {
+          "type": "nested",
+          "properties": {
+            "type": { "type": "keyword" },
+            "name": { "type": "keyword" },
+            "value": {
+              "type": "text",
+              "analyzer": "custom_asciifolding",
+              "search_analyzer": "custom_asciifolding"
+            },
+            "value_enum": { "type": "keyword" },
+            "value_boolean": { "type": "boolean" },
+            "value_integer": { "type": "long" },
+            "value_float": { "type": "double" },
+            "value_datetime": { "type": "date" }
+          }
+        }
+      }
+    },
+    "resource": {
+      "properties": {
+        "ref": { "type": "keyword" },
+        "type": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": { "keyword": { "type": "keyword" } }
+        },
+        "extra": {
+          "type": "nested",
+          "properties": {
+            "type": { "type": "keyword" },
+            "name": { "type": "keyword" },
+            "value": {
+              "type": "text",
+              "analyzer": "custom_asciifolding",
+              "search_analyzer": "custom_asciifolding"
+            },
+            "value_enum": { "type": "keyword" },
+            "value_boolean": { "type": "boolean" },
+            "value_integer": { "type": "long" },
+            "value_float": { "type": "double" },
+            "value_datetime": { "type": "date" }
+          }
+        }
+      }
+    },
+    "details": {
+      "type": "nested",
+      "properties": {
+        "type": { "type": "keyword" },
+        "name": { "type": "keyword" },
+        "value": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding"
+        },
+        "value_enum": { "type": "keyword" },
+        "value_boolean": { "type": "boolean" },
+        "value_integer": { "type": "long" },
+        "value_float": { "type": "double" },
+        "value_datetime": { "type": "date" }
+      }
+    },
+    "tags": {
+      "type": "nested",
+      "properties": {
+        "ref": { "type": "keyword" },
+        "type": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": { "keyword": { "type": "keyword" } }
+        }
+      }
+    },
+    "attachments": {
+      "type": "nested",
+      "properties": {
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding"
+        },
+        "type": { "type": "keyword" },
+        "mime_type": { "type": "keyword" },
+        "saved_at": { "type": "date" },
+        "data": { "type": "binary" }
+      }
+    },
+    "entity_path": {
+      "type": "nested",
+      "properties": {
+        "ref": { "type": "keyword" },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": { "keyword": { "type": "keyword" } }
+        }
+      }
+    }
+  }
+}

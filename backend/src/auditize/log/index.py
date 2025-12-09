@@ -8,7 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auditize.database import get_elastic_client
 from auditize.repo.sql_models import Repo
 
-_MAPPING_VERSION = 2
+_MAPPING_VERSION = 3
+
+# Elasticsearch mapping history:
+# - 0.7.0:
+#   - v1: initial mapping
+# - 0.9.0:
+#   - v2: update mapping for custom field types, use ascii folding for text fields to mapping
+# - 0.10.0:
+#   - v3: unchanged mapping, use '_' instead of '-' in custom field names and identifiers in general
 
 _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
     "type": "text",
@@ -28,6 +36,74 @@ _TYPE_CUSTOM_FIELDS = {
         "value_float": {"type": "double"},
         "value_datetime": {"type": "date"},
     },
+}
+
+_MAPPING = {
+    "properties": {
+        "log_id": {"type": "keyword"},
+        "saved_at": {"type": "date"},
+        "action": {
+            "properties": {
+                "type": {"type": "keyword"},
+                "category": {"type": "keyword"},
+            }
+        },
+        "source": _TYPE_CUSTOM_FIELDS,
+        "actor": {
+            "properties": {
+                "ref": {"type": "keyword"},
+                "type": {"type": "keyword"},
+                "name": {
+                    **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+                    "fields": {"keyword": {"type": "keyword"}},
+                },
+                "extra": _TYPE_CUSTOM_FIELDS,
+            }
+        },
+        "resource": {
+            "properties": {
+                "ref": {"type": "keyword"},
+                "type": {"type": "keyword"},
+                "name": {
+                    **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+                    "fields": {"keyword": {"type": "keyword"}},
+                },
+                "extra": _TYPE_CUSTOM_FIELDS,
+            }
+        },
+        "details": _TYPE_CUSTOM_FIELDS,
+        "tags": {
+            "type": "nested",
+            "properties": {
+                "ref": {"type": "keyword"},
+                "type": {"type": "keyword"},
+                "name": {
+                    **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+                    "fields": {"keyword": {"type": "keyword"}},
+                },
+            },
+        },
+        "attachments": {
+            "type": "nested",
+            "properties": {
+                "name": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+                "type": {"type": "keyword"},
+                "mime_type": {"type": "keyword"},
+                "saved_at": {"type": "date"},
+                "data": {"type": "binary"},
+            },
+        },
+        "entity_path": {
+            "type": "nested",
+            "properties": {
+                "ref": {"type": "keyword"},
+                "name": {
+                    **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+                    "fields": {"keyword": {"type": "keyword"}},
+                },
+            },
+        },
+    }
 }
 
 

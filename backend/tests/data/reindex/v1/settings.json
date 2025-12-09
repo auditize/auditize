@@ -1,0 +1,6 @@
+{
+  "index": {
+    "sort.field": ["saved_at", "log_id"],
+    "sort.order": ["desc", "desc"]
+  }
+}
