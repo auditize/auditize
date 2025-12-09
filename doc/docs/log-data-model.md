@@ -7,8 +7,8 @@ Here is an example of a full-featured log such as it is accepted by the `POST /a
 ```json
 {
   "action": {
-    "type": "job-offer-creation",
-    "category": "job-offers"
+    "type": "job_offer_creation",
+    "category": "job_offers"
   },
   "source": [
     {
@@ -16,7 +16,7 @@ Here is an example of a full-featured log such as it is accepted by the `POST /a
       "value": "myATS"
     },
     {
-      "name": "application-version",
+      "name": "application_version",
       "value": "1.0.0"
     }
   ],
@@ -78,7 +78,7 @@ The structure is also flexible enough to let you add custom information about th
 ## Anatomy of a log
 
 !!! info
-    Values that must respect the `[a-z0-9-]+` format are used as translation keys that 
+    Values that must respect the `[a-z0-9_]+` format are used as translation keys that
     can be translated through [Log i18n Profiles](overview.md#log-i18n-profiles).
     When no translation is available for a given key, a default translation is inferred
     from the key itself by the UI.
@@ -88,8 +88,8 @@ The structure is also flexible enough to let you add custom information about th
 
 The `action` object specifies the action being performed. It includes the following fields:
 
-- `type`: It should describe the action in a non-ambiguous way, independent of its associated `category`. For example, if you want to describe the creation of a user, `user-creation` is preferable to `create`. This field is required and must respect the `[a-z0-9-]+` format.
-- `category`: It is used to group related types of actions. For example, you could use `user-management` for actions whose `type` is `user-creation`, `user-deletion`, etc. This field is required and must respect the `[a-z0-9-]+` format.
+- `type`: It should describe the action in a non-ambiguous way, independent of its associated `category`. For example, if you want to describe the creation of a user, `user-creation` is preferable to `create`. This field is required and must respect the `[a-z0-9_]+` format.
+- `category`: It is used to group related types of actions. For example, you could use `user-management` for actions whose `type` is `user-creation`, `user-deletion`, etc. This field is required and must respect the `[a-z0-9_]+` format.
 
 The `action` object is mandatory.
 
@@ -104,7 +104,7 @@ The `source` field is optional.
 The `actor` object identifies the actor behind the action. It includes the following fields:
 
 - `ref`: A value that uniquely identifies an actor, regardless of its `type`. This field is required and can be any string.
-- `type`: The type of the actor. This field is required and must respect the `[a-z0-9-]+` format.
+- `type`: The type of the actor. This field is required and must respect the `[a-z0-9_]+` format.
 - `name`: The name of the actor. This field is required and can be any string.
 - `extra`: An optional list of [custom fields](#custom-fields) that can be used to express any extra custom information about the actor such as an email, a role, etc.
 
@@ -116,7 +116,7 @@ The `actor` object is optional.
 The `resource` object identifies the resource being the target of the action. It includes the following fields:
 
 - `ref`: A value that uniquely identifies a resource, regardless of its `type`. This field is required and can be any string.
-- `type`: The type of the resource. This field is required and must respect the `[a-z0-9-]+` format.
+- `type`: The type of the resource. This field is required and must respect the `[a-z0-9_]+` format.
 - `name`: The name of the resource. This field is required and can be any string.
 - `extra`: A list of [custom fields](#custom-fields) that can be used to express any extra custom information about the resource.
 
@@ -132,9 +132,9 @@ The `details` object holds information about the action. It is normalized as a l
 
 `tags` is a list of elements that can be used to track logs on an arbitrary basis. There are two types of tags:
 
-- "simple" tags: they are represented by an object with only a `type` field. The `type` must respect the `[a-z0-9-]+` format.
+- "simple" tags: they are represented by an object with only a `type` field. The `type` must respect the `[a-z0-9_]+` format.
 - "rich" tags: they are represented by an object with the three required fields: 
-    - `type` (must respect the `[a-z0-9-]+` format),
+    - `type` (must respect the `[a-z0-9_]+` format),
     - `ref` (a value that uniquely identifies a resource, whatever its type)
     - and `name` (can be any string)
 
@@ -142,11 +142,11 @@ The `details` object holds information about the action. It is normalized as a l
 
 Custom fields are a way to extend the log data model with specific information. A custom field includes the following fields:
 
-- `name`: The custom field name. It must respect the `[a-z0-9-]+` format,
+- `name`: The custom field name. It must respect the `[a-z0-9_]+` format,
 - `value`: The custom field value, it can be a string, a number, a boolean.
 - `type`: The (optional) custom field type. The following types are supported:
     - `string` for plain text values
-    - `enum` for values that are part of a closed list of values (they can be translated through [Log i18n Profiles](overview.md#log-i18n-profiles))
+    - `enum` for values that are part of a closed list of values (respecting the `[a-z0-9_]+` format) (they can be translated through [Log i18n Profiles](overview.md#log-i18n-profiles))
     - `json` for stringified JSON values
     - `datetime` for datetime values (ISO 8601 format)
     - `boolean` for boolean values
@@ -196,6 +196,6 @@ By including the full path to each entity, Auditize can construct a tree structu
 
 Auditize supports file attachements to logs. To upload one or more files to a log, you must first create the log and then attach the file(s) using the `POST /api/repos/{repo_id}/logs/{log_id}/attachments` endpoint. In addition to the file content itself, you can specify the following:
 
-- `type`: The type of the attachment. This field is required and must follow the `[a-z0-9-]+` format.
+- `type`: The type of the attachment. This field is required and must follow the `[a-z0-9_]+` format.
 - `name`: The name of the attachment. f not provided, it defaults to the uploaded file's name.
 - `mime_type`: The MIME type of the attachment. If not provided, it defaults to the MIME type of the uploaded file.

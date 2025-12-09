@@ -128,26 +128,26 @@ Example of a translation file:
 ```json
 {
   "action_type": {
-    "job-offer-creation": "New job offer",
-    "job-offer-close": "Job offer closed",
-    "job-application": "Job application",
-    "job-application-status-change": "Job application status change",
-    "user-creation": "User creation",
+    "job_offer_creation": "New job offer",
+    "job_offer_close": "Job offer closed",
+    "job_application": "Job application",
+    "job_application_status_change": "Job application status change",
+    "user_creation": "User creation",
   },
   "action_category": {
-    "job-offers": "Job offers",
-    "job-applications": "Job applications",
-    "users": "Users"
+    "job_offers": "Job offers",
+    "job_applications": "Job applications",
+    "user_management": "User management"
   },
   "detail_field": {
-    "granted-role": "Granted role",
-    "job-title": "Job title",
+    "granted_role": "Granted role",
+    "job_title": "Job title",
     "reason": "Reason",
     "comment": "Comment",
     "status": "Status",
   },
   "detail_custom_field_enum_value": {
-    "granted-role": {
+    "granted_role": {
       "admin": "Administrator",
       "user": "User"
     },
@@ -159,12 +159,12 @@ Example of a translation file:
   },
   "source_field": {
     "application": "Application",
-    "application-version": "Application version",
-    "job-board": "Job board",
+    "application_version": "Application version",
+    "job_board": "Job board",
   },
   "resource_type": {
     "user": "User",
-    "job-offer": "Job offer",
+    "job_offer": "Job offer",
     "applicant": "Candidate"
   },
   "resource_custom_field": {},

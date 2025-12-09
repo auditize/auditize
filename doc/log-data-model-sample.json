@@ -1,5 +1,5 @@
 {
-  "action": { "type": "job-offer-creation", "category": "job-offers" },
+  "action": { "type": "job_offer_creation", "category": "job_offers" },
   "source": [{ "name": "source-ip", "value": "192.168.12.34" }],
   "actor": {
     "name": "John Doe",
@@ -8,12 +8,12 @@
     "extra": [{ "name": "role", "value": "recruiter" }]
   },
   "resource": {
-    "type": "job-offer",
+    "type": "job_offer",
     "name": "Social Media Manager in Henderson",
     "ref": "77c48e18-984b-4919-a961-9eda7041ca43",
     "extra": [
       {
-        "name": "expiration-in-days",
+        "name": "expiration_in_days",
         "value": "30"
       }
     ]
