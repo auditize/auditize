@@ -1,3 +1,4 @@
+import base64
 import enum
 import json
 from datetime import datetime, timezone
@@ -11,6 +12,8 @@ from pydantic import (
     Field,
     SerializerFunctionWrapHandler,
     ValidationInfo,
+    field_serializer,
+    field_validator,
     model_serializer,
     model_validator,
 )
@@ -112,14 +115,25 @@ class Log(BaseModel):
         type: Annotated[str, BeforeValidator(normalize_identifier)]
         name: Optional[str] = None
 
-    class AttachmentMetadata(BaseModel):
+    class Attachment(BaseModel):
         name: str
         type: Annotated[str, BeforeValidator(normalize_identifier)]
         mime_type: str
         saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+        # NB: the default is set to None so that we can retrieve a log without attachment data
+        data: bytes | None = Field(default=None)
 
-    class Attachment(AttachmentMetadata):
-        data: bytes
+        @field_validator("data", mode="before")
+        def validate_data(cls, data: Any) -> Any:
+            if isinstance(data, str):
+                return base64.b64decode(data)
+            return data
+
+        @field_serializer("data", mode="plain")
+        def serialize_data(self, data: Any) -> Any:
+            if isinstance(data, bytes):
+                return base64.b64encode(data).decode()
+            return data
 
     class EntityPathNode(BaseModel):
         ref: str
@@ -133,7 +147,7 @@ class Log(BaseModel):
     resource: Optional[Resource] = None
     details: list[CustomField] = Field(default_factory=list)
     tags: list[Tag] = Field(default_factory=list)
-    attachments: list[AttachmentMetadata] = Field(default_factory=list)
+    attachments: list[Attachment] = Field(default_factory=list)
     entity_path: list[EntityPathNode] = Field(default_factory=list)
 
     @model_serializer(mode="wrap")

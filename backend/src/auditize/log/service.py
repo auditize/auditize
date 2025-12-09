@@ -1,4 +1,3 @@
-import base64
 import re
 import string
 import unicodedata
@@ -189,12 +188,7 @@ class LogService:
                 id=str(log_id),
                 script={
                     "source": "ctx._source.attachments.add(params.attachment)",
-                    "params": {
-                        "attachment": {
-                            **attachment.model_dump(exclude={"data"}),
-                            "data": base64.b64encode(attachment.data).decode(),
-                        }
-                    },
+                    "params": {"attachment": attachment.model_dump()},
                 },
                 refresh=self._refresh,
             )
@@ -260,9 +254,7 @@ class LogService:
         except IndexError:
             raise NotFoundError()
 
-        return Log.Attachment.model_validate(
-            {**attachment, "data": base64.b64decode(attachment["data"])}
-        )
+        return Log.Attachment.model_validate(attachment)
 
     @staticmethod
     def _nested_filter(path, filter):
@@ -541,6 +533,7 @@ class LogService:
         *,
         authorized_entities: set[str] = None,
         search_params: LogSearchParams = None,
+        include_attachment_data: bool = False,
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
@@ -558,7 +551,7 @@ class LogService:
             index=self.read_alias,
             query=query,
             search_after=search_after,
-            source_excludes=["attachments.data"],
+            source_excludes=None if include_attachment_data else ["attachments.data"],
             sort=[{"saved_at": "desc", "log_id": "desc"}],
             size=limit + 1,
             track_total_hits=False,
