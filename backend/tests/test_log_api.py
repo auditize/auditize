@@ -2210,6 +2210,33 @@ class _ConsolidatedDataTest:
             items=[{"name": item} for item in reversed(items)],
         )
 
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        entity_a_values = list(reversed(range(5)))
+        entity_a_items = await self.create_consolidated_data(
+            superadmin_client, repo, entity_a_values, entity_path=["A"]
+        )
+        entity_b_values = list(reversed(range(5, 10)))
+        entity_b_items = await self.create_consolidated_data(
+            superadmin_client, repo, entity_b_values, entity_path=["B"]
+        )
+
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                f"/repos/{repo.id}/logs/aggs/{self.relative_path}",
+                expected_json={
+                    "items": [{"name": item} for item in reversed(entity_b_items)],
+                    "pagination": {"next_cursor": None},
+                },
+            )
+
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id)
@@ -2230,24 +2257,30 @@ class TestLogActionCategories(_ConsolidatedDataTest):
         return "actions/categories"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
-                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
+                PreparedLog.prepare_data_with_entity_path(
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}},
+                    entity_path=entity_path,
                 ),
             )
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "action": {
                             "category": f"category_{val}",
                             "type": f"type_{val + 10}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
 
@@ -2260,24 +2293,31 @@ class TestLogActionTypes(_ConsolidatedDataTest):
         return "actions/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
-                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
+                PreparedLog.prepare_data_with_entity_path(
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}},
+                    entity_path=entity_path,
                 ),
             )
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "action": {
                             "category": f"category_{val + 10}",
                             "type": f"type_{val}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
 
@@ -2309,19 +2349,25 @@ class TestLogActorTypes(_ConsolidatedDataTest):
         return "actors/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "actor": {
                             "type": f"type_{val}",
                             "ref": f"id_{val}",
                             "name": f"name_{val}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
         return [f"type_{val}" for val in values]
@@ -2333,19 +2379,25 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
         return "resources/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "resource": {
                             "ref": f"ref_{val}",
                             "type": f"type_{val}",
                             "name": f"name_{val}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
         return [f"type_{val}" for val in values]
@@ -2357,12 +2409,17 @@ class TestLogTagTypes(_ConsolidatedDataTest):
         return "tags/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values[:-1]:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "tags": [
                             {
@@ -2371,13 +2428,17 @@ class TestLogTagTypes(_ConsolidatedDataTest):
                                 "name": f"name_{val}",
                             }
                         ]
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
 
         await repo.create_log(
             client,
-            PreparedLog.prepare_data({"tags": [{"type": "simple_tag"}]}),
+            PreparedLog.prepare_data_with_entity_path(
+                {"tags": [{"type": "simple_tag"}]},
+                entity_path=entity_path,
+            ),
         )
 
         return [f"type_{val}" for val in values[:-1]] + ["simple_tag"]
@@ -2389,10 +2450,15 @@ class TestLogAttachmentTypes(_ConsolidatedDataTest):
         return "attachments/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
-            log = await repo.create_log(client)
+            log = await repo.create_log_with_entity_path(client, entity_path)
             await log.upload_attachment(client, type=f"type_{val}")
         return [f"type_{val}" for val in values]
 
@@ -2403,10 +2469,15 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
         return "attachments/mime-types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
-            log = await repo.create_log(client)
+            log = await repo.create_log_with_entity_path(client, entity_path)
             await log.upload_attachment(client, mime_type=f"text/plain{val}")
         return [f"text/plain{val}" for val in values]
 

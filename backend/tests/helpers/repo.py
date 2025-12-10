@@ -96,17 +96,21 @@ class PreparedRepo:
     async def create_log_with_entity_path(
         self,
         client: HttpTestHelper,
-        entity_path: list[str],
+        entity_path: list[str] | None,
         *,
         saved_at: datetime = None,
     ):
         return await self.create_log_with(
             client,
-            {
-                "entity_path": [
-                    {"name": entity, "ref": entity} for entity in entity_path
-                ]
-            },
+            (
+                {
+                    "entity_path": [
+                        {"name": entity, "ref": entity} for entity in entity_path
+                    ]
+                }
+                if entity_path
+                else {}
+            ),
             saved_at=saved_at,
         )
 

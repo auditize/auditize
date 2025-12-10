@@ -415,117 +415,134 @@ class LogService:
 
     async def _prepare_es_query(
         self,
-        search_params: LogSearchParams,
+        search_params: LogSearchParams | None = None,
+        *,
+        authorized_entities: set[str] = None,
     ) -> list[dict]:
         sp = search_params
         filter = []
-        if sp.query:
-            filter.append(self._query_filter(sp.query))
-        if sp.action_type:
-            filter.append({"term": {"action.type": sp.action_type}})
-        if sp.action_category:
-            filter.append({"term": {"action.category": sp.action_category}})
-        if sp.source:
-            filter.extend(await self._custom_fields_search_filter("source", sp.source))
-        if sp.actor_type:
-            filter.append({"term": {"actor.type": sp.actor_type}})
-        if sp.actor_name:
-            filter.append({"term": {"actor.name.keyword": sp.actor_name}})
-        if sp.actor_ref:
-            filter.append({"term": {"actor.ref": sp.actor_ref}})
-        if sp.actor_extra:
-            filter.extend(
-                await self._custom_fields_search_filter("actor.extra", sp.actor_extra)
-            )
-        if sp.resource_type:
-            filter.append({"term": {"resource.type": sp.resource_type}})
-        if sp.resource_name:
-            filter.append({"term": {"resource.name.keyword": sp.resource_name}})
-        if sp.resource_ref:
-            filter.append({"term": {"resource.ref": sp.resource_ref}})
-        if sp.resource_extra:
-            filter.extend(
-                await self._custom_fields_search_filter(
-                    "resource.extra", sp.resource_extra
+        if sp:
+            if sp.query:
+                filter.append(self._query_filter(sp.query))
+            if sp.action_type:
+                filter.append({"term": {"action.type": sp.action_type}})
+            if sp.action_category:
+                filter.append({"term": {"action.category": sp.action_category}})
+            if sp.source:
+                filter.extend(
+                    await self._custom_fields_search_filter("source", sp.source)
                 )
-            )
-        if sp.details:
-            filter.extend(
-                await self._custom_fields_search_filter("details", sp.details)
-            )
-        if sp.tag_ref:
-            filter.append(self._nested_filter_term("tags", "tags.ref", sp.tag_ref))
-        if sp.tag_type:
-            filter.append(self._nested_filter_term("tags", "tags.type", sp.tag_type))
-        if sp.tag_name:
-            filter.append(
-                self._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
-            )
-        if sp.has_attachment is not None:
-            if sp.has_attachment:
+            if sp.actor_type:
+                filter.append({"term": {"actor.type": sp.actor_type}})
+            if sp.actor_name:
+                filter.append({"term": {"actor.name.keyword": sp.actor_name}})
+            if sp.actor_ref:
+                filter.append({"term": {"actor.ref": sp.actor_ref}})
+            if sp.actor_extra:
+                filter.extend(
+                    await self._custom_fields_search_filter(
+                        "actor.extra", sp.actor_extra
+                    )
+                )
+            if sp.resource_type:
+                filter.append({"term": {"resource.type": sp.resource_type}})
+            if sp.resource_name:
+                filter.append({"term": {"resource.name.keyword": sp.resource_name}})
+            if sp.resource_ref:
+                filter.append({"term": {"resource.ref": sp.resource_ref}})
+            if sp.resource_extra:
+                filter.extend(
+                    await self._custom_fields_search_filter(
+                        "resource.extra", sp.resource_extra
+                    )
+                )
+            if sp.details:
+                filter.extend(
+                    await self._custom_fields_search_filter("details", sp.details)
+                )
+            if sp.tag_ref:
+                filter.append(self._nested_filter_term("tags", "tags.ref", sp.tag_ref))
+            if sp.tag_type:
                 filter.append(
-                    {
-                        "nested": {
-                            "path": "attachments",
-                            "query": {"exists": {"field": "attachments"}},
+                    self._nested_filter_term("tags", "tags.type", sp.tag_type)
+                )
+            if sp.tag_name:
+                filter.append(
+                    self._nested_filter_term("tags", "tags.name.keyword", sp.tag_name)
+                )
+            if sp.has_attachment is not None:
+                if sp.has_attachment:
+                    filter.append(
+                        {
+                            "nested": {
+                                "path": "attachments",
+                                "query": {"exists": {"field": "attachments"}},
+                            }
                         }
-                    }
-                )
-            else:
-                filter.append(
-                    {
-                        "bool": {
-                            "must_not": {
-                                "nested": {
-                                    "path": "attachments",
-                                    "query": {"exists": {"field": "attachments"}},
+                    )
+                else:
+                    filter.append(
+                        {
+                            "bool": {
+                                "must_not": {
+                                    "nested": {
+                                        "path": "attachments",
+                                        "query": {"exists": {"field": "attachments"}},
+                                    }
                                 }
                             }
                         }
+                    )
+
+            if sp.attachment_name:
+                filter.append(
+                    self._nested_filter(
+                        "attachments",
+                        {
+                            "match": {
+                                "attachments.name": {
+                                    "query": sp.attachment_name,
+                                    "operator": "and",
+                                }
+                            }
+                        },
+                    )
+                )
+
+            if sp.attachment_type:
+                filter.append(
+                    self._nested_filter_term(
+                        "attachments", "attachments.type", sp.attachment_type
+                    )
+                )
+            if sp.attachment_mime_type:
+                filter.append(
+                    self._nested_filter_term(
+                        "attachments", "attachments.mime_type", sp.attachment_mime_type
+                    )
+                )
+            if sp.entity_ref:
+                filter.append(
+                    self._nested_filter_term(
+                        "entity_path", "entity_path.ref", sp.entity_ref
+                    )
+                )
+            if sp.since:
+                filter.append({"range": {"saved_at": {"gte": sp.since}}})
+            if sp.until:
+                # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
+                # will also include logs saved at 23:59:59.500 for instance
+                filter.append(
+                    {
+                        "range": {
+                            "saved_at": {"lte": sp.until.replace(microsecond=999999)}
+                        }
                     }
                 )
 
-        if sp.attachment_name:
-            filter.append(
-                self._nested_filter(
-                    "attachments",
-                    {
-                        "match": {
-                            "attachments.name": {
-                                "query": sp.attachment_name,
-                                "operator": "and",
-                            }
-                        }
-                    },
-                )
-            )
+        if authorized_entities:
+            filter.append(self._authorized_entity_filter(authorized_entities))
 
-        if sp.attachment_type:
-            filter.append(
-                self._nested_filter_term(
-                    "attachments", "attachments.type", sp.attachment_type
-                )
-            )
-        if sp.attachment_mime_type:
-            filter.append(
-                self._nested_filter_term(
-                    "attachments", "attachments.mime_type", sp.attachment_mime_type
-                )
-            )
-        if sp.entity_ref:
-            filter.append(
-                self._nested_filter_term(
-                    "entity_path", "entity_path.ref", sp.entity_ref
-                )
-            )
-        if sp.since:
-            filter.append({"range": {"saved_at": {"gte": sp.since}}})
-        if sp.until:
-            # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
-            # will also include logs saved at 23:59:59.500 for instance
-            filter.append(
-                {"range": {"saved_at": {"lte": sp.until.replace(microsecond=999999)}}}
-            )
         return filter
 
     async def get_logs(
@@ -537,19 +554,16 @@ class LogService:
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
-        filter = await self._prepare_es_query(search_params) if search_params else []
-
-        if authorized_entities:
-            filter.append(self._authorized_entity_filter(authorized_entities))
-
+        filter = await self._prepare_es_query(
+            search_params, authorized_entities=authorized_entities
+        )
         search_after = (
             load_pagination_cursor(pagination_cursor) if pagination_cursor else None
         )
 
-        query = {"bool": {"filter": filter}}
         resp = await self.es.search(
             index=self.read_alias,
-            query=query,
+            query={"bool": {"filter": filter}},
             search_after=search_after,
             source_excludes=None if include_attachment_data else ["attachments.data"],
             sort=[{"saved_at": "desc", "log_id": "desc"}],
@@ -574,7 +588,7 @@ class LogService:
     async def get_newest_log(
         self, search_params: LogSearchParams | None = None
     ) -> Log | None:
-        filter = await self._prepare_es_query(search_params) if search_params else []
+        filter = await self._prepare_es_query(search_params)
         resp = await self.es.search(
             index=self.read_alias,
             query={"bool": {"filter": filter}},
@@ -659,14 +673,18 @@ class LogService:
         *,
         nested: str = None,
         field: str,
-        query: dict = None,
+        authorized_entities: set[str],
+        search_params: LogSearchParams | None = None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str]:
+        filter = await self._prepare_es_query(
+            search_params, authorized_entities=authorized_entities
+        )
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=nested,
             fields=[field],
-            query=query,
+            query={"bool": {"filter": filter}},
             limit=limit,
             pagination_cursor=pagination_cursor,
         )
@@ -678,14 +696,16 @@ class LogService:
 
     async def get_log_action_types(
         self,
+        authorized_entities: set[str],
         action_category: str | None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str]:
         return await self._get_paginated_agg_single_field(
             field="action.type",
-            query=(
-                {"bool": {"filter": {"term": {"action.category": action_category}}}}
+            authorized_entities=authorized_entities,
+            search_params=(
+                LogSearchParams(action_category=action_category)
                 if action_category
                 else None
             ),
