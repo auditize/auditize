@@ -418,9 +418,10 @@ class LogService:
         search_params: LogSearchParams | None = None,
         *,
         authorized_entities: set[str] = None,
-    ) -> list[dict]:
+    ) -> dict | None:
         sp = search_params
         filter = []
+
         if sp:
             if sp.query:
                 filter.append(self._query_filter(sp.query))
@@ -543,7 +544,7 @@ class LogService:
         if authorized_entities:
             filter.append(self._authorized_entity_filter(authorized_entities))
 
-        return filter
+        return {"bool": {"filter": filter}} if filter else None
 
     async def get_logs(
         self,
@@ -554,17 +555,14 @@ class LogService:
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
-        filter = await self._prepare_es_query(
-            search_params, authorized_entities=authorized_entities
-        )
-        search_after = (
-            load_pagination_cursor(pagination_cursor) if pagination_cursor else None
-        )
-
         resp = await self.es.search(
             index=self.read_alias,
-            query={"bool": {"filter": filter}},
-            search_after=search_after,
+            query=await self._prepare_es_query(
+                search_params, authorized_entities=authorized_entities
+            ),
+            search_after=(
+                load_pagination_cursor(pagination_cursor) if pagination_cursor else None
+            ),
             source_excludes=None if include_attachment_data else ["attachments.data"],
             sort=[{"saved_at": "desc", "log_id": "desc"}],
             size=limit + 1,
@@ -588,10 +586,9 @@ class LogService:
     async def get_newest_log(
         self, search_params: LogSearchParams | None = None
     ) -> Log | None:
-        filter = await self._prepare_es_query(search_params)
         resp = await self.es.search(
             index=self.read_alias,
-            query={"bool": {"filter": filter}},
+            query=await self._prepare_es_query(search_params),
             sort=[{"saved_at": "desc", "log_id": "desc"}],
             size=1,
         )
@@ -678,13 +675,12 @@ class LogService:
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str]:
-        filter = await self._prepare_es_query(
-            search_params, authorized_entities=authorized_entities
-        )
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=nested,
             fields=[field],
-            query={"bool": {"filter": filter}},
+            query=await self._prepare_es_query(
+                search_params, authorized_entities=authorized_entities
+            ),
             limit=limit,
             pagination_cursor=pagination_cursor,
         )
