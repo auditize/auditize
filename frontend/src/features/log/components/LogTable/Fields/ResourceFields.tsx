@@ -131,7 +131,10 @@ export function ResourceCustomField({
   return (
     <InlineSearchParamLink
       label={t("log.inlineFilter.field.resourceCustomField", {
-        field: logTranslator("resource_custom_field", field.name).toLowerCase(),
+        field: logTranslator(
+          "resource_extra_field_name",
+          field.name,
+        ).toLowerCase(),
       })}
       onClick={() =>
         onTableSearchParamChange(

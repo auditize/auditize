@@ -227,7 +227,7 @@ function LogSourceSection({ log, repoId }: { log: Log; repoId: string }) {
       title={t("log.source")}
       icon={<IconRoute style={iconBesideText({ size: "18px", top: "0px" })} />}
       data={log.source.map((field) => [
-        logTranslator("source_field", field.name),
+        logTranslator("source_field_name", field.name),
         <SourceFieldValue repoId={repoId} field={field} />,
       ])}
     />
@@ -250,7 +250,7 @@ function LogActorSection({ log, repoId }: { log: Log; repoId: string }) {
           ...log.actor.extra.map(
             (field) =>
               [
-                logTranslator("actor_custom_field", field.name),
+                logTranslator("actor_extra_field_name", field.name),
                 <ActorExtraFieldValue repoId={repoId} field={field} />,
               ] as [React.ReactNode, React.ReactNode],
           ),
@@ -281,7 +281,7 @@ function LogResourceSection({ log, repoId }: { log: Log; repoId: string }) {
           ...log.resource.extra.map(
             (field) =>
               [
-                logTranslator("resource_custom_field", field.name),
+                logTranslator("resource_extra_field_name", field.name),
                 <ResourceExtraFieldValue repoId={repoId} field={field} />,
               ] as [React.ReactNode, React.ReactNode],
           ),
@@ -302,7 +302,7 @@ function LogDetailsSection({ log, repoId }: { log: Log; repoId: string }) {
         <IconListDetails style={iconBesideText({ size: "18px", top: "0px" })} />
       }
       data={log.details.map((field) => [
-        logTranslator("detail_field", field.name),
+        logTranslator("detail_field_name", field.name),
         <DetailFieldValue repoId={repoId} field={field} />,
       ])}
     />

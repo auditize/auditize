@@ -160,7 +160,7 @@ function SearchParamField({
         searchParamName={name}
         enumValues={getAllActorCustomFieldEnumValues}
         enumLabel={(value) =>
-          customFieldEnumValueTranslator("actor_custom_field", fieldName, value)
+          customFieldEnumValueTranslator("actor_extra_field", fieldName, value)
         }
         onChange={(_, value) =>
           onChange(
@@ -241,7 +241,7 @@ function SearchParamField({
         enumValues={getAllResourceCustomFieldEnumValues}
         enumLabel={(value) =>
           customFieldEnumValueTranslator(
-            "resource_custom_field",
+            "resource_extra_field",
             fieldName,
             value,
           )

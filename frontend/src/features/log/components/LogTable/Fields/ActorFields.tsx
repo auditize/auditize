@@ -119,7 +119,10 @@ export function ActorCustomField({
   return (
     <InlineSearchParamLink
       label={t("log.inlineFilter.field.actorCustomField", {
-        field: logTranslator("actor_custom_field", field.name).toLowerCase(),
+        field: logTranslator(
+          "actor_extra_field_name",
+          field.name,
+        ).toLowerCase(),
       })}
       onClick={() =>
         onTableSearchParamChange(

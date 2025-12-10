@@ -116,7 +116,7 @@ export function ResourceExtraFieldValue({
     <CustomFieldValue
       repoId={repoId}
       field={field}
-      fieldCategoryKey="resource_custom_field"
+      fieldCategoryKey="resource_extra_field"
     />
   );
 }
@@ -132,7 +132,7 @@ export function ActorExtraFieldValue({
     <CustomFieldValue
       repoId={repoId}
       field={field}
-      fieldCategoryKey="actor_custom_field"
+      fieldCategoryKey="actor_extra_field"
     />
   );
 }

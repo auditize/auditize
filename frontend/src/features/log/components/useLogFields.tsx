@@ -122,12 +122,16 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
         items: [
           item("actorType", t("common.type")),
           item("actorRef", t("log.actor")),
-          ...customFieldItems(actorCustomFields, "actor", "actor_custom_field"),
+          ...customFieldItems(
+            actorCustomFields,
+            "actor",
+            "actor_extra_field_name",
+          ),
         ],
       },
       {
         group: t("log.source"),
-        items: customFieldItems(sourceFields, "source", "source_field"),
+        items: customFieldItems(sourceFields, "source", "source_field_name"),
       },
       {
         group: t("log.resource"),
@@ -137,13 +141,13 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
           ...customFieldItems(
             resourceCustomFields,
             "resource",
-            "resource_custom_field",
+            "resource_extra_field_name",
           ),
         ],
       },
       {
         group: t("log.details"),
-        items: customFieldItems(detailFields, "details", "detail_field"),
+        items: customFieldItems(detailFields, "details", "detail_field_name"),
       },
       {
         group: t("log.tag"),
@@ -237,12 +241,16 @@ export function useColumnFields(repoId: string) {
           item("actorType", t("common.type")),
           item("actorName", t("common.name")),
           item("actorRef", t("common.ref")),
-          ...customFieldItems(actorCustomFields, "actor", "actor_custom_field"),
+          ...customFieldItems(
+            actorCustomFields,
+            "actor",
+            "actor_extra_field_name",
+          ),
         ],
       },
       {
         group: t("log.source"),
-        items: customFieldItems(sourceFields, "source", "source_field"),
+        items: customFieldItems(sourceFields, "source", "source_field_name"),
       },
       {
         group: t("log.resource"),
@@ -254,13 +262,13 @@ export function useColumnFields(repoId: string) {
           ...customFieldItems(
             resourceCustomFields,
             "resource",
-            "resource_custom_field",
+            "resource_extra_field_name",
           ),
         ],
       },
       {
         group: t("log.details"),
-        items: customFieldItems(detailFields, "details", "detail_field"),
+        items: customFieldItems(detailFields, "details", "detail_field_name"),
       },
       {
         group: t("log.tag"),
