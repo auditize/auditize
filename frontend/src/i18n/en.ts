@@ -392,7 +392,7 @@ export default {
       },
     },
     CustomMultiSelect: {
-      filterFields: "Search",
+      filterFields: "Filter",
     },
     error: {
       error: "Error",

@@ -394,6 +394,9 @@ export default {
         doesNotMatch: "Les mots de passe ne correspondent pas.",
       },
     },
+    CustomMultiSelect: {
+      filterFields: "Filtrer",
+    },
     error: {
       error: "Erreur",
       details: "Erreur: {{error}}",
@@ -401,9 +404,6 @@ export default {
       401: "Erreur d'authentification",
       403: "Erreur: Cette opération n'est pas autorisée",
     },
-  },
-  CustomMultiSelect: {
-    filterFields: "Filtrer",
   },
   resource: {
     list: {
