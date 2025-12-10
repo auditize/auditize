@@ -5,12 +5,12 @@ import {
   getActorNames,
   getAllActionCategories,
   getAllActionTypes,
-  getAllActorCustomFieldEnumValues,
+  getAllActorExtraFieldEnumValues,
   getAllActorTypes,
   getAllAttachmentMimeTypes,
   getAllAttachmentTypes,
   getAllDetailFieldEnumValues,
-  getAllResourceCustomFieldEnumValues,
+  getAllResourceExtraFieldEnumValues,
   getAllResourceTypes,
   getAllSourceFieldEnumValues,
   getAllTagTypes,
@@ -158,9 +158,9 @@ function SearchParamField({
       <CustomFieldSearchParamField
         searchParams={searchParams}
         searchParamName={name}
-        enumValues={getAllActorCustomFieldEnumValues}
+        enumValues={getAllActorExtraFieldEnumValues}
         enumLabel={(value) =>
-          customFieldEnumValueTranslator("actor_custom_field", fieldName, value)
+          customFieldEnumValueTranslator("actor_extra_field", fieldName, value)
         }
         onChange={(_, value) =>
           onChange(
@@ -238,10 +238,10 @@ function SearchParamField({
       <CustomFieldSearchParamField
         searchParams={searchParams}
         searchParamName={name}
-        enumValues={getAllResourceCustomFieldEnumValues}
+        enumValues={getAllResourceExtraFieldEnumValues}
         enumLabel={(value) =>
           customFieldEnumValueTranslator(
-            "resource_custom_field",
+            "resource_extra_field",
             fieldName,
             value,
           )

@@ -14,15 +14,15 @@ class PreparedLogI18nProfile:
         "action_type": {},
         "action_category": {},
         "actor_type": {},
-        "actor_custom_field": {},
-        "actor_custom_field_enum_value": {},
-        "source_field": {},
-        "source_field_enum_value": {},
-        "detail_field": {},
-        "detail_field_enum_value": {},
+        "actor_extra_field_name": {},
+        "actor_extra_field_value_enum": {},
+        "source_field_name": {},
+        "source_field_value_enum": {},
+        "detail_field_name": {},
+        "detail_field_value_enum": {},
         "resource_type": {},
-        "resource_custom_field": {},
-        "resource_custom_field_enum_value": {},
+        "resource_extra_field_name": {},
+        "resource_extra_field_value_enum": {},
         "tag_type": {},
         "attachment_type": {},
     }
@@ -36,26 +36,26 @@ class PreparedLogI18nProfile:
         "actor_type": {
             "actor_type_1": "actor_type_1 EN",
         },
-        "actor_custom_field": {
+        "actor_extra_field_name": {
             "actor_custom_field_1": "actor_custom_field_1 EN",
         },
-        "actor_custom_field_enum_value": {
+        "actor_extra_field_value_enum": {
             "actor_custom_field_1": {
                 "enum_value_1": "actor_custom_field_enum_value_1 EN",
             }
         },
-        "source_field": {
+        "source_field_name": {
             "source_field_1": "source_field_1 EN",
         },
-        "source_field_enum_value": {
+        "source_field_value_enum": {
             "source_field_1": {
                 "enum_value_1": "source_field_enum_value_1 EN",
             }
         },
-        "detail_field": {
+        "detail_field_name": {
             "detail_field_1": "detail_field_1 EN",
         },
-        "detail_field_enum_value": {
+        "detail_field_value_enum": {
             "detail_field_1": {
                 "enum_value_1": "detail_field_enum_value_1 EN",
             }
@@ -63,10 +63,10 @@ class PreparedLogI18nProfile:
         "resource_type": {
             "resource_type_1": "resource_type_1 EN",
         },
-        "resource_custom_field": {
+        "resource_extra_field_name": {
             "resource_custom_field_1": "resource_custom_field_1 EN",
         },
-        "resource_custom_field_enum_value": {
+        "resource_extra_field_value_enum": {
             "resource_custom_field_1": {
                 "enum_value_1": "resource_custom_field_enum_value_1 EN",
             }
@@ -88,26 +88,26 @@ class PreparedLogI18nProfile:
         "actor_type": {
             "actor_type_1": "actor_type_1 FR",
         },
-        "actor_custom_field": {
+        "actor_extra_field_name": {
             "actor_custom_field_1": "actor_custom_field_1 FR",
         },
-        "actor_custom_field_enum_value": {
+        "actor_extra_field_value_enum": {
             "actor_custom_field_1": {
                 "enum_value_1": "actor_custom_field_enum_value_1 FR",
             }
         },
-        "source_field": {
+        "source_field_name": {
             "source_field_1": "source_field_1 FR",
         },
-        "source_field_enum_value": {
+        "source_field_value_enum": {
             "source_field_1": {
                 "enum_value_1": "source_field_enum_value_1 FR",
             }
         },
-        "detail_field": {
+        "detail_field_name": {
             "detail_field_1": "detail_field_1 FR",
         },
-        "detail_field_enum_value": {
+        "detail_field_value_enum": {
             "detail_field_1": {
                 "enum_value_1": "detail_field_enum_value_1 FR",
             }
@@ -115,10 +115,10 @@ class PreparedLogI18nProfile:
         "resource_type": {
             "resource_type_1": "resource_type_1 FR",
         },
-        "resource_custom_field": {
+        "resource_extra_field_name": {
             "resource_custom_field_1": "resource_custom_field_1 FR",
         },
-        "resource_custom_field_enum_value": {
+        "resource_extra_field_value_enum": {
             "resource_custom_field_1": {
                 "enum_value_1": "resource_custom_field_enum_value_1 FR",
             }

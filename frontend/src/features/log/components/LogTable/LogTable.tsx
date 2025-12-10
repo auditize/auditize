@@ -25,7 +25,7 @@ import {
   ActionCategoryField,
   ActionField,
   ActionTypeField,
-  ActorCustomField,
+  ActorExtraField,
   ActorField,
   ActorNameField,
   ActorRefField,
@@ -36,7 +36,7 @@ import {
   DateField,
   DetailField,
   EntityPathField,
-  ResourceCustomField,
+  ResourceExtraField,
   ResourceField,
   ResourceNameField,
   ResourceRefField,
@@ -138,7 +138,7 @@ function logFieldToColumn(
     return column({
       accessor: `source.${fieldName}`,
       title: columnTitle(
-        t("log.source") + ": " + logTranslator("source_field", fieldName),
+        t("log.source") + ": " + logTranslator("source_field_name", fieldName),
       ),
       render: (log: Log) => (
         <SourceField
@@ -205,10 +205,12 @@ function logFieldToColumn(
     return column({
       accessor: `actor.${fieldName}`,
       title: columnTitle(
-        t("log.actor") + ": " + logTranslator("actor_custom_field", fieldName),
+        t("log.actor") +
+          ": " +
+          logTranslator("actor_extra_field_name", fieldName),
       ),
       render: (log: Log) => (
-        <ActorCustomField
+        <ActorExtraField
           log={log}
           repoId={repoId}
           fieldName={fieldName}
@@ -314,10 +316,10 @@ function logFieldToColumn(
       title: columnTitle(
         t("log.resource") +
           ": " +
-          logTranslator("resource_custom_field", fieldName),
+          logTranslator("resource_extra_field_name", fieldName),
       ),
       render: (log: Log) => (
-        <ResourceCustomField
+        <ResourceExtraField
           log={log}
           repoId={repoId}
           fieldName={fieldName}
@@ -331,7 +333,7 @@ function logFieldToColumn(
     const fieldName = field.split(".")[1];
     return column({
       accessor: `details.${fieldName}`,
-      title: columnTitle(logTranslator("detail_field", fieldName)),
+      title: columnTitle(logTranslator("detail_field_name", fieldName)),
       render: (log: Log) => (
         <DetailField
           log={log}

@@ -34,7 +34,7 @@ export function useCustomFieldEnumValueTranslator(repoId?: string) {
       return defaultTranslation;
     }
     return (
-      translationQuery.data[fieldType + "_enum_value"]?.[fieldName]?.[enumValue] || defaultTranslation // prettier-ignore
+      translationQuery.data[fieldType + "_value_enum"]?.[fieldName]?.[enumValue] || defaultTranslation // prettier-ignore
     );
   };
 }
