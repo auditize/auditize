@@ -27,7 +27,8 @@ class CursorPaginationData(BaseModel):
     next_cursor: str | None = Field(
         description="The cursor to the next page of results. It must be passed as the `cursor` parameter to the "
         "next query to get the next page of results. `next_cursor` will be null if there "
-        "are no more results to fetch."
+        "are no more results to fetch.",
+        json_schema_extra={"example": "c29tZSBiYXNlNjQtaWZpZWQgb3BhcXVlIGRhdGEK"},
     )
 
 

@@ -258,7 +258,7 @@ async def get_log_actor_extra_field_values(
 
 @router.get(
     "/repos/{repo_id}/logs/actors/{actor_ref}",
-    summary="Get log actor",
+    summary="Get log actor given an actor ref",
     description="Requires `log:read` permission.",
     operation_id="get_log_actor",
     tags=["log"],
@@ -356,7 +356,7 @@ async def get_log_resource_extra_fields(
 
 @router.get(
     "/repos/{repo_id}/logs/resources/{resource_ref}",
-    summary="Get log resource",
+    summary="Get log resource given a resource ref",
     description="Requires `log:read` permission.",
     operation_id="get_log_resource",
     tags=["log"],
@@ -415,7 +415,7 @@ async def get_log_tag_names(
 
 @router.get(
     "/repos/{repo_id}/logs/tags/{tag_ref}",
-    summary="Get log tag",
+    summary="Get log tag given a tag ref",
     description="Requires `log:read` permission.",
     operation_id="get_log_tag",
     tags=["log"],
@@ -592,7 +592,7 @@ async def get_log_entities(
 
 @router.get(
     "/repos/{repo_id}/logs/entities/{entity_ref}",
-    summary="Get log entity",
+    summary="Get log entity given an entity ref",
     description="Requires `log:read` permission.",
     operation_id="get_log_entity",
     tags=["log"],
