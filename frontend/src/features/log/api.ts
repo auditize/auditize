@@ -149,7 +149,7 @@ export async function getAllActorTypes(repoId: string): Promise<string[]> {
   );
 }
 
-export async function getAllActorCustomFields(
+export async function getAllActorExtraFields(
   repoId: string,
 ): Promise<AvailableCustomField[]> {
   return await getAllCursorPaginatedItems<AvailableCustomField>(
@@ -174,7 +174,7 @@ export async function getAllResourceTypes(repoId: string): Promise<string[]> {
   );
 }
 
-export async function getAllResourceCustomFields(
+export async function getAllResourceExtraFields(
   repoId: string,
 ): Promise<AvailableCustomField[]> {
   return await getAllCursorPaginatedItems<AvailableCustomField>(
@@ -312,7 +312,7 @@ export async function getAllSourceFieldEnumValues(
   );
 }
 
-export async function getAllActorCustomFieldEnumValues(
+export async function getAllActorExtraFieldEnumValues(
   repoId: string,
   fieldName: string,
 ): Promise<string[]> {
@@ -324,7 +324,7 @@ export async function getAllActorCustomFieldEnumValues(
   );
 }
 
-export async function getAllResourceCustomFieldEnumValues(
+export async function getAllResourceExtraFieldEnumValues(
   repoId: string,
   fieldName: string,
 ): Promise<string[]> {

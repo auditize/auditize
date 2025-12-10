@@ -98,7 +98,7 @@ export function ActorRefField({
   );
 }
 
-export function ActorCustomField({
+export function ActorExtraField({
   log,
   repoId,
   fieldName,
@@ -118,7 +118,7 @@ export function ActorCustomField({
 
   return (
     <InlineSearchParamLink
-      label={t("log.inlineFilter.field.actorCustomField", {
+      label={t("log.inlineFilter.field.actorExtraField", {
         field: logTranslator(
           "actor_extra_field_name",
           field.name,

@@ -3,23 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import {
-  getAllActorCustomFields,
+  getAllActorExtraFields,
   getAllDetailFields,
-  getAllResourceCustomFields,
+  getAllResourceExtraFields,
   getAllSourceFields,
 } from "../api";
 import { AvailableCustomField, CustomFieldType } from "../api";
 import { useLogTranslationQuery, useLogTranslator } from "./LogTranslation";
 
 function useCustomFields(repoId: string) {
-  const actorCustomFieldListQuery = useQuery({
-    queryKey: ["logActorCustomFields", repoId],
-    queryFn: () => getAllActorCustomFields(repoId),
+  const actorExtraFieldListQuery = useQuery({
+    queryKey: ["logActorExtraFields", repoId],
+    queryFn: () => getAllActorExtraFields(repoId),
     enabled: !!repoId,
   });
-  const resourceCustomFieldListQuery = useQuery({
-    queryKey: ["logResourceCustomFields", repoId],
-    queryFn: () => getAllResourceCustomFields(repoId),
+  const resourceExtraFieldListQuery = useQuery({
+    queryKey: ["logResourceExtraFields", repoId],
+    queryFn: () => getAllResourceExtraFields(repoId),
     enabled: !!repoId,
   });
   const detailFieldListQuery = useQuery({
@@ -33,34 +33,30 @@ function useCustomFields(repoId: string) {
     enabled: !!repoId,
   });
   return {
-    actorCustomFields: actorCustomFieldListQuery.data ?? [],
-    resourceCustomFields: resourceCustomFieldListQuery.data ?? [],
+    actorExtraFields: actorExtraFieldListQuery.data ?? [],
+    resourceExtraFields: resourceExtraFieldListQuery.data ?? [],
     detailFields: detailFieldListQuery.data ?? [],
     sourceFields: sourceFieldListQuery.data ?? [],
     loading:
-      actorCustomFieldListQuery.isPending ||
-      resourceCustomFieldListQuery.isPending ||
+      actorExtraFieldListQuery.isPending ||
+      resourceExtraFieldListQuery.isPending ||
       detailFieldListQuery.isPending ||
       sourceFieldListQuery.isPending,
   };
 }
 
 export function useCustomFieldTypes(repoId: string) {
-  const {
-    actorCustomFields,
-    resourceCustomFields,
-    detailFields,
-    sourceFields,
-  } = useCustomFields(repoId);
+  const { actorExtraFields, resourceExtraFields, detailFields, sourceFields } =
+    useCustomFields(repoId);
   return {
     ...Object.fromEntries(
-      actorCustomFields.map((field) => [`actor.${field.name}`, field.type]),
+      actorExtraFields.map((field) => [`actor.${field.name}`, field.type]),
     ),
     ...Object.fromEntries(
       sourceFields.map((field) => [`source.${field.name}`, field.type]),
     ),
     ...Object.fromEntries(
-      resourceCustomFields.map((field) => [
+      resourceExtraFields.map((field) => [
         `resource.${field.name}`,
         field.type,
       ]),
@@ -76,8 +72,8 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
   const logTranslator = useLogTranslator(repoId);
   const logTranslationQuery = useLogTranslationQuery(repoId);
   const {
-    actorCustomFields,
-    resourceCustomFields,
+    actorExtraFields,
+    resourceExtraFields,
     detailFields,
     sourceFields,
     loading: customFieldsLoading,
@@ -123,7 +119,7 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
           item("actorType", t("common.type")),
           item("actorRef", t("log.actor")),
           ...customFieldItems(
-            actorCustomFields,
+            actorExtraFields,
             "actor",
             "actor_extra_field_name",
           ),
@@ -139,7 +135,7 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
           item("resourceRef", t("log.resource")),
           item("resourceType", t("common.type")),
           ...customFieldItems(
-            resourceCustomFields,
+            resourceExtraFields,
             "resource",
             "resource_extra_field_name",
           ),
@@ -179,8 +175,8 @@ export function useColumnFields(repoId: string) {
   const logTranslator = useLogTranslator(repoId);
   const logTranslationQuery = useLogTranslationQuery(repoId);
   const {
-    actorCustomFields,
-    resourceCustomFields,
+    actorExtraFields,
+    resourceExtraFields,
     detailFields,
     sourceFields,
     loading: customFieldsLoading,
@@ -242,7 +238,7 @@ export function useColumnFields(repoId: string) {
           item("actorName", t("common.name")),
           item("actorRef", t("common.ref")),
           ...customFieldItems(
-            actorCustomFields,
+            actorExtraFields,
             "actor",
             "actor_extra_field_name",
           ),
@@ -260,7 +256,7 @@ export function useColumnFields(repoId: string) {
           item("resourceName", t("common.name")),
           item("resourceRef", t("common.ref")),
           ...customFieldItems(
-            resourceCustomFields,
+            resourceExtraFields,
             "resource",
             "resource_extra_field_name",
           ),

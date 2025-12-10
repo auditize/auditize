@@ -25,7 +25,7 @@ import {
   ActionCategoryField,
   ActionField,
   ActionTypeField,
-  ActorCustomField,
+  ActorExtraField,
   ActorField,
   ActorNameField,
   ActorRefField,
@@ -36,7 +36,7 @@ import {
   DateField,
   DetailField,
   EntityPathField,
-  ResourceCustomField,
+  ResourceExtraField,
   ResourceField,
   ResourceNameField,
   ResourceRefField,
@@ -210,7 +210,7 @@ function logFieldToColumn(
           logTranslator("actor_extra_field_name", fieldName),
       ),
       render: (log: Log) => (
-        <ActorCustomField
+        <ActorExtraField
           log={log}
           repoId={repoId}
           fieldName={fieldName}
@@ -319,7 +319,7 @@ function logFieldToColumn(
           logTranslator("resource_extra_field_name", fieldName),
       ),
       render: (log: Log) => (
-        <ResourceCustomField
+        <ResourceExtraField
           log={log}
           repoId={repoId}
           fieldName={fieldName}

@@ -110,7 +110,7 @@ export function ResourceRefField({
   ) : null;
 }
 
-export function ResourceCustomField({
+export function ResourceExtraField({
   log,
   repoId,
   fieldName,
@@ -130,7 +130,7 @@ export function ResourceCustomField({
 
   return (
     <InlineSearchParamLink
-      label={t("log.inlineFilter.field.resourceCustomField", {
+      label={t("log.inlineFilter.field.resourceExtraField", {
         field: logTranslator(
           "resource_extra_field_name",
           field.name,
