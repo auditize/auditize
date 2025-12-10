@@ -1,6 +1,6 @@
 # Test that the frontend properly compiles
 
-name: Frontend compilation test
+name: Frontend checks
 
 on:
   push:
@@ -21,3 +21,15 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run build
+
+  check-translations:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: python3 src/i18n/check-missing.py
