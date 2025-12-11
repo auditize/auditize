@@ -1,12 +1,18 @@
 import {
+  ActionIcon,
   Group,
   NumberInput,
   Radio,
+  rem,
   Select,
+  SelectProps,
   Stack,
   TextInput,
+  Tooltip,
 } from "@mantine/core";
+import type { ActionIconProps } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
+import { IconDownload } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -54,9 +60,11 @@ function useRepoEditorState(opened: boolean) {
 function LogI18nProfileSelector({
   form,
   readOnly,
+  selectProps,
 }: {
   form: UseFormReturnType<any>;
   readOnly: boolean;
+  selectProps?: SelectProps;
 }) {
   const { t } = useTranslation();
   const query = useQuery({
@@ -82,15 +90,47 @@ function LogI18nProfileSelector({
       disabled={readOnly}
       comboboxProps={{ shadow: "md" }}
       {...form.getInputProps("logI18nProfileId")}
+      {...selectProps}
     />
+  );
+}
+
+function LogTranslationTemplateDownload({
+  repoId,
+  iconProps,
+}: {
+  repoId?: string;
+  iconProps?: ActionIconProps;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Tooltip
+      label={t("repo.form.downloadTranslationTemplate")}
+      withArrow
+      position="bottom"
+    >
+      <ActionIcon
+        component="a"
+        href={`/api/repos/${repoId}/translations/template`}
+        download={`auditize-log-translation-template-${repoId}.json`}
+        target="_blank"
+        variant="transparent"
+        {...iconProps}
+      >
+        <IconDownload />
+      </ActionIcon>
+    </Tooltip>
   );
 }
 
 function RepoForm({
   form,
+  repoId,
   readOnly = false,
 }: {
   form: UseFormReturnType<any>;
+  repoId?: string;
   readOnly?: boolean;
 }) {
   const { t } = useTranslation();
@@ -135,7 +175,19 @@ function RepoForm({
         disabled={readOnly}
         {...form.getInputProps("retentionPeriod")}
       />
-      <LogI18nProfileSelector form={form} readOnly={readOnly} />
+      <Group justify="space-between" align="flex-end">
+        <LogI18nProfileSelector
+          form={form}
+          readOnly={readOnly}
+          selectProps={{ flex: 1 }}
+        />
+        {repoId && (
+          <LogTranslationTemplateDownload
+            repoId={repoId}
+            iconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
+          />
+        )}
+      </Group>
     </Stack>
   );
 }
@@ -197,7 +249,7 @@ export function RepoEdition({
       queryKeyForInvalidation={["repos"]}
       disabledSaving={readOnly}
     >
-      <RepoForm form={form} readOnly={readOnly} />
+      <RepoForm form={form} repoId={repoId ?? undefined} readOnly={readOnly} />
     </ResourceEdition>
   );
 }

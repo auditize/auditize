@@ -41,6 +41,7 @@ export default {
           disabled: "Disabled",
         },
       },
+      downloadTranslationTemplate: "Download log translation template",
     },
     create: {
       title: "Create a repository",
