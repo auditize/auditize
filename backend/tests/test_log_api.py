@@ -2921,6 +2921,46 @@ class _ConsolidatedCustomFieldsTest:
             items=[{"name": field["name"], "type": field["type"]} for field in fields],
         )
 
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field_a", "value": "Value A", "type": "string"}]
+                    )
+                ),
+                entity_path=["A"],
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field_b", "value": "Value B", "type": "string"}]
+                    )
+                ),
+                entity_path=["B"],
+            ),
+        )
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                self.get_path(repo.id),
+                expected_json={
+                    "items": [{"name": "field_b", "type": "string"}],
+                    "pagination": {"next_cursor": None},
+                },
+            )
+
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id)
