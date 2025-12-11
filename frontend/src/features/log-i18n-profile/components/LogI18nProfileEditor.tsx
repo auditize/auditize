@@ -3,6 +3,7 @@ import {
   FileInput,
   Group,
   Input,
+  rem,
   Stack,
   TextInput,
 } from "@mantine/core";
@@ -78,45 +79,48 @@ function TranslationFileInput({
   }, [file]);
 
   return (
-    <Input.Wrapper
-      label={t("logi18nprofile.form.file.label", {
-        lang: t("language." + lang),
-      })}
-    >
-      <Group justify="space-between">
-        <FileInput
-          placeholder={
-            isSet
-              ? t("logi18nprofile.form.file.configured")
-              : t("logi18nprofile.form.file.choose")
+    <Group justify="space-between" align="flex-end">
+      <FileInput
+        label={t("logi18nprofile.form.file.label", {
+          lang: t("language." + lang),
+        })}
+        placeholder={
+          isSet
+            ? t("logi18nprofile.form.file.configured")
+            : t("logi18nprofile.form.file.choose")
+        }
+        accept="application/json"
+        value={file}
+        onChange={setFile}
+        disabled={readonly}
+        flex={1}
+        styles={{
+          input: {
+            fontSize: rem(14),
+          },
+        }}
+      />
+      {profileId && (
+        <DownloadButton
+          href={`/api/log-i18n-profiles/${profileId}/translations/${lang}`}
+          download={`auditize-log-translation-${profileId}-${lang}.json`}
+          tooltipLabel={t("logi18nprofile.form.downloadTranslation")}
+          iconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
+        />
+      )}
+      <CloseButton
+        onClick={() => {
+          if (file) {
+            setFile(null);
+          } else {
+            onChange(null);
           }
-          accept="application/json"
-          value={file}
-          onChange={setFile}
-          disabled={readonly}
-          flex={1}
-        />
-        {profileId && (
-          <DownloadButton
-            href={`/api/log-i18n-profiles/${profileId}/translations/${lang}`}
-            download={`auditize-log-translation-${profileId}-${lang}.json`}
-            tooltipLabel={t("logi18nprofile.form.downloadTranslation")}
-            iconProps={{ flex: 0 }}
-          />
-        )}
-        <CloseButton
-          onClick={() => {
-            if (file) {
-              setFile(null);
-            } else {
-              onChange(null);
-            }
-          }}
-          disabled={readonly || (!isSet && !file)}
-          flex={0}
-        />
-      </Group>
-    </Input.Wrapper>
+        }}
+        disabled={readonly || (!isSet && !file)}
+        flex={0}
+        style={{ marginBottom: rem(4) }}
+      />
+    </Group>
   );
 }
 
