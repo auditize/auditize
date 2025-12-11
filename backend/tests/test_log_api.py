@@ -2774,9 +2774,7 @@ class _TestGetSubElementByRef:
     def get_path(self, repo_id: str, ref: str) -> str:
         raise NotImplementedError
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
+    def prepare_log_extra(self, ref: str) -> dict:
         raise NotImplementedError
 
     def build_expected_json(self, *, ref: str) -> dict:
@@ -2788,7 +2786,7 @@ class _TestGetSubElementByRef:
         log_read_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        await self.create_log(superadmin_client, repo, ref="A")
+        await repo.create_log_with(superadmin_client, self.prepare_log_extra(ref="A"))
         await log_read_client.assert_get_ok(
             self.get_path(repo.id, "A"),
             expected_json=self.build_expected_json(ref="A"),
@@ -2803,7 +2801,7 @@ class _TestGetSubElementByRef:
         no_permission_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        await self.create_log(superadmin_client, repo, ref="A")
+        await repo.create_log_with(superadmin_client, self.prepare_log_extra(ref="A"))
         await no_permission_client.assert_get_forbidden(self.get_path(repo.id, "A"))
 
 
@@ -2811,13 +2809,8 @@ class TestLogActor(_TestGetSubElementByRef):
     def get_path(self, repo_id: str, ref: str) -> str:
         return f"/repos/{repo_id}/logs/actors/{ref}"
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
-        await repo.create_log_with(
-            superadmin_client,
-            {"actor": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
-        )
+    def prepare_log_extra(self, ref: str) -> dict:
+        return {"actor": {"ref": ref, "name": f"Name of {ref}", "type": "data"}}
 
     def build_expected_json(self, *, ref: str) -> dict:
         return {
@@ -2832,13 +2825,8 @@ class TestLogResource(_TestGetSubElementByRef):
     def get_path(self, repo_id: str, ref: str) -> str:
         return f"/repos/{repo_id}/logs/resources/{ref}"
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
-        await repo.create_log_with(
-            superadmin_client,
-            {"resource": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
-        )
+    def prepare_log_extra(self, ref: str) -> dict:
+        return {"resource": {"ref": ref, "name": f"Name of {ref}", "type": "data"}}
 
     def build_expected_json(self, *, ref: str) -> dict:
         return {
@@ -2853,13 +2841,8 @@ class TestLogTag(_TestGetSubElementByRef):
     def get_path(self, repo_id: str, ref: str) -> str:
         return f"/repos/{repo_id}/logs/tags/{ref}"
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
-        await repo.create_log_with(
-            superadmin_client,
-            {"tags": [{"ref": ref, "name": f"Name of {ref}", "type": "data"}]},
-        )
+    def prepare_log_extra(self, ref: str) -> dict:
+        return {"tags": [{"ref": ref, "name": f"Name of {ref}", "type": "data"}]}
 
     def build_expected_json(self, *, ref: str) -> dict:
         return {
