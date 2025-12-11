@@ -196,7 +196,7 @@ class LogService:
             raise NotFoundError()
 
     @staticmethod
-    def _authorized_entity_filter(authorized_entities: set[str]):
+    def _authorized_entity_filter(authorized_entities: set[str]) -> dict:
         return {
             "nested": {
                 "path": "entity_path",
@@ -757,6 +757,7 @@ class LogService:
         *,
         path: str,
         nested: bool = False,
+        authorized_entities: set[str],
         search: str | None,
         limit: int,
         pagination_cursor: str | None,
@@ -768,12 +769,21 @@ class LogService:
                         {"prefix": {f"{path}.name": word}}
                         for word in self._split_words(search)
                     ]
+                    + (
+                        [self._authorized_entity_filter(authorized_entities)]
+                        if authorized_entities
+                        else []
+                    )
                 }
             }
             if nested:
                 query = {"nested": {"path": path, "query": query}}
         else:
-            query = None
+            query = (
+                self._authorized_entity_filter(authorized_entities)
+                if authorized_entities
+                else None
+            )
 
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=path if nested else None,

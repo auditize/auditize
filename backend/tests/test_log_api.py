@@ -2490,6 +2490,9 @@ class _ConsolidatedNameRefPairsTest:
     def get_path(self, repo_id: str) -> str:
         return f"/repos/{repo_id}/logs/aggs/{self.data_type}s/names"
 
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        raise NotImplementedError()
+
     async def test_nominal(
         self,
         superadmin_client: HttpTestHelper,
@@ -2593,6 +2596,37 @@ class _ConsolidatedNameRefPairsTest:
             },
         )
 
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_data("Data A", "data:A", "data"), entity_path=["A"]
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_data("Data B", "data:B", "data"), entity_path=["B"]
+            ),
+        )
+
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                self.get_path(repo.id),
+                expected_json={
+                    "items": [{"name": "Data B", "ref": "data:B"}],
+                    "pagination": {"next_cursor": None},
+                },
+            )
+
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id)
@@ -2610,13 +2644,28 @@ class _ConsolidatedNameRefPairsTest:
 class TestLogActorNames(_ConsolidatedNameRefPairsTest):
     data_type = "actor"
 
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        return PreparedLog.prepare_data(
+            {"actor": {"name": name, "ref": ref, "type": type}}
+        )
+
 
 class TestLogResourceNames(_ConsolidatedNameRefPairsTest):
     data_type = "resource"
 
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        return PreparedLog.prepare_data(
+            {"resource": {"name": name, "ref": ref, "type": type}}
+        )
+
 
 class TestLogTagNames(_ConsolidatedNameRefPairsTest):
     data_type = "tag"
+
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        return PreparedLog.prepare_data(
+            {"tags": [{"name": name, "ref": ref, "type": type}]}
+        )
 
     async def test_nominal(
         self,

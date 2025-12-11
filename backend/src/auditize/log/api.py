@@ -87,10 +87,12 @@ async def _get_aggregated_name_ref_pairs(
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
+    authorized_entities: set[str],
     params: CursorPaginatedSearchParams,
 ) -> NameRefPairListResponse:
     service = await LogService.for_reading(session, repo_id)
     data, next_cursor = await getattr(service, get_data_func_name)(
+        authorized_entities=authorized_entities,
         search=params.query,
         limit=params.limit,
         pagination_cursor=params.cursor,
@@ -213,12 +215,16 @@ async def get_log_actor_types(
 )
 async def get_log_actor_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[CursorPaginatedSearchParams, Query()],
 ):
     return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_actor_names", params
+        session,
+        repo_id,
+        "get_log_actor_names",
+        authorized.permissions.get_repo_readable_entities(repo_id),
+        params,
     )
 
 
@@ -289,12 +295,16 @@ async def get_log_actor(
 )
 async def get_log_resource_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[CursorPaginatedSearchParams, Query()],
 ):
     return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_resource_names", params
+        session,
+        repo_id,
+        "get_log_resource_names",
+        authorized.permissions.get_repo_readable_entities(repo_id),
+        params,
     )
 
 
@@ -411,12 +421,16 @@ async def get_log_tag_types(
 )
 async def get_log_tag_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[CursorPaginatedSearchParams, Query()],
 ):
     return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_tag_names", params
+        session,
+        repo_id,
+        "get_log_tag_names",
+        authorized.permissions.get_repo_readable_entities(repo_id),
+        params,
     )
 
 
