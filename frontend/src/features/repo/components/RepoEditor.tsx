@@ -1,5 +1,4 @@
 import {
-  ActionIcon,
   Group,
   NumberInput,
   Radio,
@@ -8,15 +7,13 @@ import {
   SelectProps,
   Stack,
   TextInput,
-  Tooltip,
 } from "@mantine/core";
-import type { ActionIconProps } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
-import { IconDownload } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
+import { DownloadButton } from "@/components/DownloadButton";
 import {
   ResourceCreation,
   ResourceEdition,
@@ -95,35 +92,6 @@ function LogI18nProfileSelector({
   );
 }
 
-function LogTranslationTemplateDownload({
-  repoId,
-  iconProps,
-}: {
-  repoId?: string;
-  iconProps?: ActionIconProps;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <Tooltip
-      label={t("repo.form.downloadTranslationTemplate")}
-      withArrow
-      position="bottom"
-    >
-      <ActionIcon
-        component="a"
-        href={`/api/repos/${repoId}/translations/template`}
-        download={`auditize-log-translation-template-${repoId}.json`}
-        target="_blank"
-        variant="transparent"
-        {...iconProps}
-      >
-        <IconDownload />
-      </ActionIcon>
-    </Tooltip>
-  );
-}
-
 function RepoForm({
   form,
   repoId,
@@ -182,8 +150,10 @@ function RepoForm({
           selectProps={{ flex: 1 }}
         />
         {repoId && (
-          <LogTranslationTemplateDownload
-            repoId={repoId}
+          <DownloadButton
+            href={`/api/repos/${repoId}/translations/template`}
+            download={`auditize-log-translation-template-${repoId}.json`}
+            tooltipLabel={t("repo.form.downloadTranslationTemplate")}
             iconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
           />
         )}

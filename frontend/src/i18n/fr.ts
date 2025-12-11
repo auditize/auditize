@@ -83,6 +83,7 @@ export default {
         choose: "Sélectionner un fichier",
         configured: "Traduction configurée",
       },
+      downloadTranslation: "Télécharger la traduction",
     },
     create: {
       title: "Créer un profil de traduction des journaux",

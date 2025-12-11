@@ -1,5 +1,4 @@
 import {
-  ActionIcon,
   CloseButton,
   FileInput,
   Group,
@@ -8,10 +7,10 @@ import {
   TextInput,
 } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
-import { IconDownload } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { DownloadButton } from "@/components/DownloadButton";
 import {
   ResourceCreation,
   ResourceEdition,
@@ -98,16 +97,12 @@ function TranslationFileInput({
           flex={1}
         />
         {profileId && (
-          <ActionIcon
-            component="a"
+          <DownloadButton
             href={`/api/log-i18n-profiles/${profileId}/translations/${lang}`}
             download={`auditize-log-translation-${profileId}-${lang}.json`}
-            target="_blank"
-            variant="transparent"
-            flex={0}
-          >
-            <IconDownload />
-          </ActionIcon>
+            tooltipLabel={t("logi18nprofile.form.downloadTranslation")}
+            iconProps={{ flex: 0 }}
+          />
         )}
         <CloseButton
           onClick={() => {
