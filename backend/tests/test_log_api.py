@@ -3028,6 +3028,46 @@ class _CustomFieldsEnumValuesTest:
             items=[{"value": value} for value in field_values],
         )
 
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field", "value": "value_a", "type": "enum"}]
+                    )
+                ),
+                entity_path=["A"],
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field", "value": "value_b", "type": "enum"}]
+                    )
+                ),
+                entity_path=["B"],
+            ),
+        )
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                self.get_path(repo.id, "field"),
+                expected_json={
+                    "items": [{"value": "value_b"}],
+                    "pagination": {"next_cursor": None},
+                },
+            )
+
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id, "my_field")

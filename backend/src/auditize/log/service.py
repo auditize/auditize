@@ -916,6 +916,7 @@ class LogService:
         *,
         path: str,
         field_name: str,
+        authorized_entities: set[str],
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str | None]:
@@ -952,6 +953,11 @@ class LogService:
 
         resp = await self.es.search(
             index=self.read_alias,
+            query=(
+                self._authorized_entity_filter(authorized_entities)
+                if authorized_entities
+                else None
+            ),
             aggregations=aggregations,
             size=0,
         )
