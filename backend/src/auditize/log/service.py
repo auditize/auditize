@@ -584,11 +584,16 @@ class LogService:
         return logs, next_cursor
 
     async def get_newest_log(
-        self, search_params: LogSearchParams | None = None
+        self,
+        search_params: LogSearchParams | None = None,
+        *,
+        authorized_entities: set[str] = None,
     ) -> Log | None:
         resp = await self.es.search(
             index=self.read_alias,
-            query=await self._prepare_es_query(search_params),
+            query=await self._prepare_es_query(
+                search_params, authorized_entities=authorized_entities
+            ),
             sort=[{"saved_at": "desc", "log_id": "desc"}],
             size=1,
         )
@@ -804,20 +809,33 @@ class LogService:
         _get_aggregated_name_ref_pairs, path="tags", nested=True
     )
 
-    async def get_log_actor(self, actor_ref: str) -> Log.Actor:
-        log = await self.get_newest_log(LogSearchParams(actor_ref=actor_ref))
+    async def get_log_actor(
+        self, actor_ref: str, authorized_entities: set[str]
+    ) -> Log.Actor:
+        log = await self.get_newest_log(
+            LogSearchParams(actor_ref=actor_ref),
+            authorized_entities=authorized_entities,
+        )
         if not log or not log.actor:
             raise NotFoundError(f"Actor {actor_ref!r} not found")
         return log.actor
 
-    async def get_log_resource(self, resource_ref: str) -> Log.Resource:
-        log = await self.get_newest_log(LogSearchParams(resource_ref=resource_ref))
+    async def get_log_resource(
+        self, resource_ref: str, authorized_entities: set[str]
+    ) -> Log.Resource:
+        log = await self.get_newest_log(
+            LogSearchParams(resource_ref=resource_ref),
+            authorized_entities=authorized_entities,
+        )
         if not log or not log.resource:
             raise NotFoundError(f"Resource {resource_ref!r} not found")
         return log.resource
 
-    async def get_log_tag(self, tag_ref: str) -> Log.Tag:
-        log = await self.get_newest_log(LogSearchParams(tag_ref=tag_ref))
+    async def get_log_tag(self, tag_ref: str, authorized_entities: set[str]) -> Log.Tag:
+        log = await self.get_newest_log(
+            LogSearchParams(tag_ref=tag_ref),
+            authorized_entities=authorized_entities,
+        )
         if log:
             for tag in log.tags:
                 if tag.ref == tag_ref:

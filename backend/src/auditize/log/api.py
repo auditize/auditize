@@ -290,12 +290,15 @@ async def get_log_actor_extra_field_values(
 )
 async def get_log_actor(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     actor_ref: str,
 ):
     service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_actor(actor_ref)
+    return await service.get_log_actor(
+        actor_ref,
+        authorized.permissions.get_repo_readable_entities(repo_id),
+    )
 
 
 @router.get(
@@ -402,12 +405,15 @@ async def get_log_resource_extra_fields(
 )
 async def get_log_resource(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     resource_ref: str,
 ):
     service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_resource(resource_ref)
+    return await service.get_log_resource(
+        resource_ref,
+        authorized.permissions.get_repo_readable_entities(repo_id),
+    )
 
 
 @router.get(
@@ -466,12 +472,15 @@ async def get_log_tag_names(
 )
 async def get_log_tag(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     tag_ref: str,
 ):
     service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_tag(tag_ref)
+    return await service.get_log_tag(
+        tag_ref,
+        authorized.permissions.get_repo_readable_entities(repo_id),
+    )
 
 
 @router.get(

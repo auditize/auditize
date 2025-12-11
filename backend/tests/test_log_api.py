@@ -2792,6 +2792,33 @@ class _TestGetSubElementByRef:
             expected_json=self.build_expected_json(ref="A"),
         )
 
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_extra(ref="A"),
+                entity_path=["A"],
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_extra(ref="B"),
+                entity_path=["B"],
+            ),
+        )
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_not_found(self.get_path(repo.id, "A"))
+            await client.assert_get_ok(self.get_path(repo.id, "B"))
+
     async def test_not_found(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await log_read_client.assert_get_not_found(self.get_path(repo.id, "A"))
 
