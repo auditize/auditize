@@ -196,7 +196,11 @@ class LogService:
             raise NotFoundError()
 
     @staticmethod
-    def _authorized_entity_filter(authorized_entities: set[str]) -> dict:
+    def _build_authorized_entities_es_query(
+        authorized_entities: set[str] | None,
+    ) -> dict | None:
+        if not authorized_entities:
+            return None
         return {
             "nested": {
                 "path": "entity_path",
@@ -413,11 +417,11 @@ class LogService:
             for name, value in fields.items()
         ]
 
-    async def _prepare_es_query(
+    async def _build_es_query(
         self,
         search_params: LogSearchParams | None = None,
         *,
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None = None,
     ) -> dict | None:
         sp = search_params
         filter = []
@@ -542,7 +546,7 @@ class LogService:
                 )
 
         if authorized_entities:
-            filter.append(self._authorized_entity_filter(authorized_entities))
+            filter.append(self._build_authorized_entities_es_query(authorized_entities))
 
         return {"bool": {"filter": filter}} if filter else None
 
@@ -557,7 +561,7 @@ class LogService:
     ) -> tuple[list[Log], str | None]:
         resp = await self.es.search(
             index=self.read_alias,
-            query=await self._prepare_es_query(
+            query=await self._build_es_query(
                 search_params, authorized_entities=authorized_entities
             ),
             search_after=(
@@ -591,7 +595,7 @@ class LogService:
     ) -> Log | None:
         resp = await self.es.search(
             index=self.read_alias,
-            query=await self._prepare_es_query(
+            query=await self._build_es_query(
                 search_params, authorized_entities=authorized_entities
             ),
             sort=[{"saved_at": "desc", "log_id": "desc"}],
@@ -683,7 +687,7 @@ class LogService:
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=nested,
             fields=[field],
-            query=await self._prepare_es_query(
+            query=await self._build_es_query(
                 search_params, authorized_entities=authorized_entities
             ),
             limit=limit,
@@ -768,27 +772,18 @@ class LogService:
         pagination_cursor: str | None,
     ) -> tuple[list[tuple[str, str]], str]:
         if search:
-            query = {
-                "bool": {
-                    "filter": [
-                        {"prefix": {f"{path}.name": word}}
-                        for word in self._split_words(search)
-                    ]
-                    + (
-                        [self._authorized_entity_filter(authorized_entities)]
-                        if authorized_entities
-                        else []
-                    )
-                }
-            }
+            filter = [
+                {"prefix": {f"{path}.name": word}} for word in self._split_words(search)
+            ]
+            if authorized_entities:
+                filter.append(
+                    self._build_authorized_entities_es_query(authorized_entities)
+                )
+            query = {"bool": {"filter": filter}}
             if nested:
                 query = {"nested": {"path": path, "query": query}}
         else:
-            query = (
-                self._authorized_entity_filter(authorized_entities)
-                if authorized_entities
-                else None
-            )
+            query = self._build_authorized_entities_es_query(authorized_entities)
 
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=path if nested else None,
@@ -891,11 +886,7 @@ class LogService:
 
         resp = await self.es.search(
             index=self.read_alias,
-            query=(
-                self._authorized_entity_filter(authorized_entities)
-                if authorized_entities
-                else None
-            ),
+            query=self._build_authorized_entities_es_query(authorized_entities),
             aggregations=aggregations,
             size=0,
         )
@@ -971,11 +962,7 @@ class LogService:
 
         resp = await self.es.search(
             index=self.read_alias,
-            query=(
-                self._authorized_entity_filter(authorized_entities)
-                if authorized_entities
-                else None
-            ),
+            query=self._build_authorized_entities_es_query(authorized_entities),
             aggregations=aggregations,
             size=0,
         )
