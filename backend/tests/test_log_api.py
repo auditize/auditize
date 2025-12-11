@@ -2210,6 +2210,33 @@ class _ConsolidatedDataTest:
             items=[{"name": item} for item in reversed(items)],
         )
 
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        entity_a_values = list(reversed(range(5)))
+        entity_a_items = await self.create_consolidated_data(
+            superadmin_client, repo, entity_a_values, entity_path=["A"]
+        )
+        entity_b_values = list(reversed(range(5, 10)))
+        entity_b_items = await self.create_consolidated_data(
+            superadmin_client, repo, entity_b_values, entity_path=["B"]
+        )
+
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                f"/repos/{repo.id}/logs/aggs/{self.relative_path}",
+                expected_json={
+                    "items": [{"name": item} for item in reversed(entity_b_items)],
+                    "pagination": {"next_cursor": None},
+                },
+            )
+
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id)
@@ -2230,24 +2257,30 @@ class TestLogActionCategories(_ConsolidatedDataTest):
         return "actions/categories"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
-                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
+                PreparedLog.prepare_data_with_entity_path(
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}},
+                    entity_path=entity_path,
                 ),
             )
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "action": {
                             "category": f"category_{val}",
                             "type": f"type_{val + 10}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
 
@@ -2260,24 +2293,31 @@ class TestLogActionTypes(_ConsolidatedDataTest):
         return "actions/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
-                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}}
+                PreparedLog.prepare_data_with_entity_path(
+                    {"action": {"category": f"category_{val}", "type": f"type_{val}"}},
+                    entity_path=entity_path,
                 ),
             )
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "action": {
                             "category": f"category_{val + 10}",
                             "type": f"type_{val}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
 
@@ -2309,19 +2349,25 @@ class TestLogActorTypes(_ConsolidatedDataTest):
         return "actors/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "actor": {
                             "type": f"type_{val}",
                             "ref": f"id_{val}",
                             "name": f"name_{val}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
         return [f"type_{val}" for val in values]
@@ -2333,19 +2379,25 @@ class TestLogResourceTypes(_ConsolidatedDataTest):
         return "resources/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "resource": {
                             "ref": f"ref_{val}",
                             "type": f"type_{val}",
                             "name": f"name_{val}",
                         }
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
         return [f"type_{val}" for val in values]
@@ -2357,12 +2409,17 @@ class TestLogTagTypes(_ConsolidatedDataTest):
         return "tags/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values[:-1]:
             await repo.create_log(
                 client,
-                PreparedLog.prepare_data(
+                PreparedLog.prepare_data_with_entity_path(
                     {
                         "tags": [
                             {
@@ -2371,13 +2428,17 @@ class TestLogTagTypes(_ConsolidatedDataTest):
                                 "name": f"name_{val}",
                             }
                         ]
-                    }
+                    },
+                    entity_path=entity_path,
                 ),
             )
 
         await repo.create_log(
             client,
-            PreparedLog.prepare_data({"tags": [{"type": "simple_tag"}]}),
+            PreparedLog.prepare_data_with_entity_path(
+                {"tags": [{"type": "simple_tag"}]},
+                entity_path=entity_path,
+            ),
         )
 
         return [f"type_{val}" for val in values[:-1]] + ["simple_tag"]
@@ -2389,10 +2450,15 @@ class TestLogAttachmentTypes(_ConsolidatedDataTest):
         return "attachments/types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
-            log = await repo.create_log(client)
+            log = await repo.create_log_with_entity_path(client, entity_path)
             await log.upload_attachment(client, type=f"type_{val}")
         return [f"type_{val}" for val in values]
 
@@ -2403,10 +2469,15 @@ class TestLogAttachmentMimeTypes(_ConsolidatedDataTest):
         return "attachments/mime-types"
 
     async def create_consolidated_data(
-        self, client: HttpTestHelper, repo: PreparedRepo, values: list[int]
+        self,
+        client: HttpTestHelper,
+        repo: PreparedRepo,
+        values: list[int],
+        *,
+        entity_path: list[str] = None,
     ) -> list[str]:
         for val in values:
-            log = await repo.create_log(client)
+            log = await repo.create_log_with_entity_path(client, entity_path)
             await log.upload_attachment(client, mime_type=f"text/plain{val}")
         return [f"text/plain{val}" for val in values]
 
@@ -2418,6 +2489,9 @@ class _ConsolidatedNameRefPairsTest:
 
     def get_path(self, repo_id: str) -> str:
         return f"/repos/{repo_id}/logs/aggs/{self.data_type}s/names"
+
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        raise NotImplementedError()
 
     async def test_nominal(
         self,
@@ -2522,6 +2596,37 @@ class _ConsolidatedNameRefPairsTest:
             },
         )
 
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_data("Data A", "data:A", "data"), entity_path=["A"]
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_data("Data B", "data:B", "data"), entity_path=["B"]
+            ),
+        )
+
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                self.get_path(repo.id),
+                expected_json={
+                    "items": [{"name": "Data B", "ref": "data:B"}],
+                    "pagination": {"next_cursor": None},
+                },
+            )
+
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
             log_read_client, self.get_path(repo.id)
@@ -2539,13 +2644,28 @@ class _ConsolidatedNameRefPairsTest:
 class TestLogActorNames(_ConsolidatedNameRefPairsTest):
     data_type = "actor"
 
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        return PreparedLog.prepare_data(
+            {"actor": {"name": name, "ref": ref, "type": type}}
+        )
+
 
 class TestLogResourceNames(_ConsolidatedNameRefPairsTest):
     data_type = "resource"
 
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        return PreparedLog.prepare_data(
+            {"resource": {"name": name, "ref": ref, "type": type}}
+        )
+
 
 class TestLogTagNames(_ConsolidatedNameRefPairsTest):
     data_type = "tag"
+
+    def prepare_log_data(self, name: str, ref: str, type: str) -> dict:
+        return PreparedLog.prepare_data(
+            {"tags": [{"name": name, "ref": ref, "type": type}]}
+        )
 
     async def test_nominal(
         self,
@@ -2654,9 +2774,7 @@ class _TestGetSubElementByRef:
     def get_path(self, repo_id: str, ref: str) -> str:
         raise NotImplementedError
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
+    def prepare_log_extra(self, ref: str) -> dict:
         raise NotImplementedError
 
     def build_expected_json(self, *, ref: str) -> dict:
@@ -2668,11 +2786,38 @@ class _TestGetSubElementByRef:
         log_read_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        await self.create_log(superadmin_client, repo, ref="A")
+        await repo.create_log_with(superadmin_client, self.prepare_log_extra(ref="A"))
         await log_read_client.assert_get_ok(
             self.get_path(repo.id, "A"),
             expected_json=self.build_expected_json(ref="A"),
         )
+
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_extra(ref="A"),
+                entity_path=["A"],
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                self.prepare_log_extra(ref="B"),
+                entity_path=["B"],
+            ),
+        )
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_not_found(self.get_path(repo.id, "A"))
+            await client.assert_get_ok(self.get_path(repo.id, "B"))
 
     async def test_not_found(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await log_read_client.assert_get_not_found(self.get_path(repo.id, "A"))
@@ -2683,7 +2828,7 @@ class _TestGetSubElementByRef:
         no_permission_client: HttpTestHelper,
         repo: PreparedRepo,
     ):
-        await self.create_log(superadmin_client, repo, ref="A")
+        await repo.create_log_with(superadmin_client, self.prepare_log_extra(ref="A"))
         await no_permission_client.assert_get_forbidden(self.get_path(repo.id, "A"))
 
 
@@ -2691,13 +2836,8 @@ class TestLogActor(_TestGetSubElementByRef):
     def get_path(self, repo_id: str, ref: str) -> str:
         return f"/repos/{repo_id}/logs/actors/{ref}"
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
-        await repo.create_log_with(
-            superadmin_client,
-            {"actor": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
-        )
+    def prepare_log_extra(self, ref: str) -> dict:
+        return {"actor": {"ref": ref, "name": f"Name of {ref}", "type": "data"}}
 
     def build_expected_json(self, *, ref: str) -> dict:
         return {
@@ -2712,13 +2852,8 @@ class TestLogResource(_TestGetSubElementByRef):
     def get_path(self, repo_id: str, ref: str) -> str:
         return f"/repos/{repo_id}/logs/resources/{ref}"
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
-        await repo.create_log_with(
-            superadmin_client,
-            {"resource": {"ref": ref, "name": f"Name of {ref}", "type": "data"}},
-        )
+    def prepare_log_extra(self, ref: str) -> dict:
+        return {"resource": {"ref": ref, "name": f"Name of {ref}", "type": "data"}}
 
     def build_expected_json(self, *, ref: str) -> dict:
         return {
@@ -2733,13 +2868,8 @@ class TestLogTag(_TestGetSubElementByRef):
     def get_path(self, repo_id: str, ref: str) -> str:
         return f"/repos/{repo_id}/logs/tags/{ref}"
 
-    async def create_log(
-        self, superadmin_client: HttpTestHelper, repo: PreparedRepo, *, ref: str
-    ):
-        await repo.create_log_with(
-            superadmin_client,
-            {"tags": [{"ref": ref, "name": f"Name of {ref}", "type": "data"}]},
-        )
+    def prepare_log_extra(self, ref: str) -> dict:
+        return {"tags": [{"ref": ref, "name": f"Name of {ref}", "type": "data"}]}
 
     def build_expected_json(self, *, ref: str) -> dict:
         return {
@@ -2800,6 +2930,46 @@ class _ConsolidatedCustomFieldsTest:
             self.get_path(repo.id),
             items=[{"name": field["name"], "type": field["type"]} for field in fields],
         )
+
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field_a", "value": "Value A", "type": "string"}]
+                    )
+                ),
+                entity_path=["A"],
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field_b", "value": "Value B", "type": "string"}]
+                    )
+                ),
+                entity_path=["B"],
+            ),
+        )
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                self.get_path(repo.id),
+                expected_json={
+                    "items": [{"name": "field_b", "type": "string"}],
+                    "pagination": {"next_cursor": None},
+                },
+            )
 
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(
@@ -2867,6 +3037,46 @@ class _CustomFieldsEnumValuesTest:
             self.get_path(repo.id, "my_field"),
             items=[{"value": value} for value in field_values],
         )
+
+    async def test_authorized_entities(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field", "value": "value_a", "type": "enum"}]
+                    )
+                ),
+                entity_path=["A"],
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            PreparedLog.prepare_data_with_entity_path(
+                PreparedLog.prepare_data(
+                    self.prepare_log_data(
+                        [{"name": "field", "value": "value_b", "type": "enum"}]
+                    )
+                ),
+                entity_path=["B"],
+            ),
+        )
+        apikey = await apikey_builder(
+            {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["B"]}]}}
+        )
+        async with apikey.client() as client:
+            await client.assert_get_ok(
+                self.get_path(repo.id, "field"),
+                expected_json={
+                    "items": [{"value": "value_b"}],
+                    "pagination": {"next_cursor": None},
+                },
+            )
 
     async def test_empty(self, log_read_client: HttpTestHelper, repo: PreparedRepo):
         await do_test_cursor_pagination_empty_data(

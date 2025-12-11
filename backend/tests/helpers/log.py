@@ -45,6 +45,25 @@ class PreparedLog:
             **extra,
         }
 
+    @staticmethod
+    def prepare_data_with_entity_path(
+        extra=None, *, entity_path: list[str] = None
+    ) -> dict:
+        return PreparedLog.prepare_data(
+            {
+                **extra,
+                **(
+                    {
+                        "entity_path": [
+                            {"ref": entity, "name": entity} for entity in entity_path
+                        ]
+                    }
+                    if entity_path
+                    else {}
+                ),
+            }
+        )
+
     async def upload_attachment(
         self,
         client: HttpTestHelper,

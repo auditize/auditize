@@ -66,14 +66,17 @@ router = APIRouter(
 
 
 async def _get_aggregated_names(
+    *,
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
+    authorized_entities: set[str],
     page_params: CursorPaginationParams,
     **kwargs,
 ) -> NameListResponse:
     service = await LogService.for_reading(session, repo_id)
     data, next_cursor = await getattr(service, get_data_func_name)(
+        authorized_entities=authorized_entities,
         limit=page_params.limit,
         pagination_cursor=page_params.cursor,
         **kwargs,
@@ -82,13 +85,16 @@ async def _get_aggregated_names(
 
 
 async def _get_aggregated_name_ref_pairs(
+    *,
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
+    authorized_entities: set[str],
     params: CursorPaginatedSearchParams,
 ) -> NameRefPairListResponse:
     service = await LogService.for_reading(session, repo_id)
     data, next_cursor = await getattr(service, get_data_func_name)(
+        authorized_entities=authorized_entities,
         search=params.query,
         limit=params.limit,
         pagination_cursor=params.cursor,
@@ -97,13 +103,16 @@ async def _get_aggregated_name_ref_pairs(
 
 
 async def _get_custom_fields(
+    *,
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
+    authorized_entities: set[str],
     params: CursorPaginationParams,
 ) -> CustomFieldListResponse:
     service = await LogService.for_reading(session, repo_id)
     data, next_cursor = await getattr(service, get_data_func_name)(
+        authorized_entities=authorized_entities,
         limit=params.limit,
         pagination_cursor=params.cursor,
     )
@@ -111,14 +120,17 @@ async def _get_custom_fields(
 
 
 async def _get_custom_field_enum_values(
+    *,
     session: AsyncSession,
     repo_id: UUID,
     field_name: str,
     get_data_func_name,
+    authorized_entities: set[str],
     params: CursorPaginationParams,
 ) -> CustomFieldEnumValueListResponse:
     service = await LogService.for_reading(session, repo_id)
     data, next_cursor = await getattr(service, get_data_func_name)(
+        authorized_entities=authorized_entities,
         field_name=field_name,
         limit=params.limit,
         pagination_cursor=params.cursor,
@@ -141,15 +153,16 @@ async def _get_custom_field_enum_values(
 )
 async def get_log_action_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[LogActionTypeListParams, Query()],
 ):
     return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_action_types",
-        params,
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_action_types",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        page_params=params,
         action_category=params.category,
     )
 
@@ -164,15 +177,16 @@ async def get_log_action_types(
 )
 async def get_log_action_categories(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_action_categories",
-        page_params,
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_action_categories",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        page_params=page_params,
     )
 
 
@@ -186,15 +200,16 @@ async def get_log_action_categories(
 )
 async def get_log_actor_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_actor_types",
-        page_params,
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_actor_types",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        page_params=page_params,
     )
 
 
@@ -208,12 +223,16 @@ async def get_log_actor_types(
 )
 async def get_log_actor_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[CursorPaginatedSearchParams, Query()],
 ):
     return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_actor_names", params
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_actor_names",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=params,
     )
 
 
@@ -227,12 +246,16 @@ async def get_log_actor_names(
 )
 async def get_log_actor_extra_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_fields(
-        session, repo_id, "get_log_actor_extra_fields", page_params
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_actor_extra_fields",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -246,13 +269,18 @@ async def get_log_actor_extra_fields(
 )
 async def get_log_actor_extra_field_values(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     field_name: str,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_field_enum_values(
-        session, repo_id, field_name, "get_actor_extra_enum_values", page_params
+        session=session,
+        repo_id=repo_id,
+        field_name=field_name,
+        get_data_func_name="get_actor_extra_enum_values",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -266,12 +294,15 @@ async def get_log_actor_extra_field_values(
 )
 async def get_log_actor(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     actor_ref: str,
 ):
     service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_actor(actor_ref)
+    return await service.get_log_actor(
+        actor_ref,
+        authorized.permissions.get_repo_readable_entities(repo_id),
+    )
 
 
 @router.get(
@@ -284,12 +315,16 @@ async def get_log_actor(
 )
 async def get_log_resource_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[CursorPaginatedSearchParams, Query()],
 ):
     return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_resource_names", params
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_resource_names",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=params,
     )
 
 
@@ -303,15 +338,16 @@ async def get_log_resource_names(
 )
 async def get_log_resource_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_resource_types",
-        page_params,
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_resource_types",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        page_params=page_params,
     )
 
 
@@ -325,13 +361,18 @@ async def get_log_resource_types(
 )
 async def get_log_resource_extra_field_values(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     field_name: str,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_field_enum_values(
-        session, repo_id, field_name, "get_resource_extra_enum_values", page_params
+        session=session,
+        repo_id=repo_id,
+        field_name=field_name,
+        get_data_func_name="get_resource_extra_enum_values",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -345,12 +386,16 @@ async def get_log_resource_extra_field_values(
 )
 async def get_log_resource_extra_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_fields(
-        session, repo_id, "get_log_resource_extra_fields", page_params
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_resource_extra_fields",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -364,12 +409,15 @@ async def get_log_resource_extra_fields(
 )
 async def get_log_resource(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     resource_ref: str,
 ):
     service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_resource(resource_ref)
+    return await service.get_log_resource(
+        resource_ref,
+        authorized.permissions.get_repo_readable_entities(repo_id),
+    )
 
 
 @router.get(
@@ -382,15 +430,16 @@ async def get_log_resource(
 )
 async def get_log_tag_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_tag_types",
-        page_params,
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_tag_types",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        page_params=page_params,
     )
 
 
@@ -404,12 +453,16 @@ async def get_log_tag_types(
 )
 async def get_log_tag_names(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[CursorPaginatedSearchParams, Query()],
 ):
     return await _get_aggregated_name_ref_pairs(
-        session, repo_id, "get_log_tag_names", params
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_tag_names",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=params,
     )
 
 
@@ -423,12 +476,15 @@ async def get_log_tag_names(
 )
 async def get_log_tag(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     tag_ref: str,
 ):
     service = await LogService.for_reading(session, repo_id)
-    return await service.get_log_tag(tag_ref)
+    return await service.get_log_tag(
+        tag_ref,
+        authorized.permissions.get_repo_readable_entities(repo_id),
+    )
 
 
 @router.get(
@@ -441,12 +497,16 @@ async def get_log_tag(
 )
 async def get_log_source_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_fields(
-        session, repo_id, "get_log_source_fields", page_params
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_source_fields",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -460,13 +520,18 @@ async def get_log_source_fields(
 )
 async def get_log_source_field_values(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     field_name: str,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_field_enum_values(
-        session, repo_id, field_name, "get_source_enum_values", page_params
+        session=session,
+        repo_id=repo_id,
+        field_name=field_name,
+        get_data_func_name="get_source_enum_values",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -480,12 +545,16 @@ async def get_log_source_field_values(
 )
 async def get_log_details_fields(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_fields(
-        session, repo_id, "get_log_details_fields", page_params
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_details_fields",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -499,13 +568,18 @@ async def get_log_details_fields(
 )
 async def get_log_detail_field_values(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     field_name: str,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_custom_field_enum_values(
-        session, repo_id, field_name, "get_details_enum_values", page_params
+        session=session,
+        repo_id=repo_id,
+        field_name=field_name,
+        get_data_func_name="get_details_enum_values",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        params=page_params,
     )
 
 
@@ -519,15 +593,16 @@ async def get_log_detail_field_values(
 )
 async def get_log_attachment_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_attachment_types",
-        page_params,
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_attachment_types",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        page_params=page_params,
     )
 
 
@@ -541,15 +616,16 @@ async def get_log_attachment_types(
 )
 async def get_log_attachment_mime_types(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     page_params: Annotated[CursorPaginationParams, Query()],
 ):
     return await _get_aggregated_names(
-        session,
-        repo_id,
-        "get_log_attachment_mime_types",
-        page_params,
+        session=session,
+        repo_id=repo_id,
+        get_data_func_name="get_log_attachment_mime_types",
+        authorized_entities=authorized.permissions.get_repo_readable_entities(repo_id),
+        page_params=page_params,
     )
 
 
