@@ -487,6 +487,143 @@ async def test_repo_get_translation_forbidden(
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/translations/fr")
 
 
+async def test_repo_get_translation_template_empty(
+    repo_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await repo_read_client.assert_get_ok(
+        f"/repos/{repo.id}/translations/template",
+        expected_json=PreparedLogI18nProfile.EMPTY_TRANSLATION,
+    )
+
+
+async def test_repo_get_translation_template(
+    superadmin_client: HttpTestHelper,
+    repo_read_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    await repo.create_log(
+        superadmin_client,
+        {
+            "action": {
+                "type": "user_login",
+                "category": "authentication",
+            },
+            "entity_path": [{"ref": "entity", "name": "Entity"}],
+            "source": [
+                {"name": "ip", "value": "1.1.1.1"},
+                {"name": "user_agent", "value": "Mozilla/5.0"},
+                {"name": "enum_key", "value": "enum_value", "type": "enum"},
+            ],
+            "actor": {
+                "type": "user",
+                "ref": "user:123",
+                "name": "User 123",
+                "extra": [
+                    {"name": "role", "value": "admin"},
+                    {"name": "enum_key", "value": "enum_value", "type": "enum"},
+                ],
+            },
+            "resource": {
+                "ref": "core",
+                "type": "module",
+                "name": "Core Module",
+                "extra": [
+                    {"name": "creator", "value": "xyz"},
+                    {"name": "enum_key", "value": "enum_value", "type": "enum"},
+                ],
+            },
+            "details": [
+                {"name": "some_key", "value": "some_value"},
+                {"name": "other_key", "value": "other_value"},
+                {"name": "enum_key", "value": "enum_value", "type": "enum"},
+            ],
+            "tags": [
+                {
+                    "type": "simple_tag",
+                },
+                {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
+            ],
+        },
+    )
+
+    await repo_read_client.assert_get_ok(
+        f"/repos/{repo.id}/translations/template",
+        expected_json={
+            "action_type": {
+                "user_login": "",
+            },
+            "action_category": {
+                "authentication": "",
+            },
+            "actor_type": {
+                "user": "",
+            },
+            "actor_extra_field_name": {
+                "role": "",
+                "enum_key": "",
+            },
+            "actor_extra_field_value_enum": {
+                "enum_key": {
+                    "enum_value": "",
+                },
+            },
+            "detail_field_name": {
+                "some_key": "",
+                "other_key": "",
+                "enum_key": "",
+            },
+            "detail_field_value_enum": {
+                "enum_key": {
+                    "enum_value": "",
+                },
+            },
+            "resource_extra_field_name": {
+                "creator": "",
+                "enum_key": "",
+            },
+            "resource_extra_field_value_enum": {
+                "enum_key": {
+                    "enum_value": "",
+                },
+            },
+            "resource_type": {
+                "module": "",
+            },
+            "source_field_name": {
+                "ip": "",
+                "user_agent": "",
+                "enum_key": "",
+            },
+            "source_field_value_enum": {
+                "enum_key": {
+                    "enum_value": "",
+                },
+            },
+            "tag_type": {
+                "simple_tag": "",
+                "rich_tag": "",
+            },
+            "attachment_type": {},
+        },
+    )
+
+
+async def test_repo_get_translation_template_forbidden(
+    no_permission_client: HttpTestHelper, repo: PreparedRepo
+):
+    await no_permission_client.assert_get_forbidden(
+        f"/repos/{repo.id}/translations/template"
+    )
+
+
+async def test_repo_get_translation_template_unknown_id(
+    repo_read_client: HttpTestHelper,
+):
+    await repo_read_client.assert_get_not_found(
+        f"/repos/{UNKNOWN_UUID}/translations/template"
+    )
+
+
 async def test_repo_list(repo_read_client: HttpTestHelper, repo_builder: RepoBuilder):
     repos = [await repo_builder({}) for _ in range(5)]
 

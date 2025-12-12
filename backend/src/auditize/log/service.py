@@ -3,8 +3,8 @@ import string
 import unicodedata
 import uuid
 from datetime import datetime, timedelta
-from functools import partialmethod
-from typing import Any, Self
+from functools import partial, partialmethod
+from typing import Any, AsyncIterator, Awaitable, Callable, Self
 from uuid import UUID
 
 import elasticsearch
@@ -44,6 +44,7 @@ from auditize.log.models import (
     LogSearchParams,
 )
 from auditize.log.sql_models import LogEntity
+from auditize.log_i18n_profile.models import LogLabels
 from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
 
@@ -679,7 +680,7 @@ class LogService:
         *,
         nested: str = None,
         field: str,
-        authorized_entities: set[str],
+        authorized_entities: set[str] | None = None,
         search_params: LogSearchParams | None = None,
         limit: int,
         pagination_cursor: str | None,
@@ -701,8 +702,9 @@ class LogService:
 
     async def get_log_action_types(
         self,
-        authorized_entities: set[str],
-        action_category: str | None,
+        *,
+        authorized_entities: set[str] | None = None,
+        action_category: str | None = None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str]:
@@ -841,7 +843,7 @@ class LogService:
         self,
         *,
         path: str,
-        authorized_entities: set[str],
+        authorized_entities: set[str] | None = None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[tuple[str, CustomFieldType]], str | None]:
@@ -925,7 +927,7 @@ class LogService:
         *,
         path: str,
         field_name: str,
-        authorized_entities: set[str],
+        authorized_entities: set[str] | None = None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str | None]:
@@ -1242,3 +1244,120 @@ class LogService:
             delete(LogEntity).where(LogEntity.repo_id == self.repo.id)
         )
         await self.session.commit()
+
+    @staticmethod
+    async def _iter_paginated_items[T](
+        func: Callable[..., Awaitable[tuple[list[T], str | None]]],
+    ) -> AsyncIterator[T]:
+        cursor = None
+        while True:
+            items, next_cursor = await func(limit=100, pagination_cursor=cursor)
+            for item in items:
+                yield item
+            if not next_cursor:
+                break
+            cursor = next_cursor
+
+    @staticmethod
+    async def _get_custom_field_enum_values_as_template(
+        fields: dict[str, str],
+        func: Callable[..., Awaitable[tuple[list[str], str | None]]],
+    ) -> dict[str, dict[str, str]]:
+        result = {}
+        for field_name in fields:
+            enum_values = {
+                val: ""
+                async for val in LogService._iter_paginated_items(
+                    partial(func, field_name=field_name)
+                )
+            }
+            if enum_values:
+                result[field_name] = enum_values
+        return result
+
+    async def _get_field_values_as_template(
+        self,
+        func: Callable[..., Awaitable[tuple[list[Any], str | None]]],
+        *,
+        value: Callable[[Any], str] = lambda item: item,
+    ) -> dict[str, str]:
+        result = {}
+        async for item in self._iter_paginated_items(func):
+            result[value(item)] = ""
+        return result
+
+    async def get_log_translation_template(self) -> LogLabels:
+        labels = LogLabels()
+
+        ###
+        # Action
+        ###
+        labels.action_type = await self._get_field_values_as_template(
+            self.get_log_action_types
+        )
+        labels.action_category = await self._get_field_values_as_template(
+            self.get_log_action_categories
+        )
+
+        ###
+        # Source
+        ###
+        labels.source_field_name = await self._get_field_values_as_template(
+            self.get_log_source_fields, value=lambda val: val[0]
+        )
+        labels.source_field_value_enum = (
+            await self._get_custom_field_enum_values_as_template(
+                labels.source_field_name, self.get_source_enum_values
+            )
+        )
+
+        ###
+        # Actor
+        ###
+        labels.actor_type = await self._get_field_values_as_template(
+            self.get_log_actor_types
+        )
+        labels.actor_extra_field_name = await self._get_field_values_as_template(
+            self.get_log_actor_extra_fields, value=lambda val: val[0]
+        )
+        labels.actor_extra_field_value_enum = (
+            await self._get_custom_field_enum_values_as_template(
+                labels.actor_extra_field_name, self.get_actor_extra_enum_values
+            )
+        )
+
+        ###
+        # Resource
+        ###
+        labels.resource_type = await self._get_field_values_as_template(
+            self.get_log_resource_types
+        )
+        labels.resource_extra_field_name = await self._get_field_values_as_template(
+            self.get_log_resource_extra_fields, value=lambda val: val[0]
+        )
+        labels.resource_extra_field_value_enum = (
+            await self._get_custom_field_enum_values_as_template(
+                labels.resource_extra_field_name, self.get_resource_extra_enum_values
+            )
+        )
+
+        ###
+        # Details
+        ###
+        labels.detail_field_name = await self._get_field_values_as_template(
+            self.get_log_details_fields, value=lambda val: val[0]
+        )
+        labels.detail_field_value_enum = (
+            await self._get_custom_field_enum_values_as_template(
+                labels.detail_field_name, self.get_details_enum_values
+            )
+        )
+
+        ###
+        # Tag
+        ###
+        labels.tag_type = await self._get_field_values_as_template(
+            self.get_log_tag_types
+        )
+
+        return labels

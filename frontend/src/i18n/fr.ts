@@ -41,6 +41,8 @@ export default {
           disabled: "Désactivé",
         },
       },
+      downloadTranslationTemplate:
+        "Télécharger le modèle de traduction des journaux",
     },
     create: {
       title: "Créer un dépôt",
@@ -81,6 +83,7 @@ export default {
         choose: "Sélectionner un fichier",
         configured: "Traduction configurée",
       },
+      downloadTranslation: "Télécharger la traduction",
     },
     create: {
       title: "Créer un profil de traduction des journaux",

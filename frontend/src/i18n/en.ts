@@ -41,6 +41,7 @@ export default {
           disabled: "Disabled",
         },
       },
+      downloadTranslationTemplate: "Download log translation template",
     },
     create: {
       title: "Create a repository",
@@ -81,6 +82,7 @@ export default {
         choose: "Select file",
         configured: "Translation configured",
       },
+      downloadTranslation: "Download translation",
     },
     create: {
       title: "Create a log translation profile",

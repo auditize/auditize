@@ -16,6 +16,7 @@ from auditize.auth.authorizer import (
 )
 from auditize.dependencies import get_db_session
 from auditize.i18n.lang import Lang
+from auditize.log.service import LogService
 from auditize.log_i18n_profile.models import LogLabels
 from auditize.permissions.assertions import (
     can_read_logs_from_all_repos,
@@ -160,6 +161,24 @@ async def get_repo_translation_for_user(
 ):
     authorized.ensure_user()
     return await service.get_repo_translation(session, repo_id, authorized.user.lang)
+
+
+@router.get(
+    "/repos/{repo_id}/translations/template",
+    summary="Get log repository translation template",
+    description="Requires `log:read` permission.",
+    operation_id="get_repo_translation_template",
+    tags=["repo"],
+    response_model=LogLabels,
+    responses=error_responses(status.HTTP_404_NOT_FOUND),
+)
+async def get_repo_translation_template(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    _: Annotated[Authenticated, Depends(Require(can_read_repo()))],
+    repo_id: UUID,
+):
+    log_service = await LogService.for_config(session, repo_id)
+    return await log_service.get_log_translation_template()
 
 
 @router.get(

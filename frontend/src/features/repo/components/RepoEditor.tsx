@@ -2,7 +2,9 @@ import {
   Group,
   NumberInput,
   Radio,
+  rem,
   Select,
+  SelectProps,
   Stack,
   TextInput,
 } from "@mantine/core";
@@ -11,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
+import { DownloadButton } from "@/components/DownloadButton";
 import {
   ResourceCreation,
   ResourceEdition,
@@ -54,9 +57,11 @@ function useRepoEditorState(opened: boolean) {
 function LogI18nProfileSelector({
   form,
   readOnly,
+  selectProps,
 }: {
   form: UseFormReturnType<any>;
   readOnly: boolean;
+  selectProps?: SelectProps;
 }) {
   const { t } = useTranslation();
   const query = useQuery({
@@ -82,15 +87,18 @@ function LogI18nProfileSelector({
       disabled={readOnly}
       comboboxProps={{ shadow: "md" }}
       {...form.getInputProps("logI18nProfileId")}
+      {...selectProps}
     />
   );
 }
 
 function RepoForm({
   form,
+  repoId,
   readOnly = false,
 }: {
   form: UseFormReturnType<any>;
+  repoId?: string;
   readOnly?: boolean;
 }) {
   const { t } = useTranslation();
@@ -135,7 +143,21 @@ function RepoForm({
         disabled={readOnly}
         {...form.getInputProps("retentionPeriod")}
       />
-      <LogI18nProfileSelector form={form} readOnly={readOnly} />
+      <Group justify="space-between" align="flex-end">
+        <LogI18nProfileSelector
+          form={form}
+          readOnly={readOnly}
+          selectProps={{ flex: 1 }}
+        />
+        {repoId && (
+          <DownloadButton
+            href={`/api/repos/${repoId}/translations/template`}
+            download={`auditize-log-translation-template-${repoId}.json`}
+            tooltipLabel={t("repo.form.downloadTranslationTemplate")}
+            iconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
+          />
+        )}
+      </Group>
     </Stack>
   );
 }
@@ -197,7 +219,7 @@ export function RepoEdition({
       queryKeyForInvalidation={["repos"]}
       disabledSaving={readOnly}
     >
-      <RepoForm form={form} readOnly={readOnly} />
+      <RepoForm form={form} repoId={repoId ?? undefined} readOnly={readOnly} />
     </ResourceEdition>
   );
 }
