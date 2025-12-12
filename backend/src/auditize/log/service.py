@@ -1275,28 +1275,36 @@ class LogService:
                 result[field_name] = enum_values
         return result
 
+    async def _get_field_values_as_template(
+        self,
+        func: Callable[..., Awaitable[tuple[list[Any], str | None]]],
+        *,
+        value: Callable[[Any], str] = lambda item: item,
+    ) -> dict[str, str]:
+        result = {}
+        async for item in self._iter_paginated_items(func):
+            result[value(item)] = ""
+        return result
+
     async def get_log_translation_template(self) -> LogLabels:
         labels = LogLabels()
 
         ###
         # Action
         ###
-        labels.action_type = {
-            val: ""
-            async for val in self._iter_paginated_items(self.get_log_action_types)
-        }
-        labels.action_category = {
-            val: ""
-            async for val in self._iter_paginated_items(self.get_log_action_categories)
-        }
+        labels.action_type = await self._get_field_values_as_template(
+            self.get_log_action_types
+        )
+        labels.action_category = await self._get_field_values_as_template(
+            self.get_log_action_categories
+        )
 
         ###
         # Source
         ###
-        labels.source_field_name = {
-            val: ""
-            async for val, _ in self._iter_paginated_items(self.get_log_source_fields)
-        }
+        labels.source_field_name = await self._get_field_values_as_template(
+            self.get_log_source_fields, value=lambda val: val[0]
+        )
         labels.source_field_value_enum = (
             await self._get_custom_field_enum_values_as_template(
                 labels.source_field_name, self.get_source_enum_values
@@ -1306,16 +1314,12 @@ class LogService:
         ###
         # Actor
         ###
-        labels.actor_type = {
-            val: ""
-            async for val in self._iter_paginated_items(self.get_log_actor_types)
-        }
-        labels.actor_extra_field_name = {
-            val: ""
-            async for val, _ in self._iter_paginated_items(
-                self.get_log_actor_extra_fields
-            )
-        }
+        labels.actor_type = await self._get_field_values_as_template(
+            self.get_log_actor_types
+        )
+        labels.actor_extra_field_name = await self._get_field_values_as_template(
+            self.get_log_actor_extra_fields, value=lambda val: val[0]
+        )
         labels.actor_extra_field_value_enum = (
             await self._get_custom_field_enum_values_as_template(
                 labels.actor_extra_field_name, self.get_actor_extra_enum_values
@@ -1325,16 +1329,12 @@ class LogService:
         ###
         # Resource
         ###
-        labels.resource_type = {
-            val: ""
-            async for val in self._iter_paginated_items(self.get_log_resource_types)
-        }
-        labels.resource_extra_field_name = {
-            val: ""
-            async for val, _ in self._iter_paginated_items(
-                self.get_log_resource_extra_fields
-            )
-        }
+        labels.resource_type = await self._get_field_values_as_template(
+            self.get_log_resource_types
+        )
+        labels.resource_extra_field_name = await self._get_field_values_as_template(
+            self.get_log_resource_extra_fields, value=lambda val: val[0]
+        )
         labels.resource_extra_field_value_enum = (
             await self._get_custom_field_enum_values_as_template(
                 labels.resource_extra_field_name, self.get_resource_extra_enum_values
@@ -1344,10 +1344,9 @@ class LogService:
         ###
         # Details
         ###
-        labels.detail_field_name = {
-            val: ""
-            async for val, _ in self._iter_paginated_items(self.get_log_details_fields)
-        }
+        labels.detail_field_name = await self._get_field_values_as_template(
+            self.get_log_details_fields, value=lambda val: val[0]
+        )
         labels.detail_field_value_enum = (
             await self._get_custom_field_enum_values_as_template(
                 labels.detail_field_name, self.get_details_enum_values
@@ -1357,8 +1356,8 @@ class LogService:
         ###
         # Tag
         ###
-        labels.tag_type = {
-            val: "" async for val in self._iter_paginated_items(self.get_log_tag_types)
-        }
+        labels.tag_type = await self._get_field_values_as_template(
+            self.get_log_tag_types
+        )
 
         return labels
