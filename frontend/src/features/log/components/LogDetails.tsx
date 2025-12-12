@@ -28,6 +28,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
+import { DownloadButton } from "@/components/DownloadButton";
 import { Section } from "@/components/Section";
 import { SectionExpand } from "@/components/Section/Section";
 import { humanizeDate } from "@/utils/date";
@@ -422,7 +423,7 @@ export function LogDetails({ repoId }: { repoId?: string }) {
       <Modal.Content>
         <Modal.Header>
           <Flex justify="space-between" w="100%">
-            <Stack gap="0.5rem">
+            <Stack gap="0.5rem" justify="space-between">
               {log ? (
                 <>
                   <div>
@@ -446,7 +447,18 @@ export function LogDetails({ repoId }: { repoId?: string }) {
                 <LogDetailsHeaderSkeleton />
               )}
             </Stack>
-            <Modal.CloseButton />
+            <Group align="top" justify="center" gap="0.25rem">
+              {log && (
+                <DownloadButton
+                  href={`${window.auditizeBaseURL ?? ""}/api/repos/${repoId}/logs/${log.id}`}
+                  download={`auditize-log-${log.id}.json`}
+                  tooltipLabel={t("log.downloadLog")}
+                  actionIconProps={{ style: { marginTop: "-1px" } }}
+                  iconDownloadProps={{ style: { width: "70%", height: "70%" } }}
+                />
+              )}
+              <Modal.CloseButton />
+            </Group>
           </Flex>
         </Modal.Header>
         <Modal.Body>

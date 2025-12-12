@@ -154,7 +154,7 @@ function RepoForm({
             href={`/api/repos/${repoId}/translations/template`}
             download={`auditize-log-translation-template-${repoId}.json`}
             tooltipLabel={t("repo.form.downloadTranslationTemplate")}
-            iconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
+            actionIconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
           />
         )}
       </Group>

@@ -1,17 +1,19 @@
 import { ActionIcon, Tooltip } from "@mantine/core";
 import type { ActionIconProps } from "@mantine/core";
-import { IconDownload } from "@tabler/icons-react";
+import { IconDownload, IconProps } from "@tabler/icons-react";
 
 export function DownloadButton({
   href,
   download,
   tooltipLabel,
-  iconProps,
+  actionIconProps,
+  iconDownloadProps,
 }: {
   href: string;
   download: string;
   tooltipLabel: string;
-  iconProps?: ActionIconProps;
+  actionIconProps?: ActionIconProps;
+  iconDownloadProps?: IconProps;
 }) {
   return (
     <Tooltip label={tooltipLabel} withArrow position="bottom">
@@ -21,9 +23,9 @@ export function DownloadButton({
         download={download}
         target="_blank"
         variant="transparent"
-        {...iconProps}
+        {...actionIconProps}
       >
-        <IconDownload />
+        <IconDownload {...iconDownloadProps} />
       </ActionIcon>
     </Tooltip>
   );

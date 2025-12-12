@@ -217,6 +217,7 @@ export default {
     attachmentRef: "Attachment ref.",
     attachmentRefs: "Attachment refs.",
     downloadAttachment: "Download attachment",
+    downloadLog: "Download log as JSON",
     entity: "Entity",
     list: {
       columnSelector: {

@@ -221,6 +221,7 @@ export default {
     attachmentRef: "Référence de la pièce jointe",
     attachmentRefs: "Références des pièces jointes",
     downloadAttachment: "Télécharger la pièce jointe",
+    downloadLog: "Télécharger le journal en JSON",
     entity: "Entité",
     list: {
       columnSelector: {

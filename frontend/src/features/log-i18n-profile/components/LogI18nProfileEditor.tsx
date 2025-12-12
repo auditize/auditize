@@ -105,7 +105,7 @@ function TranslationFileInput({
           href={`/api/log-i18n-profiles/${profileId}/translations/${lang}`}
           download={`auditize-log-translation-${profileId}-${lang}.json`}
           tooltipLabel={t("logi18nprofile.form.downloadTranslation")}
-          iconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
+          actionIconProps={{ flex: 0, style: { marginBottom: rem(4) } }}
         />
       )}
       <CloseButton
