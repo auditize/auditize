@@ -37,6 +37,7 @@ from auditize.log.jsonl import stream_logs_as_jsonl
 from auditize.log.models import (
     CustomFieldEnumValueListResponse,
     CustomFieldListResponse,
+    Emitter,
     Log,
     LogActionTypeListParams,
     LogActorResponse,
@@ -700,12 +701,13 @@ async def get_log_entity(
 )
 async def create_log(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogWritePermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogWritePermission())],
     repo_id: UUID,
     log_create: LogCreate,
 ):
+    emitter = Emitter.from_authenticated(authorized)
     service = await LogService.for_writing(session, repo_id)
-    return await service.create_log(log_create)
+    return await service.create_log(log_create, emitter)
 
 
 @router.post(
@@ -726,12 +728,13 @@ async def create_log(
 )
 async def import_log(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    _: Annotated[Authenticated, Depends(RequireLogWritePermission())],
+    authorized: Annotated[Authenticated, Depends(RequireLogWritePermission())],
     repo_id: UUID,
     log_import: LogImport,
 ):
+    emitter = Emitter.from_authenticated(authorized)
     service = await LogService.for_writing(session, repo_id)
-    return await service.import_log(log_import)
+    return await service.import_log(log_import, emitter)
 
 
 @router.post(
@@ -873,7 +876,6 @@ class _JsonlResponse(Response):
 )
 async def get_logs_as_jsonl(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    request: Request,
     authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
     repo_id: UUID,
     params: Annotated[LogListParams, Query()],

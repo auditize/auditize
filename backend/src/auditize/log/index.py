@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auditize.database import get_elastic_client
 from auditize.repo.sql_models import Repo
 
-_MAPPING_VERSION = 3
+_MAPPING_VERSION = 4
 
 # Elasticsearch mapping history:
 # - 0.7.0:
@@ -17,6 +17,7 @@ _MAPPING_VERSION = 3
 #   - v2: update mapping for custom field types, use ascii folding for text fields to mapping
 # - 0.10.0:
 #   - v3: unchanged mapping, use '_' instead of '-' in custom field names and identifiers in general
+#   - v4: add emitter field
 
 _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
     "type": "text",
@@ -42,6 +43,13 @@ _MAPPING = {
     "properties": {
         "log_id": {"type": "keyword"},
         "saved_at": {"type": "date"},
+        "emitter": {
+            "properties": {
+                "type": {"type": "keyword"},
+                "id": {"type": "keyword"},
+                "name": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+            }
+        },
         "action": {
             "properties": {
                 "type": {"type": "keyword"},

@@ -30,6 +30,8 @@ from auditize.api.validation import (
     normalize_identifier,
     validate_identifier,
 )
+from auditize.auth.authorizer import Authenticated
+from auditize.exceptions import InternalError
 from auditize.helpers.datetime import serialize_datetime
 from auditize.helpers.string import validate_empty_string_as_none
 
@@ -89,6 +91,45 @@ class CustomField(BaseModel):
         return pre_validated
 
 
+class EmitterType(enum.StrEnum):
+    USER = "user"
+    APIKEY = "apikey"
+
+
+class Emitter(BaseModel):
+    type: EmitterType = Field(
+        description="Emitter type", json_schema_extra={"example": "apikey"}
+    )
+    id: UUID = Field(
+        description="Emitter ID",
+        json_schema_extra={"example": "FEC4A4E6-AC13-455F-A0F8-E71AA0C37B7D"},
+    )
+    name: str = Field(
+        description="Emitter name", json_schema_extra={"example": "Apikey 123"}
+    )
+
+    @classmethod
+    def from_authenticated(cls, authenticated: Authenticated) -> Self:
+        if authenticated.user:
+            type = EmitterType.USER
+            id = authenticated.user.id
+            name = f"{authenticated.user.first_name} {authenticated.user.last_name}"
+        elif authenticated.apikey:
+            type = EmitterType.APIKEY
+            id = authenticated.apikey.id
+            name = authenticated.apikey.name
+        elif authenticated.access_token:
+            type = EmitterType.APIKEY
+            id = authenticated.access_token.apikey.id
+            name = authenticated.access_token.apikey.name
+        else:
+            # This should never happen
+            raise InternalError(
+                "Authenticated is neither a user, an API key nor an access token"
+            )
+        return cls(type=type, id=id, name=name)
+
+
 class Log(BaseModel):
     """
     Pydantic model for a log that is intended to be stored in Elasticsearch.
@@ -139,7 +180,8 @@ class Log(BaseModel):
         ref: str
         name: str
 
-    id: Optional[UUID] = Field(default=None)
+    id: UUID
+    emitter: Emitter  # introduced in 0.10.0
     action: Action
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: list[CustomField] = Field(default_factory=list)
@@ -167,6 +209,15 @@ class Log(BaseModel):
             return data
         pre_validated = data.copy()
         pre_validated["id"] = pre_validated.pop("log_id")
+        # NB: emitter has been introduced in 0.10.0, add a dummy value for backward compatibility
+        pre_validated.setdefault(
+            "emitter",
+            {
+                "type": EmitterType.APIKEY,
+                "id": "00000000-0000-0000-0000-000000000000",
+                "name": "UNDEFINED",
+            },
+        )
         return pre_validated
 
 
@@ -485,9 +536,7 @@ class LogCreate(BaseModel):
     action: _ActionData = _ActionField()
     source: list[_CustomFieldInputData] = _SourceField(default_factory=list)
     actor: Optional[_ActorInputData] = _ActorField(default=None)
-    resource: Optional[_ResourceInputData] = _ResourceField(
-        default=None,
-    )
+    resource: Optional[_ResourceInputData] = _ResourceField(default=None)
     details: list[_CustomFieldInputData] = _DetailsField(default_factory=list)
     tags: list[_TagInputData] = Field(default_factory=list)
     entity_path: list[_EntityPathNodeData] = _EntityPathField()
@@ -530,6 +579,8 @@ class _AttachmentData(BaseModel, HasDatetimeSerialization):
 
 class LogResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _LogIdField()
+    saved_at: datetime
+    emitter: Emitter
     action: _ActionData = _ActionField()
     source: list[_CustomFieldOutputData] = _SourceField()
     actor: _ActorOutputData | None = _ActorField()
@@ -538,7 +589,6 @@ class LogResponse(BaseModel, HasDatetimeSerialization):
     tags: list[_TagOutputData] = Field()
     entity_path: list[_EntityPathNodeData] = _EntityPathField()
     attachments: list[_AttachmentData] = Field()
-    saved_at: datetime
 
 
 class LogListResponse(CursorPaginatedResponse[Log, LogResponse]):

@@ -4,31 +4,31 @@ from uuid import UUID
 import pytest
 
 from auditize.database.dbm import open_db_session
-from auditize.log.models import Log
+from auditize.log.models import Emitter, EmitterType, LogCreate
 from auditize.log.service import LogService
 from conftest import RepoBuilder
 from helpers.http import HttpTestHelper
-from helpers.log import PreparedLog
+from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.repo import PreparedRepo
 
 pytestmark = pytest.mark.anyio
 
 
-def make_log_data(**extra) -> Log:
+def make_log_data(**extra) -> LogCreate:
     """
     By default, the log data is minimal viable.
     """
 
-    kwargs = {
-        "action": Log.Action(type="login", category="authentication"),
-        "actor": Log.Actor(type="user", ref="user:123", name="User 123"),
-        "resource": Log.Resource(ref="core", type="module", name="Core Module"),
-        "tags": [Log.Tag(type="simple_tag")],
-        "entity_path": [Log.EntityPathNode(ref="1", name="Customer 1")],
-        **extra,
-    }
-
-    return Log(**kwargs)
+    return LogCreate.model_validate(
+        {
+            "action": {"type": "login", "category": "authentication"},
+            "actor": {"type": "user", "ref": "user:123", "name": "User 123"},
+            "resource": {"ref": "core", "type": "module", "name": "Core Module"},
+            "tags": [{"type": "simple_tag"}],
+            "entity_path": [{"ref": "1", "name": "Customer 1"}],
+            **extra,
+        }
+    )
 
 
 async def test_save_log_db_shape(repo: PreparedRepo):
@@ -36,7 +36,10 @@ async def test_save_log_db_shape(repo: PreparedRepo):
 
     async with open_db_session() as session:
         log_service = await LogService.for_writing(session, UUID(repo.id))
-        log = await log_service.create_log(log)
+        log = await log_service.create_log(
+            log,
+            emitter=Emitter(type=EmitterType.APIKEY, id=UNKNOWN_UUID, name="API Key"),
+        )
     db_log = await repo.get_log(log.id)
     assert set(db_log.keys()) == {
         "log_id",
@@ -49,6 +52,7 @@ async def test_save_log_db_shape(repo: PreparedRepo):
         "tags",
         "attachments",
         "entity_path",
+        "emitter",
     }
     assert db_log["action"].keys() == {"type", "category"}
     assert db_log["actor"].keys() == {"ref", "type", "name", "extra"}

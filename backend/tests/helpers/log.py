@@ -93,6 +93,12 @@ class PreparedLog:
     @staticmethod
     def build_expected_api_response(data=None) -> dict:
         expected: dict[str, Any] = {
+            "emitter": {
+                "type": callee.IsA(str),
+                "id": callee.IsA(str),
+                "name": callee.IsA(str),
+            },
+            "saved_at": DATETIME_FORMAT,
             "source": [],
             "actor": None,
             "resource": None,
@@ -100,7 +106,6 @@ class PreparedLog:
             "tags": [],
             "attachments": [],
             "id": callee.IsA(str),
-            "saved_at": DATETIME_FORMAT,
             **(deepcopy(data) or {}),
         }
         for tag in expected["tags"]:

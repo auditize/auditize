@@ -1,0 +1,14 @@
+{
+  "index": {
+    "sort.field": ["saved_at", "log_id"],
+    "sort.order": ["desc", "desc"]
+  },
+  "analysis": {
+    "analyzer": {
+      "custom_asciifolding": {
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding"]
+      }
+    }
+  }
+}

@@ -38,6 +38,7 @@ from auditize.helpers.datetime import now
 from auditize.log.index import get_read_alias, get_write_alias
 from auditize.log.models import (
     CustomFieldType,
+    Emitter,
     Log,
     LogCreate,
     LogImport,
@@ -163,24 +164,29 @@ class LogService:
         return log
 
     async def create_log(
-        self, log_create: LogCreate, *, saved_at: datetime | None = None
+        self,
+        log_create: LogCreate,
+        emitter: Emitter,
+        *,
+        saved_at: datetime | None = None,
     ) -> Log:
         await self.check_log(log_create)
 
-        log = Log.model_validate(log_create.model_dump())
-        log.id = uuid.uuid4()
+        log_json = log_create.model_dump()
+        log_json["id"] = uuid.uuid4()
+        log_json["emitter"] = emitter.model_dump()
         if saved_at:
-            log.saved_at = saved_at
-        return await self._save_log(log)
+            log_json["saved_at"] = saved_at
 
-    async def import_log(self, log_import: LogImport) -> Log:
+        return await self._save_log(Log.model_validate(log_json))
+
+    async def import_log(self, log_import: LogImport, emitter: Emitter) -> Log:
         await self.check_log(log_import)
 
-        log = Log.model_validate(log_import.model_dump(exclude_unset=True))
-        if not log.id:
-            log.id = uuid.uuid4()
-
-        return await self._save_log(log)
+        log_json = log_import.model_dump(exclude_unset=True)
+        log_json.setdefault("id", uuid.uuid4())
+        log_json["emitter"] = emitter.model_dump()
+        return await self._save_log(Log.model_validate(log_json))
 
     async def save_log_attachment(self, log_id: UUID, attachment: Log.Attachment):
         try:
