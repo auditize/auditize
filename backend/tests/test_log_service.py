@@ -45,6 +45,7 @@ async def test_save_log_db_shape(repo: PreparedRepo):
         "log_id",
         "action",
         "saved_at",
+        "emitted_at",
         "source",
         "actor",
         "resource",

@@ -99,6 +99,7 @@ class PreparedLog:
                 "name": callee.IsA(str),
             },
             "saved_at": DATETIME_FORMAT,
+            "emitted_at": DATETIME_FORMAT,
             "source": [],
             "actor": None,
             "resource": None,
@@ -149,6 +150,7 @@ class PreparedLog:
     def expected_db_document(self, extra=None) -> dict:
         expected = self.expected_api_response(extra)
         expected["saved_at"] = callee.IsA(str)
+        expected["emitted_at"] = callee.IsA(str)
         for expected_attachment in expected["attachments"]:
             expected_attachment["data"] = base64.b64encode(
                 expected_attachment["data"]

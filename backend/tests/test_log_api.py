@@ -61,6 +61,17 @@ async def test_create_log_minimal_fields(
     )
 
 
+async def test_create_log_with_emitted_at(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data({"emitted_at": "2024-01-15T10:30:00.000Z"})
+    await log_write_client.assert_post_created(
+        f"/repos/{repo.id}/logs",
+        json=log_data,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
 async def test_create_log_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):

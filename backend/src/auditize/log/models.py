@@ -184,6 +184,7 @@ class Log(BaseModel):
     emitter: Emitter  # introduced in 0.10.0
     action: Action
     saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    emitted_at: datetime
     source: list[CustomField] = Field(default_factory=list)
     actor: Optional[Actor] = None
     resource: Optional[Resource] = None
@@ -218,6 +219,8 @@ class Log(BaseModel):
                 "name": "UNDEFINED",
             },
         )
+        # NB: emitted_at has been introduced in 0.10.0, fallback to saved_at if not set
+        pre_validated.setdefault("emitted_at", pre_validated.get("saved_at"))
         return pre_validated
 
 
@@ -532,7 +535,18 @@ def _EntityPathField():  # noqa
     )
 
 
+def _EmittedAtField(**kwargs):  # noqa
+    return Field(
+        description="The date and time the log was emitted",
+        json_schema_extra={"example": "2025-12-15T10:00:00.000Z"},
+        **kwargs,
+    )
+
+
 class LogCreate(BaseModel):
+    emitted_at: datetime = _EmittedAtField(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
     action: _ActionData = _ActionField()
     source: list[_CustomFieldInputData] = _SourceField(default_factory=list)
     actor: Optional[_ActorInputData] = _ActorField(default=None)
@@ -580,6 +594,7 @@ class _AttachmentData(BaseModel, HasDatetimeSerialization):
 class LogResponse(BaseModel, HasDatetimeSerialization):
     id: UUID = _LogIdField()
     saved_at: datetime
+    emitted_at: datetime = _EmittedAtField()
     emitter: Emitter
     action: _ActionData = _ActionField()
     source: list[_CustomFieldOutputData] = _SourceField()
