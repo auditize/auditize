@@ -59,7 +59,7 @@ function columnsToCsvColumns(columns: string[]): string[] {
   );
 }
 
-function ExtraActionsCsvExport({
+function ExtraActionsExport({
   searchParams,
   selectedColumns,
 }: {
@@ -78,23 +78,38 @@ function ExtraActionsCsvExport({
         snakeCase: true,
       }),
     ).toString();
+  const jsonlExportUrl =
+    (window.auditizeBaseURL ?? "") +
+    "/api/repos/" +
+    searchParams.repoId +
+    "/logs/jsonl?" +
+    new URLSearchParams(
+      searchParams.serialize({ includeRepoId: false, snakeCase: true }),
+    ).toString();
 
   return (
     <>
-      <Menu.Label>{t("log.csv.csv")}</Menu.Label>
+      <Menu.Label>{t("log.export.export")}</Menu.Label>
       <Menu.Item
         component="a"
         href={csvExportUrl}
         leftSection={<IconDownload style={iconSize(14)} />}
       >
-        {t("log.csv.csvExportDefault")}
+        {t("log.export.csvExportDefault")}
       </Menu.Item>
       <Menu.Item
         component="a"
         href={`${csvExportUrl}&columns=${columnsToCsvColumns(selectedColumns).join(",")}`}
         leftSection={<IconDownload style={iconSize(14)} />}
       >
-        {t("log.csv.csvExportCurrent")}
+        {t("log.export.csvExportCurrent")}
+      </Menu.Item>
+      <Menu.Item
+        component="a"
+        href={jsonlExportUrl}
+        leftSection={<IconDownload style={iconSize(14)} />}
+      >
+        {t("log.export.jsonlExport")}
       </Menu.Item>
     </>
   );
@@ -252,7 +267,7 @@ export function ExtraActions({
           </Tooltip>
         </Menu.Target>
         <Menu.Dropdown>
-          <ExtraActionsCsvExport
+          <ExtraActionsExport
             searchParams={searchParams}
             selectedColumns={selectedColumns}
           />
