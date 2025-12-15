@@ -3711,3 +3711,128 @@ async def test_get_logs_as_csv_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
     await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/csv")
+
+
+def _parse_jsonl_logs(text: str) -> list[dict]:
+    return [json.loads(line) for line in text.splitlines()]
+
+
+async def test_get_logs_as_jsonl_minimal_log(
+    log_read_client: HttpTestHelper,
+    log_write_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log = await repo.create_log(log_write_client)
+
+    resp = await log_read_client.assert_get(f"/repos/{repo.id}/logs/jsonl")
+
+    assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
+
+    assert _parse_jsonl_logs(resp.text) == [log.expected_api_response()]
+
+
+async def test_get_logs_as_jsonl_log_with_all_fields(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    log = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": "user:123",
+                    "name": "User 123",
+                },
+                "resource": {
+                    "ref": "core",
+                    "type": "module",
+                    "name": "Core Module",
+                },
+                "details": [
+                    {"name": "some_key", "value": "some_value"},
+                ],
+                "tags": [
+                    {
+                        "type": "simple_tag",
+                    },
+                    {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
+                ],
+            }
+        ),
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+    await log.upload_attachment(
+        log_rw_client,
+        name="attachment.txt",
+        mime_type="text/plain",
+        type="attachment_type",
+    )
+
+    resp = await log_rw_client.assert_get_ok(f"/repos/{repo.id}/logs/jsonl")
+    assert _parse_jsonl_logs(resp.text) == [log.expected_api_response()]
+
+
+async def test_get_logs_as_jsonl_with_filter(
+    log_rw_client: HttpTestHelper,
+    repo: PreparedRepo,
+):
+    log1 = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {"action": {"category": "action_category_1", "type": "action_type_1"}}
+        ),
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+    log2 = await repo.create_log(
+        log_rw_client,
+        PreparedLog.prepare_data(
+            {"action": {"category": "action_category_2", "type": "action_type_2"}}
+        ),
+        saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
+    )
+
+    resp = await log_rw_client.assert_get(
+        f"/repos/{repo.id}/logs/jsonl",
+        params={"action_type": "action_type_1"},
+    )
+    assert _parse_jsonl_logs(resp.text) == [log1.expected_api_response()]
+    assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
+
+
+async def test_get_logs_as_jsonl_with_export_max_rows(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    # assume that AUDITIZE_EXPORT_MAX_ROWS is set to 10 in the test environment
+    for _ in range(15):
+        await repo.create_log(log_rw_client)
+
+    resp = await log_rw_client.assert_get_ok(
+        f"/repos/{repo.id}/logs/jsonl",
+    )
+    assert len(_parse_jsonl_logs(resp.text)) == 10
+
+
+async def test_get_logs_as_jsonl_with_export_max_rows_unlimited(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    for _ in range(15):
+        await repo.create_log(log_rw_client)
+
+    with patch("auditize.log.jsonl.get_config") as mock:
+        mock.return_value.export_max_rows = 0
+        resp = await log_rw_client.assert_get_ok(
+            f"/repos/{repo.id}/logs/jsonl",
+        )
+    assert len(_parse_jsonl_logs(resp.text)) == 15
+
+
+async def test_get_logs_as_jsonl_unknown_repo(
+    log_read_client: HttpTestHelper, repo: PreparedRepo
+):
+    await log_read_client.assert_get_not_found(f"/repos/{UNKNOWN_UUID}/logs/jsonl")
+
+
+async def test_get_logs_as_jsonl_forbidden(
+    no_permission_client: HttpTestHelper, repo: PreparedRepo
+):
+    await no_permission_client.assert_get_forbidden(f"/repos/{repo.id}/logs/jsonl")
