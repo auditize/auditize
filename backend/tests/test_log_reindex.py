@@ -45,7 +45,7 @@ async def test_reindex(repo: PreparedRepo, superadmin_client: HttpTestHelper):
         assert (await repo.get_log(log_2.id)) is not None
 
 
-@pytest.mark.parametrize("version", [1, 2, 3])
+@pytest.mark.parametrize("version", [1, 2, 3, 4])
 async def test_reindex_from_previous_version(
     superadmin_client: HttpTestHelper, version: int
 ):
