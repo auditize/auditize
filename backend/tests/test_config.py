@@ -28,7 +28,7 @@ def test_get_config():
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 1024
-    assert config.csv_max_rows == 10
+    assert config.export_max_rows == 10
     # NB: don't check the actual value, since it can be changed
     # when pytest-xdist is used
     assert config.db_name
@@ -67,7 +67,7 @@ def test_config_minimum_viable_config():
     assert config.user_session_token_lifetime == 43200  # 12 hours
     assert config.access_token_lifetime == 600  # 10 minutes
     assert config.attachment_max_size == 5242880  # 5MB
-    assert config.csv_max_rows == 10_000
+    assert config.export_max_rows == 10_000
     assert config.db_name == "auditize"
     assert config.smtp_server is None
     assert config.smtp_port is None

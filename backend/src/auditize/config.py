@@ -11,7 +11,7 @@ from auditize.exceptions import (
 )
 
 _DEFAULT_ATTACHMENT_MAX_SIZE = 1024 * 1024 * 5  # 5MB
-_DEFAULT_CSV_MAX_ROWS = 10_000
+_DEFAULT_EXPORT_MAX_ROWS = 10_000
 _DEFAULT_USER_SESSION_TOKEN_LIFETIME = 60 * 60 * 12  # 12 hours
 _DEFAULT_ACCESS_TOKEN_LIFETIME = 10 * 60  # 10 minutes
 _DEFAULT_LOG_EXPIRATION_SCHEDULE = "0 1 * * *"
@@ -24,7 +24,7 @@ class Config:
     user_session_token_lifetime: int
     access_token_lifetime: int
     attachment_max_size: int
-    csv_max_rows: int
+    export_max_rows: int
     postgres_host: str
     postgres_port: int
     postgres_user: str
@@ -126,9 +126,9 @@ class Config:
                     default=_DEFAULT_ATTACHMENT_MAX_SIZE,
                     validator=int,
                 ),
-                csv_max_rows=optional(
-                    "AUDITIZE_CSV_MAX_ROWS",
-                    default=_DEFAULT_CSV_MAX_ROWS,
+                export_max_rows=optional(
+                    "AUDITIZE_EXPORT_MAX_ROWS",
+                    default=_DEFAULT_EXPORT_MAX_ROWS,
                     validator=int,
                 ),
                 postgres_host=optional("AUDITIZE_PG_HOST", default="localhost"),

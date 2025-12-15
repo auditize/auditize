@@ -3649,10 +3649,10 @@ async def test_get_logs_as_csv_boolean_fields(
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
 
-async def test_get_logs_as_csv_with_csv_max_rows(
+async def test_get_logs_as_csv_with_export_max_rows(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    # assume that AUDITIZE_CSV_MAX_ROWS is set to 10 in the test environment
+    # assume that AUDITIZE_EXPORT_MAX_ROWS is set to 10 in the test environment
     for _ in range(15):
         await repo.create_log(log_rw_client)
 
@@ -3662,14 +3662,14 @@ async def test_get_logs_as_csv_with_csv_max_rows(
     assert len(resp.text.splitlines()) == 11  # 10 logs + header
 
 
-async def test_get_logs_as_csv_with_csv_max_rows_unlimited(
+async def test_get_logs_as_csv_with_export_max_rows_unlimited(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
     for _ in range(15):
         await repo.create_log(log_rw_client)
 
     with patch("auditize.log.csv.get_config") as mock:
-        mock.return_value.csv_max_rows = 0
+        mock.return_value.export_max_rows = 0
         resp = await log_rw_client.assert_get_ok(
             f"/repos/{repo.id}/logs/csv",
         )

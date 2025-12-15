@@ -141,7 +141,7 @@ async def stream_logs_as_csv(
     columns: list[str],
     lang: Lang,
 ) -> AsyncGenerator[str, None]:
-    max_rows = get_config().csv_max_rows
+    max_rows = get_config().export_max_rows
     returned_rows = 0
     cursor = None
     for i in count(0):
