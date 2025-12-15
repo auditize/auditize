@@ -45,7 +45,7 @@ def _config(anyio_backend):
             "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
             "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
             "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
-            "AUDITIZE_CSV_MAX_ROWS": "10",
+            "AUDITIZE_EXPORT_MAX_ROWS": "10",
             "_AUDITIZE_TEST_MODE": "true",
         }
     )

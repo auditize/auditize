@@ -141,8 +141,8 @@ async def stream_logs_as_csv(
     columns: list[str],
     lang: Lang,
 ) -> AsyncGenerator[str, None]:
-    max_rows = get_config().csv_max_rows
-    returned_rows = 0
+    max_rows = get_config().export_max_rows
+    exported_rows = 0
     cursor = None
     for i in count(0):
         csv_buffer = StringIO()
@@ -156,9 +156,9 @@ async def stream_logs_as_csv(
             authorized_entities=authorized_entities,
             search_params=search_params,
             pagination_cursor=cursor,
-            limit=min(100, max_rows - returned_rows) if max_rows > 0 else 100,
+            limit=min(100, max_rows - exported_rows) if max_rows > 0 else 100,
         )
-        returned_rows += len(logs)
+        exported_rows += len(logs)
         csv_writer.writerows(
             _log_dict_to_csv_row(
                 _log_to_dict(log, log_service.repo.log_i18n_profile, lang), columns
@@ -166,5 +166,5 @@ async def stream_logs_as_csv(
             for log in logs
         )
         yield csv_buffer.getvalue()
-        if not cursor or (max_rows > 0 and returned_rows >= max_rows):
+        if not cursor or (max_rows > 0 and exported_rows >= max_rows):
             break

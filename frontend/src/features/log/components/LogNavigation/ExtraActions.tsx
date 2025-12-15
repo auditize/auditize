@@ -59,7 +59,19 @@ function columnsToCsvColumns(columns: string[]): string[] {
   );
 }
 
-function ExtraActionsCsvExport({
+function ExportLinkItem({ href, label }: { href: string; label: string }) {
+  return (
+    <Menu.Item
+      component="a"
+      href={href}
+      leftSection={<IconDownload style={iconSize(14)} />}
+    >
+      {label}
+    </Menu.Item>
+  );
+}
+
+function ExtraActionsExport({
   searchParams,
   selectedColumns,
 }: {
@@ -67,35 +79,32 @@ function ExtraActionsCsvExport({
   selectedColumns: string[];
 }) {
   const { t } = useTranslation();
-  const csvExportUrl =
+  const logsBaseUrl =
     (window.auditizeBaseURL ?? "") +
     "/api/repos/" +
     searchParams.repoId +
-    "/logs/csv?" +
-    new URLSearchParams(
-      searchParams.serialize({
-        includeRepoId: false,
-        snakeCase: true,
-      }),
-    ).toString();
+    "/logs";
+  const searchParamsQueryString = new URLSearchParams(
+    searchParams.serialize({ includeRepoId: false, snakeCase: true }),
+  ).toString();
+  const csvExportUrl = logsBaseUrl + "/csv?" + searchParamsQueryString;
+  const jsonlExportUrl = logsBaseUrl + "/jsonl?" + searchParamsQueryString;
 
   return (
     <>
-      <Menu.Label>{t("log.csv.csv")}</Menu.Label>
-      <Menu.Item
-        component="a"
+      <Menu.Label>{t("log.export.export")}</Menu.Label>
+      <ExportLinkItem
         href={csvExportUrl}
-        leftSection={<IconDownload style={iconSize(14)} />}
-      >
-        {t("log.csv.csvExportDefault")}
-      </Menu.Item>
-      <Menu.Item
-        component="a"
+        label={t("log.export.csvExportDefault")}
+      />
+      <ExportLinkItem
         href={`${csvExportUrl}&columns=${columnsToCsvColumns(selectedColumns).join(",")}`}
-        leftSection={<IconDownload style={iconSize(14)} />}
-      >
-        {t("log.csv.csvExportCurrent")}
-      </Menu.Item>
+        label={t("log.export.csvExportCurrent")}
+      />
+      <ExportLinkItem
+        href={jsonlExportUrl}
+        label={t("log.export.jsonlExport")}
+      />
     </>
   );
 }
@@ -252,7 +261,7 @@ export function ExtraActions({
           </Tooltip>
         </Menu.Target>
         <Menu.Dropdown>
-          <ExtraActionsCsvExport
+          <ExtraActionsExport
             searchParams={searchParams}
             selectedColumns={selectedColumns}
           />

@@ -33,6 +33,7 @@ from auditize.exceptions import PayloadTooLarge, ValidationError
 from auditize.helpers.datetime import now
 from auditize.i18n import get_request_lang
 from auditize.log.csv import stream_logs_as_csv, validate_log_csv_columns
+from auditize.log.jsonl import stream_logs_as_jsonl
 from auditize.log.models import (
     CustomFieldEnumValueListResponse,
     CustomFieldListResponse,
@@ -796,6 +797,10 @@ async def add_attachment(
     )
 
 
+def _build_log_export_filename(*, repo_id: UUID, ext: str) -> str:
+    return f"auditize-logs-{repo_id}-{now().strftime('%Y%m%d%H%M%S')}.{ext}"
+
+
 class _CsvResponse(Response):
     media_type = "text/csv"
 
@@ -817,9 +822,9 @@ _GET_LOGS_DESCRIPTION = (
 
 @router.get(
     "/repos/{repo_id}/logs/csv",
-    summary="List logs as CSV file",
+    summary="Export logs as CSV file",
     description=_GET_LOGS_DESCRIPTION,
-    operation_id="list_logs_csv",
+    operation_id="get_logs_as_csv",
     tags=["log"],
     response_class=_CsvResponse,
 )
@@ -836,7 +841,7 @@ async def get_logs_as_csv(
     columns = params.columns.split(",")  # convert columns string to a list
     validate_log_csv_columns(columns)
 
-    filename = f"auditize-logs_{repo_id}_{now().strftime('%Y%m%d%H%M%S')}.csv"
+    filename = _build_log_export_filename(repo_id=repo_id, ext="csv")
 
     return StreamingResponse(
         stream_logs_as_csv(
@@ -849,6 +854,43 @@ async def get_logs_as_csv(
             lang=get_request_lang(request),
         ),
         media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+class _JsonlResponse(Response):
+    # NB: there is no official MIME type for JSONL yet
+    media_type = "text/plain"
+
+
+@router.get(
+    "/repos/{repo_id}/logs/jsonl",
+    summary="Export logs as JSONL file",
+    description="Requires `log:read` permission.",
+    operation_id="get_logs_as_jsonl",
+    tags=["log"],
+    response_class=_JsonlResponse,
+)
+async def get_logs_as_jsonl(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    request: Request,
+    authorized: Annotated[Authenticated, Depends(RequireLogReadPermission())],
+    repo_id: UUID,
+    params: Annotated[LogListParams, Query()],
+):
+    service = await LogService.for_reading(session, repo_id)
+
+    filename = _build_log_export_filename(repo_id=repo_id, ext="jsonl")
+
+    return StreamingResponse(
+        stream_logs_as_jsonl(
+            service,
+            authorized_entities=authorized.permissions.get_repo_readable_entities(
+                repo_id
+            ),
+            search_params=LogSearchParams.model_validate(params.model_dump()),
+        ),
+        media_type="text/plain",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 

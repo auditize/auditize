@@ -246,10 +246,11 @@ export default {
       type: "Type",
       ref: "Référence",
     },
-    csv: {
-      csv: "CSV",
+    export: {
+      export: "Export",
       csvExportDefault: "Exporter en CSV (colonnes par défaut)",
       csvExportCurrent: "Exporter en CSV (colonnes affichées)",
+      jsonlExport: "Exporter en JSONL",
     },
     filter: {
       filter: "Filtre",
