@@ -59,6 +59,18 @@ function columnsToCsvColumns(columns: string[]): string[] {
   );
 }
 
+function ExportLinkItem({ href, label }: { href: string; label: string }) {
+  return (
+    <Menu.Item
+      component="a"
+      href={href}
+      leftSection={<IconDownload style={iconSize(14)} />}
+    >
+      {label}
+    </Menu.Item>
+  );
+}
+
 function ExtraActionsExport({
   searchParams,
   selectedColumns,
@@ -67,50 +79,32 @@ function ExtraActionsExport({
   selectedColumns: string[];
 }) {
   const { t } = useTranslation();
-  const csvExportUrl =
+  const logsBaseUrl =
     (window.auditizeBaseURL ?? "") +
     "/api/repos/" +
     searchParams.repoId +
-    "/logs/csv?" +
-    new URLSearchParams(
-      searchParams.serialize({
-        includeRepoId: false,
-        snakeCase: true,
-      }),
-    ).toString();
-  const jsonlExportUrl =
-    (window.auditizeBaseURL ?? "") +
-    "/api/repos/" +
-    searchParams.repoId +
-    "/logs/jsonl?" +
-    new URLSearchParams(
-      searchParams.serialize({ includeRepoId: false, snakeCase: true }),
-    ).toString();
+    "/logs";
+  const searchParamsQueryString = new URLSearchParams(
+    searchParams.serialize({ includeRepoId: false, snakeCase: true }),
+  ).toString();
+  const csvExportUrl = logsBaseUrl + "/csv?" + searchParamsQueryString;
+  const jsonlExportUrl = logsBaseUrl + "/jsonl?" + searchParamsQueryString;
 
   return (
     <>
       <Menu.Label>{t("log.export.export")}</Menu.Label>
-      <Menu.Item
-        component="a"
+      <ExportLinkItem
         href={csvExportUrl}
-        leftSection={<IconDownload style={iconSize(14)} />}
-      >
-        {t("log.export.csvExportDefault")}
-      </Menu.Item>
-      <Menu.Item
-        component="a"
+        label={t("log.export.csvExportDefault")}
+      />
+      <ExportLinkItem
         href={`${csvExportUrl}&columns=${columnsToCsvColumns(selectedColumns).join(",")}`}
-        leftSection={<IconDownload style={iconSize(14)} />}
-      >
-        {t("log.export.csvExportCurrent")}
-      </Menu.Item>
-      <Menu.Item
-        component="a"
+        label={t("log.export.csvExportCurrent")}
+      />
+      <ExportLinkItem
         href={jsonlExportUrl}
-        leftSection={<IconDownload style={iconSize(14)} />}
-      >
-        {t("log.export.jsonlExport")}
-      </Menu.Item>
+        label={t("log.export.jsonlExport")}
+      />
     </>
   );
 }
