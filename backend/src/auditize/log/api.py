@@ -797,6 +797,10 @@ async def add_attachment(
     )
 
 
+def _build_log_export_filename(*, repo_id: UUID, ext: str) -> str:
+    return f"auditize-logs-{repo_id}-{now().strftime('%Y%m%d%H%M%S')}.{ext}"
+
+
 class _CsvResponse(Response):
     media_type = "text/csv"
 
@@ -837,7 +841,7 @@ async def get_logs_as_csv(
     columns = params.columns.split(",")  # convert columns string to a list
     validate_log_csv_columns(columns)
 
-    filename = f"auditize-logs_{repo_id}_{now().strftime('%Y%m%d%H%M%S')}.csv"
+    filename = _build_log_export_filename(repo_id=repo_id, ext="csv")
 
     return StreamingResponse(
         stream_logs_as_csv(
@@ -876,7 +880,7 @@ async def get_logs_as_jsonl(
 ):
     service = await LogService.for_reading(session, repo_id)
 
-    filename = f"auditize-logs_{repo_id}_{now().strftime('%Y%m%d%H%M%S')}.jsonl"
+    filename = _build_log_export_filename(repo_id=repo_id, ext="jsonl")
 
     return StreamingResponse(
         stream_logs_as_jsonl(
