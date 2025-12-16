@@ -52,7 +52,7 @@ function searchParamsToSearchParamNames(
 
   // Date
   if (searchParams.since || searchParams.until) {
-    names.add("savedAt");
+    names.add("emittedAt");
   }
 
   // Action
@@ -156,7 +156,7 @@ function removeSearchParam(
   }
 
   // Handle date
-  if (paramName === "savedAt") {
+  if (paramName === "emittedAt") {
     setSearchParam("since", null);
     setSearchParam("until", null);
     return;

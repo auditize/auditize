@@ -4,7 +4,7 @@ import { Log } from "@/features/log/api";
 export function DateField({ log }: { log: Log }) {
   return (
     <DateTime
-      value={log.savedAt}
+      value={log.emittedAt}
       textProps={{
         size: "xs",
       }}

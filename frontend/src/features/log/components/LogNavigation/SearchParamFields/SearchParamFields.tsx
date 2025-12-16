@@ -36,7 +36,7 @@ import { TextInputSearchParamField } from "./TextInputSearchParamField";
 
 export const FIXED_SEARCH_PARAM_NAMES = new Set([
   "q",
-  "savedAt",
+  "emittedAt",
   "actorRef",
   "actionCategory",
   "actionType",
@@ -74,7 +74,7 @@ function SearchParamField({
     );
   }
 
-  if (name === "savedAt") {
+  if (name === "emittedAt") {
     return (
       <DateInterval
         searchParams={searchParams}

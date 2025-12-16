@@ -51,7 +51,7 @@ import {
 
 export function sortLogFields(a: string, b: string) {
   const order: { [key: string]: number } = {
-    savedAt: 0,
+    emittedAt: 0,
     "source.": 1,
     actor: 2,
     actorType: 3,
@@ -123,9 +123,9 @@ function logFieldToColumn(
     customCellAttributes: isLastColumn ? () => ({ colSpan: 2 }) : undefined,
   });
 
-  if (field === "savedAt")
+  if (field === "emittedAt")
     return column({
-      accessor: "savedAt",
+      accessor: "emittedAt",
       title: columnTitle(t("log.date"), IconCalendarClock),
       render: (log: Log) => <DateField log={log} />,
       cellsStyle: () => ({
