@@ -717,9 +717,10 @@ async def create_log(
     description=dedent("""
     Requires `log:write` permission.
 
-    This endpoint acts like a create_log operation,
-    except that extra fields such as `id` and `saved_at` may be provided.
-    For classic use cases, it is recommended to use the create_log operation instead.
+    This endpoint acts like a create_log operation, except that:
+        - the `emitted_at` field is required
+        - the `id` field may be provided.
+    For classic use cases, it is strongly recommended to use the create_log operation instead.
     """),
     operation_id="import_log",
     responses=error_responses(status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT),

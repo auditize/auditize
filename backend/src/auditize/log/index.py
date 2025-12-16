@@ -204,7 +204,11 @@ async def _copy_logs(session: AsyncSession, repo: Repo, *, target_index: str):
     pagination_cursor = repo.reindex_cursor
     while True:
         logs, next_cursor = await log_service.get_logs(
-            include_attachment_data=True, limit=100, pagination_cursor=pagination_cursor
+            include_attachment_data=True,
+            # NB: sort by saved_at since emitted_at is only available since version 0.10.0
+            sort_by_saved_at=True,
+            limit=100,
+            pagination_cursor=pagination_cursor,
         )
         await helpers.async_bulk(
             log_service.es,

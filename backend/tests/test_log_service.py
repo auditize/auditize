@@ -66,7 +66,7 @@ async def test_log_retention_period_disabled(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
     await repo.create_log(
-        superadmin_client, saved_at=datetime.now() - timedelta(days=3650)
+        superadmin_client, emitted_at=datetime.now() - timedelta(days=3650)
     )
 
     async with open_db_session() as session:
@@ -83,18 +83,18 @@ async def test_log_retention_period_enabled(
 
     repo_1 = await repo_builder({"retention_period": 30})
     repo_1_log_1 = await repo_1.create_log(
-        superadmin_client, saved_at=datetime.now() - timedelta(days=31)
+        superadmin_client, emitted_at=datetime.now() - timedelta(days=31)
     )
     repo_1_log_2 = await repo_1.create_log(
-        superadmin_client, saved_at=datetime.now() - timedelta(days=29)
+        superadmin_client, emitted_at=datetime.now() - timedelta(days=29)
     )
 
     repo_2 = await repo_builder({})
     repo_2_log_1 = await repo_2.create_log(
-        superadmin_client, saved_at=datetime.now() - timedelta(days=31)
+        superadmin_client, emitted_at=datetime.now() - timedelta(days=31)
     )
     repo_2_log_2 = await repo_2.create_log(
-        superadmin_client, saved_at=datetime.now() - timedelta(days=29)
+        superadmin_client, emitted_at=datetime.now() - timedelta(days=29)
     )
 
     async with open_db_session() as session:
@@ -136,7 +136,7 @@ async def test_log_retention_period_purge_consolidated_data(
                 "details": [{"name": "detail_field_to_be_kept", "value": "value"}],
             }
         ),
-        saved_at=datetime.now() - timedelta(days=10),
+        emitted_at=datetime.now() - timedelta(days=10),
     )
     await log_1.upload_attachment(
         superadmin_client,
@@ -171,7 +171,7 @@ async def test_log_retention_period_purge_consolidated_data(
                 "details": [{"name": "detail_field_to_be_purged", "value": "value"}],
             }
         ),
-        saved_at=datetime.now() - timedelta(days=40),
+        emitted_at=datetime.now() - timedelta(days=40),
     )
     await log_2.upload_attachment(
         superadmin_client,
@@ -199,12 +199,12 @@ async def test_log_retention_period_purge_log_entities_1(
     await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AA", "AAA"],
-        saved_at=datetime.now() - timedelta(days=40),
+        emitted_at=datetime.now() - timedelta(days=40),
     )
     await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AB", "ABA"],
-        saved_at=datetime.now() - timedelta(days=40),
+        emitted_at=datetime.now() - timedelta(days=40),
     )
     await repo.create_log_with_entity_path(
         superadmin_client,
@@ -253,12 +253,12 @@ async def test_log_retention_period_purge_log_entities_2(
     await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AA"],
-        saved_at=datetime.now() - timedelta(days=40),
+        emitted_at=datetime.now() - timedelta(days=40),
     )
     await repo.create_log_with_entity_path(
         superadmin_client,
         ["A", "AB"],
-        saved_at=datetime.now() - timedelta(days=40),
+        emitted_at=datetime.now() - timedelta(days=40),
     )
 
     async with open_db_session() as session:

@@ -7,11 +7,11 @@
     "cannot_delete_last_superadmin_user": "Impossible de supprimer le dernier utilisateur ayant le rôle superadmin",
     "invalid_password_reset_token": "Le jeton de réinitialisation du mot de passe est invalide ou a expiré",
     "constraint_violation": {
-        "user": "Un utilisateur avec l'email {email!r} existe déjà",
-        "apikey": "Une clé d'API avec le nom {name!r} existe déjà",
-        "repo": "Un dépôt avec le nom {name!r} existe déjà",
-        "log_i18n_profile": "Un profil de traduction de journaux avec le nom {name!r} existe déjà",
-        "log_filter": "Un filtre de journaux avec le nom {name!r} existe déjà"
+      "user": "Un utilisateur avec l'email {email!r} existe déjà",
+      "apikey": "Une clé d'API avec le nom {name!r} existe déjà",
+      "repo": "Un dépôt avec le nom {name!r} existe déjà",
+      "log_i18n_profile": "Un profil de traduction de journaux avec le nom {name!r} existe déjà",
+      "log_filter": "Un filtre de journaux avec le nom {name!r} existe déjà"
     }
   },
   "log": {
@@ -38,7 +38,8 @@
         "attachment_mime_type": "Type MIME de la pièce jointe",
         "entity_path:ref": "Références d'entités",
         "entity_path:name": "Noms d'entités",
-        "saved_at": "Date"
+        "saved_at": "Date de sauvegarde",
+        "emitted_at": "Date d'émission"
       },
       "true": "Oui",
       "false": "Non"

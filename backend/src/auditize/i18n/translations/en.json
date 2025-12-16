@@ -38,7 +38,8 @@
         "attachment_mime_type": "Attachment MIME Type",
         "entity_path:ref": "Entity Refs",
         "entity_path:name": "Entity Names",
-        "saved_at": "Date"
+        "saved_at": "Saved At",
+        "emitted_at": "Emitted At"
       },
       "true": "Yes",
       "false": "No"

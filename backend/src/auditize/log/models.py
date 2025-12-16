@@ -882,6 +882,7 @@ class LogListParams(CursorPaginationParams, LogSearchQueryParams):
 LOG_CSV_BUILTIN_COLUMNS = (
     "log_id",
     "saved_at",
+    "emitted_at",
     "action_type",
     "action_category",
     "actor_ref",
