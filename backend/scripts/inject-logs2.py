@@ -16,7 +16,7 @@ import httpx
 from auditize.config import init_config
 from auditize.database import init_dbm
 from auditize.database.dbm import open_db_session
-from auditize.log.models import Log, LogCreate
+from auditize.log.models import Emitter, EmitterType, Log, LogCreate
 from auditize.log.service import LogService
 
 # fmt: off
@@ -650,18 +650,45 @@ def jsonify(text: str):
         return json.dumps(data, indent=4, ensure_ascii=False)
 
 
+class DatetimeProvider:
+    def __init__(self, log_count: int):
+        # create a time span for 1000 logs / day
+        self.time_end = int(time.time())
+        self.time_start = self.time_end - ((log_count / 1000) * 24 * 60 * 60)
+
+    def get_datetime(self) -> datetime:
+        return datetime.fromtimestamp(
+            random.uniform(self.time_start, self.time_end), timezone.utc
+        )
+
+    def get_datetime_str(self) -> str:
+        return (
+            self.get_datetime()
+            .astimezone(timezone.utc)
+            .isoformat(timespec="milliseconds")
+        )
+
+
 class ApiInjector:
-    def __init__(self, base_url, repo_id, api_key):
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        repo_id: str,
+        api_key: str,
+        log_count: int,
+    ):
         self.base_url = base_url
         self.repo_id = repo_id
         self.api_key = api_key
+        self.datetime_provider = DatetimeProvider(log_count=log_count)
         self.client = httpx.AsyncClient()
 
     async def __call__(self, log, attachments):
         resp = await self.client.post(
             f"{self.base_url}/api/repos/{self.repo_id}/logs",
             headers={"Authorization": f"Bearer {self.api_key}"},
-            json=log,
+            json={**log, "emitted_at": self.datetime_provider.get_datetime_str()},
         )
         if resp.is_error:
             sys.exit(
@@ -686,24 +713,27 @@ class ApiInjector:
 class ServiceInjector:
     def __init__(self, repo_id: str, log_count: int):
         self.repo_id = repo_id
-        # create a time span for 1000 logs / day
-        self.time_end = int(time.time())
-        self.time_start = self.time_end - ((log_count / 1000) * 24 * 60 * 60)
+        self.datetime_provider = DatetimeProvider(log_count=log_count)
 
     @classmethod
-    async def spawn(cls, repo_id: str, log_count: int):
+    async def spawn(cls, *, repo_id: str, log_count: int):
         init_config()
         init_dbm()
         return cls(repo_id, log_count)
 
     async def __call__(self, log, attachments):
         log_model = LogCreate.model_validate(log)
-        saved_at = datetime.fromtimestamp(
-            random.uniform(self.time_start, self.time_end), timezone.utc
-        )
+        log_model.emitted_at = self.datetime_provider.get_datetime()
         async with open_db_session() as db_session:
             log_service = await LogService.for_maintenance(db_session, self.repo_id)
-            log = await log_service.create_log(log_model, saved_at=saved_at)
+            log = await log_service.create_log(
+                log_model,
+                Emitter(
+                    type=EmitterType.APIKEY,
+                    id="00000000-0000-0000-0000-000000000000",
+                    name="UNKNOWN",
+                ),
+            )
             for attachment in attachments:
                 await log_service.save_log_attachment(
                     log.id,
@@ -754,9 +784,14 @@ async def main(argv):
     print(f"Injecting {count} logs into {repo_id} at {base_url}")
 
     if base_url and api_key:
-        injector = ApiInjector(base_url, repo_id, api_key)
+        injector = ApiInjector(
+            base_url=base_url,
+            repo_id=repo_id,
+            api_key=api_key,
+            log_count=count,
+        )
     else:
-        injector = await ServiceInjector.spawn(repo_id, count)
+        injector = await ServiceInjector.spawn(repo_id=repo_id, log_count=count)
 
     provider = LogProvider.prepare()
 
