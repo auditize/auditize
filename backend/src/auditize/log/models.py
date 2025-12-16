@@ -569,15 +569,10 @@ class LogCreate(BaseModel):
         return self
 
 
-class _LogImport(BaseModel):
-    id: UUID = Field(default=None)
-    saved_at: datetime = Field(default=None)
-
-
-class LogImport(LogCreate, _LogImport):
-    # NB: we create two model classes _LogImport and LogImport to force the id and saved_at
-    # fields to be at the top of the model in OpenAPI schema.
-    pass
+class LogImport(LogCreate):
+    id: UUID = _LogIdField(default=None)
+    # NB: emitted_at is required for import operation.
+    emitted_at: datetime = _EmittedAtField()
 
 
 class LogCreationResponse(BaseModel):

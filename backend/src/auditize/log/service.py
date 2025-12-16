@@ -183,9 +183,7 @@ class LogService:
     async def import_log(self, log_import: LogImport, emitter: Emitter) -> Log:
         await self.check_log(log_import)
 
-        # NB: we use exclude_none=True instead of exclude_unset=True to skip
-        # id and saved_at fields that are not set while keeping emitted_at which is set by default value.
-        log_json = log_import.model_dump(exclude_none=True)
+        log_json = log_import.model_dump(exclude_unset=True)
         log_json.setdefault("id", uuid.uuid4())
         log_json["emitter"] = emitter.model_dump()
         return await self._save_log(Log.model_validate(log_json))
