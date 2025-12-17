@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auditize.database import get_elastic_client
 from auditize.repo.sql_models import Repo
 
-_MAPPING_VERSION = 4
+_MAPPING_VERSION = 5
 
 # Elasticsearch mapping history:
 # - 0.7.0:
@@ -18,6 +18,7 @@ _MAPPING_VERSION = 4
 # - 0.10.0:
 #   - v3: unchanged mapping, use '_' instead of '-' in custom field names and identifiers in general
 #   - v4: add emitter field
+#   - v5: add emitted_at field and update sorting to use emitted_at and log_id
 
 _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
     "type": "text",
@@ -43,6 +44,7 @@ _MAPPING = {
     "properties": {
         "log_id": {"type": "keyword"},
         "saved_at": {"type": "date"},
+        "emitted_at": {"type": "date"},
         "emitter": {
             "properties": {
                 "type": {"type": "keyword"},
@@ -143,76 +145,10 @@ async def _create_index(
     await elastic_client.indices.create(
         index=index,
         aliases=aliases,
-        mappings={
-            "properties": {
-                "log_id": {"type": "keyword"},
-                "saved_at": {"type": "date"},
-                "action": {
-                    "properties": {
-                        "type": {"type": "keyword"},
-                        "category": {"type": "keyword"},
-                    }
-                },
-                "source": _TYPE_CUSTOM_FIELDS,
-                "actor": {
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "type": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                        "extra": _TYPE_CUSTOM_FIELDS,
-                    }
-                },
-                "resource": {
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "type": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                        "extra": _TYPE_CUSTOM_FIELDS,
-                    }
-                },
-                "details": _TYPE_CUSTOM_FIELDS,
-                "tags": {
-                    "type": "nested",
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "type": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                    },
-                },
-                "attachments": {
-                    "type": "nested",
-                    "properties": {
-                        "name": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
-                        "type": {"type": "keyword"},
-                        "mime_type": {"type": "keyword"},
-                        "saved_at": {"type": "date"},
-                        "data": {"type": "binary"},
-                    },
-                },
-                "entity_path": {
-                    "type": "nested",
-                    "properties": {
-                        "ref": {"type": "keyword"},
-                        "name": {
-                            **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
-                            "fields": {"keyword": {"type": "keyword"}},
-                        },
-                    },
-                },
-            }
-        },
+        mappings=_MAPPING,
         settings={
             "index": {
-                "sort.field": ["saved_at", "log_id"],
+                "sort.field": ["emitted_at", "log_id"],
                 "sort.order": ["desc", "desc"],
             },
             "analysis": {
@@ -268,7 +204,11 @@ async def _copy_logs(session: AsyncSession, repo: Repo, *, target_index: str):
     pagination_cursor = repo.reindex_cursor
     while True:
         logs, next_cursor = await log_service.get_logs(
-            include_attachment_data=True, limit=100, pagination_cursor=pagination_cursor
+            include_attachment_data=True,
+            # NB: sort by saved_at since emitted_at is only available since version 0.10.0
+            sort_by_saved_at=True,
+            limit=100,
+            pagination_cursor=pagination_cursor,
         )
         await helpers.async_bulk(
             log_service.es,

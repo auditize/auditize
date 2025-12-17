@@ -4,8 +4,8 @@
   "emitted_at": "2024-01-15T10:30:00.000Z",
   "emitter": {
     "type": "apikey",
-    "id": "00000000-0000-0000-0000-000000000000",
-    "name": "UNDEFINED"
+    "id": "fec4a4e6-ac13-455f-a0f8-e71aa0c37b7d",
+    "name": "Apikey 123"
   },
   "action": {
     "type": "create_configuration_profile",
@@ -40,7 +40,7 @@
   "details": [
     { "name": "field_name_1", "value": "value 1", "type": "string" },
     { "name": "field_name_2", "value": "value 2", "type": "string" },
-    { "name": "status", "value": "success", "type": "string" }
+    { "name": "status", "value": "success", "type": "enum" }
   ],
   "tags": [
     { "type": "security", "name": null, "ref": null },

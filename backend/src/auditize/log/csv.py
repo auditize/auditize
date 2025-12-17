@@ -90,6 +90,7 @@ def _log_to_dict(
     data["entity_path:ref"] = " > ".join(entity.ref for entity in log.entity_path)
     data["entity_path:name"] = " > ".join(entity.name for entity in log.entity_path)
     data["saved_at"] = serialize_datetime(log.saved_at)
+    data["emitted_at"] = serialize_datetime(log.emitted_at)
 
     return data
 

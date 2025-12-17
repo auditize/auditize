@@ -127,8 +127,8 @@ async def test_purge_expired_logs_all(
     superadmin_client: HttpTestHelper, repo_builder: RepoBuilder
 ):
     repo = await repo_builder({"retention_period": 30})
-    await repo.create_log(
-        superadmin_client, saved_at=datetime.now() - timedelta(days=90)
+    await repo.create_log_with(
+        superadmin_client, {"emitted_at": "2024-01-01T00:00:00.000Z"}
     )
     await async_main(["purge-expired-logs"])
     assert (await repo.get_log_count()) == 0
@@ -139,7 +139,7 @@ async def test_purge_expired_logs_single(
 ):
     repo_1 = await repo_builder({"retention_period": 30})
     await repo_1.create_log(
-        superadmin_client, saved_at=datetime.now() - timedelta(days=90)
+        superadmin_client, emitted_at=datetime.now() - timedelta(days=90)
     )
 
     repo_2 = await repo_builder({"retention_period": 30})

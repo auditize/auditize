@@ -61,6 +61,17 @@ async def test_create_log_minimal_fields(
     )
 
 
+async def test_create_log_with_emitted_at(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data({"emitted_at": "2024-01-15T10:30:00.000Z"})
+    await log_write_client.assert_post_created(
+        f"/repos/{repo.id}/logs",
+        json=log_data,
+        expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
 async def test_create_log_forbidden(
     no_permission_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -550,11 +561,20 @@ async def test_create_log_from_openapi_example(
 async def test_import_log_no_extra_fields(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
-    log_data = PreparedLog.prepare_data()
+    log_data = PreparedLog.prepare_data({"emitted_at": "2024-01-15T10:30:00.000Z"})
     await log_write_client.assert_post_created(
         f"/repos/{repo.id}/logs/import",
         json=log_data,
         expected_json=PreparedLog.build_expected_api_response(log_data),
+    )
+
+
+async def test_import_log_with_missing_emitted_at(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data()
+    await log_write_client.assert_post_bad_request(
+        f"/repos/{repo.id}/logs/import", json=log_data
     )
 
 
@@ -564,7 +584,7 @@ async def test_import_log_with_extra_fields(
     log_data = PreparedLog.prepare_data(
         {
             "id": UNKNOWN_UUID,
-            "saved_at": "2021-01-01T00:00:00.000Z",
+            "emitted_at": "2024-01-15T10:30:00.000Z",
         }
     )
     await log_write_client.assert_post_created(
@@ -581,11 +601,28 @@ async def test_import_log_id_already_used(
     imported_log_data = PreparedLog.prepare_data(
         {
             "id": existing_log.id,
+            "emitted_at": "2024-01-15T10:30:00.000Z",
         }
     )
     await log_write_client.assert_post_constraint_violation(
         f"/repos/{repo.id}/logs/import",
         json=imported_log_data,
+    )
+
+
+async def test_import_log_unknown_repo(log_write_client: HttpTestHelper):
+    log_data = PreparedLog.prepare_data({"emitted_at": "2024-01-15T10:30:00.000Z"})
+    await log_write_client.assert_post_not_found(
+        f"/repos/{UNKNOWN_UUID}/logs/import", json=log_data
+    )
+
+
+async def test_import_log_forbidden(
+    no_permission_client: HttpTestHelper, repo: PreparedRepo
+):
+    log_data = PreparedLog.prepare_data({"emitted_at": "2024-01-15T10:30:00.000Z"})
+    await no_permission_client.assert_post_forbidden(
+        f"/repos/{repo.id}/logs/import", json=log_data
     )
 
 
@@ -1594,11 +1631,11 @@ async def test_get_logs_filter_entity_id_ascendant_entity(
 
 
 async def test_get_logs_filter_since(log_rw_client: HttpTestHelper, repo: PreparedRepo):
-    log1 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z")
+    log1 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-01T00:00:00.000Z"}
     )
-    log2 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z")
+    log2 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-02T00:00:00.000Z"}
     )
 
     await _test_get_logs_filter(
@@ -1611,11 +1648,11 @@ async def test_get_logs_filter_since(log_rw_client: HttpTestHelper, repo: Prepar
 
 
 async def test_get_logs_filter_until(log_rw_client: HttpTestHelper, repo: PreparedRepo):
-    log1 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z")
+    log1 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-01T00:00:00.000Z"}
     )
-    log2 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z")
+    log2 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-02T00:00:00.000Z"}
     )
 
     await _test_get_logs_filter(
@@ -1630,11 +1667,11 @@ async def test_get_logs_filter_until(log_rw_client: HttpTestHelper, repo: Prepar
 async def test_get_logs_filter_until_milliseconds(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    log1 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2023-12-31T23:59:59.500Z")
+    log1 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2023-12-31T23:59:59.500Z"}
     )
-    log2 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z")
+    log2 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-01T00:00:00.000Z"}
     )
 
     await _test_get_logs_filter(
@@ -1649,14 +1686,14 @@ async def test_get_logs_filter_until_milliseconds(
 async def test_get_logs_filter_between_since_and_until(
     log_rw_client: HttpTestHelper, repo: PreparedRepo
 ):
-    log1 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z")
+    log1 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-01T00:00:00.000Z"}
     )
-    log2 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z")
+    log2 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-02T00:00:00.000Z"}
     )
-    log3 = await repo.create_log(
-        log_rw_client, saved_at=datetime.fromisoformat("2024-01-03T00:00:00Z")
+    log3 = await repo.create_log_with(
+        log_rw_client, {"emitted_at": "2024-01-03T00:00:00.000Z"}
     )
 
     await _test_get_logs_filter(
@@ -3390,16 +3427,17 @@ async def test_get_logs_as_csv_minimal_log(
     log_write_client: HttpTestHelper,
     repo: PreparedRepo,
 ):
-    log = await repo.create_log(
+    log = await repo.create_log_with(
         log_write_client,
+        {"emitted_at": "2024-01-01T00:00:00.000Z"},
         saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
     )
 
     resp = await log_read_client.assert_get(f"/repos/{repo.id}/logs/csv")
     assert (
         resp.text
-        == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
-        f"{log.id},2024-01-01T00:00:00.000Z,User Login,Authentication,,,,,,,,,,,,,entity,Entity\r\n"
+        == "Log ID,Saved At,Emitted At,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
+        f"{log.id},2024-01-01T00:00:00.000Z,2024-01-01T00:00:00.000Z,User Login,Authentication,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 
@@ -3430,6 +3468,7 @@ async def test_get_logs_as_csv_log_with_all_fields(
                     },
                     {"ref": "rich_tag:1", "type": "rich_tag", "name": "Rich tag"},
                 ],
+                "emitted_at": "2024-01-01T00:00:00.000Z",
             }
         ),
         saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
@@ -3444,8 +3483,8 @@ async def test_get_logs_as_csv_log_with_all_fields(
     resp = await log_rw_client.assert_get_ok(f"/repos/{repo.id}/logs/csv")
     assert (
         resp.text
-        == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
-        f"{log.id},2024-01-01T00:00:00.000Z,User Login,Authentication,user:123,User,User 123,core,Module,Core Module,|rich_tag:1,Simple Tag|Rich Tag,|Rich tag,attachment.txt,Attachment Type,text/plain,entity,Entity\r\n"
+        == "Log ID,Saved At,Emitted At,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
+        f"{log.id},2024-01-01T00:00:00.000Z,2024-01-01T00:00:00.000Z,User Login,Authentication,user:123,User,User 123,core,Module,Core Module,|rich_tag:1,Simple Tag|Rich Tag,|Rich tag,attachment.txt,Attachment Type,text/plain,entity,Entity\r\n"
     )
 
 
@@ -3464,7 +3503,7 @@ async def test_get_logs_as_csv_with_columns_param(
         params={"columns": "saved_at,action_type,action_category"},
     )
     assert (
-        resp.text == "Date,Action Type,Action Category\r\n"
+        resp.text == "Saved At,Action Type,Action Category\r\n"
         f"2024-01-01T00:00:00.000Z,User Login,Authentication\r\n"
     )
 
@@ -3486,7 +3525,10 @@ async def test_get_logs_as_csv_with_filter(
     log1 = await repo.create_log(
         log_rw_client,
         PreparedLog.prepare_data(
-            {"action": {"category": "action_category_1", "type": "action_type_1"}}
+            {
+                "action": {"category": "action_category_1", "type": "action_type_1"},
+                "emitted_at": "2024-01-01T00:00:00.000Z",
+            }
         ),
         saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
     )
@@ -3504,8 +3546,8 @@ async def test_get_logs_as_csv_with_filter(
     )
     assert (
         resp.text
-        == "Log ID,Date,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
-        f"{log1.id},2024-01-01T00:00:00.000Z,Action Type 1,Action Category 1,,,,,,,,,,,,,entity,Entity\r\n"
+        == "Log ID,Saved At,Emitted At,Action Type,Action Category,Actor Ref,Actor Type,Actor Name,Resource Ref,Resource Type,Resource Name,Tag Ref,Tag Type,Tag Name,Attachment Name,Attachment Type,Attachment MIME Type,Entity Refs,Entity Names\r\n"
+        f"{log1.id},2024-01-01T00:00:00.000Z,2024-01-01T00:00:00.000Z,Action Type 1,Action Category 1,,,,,,,,,,,,,entity,Entity\r\n"
     )
     assert resp.headers["Content-Type"] == "text/csv; charset=utf-8"
 

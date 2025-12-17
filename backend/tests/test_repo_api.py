@@ -304,10 +304,10 @@ async def test_repo_get_with_stats(
     superadmin_client: HttpTestHelper, repo: PreparedRepo
 ):
     await repo.create_log(
-        superadmin_client, saved_at=datetime.fromisoformat("2024-01-01T00:00:00Z")
+        superadmin_client, emitted_at=datetime.fromisoformat("2024-01-01T00:00:00Z")
     )
     await repo.create_log(
-        superadmin_client, saved_at=datetime.fromisoformat("2024-01-02T00:00:00Z")
+        superadmin_client, emitted_at=datetime.fromisoformat("2024-01-02T00:00:00Z")
     )
 
     await superadmin_client.assert_get(
@@ -656,7 +656,7 @@ async def test_repo_list_with_stats(
 ):
     await repo.create_log(
         superadmin_client,
-        saved_at=datetime.fromisoformat("2024-01-01T00:00:00.123Z"),
+        emitted_at=datetime.fromisoformat("2024-01-01T00:00:00.123Z"),
     )
 
     await superadmin_client.assert_get(

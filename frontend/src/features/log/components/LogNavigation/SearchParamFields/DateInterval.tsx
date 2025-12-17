@@ -5,8 +5,9 @@ import { useTranslation } from "react-i18next";
 
 import { CustomDateTimePicker } from "@/components";
 import { LogSearchParams } from "@/features/log/LogSearchParams";
-import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
+
 import { SearchParamFieldPopover } from "./SearchParamFieldPopover";
+import { FIXED_SEARCH_PARAM_NAMES } from "./SearchParamFields";
 
 export function DateInterval({
   searchParams,
@@ -28,8 +29,8 @@ export function DateInterval({
   return (
     <SearchParamFieldPopover
       title={t("log.date")}
-      removable={!FIXED_SEARCH_PARAM_NAMES.has("savedAt")}
-      onRemove={() => onRemove("savedAt")}
+      removable={!FIXED_SEARCH_PARAM_NAMES.has("emittedAt")}
+      onRemove={() => onRemove("emittedAt")}
       isSet={!!(searchParams.since || searchParams.until)}
       opened={opened}
       onChange={toggle}
@@ -69,4 +70,3 @@ export function DateInterval({
     </SearchParamFieldPopover>
   );
 }
-

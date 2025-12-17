@@ -123,7 +123,7 @@ async def get_repo_stats(session: AsyncSession, repo_id: UUID) -> RepoStats:
 
     try:
         last_log = await log_service.get_newest_log()
-        stats.last_log_date = last_log.saved_at if last_log else None
+        stats.last_log_date = last_log.emitted_at if last_log else None
         stats.log_count = await log_service.get_log_count()
         stats.storage_size = await log_service.get_storage_size()
     except (elasticsearch.NotFoundError, elasticsearch.BadRequestError) as exc:

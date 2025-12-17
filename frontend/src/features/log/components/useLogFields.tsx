@@ -104,7 +104,7 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
   };
   return {
     fields: [
-      { group: "Date", items: [item("savedAt", t("log.date"))] },
+      { group: "Date", items: [item("emittedAt", t("log.date"))] },
       { group: "Search", items: [item("q", t("common.search"))] },
       {
         group: t("log.action"),
@@ -221,7 +221,7 @@ export function useColumnFields(repoId: string) {
 
   return {
     fields: [
-      { group: t("log.date"), items: [item("savedAt", t("log.date"))] },
+      { group: t("log.date"), items: [item("emittedAt", t("log.date"))] },
       {
         group: "Action",
         items: [

@@ -334,7 +334,7 @@ class LogService:
                             "latest_type": {
                                 "top_hits": {
                                     "size": 1,
-                                    "sort": [{"saved_at": {"order": "desc"}}],
+                                    "sort": [{"emitted_at": {"order": "desc"}}],
                                     "_source": {"includes": [f"{path}.type"]},
                                 }
                             }
@@ -540,14 +540,14 @@ class LogService:
                     )
                 )
             if sp.since:
-                filter.append({"range": {"saved_at": {"gte": sp.since}}})
+                filter.append({"range": {"emitted_at": {"gte": sp.since}}})
             if sp.until:
                 # don't want to miss logs saved at the same second, meaning that the "until: ...23:59:59" criterion
                 # will also include logs saved at 23:59:59.500 for instance
                 filter.append(
                     {
                         "range": {
-                            "saved_at": {"lte": sp.until.replace(microsecond=999999)}
+                            "emitted_at": {"lte": sp.until.replace(microsecond=999999)}
                         }
                     }
                 )
@@ -563,6 +563,7 @@ class LogService:
         authorized_entities: set[str] = None,
         search_params: LogSearchParams = None,
         include_attachment_data: bool = False,
+        sort_by_saved_at: bool = False,
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[Log], str | None]:
@@ -575,7 +576,12 @@ class LogService:
                 load_pagination_cursor(pagination_cursor) if pagination_cursor else None
             ),
             source_excludes=None if include_attachment_data else ["attachments.data"],
-            sort=[{"saved_at": "desc", "log_id": "desc"}],
+            sort=[
+                {
+                    "saved_at" if sort_by_saved_at else "emitted_at": "desc",
+                    "log_id": "desc",
+                }
+            ],
             size=limit + 1,
             track_total_hits=False,
         )
@@ -605,7 +611,7 @@ class LogService:
             query=await self._build_es_query(
                 search_params, authorized_entities=authorized_entities
             ),
-            sort=[{"saved_at": "desc", "log_id": "desc"}],
+            sort=[{"emitted_at": "desc", "log_id": "desc"}],
             size=1,
         )
         hits = resp["hits"]["hits"]
@@ -878,7 +884,7 @@ class LogService:
                             "latest_type": {
                                 "top_hits": {
                                     "size": 1,
-                                    "sort": [{"saved_at": {"order": "desc"}}],
+                                    "sort": [{"emitted_at": {"order": "desc"}}],
                                     "_source": {
                                         "includes": [
                                             f"{path}.type",
@@ -1047,7 +1053,7 @@ class LogService:
                     "filter": [
                         {
                             "range": {
-                                "saved_at": {
+                                "emitted_at": {
                                     "lt": (
                                         now()
                                         - timedelta(days=self.repo.retention_period)

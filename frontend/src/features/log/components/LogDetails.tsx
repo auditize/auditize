@@ -352,7 +352,7 @@ function LogDate({ log }: { log: Log }) {
           marginRight: "0.25rem",
         })}
       />
-      <Text size="sm">{humanizeDate(log.savedAt)}</Text>
+      <Text size="sm">{humanizeDate(log.emittedAt)}</Text>
     </Group>
   );
 }

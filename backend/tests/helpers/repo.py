@@ -12,7 +12,7 @@ from auditize.repo.sql_models import Repo
 
 from .http import HttpTestHelper
 from .log import PreparedLog
-from .utils import DATETIME_FORMAT
+from .utils import DATETIME_FORMAT, serialize_datetime
 
 
 class PreparedRepo:
@@ -69,10 +69,17 @@ class PreparedRepo:
         )
 
     async def create_log(
-        self, client: HttpTestHelper, data: dict = None, *, saved_at: datetime = None
+        self,
+        client: HttpTestHelper,
+        data: dict = None,
+        *,
+        saved_at: datetime = None,
+        emitted_at: datetime = None,
     ) -> PreparedLog:
         if data is None:
             data = PreparedLog.prepare_data()
+        if emitted_at:
+            data["emitted_at"] = serialize_datetime(emitted_at)
         resp = await client.assert_post(
             f"/repos/{self.id}/logs", json=data, expected_status_code=201
         )
@@ -87,10 +94,18 @@ class PreparedRepo:
         return PreparedLog(log_id, data, self)
 
     async def create_log_with(
-        self, client: HttpTestHelper, extra: dict, *, saved_at: datetime = None
+        self,
+        client: HttpTestHelper,
+        extra: dict,
+        *,
+        saved_at: datetime = None,
+        emitted_at: datetime = None,
     ):
         return await self.create_log(
-            client, PreparedLog.prepare_data(extra), saved_at=saved_at
+            client,
+            PreparedLog.prepare_data(extra),
+            saved_at=saved_at,
+            emitted_at=emitted_at,
         )
 
     async def create_log_with_entity_path(
@@ -99,6 +114,7 @@ class PreparedRepo:
         entity_path: list[str] | None,
         *,
         saved_at: datetime = None,
+        emitted_at: datetime = None,
     ):
         return await self.create_log_with(
             client,
@@ -112,6 +128,7 @@ class PreparedRepo:
                 else {}
             ),
             saved_at=saved_at,
+            emitted_at=emitted_at,
         )
 
     async def update_status(self, client: HttpTestHelper, status: str):

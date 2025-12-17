@@ -70,6 +70,7 @@ export type Resource = {
 export type Log = {
   id: string;
   savedAt: string;
+  emittedAt: string;
   action: {
     type: string;
     category: string;

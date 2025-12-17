@@ -84,6 +84,14 @@ The structure is also flexible enough to let you add custom information about th
     from the key itself by the UI.
 
 
+### Emission datetime
+
+Auditize lets you explicitly set the emission timestamp of a log (that will be by default the current timestamp). To do so, you must include the `emitted_at` field in the log object. The value must be a valid ISO 8601 timestamp string.
+
+It can be useful for instance when logs are sent asynchronously from your application and you want to ensure that the emission timestamp is the one you expect.
+
+Alongside the `emitted_at` field, Auditize will also store the current timestamp as the `saved_at` field.
+
 ### `action`
 
 The `action` object specifies the action being performed. It includes the following fields:

@@ -38,7 +38,7 @@ type LogContextProps = {
 const StateLogContext = createContext<LogContextProps | null>(null);
 
 const DEFAULT_SELECTED_COLUMNS = [
-  "savedAt",
+  "emittedAt",
   "actor",
   "action",
   "resource",
