@@ -36,6 +36,7 @@ build-backend = "setuptools.build_meta"
 version = {attr = "auditize.version.__version__"}
 dependencies = { file = ["requirements.txt"] }
 optional-dependencies.dev = { file = ["requirements-dev.txt"] }
+optional-dependencies.doc = { file = ["requirements-doc.txt"] }
 
 [tool.setuptools.package-data]
 "auditize" = ["data/**", "i18n/translations/*.json", "database/alembic.ini"]
