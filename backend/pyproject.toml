@@ -16,37 +16,7 @@ classifiers=[
     "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.12"
-dynamic = ["version"]
-dependencies = [
-    "fastapi",
-    "pydantic[email]",
-    "python-multipart",
-    "uvicorn[standard]",
-    "aiocache",
-    "certifi",
-    "bcrypt",
-    "Authlib",
-    "apscheduler",
-    "python-dotenv",
-    # NB: elasticsearch 8.x is compatible with Elasticsearch 8.x and 9.x servers
-    # while elasticsearch 9.x is only compatible with Elasticsearch 9.x servers.
-    "elasticsearch[async]~=8.17.0",
-    "sqlalchemy[asyncio]~=2.0.36",
-    "asyncpg",
-    "alembic~=1.14.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-xdist",
-    "callee",
-    "httpx",
-    "icecream",
-    "ruff",
-    "build",
-    "pip-tools",
-]
+dynamic = ["version", "dependencies", "optional-dependencies"]
 
 [project.urls]
 Homepage = "https://www.auditize.org"
@@ -64,6 +34,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 version = {attr = "auditize.version.__version__"}
+dependencies = { file = ["requirements.txt"] }
+optional-dependencies.dev = { file = ["requirements-dev.txt"] }
 
 [tool.setuptools.package-data]
 "auditize" = ["data/**", "i18n/translations/*.json", "database/alembic.ini"]
