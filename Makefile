@@ -8,7 +8,13 @@ copy-frontend: build-frontend
 	cp frontend/dist/lib/auditize-web-component.mjs backend/src/auditize/data/html
 
 build-backend:
-	cd backend && rm -rf build && python3 -m build --wheel
+	# NB: Temporary override the requirements.txt file to include the pinned dependencies from uv.lock
+	cd backend && \
+		rm -rf build && \
+		cp -a requirements.txt requirements.txt.bak && \
+		uv export --no-hashes --frozen --no-annotate --no-header --no-editable --no-emit-workspace > requirements.txt && \
+		uv build --wheel && \
+		mv requirements.txt.bak requirements.txt
 	ls -lht ${PWD}/backend/dist/*.whl | head -n 1
 
 build: copy-frontend build-backend
