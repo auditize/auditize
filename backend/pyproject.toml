@@ -16,7 +16,7 @@ classifiers=[
     "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.12"
-dynamic = ["version", "dependencies", "optional-dependencies"]
+dynamic = ["version", "dependencies"]
 
 [project.urls]
 Homepage = "https://www.auditize.org"
@@ -32,11 +32,22 @@ auditize = "auditize.__main__:main"
 requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
+[dependency-groups]
+dev = [
+  "pytest",
+  "pytest-xdist",
+  "callee",
+  "httpx",
+  "icecream",
+  "ruff",
+]
+doc = [
+  "mkdocs-material",
+]
+
 [tool.setuptools.dynamic]
 version = {attr = "auditize.version.__version__"}
 dependencies = { file = ["requirements.txt"] }
-optional-dependencies.dev = { file = ["requirements-dev.txt"] }
-optional-dependencies.doc = { file = ["requirements-doc.txt"] }
 
 [tool.setuptools.package-data]
 "auditize" = ["data/**", "i18n/translations/*.json", "database/alembic.ini"]

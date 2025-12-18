@@ -253,7 +253,7 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "callee" },
     { name = "httpx" },
@@ -274,23 +274,26 @@ requires-dist = [
     { name = "asyncpg" },
     { name = "authlib" },
     { name = "bcrypt" },
-    { name = "callee", marker = "extra == 'dev'" },
     { name = "certifi" },
     { name = "elasticsearch", extras = ["async"], specifier = "~=8.17.0" },
     { name = "fastapi" },
-    { name = "httpx", marker = "extra == 'dev'" },
-    { name = "icecream", marker = "extra == 'dev'" },
-    { name = "mkdocs-material", marker = "extra == 'doc'" },
     { name = "pydantic", extras = ["email"] },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-xdist", marker = "extra == 'dev'" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
-    { name = "ruff", marker = "extra == 'dev'" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0.36" },
     { name = "uvicorn", extras = ["standard"] },
 ]
-provides-extras = ["dev", "doc"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "callee" },
+    { name = "httpx" },
+    { name = "icecream" },
+    { name = "pytest" },
+    { name = "pytest-xdist" },
+    { name = "ruff" },
+]
+doc = [{ name = "mkdocs-material" }]
 
 [[package]]
 name = "authlib"
