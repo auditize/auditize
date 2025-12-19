@@ -39,7 +39,7 @@ class PreparedLogFilter:
             "name": f"Filter {uuid.uuid4()}",
             "repo_id": UNKNOWN_UUID,
             "search_params": {"action_type": "some action"},
-            "columns": ["saved_at", "action_type"],
+            "columns": ["emitted_at", "action_type"],
             **(extra or {}),
         }
 

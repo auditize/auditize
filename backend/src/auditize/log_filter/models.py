@@ -24,7 +24,7 @@ from auditize.api.models.page_pagination import PagePaginatedResponse
 from auditize.api.models.search import PagePaginatedSearchParams
 
 _BUILTIN_FILTER_COLUMNS = (
-    "saved_at",
+    "emitted_at",
     "action",
     "action_type",
     "action_category",

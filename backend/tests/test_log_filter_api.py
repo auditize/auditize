@@ -34,7 +34,7 @@ async def test_log_filter_create_simple(user_builder: UserBuilder, repo: Prepare
             "repo_id": repo.id,
             "search_params": {"action_type": "some action"},
             "columns": [
-                "saved_at",
+                "emitted_at",
                 "action_type",
             ],
         },
@@ -88,7 +88,7 @@ async def test_log_filter_create_all_builtin_field_columns(
             "repo_id": repo.id,
             "search_params": {},
             "columns": [
-                "saved_at",
+                "emitted_at",
                 "action",
                 "action_type",
                 "action_category",
@@ -156,7 +156,7 @@ async def test_log_filter_create_missing_param(
         "repo_id": repo.id,
         "search_params": {"action_type": "some action"},
         "columns": [
-            "saved_at",
+            "emitted_at",
             "action_type",
         ],
     }
@@ -246,8 +246,8 @@ async def test_log_filter_create_invalid_column_duplicated(
             "repo_id": repo.id,
             "search_params": {},
             "columns": [
-                "saved_at",
-                "saved_at",
+                "emitted_at",
+                "emitted_at",
             ],
         },
     )
@@ -345,7 +345,7 @@ async def test_log_filter_update_simple(user_builder: UserBuilder, repo: Prepare
                 "action_type": "some action",
             },
             "columns": [
-                "saved_at",
+                "emitted_at",
                 "action_type",
             ],
         },
@@ -370,7 +370,7 @@ async def test_log_filter_update_all_params(
                 "action_type": "some action",
             },
             "columns": [
-                "saved_at",
+                "emitted_at",
                 "action_type",
             ],
         },
@@ -487,7 +487,7 @@ async def test_log_filter_get_all_fields_set(
                 "details.custom_details_field": "details field",
             },
             "columns": [
-                "saved_at",
+                "emitted_at",
                 "action",
                 "action_type",
                 "actor.custom_actor_field",
@@ -539,7 +539,7 @@ async def test_log_filter_list(user_builder: UserBuilder, repo: PreparedRepo):
                     "action_type": f"some action {i}",
                 },
                 "columns": [
-                    "saved_at",
+                    "emitted_at",
                     "action_type",
                 ],
             }
@@ -566,7 +566,7 @@ async def test_log_filter_list_search(log_read_user: PreparedUser, repo: Prepare
                     "action_type": f"some action {i}",
                 },
                 "columns": [
-                    "saved_at",
+                    "emitted_at",
                     "action_type",
                 ],
             }
