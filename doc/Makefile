@@ -1,11 +1,13 @@
+UV_PROJECT = ../backend
+
 serve:
-	mkdocs serve -a localhost:8600
+	uv run mkdocs serve -a localhost:8600
 
 openapi:
-	python -m auditize openapi > docs/openapi.json
+	uv run python -m auditize openapi > docs/openapi.json
 
 build: openapi
-	mkdocs build
+	uv run mkdocs build
 
 serve-build: build
-	cd site && python -m http.server -b 0.0.0.0 8601
+	cd site && uv run python -m http.server -b 0.0.0.0 8601
