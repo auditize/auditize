@@ -18,11 +18,3 @@ build-backend:
 	ls -lht ${PWD}/backend/dist/*.whl | head -n 1
 
 build: copy-frontend build-backend
-
-upgrade-backend-deps:
-	cd backend && pip-compile -U requirements.in && pip-compile -U requirements-dev.in
-	# do not upgrade doc dependencies, just apply constraints
-	cd doc && pip-compile requirements.in
-
-upgrade-doc-deps:
-	cd doc && pip-compile -U requirements.in
