@@ -1,11 +1,10 @@
 import uuid
 
-import callee
-
 from auditize.database.dbm import open_db_session
 from auditize.log_i18n_profile.models import LogI18nProfileCreate
 from auditize.log_i18n_profile.service import create_log_i18n_profile
 
+from . import matchers
 from .utils import DATETIME_FORMAT
 
 
@@ -154,7 +153,7 @@ class PreparedLogI18nProfile:
         if extra is None:
             extra = {}
         return {
-            "id": callee.IsA(str),
+            "id": matchers.IsA(str),
             "created_at": DATETIME_FORMAT,
             "updated_at": DATETIME_FORMAT,
             **extra,

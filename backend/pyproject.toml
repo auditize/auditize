@@ -37,7 +37,6 @@ build-backend = "setuptools.build_meta"
 dev = [
   "pytest",
   "pytest-xdist",
-  "callee",
   "httpx",
   "icecream",
   "ruff",

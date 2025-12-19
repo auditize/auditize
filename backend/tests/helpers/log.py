@@ -3,10 +3,10 @@ import typing
 from copy import deepcopy
 from typing import Any
 
-import callee
 from icecream import ic
 
 from auditize.database import get_dbm
+from helpers import matchers
 
 from .http import HttpTestHelper
 from .utils import DATETIME_FORMAT
@@ -94,9 +94,9 @@ class PreparedLog:
     def build_expected_api_response(data=None) -> dict:
         expected: dict[str, Any] = {
             "emitter": {
-                "type": callee.IsA(str),
-                "id": callee.IsA(str),
-                "name": callee.IsA(str),
+                "type": matchers.IsA(str),
+                "id": matchers.IsA(str),
+                "name": matchers.IsA(str),
             },
             "saved_at": DATETIME_FORMAT,
             "emitted_at": DATETIME_FORMAT,
@@ -106,7 +106,7 @@ class PreparedLog:
             "details": [],
             "tags": [],
             "attachments": [],
-            "id": callee.IsA(str),
+            "id": matchers.IsA(str),
             **(deepcopy(data) or {}),
         }
         for tag in expected["tags"]:
@@ -149,13 +149,13 @@ class PreparedLog:
 
     def expected_db_document(self, extra=None) -> dict:
         expected = self.expected_api_response(extra)
-        expected["saved_at"] = callee.IsA(str)
-        expected["emitted_at"] = callee.IsA(str)
+        expected["saved_at"] = matchers.IsA(str)
+        expected["emitted_at"] = matchers.IsA(str)
         for expected_attachment in expected["attachments"]:
             expected_attachment["data"] = base64.b64encode(
                 expected_attachment["data"]
             ).decode()
-            expected_attachment["saved_at"] = callee.IsA(str)
+            expected_attachment["saved_at"] = matchers.IsA(str)
         expected["log_id"] = self.id
         del expected["id"]
         return expected

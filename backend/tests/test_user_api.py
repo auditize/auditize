@@ -2,7 +2,6 @@ import re
 from unittest.mock import patch
 from uuid import UUID
 
-import callee
 import pytest
 from httpx import Response
 
@@ -10,6 +9,7 @@ from auditize.database.dbm import open_db_session
 from auditize.exceptions import NotFoundError
 from auditize.log_filter.service import get_log_filter
 from conftest import UserBuilder
+from helpers import matchers
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
@@ -36,8 +36,8 @@ async def _wrap_password_reset_link_sending(func, expected_email: str) -> str:
         await func()
         mock.assert_called_once_with(
             expected_email,  # to
-            callee.IsA(str),  # subject
-            callee.Regex(".*/[0-9a-f]{64}.*"),  # body
+            matchers.IsA(str),  # subject
+            matchers.Regex(".*/[0-9a-f]{64}.*"),  # body
         )
         match = re.search(r"([0-9a-f]{64})", mock.call_args[0][2])
         return match.group(1)
@@ -111,7 +111,7 @@ async def test_user_create_invalid_email(user_write_client: HttpTestHelper):
             "validation_errors": [
                 {
                     "field": "email",
-                    "message": callee.Contains("not a valid email address"),
+                    "message": matchers.Contains("not a valid email address"),
                 }
             ],
         },
@@ -128,7 +128,7 @@ async def test_user_create_unsupported_lang(user_write_client: HttpTestHelper):
             "validation_errors": [
                 {
                     "field": "lang",
-                    "message": callee.Contains("Input should be"),
+                    "message": matchers.Contains("Input should be"),
                 }
             ],
         },

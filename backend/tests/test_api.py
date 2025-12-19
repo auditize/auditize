@@ -3,9 +3,9 @@
 ###
 from unittest.mock import patch
 
-import callee
 import pytest
 
+from helpers import matchers
 from helpers.http import HttpTestHelper
 
 pytestmark = pytest.mark.anyio
@@ -16,7 +16,7 @@ async def test_bad_json(superadmin_client: HttpTestHelper):
         "/repos",
         json="bad json",
         expected_json={
-            "message": callee.StartsWith("Input should be a valid"),
+            "message": matchers.StartsWith("Input should be a valid"),
             "localized_message": None,
             "validation_errors": [],
         },

@@ -1,6 +1,6 @@
 import uuid
 
-import callee
+from helpers import matchers
 
 from .log import UNKNOWN_UUID
 from .utils import DATETIME_FORMAT
@@ -48,7 +48,7 @@ class PreparedLogFilter:
             extra = {}
         search_params = extra.get("search_params", self.data.get("search_params", {}))
         return {
-            "id": self.id if self.id else callee.IsA(str),
+            "id": self.id if self.id else matchers.IsA(str),
             "name": self.data["name"],
             "created_at": DATETIME_FORMAT,
             "updated_at": DATETIME_FORMAT,

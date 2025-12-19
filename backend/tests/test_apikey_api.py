@@ -1,9 +1,8 @@
-
-import callee
 import pytest
 from httpx import Response
 
 from conftest import ApikeyBuilder
+from helpers import matchers
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
@@ -25,7 +24,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper):
         "/apikeys",
         json=data,
         expected_json=PreparedApikey.build_expected_api_response(
-            {**data, "key": callee.IsA(str)}
+            {**data, "key": matchers.IsA(str)}
         ),
     )
 
@@ -129,7 +128,7 @@ async def test_apikey_regenerate_key(
     # Regenerate the key
     resp = await apikey_write_client.assert_post_ok(
         f"/apikeys/{apikey.id}/key",
-        expected_json={"key": callee.IsA(str)},
+        expected_json={"key": matchers.IsA(str)},
     )
 
     # Test that the generated key actually works

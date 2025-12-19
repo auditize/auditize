@@ -1,4 +1,4 @@
-import callee
+from helpers import matchers
 
 from .http import HttpTestHelper
 
@@ -51,7 +51,7 @@ async def do_test_cursor_pagination_common_scenarios(
         params={**params, "limit": 3},
         expected_json={
             "items": items[:3],
-            "pagination": {"next_cursor": callee.IsA(str)},
+            "pagination": {"next_cursor": matchers.IsA(str)},
         },
     )
     await client.assert_get(

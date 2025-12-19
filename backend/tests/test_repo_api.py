@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Awaitable, Callable
 
-import callee
 import pytest
 from icecream import ic
 
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
+from helpers import matchers
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
@@ -293,7 +293,7 @@ async def test_repo_get_with_stats_empty(
                 "stats": {
                     "last_log_date": None,
                     "log_count": 0,
-                    "storage_size": callee.IsA(int),
+                    "storage_size": matchers.IsA(int),
                 }
             }
         ),
@@ -318,7 +318,7 @@ async def test_repo_get_with_stats(
                 "stats": {
                     "last_log_date": "2024-01-02T00:00:00.000Z",
                     "log_count": 2,
-                    "storage_size": callee.IsA(int),
+                    "storage_size": matchers.IsA(int),
                 }
             }
         ),
@@ -669,7 +669,7 @@ async def test_repo_list_with_stats(
                         "stats": {
                             "last_log_date": "2024-01-01T00:00:00.123Z",
                             "log_count": 1,
-                            "storage_size": callee.IsA(int),
+                            "storage_size": matchers.IsA(int),
                         }
                     }
                 )

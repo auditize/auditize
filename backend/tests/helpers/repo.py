@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-import callee
 from elasticsearch import AsyncElasticsearch
 
 from auditize.database import get_dbm
@@ -10,6 +9,7 @@ from auditize.database.dbm import open_db_session
 from auditize.repo.service import create_repo
 from auditize.repo.sql_models import Repo
 
+from . import matchers
 from .http import HttpTestHelper
 from .log import PreparedLog
 from .utils import DATETIME_FORMAT, serialize_datetime
@@ -47,7 +47,7 @@ class PreparedRepo:
     @staticmethod
     def build_expected_api_response(extra=None):
         return {
-            "id": callee.IsA(str),
+            "id": matchers.IsA(str),
             "created_at": DATETIME_FORMAT,
             "updated_at": DATETIME_FORMAT,
             "status": "enabled",

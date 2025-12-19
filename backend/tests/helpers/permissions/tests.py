@@ -1,7 +1,7 @@
-import callee
 from httpx import Response
 
 from conftest import RepoBuilder
+from helpers import matchers
 
 from ..apikey import PreparedApikey
 from ..http import HttpTestHelper
@@ -127,7 +127,7 @@ class BasePermissionTests:
                 }
             ),
             expected_json={
-                "message": callee.Regex(r".+repositories .+ do not exist"),
+                "message": matchers.Regex(r".+repositories .+ do not exist"),
                 "localized_message": None,
                 "validation_errors": [],
             },
@@ -234,7 +234,7 @@ class BasePermissionTests:
                 }
             },
             expected_json={
-                "message": callee.Regex(r".+repositories .+ do not exist"),
+                "message": matchers.Regex(r".+repositories .+ do not exist"),
                 "localized_message": None,
                 "validation_errors": [],
             },
