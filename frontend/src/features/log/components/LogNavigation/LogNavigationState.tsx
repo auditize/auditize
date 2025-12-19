@@ -55,13 +55,27 @@ function useLogSelectedColumns(
     key: `auditize-log-columns`,
     defaultValue: {},
   });
+
+  // In 0.10.0, the emittedAt date has been added alongside the savedAt date,
+  // but the UI only shows one date: the emittedAt.
+  // We need to handle this case by removing the savedAt column and adding
+  // the emittedAt column if it is not already present.
+  let columns = perRepoColumns[repoId] ?? DEFAULT_SELECTED_COLUMNS;
+  if (columns.includes("savedAt")) {
+    columns = columns.filter((column) => column !== "savedAt");
+    if (!columns.includes("emittedAt")) {
+      columns = [...columns, "emittedAt"];
+    }
+  }
+
   return [
-    perRepoColumns[repoId] ?? DEFAULT_SELECTED_COLUMNS,
-    (columns) =>
+    columns,
+    (newColumns) => {
       setPerRepoColumns((perRepoColumns) => ({
         ...perRepoColumns,
-        [repoId]: columns ? columns : DEFAULT_SELECTED_COLUMNS,
-      })),
+        [repoId]: newColumns ? newColumns : DEFAULT_SELECTED_COLUMNS,
+      }));
+    },
   ];
 }
 
