@@ -33,6 +33,8 @@ import {
   RouterProvider,
   useLocation,
 } from "react-router-dom";
+import { createHighlighterCore } from "shiki/core";
+import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 
 import {
   AuthProvider,
@@ -338,16 +340,17 @@ function AppRoutes() {
 
 // Shiki requires async code to load the highlighter
 async function loadShiki() {
-  const { createHighlighter } = await import("shiki");
-  const shiki = await createHighlighter({
-    langs: ["json"],
+  const shiki = await createHighlighterCore({
+    langs: [import("@shikijs/langs/json")],
     themes: [],
+    engine: createOnigurumaEngine(import("shiki/wasm")),
   });
 
   return shiki;
 }
 
 const shikiAdapter = createShikiAdapter(loadShiki);
+
 export default function App() {
   return (
     <MantineProvider theme={theme}>
