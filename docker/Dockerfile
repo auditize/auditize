@@ -6,8 +6,8 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     curl
 
-# Install python dependencies
-RUN pip3 install build --break-system-packages
+# Install uv
+RUN pip3 install uv --break-system-packages
 
 # Install nodejs
 RUN curl -o - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash

@@ -16,9 +16,7 @@ jobs:
         working-directory: ./backend
     strategy:
       matrix:
-        python: ["3.12", "3.13"]
-        include:
-          - python: "3.12"
+        python: ["3.12", "3.13", "3.14"]
     services:
       postgres:
         image: postgres
@@ -47,10 +45,10 @@ jobs:
         uses: elastic/elastic-github-actions/elasticsearch@master
         with:
           stack-version: 8.16.2
-      - run: pip install tox
+      - run: pip install uv
       - name: Run tests
         env:
           PG_USER: "postgres"
           PG_PASSWORD: "postgres"
           ES_PASSWORD: "changeme"
-        run: tox -e py # Run tox using the version of Python in `PATH`
+        run: uv run pytest
