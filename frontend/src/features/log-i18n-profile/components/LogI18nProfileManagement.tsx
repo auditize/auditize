@@ -52,12 +52,12 @@ export function LogI18nProfileManagement() {
         [
           t("common.createdAt"),
           (profile: LogI18nProfile) => <DateTime value={profile.createdAt} />,
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
         [
           t("common.updatedAt"),
           (profile: LogI18nProfile) => <DateTime value={profile.updatedAt} />,
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
       ]}
       resourceCreationComponentBuilder={

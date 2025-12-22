@@ -51,7 +51,7 @@ export function UsersManagement() {
         [
           t("common.createdAt"),
           (user: User) => <DateTime value={user.createdAt} />,
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
         [
           t("user.list.column.authenticatedAt"),
@@ -61,7 +61,7 @@ export function UsersManagement() {
             ) : (
               <i>n/a</i>
             ),
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
       ]}
       resourceCreationComponentBuilder={

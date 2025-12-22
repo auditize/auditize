@@ -2,6 +2,7 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { IconKey } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
+import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { useAuthenticatedUser } from "@/features/auth";
 import { PermissionSummary } from "@/features/permissions";
@@ -10,7 +11,6 @@ import { iconBesideText } from "@/utils/ui";
 import { Apikey, getApikeys } from "../api";
 import { ApikeyDeletion } from "./ApikeyDeletion";
 import { ApikeyCreation, ApikeyEdition } from "./ApikeyEditor";
-import { DateTime } from "@/components/DateTime";
 
 export function ApikeysManagement() {
   const { t } = useTranslation();
@@ -46,12 +46,12 @@ export function ApikeysManagement() {
         [
           t("common.createdAt"),
           (apikey: Apikey) => <DateTime value={apikey.createdAt} />,
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
         [
           t("common.updatedAt"),
           (apikey: Apikey) => <DateTime value={apikey.updatedAt} />,
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
       ]}
       resourceCreationComponentBuilder={

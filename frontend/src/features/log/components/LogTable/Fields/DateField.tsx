@@ -7,6 +7,9 @@ export function DateField({ log }: { log: Log }) {
       value={log.emittedAt}
       textProps={{
         size: "xs",
+        style: {
+          fontVariantNumeric: "tabular-nums",
+        },
       }}
       tooltip
     />

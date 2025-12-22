@@ -124,22 +124,22 @@ export function RepoManagement() {
                 }}
               />
             ),
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
         [
           t("repo.list.column.logs"),
           (repo: Repo) => repo.stats!.logCount.toLocaleString(),
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
         [
           t("repo.list.column.storage"),
           (repo: Repo) => filesize(repo.stats!.storageSize, { round: 0 }),
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
         [
           t("common.createdAt"),
           (repo: Repo) => <DateTime value={repo.createdAt} />,
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
         [
           t("repo.list.column.lastLog"),
@@ -149,7 +149,7 @@ export function RepoManagement() {
             ) : (
               <i>n/a</i>
             ),
-          { textAlign: "right" },
+          { textAlign: "right", fontVariantNumeric: "tabular-nums" },
         ],
       ]}
       resourceCreationComponentBuilder={
