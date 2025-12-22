@@ -66,7 +66,7 @@ export function NavbarItemGroup({ label, children }: NavbarItemGroupProps) {
             className={
               isActive ? `${classes.link} ${classes.active}` : classes.link
             }
-            style={{ paddingRight: "0.375rem" }}
+            style={{ paddingRight: "0.375rem", cursor: "pointer" }}
           >
             {label}
           </span>
