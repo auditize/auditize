@@ -30,6 +30,7 @@ export function RepoSelector({
       }
       disabled={query.isPending}
       clearable={false}
+      allowDeselect={false}
       display="flex"
       comboboxProps={{ withinPortal: false, shadow: "md" }}
     />
