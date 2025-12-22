@@ -11,6 +11,12 @@ export function normalizeFilterColumnsForApi(columns: string[]): string[] {
     .map((col) => camelCaseToSnakeCaseString(col));
 }
 
+export function normalizeLogFieldNameFromApi(fieldName: string): string {
+  return fieldName.match(/^(source|resource|details|actor)\./)
+    ? fieldName
+    : snakeCaseToCamelCaseString(fieldName);
+}
+
 export function unnormalizeFilterColumnsFromApi(columns: string[]): string[] {
-  return columns.map((col) => snakeCaseToCamelCaseString(col));
+  return columns.map(normalizeLogFieldNameFromApi);
 }

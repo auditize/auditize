@@ -13,6 +13,8 @@ import {
   snakeCaseToCamelCaseString,
 } from "@/utils/switchCase";
 
+import { normalizeLogFieldNameFromApi } from "./utils";
+
 export interface LogFilterCreation {
   name: string;
   repoId: string;
@@ -47,9 +49,7 @@ function normalizeLogFilter(data: any): LogFilter {
   const filter: LogFilter = snakeCaseToCamelCaseObjectKeys(data, 1);
   filter.searchParams = Object.fromEntries(
     Object.entries(filter.searchParams).map(([key, value]) => [
-      key.match(/^(source|resource|details|actor)\./)
-        ? key
-        : snakeCaseToCamelCaseString(key),
+      normalizeLogFieldNameFromApi(key),
       value,
     ]),
   );

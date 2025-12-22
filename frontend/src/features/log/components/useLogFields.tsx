@@ -91,8 +91,8 @@ export function useSearchFields(repoId: string, disabledFields?: Set<string>) {
   ) => {
     return (
       fields
-        // Datetime values should be searchable using a range picker, which is not supported yet
-        // so we hide them for now
+        // Datetime values should be searchable using a range picker which is not supported yet
+        // so we hide them for now.
         .filter((field) => field.type !== CustomFieldType.DateTime)
         .map((field) =>
           item(
