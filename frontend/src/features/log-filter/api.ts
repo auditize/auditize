@@ -8,7 +8,10 @@ import {
   reqPatch,
   reqPost,
 } from "@/utils/api";
-import { snakeCaseToCamelCaseObjectKeys } from "@/utils/switchCase";
+import {
+  snakeCaseToCamelCaseObjectKeys,
+  snakeCaseToCamelCaseString,
+} from "@/utils/switchCase";
 
 export interface LogFilterCreation {
   name: string;
@@ -38,6 +41,21 @@ export async function createLogFilter(
   return data.id;
 }
 
+function normalizeLogFilter(data: any): LogFilter {
+  // the searchParams is an object that can contain custom field parameter names with
+  // underscore that must be preserved, that's why we do a manual case conversion
+  const filter: LogFilter = snakeCaseToCamelCaseObjectKeys(data, 1);
+  filter.searchParams = Object.fromEntries(
+    Object.entries(filter.searchParams).map(([key, value]) => [
+      key.match(/^(source|resource|details|actor)\./)
+        ? key
+        : snakeCaseToCamelCaseString(key),
+      value,
+    ]),
+  );
+  return filter;
+}
+
 export async function getLogFilters({
   search = null,
   isFavorite,
@@ -60,9 +78,7 @@ export async function getLogFilters({
     { raw: true },
   );
   // see getLogFilter for more details on the manual case conversion
-  const normalizedItems = items.map((item) =>
-    snakeCaseToCamelCaseObjectKeys(item, 1),
-  );
+  const normalizedItems = items.map(normalizeLogFilter);
   return [normalizedItems, pagination];
 }
 
@@ -72,10 +88,8 @@ export async function getLogFilter(logFilterId: string): Promise<LogFilter> {
     {},
     { raw: true },
   );
-  // the searchParams is an object that can contain custom field parameter names with
-  // underscore that must be preserved, that's why we do a manual case conversion
-  // and only convert the keys at level 1
-  return snakeCaseToCamelCaseObjectKeys(data, 1);
+
+  return normalizeLogFilter(data);
 }
 
 export async function updateLogFilter(
