@@ -63,6 +63,8 @@ export default {
         lastLog: "Dernier journal",
         viewLogs: "Voir les journaux",
       },
+      emptyStateMessage:
+        "Aucun dépôt de journaux n'a encore été créé.\nLes dépôts de journaux sont utilisés pour stocker les journaux, vous devez en créer un pour commencer à envoyer des journaux à Auditize.",
     },
     delete: {
       confirm:
@@ -98,6 +100,8 @@ export default {
         langs: "Langues",
       },
       noLangs: "aucune",
+      emptyStateMessage:
+        "Aucun profil de traduction des journaux n'a encore été créé.\nLes profils de traduction des journaux permettent de traduire le contenu des journaux en différentes langues.",
     },
     delete: {
       confirm:
@@ -154,6 +158,8 @@ export default {
         name: "Nom",
         permissions: "Permissions",
       },
+      emptyStateMessage:
+        "Aucune clé d'API n'a encore été créée.\nLes clés d'API permettent d'authentifier les requêtes à l'API lors de l'envoi de journaux à Auditize par exemple.",
     },
     form: {
       name: {
@@ -235,6 +241,8 @@ export default {
       },
       documentTitle: "Journaux",
       noRepos: "Aucun dépôt de journaux n'a encore été créé",
+      createRepoShortcut:
+        "Vous pouvez créer un dépôt de journaux en cliquant <1>ici</1>.",
       noResults: "Pas de résultats",
       loadMore: "Voir plus",
       untilMustBeGreaterThanSince:

@@ -10,11 +10,12 @@ import {
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconEdit, IconLogs, IconRestore, IconX } from "@tabler/icons-react";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 
 import Message from "@/components/Message";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { useAuthenticatedUser } from "@/features/auth";
 import { LogFilterEdition, LogFilterFavoriteIcon } from "@/features/log-filter";
 import { LogFilter, useLogFilterMutation } from "@/features/log-filter/api";
 import { useLogRepoListQuery } from "@/features/repo";
@@ -42,14 +43,24 @@ export function BaseLogs({
     setSelectedColumns,
     logComponentRef,
   } = useLogNavigationState();
+  const { currentUser } = useAuthenticatedUser();
 
   if (repoListQuery.data && repoListQuery.data.length === 0) {
     return (
-      <Flex justify="center">
-        <Message.Warning textProps={{ size: "md" }}>
-          {t("log.list.noRepos")}
-        </Message.Warning>
-      </Flex>
+      <Message.Warning alertProps={{ style: { maxWidth: "fit-content" } }}>
+        {t("log.list.noRepos")}
+
+        {currentUser.permissions.management.repos.read &&
+          currentUser.permissions.management.repos.write && (
+            <>
+              <br />
+              <Trans i18nKey="log.list.createRepoShortcut">
+                You can create a repository by clicking
+                <Link to="/repos">here</Link>.
+              </Trans>
+            </>
+          )}
+      </Message.Warning>
     );
   } else {
     return (

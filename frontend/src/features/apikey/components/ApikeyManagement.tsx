@@ -33,6 +33,7 @@ export function ApikeysManagement() {
         </>
       }
       name={t("apikey.apikey")}
+      emptyStateMessage={t("apikey.list.emptyStateMessage")}
       queryKey={(search, page) => ["apikeys", "list", search, page]}
       queryFn={(search, page) => () => getApikeys(search, page)}
       columnDefinitions={[

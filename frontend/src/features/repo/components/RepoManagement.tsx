@@ -91,6 +91,7 @@ export function RepoManagement() {
         </>
       }
       name={t("repo.repo")}
+      emptyStateMessage={t("repo.list.emptyStateMessage")}
       queryKey={(search, page) => [
         "repos",
         "list",

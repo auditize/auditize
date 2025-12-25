@@ -62,6 +62,8 @@ export default {
         lastLog: "Last log",
         viewLogs: "View logs",
       },
+      emptyStateMessage:
+        "No repositories have been created yet.\nRepositories are used to store logs, you must create one to start logging into Auditize.",
     },
     delete: {
       confirm:
@@ -97,6 +99,8 @@ export default {
         langs: "Languages",
       },
       noLangs: "none",
+      emptyStateMessage:
+        "No log translation profiles have been created yet.\nThe log translation profiles allow you to translate the log content into different languages.",
     },
     delete: {
       confirm:
@@ -152,6 +156,8 @@ export default {
         name: "Name",
         permissions: "Permissions",
       },
+      emptyStateMessage:
+        "No API keys have been created yet.\nAn API key is required to authenticate requests to the API when sending logs to Auditize for instance.",
     },
     form: {
       name: {
@@ -232,6 +238,8 @@ export default {
       documentTitle: "Logs",
       noResults: "No results",
       noRepos: "No repositories have been created yet.",
+      createRepoShortcut:
+        "You can create a repository by clicking <1>here</1>.",
       loadMore: "Load more",
       untilMustBeGreaterThanSince:
         "The end date must be greater than the start date",

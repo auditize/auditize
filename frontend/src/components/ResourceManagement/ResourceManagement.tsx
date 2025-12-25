@@ -16,6 +16,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiErrorMessage } from "../ErrorMessage";
+import Message from "../Message";
 import { SearchInput } from "../SearchInput";
 import cssClasses from "./ResourceManagement.module.css";
 import { useResourceManagementState } from "./ResourceManagementState";
@@ -140,6 +141,7 @@ type ColumnDefinition =
 export function ResourceManagement({
   title,
   name,
+  emptyStateMessage,
   stateMode = "url",
   queryKey,
   queryFn,
@@ -150,6 +152,7 @@ export function ResourceManagement({
 }: {
   title: React.ReactNode;
   name: string;
+  emptyStateMessage?: string;
   stateMode?: "url" | "useState";
   queryKey: (search: string | null, page: number) => any[];
   queryFn: (search: string | null, page: number) => () => Promise<any>;
@@ -179,6 +182,7 @@ export function ResourceManagement({
 
   let rows;
   let pagination;
+  let hasResources: boolean | undefined;
   if (resourcesQuery.isPending) {
     rows = Array.from({ length: 10 }).map((_, rowIndex) => (
       <Table.Tr key={rowIndex} style={{ height: "2rem" }}>
@@ -201,6 +205,9 @@ export function ResourceManagement({
         resourceDeletionComponentBuilder={resourceDeletionComponentBuilder}
       />
     ));
+    // If there is a search, we consider there are existing resources even
+    // if we don't actually know.
+    hasResources = search ? true : resources.length > 0;
   }
 
   return (
@@ -208,8 +215,20 @@ export function ResourceManagement({
       <Title order={1} pb="xl" fw={550} size="26">
         {title}
       </Title>
+      {hasResources === false && emptyStateMessage && (
+        <Message.Info
+          alertProps={{
+            style: { maxWidth: "fit-content", whiteSpace: "pre-line" },
+            mb: "md",
+          }}
+        >
+          {emptyStateMessage}
+        </Message.Info>
+      )}
       <Group justify="space-between" pb="md">
-        <Search value={search} onChange={setSearch} />
+        {hasResources !== false && (
+          <Search value={search} onChange={setSearch} />
+        )}
         {resourceCreationComponentBuilder && (
           <Button
             onClick={() => setIsNew(true)}
@@ -219,28 +238,30 @@ export function ResourceManagement({
           </Button>
         )}
       </Group>
-      <Stack align="center">
-        <Table highlightOnHover withTableBorder verticalSpacing="sm">
-          <Table.Thead
-            style={{ backgroundColor: "var(--auditize-header-color)" }}
-          >
-            <Table.Tr>
-              {columnDefinitions.map(([name, _, style], i) => (
-                <Table.Th style={style} key={i}>
-                  {name}
-                </Table.Th>
-              ))}
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
-        <Pagination
-          total={pagination?.total_pages}
-          value={pagination?.page}
-          onChange={setPage}
-          py="md"
-        />
-      </Stack>
+      {hasResources !== false && (
+        <Stack align="center">
+          <Table highlightOnHover withTableBorder verticalSpacing="sm">
+            <Table.Thead
+              style={{ backgroundColor: "var(--auditize-header-color)" }}
+            >
+              <Table.Tr>
+                {columnDefinitions.map(([name, _, style], i) => (
+                  <Table.Th style={style} key={i}>
+                    {name}
+                  </Table.Th>
+                ))}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>{rows}</Table.Tbody>
+          </Table>
+          <Pagination
+            total={pagination?.total_pages}
+            value={pagination?.page}
+            onChange={setPage}
+            py="md"
+          />
+        </Stack>
+      )}
       {resourceCreationComponentBuilder &&
         resourceCreationComponentBuilder(isNew, () => setIsNew(false))}
       {resourceEditionComponentBuilder(resourceId, () => setResourceId(null))}

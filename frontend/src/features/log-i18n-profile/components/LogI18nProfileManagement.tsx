@@ -35,6 +35,7 @@ export function LogI18nProfileManagement() {
         </>
       }
       name={t("logi18nprofile.logi18nprofile")}
+      emptyStateMessage={t("logi18nprofile.list.emptyStateMessage")}
       queryKey={(search, page) => ["logi18nprofiles", "list", search, page]}
       queryFn={(search, page) => () => getLogI18nProfiles(search, page)}
       columnDefinitions={[
