@@ -1,5 +1,8 @@
 import asyncio
+import multiprocessing
+import os
 import os.path as osp
+from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
 from typing import Self
 
@@ -8,7 +11,7 @@ from alembic.config import Config
 from elasticsearch import AsyncElasticsearch
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-from auditize.config import get_config
+from auditize.config import get_config, init_config_from_dict
 from auditize.database.elastic import init_elastic_client
 
 
@@ -74,16 +77,25 @@ async def open_db_session():
             await session.close()
 
 
-async def migrate_database():
+def _alembic_upgrade(config_as_dict: dict):
+    init_config_from_dict(config_as_dict)
     current_dir = osp.dirname(__file__)
     alembic_config = Config(osp.join(current_dir, "alembic.ini"))
     alembic_config.set_section_option(
         "alembic", "script_location", osp.join(current_dir, "alembic")
     )
+    command.upgrade(alembic_config, "head")
 
-    # This is needed because alembic run async migrations using
-    # asyncio.run() later
-    def upgrade_sync():
-        command.upgrade(alembic_config, "head")
 
-    await asyncio.to_thread(upgrade_sync)
+async def migrate_database():
+    # Alembic changes global logging configuration, which has a serious side effect
+    # especially when running tests because this function is run in the same context
+    # as the tests. To avoid this, we run the migration in a separate process.
+    # We use the 'spawn' context because:
+    # - it forces to have the same process context and behavior on macOS and Linux
+    # - the 'fork' context is deprecated in Python 3.14
+    with ProcessPoolExecutor(
+        max_workers=1, mp_context=multiprocessing.get_context("spawn")
+    ) as executor:
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(executor, _alembic_upgrade, get_config().to_dict())

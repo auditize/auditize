@@ -23,9 +23,8 @@ async def test_bad_json(superadmin_client: HttpTestHelper):
     )
 
 
-@pytest.mark.skip("FIXME: Waiting for a proper 500 handling")
 async def test_internal_error(superadmin_client: HttpTestHelper):
-    with patch("auditize.repos.service.create_repo") as create_repo:
+    with patch("auditize.repo.service.create_repo") as create_repo:
         create_repo.side_effect = Exception("Unexpected error")
         await superadmin_client.assert_post(
             "/repos",

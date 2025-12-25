@@ -174,14 +174,20 @@ def error_responses(*status_codes: int):
     }
 
 
-def make_response_from_exception(exc: E, lang: Lang) -> JSONResponse:
+def make_error_response_from_model(
+    model: ApiErrorResponse, status_code: int
+) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content=model.model_dump())
+
+
+def make_error_response_from_exception(exc: E, lang: Lang) -> JSONResponse:
     if exc.__class__ not in _EXCEPTION_RESPONSES:
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        error = ApiErrorResponse(message="Internal server error")
+        error = ApiErrorResponse.build("Internal server error")
     else:
         status_code, default_error_message, error_response_class = _EXCEPTION_RESPONSES[
             exc.__class__
         ]
         error = error_response_class.from_exception(exc, default_error_message, lang)
 
-    return JSONResponse(status_code=status_code, content=error.model_dump())
+    return make_error_response_from_model(error, status_code)

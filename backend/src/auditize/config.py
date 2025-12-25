@@ -235,6 +235,14 @@ def init_config(env=None) -> Config:
     return _config
 
 
+def init_config_from_dict(attrs: dict) -> Config:
+    global _config
+    if _config:
+        raise ConfigAlreadyInitialized()
+    _config = Config(**attrs)
+    return _config
+
+
 def get_config() -> Config:
     if not _config:
         raise ConfigNotInitialized()
