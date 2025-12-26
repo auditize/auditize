@@ -1,3 +1,19 @@
+# 0.10.0 (2025-12-26)
+
+- Add log translation template download for repositories
+- Add JSONL download for log search results
+- Add JSON download for individual logs
+- API: Add optional `emitted_at` parameter when sending logs
+  (defaults to current datetime; displayed as "Date" in UI)
+- API: Store emitter information (e.g., API key) in log data
+- API: Apply log entity filtering to all log-related endpoints
+  (previously only applied to direct log reading endpoints)
+- API: Require `_` instead of `-` in custom field names and identifiers
+- Add official support for Python 3.14
+- Switch dependency management from `pip-compile` to `uv`
+- Update backend and frontend dependencies
+- Various improvements and bug fixes
+
 # 0.9.0 (2025-12-03)
 
 - Add types (string, enum, datetime, json, boolean, integer, float) to custom fields
