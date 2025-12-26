@@ -1,6 +1,7 @@
 import { Stack, Switch, TextInput } from "@mantine/core";
 import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
-import { useEffect } from "react";
+import { useTimeout } from "@mantine/hooks";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -26,13 +27,18 @@ function useLogFilterForm(values: { name?: string }) {
 
 function LogFilterForm({ form }: { form: UseFormReturnType<any> }) {
   const { t } = useTranslation();
+  // NB: the usual data-autofocus attribute does not work on Chrome
+  // (I don't know why, it works on Firefox and in works on other resource editors with Chrome),
+  // the useTimeout hook is a workaround.
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  useTimeout(() => nameInputRef.current?.focus(), 100, { autoInvoke: true });
 
   return (
     <Stack gap={"sm"}>
       <TextInput
         label={t("log.filter.form.name.label")}
         placeholder={t("log.filter.form.name.placeholder")}
-        data-autofocus
+        ref={nameInputRef}
         {...form.getInputProps("name")}
       />
       <Switch.Group
