@@ -137,9 +137,7 @@ function logFieldToColumn(
     const fieldName = field.split(".")[1];
     return column({
       accessor: `source.${fieldName}`,
-      title: columnTitle(
-        t("log.source") + ": " + logTranslator("source_field_name", fieldName),
-      ),
+      title: columnTitle(logTranslator("source_field_name", fieldName)),
       render: (log: Log) => (
         <SourceField
           log={log}
@@ -204,11 +202,7 @@ function logFieldToColumn(
     const fieldName = field.split(".")[1];
     return column({
       accessor: `actor.${fieldName}`,
-      title: columnTitle(
-        t("log.actor") +
-          ": " +
-          logTranslator("actor_extra_field_name", fieldName),
-      ),
+      title: columnTitle(logTranslator("actor_extra_field_name", fieldName)),
       render: (log: Log) => (
         <ActorExtraField
           log={log}
@@ -313,11 +307,7 @@ function logFieldToColumn(
     const fieldName = field.split(".")[1];
     return column({
       accessor: `resource.${fieldName}`,
-      title: columnTitle(
-        t("log.resource") +
-          ": " +
-          logTranslator("resource_extra_field_name", fieldName),
-      ),
+      title: columnTitle(logTranslator("resource_extra_field_name", fieldName)),
       render: (log: Log) => (
         <ResourceExtraField
           log={log}

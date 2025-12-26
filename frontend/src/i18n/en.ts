@@ -202,6 +202,7 @@ export default {
     resourceType: "Resource type",
     resourceName: "Resource name",
     resourceRef: "Resource ref.",
+    detail: "Detail",
     details: "Details",
     tag: "Tag",
     tags: "Tags",
