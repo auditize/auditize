@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Button,
+  Center,
   Group,
   Pagination,
   Skeleton,
@@ -210,34 +211,42 @@ export function ResourceManagement({
     hasResources = search ? true : resources.length > 0;
   }
 
+  const resourceCreationButton = (
+    <Button
+      onClick={() => setIsNew(true)}
+      leftSection={<IconPlus size={"1.3rem"} />}
+    >
+      {name}
+    </Button>
+  );
+
   return (
     <div>
       <Title order={1} pb="xl" fw={550} size="26">
         {title}
       </Title>
-      {hasResources === false && emptyStateMessage && (
-        <Message.Info
-          alertProps={{
-            style: { maxWidth: "fit-content", whiteSpace: "pre-line" },
-            mb: "md",
-          }}
-        >
-          {emptyStateMessage}
-        </Message.Info>
+      {hasResources === false && (
+        <Center pt="xl">
+          <Stack align="center">
+            {emptyStateMessage && (
+              <Message.Info
+                alertProps={{
+                  style: { maxWidth: "fit-content", whiteSpace: "pre-line" },
+                }}
+              >
+                {emptyStateMessage}
+              </Message.Info>
+            )}
+            {resourceCreationComponentBuilder && resourceCreationButton}
+          </Stack>
+        </Center>
       )}
-      <Group justify="space-between" pb="md">
-        {hasResources !== false && (
+      {hasResources !== false && (
+        <Group justify="space-between" pb="md">
           <Search value={search} onChange={setSearch} />
-        )}
-        {resourceCreationComponentBuilder && (
-          <Button
-            onClick={() => setIsNew(true)}
-            leftSection={<IconPlus size={"1.3rem"} />}
-          >
-            {name}
-          </Button>
-        )}
-      </Group>
+          {resourceCreationComponentBuilder && resourceCreationButton}
+        </Group>
+      )}
       {hasResources !== false && (
         <Stack align="center">
           <Table highlightOnHover withTableBorder verticalSpacing="sm">

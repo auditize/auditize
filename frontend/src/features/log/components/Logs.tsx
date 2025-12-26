@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Center,
   Flex,
   Group,
   rem,
@@ -47,20 +48,22 @@ export function BaseLogs({
 
   if (repoListQuery.data && repoListQuery.data.length === 0) {
     return (
-      <Message.Warning alertProps={{ style: { maxWidth: "fit-content" } }}>
-        {t("log.list.noRepos")}
+      <Center pt="xl">
+        <Message.Info alertProps={{ style: { maxWidth: "fit-content" } }}>
+          {t("log.list.noRepos")}
 
-        {currentUser.permissions.management.repos.read &&
-          currentUser.permissions.management.repos.write && (
-            <>
-              <br />
-              <Trans i18nKey="log.list.createRepoShortcut">
-                You can create a repository by clicking
-                <Link to="/repos">here</Link>.
-              </Trans>
-            </>
-          )}
-      </Message.Warning>
+          {currentUser.permissions.management.repos.read &&
+            currentUser.permissions.management.repos.write && (
+              <>
+                <br />
+                <Trans i18nKey="log.list.createRepoShortcut">
+                  You can create a repository by clicking
+                  <Link to="/repos">here</Link>.
+                </Trans>
+              </>
+            )}
+        </Message.Info>
+      </Center>
     );
   } else {
     return (
