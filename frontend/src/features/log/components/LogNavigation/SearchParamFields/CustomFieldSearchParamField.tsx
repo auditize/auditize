@@ -19,6 +19,7 @@ function stringToBoolean(value: string | undefined): boolean | undefined {
 }
 
 export function CustomFieldSearchParamField({
+  label,
   searchParams,
   searchParamName,
   enumValues,
@@ -28,6 +29,7 @@ export function CustomFieldSearchParamField({
   onSubmit,
   openedByDefault,
 }: {
+  label: string;
   searchParams: LogSearchParams;
   searchParamName: string;
   enumValues: (repoId: string, fieldName: string) => Promise<string[]>;
@@ -41,7 +43,6 @@ export function CustomFieldSearchParamField({
   const fieldTypes = useCustomFieldTypes(searchParams.repoId);
   const fieldType = fieldTypes[searchParamName] ?? CustomFieldType.String;
   const [groupName, fieldName] = searchParamName.split(".");
-  const label = t(`log.${groupName}`) + ": " + titlize(fieldName);
 
   if (fieldType === CustomFieldType.Enum) {
     return (

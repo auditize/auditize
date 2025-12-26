@@ -156,6 +156,7 @@ function SearchParamField({
     const fieldName = name.replace("actor.", "");
     return (
       <CustomFieldSearchParamField
+        label={logTranslator("actor_extra_field_name", fieldName)}
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllActorExtraFieldEnumValues}
@@ -179,6 +180,7 @@ function SearchParamField({
     const fieldName = name.replace("source.", "");
     return (
       <CustomFieldSearchParamField
+        label={logTranslator("source_field_name", fieldName)}
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllSourceFieldEnumValues}
@@ -236,6 +238,7 @@ function SearchParamField({
     const fieldName = name.replace("resource.", "");
     return (
       <CustomFieldSearchParamField
+        label={logTranslator("resource_extra_field_name", fieldName)}
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllResourceExtraFieldEnumValues}
@@ -263,6 +266,7 @@ function SearchParamField({
     const fieldName = name.replace("details.", "");
     return (
       <CustomFieldSearchParamField
+        label={logTranslator("detail_field_name", fieldName)}
         searchParams={searchParams}
         searchParamName={name}
         enumValues={getAllDetailFieldEnumValues}
