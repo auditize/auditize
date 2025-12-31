@@ -14,3 +14,5 @@ elasticsearch[async]~=8.17.0
 sqlalchemy[asyncio]~=2.0.36
 asyncpg
 alembic~=1.14.0
+fastmcp
+

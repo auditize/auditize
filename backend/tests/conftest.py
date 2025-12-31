@@ -59,8 +59,12 @@ async def _dbm():
 
 
 @pytest.fixture(scope="function")
-async def apikey_client():
-    apikey = await PreparedApikey.inject_into_db()
+async def apikey():
+    return await PreparedApikey.inject_into_db()
+
+
+@pytest.fixture(scope="function")
+async def apikey_client(apikey):
     async with apikey.client() as client:
         yield client
 

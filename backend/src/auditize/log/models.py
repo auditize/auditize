@@ -713,6 +713,15 @@ class LogEntityResponse(_EntityPathNodeData):
     )
 
 
+class LogEntityMcpResponse(BaseModel):
+    ref: str = Field(description="Entity ref")
+    name: str = Field(description="Entity name")
+    path: str = Field(
+        description="Entity path as a string",
+        json_schema_extra={"example": "Customer 1 > Entity 1"},
+    )
+
+
 class LogActorResponse(_ActorOutputData):
     pass
 
