@@ -780,10 +780,10 @@ class LogService:
         *,
         path: str,
         nested: bool = False,
-        authorized_entities: set[str],
-        search: str | None,
-        limit: int,
-        pagination_cursor: str | None,
+        authorized_entities: set[str] | None = None,
+        search: str | None = None,
+        limit: int = 10,
+        pagination_cursor: str | None = None,
     ) -> tuple[list[tuple[str, str]], str]:
         filter = []
         if search:
