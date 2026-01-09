@@ -1,5 +1,6 @@
 site_name: Auditize
 site_url: https://auditize.org
+site_description: Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
 repo_url: https://github.com/auditize/auditize
 repo_name: auditize/auditize
 nav:
@@ -18,6 +19,7 @@ theme:
   favicon: images/favicon.png
   icon:
     repo: fontawesome/brands/github
+  custom_dir: overrides
   features:
     - content.code.copy
     - content.code.annotate
