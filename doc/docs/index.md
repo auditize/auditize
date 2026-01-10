@@ -20,7 +20,7 @@ hide:
     <span class='adz-hero-text-blue'>functional logs</span><br/>
   </div>
   <div class='adz-hero-subtitle'>
-    Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
+      Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.
   </div>
   <a href='overview' class='md-button'>
     Get started

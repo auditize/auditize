@@ -1,4 +1,5 @@
 UV_PROJECT = ../backend
+export
 
 serve:
 	uv run mkdocs serve -a localhost:8600
