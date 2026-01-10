@@ -1,0 +1,1098 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.">
+      
+      
+      
+        <link rel="canonical" href="https://auditize.org/install/">
+      
+      
+        <link rel="prev" href="../overview/">
+      
+      
+        <link rel="next" href="../config/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Installation - Auditize</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../css/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-L8HV7645W1"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-L8HV7645W1",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-L8HV7645W1",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Installation - Auditize">
+<meta property="og:description" content="Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.">
+<meta property="og:image" content="https://auditize.org/images/logo.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://auditize.org/install/">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Installation - Auditize">
+<meta name="twitter:description" content="Auditize is a comprehensive audit log solution designed to integrate auditability seamlessly into your software.">
+<meta name="twitter:image" content="https://auditize.org/images/logo.png">
+
+
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#installation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Auditize" class="md-header__button md-logo" aria-label="Auditize" data-md-component="logo">
+      
+  <img src="../images/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Auditize
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Installation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/auditize/auditize" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    auditize/auditize
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Auditize" class="md-nav__button md-logo" aria-label="Auditize" data-md-component="logo">
+      
+  <img src="../images/logo.svg" alt="logo">
+
+    </a>
+    Auditize
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/auditize/auditize" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    auditize/auditize
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Compose">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-gunicorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Gunicorn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ngnix-tls-kubernetes-and-beyond" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ngnix, TLS, Kubernetes and beyond
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#standalone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standalone
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Standalone">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introduction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-and-configure-auditize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install and configure Auditize
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-auditizes-scheduler-with-systemd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run Auditize's scheduler with systemd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-gunicorn-with-systemd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run Gunicorn with systemd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-nginx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup Nginx
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup Nginx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sending-logs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sending logs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-data-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log data model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-component/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Component
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source, license and contribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
+<p>Auditize is a Python 3.12+ application that uses PostgreSQL and Elasticsearch as databases and do not use the filesystem to persist data. It's base configuration is 100% environment variables based, making it easy and flexible to configure, especially in a Docker environment.</p>
+<p>Auditize is composed of two distinct services:</p>
+<ul>
+<li>an <a href="https://en.wikipedia.org/wiki/Asynchronous_Server_Gateway_Interface">ASGI</a> web application that serves both the API and the frontend</li>
+<li>a scheduler that runs period tasks</li>
+</ul>
+<p>It is delivered as a <a href="https://pypi.org/project/auditize/">Python package on PyPI</a> that can be installed with <code>pip</code> (the package installer for Python). Please note that the Auditize package dependencies are pinned to ensure a stable and reproducible installation.</p>
+<p>By default, Auditze uses <code>auditize</code> as PostgreSQL database name and also use <code>auditize</code> as an Elasticsearch index prefix: <code>auditize_logs_{repo_id}</code>. This can be changed through the <code>AUDITIZE_DB_NAME</code> configuration variable.</p>
+<p>The following sections will guide you through the installation of Auditize in two different contexts:</p>
+<ul>
+<li>a <a href="#docker-compose">Docker Compose environment</a></li>
+<li>a <a href="#standalone">standalone environment</a></li>
+</ul>
+<h2 id="docker-compose">Docker Compose<a class="headerlink" href="#docker-compose" title="Permanent link">&para;</a></h2>
+<p>The Docker Compose environment described here provides a complete Auditize setup including PostgreSQL and Elasticsearch.</p>
+<p>First, create an <code>auditize-docker</code> directory where you will store the various files related to your Auditize's Docker setup, and go to this directory:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdir<span class="w"> </span>auditize-docker
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>auditize-docker
+</span></code></pre></div>
+<p>Then, create a <code>Dockerfile</code> file with the following content:</p>
+<div class="language-Dockerfile highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>auditize
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">EXPOSE</span><span class="w"> </span><span class="s">80</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">ENTRYPOINT</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;auditize&quot;</span><span class="p">]</span>
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This is a minimal Dockerfile that installs the <code>auditize</code> package and exposes the port 80. In a real-world / production setup, you would typically implement security and optimization measures such as:</p>
+<ul>
+<li>running the application as a non-root user,</li>
+<li>using a non-privileged port,</li>
+<li>making the Docker image as small as possible by using an optimized base image,</li>
+<li>pin the version of the <code>auditize</code> package to a specific version,</li>
+<li>etc.</li>
+</ul>
+</div>
+<p>This image will be used to run both the web application and the scheduler Docker Compose services.</p>
+<p>Next, create a <code>docker-compose.yml</code> file in the same directory with the following content:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">x-auditize-variables</span><span class="p">:</span><span class="w"> </span><span class="nl">&amp;auditize-variables</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">AUDITIZE_PG_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">AUDITIZE_PG_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">AUDITIZE_PG_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">AUDITIZE_ES_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://elastic:9200</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nt">services</span><span class="p">:</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:17</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data/postgres:/var/lib/postgresql/data</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">  </span><span class="nt">elastic</span><span class="p">:</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elasticsearch:8.19.4</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">discovery.type=single-node</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">xpack.security.enabled=false</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data/elastic:/usr/share/elasticsearch/data</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">  </span><span class="nt">web</span><span class="p">:</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elastic</span>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;serve&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--host&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;0.0.0.0&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--port&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;8000&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.env&quot;</span>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="w">      </span><span class="nt">&lt;&lt;</span><span class="p">:</span><span class="w"> </span><span class="nv">*auditize-variables</span>
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="w">  </span><span class="nt">scheduler</span><span class="p">:</span>
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auditize</span>
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elastic</span>
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;schedule&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a><span class="w">    </span><span class="nt">env_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.env&quot;</span>
+</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+</span><span id="__span-2-46"><a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a><span class="w">      </span><span class="nt">&lt;&lt;</span><span class="p">:</span><span class="w"> </span><span class="nv">*auditize-variables</span>
+</span><span id="__span-2-47"><a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a><span class="w">      </span><span class="c1"># we set PYTHONUNBUFFERED, otherwise the print() from &quot;schedule&quot; are not shown</span>
+</span><span id="__span-2-48"><a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a><span class="w">      </span><span class="nt">PYTHONUNBUFFERED</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</span></code></pre></div>
+<p>This <code>docker-compose.yml</code> uses a <code>.env</code> file for the Auditize base-configuration, so let's create a <code>.env</code> file in the same directory with at least the following configuration elements:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">AUDITIZE_PUBLIC_URL</span><span class="o">=</span>http://localhost:8000
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">AUDITIZE_JWT_SIGNING_KEY</span><span class="o">=</span>YOUR_AUDITIZE_JWT_SIGNING_KEY
+</span></code></pre></div>
+<ul>
+<li><code>AUDITIZE_PUBLIC_URL</code> is the public URL of your Auditize instance from which the web application will be accessed by your users or API clients (e.g. <code>https://auditize.example.com</code>). It is used to generate URLs in the emails sent by Auditize.</li>
+<li><code>AUDITIZE_JWT_SIGNING_KEY</code> is the key used to sign the JWT tokens generated by Auditize (e.g. user sessions).</li>
+</ul>
+<p>Please refer to the <a href="../config/">configuration documentation</a> for more details.</p>
+<p>Build the <code>auditize</code> Docker image:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>build
+</span></code></pre></div>
+<p>Run the services:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+</span></code></pre></div>
+<p>Then, create the database schema for PostgreSQL:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>auditize-web-1<span class="w"> </span>auditize<span class="w"> </span>migrate-db
+</span></code></pre></div>
+<p>In order to login on Auditize, you need to create a superadmin user. You can do this by running the following command:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>auditize-web-1<span class="w"> </span>auditize<span class="w"> </span>bootstrap-superadmin<span class="w"> </span>YOUR_EMAIL<span class="w"> </span>YOUR_FIRST_NAME<span class="w"> </span>YOUR_LAST_NAME
+</span></code></pre></div>
+<p>Where:</p>
+<ul>
+<li><code>auditize-web-1</code> is the name of the web container to run the command from</li>
+<li><code>YOUR_EMAIL</code>, <code>YOUR_FIRST_NAME</code>, and <code>YOUR_LAST_NAME</code> must be replaced by your actual user information</li>
+</ul>
+<p>The command will prompt you for a password and then create the superadmin user.</p>
+<p>You can now access Auditize at <code>http://localhost:8000</code> and log in with the superadmin user you just created.</p>
+<h3 id="using-gunicorn">Using Gunicorn<a class="headerlink" href="#using-gunicorn" title="Permanent link">&para;</a></h3>
+<p>The previous setup uses <code>auditize serve</code> to run the web application. What this command does under the hood is to run the <a href="https://www.uvicorn.org/">Uvicorn</a> ASGI server with one worker. You may want to use <a href="https://gunicorn.org/">Gunicorn</a> with multiple workers for better performance as recommended in the <a href="https://www.uvicorn.org/#running-with-gunicorn">Uvicorn documentation</a>.</p>
+<p>In this case, you can follow the same steps as above but make the following change in <code>Dockerfile</code>:</p>
+<div class="language-Dockerfile highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c"># RUN pip install auditize</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>auditize<span class="w"> </span>gunicorn
+</span></code></pre></div>
+<p>And this change in the <code>docker-compose.yml</code> file:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># command: [&quot;serve&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;80&quot;]</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nt">entrypoint</span><span class="p">:</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="p p-Indicator">[</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="s">&quot;gunicorn&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="s">&quot;auditize:asgi()&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="s">&quot;-k&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="s">&quot;uvicorn.workers.UvicornWorker&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="s">&quot;-w&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="s">&quot;4&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">    </span><span class="s">&quot;-b&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">    </span><span class="s">&quot;0.0.0.0:80&quot;</span><span class="p p-Indicator">,</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span><span class="p p-Indicator">]</span>
+</span></code></pre></div>
+<p>In this example, Gunicorn is configured to run 4 workers with the Uvicorn worker class. You can adjust the number of workers according to your needs / host resources.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since Auditize is an ASGI application, you can use any other ASGI server to run it instead of Uvicorn or Uvicorn+Gunicorn.</p>
+</div>
+<h3 id="ngnix-tls-kubernetes-and-beyond">Ngnix, TLS, Kubernetes and beyond<a class="headerlink" href="#ngnix-tls-kubernetes-and-beyond" title="Permanent link">&para;</a></h3>
+<p>The Docker Compose environment described above is a good starting point to run Auditize in a development/test environment. For a production deployment, you may consider:</p>
+<ul>
+<li>using a reverse proxy such as Nginx to serve the web application and handle TLS termination,</li>
+<li>deploying Auditize in a Kubernetes cluster with a proper ingress controller,</li>
+<li>build a custom Docker image with security and optimization measures,</li>
+<li>etc.</li>
+</ul>
+<p>When deploying Auditize in a Kubernetes cluster, you have the flexibility to scale it by choosing between multiple pods running directly with Uvicorn and a single worker (through <code>auditize serve</code>) or using Gunicorn with multiple workers. Using Uvicorn directly in each pod can be simpler and more lightweight, making it easier to manage and scale horizontally. The FastAPI documentation provides <a href="https://fastapi.tiangolo.com/deployment/docker/">more information</a> on how to deploy a FastAPI application in Kubernetes.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>You can also take a look at the <a href="https://github.com/auditize/auditize-docker">auditize-docker</a> repository which provides an exemple of Docker Compose environment with Nginx proxying and automatic SSL certificate generation using Let's Encrypt.</p>
+</div>
+<h2 id="standalone">Standalone<a class="headerlink" href="#standalone" title="Permanent link">&para;</a></h2>
+<h3 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h3>
+<p>Auditize supports <strong>Python 3.12+</strong>. This version of Python is available on Ubuntu 24.04+ and RHEL 9.4+ (among others) as time of writing.</p>
+<p>In this section, we will build a standalone Auditize environment using:</p>
+<ul>
+<li>Auditize installed in a Python virtual environment</li>
+<li>Gunicorn with ASGI workers</li>
+<li>Nginx as a reverse proxy</li>
+</ul>
+<p>We assume that you have <strong>working PostgreSQL and Elasticsearch instances available</strong>, a database created for Auditize and the corresponding connection details.</p>
+<p>Here, we take Ubuntu 24.04 as an example, but the steps should be similar for other Linux distributions (especially Debian-based ones and distros using <code>systemd</code>).</p>
+<h3 id="install-and-configure-auditize">Install and configure Auditize<a class="headerlink" href="#install-and-configure-auditize" title="Permanent link">&para;</a></h3>
+<p>First, install the <code>virtualenv</code> package and create a Python virtual environment with Auditize and Gunicorn:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>python3-virtualenv
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>sudo<span class="w"> </span>virtualenv<span class="w"> </span>/opt/auditize
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>sudo<span class="w"> </span>/opt/auditize/bin/pip<span class="w"> </span>install<span class="w"> </span>auditize<span class="w"> </span>gunicorn
+</span></code></pre></div>
+<p>Create a <code>/opt/auditize/env</code> file containing your <a href="../config/">Auditize configuration</a>. It should contain at least the required fields <code>AUDITIZE_PUBLIC_URL</code>, <code>AUDITIZE_JWT_SIGNING_KEY</code>, and also <code>AUDITIZE_PG_*</code> and <code>AUDITIZE_ES_*</code> according to your PostgreSQL and Elasticsearch setup.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">AUDITIZE_PUBLIC_URL</span><span class="o">=</span>...
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nv">AUDITIZE_JWT_SIGNING_KEY</span><span class="o">=</span>...
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>...
+</span></code></pre></div>
+<p>Then, ensure appropriate permissions and ownership on this file:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>sudo<span class="w"> </span>chown<span class="w"> </span>www-data:www-data<span class="w"> </span>/opt/auditize/env
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">660</span><span class="w"> </span>/opt/auditize/env
+</span></code></pre></div>
+<p>Create the database schema for PostgreSQL:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>sudo<span class="w"> </span><span class="nv">AUDITIZE_CONFIG</span><span class="o">=</span>/opt/auditize/env<span class="w"> </span>/opt/auditize/bin/auditize<span class="w"> </span>migrate-db
+</span></code></pre></div>
+<p>Bootstrap the superadmin user:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>sudo<span class="w"> </span><span class="nv">AUDITIZE_CONFIG</span><span class="o">=</span>/opt/auditize/env<span class="w"> </span>/opt/auditize/bin/auditize<span class="w"> </span>bootstrap-superadmin<span class="w"> </span>YOUR_EMAIL<span class="w"> </span>YOUR_FIRST_NAME<span class="w"> </span>YOUR_LAST_NAME
+</span></code></pre></div>
+<p>The <code>auditize bootstrap-superadmin</code> command will prompt you for a password and then create the superadmin user.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The install path <code>/opt/auditize</code> can be changed to any other path you prefer (when doing so, make sure to adjust the paths in the following steps accordingly). We use the <code>www-data</code> user to run the services for simplicity, but you can choose to create a dedicated user for Auditize (you will have to ensure that the <code>/run/gunicorn.sock</code> socket file is still accessible by Nginx that runs as <code>www-data</code>).</p>
+</div>
+<h3 id="run-auditizes-scheduler-with-systemd">Run Auditize's scheduler with systemd<a class="headerlink" href="#run-auditizes-scheduler-with-systemd" title="Permanent link">&para;</a></h3>
+<p>First, create a <code>/opt/auditize/log</code> directory to store the logs:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>sudo<span class="w"> </span>mkdir<span class="w"> </span>/opt/auditize/log
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>sudo<span class="w"> </span>chown<span class="w"> </span>www-data:www-data<span class="w"> </span>/opt/auditize/log
+</span></code></pre></div>
+<p>Then, create a <code>/etc/systemd/system/auditize-scheduler.service</code> file with :</p>
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">[Unit]</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="na">Description</span><span class="o">=</span><span class="s">Auditize Scheduler</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="na">After</span><span class="o">=</span><span class="s">network.target</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="k">[Service]</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="na">User</span><span class="o">=</span><span class="s">www-data</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="na">WorkingDirectory</span><span class="o">=</span><span class="s">/opt/auditize</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="na">EnvironmentFile</span><span class="o">=</span><span class="s">/opt/auditize/env</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="na">Environment</span><span class="o">=</span><span class="s">PYTHONUNBUFFERED=1</span>
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="na">ExecStart</span><span class="o">=</span><span class="s">/opt/auditize/bin/auditize schedule</span>
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="na">Restart</span><span class="o">=</span><span class="s">always</span>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="na">RestartSec</span><span class="o">=</span><span class="s">3</span>
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="na">StandardOutput</span><span class="o">=</span><span class="s">append:/opt/auditize/log/scheduler.log</span>
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="na">StandardError</span><span class="o">=</span><span class="s">append:/opt/auditize/log/scheduler-error.log</span>
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="k">[Install]</span>
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
+</span></code></pre></div>
+<p>And activate the service:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>auditize-scheduler
+</span></code></pre></div>
+<h3 id="run-gunicorn-with-systemd">Run Gunicorn with systemd<a class="headerlink" href="#run-gunicorn-with-systemd" title="Permanent link">&para;</a></h3>
+<p>We are going to use <code>systemd</code> to create a UNIX socket for Gunicorn. Nginx will forward requests to this socket and <code>systemd</code> will start the Gunicorn service when the first request is received.</p>
+<p>Create a <code>/etc/systemd/system/auditize-gunicorn.socket</code> file with:</p>
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">[Unit]</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="na">Description</span><span class="o">=</span><span class="s">Unix socket for Auditize Gunicorn</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="k">[Socket]</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="na">ListenStream</span><span class="o">=</span><span class="s">/run/gunicorn.sock</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="na">SocketUser</span><span class="o">=</span><span class="s">www-data</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="na">SocketGroup</span><span class="o">=</span><span class="s">www-data</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="na">SocketMode</span><span class="o">=</span><span class="s">0660</span>
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="k">[Install]</span>
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="na">WantedBy</span><span class="o">=</span><span class="s">sockets.target</span>
+</span></code></pre></div>
+<p>Create a <code>/etc/systemd/system/auditize-gunicorn.service</code>:</p>
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">[Unit]</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="na">Description</span><span class="o">=</span><span class="s">Run Auditize using Gunicorn</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="na">Requires</span><span class="o">=</span><span class="s">auditize-gunicorn.socket</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="na">After</span><span class="o">=</span><span class="s">network.target</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="k">[Service]</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="na">Type</span><span class="o">=</span><span class="s">notify</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="na">NotifyAccess</span><span class="o">=</span><span class="s">main</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="na">User</span><span class="o">=</span><span class="s">www-data</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="na">Group</span><span class="o">=</span><span class="s">www-data</span>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="na">WorkingDirectory</span><span class="o">=</span><span class="s">/opt/auditize</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="na">EnvironmentFile</span><span class="o">=</span><span class="s">/opt/auditize/env</span>
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="na">ExecStart</span><span class="o">=</span><span class="s">/opt/auditize/bin/gunicorn &#39;auditize:asgi()&#39; </span>\
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">  </span><span class="s">--error-logfile /opt/auditize/log/gunicorn.log </span>\
+</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="w">  </span><span class="s">-k uvicorn.workers.UvicornWorker -w 4</span>
+</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="na">ExecReload</span><span class="o">=</span><span class="s">/bin/kill -s HUP $MAINPID</span>
+</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a><span class="na">KillMode</span><span class="o">=</span><span class="s">mixed</span>
+</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a><span class="na">TimeoutStopSec</span><span class="o">=</span><span class="s">5</span>
+</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="na">PrivateTmp</span><span class="o">=</span><span class="s">true</span>
+</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>
+</span><span id="__span-19-21"><a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a><span class="k">[Install]</span>
+</span><span id="__span-19-22"><a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a><span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
+</span></code></pre></div>
+<p>The <code>-w 4</code> option tells Gunicorn to run 4 workers. You can adjust this number according to your needs / host resources.</p>
+<p>Enable and start the <code>auditize-gunicorn.socket</code> (<code>systemd</code> will start the <code>auditize-gunicorn.service</code> when needed) :</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>auditize-gunicorn.socket
+</span></code></pre></div>
+<h3 id="setup-nginx">Setup Nginx<a class="headerlink" href="#setup-nginx" title="Permanent link">&para;</a></h3>
+<p>Install Nginx:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>nginx
+</span></code></pre></div>
+<p>Add this Nginx configuration file at <code>/etc/nginx/sites-available/auditize</code>:</p>
+<div class="language-nginx highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">80</span><span class="p">;</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Host</span><span class="w"> </span><span class="nv">$http_host</span><span class="p">;</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-For</span><span class="w"> </span><span class="nv">$proxy_add_x_forwarded_for</span><span class="p">;</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-Proto</span><span class="w"> </span><span class="nv">$scheme</span><span class="p">;</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="w">        </span><span class="kn">proxy_redirect</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="w">        </span><span class="kn">proxy_buffering</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="w">        </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://gunicorn</span><span class="p">;</span>
+</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="p">}</span>
+</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>
+</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="k">upstream</span><span class="w"> </span><span class="s">gunicorn</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="s">unix:/run/gunicorn.sock</span><span class="p">;</span>
+</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Remove the default Nginx configuration if any:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>sudo<span class="w"> </span>rm<span class="w"> </span>/etc/nginx/sites-enabled/default
+</span></code></pre></div>
+<p>Enable the Auditize configuration for Nginx:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>sudo<span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>/etc/nginx/sites-available/auditize<span class="w"> </span>/etc/nginx/sites-enabled/auditize
+</span></code></pre></div>
+<p>Restart Nginx:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>nginx
+</span></code></pre></div>
+<p>You can now access Auditize at <code>http://YOUR_SERVER_HOSTNAME</code> and log in with the superadmin user you created earlier.</p>
+<h4 id="tls">TLS<a class="headerlink" href="#tls" title="Permanent link">&para;</a></h4>
+<p>It is of course highly recommended to use TLS for your Auditize instance. Here is an example of an Nginx configuration with TLS, it has been generated using the <a href="https://ssl-config.mozilla.org/">Mozilla SSL Configuration Generator</a> and it assumes that you have a valid certificate, private key, and DH parameter files in <code>/opt/auditize/ssl/</code>:</p>
+<div class="language-nginx highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># generated 2024-10-08, Mozilla Guideline v5.7, nginx 1.17.7, OpenSSL 1.1.1k, intermediate configuration</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="c1"># https://ssl-config.mozilla.org/#server=nginx&amp;version=1.17.7&amp;config=intermediate&amp;openssl=1.1.1k&amp;guideline=5.7</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="c1"># adapted for Auditize</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">80</span><span class="w"> </span><span class="s">default_server</span><span class="p">;</span>
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="s">[::]:80</span><span class="w"> </span><span class="s">default_server</span><span class="p">;</span>
+</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>
+</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="w">        </span><span class="kn">return</span><span class="w"> </span><span class="mi">301</span><span class="w"> </span><span class="s">https://</span><span class="nv">$host$request_uri</span><span class="p">;</span>
+</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="p">}</span>
+</span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a>
+</span><span id="__span-26-15"><a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="k">server</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">443</span><span class="w"> </span><span class="s">ssl</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
+</span><span id="__span-26-17"><a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a><span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="s">[::]:443</span><span class="w"> </span><span class="s">ssl</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
+</span><span id="__span-26-18"><a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a>
+</span><span id="__span-26-19"><a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a><span class="w">    </span><span class="kn">ssl_certificate</span><span class="w"> </span><span class="s">/opt/auditize/ssl/cert.pem</span><span class="p">;</span>
+</span><span id="__span-26-20"><a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a><span class="w">    </span><span class="kn">ssl_certificate_key</span><span class="w"> </span><span class="s">/opt/auditize/ssl/key.pem</span><span class="p">;</span>
+</span><span id="__span-26-21"><a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a><span class="w">    </span><span class="kn">ssl_session_timeout</span><span class="w"> </span><span class="s">1d</span><span class="p">;</span>
+</span><span id="__span-26-22"><a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a><span class="w">    </span><span class="kn">ssl_session_cache</span><span class="w"> </span><span class="s">shared:MozSSL:10m</span><span class="p">;</span><span class="w">  </span><span class="c1"># about 40000 sessions</span>
+</span><span id="__span-26-23"><a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a><span class="w">    </span><span class="kn">ssl_session_tickets</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+</span><span id="__span-26-24"><a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a>
+</span><span id="__span-26-25"><a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a><span class="w">    </span><span class="c1"># curl https://ssl-config.mozilla.org/ffdhe2048.txt &gt; /path/to/dhparam</span>
+</span><span id="__span-26-26"><a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a><span class="w">    </span><span class="kn">ssl_dhparam</span><span class="w"> </span><span class="s">/opt/auditize/ssl/dhparam</span><span class="p">;</span>
+</span><span id="__span-26-27"><a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a>
+</span><span id="__span-26-28"><a id="__codelineno-26-28" name="__codelineno-26-28" href="#__codelineno-26-28"></a><span class="w">    </span><span class="c1"># intermediate configuration</span>
+</span><span id="__span-26-29"><a id="__codelineno-26-29" name="__codelineno-26-29" href="#__codelineno-26-29"></a><span class="w">    </span><span class="kn">ssl_protocols</span><span class="w"> </span><span class="s">TLSv1.2</span><span class="w"> </span><span class="s">TLSv1.3</span><span class="p">;</span>
+</span><span id="__span-26-30"><a id="__codelineno-26-30" name="__codelineno-26-30" href="#__codelineno-26-30"></a><span class="w">    </span><span class="kn">ssl_ciphers</span><span class="w"> </span><span class="s">ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305</span><span class="p">;</span>
+</span><span id="__span-26-31"><a id="__codelineno-26-31" name="__codelineno-26-31" href="#__codelineno-26-31"></a><span class="w">    </span><span class="kn">ssl_prefer_server_ciphers</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+</span><span id="__span-26-32"><a id="__codelineno-26-32" name="__codelineno-26-32" href="#__codelineno-26-32"></a>
+</span><span id="__span-26-33"><a id="__codelineno-26-33" name="__codelineno-26-33" href="#__codelineno-26-33"></a><span class="w">    </span><span class="c1"># HSTS (ngx_http_headers_module is required) (63072000 seconds)</span>
+</span><span id="__span-26-34"><a id="__codelineno-26-34" name="__codelineno-26-34" href="#__codelineno-26-34"></a><span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">Strict-Transport-Security</span><span class="w"> </span><span class="s">&quot;max-age=63072000&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+</span><span id="__span-26-35"><a id="__codelineno-26-35" name="__codelineno-26-35" href="#__codelineno-26-35"></a>
+</span><span id="__span-26-36"><a id="__codelineno-26-36" name="__codelineno-26-36" href="#__codelineno-26-36"></a><span class="w">    </span><span class="c1"># OCSP stapling</span>
+</span><span id="__span-26-37"><a id="__codelineno-26-37" name="__codelineno-26-37" href="#__codelineno-26-37"></a><span class="w">    </span><span class="kn">ssl_stapling</span><span class="w"> </span><span class="no">on</span><span class="p">;</span>
+</span><span id="__span-26-38"><a id="__codelineno-26-38" name="__codelineno-26-38" href="#__codelineno-26-38"></a><span class="w">    </span><span class="kn">ssl_stapling_verify</span><span class="w"> </span><span class="no">on</span><span class="p">;</span>
+</span><span id="__span-26-39"><a id="__codelineno-26-39" name="__codelineno-26-39" href="#__codelineno-26-39"></a>
+</span><span id="__span-26-40"><a id="__codelineno-26-40" name="__codelineno-26-40" href="#__codelineno-26-40"></a><span class="w">    </span><span class="c1"># replace with the IP address of your resolver</span>
+</span><span id="__span-26-41"><a id="__codelineno-26-41" name="__codelineno-26-41" href="#__codelineno-26-41"></a><span class="w">    </span><span class="kn">resolver</span><span class="w"> </span><span class="mi">127</span><span class="s">.0.0.1</span><span class="p">;</span>
+</span><span id="__span-26-42"><a id="__codelineno-26-42" name="__codelineno-26-42" href="#__codelineno-26-42"></a>
+</span><span id="__span-26-43"><a id="__codelineno-26-43" name="__codelineno-26-43" href="#__codelineno-26-43"></a><span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-26-44"><a id="__codelineno-26-44" name="__codelineno-26-44" href="#__codelineno-26-44"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Host</span><span class="w"> </span><span class="nv">$http_host</span><span class="p">;</span>
+</span><span id="__span-26-45"><a id="__codelineno-26-45" name="__codelineno-26-45" href="#__codelineno-26-45"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-For</span><span class="w"> </span><span class="nv">$proxy_add_x_forwarded_for</span><span class="p">;</span>
+</span><span id="__span-26-46"><a id="__codelineno-26-46" name="__codelineno-26-46" href="#__codelineno-26-46"></a><span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-Proto</span><span class="w"> </span><span class="nv">$scheme</span><span class="p">;</span>
+</span><span id="__span-26-47"><a id="__codelineno-26-47" name="__codelineno-26-47" href="#__codelineno-26-47"></a><span class="w">        </span><span class="kn">proxy_redirect</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+</span><span id="__span-26-48"><a id="__codelineno-26-48" name="__codelineno-26-48" href="#__codelineno-26-48"></a><span class="w">        </span><span class="kn">proxy_buffering</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+</span><span id="__span-26-49"><a id="__codelineno-26-49" name="__codelineno-26-49" href="#__codelineno-26-49"></a><span class="w">        </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://gunicorn</span><span class="p">;</span>
+</span><span id="__span-26-50"><a id="__codelineno-26-50" name="__codelineno-26-50" href="#__codelineno-26-50"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-26-51"><a id="__codelineno-26-51" name="__codelineno-26-51" href="#__codelineno-26-51"></a><span class="p">}</span>
+</span><span id="__span-26-52"><a id="__codelineno-26-52" name="__codelineno-26-52" href="#__codelineno-26-52"></a>
+</span><span id="__span-26-53"><a id="__codelineno-26-53" name="__codelineno-26-53" href="#__codelineno-26-53"></a><span class="k">upstream</span><span class="w"> </span><span class="s">gunicorn</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-26-54"><a id="__codelineno-26-54" name="__codelineno-26-54" href="#__codelineno-26-54"></a><span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="s">unix:/run/gunicorn.sock</span><span class="p">;</span>
+</span><span id="__span-26-55"><a id="__codelineno-26-55" name="__codelineno-26-55" href="#__codelineno-26-55"></a><span class="p">}</span>
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Make sure that the files under <code>/opt/auditize/ssl/</code> have proper permissions:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>sudo<span class="w"> </span>chmod<span class="w"> </span>o-rwx<span class="w"> </span>/opt/auditize/ssl/*
+</span></code></pre></div>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.annotate", "toc.integrate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

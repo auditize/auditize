@@ -1,0 +1,152 @@
+/* Hide GitHub statistics */
+.md-source__facts {
+  display: none;
+}
+
+/* Change primary color to match the product's one */
+:root {
+  --md-primary-fg-color: #1065ce;
+  --md-accent-fg-color: #046ef0;
+}
+
+/* Make font-size a bit smaller than the original 0.8rem */
+.md-typeset {
+  font-size: 0.7rem;
+}
+
+/*
+ * Avoid environment variable names to be broken into two lines in the Configuration page.
+ * Same thing for table header titles.
+ */
+th,
+td code {
+  white-space: nowrap;
+}
+
+/*
+ * This is ugly hack to avoid displaying both the logo (that includes "Auditize")
+ * and the topic (which is also "Auditize") when the screen reach a given breakpoint
+ */
+@media screen and (min-width: 76.234375em) {
+  .md-header__topic {
+    display: none;
+  }
+}
+
+/*
+ * Landing page "features" styling
+ */
+
+.adz-feature {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 2rem;
+  padding-bottom: 4rem;
+}
+
+.adz-feature-text {
+  font-size: 0.8rem;
+  flex-grow: 1;
+}
+
+.adz-feature-text h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 0px;
+}
+
+.adz-feature-image {
+  flex-shrink: 1;
+  flex-grow: 0;
+}
+
+.adz-feature-image img {
+  box-shadow: var(--md-shadow-z2);
+}
+
+.adz-feature-image a img {
+  transition: transform 0.15s ease-in-out;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+}
+
+@media screen and (min-width: 60em) {
+  .adz-features > .adz-feature:nth-child(odd) {
+    flex-direction: row-reverse;
+  }
+  .adz-feature-text {
+    flex-basis: 300px;
+  }
+}
+
+@media screen and (max-width: 59.9844em) {
+  .adz-feature {
+    gap: 0.5rem;
+    flex-direction: column;
+  }
+  .adz-feature-image {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/*
+  * Landing page "hero" styling
+  */
+
+.adz-hero {
+  font-family: "Roboto", sans-serif;
+  text-align: center;
+  margin: auto;
+  padding-bottom: 6rem;
+}
+
+.adz-hero-title {
+  text-transform: uppercase;
+  font-size: 3rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.adz-hero-subtitle {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #7d8b9b;
+  text-align: center;
+  max-width: 50%;
+  margin: auto;
+}
+
+.adz-hero-text-blue {
+  color: var(--md-accent-fg-color);
+}
+
+.adz-hero-text-black {
+  color: #041120;
+}
+
+.adz-hero .md-button {
+  color: var(--md-accent-fg-color);
+}
+
+@media screen and (max-width: 768px) {
+  .adz-hero-title {
+    font-size: 2rem;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .adz-hero-title {
+    font-size: 1.5rem;
+  }
+
+  .adz-hero-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+}
