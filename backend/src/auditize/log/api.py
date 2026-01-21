@@ -763,7 +763,7 @@ async def add_attachment(
         str,
         Form(
             description="The 'functional' type of the attachment",
-            json_schema_extra={"example": "Configuration file"},
+            json_schema_extra={"example": "config-file"},
             pattern=IDENTIFIER_PATTERN_STRING,
         ),
     ],
