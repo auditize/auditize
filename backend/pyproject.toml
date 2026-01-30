@@ -45,6 +45,9 @@ doc = [
   "mkdocs-material",
 ]
 
+[tool.uv]
+cache-keys = [{file = "pyproject.toml"}, {file = "requirements.txt"}]
+
 [tool.setuptools.dynamic]
 version = {attr = "auditize.version.__version__"}
 dependencies = { file = ["requirements.txt"] }
