@@ -100,3 +100,25 @@ async def list_action_types(
         limit=100, pagination_cursor=None
     )
     return action_types
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        readOnlyHint=True,
+        openWorldHint=False,  # Only internal data
+    )
+)
+async def list_action_categories(
+    db_session: AsyncSession = Depends(open_db_session),
+) -> list[str]:
+    """List all possible action categories (action categories are used to group action types).
+
+    When searching for logs on a specific action category:
+    - first: call list_action_categories to get the list of possible action categories
+    - then: use the action_category with search_logs(action_category=...)
+    """
+    log_service = await get_log_service(db_session)
+    action_categories, _ = await log_service.get_log_action_categories(
+        limit=100, pagination_cursor=None
+    )
+    return action_categories
