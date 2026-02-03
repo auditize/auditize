@@ -67,6 +67,26 @@ async def test_search_actors(
     assert result.data == [["Jane Doe", "2"]]
 
 
+async def test_search_resources(
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {"resource": {"type": "config", "ref": "cfg-1", "name": "Config Profile 123"}},
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {"resource": {"type": "doc", "ref": "doc-2", "name": "Document Template"}},
+    )
+
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool("search_resources", {"query": "config"})
+    assert result.data == [["Config Profile 123", "cfg-1"]]
+
+
 async def test_search_entities(
     repo: PreparedRepo,
     apikey: PreparedApikey,

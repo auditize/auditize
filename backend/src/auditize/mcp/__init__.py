@@ -76,6 +76,29 @@ async def search_actors(
 
 
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
+async def search_resources(
+    query: Annotated[str | None, "The query (keywords) to search for resources"],
+    db_session: AsyncSession = Depends(open_db_session),
+) -> list[tuple[str, str]]:
+    """Search for resources on partial name match ("Config" will match "Config Profile 123").
+
+    Returns a list of tuples (resource_name, resource_ref) for matching resources.
+
+    IMPORTANT: When searching for logs, use the resource_ref (second element of each tuple)
+    with search_logs(resource_ref=...) rather than resource_name. The resource_ref is the unique
+    identifier and provides more accurate filtering than resource_name.
+
+    Example workflow:
+    1. Call search_resources(query="Config") to find resources
+    2. Use the resource_ref from the results: search_logs(resource_ref="config:123")
+
+    At most 10 results are returned."""
+    log_service = await get_log_service(db_session)
+    resources, _ = await log_service.get_log_resource_names(search=query)
+    return resources
+
+
+@mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_entities(
     query: Annotated[str, "The query (keywords) to search for entities"],
     db_session: AsyncSession = Depends(open_db_session),
