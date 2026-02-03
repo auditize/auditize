@@ -33,7 +33,9 @@ mcp.add_middleware(
 )
 
 
-async def get_log_service(db_session: AsyncSession) -> LogService:
+async def get_log_service(
+    db_session: AsyncSession = Depends(open_db_session),
+) -> LogService:
     headers = get_http_headers()
     repo_id = headers.get("x-auditize-repo")
     if not repo_id:
@@ -44,10 +46,9 @@ async def get_log_service(db_session: AsyncSession) -> LogService:
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_logs(
     search_params: LogSearchParams,
-    db_session: AsyncSession = Depends(open_db_session),
+    log_service: LogService = Depends(get_log_service),
 ) -> list[LogResponse]:
     """Search for logs in the repository given optional keywords in the query. Return at most 10 logs."""
-    log_service = await get_log_service(db_session)
     logs, _ = await log_service.get_logs(search_params=search_params)
     return [LogResponse.model_validate(log.model_dump()) for log in logs]
 
@@ -55,7 +56,7 @@ async def search_logs(
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_actors(
     query: Annotated[str | None, "The query (keywords) to search for actors"],
-    db_session: AsyncSession = Depends(open_db_session),
+    log_service: LogService = Depends(get_log_service),
 ) -> list[tuple[str, str]]:
     """Search for actors on partial name match ("Jo Do" will match "John Doe").
 
@@ -70,7 +71,6 @@ async def search_actors(
     2. Use the actor_ref from the results: search_logs(actor_ref="user:123")
 
     At most 10 results are returned."""
-    log_service = await get_log_service(db_session)
     actors, _ = await log_service.get_log_actor_names(search=query)
     return actors
 
@@ -78,7 +78,7 @@ async def search_actors(
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_resources(
     query: Annotated[str | None, "The query (keywords) to search for resources"],
-    db_session: AsyncSession = Depends(open_db_session),
+    log_service: LogService = Depends(get_log_service),
 ) -> list[tuple[str, str]]:
     """Search for resources on partial name match ("Config" will match "Config Profile 123").
 
@@ -93,7 +93,6 @@ async def search_resources(
     2. Use the resource_ref from the results: search_logs(resource_ref="config:123")
 
     At most 10 results are returned."""
-    log_service = await get_log_service(db_session)
     resources, _ = await log_service.get_log_resource_names(search=query)
     return resources
 
@@ -101,7 +100,7 @@ async def search_resources(
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_entities(
     query: Annotated[str, "The query (keywords) to search for entities"],
-    db_session: AsyncSession = Depends(open_db_session),
+    log_service: LogService = Depends(get_log_service),
 ) -> list[LogEntityMcpResponse]:
     """Search for entities on partial name match ("Ent" will match "Entity 1").
 
@@ -112,7 +111,6 @@ async def search_entities(
     - then: use the ref of the entity with search_logs(entity_ref=ref)
 
     At most 10 results are returned."""
-    log_service = await get_log_service(db_session)
     entities, _ = await log_service.get_log_entities(
         search=query, authorized_entities=set()
     )
@@ -131,7 +129,7 @@ async def search_entities(
 
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def list_action_types(
-    db_session: AsyncSession = Depends(open_db_session),
+    log_service: LogService = Depends(get_log_service),
 ) -> list[str]:
     """List all possible action types.
 
@@ -139,7 +137,6 @@ async def list_action_types(
     - first: call list_action_types to get the list of possible action types
     - then: use the action_type with search_logs(action_type=...)
     """
-    log_service = await get_log_service(db_session)
     action_types, _ = await log_service.get_log_action_types(
         limit=100, pagination_cursor=None
     )
@@ -148,7 +145,7 @@ async def list_action_types(
 
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def list_action_categories(
-    db_session: AsyncSession = Depends(open_db_session),
+    log_service: LogService = Depends(get_log_service),
 ) -> list[str]:
     """List all possible action categories (action categories are used to group action types).
 
@@ -156,7 +153,6 @@ async def list_action_categories(
     - first: call list_action_categories to get the list of possible action categories
     - then: use the action_category with search_logs(action_category=...)
     """
-    log_service = await get_log_service(db_session)
     action_categories, _ = await log_service.get_log_action_categories(
         limit=100, pagination_cursor=None
     )
