@@ -18,29 +18,43 @@ async def mcp_client():
 
 
 @contextmanager
-def mock_mcp_http_headers(headers: dict):
-    with patch("auditize.mcp.get_http_headers", return_value=headers):
+def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
+    with patch(
+        "auditize.mcp.get_http_headers",
+        return_value={
+            "x-auditize-repo": repo.id,
+            "Authorization": f"Bearer {apikey.key}",
+        },
+    ):
         yield
 
 
-async def test_list_tools(mcp_client: Client[FastMCPTransport]):
-    list_tools = await mcp_client.list_tools()
+async def test_search_actors(
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
+    )
+    await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
+    )
 
-    print(len(list_tools))
-
-    assert len(list_tools) != 0
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool("search_actors", {"query": "jane"})
+    assert result.data == [["Jane Doe", "2"]]
 
 
 async def test_search_entities(
     repo: PreparedRepo,
+    apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
-    apikey = await PreparedApikey.inject_into_db()
     await repo.create_log_with_entity_path(log_rw_client, ["Customer", "Organization"])
-    with mock_mcp_http_headers(
-        {"x-auditize-repo": repo.id, "Authorization": f"Bearer {apikey.key}"}
-    ):
+    with mock_mcp_http_headers(repo, apikey):
         result = await mcp_client.call_tool("search_entities", {"query": "orga"})
     assert result.data == [
         {

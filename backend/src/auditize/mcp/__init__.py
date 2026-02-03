@@ -14,6 +14,11 @@ from auditize.log.service import LogService
 
 logging.basicConfig(level=logging.INFO)
 
+_TOOL_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=True,
+    openWorldHint=False,  # Only internal data
+)
+
 mcp = FastMCP(
     "Auditize MCP Connector",
     "Provides Auditize log exploring capabilities for a given repository",
@@ -36,12 +41,7 @@ async def get_log_service(db_session: AsyncSession) -> LogService:
     return await LogService.for_reading(db_session, repo_id)
 
 
-@mcp.tool(
-    annotations=ToolAnnotations(
-        readOnlyHint=True,
-        openWorldHint=False,  # Only internal data
-    )
-)
+@mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_logs(
     search_params: LogSearchParams,
     db_session: AsyncSession = Depends(open_db_session),
@@ -52,12 +52,7 @@ async def search_logs(
     return [LogResponse.model_validate(log.model_dump()) for log in logs]
 
 
-@mcp.tool(
-    annotations=ToolAnnotations(
-        readOnlyHint=True,
-        openWorldHint=False,  # Only internal data
-    )
-)
+@mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_actors(
     query: Annotated[str | None, "The query (keywords) to search for actors"],
     db_session: AsyncSession = Depends(open_db_session),
@@ -80,12 +75,7 @@ async def search_actors(
     return actors
 
 
-@mcp.tool(
-    annotations=ToolAnnotations(
-        readOnlyHint=True,
-        openWorldHint=False,  # Only internal data
-    )
-)
+@mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_entities(
     query: Annotated[str, "The query (keywords) to search for entities"],
     db_session: AsyncSession = Depends(open_db_session),
@@ -116,12 +106,7 @@ async def search_entities(
     ]
 
 
-@mcp.tool(
-    annotations=ToolAnnotations(
-        readOnlyHint=True,
-        openWorldHint=False,  # Only internal data
-    )
-)
+@mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def list_action_types(
     db_session: AsyncSession = Depends(open_db_session),
 ) -> list[str]:
@@ -138,12 +123,7 @@ async def list_action_types(
     return action_types
 
 
-@mcp.tool(
-    annotations=ToolAnnotations(
-        readOnlyHint=True,
-        openWorldHint=False,  # Only internal data
-    )
-)
+@mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def list_action_categories(
     db_session: AsyncSession = Depends(open_db_session),
 ) -> list[str]:
