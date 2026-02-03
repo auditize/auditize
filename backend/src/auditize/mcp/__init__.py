@@ -9,7 +9,7 @@ from mcp.types import ToolAnnotations
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database.dbm import open_db_session
-from auditize.log.models import LogResponse, LogSearchParams
+from auditize.log.models import LogEntityMcpResponse, LogResponse, LogSearchParams
 from auditize.log.service import LogService
 
 logging.basicConfig(level=logging.INFO)
@@ -78,6 +78,42 @@ async def search_actors(
     log_service = await get_log_service(db_session)
     actors, _ = await log_service.get_log_actor_names(search=query)
     return actors
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        readOnlyHint=True,
+        openWorldHint=False,  # Only internal data
+    )
+)
+async def search_entities(
+    query: Annotated[str, "The query (keywords) to search for entities"],
+    db_session: AsyncSession = Depends(open_db_session),
+) -> list[LogEntityMcpResponse]:
+    """Search for entities on partial name match ("Ent" will match "Entity 1").
+
+    Returns a list of LogEntityMcpResponse for matching entities.
+
+    When searching for logs on a specific entity:
+    - first: call search_entities to get the list of possible entities
+    - then: use the ref of the entity with search_logs(entity_ref=ref)
+
+    At most 10 results are returned."""
+    log_service = await get_log_service(db_session)
+    entities, _ = await log_service.get_log_entities(
+        search=query, authorized_entities=set()
+    )
+
+    return [
+        LogEntityMcpResponse(
+            ref=entity.ref,
+            name=entity.name,
+            path=" > ".join(
+                [ent.name async for ent in log_service.iter_on_log_entity_path(entity)]
+            ),
+        )
+        for entity in entities
+    ]
 
 
 @mcp.tool(

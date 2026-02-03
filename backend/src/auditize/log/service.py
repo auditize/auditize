@@ -4,7 +4,7 @@ import unicodedata
 import uuid
 from datetime import datetime, timedelta
 from functools import partial, partialmethod
-from typing import Any, AsyncIterator, Awaitable, Callable, Self
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Self
 from uuid import UUID
 
 import elasticsearch
@@ -1196,6 +1196,7 @@ class LogService:
         authorized_entities: set[str],
         *,
         parent_entity_ref=NotImplemented,
+        search: str | None = None,
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[LogEntity], str | None]:
@@ -1221,6 +1222,10 @@ class LogService:
                     authorized_entities
                 )
                 filters.append(LogEntity.ref.in_(visible_entities))
+
+        if search:
+            filters.append(LogEntity.name.ilike(f"%{search}%"))
+
         return await self._get_log_entities(
             filters=filters, pagination_cursor=pagination_cursor, limit=limit
         )
@@ -1246,6 +1251,15 @@ class LogService:
             ):
                 raise NotFoundError()
         return await self._get_log_entity(entity_ref)
+
+    async def iter_on_log_entity_path(self, entity: LogEntity) -> Iterator[LogEntity]:
+        if entity.parent_entity_id:
+            parent_entity = await get_sql_model(
+                self.session, LogEntity, LogEntity.id == entity.parent_entity_id
+            )
+            async for ent in self.iter_on_log_entity_path(parent_entity):
+                yield ent
+        yield entity
 
     async def empty_log_db(self):
         await self.es.delete_by_query(
