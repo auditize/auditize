@@ -29,6 +29,26 @@ def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
         yield
 
 
+async def test_search_logs(
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    log_1 = await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
+    )
+    log_2 = await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
+    )
+
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool(
+            "search_logs", {"search_params": {"actor_ref": "2"}}
+        )
+    assert result.data == [log_2.expected_api_response()]
+
+
 async def test_search_actors(
     repo: PreparedRepo,
     apikey: PreparedApikey,
@@ -63,3 +83,27 @@ async def test_search_entities(
             "path": "Customer > Organization",
         }
     ]
+
+
+async def test_list_action_types(
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log(log_rw_client)
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool("list_action_types")
+    assert result.data == ["user_login"]
+
+
+async def test_list_action_categories(
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log(log_rw_client)
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool("list_action_categories")
+    assert result.data == ["authentication"]
