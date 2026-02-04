@@ -801,6 +801,8 @@ class LogService:
         if authorized_entities:
             filter.append(self._build_authorized_entities_es_query(authorized_entities))
 
+        print("--- _get_aggregated_name_ref_pairs", query)
+
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=path if nested else None,
             query={"bool": {"filter": filter}} if filter else None,
@@ -819,6 +821,27 @@ class LogService:
     get_log_tag_names = partialmethod(
         _get_aggregated_name_ref_pairs, path="tags", nested=True
     )
+
+    async def get_log_simple_tag_types(
+        self,
+        *,
+        authorized_entities: set[str] | None = None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str]:
+        values, next_cursor = await self._get_paginated_agg_multi_fields(
+            nested="tags",
+            fields=["tags.type"],
+            query={
+                "nested": {
+                    "path": "tags",
+                    "query": {"bool": {"must_not": {"exists": {"field": "tags.ref"}}}},
+                }
+            },
+            limit=limit,
+            pagination_cursor=pagination_cursor,
+        )
+        return [value[0] for value in values], next_cursor
 
     async def get_log_actor(
         self, actor_ref: str, authorized_entities: set[str]
