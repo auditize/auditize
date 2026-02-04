@@ -98,6 +98,30 @@ async def search_resources(
 
 
 @mcp.tool(annotations=_TOOL_ANNOTATIONS)
+async def search_rich_tags(
+    query: Annotated[str | None, "The query (keywords) to search for rich tags"],
+    log_service: LogService = Depends(get_log_service),
+) -> list[tuple[str, str]]:
+    """Search for rich tags on partial name match ("abc" will match "Profile ABC").
+
+    Rich tags are tags that tracks a resource accross logs.
+
+    Returns a list of tuples (tag_name, tag_ref) for matching tags.
+
+    IMPORTANT: When searching for logs, use the tag_ref (second element of each tuple)
+    with search_logs(tag_ref=...) rather than tag_name. The tag_ref is the unique
+    identifier and provides more accurate filtering than tag_name.
+
+    Example workflow:
+    1. Call search_tags(query="abc") to find tags
+    2. Use the tag_ref from the results: search_logs(tag_ref="profile:abc")
+
+    At most 10 results are returned."""
+    tags, _ = await log_service.get_log_tag_names(search=query)
+    return tags
+
+
+@mcp.tool(annotations=_TOOL_ANNOTATIONS)
 async def search_entities(
     query: Annotated[str, "The query (keywords) to search for entities"],
     log_service: LogService = Depends(get_log_service),

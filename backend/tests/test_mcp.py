@@ -87,6 +87,27 @@ async def test_search_resources(
     assert result.data == [["Config Profile 123", "cfg-1"]]
 
 
+async def test_search_rich_tags(
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            "tags": [
+                {"type": "security"},
+                {"type": "config", "name": "Config Profile 123", "ref": "cfg-1"},
+            ]
+        },
+    )
+
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool("search_rich_tags", {"query": "prof"})
+    assert result.data == [["Config Profile 123", "cfg-1"]]
+
+
 async def test_search_entities(
     repo: PreparedRepo,
     apikey: PreparedApikey,
