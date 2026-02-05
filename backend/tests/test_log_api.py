@@ -2808,6 +2808,59 @@ class TestLogTagNames(_ConsolidatedNameRefPairsTest):
             },
         )
 
+    async def test_with_authorized_entities_restriction(
+        self,
+        superadmin_client: HttpTestHelper,
+        repo: PreparedRepo,
+        apikey_builder: ApikeyBuilder,
+    ):
+        log_1 = await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {
+                        "type": "config",
+                        "name": "Config Profile 123",
+                        "ref": "config:123",
+                    }
+                ],
+                "entity_path": [{"name": "A", "ref": "A"}],
+            },
+        )
+        log_2 = await repo.create_log_with(
+            superadmin_client,
+            {
+                "tags": [
+                    {
+                        "type": "config",
+                        "name": "Config Profile 456",
+                        "ref": "config:456",
+                    }
+                ],
+                "entity_path": [{"name": "B", "ref": "B"}],
+            },
+        )
+        apikey = await apikey_builder(
+            {
+                "logs": {
+                    "repos": [
+                        {
+                            "repo_id": repo.id,
+                            "readable_entities": ["A"],
+                        }
+                    ]
+                }
+            }
+        )
+        async with apikey.client() as client:
+            resp = await client.assert_get_ok(
+                self.get_path(repo.id), params={"q": "123"}
+            )
+            assert resp.json() == {
+                "items": [{"ref": "config:123", "name": "Config Profile 123"}],
+                "pagination": {"next_cursor": None},
+            }
+
 
 class _TestGetSubElementByRef:
     def get_path(self, repo_id: str, ref: str) -> str:

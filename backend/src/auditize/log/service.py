@@ -785,23 +785,25 @@ class LogService:
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[tuple[str, str]], str]:
+        filter = []
         if search:
-            filter = [
-                {"prefix": {f"{path}.name": word}} for word in self._split_words(search)
-            ]
-            if authorized_entities:
-                filter.append(
-                    self._build_authorized_entities_es_query(authorized_entities)
-                )
-            query = {"bool": {"filter": filter}}
+            words_query = {
+                "bool": {
+                    "filter": [
+                        {"prefix": {f"{path}.name": word}}
+                        for word in self._split_words(search)
+                    ]
+                }
+            }
             if nested:
-                query = {"nested": {"path": path, "query": query}}
-        else:
-            query = self._build_authorized_entities_es_query(authorized_entities)
+                words_query = {"nested": {"path": path, "query": words_query}}
+            filter.append(words_query)
+        if authorized_entities:
+            filter.append(self._build_authorized_entities_es_query(authorized_entities))
 
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=path if nested else None,
-            query=query,
+            query={"bool": {"filter": filter}} if filter else None,
             fields=[f"{path}.name.keyword", f"{path}.ref"],
             limit=limit,
             pagination_cursor=pagination_cursor,
