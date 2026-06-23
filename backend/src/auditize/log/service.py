@@ -801,8 +801,6 @@ class LogService:
         if authorized_entities:
             filter.append(self._build_authorized_entities_es_query(authorized_entities))
 
-        print("--- _get_aggregated_name_ref_pairs", query)
-
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested=path if nested else None,
             query={"bool": {"filter": filter}} if filter else None,
