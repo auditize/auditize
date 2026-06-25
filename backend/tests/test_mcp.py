@@ -17,6 +17,11 @@ async def mcp_client():
         yield mcp_client
 
 
+@pytest.fixture
+async def log_read_apikey(apikey_builder):
+    return await apikey_builder({"logs": {"read": True}})
+
+
 @contextmanager
 def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
     with patch(
@@ -31,7 +36,7 @@ def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
 
 async def test_search_logs(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
+    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
@@ -42,7 +47,7 @@ async def test_search_logs(
         log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
     )
 
-    with mock_mcp_http_headers(repo, apikey):
+    with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool(
             "search_logs", {"search_params": {"actor_ref": "2"}}
         )
@@ -51,7 +56,7 @@ async def test_search_logs(
 
 async def test_search_actors(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
+    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
@@ -62,14 +67,14 @@ async def test_search_actors(
         log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
     )
 
-    with mock_mcp_http_headers(repo, apikey):
+    with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_actors", {"query": "jane"})
     assert result.data == [["Jane Doe", "2"]]
 
 
 async def test_search_resources(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
+    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
@@ -82,14 +87,14 @@ async def test_search_resources(
         {"resource": {"type": "doc", "ref": "doc-2", "name": "Document Template"}},
     )
 
-    with mock_mcp_http_headers(repo, apikey):
+    with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_resources", {"query": "config"})
     assert result.data == [["Config Profile 123", "cfg-1"]]
 
 
 async def test_search_rich_tags(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
+    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
@@ -103,19 +108,19 @@ async def test_search_rich_tags(
         },
     )
 
-    with mock_mcp_http_headers(repo, apikey):
+    with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_rich_tags", {"query": "prof"})
     assert result.data == [["Config Profile 123", "cfg-1"]]
 
 
 async def test_search_entities(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
+    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
     await repo.create_log_with_entity_path(log_rw_client, ["Customer", "Organization"])
-    with mock_mcp_http_headers(repo, apikey):
+    with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_entities", {"query": "orga"})
     assert result.data == [
         {
@@ -128,23 +133,23 @@ async def test_search_entities(
 
 async def test_list_action_types(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
+    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
     await repo.create_log(log_rw_client)
-    with mock_mcp_http_headers(repo, apikey):
+    with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_action_types")
     assert result.data == ["user_login"]
 
 
 async def test_list_action_categories(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
+    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
     mcp_client: Client[FastMCPTransport],
 ):
     await repo.create_log(log_rw_client)
-    with mock_mcp_http_headers(repo, apikey):
+    with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_action_categories")
     assert result.data == ["authentication"]

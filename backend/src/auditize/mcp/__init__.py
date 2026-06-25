@@ -3,14 +3,20 @@ from typing import Annotated
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
+from fastmcp.exceptions import ToolError
 from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.middleware.logging import LoggingMiddleware
 from mcp.types import ToolAnnotations
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auditize.auth.authorizer import (
+    authenticate_apikey,
+    get_bearer_token_from_authorization_header,
+)
 from auditize.database.dbm import open_db_session
 from auditize.log.models import LogEntityMcpResponse, LogResponse, LogSearchParams
 from auditize.log.service import LogService
+from auditize.permissions.assertions import can_read_logs_from_repo
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,9 +43,23 @@ async def get_log_service(
     db_session: AsyncSession = Depends(open_db_session),
 ) -> LogService:
     headers = get_http_headers()
+
+    authorization_header = headers.get("Authorization")
+    if not authorization_header:
+        raise ToolError("Authorization header is required")
+
+    bearer_token = get_bearer_token_from_authorization_header(authorization_header)
+    authenticated = await authenticate_apikey(db_session, bearer_token)
+
     repo_id = headers.get("x-auditize-repo")
     if not repo_id:
-        raise ValueError("X-Auditize-Repo header is required")
+        raise ToolError("X-Auditize-Repo header is required")
+
+    if not authenticated.comply(can_read_logs_from_repo(repo_id)):
+        raise ToolError(
+            f"Apikey does not have permission to read logs from repository {repo_id!r}"
+        )
+
     return await LogService.for_reading(db_session, repo_id)
 
 

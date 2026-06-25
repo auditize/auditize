@@ -81,13 +81,17 @@ class Authenticated:
             raise PermissionDenied("This operation is only available to API keys")
 
 
+def get_bearer_token_from_authorization_header(header: str) -> str:
+    if not header.startswith(_BEARER_PREFIX):
+        raise AuthenticationFailure("Authorization header is not a Bearer")
+    return header[len(_BEARER_PREFIX) :]
+
+
 def _get_authorization_bearer(request: Request) -> str | None:
     authorization = request.headers.get("Authorization")
     if not authorization:
         return None
-    if not authorization.startswith(_BEARER_PREFIX):
-        raise AuthenticationFailure("Authorization header is not a Bearer")
-    return authorization[len(_BEARER_PREFIX) :]
+    return get_bearer_token_from_authorization_header(authorization)
 
 
 async def authenticate_apikey(session: AsyncSession, key: str) -> Authenticated:
