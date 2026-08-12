@@ -7,7 +7,7 @@ from fastmcp.client import Client
 from fastmcp.client.client import CallToolResult
 from fastmcp.client.transports import FastMCPTransport
 
-from auditize.mcp import mcp
+from auditize.mcp.app import mcp
 from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
@@ -28,7 +28,7 @@ async def log_read_apikey(apikey_builder):
 @contextmanager
 def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
     with patch(
-        "auditize.mcp.get_http_headers",
+        "auditize.mcp.tools.get_http_headers",
         return_value={
             "x-auditize-repo": repo.id,
             "authorization": f"Bearer {apikey.key}",

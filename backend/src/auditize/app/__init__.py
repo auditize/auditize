@@ -1,11 +1,10 @@
 from fastapi import FastAPI
-from fastmcp import FastMCP
 
 from auditize.app.app_api import build_app as build_api_app
 from auditize.app.app_static import build_app as build_static_app
 from auditize.config import get_config, init_config
 from auditize.database import init_dbm
-from auditize.mcp import mcp
+from auditize.mcp.app import mcp
 
 __all__ = ("build_app", "build_api_app", "app_factory")
 
