@@ -29,7 +29,7 @@ TOOL_MAX_RESULTS = 20
 async def get_authorized(
     db_session: AsyncSession = Depends(open_db_session),
 ) -> Authenticated:
-    headers = get_http_headers()
+    headers = get_http_headers(include_all=True)
 
     authorization_header = headers.get("authorization")
     if not authorization_header:
