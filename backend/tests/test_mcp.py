@@ -28,7 +28,7 @@ def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
         "auditize.mcp.get_http_headers",
         return_value={
             "x-auditize-repo": repo.id,
-            "Authorization": f"Bearer {apikey.key}",
+            "authorization": f"Bearer {apikey.key}",
         },
     ):
         yield

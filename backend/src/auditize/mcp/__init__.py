@@ -45,7 +45,7 @@ async def get_authorized(
 ) -> Authenticated:
     headers = get_http_headers()
 
-    authorization_header = headers.get("Authorization")
+    authorization_header = headers.get("authorization")
     if not authorization_header:
         raise ToolError("Authorization header is required")
 
