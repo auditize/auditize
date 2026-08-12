@@ -8,6 +8,7 @@ from fastmcp.client.client import CallToolResult
 from fastmcp.client.transports import FastMCPTransport
 
 from auditize.mcp import mcp
+from conftest import ApikeyBuilder
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
 from helpers.repo import PreparedRepo
@@ -58,6 +59,24 @@ async def test_search_logs(
             "search_logs", {"search_params": {"actor_ref": "2"}}
         )
     assert _get_tool_data(result) == [log_2.expected_api_response()]
+
+
+async def test_search_logs_limited_permissions(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    log = await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
+    )
+    apikey = await apikey_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}
+    )
+
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool("search_logs", {"search_params": {}})
+    assert _get_tool_data(result) == [log.expected_api_response()]
 
 
 async def test_search_actors(

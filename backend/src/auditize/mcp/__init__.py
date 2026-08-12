@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Annotated
 
 from fastmcp import FastMCP
@@ -60,9 +61,14 @@ async def get_log_service(
 ) -> LogService:
     headers = get_http_headers()
 
-    repo_id = headers.get("x-auditize-repo")
-    if not repo_id:
+    raw_repo_id = headers.get("x-auditize-repo")
+    if not raw_repo_id:
         raise ToolError("X-Auditize-Repo header is required")
+
+    try:
+        repo_id = uuid.UUID(raw_repo_id)
+    except ValueError:
+        raise ToolError(f"Invalid X-Auditize-Repo header {raw_repo_id!r}")
 
     if not authenticated.comply(can_read_logs_from_repo(repo_id)):
         raise ToolError(
