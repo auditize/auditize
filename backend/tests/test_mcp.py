@@ -1,8 +1,10 @@
 from contextlib import contextmanager
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 from fastmcp.client import Client
+from fastmcp.client.client import CallToolResult
 from fastmcp.client.transports import FastMCPTransport
 
 from auditize.mcp import mcp
@@ -34,6 +36,10 @@ def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
         yield
 
 
+def _get_tool_data(result: CallToolResult) -> Any:
+    return result.structured_content["result"] if result.structured_content else None
+
+
 async def test_search_logs(
     repo: PreparedRepo,
     log_read_apikey: PreparedApikey,
@@ -51,7 +57,7 @@ async def test_search_logs(
         result = await mcp_client.call_tool(
             "search_logs", {"search_params": {"actor_ref": "2"}}
         )
-    assert result.data == [log_2.expected_api_response()]
+    assert _get_tool_data(result) == [log_2.expected_api_response()]
 
 
 async def test_search_actors(
@@ -69,7 +75,7 @@ async def test_search_actors(
 
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_actors", {"query": "jane"})
-    assert result.data == [["Jane Doe", "2"]]
+    assert _get_tool_data(result) == [["Jane Doe", "2"]]
 
 
 async def test_search_resources(
@@ -89,7 +95,7 @@ async def test_search_resources(
 
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_resources", {"query": "config"})
-    assert result.data == [["Config Profile 123", "cfg-1"]]
+    assert _get_tool_data(result) == [["Config Profile 123", "cfg-1"]]
 
 
 async def test_search_rich_tags(
@@ -110,7 +116,7 @@ async def test_search_rich_tags(
 
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_rich_tags", {"query": "prof"})
-    assert result.data == [["Config Profile 123", "cfg-1"]]
+    assert _get_tool_data(result) == [["Config Profile 123", "cfg-1"]]
 
 
 async def test_search_entities(
@@ -122,7 +128,7 @@ async def test_search_entities(
     await repo.create_log_with_entity_path(log_rw_client, ["Customer", "Organization"])
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_entities", {"query": "orga"})
-    assert result.data == [
+    assert _get_tool_data(result) == [
         {
             "ref": "Organization",
             "name": "Organization",
@@ -140,7 +146,7 @@ async def test_list_action_types(
     await repo.create_log(log_rw_client)
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_action_types")
-    assert result.data == ["user_login"]
+    assert _get_tool_data(result) == ["user_login"]
 
 
 async def test_list_action_categories(
@@ -152,4 +158,4 @@ async def test_list_action_categories(
     await repo.create_log(log_rw_client)
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_action_categories")
-    assert result.data == ["authentication"]
+    assert _get_tool_data(result) == ["authentication"]
