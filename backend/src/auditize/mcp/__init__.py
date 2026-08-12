@@ -29,7 +29,6 @@ _TOOL_ANNOTATIONS = ToolAnnotations(
 mcp = FastMCP(
     "Auditize MCP Connector",
     "Provides Auditize log exploring capabilities for a given repository",
-    log_level="INFO",
 )
 
 mcp.add_middleware(
