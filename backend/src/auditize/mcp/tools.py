@@ -23,8 +23,6 @@ TOOL_ANNOTATIONS = ToolAnnotations(
     openWorldHint=False,  # Only internal data
 )
 
-TOOL_MAX_RESULTS = 20
-
 
 async def get_authorized(
     db_session: AsyncSession = Depends(open_db_session),
@@ -33,7 +31,7 @@ async def get_authorized(
 
     authorization_header = headers.get("authorization")
     if not authorization_header:
-        raise ToolError(f"Authorization header is required (actual headers: {headers})")
+        raise ToolError(f"Authorization header is required")
 
     bearer_token = get_bearer_token_from_authorization_header(authorization_header)
     authenticated = await authenticate_apikey(db_session, bearer_token)
@@ -151,7 +149,7 @@ async def search_rich_tags(
     identifier and provides more accurate filtering than tag_name.
 
     Example workflow:
-    1. Call search_tags(query="abc") to find tags
+    1. Call search_rich_tags(query="abc") to find tags
     2. Use the tag_ref from the results: search_logs(tag_ref="profile:abc")
 
     At most 10 results are returned."""
