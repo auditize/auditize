@@ -634,6 +634,7 @@ class LogService:
         self,
         *,
         nested: str = None,
+        nested_filter: dict = None,
         fields: list[str],
         query: dict = None,
         limit: int,
@@ -653,6 +654,17 @@ class LogService:
                 }
             },
         }
+        if nested_filter:
+            # restrict the aggregation itself to the nested sub-documents matching
+            # nested_filter, as opposed to `query` which only filters top-level documents
+            # (a document with at least one matching nested sub-document still has all its
+            # nested sub-documents, matching or not, included in the aggregation)
+            aggregations = {
+                "matching": {
+                    "filter": nested_filter,
+                    "aggs": aggregations,
+                }
+            }
         if nested:
             aggregations = {
                 "nested_group_by": {
@@ -671,9 +683,12 @@ class LogService:
         )
 
         if nested:
-            group_by_result = resp["aggregations"]["nested_group_by"]["group_by"]
+            group_by_result = resp["aggregations"]["nested_group_by"]
         else:
-            group_by_result = resp["aggregations"]["group_by"]
+            group_by_result = resp["aggregations"]
+        if nested_filter:
+            group_by_result = group_by_result["matching"]
+        group_by_result = group_by_result["group_by"]
 
         if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
             next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
@@ -829,13 +844,11 @@ class LogService:
     ) -> tuple[list[str], str]:
         values, next_cursor = await self._get_paginated_agg_multi_fields(
             nested="tags",
+            nested_filter={"bool": {"must_not": {"exists": {"field": "tags.ref"}}}},
             fields=["tags.type"],
-            query={
-                "nested": {
-                    "path": "tags",
-                    "query": {"bool": {"must_not": {"exists": {"field": "tags.ref"}}}},
-                }
-            },
+            query=await self._build_es_query(
+                None, authorized_entities=authorized_entities
+            ),
             limit=limit,
             pagination_cursor=pagination_cursor,
         )

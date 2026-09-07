@@ -236,6 +236,95 @@ async def list_action_categories(
     return action_categories
 
 
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_actor_types(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List all possible actor types.
+
+    When searching for logs on a specific actor type:
+    - first: call list_actor_types to get the list of possible actor types
+    - then: use the actor_type with search_logs(actor_type=...)
+    """
+    actor_types, _ = await log_service.get_log_actor_types(
+        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    )
+    return actor_types
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_resource_types(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List all possible resource types.
+
+    When searching for logs on a specific resource type:
+    - first: call list_resource_types to get the list of possible resource types
+    - then: use the resource_type with search_logs(resource_type=...)
+    """
+    resource_types, _ = await log_service.get_log_resource_types(
+        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    )
+    return resource_types
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_attachment_types(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List all possible attachment types.
+
+    When searching for logs on a specific attachment type:
+    - first: call list_attachment_types to get the list of possible attachment types
+    - then: use the attachment_type with search_logs(attachment_type=...)
+    """
+    attachment_types, _ = await log_service.get_log_attachment_types(
+        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    )
+    return attachment_types
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_attachment_mime_types(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List all possible attachment MIME types.
+
+    When searching for logs on a specific attachment MIME type:
+    - first: call list_attachment_mime_types to get the list of possible attachment MIME types
+    - then: use the attachment_mime_type with search_logs(attachment_mime_type=...)
+    """
+    attachment_mime_types, _ = await log_service.get_log_attachment_mime_types(
+        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    )
+    return attachment_mime_types
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_simple_tag_types(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List all possible tag types for simple tags.
+
+    Simple tags are tags without a ref, used purely for categorization (e.g. a tag of type
+    "security"). For tags that track a resource across logs (with a name and a ref), use
+    search_rich_tags instead.
+
+    When searching for logs on a specific simple tag type:
+    - first: call list_simple_tag_types to get the list of possible simple tag types
+    - then: use the tag_type with search_logs(tag_type=...)
+    """
+    tag_types, _ = await log_service.get_log_simple_tag_types(
+        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    )
+    return tag_types
+
+
 async def _list_custom_fields(
     log_service: LogService, authorized_entities: set[str], get_data_func_name: str
 ) -> list[CustomFieldData]:

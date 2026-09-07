@@ -180,6 +180,81 @@ async def test_list_action_categories(
     assert _get_tool_data(result) == ["authentication"]
 
 
+async def test_list_actor_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
+    )
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        result = await mcp_client.call_tool("list_actor_types")
+    assert _get_tool_data(result) == ["user"]
+
+
+async def test_list_resource_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {"resource": {"type": "config", "ref": "cfg-1", "name": "Config Profile 123"}},
+    )
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        result = await mcp_client.call_tool("list_resource_types")
+    assert _get_tool_data(result) == ["config"]
+
+
+async def test_list_attachment_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    log = await repo.create_log(log_rw_client)
+    await log.upload_attachment(log_rw_client, type="text_file")
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        result = await mcp_client.call_tool("list_attachment_types")
+    assert _get_tool_data(result) == ["text_file"]
+
+
+async def test_list_attachment_mime_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    log = await repo.create_log(log_rw_client)
+    await log.upload_attachment(log_rw_client, mime_type="text/plain")
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        result = await mcp_client.call_tool("list_attachment_mime_types")
+    assert _get_tool_data(result) == ["text/plain"]
+
+
+async def test_list_simple_tag_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            "tags": [
+                {"type": "security"},
+                {"type": "config", "name": "Config Profile 123", "ref": "cfg-1"},
+            ]
+        },
+    )
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        result = await mcp_client.call_tool("list_simple_tag_types")
+    assert _get_tool_data(result) == ["security"]
+
+
 # One field per possible CustomFieldType (see auditize.log.models.CustomFieldType), sorted by
 # name since that's the order the "fields" aggregation returns them in (composite agg, asc).
 CUSTOM_FIELD_VALUES_BY_TYPE = [
