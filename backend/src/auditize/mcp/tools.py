@@ -13,7 +13,12 @@ from auditize.auth.authorizer import (
     get_bearer_token_from_authorization_header,
 )
 from auditize.database.dbm import open_db_session
-from auditize.log.models import LogEntityMcpResponse, LogResponse, LogSearchParams
+from auditize.log.models import (
+    CustomFieldData,
+    LogEntityMcpResponse,
+    LogResponse,
+    LogSearchParams,
+)
 from auditize.log.service import LogService
 from auditize.mcp.app import mcp
 from auditize.permissions.assertions import can_read_logs_from_repo
@@ -75,7 +80,14 @@ async def search_logs(
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> list[LogResponse]:
-    """Search for logs in the repository given optional keywords in the query. Return at most 10 logs."""
+    """Search for logs in the repository given optional keywords in the query. Return at most 10 logs.
+
+    To filter on custom fields (source, details, actor_extra, resource_extra), first discover
+    available field names and their type with list_source_fields / list_details_fields /
+    list_actor_extra_fields / list_resource_extra_fields, then for fields of type "enum" get
+    their possible values with the matching list_source_field_values / list_detail_field_values /
+    list_actor_extra_field_values / list_resource_extra_field_values tool.
+    """
     logs, _ = await log_service.get_logs(
         search_params=search_params, authorized_entities=authorized_entities
     )
@@ -222,3 +234,211 @@ async def list_action_categories(
         limit=100, pagination_cursor=None, authorized_entities=authorized_entities
     )
     return action_categories
+
+
+async def _list_custom_fields(
+    log_service: LogService, authorized_entities: set[str], get_data_func_name: str
+) -> list[CustomFieldData]:
+    fields, _ = await getattr(log_service, get_data_func_name)(
+        authorized_entities=authorized_entities, limit=100, pagination_cursor=None
+    )
+    return [CustomFieldData(name=name, type=type_) for name, type_ in fields]
+
+
+async def _list_custom_field_enum_values(
+    log_service: LogService,
+    authorized_entities: set[str],
+    get_data_func_name: str,
+    field_name: str,
+) -> list[str]:
+    values, _ = await getattr(log_service, get_data_func_name)(
+        field_name=field_name,
+        authorized_entities=authorized_entities,
+        limit=100,
+        pagination_cursor=None,
+    )
+    return values
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_source_fields(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[CustomFieldData]:
+    """List the available custom field names under "source", along with their type.
+
+    Use this before filtering search_logs(search_params={"source": {...}}), to discover
+    which field names actually exist in this repository.
+
+    If a field's type is "enum", call list_source_field_values(field_name) to get its
+    possible values. Other types (string, datetime, boolean, integer, float, json) have
+    unbounded values and must be filtered with a value already known (e.g. found in a
+    previous search_logs result).
+
+    At most 100 fields are returned.
+    """
+    return await _list_custom_fields(
+        log_service, authorized_entities, "get_log_source_fields"
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_source_field_values(
+    field_name: Annotated[str, "The field name, as returned by list_source_fields"],
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List the distinct known values for one "source" custom field.
+
+    Only meaningful for fields whose type is "enum" (see list_source_fields) — for any
+    other type this returns an empty list.
+
+    Example workflow:
+    1. list_source_fields() -> [{"name": "status", "type": "enum"}, ...]
+    2. list_source_field_values(field_name="status") -> ["enabled", "disabled"]
+    3. search_logs(search_params={"source": {"status": "enabled"}})
+
+    At most 100 values are returned.
+    """
+    return await _list_custom_field_enum_values(
+        log_service, authorized_entities, "get_source_enum_values", field_name
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_details_fields(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[CustomFieldData]:
+    """List the available custom field names under "details", along with their type.
+
+    Use this before filtering search_logs(search_params={"details": {...}}), to discover
+    which field names actually exist in this repository.
+
+    If a field's type is "enum", call list_detail_field_values(field_name) to get its
+    possible values. Other types (string, datetime, boolean, integer, float, json) have
+    unbounded values and must be filtered with a value already known (e.g. found in a
+    previous search_logs result).
+
+    At most 100 fields are returned.
+    """
+    return await _list_custom_fields(
+        log_service, authorized_entities, "get_log_details_fields"
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_detail_field_values(
+    field_name: Annotated[str, "The field name, as returned by list_details_fields"],
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List the distinct known values for one "details" custom field.
+
+    Only meaningful for fields whose type is "enum" (see list_details_fields) — for any
+    other type this returns an empty list.
+
+    Example workflow:
+    1. list_details_fields() -> [{"name": "status", "type": "enum"}, ...]
+    2. list_detail_field_values(field_name="status") -> ["enabled", "disabled"]
+    3. search_logs(search_params={"details": {"status": "enabled"}})
+
+    At most 100 values are returned.
+    """
+    return await _list_custom_field_enum_values(
+        log_service, authorized_entities, "get_details_enum_values", field_name
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_actor_extra_fields(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[CustomFieldData]:
+    """List the available custom field names under "actor_extra", along with their type.
+
+    Use this before filtering search_logs(search_params={"actor_extra": {...}}), to discover
+    which field names actually exist in this repository.
+
+    If a field's type is "enum", call list_actor_extra_field_values(field_name) to get its
+    possible values. Other types (string, datetime, boolean, integer, float, json) have
+    unbounded values and must be filtered with a value already known (e.g. found in a
+    previous search_logs result).
+
+    At most 100 fields are returned.
+    """
+    return await _list_custom_fields(
+        log_service, authorized_entities, "get_log_actor_extra_fields"
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_actor_extra_field_values(
+    field_name: Annotated[
+        str, "The field name, as returned by list_actor_extra_fields"
+    ],
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List the distinct known values for one "actor_extra" custom field.
+
+    Only meaningful for fields whose type is "enum" (see list_actor_extra_fields) — for any
+    other type this returns an empty list.
+
+    Example workflow:
+    1. list_actor_extra_fields() -> [{"name": "department", "type": "enum"}, ...]
+    2. list_actor_extra_field_values(field_name="department") -> ["IT", "HR"]
+    3. search_logs(search_params={"actor_extra": {"department": "IT"}})
+
+    At most 100 values are returned.
+    """
+    return await _list_custom_field_enum_values(
+        log_service, authorized_entities, "get_actor_extra_enum_values", field_name
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_resource_extra_fields(
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[CustomFieldData]:
+    """List the available custom field names under "resource_extra", along with their type.
+
+    Use this before filtering search_logs(search_params={"resource_extra": {...}}), to discover
+    which field names actually exist in this repository.
+
+    If a field's type is "enum", call list_resource_extra_field_values(field_name) to get its
+    possible values. Other types (string, datetime, boolean, integer, float, json) have
+    unbounded values and must be filtered with a value already known (e.g. found in a
+    previous search_logs result).
+
+    At most 100 fields are returned.
+    """
+    return await _list_custom_fields(
+        log_service, authorized_entities, "get_log_resource_extra_fields"
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def list_resource_extra_field_values(
+    field_name: Annotated[
+        str, "The field name, as returned by list_resource_extra_fields"
+    ],
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> list[str]:
+    """List the distinct known values for one "resource_extra" custom field.
+
+    Only meaningful for fields whose type is "enum" (see list_resource_extra_fields) — for
+    any other type this returns an empty list.
+
+    Example workflow:
+    1. list_resource_extra_fields() -> [{"name": "environment", "type": "enum"}, ...]
+    2. list_resource_extra_field_values(field_name="environment") -> ["production", "staging"]
+    3. search_logs(search_params={"resource_extra": {"environment": "production"}})
+
+    At most 100 values are returned.
+    """
+    return await _list_custom_field_enum_values(
+        log_service, authorized_entities, "get_resource_extra_enum_values", field_name
+    )
