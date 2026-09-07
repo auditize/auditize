@@ -15,17 +15,26 @@ from auditize.auth.authorizer import (
 from auditize.database.dbm import open_db_session
 from auditize.log.models import (
     CustomFieldData,
-    LogEntityMcpResponse,
     LogResponse,
     LogSearchParams,
 )
 from auditize.log.service import LogService
 from auditize.mcp.app import mcp
+from auditize.mcp.models import LogEntityMcpResponse, PaginatedMcpResponse
 from auditize.permissions.assertions import can_read_logs_from_repo
 
 TOOL_ANNOTATIONS = ToolAnnotations(
     readOnlyHint=True,
     openWorldHint=False,  # Only internal data
+)
+
+# Page size used by all tools, except search_logs which returns heavier objects.
+DEFAULT_TOOL_PAGE_LIMIT = 50
+SEARCH_LOGS_PAGE_LIMIT = 10
+
+CURSOR_PARAM_DESCRIPTION = (
+    "Pagination cursor from a previous call's next_cursor field. "
+    "Leave unset to get the first page."
 )
 
 
@@ -77,10 +86,15 @@ def get_authorized_entities(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def search_logs(
     search_params: LogSearchParams,
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[LogResponse]:
-    """Search for logs in the repository given optional keywords in the query. Return at most 10 logs.
+) -> PaginatedMcpResponse[LogResponse]:
+    """Search for logs in the repository given optional keywords in the query.
+
+    Results are paginated (10 logs per page). If the response's `next_cursor` is not
+    null, call this tool again with the same search_params and `cursor` set to that
+    value to fetch the next page.
 
     To filter on custom fields (source, details, actor_extra, resource_extra), first discover
     available field names and their type with list_source_fields / list_details_fields /
@@ -88,21 +102,30 @@ async def search_logs(
     their possible values with the matching list_source_field_values / list_detail_field_values /
     list_actor_extra_field_values / list_resource_extra_field_values tool.
     """
-    logs, _ = await log_service.get_logs(
-        search_params=search_params, authorized_entities=authorized_entities
+    logs, next_cursor = await log_service.get_logs(
+        search_params=search_params,
+        authorized_entities=authorized_entities,
+        limit=SEARCH_LOGS_PAGE_LIMIT,
+        pagination_cursor=cursor,
     )
-    return [LogResponse.model_validate(log.model_dump()) for log in logs]
+    return PaginatedMcpResponse(
+        items=[LogResponse.model_validate(log.model_dump()) for log in logs],
+        next_cursor=next_cursor,
+    )
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def search_actors(
     query: Annotated[str | None, "The query (keywords) to search for actors"],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[tuple[str, str]]:
+) -> PaginatedMcpResponse[tuple[str, str]]:
     """Search for actors on partial name match ("Jo Do" will match "John Doe").
 
-    Returns a list of tuples (actor_name, actor_ref) for matching actors.
+    Returns a paginated list of tuples (actor_name, actor_ref) for matching actors. If
+    the response's `next_cursor` is not null, call this tool again with the same query
+    and `cursor` set to that value to fetch the next page.
 
     IMPORTANT: When searching for logs, use the actor_ref (second element of each tuple)
     with search_logs(actor_ref=...) rather than actor_name. The actor_ref is the unique
@@ -111,23 +134,28 @@ async def search_actors(
     Example workflow:
     1. Call search_actors(query="John") to find actors
     2. Use the actor_ref from the results: search_logs(actor_ref="user:123")
-
-    At most 10 results are returned."""
-    actors, _ = await log_service.get_log_actor_names(
-        search=query, authorized_entities=authorized_entities
+    """
+    actors, next_cursor = await log_service.get_log_actor_names(
+        search=query,
+        authorized_entities=authorized_entities,
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
     )
-    return actors
+    return PaginatedMcpResponse(items=actors, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def search_resources(
     query: Annotated[str | None, "The query (keywords) to search for resources"],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[tuple[str, str]]:
+) -> PaginatedMcpResponse[tuple[str, str]]:
     """Search for resources on partial name match ("Config" will match "Config Profile 123").
 
-    Returns a list of tuples (resource_name, resource_ref) for matching resources.
+    Returns a paginated list of tuples (resource_name, resource_ref) for matching resources.
+    If the response's `next_cursor` is not null, call this tool again with the same query
+    and `cursor` set to that value to fetch the next page.
 
     IMPORTANT: When searching for logs, use the resource_ref (second element of each tuple)
     with search_logs(resource_ref=...) rather than resource_name. The resource_ref is the unique
@@ -136,25 +164,30 @@ async def search_resources(
     Example workflow:
     1. Call search_resources(query="Config") to find resources
     2. Use the resource_ref from the results: search_logs(resource_ref="config:123")
-
-    At most 10 results are returned."""
-    resources, _ = await log_service.get_log_resource_names(
-        search=query, authorized_entities=authorized_entities
+    """
+    resources, next_cursor = await log_service.get_log_resource_names(
+        search=query,
+        authorized_entities=authorized_entities,
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
     )
-    return resources
+    return PaginatedMcpResponse(items=resources, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def search_rich_tags(
     query: Annotated[str | None, "The query (keywords) to search for rich tags"],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[tuple[str, str]]:
+) -> PaginatedMcpResponse[tuple[str, str]]:
     """Search for rich tags on partial name match ("abc" will match "Profile ABC").
 
     Rich tags are tags that tracks a resource accross logs.
 
-    Returns a list of tuples (tag_name, tag_ref) for matching tags.
+    Returns a paginated list of tuples (tag_name, tag_ref) for matching tags. If the
+    response's `next_cursor` is not null, call this tool again with the same query and
+    `cursor` set to that value to fetch the next page.
 
     IMPORTANT: When searching for logs, use the tag_ref (second element of each tuple)
     with search_logs(tag_ref=...) rather than tag_name. The tag_ref is the unique
@@ -163,175 +196,241 @@ async def search_rich_tags(
     Example workflow:
     1. Call search_rich_tags(query="abc") to find tags
     2. Use the tag_ref from the results: search_logs(tag_ref="profile:abc")
-
-    At most 10 results are returned."""
-    tags, _ = await log_service.get_log_tag_names(
-        search=query, authorized_entities=authorized_entities
+    """
+    tags, next_cursor = await log_service.get_log_tag_names(
+        search=query,
+        authorized_entities=authorized_entities,
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
     )
-    return tags
+    return PaginatedMcpResponse(items=tags, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def search_entities(
     query: Annotated[str, "The query (keywords) to search for entities"],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[LogEntityMcpResponse]:
+) -> PaginatedMcpResponse[LogEntityMcpResponse]:
     """Search for entities on partial name match ("Ent" will match "Entity 1").
 
-    Returns a list of LogEntityMcpResponse for matching entities.
+    Returns a paginated list of LogEntityMcpResponse for matching entities. If the
+    response's `next_cursor` is not null, call this tool again with the same query and
+    `cursor` set to that value to fetch the next page.
 
     When searching for logs on a specific entity:
     - first: call search_entities to get the list of possible entities
     - then: use the ref of the entity with search_logs(entity_ref=ref)
-
-    At most 10 results are returned."""
-    entities, _ = await log_service.get_log_entities(
-        search=query, authorized_entities=authorized_entities
+    """
+    entities, next_cursor = await log_service.get_log_entities(
+        search=query,
+        authorized_entities=authorized_entities,
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
     )
 
-    return [
-        LogEntityMcpResponse(
-            ref=entity.ref,
-            name=entity.name,
-            path=" > ".join(
-                [ent.name async for ent in log_service.iter_on_log_entity_path(entity)]
-            ),
-        )
-        for entity in entities
-    ]
+    return PaginatedMcpResponse(
+        items=[
+            LogEntityMcpResponse(
+                ref=entity.ref,
+                name=entity.name,
+                path=" > ".join(
+                    [
+                        ent.name
+                        async for ent in log_service.iter_on_log_entity_path(entity)
+                    ]
+                ),
+            )
+            for entity in entities
+        ],
+        next_cursor=next_cursor,
+    )
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_action_types(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List all possible action types.
+
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
 
     When searching for logs on a specific action type:
     - first: call list_action_types to get the list of possible action types
     - then: use the action_type with search_logs(action_type=...)
     """
-    action_types, _ = await log_service.get_log_action_types(
-        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    action_types, next_cursor = await log_service.get_log_action_types(
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
+        authorized_entities=authorized_entities,
     )
-    return action_types
+    return PaginatedMcpResponse(items=action_types, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_action_categories(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List all possible action categories (action categories are used to group action types).
+
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
 
     When searching for logs on a specific action category:
     - first: call list_action_categories to get the list of possible action categories
     - then: use the action_category with search_logs(action_category=...)
     """
-    action_categories, _ = await log_service.get_log_action_categories(
-        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    action_categories, next_cursor = await log_service.get_log_action_categories(
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
+        authorized_entities=authorized_entities,
     )
-    return action_categories
+    return PaginatedMcpResponse(items=action_categories, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_actor_types(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List all possible actor types.
+
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
 
     When searching for logs on a specific actor type:
     - first: call list_actor_types to get the list of possible actor types
     - then: use the actor_type with search_logs(actor_type=...)
     """
-    actor_types, _ = await log_service.get_log_actor_types(
-        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    actor_types, next_cursor = await log_service.get_log_actor_types(
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
+        authorized_entities=authorized_entities,
     )
-    return actor_types
+    return PaginatedMcpResponse(items=actor_types, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_resource_types(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List all possible resource types.
+
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
 
     When searching for logs on a specific resource type:
     - first: call list_resource_types to get the list of possible resource types
     - then: use the resource_type with search_logs(resource_type=...)
     """
-    resource_types, _ = await log_service.get_log_resource_types(
-        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    resource_types, next_cursor = await log_service.get_log_resource_types(
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
+        authorized_entities=authorized_entities,
     )
-    return resource_types
+    return PaginatedMcpResponse(items=resource_types, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_attachment_types(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List all possible attachment types.
+
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
 
     When searching for logs on a specific attachment type:
     - first: call list_attachment_types to get the list of possible attachment types
     - then: use the attachment_type with search_logs(attachment_type=...)
     """
-    attachment_types, _ = await log_service.get_log_attachment_types(
-        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    attachment_types, next_cursor = await log_service.get_log_attachment_types(
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
+        authorized_entities=authorized_entities,
     )
-    return attachment_types
+    return PaginatedMcpResponse(items=attachment_types, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_attachment_mime_types(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List all possible attachment MIME types.
+
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
 
     When searching for logs on a specific attachment MIME type:
     - first: call list_attachment_mime_types to get the list of possible attachment MIME types
     - then: use the attachment_mime_type with search_logs(attachment_mime_type=...)
     """
-    attachment_mime_types, _ = await log_service.get_log_attachment_mime_types(
-        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    (
+        attachment_mime_types,
+        next_cursor,
+    ) = await log_service.get_log_attachment_mime_types(
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
+        authorized_entities=authorized_entities,
     )
-    return attachment_mime_types
+    return PaginatedMcpResponse(items=attachment_mime_types, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_simple_tag_types(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List all possible tag types for simple tags.
 
     Simple tags are tags without a ref, used purely for categorization (e.g. a tag of type
     "security"). For tags that track a resource across logs (with a name and a ref), use
     search_rich_tags instead.
 
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
+
     When searching for logs on a specific simple tag type:
     - first: call list_simple_tag_types to get the list of possible simple tag types
     - then: use the tag_type with search_logs(tag_type=...)
     """
-    tag_types, _ = await log_service.get_log_simple_tag_types(
-        limit=100, pagination_cursor=None, authorized_entities=authorized_entities
+    tag_types, next_cursor = await log_service.get_log_simple_tag_types(
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
+        authorized_entities=authorized_entities,
     )
-    return tag_types
+    return PaginatedMcpResponse(items=tag_types, next_cursor=next_cursor)
 
 
 async def _list_custom_fields(
-    log_service: LogService, authorized_entities: set[str], get_data_func_name: str
-) -> list[CustomFieldData]:
-    fields, _ = await getattr(log_service, get_data_func_name)(
-        authorized_entities=authorized_entities, limit=100, pagination_cursor=None
+    log_service: LogService,
+    authorized_entities: set[str],
+    get_data_func_name: str,
+    cursor: str | None,
+) -> PaginatedMcpResponse[CustomFieldData]:
+    fields, next_cursor = await getattr(log_service, get_data_func_name)(
+        authorized_entities=authorized_entities,
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
     )
-    return [CustomFieldData(name=name, type=type_) for name, type_ in fields]
+    return PaginatedMcpResponse(
+        items=[CustomFieldData(name=name, type=type_) for name, type_ in fields],
+        next_cursor=next_cursor,
+    )
 
 
 async def _list_custom_field_enum_values(
@@ -339,21 +438,23 @@ async def _list_custom_field_enum_values(
     authorized_entities: set[str],
     get_data_func_name: str,
     field_name: str,
-) -> list[str]:
-    values, _ = await getattr(log_service, get_data_func_name)(
+    cursor: str | None,
+) -> PaginatedMcpResponse[str]:
+    values, next_cursor = await getattr(log_service, get_data_func_name)(
         field_name=field_name,
         authorized_entities=authorized_entities,
-        limit=100,
-        pagination_cursor=None,
+        limit=DEFAULT_TOOL_PAGE_LIMIT,
+        pagination_cursor=cursor,
     )
-    return values
+    return PaginatedMcpResponse(items=values, next_cursor=next_cursor)
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_source_fields(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[CustomFieldData]:
+) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "source", along with their type.
 
     Use this before filtering search_logs(search_params={"source": {...}}), to discover
@@ -364,19 +465,21 @@ async def list_source_fields(
     unbounded values and must be filtered with a value already known (e.g. found in a
     previous search_logs result).
 
-    At most 100 fields are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_fields(
-        log_service, authorized_entities, "get_log_source_fields"
+        log_service, authorized_entities, "get_log_source_fields", cursor
     )
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_source_field_values(
     field_name: Annotated[str, "The field name, as returned by list_source_fields"],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "source" custom field.
 
     Only meaningful for fields whose type is "enum" (see list_source_fields) — for any
@@ -387,18 +490,20 @@ async def list_source_field_values(
     2. list_source_field_values(field_name="status") -> ["enabled", "disabled"]
     3. search_logs(search_params={"source": {"status": "enabled"}})
 
-    At most 100 values are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with the same field_name and `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_field_enum_values(
-        log_service, authorized_entities, "get_source_enum_values", field_name
+        log_service, authorized_entities, "get_source_enum_values", field_name, cursor
     )
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_details_fields(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[CustomFieldData]:
+) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "details", along with their type.
 
     Use this before filtering search_logs(search_params={"details": {...}}), to discover
@@ -409,19 +514,21 @@ async def list_details_fields(
     unbounded values and must be filtered with a value already known (e.g. found in a
     previous search_logs result).
 
-    At most 100 fields are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_fields(
-        log_service, authorized_entities, "get_log_details_fields"
+        log_service, authorized_entities, "get_log_details_fields", cursor
     )
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_detail_field_values(
     field_name: Annotated[str, "The field name, as returned by list_details_fields"],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "details" custom field.
 
     Only meaningful for fields whose type is "enum" (see list_details_fields) — for any
@@ -432,18 +539,20 @@ async def list_detail_field_values(
     2. list_detail_field_values(field_name="status") -> ["enabled", "disabled"]
     3. search_logs(search_params={"details": {"status": "enabled"}})
 
-    At most 100 values are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with the same field_name and `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_field_enum_values(
-        log_service, authorized_entities, "get_details_enum_values", field_name
+        log_service, authorized_entities, "get_details_enum_values", field_name, cursor
     )
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_actor_extra_fields(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[CustomFieldData]:
+) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "actor_extra", along with their type.
 
     Use this before filtering search_logs(search_params={"actor_extra": {...}}), to discover
@@ -454,10 +563,11 @@ async def list_actor_extra_fields(
     unbounded values and must be filtered with a value already known (e.g. found in a
     previous search_logs result).
 
-    At most 100 fields are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_fields(
-        log_service, authorized_entities, "get_log_actor_extra_fields"
+        log_service, authorized_entities, "get_log_actor_extra_fields", cursor
     )
 
 
@@ -466,9 +576,10 @@ async def list_actor_extra_field_values(
     field_name: Annotated[
         str, "The field name, as returned by list_actor_extra_fields"
     ],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "actor_extra" custom field.
 
     Only meaningful for fields whose type is "enum" (see list_actor_extra_fields) — for any
@@ -479,18 +590,24 @@ async def list_actor_extra_field_values(
     2. list_actor_extra_field_values(field_name="department") -> ["IT", "HR"]
     3. search_logs(search_params={"actor_extra": {"department": "IT"}})
 
-    At most 100 values are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with the same field_name and `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_field_enum_values(
-        log_service, authorized_entities, "get_actor_extra_enum_values", field_name
+        log_service,
+        authorized_entities,
+        "get_actor_extra_enum_values",
+        field_name,
+        cursor,
     )
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_resource_extra_fields(
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[CustomFieldData]:
+) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "resource_extra", along with their type.
 
     Use this before filtering search_logs(search_params={"resource_extra": {...}}), to discover
@@ -501,10 +618,11 @@ async def list_resource_extra_fields(
     unbounded values and must be filtered with a value already known (e.g. found in a
     previous search_logs result).
 
-    At most 100 fields are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_fields(
-        log_service, authorized_entities, "get_log_resource_extra_fields"
+        log_service, authorized_entities, "get_log_resource_extra_fields", cursor
     )
 
 
@@ -513,9 +631,10 @@ async def list_resource_extra_field_values(
     field_name: Annotated[
         str, "The field name, as returned by list_resource_extra_fields"
     ],
+    cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
     log_service: LogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
-) -> list[str]:
+) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "resource_extra" custom field.
 
     Only meaningful for fields whose type is "enum" (see list_resource_extra_fields) — for
@@ -526,8 +645,13 @@ async def list_resource_extra_field_values(
     2. list_resource_extra_field_values(field_name="environment") -> ["production", "staging"]
     3. search_logs(search_params={"resource_extra": {"environment": "production"}})
 
-    At most 100 values are returned.
+    Results are paginated. If the response's `next_cursor` is not null, call this tool
+    again with the same field_name and `cursor` set to that value to fetch the next page.
     """
     return await _list_custom_field_enum_values(
-        log_service, authorized_entities, "get_resource_extra_enum_values", field_name
+        log_service,
+        authorized_entities,
+        "get_resource_extra_enum_values",
+        field_name,
+        cursor,
     )

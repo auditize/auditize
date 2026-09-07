@@ -38,7 +38,7 @@ def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
 
 
 def _get_tool_data(result: CallToolResult) -> Any:
-    return result.structured_content["result"] if result.structured_content else None
+    return result.structured_content if result.structured_content else None
 
 
 async def test_search_logs(
@@ -58,7 +58,10 @@ async def test_search_logs(
         result = await mcp_client.call_tool(
             "search_logs", {"search_params": {"actor_ref": "2"}}
         )
-    assert _get_tool_data(result) == [log_2.expected_api_response()]
+    assert _get_tool_data(result) == {
+        "items": [log_2.expected_api_response()],
+        "next_cursor": None,
+    }
 
 
 async def test_search_logs_limited_permissions(
@@ -76,7 +79,44 @@ async def test_search_logs_limited_permissions(
 
     with mock_mcp_http_headers(repo, apikey):
         result = await mcp_client.call_tool("search_logs", {"search_params": {}})
-    assert _get_tool_data(result) == [log.expected_api_response()]
+    assert _get_tool_data(result) == {
+        "items": [log.expected_api_response()],
+        "next_cursor": None,
+    }
+
+
+async def test_search_logs_pagination(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    # emitted_at defaults to "now", so logs created later sort first (search_logs
+    # orders by emitted_at desc)
+    logs = [await repo.create_log_with(log_rw_client, {}) for _ in range(11)]
+    logs.reverse()
+
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        first_page = await mcp_client.call_tool("search_logs", {"search_params": {}})
+    first_page_data = _get_tool_data(first_page)
+    assert first_page_data["items"] == [
+        log.expected_api_response() for log in logs[:10]
+    ]
+    assert first_page_data["next_cursor"] is not None
+
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        second_page = await mcp_client.call_tool(
+            "search_logs",
+            {
+                "search_params": {},
+                "cursor": first_page_data["next_cursor"],
+            },
+        )
+    second_page_data = _get_tool_data(second_page)
+    assert second_page_data["items"] == [
+        log.expected_api_response() for log in logs[10:]
+    ]
+    assert second_page_data["next_cursor"] is None
 
 
 async def test_search_actors(
@@ -94,7 +134,10 @@ async def test_search_actors(
 
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_actors", {"query": "jane"})
-    assert _get_tool_data(result) == [["Jane Doe", "2"]]
+    assert _get_tool_data(result) == {
+        "items": [["Jane Doe", "2"]],
+        "next_cursor": None,
+    }
 
 
 async def test_search_resources(
@@ -114,7 +157,10 @@ async def test_search_resources(
 
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_resources", {"query": "config"})
-    assert _get_tool_data(result) == [["Config Profile 123", "cfg-1"]]
+    assert _get_tool_data(result) == {
+        "items": [["Config Profile 123", "cfg-1"]],
+        "next_cursor": None,
+    }
 
 
 async def test_search_rich_tags(
@@ -135,7 +181,10 @@ async def test_search_rich_tags(
 
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_rich_tags", {"query": "prof"})
-    assert _get_tool_data(result) == [["Config Profile 123", "cfg-1"]]
+    assert _get_tool_data(result) == {
+        "items": [["Config Profile 123", "cfg-1"]],
+        "next_cursor": None,
+    }
 
 
 async def test_search_entities(
@@ -147,13 +196,16 @@ async def test_search_entities(
     await repo.create_log_with_entity_path(log_rw_client, ["Customer", "Organization"])
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("search_entities", {"query": "orga"})
-    assert _get_tool_data(result) == [
-        {
-            "ref": "Organization",
-            "name": "Organization",
-            "path": "Customer > Organization",
-        }
-    ]
+    assert _get_tool_data(result) == {
+        "items": [
+            {
+                "ref": "Organization",
+                "name": "Organization",
+                "path": "Customer > Organization",
+            }
+        ],
+        "next_cursor": None,
+    }
 
 
 async def test_list_action_types(
@@ -165,7 +217,7 @@ async def test_list_action_types(
     await repo.create_log(log_rw_client)
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_action_types")
-    assert _get_tool_data(result) == ["user_login"]
+    assert _get_tool_data(result) == {"items": ["user_login"], "next_cursor": None}
 
 
 async def test_list_action_categories(
@@ -177,7 +229,10 @@ async def test_list_action_categories(
     await repo.create_log(log_rw_client)
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_action_categories")
-    assert _get_tool_data(result) == ["authentication"]
+    assert _get_tool_data(result) == {
+        "items": ["authentication"],
+        "next_cursor": None,
+    }
 
 
 async def test_list_actor_types(
@@ -191,7 +246,7 @@ async def test_list_actor_types(
     )
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_actor_types")
-    assert _get_tool_data(result) == ["user"]
+    assert _get_tool_data(result) == {"items": ["user"], "next_cursor": None}
 
 
 async def test_list_resource_types(
@@ -206,7 +261,7 @@ async def test_list_resource_types(
     )
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_resource_types")
-    assert _get_tool_data(result) == ["config"]
+    assert _get_tool_data(result) == {"items": ["config"], "next_cursor": None}
 
 
 async def test_list_attachment_types(
@@ -219,7 +274,7 @@ async def test_list_attachment_types(
     await log.upload_attachment(log_rw_client, type="text_file")
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_attachment_types")
-    assert _get_tool_data(result) == ["text_file"]
+    assert _get_tool_data(result) == {"items": ["text_file"], "next_cursor": None}
 
 
 async def test_list_attachment_mime_types(
@@ -232,7 +287,7 @@ async def test_list_attachment_mime_types(
     await log.upload_attachment(log_rw_client, mime_type="text/plain")
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_attachment_mime_types")
-    assert _get_tool_data(result) == ["text/plain"]
+    assert _get_tool_data(result) == {"items": ["text/plain"], "next_cursor": None}
 
 
 async def test_list_simple_tag_types(
@@ -252,7 +307,7 @@ async def test_list_simple_tag_types(
     )
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool("list_simple_tag_types")
-    assert _get_tool_data(result) == ["security"]
+    assert _get_tool_data(result) == {"items": ["security"], "next_cursor": None}
 
 
 # One field per possible CustomFieldType (see auditize.log.models.CustomFieldType), sorted by
@@ -323,7 +378,10 @@ async def test_list_custom_fields(
 ):
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool(tool_name)
-    assert _get_tool_data(result) == EXPECTED_CUSTOM_FIELDS
+    assert _get_tool_data(result) == {
+        "items": EXPECTED_CUSTOM_FIELDS,
+        "next_cursor": None,
+    }
 
 
 @pytest.mark.usefixtures("log_with_custom_fields")
@@ -348,4 +406,4 @@ async def test_list_custom_field_values(
     with mock_mcp_http_headers(repo, log_read_apikey):
         result = await mcp_client.call_tool(tool_name, {"field_name": field_name})
     expected = ["enum_value"] if field_type == "enum" else []
-    assert _get_tool_data(result) == expected
+    assert _get_tool_data(result) == {"items": expected, "next_cursor": None}
