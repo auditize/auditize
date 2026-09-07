@@ -16,7 +16,7 @@ def build_app():
     api_app = build_api_app(
         cors_allow_origins=config.cors_allow_origins, online_doc=config.online_doc
     )
-    mcp_app = mcp.http_app(path="/mcp", transport="streamable-http")
+    mcp_app = mcp.http_app(path="/logs", transport="streamable-http")
     static_app = build_static_app(cors_allow_origins=config.cors_allow_origins)
     app = FastAPI(openapi_url=None, lifespan=mcp_app.lifespan)
     app.mount("/mcp", mcp_app)
