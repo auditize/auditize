@@ -1,9 +1,8 @@
-import logging
-
 from fastmcp import FastMCP
 from fastmcp.server.middleware.logging import LoggingMiddleware
+from fastmcp.utilities.logging import configure_logging
 
-logging.basicConfig(level=logging.INFO)
+configure_logging(level="INFO")
 
 
 mcp = FastMCP(
