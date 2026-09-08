@@ -626,6 +626,20 @@ class LogService:
         )
         return resp["count"]
 
+    async def count_logs(
+        self,
+        *,
+        authorized_entities: set[str] = None,
+        search_params: LogSearchParams = None,
+    ) -> int:
+        resp = await self.es.count(
+            index=self.read_alias,
+            query=await self._build_es_query(
+                search_params, authorized_entities=authorized_entities
+            ),
+        )
+        return resp["count"]
+
     async def get_storage_size(self) -> int:
         resp = await self.es.indices.stats(index=self.read_alias)
         return resp["_all"]["primaries"]["store"]["size_in_bytes"]

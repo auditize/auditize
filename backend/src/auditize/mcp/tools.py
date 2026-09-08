@@ -115,6 +115,30 @@ async def search_logs(
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def count_logs(
+    search_params: LogSearchParams,
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> int:
+    """Count the logs in the repository matching optional keywords in the query.
+
+    Takes the same search_params as search_logs, but returns the total number of
+    matching logs instead of the logs themselves. Use this when you only need a
+    count (e.g. "how many logs...") rather than the log details.
+
+    To filter on custom fields (source, details, actor_extra, resource_extra), first discover
+    available field names and their type with list_source_fields / list_details_fields /
+    list_actor_extra_fields / list_resource_extra_fields, then for fields of type "enum" get
+    their possible values with the matching list_source_field_values / list_detail_field_values /
+    list_actor_extra_field_values / list_resource_extra_field_values tool.
+    """
+    return await log_service.count_logs(
+        search_params=search_params,
+        authorized_entities=authorized_entities,
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def search_actors(
     query: Annotated[str | None, "The query (keywords) to search for actors"],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,

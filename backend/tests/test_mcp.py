@@ -119,6 +119,30 @@ async def test_search_logs_pagination(
     assert second_page_data["next_cursor"] is None
 
 
+async def test_count_logs(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
+    )
+    await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
+    )
+
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        result = await mcp_client.call_tool(
+            "count_logs", {"search_params": {"actor_ref": "2"}}
+        )
+    assert result.data == 1
+
+    with mock_mcp_http_headers(repo, log_read_apikey):
+        result = await mcp_client.call_tool("count_logs", {"search_params": {}})
+    assert result.data == 2
+
+
 async def test_search_actors(
     repo: PreparedRepo,
     log_read_apikey: PreparedApikey,
