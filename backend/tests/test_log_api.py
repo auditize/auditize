@@ -2854,7 +2854,7 @@ class TestLogTagNames(_ConsolidatedNameRefPairsTest):
         )
         async with apikey.client() as client:
             resp = await client.assert_get_ok(
-                self.get_path(repo.id), params={"q": "123"}
+                self.get_path(repo.id), params={"q": "config"}
             )
             assert resp.json() == {
                 "items": [{"ref": "config:123", "name": "Config Profile 123"}],
