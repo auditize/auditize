@@ -253,8 +253,12 @@ function NotAuthenticatedCatchAll() {
 }
 
 function Home() {
-  const { currentUser } = useAuthenticatedUser();
+  const { currentUser } = useCurrentUser();
   const location = useLocation();
+
+  if (!currentUser) {
+    return <NotAuthenticatedCatchAll />;
+  }
 
   if (location.pathname === "/") {
     const redirection = getUserHomeRoute(currentUser);
@@ -271,44 +275,37 @@ function Home() {
 }
 
 function AppRoutes() {
-  const { isAuthenticated, declareLogin } = useCurrentUser();
-
   const router = createBrowserRouter([
-    isAuthenticated
-      ? {
-          path: "/",
-          element: <Home />,
-          children: [
-            {
-              path: "logs",
-              element: (
-                <LogNavigationStateProvider>
-                  <Logs />
-                </LogNavigationStateProvider>
-              ),
-            },
-            {
-              path: "repos",
-              element: <RepoManagement />,
-            },
-            {
-              path: "log-i18n-profiles",
-              element: <LogI18nProfileManagement />,
-            },
-            {
-              path: "users",
-              element: <UsersManagement />,
-            },
-            {
-              path: "apikeys",
-              element: <ApikeysManagement />,
-            },
-          ],
-        }
-      : {
-          path: "*",
-          element: <NotAuthenticatedCatchAll />,
+    {
+      path: "/",
+      element: <Home />,
+      children: [
+        {
+          path: "logs",
+          element: (
+            <LogNavigationStateProvider>
+              <Logs />
+            </LogNavigationStateProvider>
+          ),
         },
+        {
+          path: "repos",
+          element: <RepoManagement />,
+        },
+        {
+          path: "log-i18n-profiles",
+          element: <LogI18nProfileManagement />,
+        },
+        {
+          path: "users",
+          element: <UsersManagement />,
+        },
+        {
+          path: "apikeys",
+          element: <ApikeysManagement />,
+        },
+      ],
+    },
     {
       path: "/account-setup/:token",
       element: (
@@ -329,7 +326,7 @@ function AppRoutes() {
       path: "/login",
       element: (
         <I18nProvider>
-          <LoginForm onLogin={declareLogin} />
+          <LoginForm />
         </I18nProvider>
       ),
     },

@@ -110,14 +110,10 @@ function LoginErrorMessage({ error }: { error: Error | null }) {
   }
 }
 
-export function LoginForm({
-  onLogin,
-}: {
-  onLogin: (user: CurrentUserInfo) => void;
-}) {
+export function LoginForm({}: {}) {
   const { t } = useTranslation();
   const { lang } = useI18nContext();
-  const { currentUser } = useCurrentUser();
+  const { currentUser, declareLogin } = useCurrentUser();
   const [searchParams] = useSearchParams();
   const form = useForm({
     mode: "uncontrolled",
@@ -135,7 +131,7 @@ export function LoginForm({
     mutationFn: (values: { email: string; password: string }) =>
       logIn(values.email, values.password, lang),
     onSuccess: (user) => {
-      onLogin(user);
+      declareLogin(user);
       navigate(getPostLoginRoute(user, searchParams), { replace: true });
     },
   });
