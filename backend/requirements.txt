@@ -5,7 +5,7 @@ uvicorn[standard]
 aiocache
 certifi
 bcrypt
-Authlib
+joserfc
 apscheduler
 python-dotenv
 # NB: elasticsearch 8.x is compatible with Elasticsearch 8.x and 9.x servers

@@ -3,7 +3,7 @@ from unittest.mock import patch
 from uuid import UUID
 
 import pytest
-from authlib.jose import jwt
+from joserfc import jwk, jwt
 
 from auditize.apikey.models import ApikeyUpdate
 from auditize.apikey.service import update_apikey
@@ -132,7 +132,9 @@ async def test_auth_access_token_bad_signature():
 
     # Prepare a valid JWT session token but sign with a different key
     jwt_payload, _ = generate_access_token_payload(UUID(apikey.id), PermissionsInput())
-    jwt_token = jwt.encode({"alg": "HS256"}, jwt_payload, key="agreatsigningkey")
+    jwt_token = jwt.encode(
+        {"alg": "HS256"}, jwt_payload, jwk.import_key("agreatsigningkey", "oct")
+    )
 
     request = make_http_request(headers={"Authorization": f"Bearer aat-{jwt_token}"})
 
@@ -243,7 +245,9 @@ async def test_auth_user_invalid_session_token_bad_signature():
 
     # Prepare a valid JWT session token but sign with a different key
     jwt_payload, _ = generate_session_token_payload(user.data["email"])
-    jwt_token = jwt.encode({"alg": "HS256"}, jwt_payload, key="agreatsigningkey")
+    jwt_token = jwt.encode(
+        {"alg": "HS256"}, jwt_payload, jwk.import_key("agreatsigningkey", "oct")
+    )
 
     request = make_http_request(headers={"Cookie": f"session={jwt_token}"})
 

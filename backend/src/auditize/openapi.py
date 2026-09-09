@@ -1,5 +1,5 @@
 from fastapi.openapi.utils import get_openapi
-from fastapi.routing import APIRoute
+from fastapi.routing import APIRoute, iter_route_contexts
 
 from auditize.version import __version__
 
@@ -110,16 +110,21 @@ def _add_security_scheme(schema):
     schema["security"] = [{"apikeyAuth": []}]
 
 
-def _filter_out_internal_routes(routes):
-    for route in routes:
-        if isinstance(route, APIRoute) and "internal" not in route.tags:
-            yield route
+def _filter_out_internal_routes(contexts):
+    for context in contexts:
+        if (
+            isinstance(context.original_route, APIRoute)
+            and "internal" not in context.tags
+        ):
+            yield context
 
 
-def _filter_out_empty_tags(tags: list[dict], routes):
+def _filter_out_empty_tags(tags: list[dict], contexts):
     for tag in tags:
         if any(
-            tag["name"] in route.tags for route in routes if isinstance(route, APIRoute)
+            tag["name"] in context.tags
+            for context in contexts
+            if isinstance(context.original_route, APIRoute)
         ):
             yield tag
 
@@ -131,17 +136,15 @@ def _add_slash_api_prefix(schema):
 
 
 def get_customized_openapi_schema(app, include_internal_routes=True):
-    routes = (
-        app.routes
-        if include_internal_routes
-        else list(_filter_out_internal_routes(app.routes))
-    )
+    contexts = list(iter_route_contexts(app.routes))
+    if not include_internal_routes:
+        contexts = list(_filter_out_internal_routes(contexts))
     schema = get_openapi(
         title="Auditize",
         version=__version__,
         description="Auditize API",
-        routes=routes,
-        tags=list(_filter_out_empty_tags(_TAGS, routes)),
+        routes=contexts,
+        tags=list(_filter_out_empty_tags(_TAGS, contexts)),
     )
 
     _fix_nullable(schema)

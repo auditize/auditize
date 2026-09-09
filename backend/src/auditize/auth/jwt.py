@@ -2,22 +2,16 @@ import json
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from authlib.jose import JsonWebToken
-from authlib.jose.errors import ExpiredTokenError, JoseError
+from joserfc import jwk, jwt
+from joserfc.errors import ClaimError, ExpiredTokenError, JoseError
 
 from auditize.config import get_config
 from auditize.exceptions import AuthenticationFailure
 from auditize.helpers.datetime import now
 from auditize.permissions.models import PermissionsInput
-from auditize.permissions.service import (
-    build_permissions,
-)
-from auditize.permissions.sql_models import Permissions
 
 _SUB_PREFIX_SESSION_TOKEN = "user_email:"
 _SUB_PREFIX_ACCESS_TOKEN = "apikey_id:"
-
-jwt = JsonWebToken(["HS256"])
 
 
 def _generate_jwt_payload(data, lifetime) -> tuple[dict, datetime]:
@@ -26,25 +20,28 @@ def _generate_jwt_payload(data, lifetime) -> tuple[dict, datetime]:
 
 
 def _sign_jwt_token(payload: dict) -> str:
-    value = jwt.encode({"alg": "HS256"}, payload, key=get_config().jwt_signing_key)
-    return value.decode()
+    return jwt.encode(
+        {"alg": "HS256"}, payload, jwk.import_key(get_config().jwt_signing_key, "oct")
+    )
 
 
 def _get_jwt_token_payload(token: str) -> dict:
     # Load JWT token
     try:
-        claims = jwt.decode(token, get_config().jwt_signing_key)
-        claims.validate()
-    except ExpiredTokenError:
-        raise AuthenticationFailure("JWT token expired")
+        token = jwt.decode(token, jwk.import_key(get_config().jwt_signing_key, "oct"))
     except JoseError:
         raise AuthenticationFailure("Cannot decode JWT token")
 
-    # Ensure the token has a 'sub' field
-    if "sub" not in claims:
-        raise AuthenticationFailure("Missing 'sub' field in JWT token")
+    # Validate JWT token is not expired and sub field is present
+    claims_requests = jwt.JWTClaimsRegistry(sub={"essential": True})
+    try:
+        claims_requests.validate(token.claims)
+    except ExpiredTokenError:
+        raise AuthenticationFailure("JWT token expired")
+    except ClaimError as exc:
+        raise AuthenticationFailure(f"JWT token is invalid: {exc}")
 
-    return claims
+    return token.claims
 
 
 # NB: make this function public so we can test valid JWT tokens but signed with another key
