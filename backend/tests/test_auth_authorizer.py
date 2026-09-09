@@ -28,8 +28,6 @@ from helpers.http import HttpTestHelper, make_http_request
 from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 
-pytestmark = pytest.mark.anyio
-
 
 async def test_auth_no_auth(apikey: PreparedApikey):
     request = make_http_request()

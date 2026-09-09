@@ -36,6 +36,7 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
   "pytest",
+  "pytest-asyncio",
   "pytest-xdist",
   "httpx",
   "icecream",
@@ -47,6 +48,11 @@ doc = [
 
 [tool.uv]
 cache-keys = [{file = "pyproject.toml"}, {file = "requirements.txt"}]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 [tool.setuptools.dynamic]
 version = {attr = "auditize.version.__version__"}

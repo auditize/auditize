@@ -10,8 +10,6 @@ from auditize.version import __version__
 from conftest import RepoBuilder
 from helpers.http import HttpTestHelper
 
-pytestmark = pytest.mark.anyio
-
 
 @contextmanager
 def _mock_getpass(*args):

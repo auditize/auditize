@@ -16,8 +16,6 @@ from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 from helpers.utils import strip_dict_keys
 
-pytestmark = pytest.mark.anyio
-
 
 async def _test_repo_create(
     client: HttpTestHelper, permissions_getter: Callable[[], Awaitable]

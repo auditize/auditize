@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-import pytest
 
 from auditize.database.dbm import open_db_session
 from auditize.log.models import Emitter, EmitterType, LogCreate
@@ -10,8 +9,6 @@ from conftest import RepoBuilder
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.repo import PreparedRepo
-
-pytestmark = pytest.mark.anyio
 
 
 def make_log_data(**extra) -> LogCreate:

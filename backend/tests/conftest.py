@@ -25,14 +25,8 @@ from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 
 
-@pytest.fixture(scope="session")
-def anyio_backend():
-    # Limit the tests to only run on asyncio:
-    return "asyncio"
-
-
 @pytest.fixture(scope="session", autouse=True)
-def _config(anyio_backend):
+def _config():
     init_config(
         {
             "AUDITIZE_ES_URL": "https://localhost:9200",

@@ -1,4 +1,3 @@
-import pytest
 from httpx import Response
 
 from conftest import ApikeyBuilder
@@ -9,8 +8,6 @@ from helpers.log import UNKNOWN_UUID
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.tests import BasePermissionTests
 from helpers.user import PreparedUser
-
-pytestmark = pytest.mark.anyio
 
 
 # Make API calls as a user instead of apikey to let an empty apikeys collection

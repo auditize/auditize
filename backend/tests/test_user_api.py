@@ -24,7 +24,6 @@ from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 from helpers.utils import DATETIME_FORMAT
 
-pytestmark = pytest.mark.anyio
 
 UNKNOWN_PASSWORD_RESET_TOKEN = (
     "5620281609bbdc9796751a1cb1ac58efb27497b1fd14a0788faa83ada93e6048"

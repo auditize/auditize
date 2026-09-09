@@ -1,6 +1,5 @@
 from typing import Any
 
-import pytest
 
 from conftest import RepoBuilder, UserBuilder
 from helpers.http import HttpTestHelper
@@ -9,8 +8,6 @@ from helpers.log_filter import DEFAULT_SEARCH_PARAMETERS, PreparedLogFilter
 from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
-
-pytestmark = pytest.mark.anyio
 
 
 async def _test_log_filter_creation(user: PreparedUser, data: dict):

@@ -16,8 +16,6 @@ from helpers.pagination import (
 from helpers.repo import PreparedRepo
 from helpers.utils import DATETIME_FORMAT
 
-pytestmark = pytest.mark.anyio
-
 
 async def test_log_repo_access_control(
     apikey_builder: ApikeyBuilder, repo_builder: RepoBuilder

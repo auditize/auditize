@@ -8,8 +8,6 @@ from auditize.i18n import get_request_lang, t
 from conftest import UserBuilder
 from helpers.http import HttpTestHelper, make_http_request
 
-pytestmark = pytest.mark.anyio
-
 
 async def test_i18n_detect_default(client: HttpTestHelper):
     request = make_http_request()

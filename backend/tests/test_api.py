@@ -8,8 +8,6 @@ import pytest
 from helpers import matchers
 from helpers.http import HttpTestHelper
 
-pytestmark = pytest.mark.anyio
-
 
 async def test_bad_json(superadmin_client: HttpTestHelper):
     await superadmin_client.assert_post_bad_request(

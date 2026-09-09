@@ -17,8 +17,6 @@ from auditize.permissions.models import (
     ReadWritePermissionsInput,
 )
 
-pytestmark = pytest.mark.anyio
-
 
 async def test_user_session_token():
     email = "john.doe@example.net"

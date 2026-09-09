@@ -1,7 +1,6 @@
 import time
 from unittest.mock import patch
 
-import pytest
 from icecream import ic
 
 from conftest import ApikeyBuilder, UserBuilder
@@ -11,8 +10,6 @@ from helpers.log import UNKNOWN_UUID
 from helpers.permissions.constants import DEFAULT_APPLICABLE_PERMISSIONS
 from helpers.user import PreparedUser
 from helpers.utils import DATETIME_FORMAT
-
-pytestmark = pytest.mark.anyio
 
 
 def _assert_cookie(resp, now, expected_secure=False):

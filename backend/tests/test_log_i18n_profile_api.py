@@ -10,8 +10,6 @@ from helpers.log import UNKNOWN_UUID
 from helpers.log_i18n_profile import PreparedLogI18nProfile
 from helpers.pagination import do_test_page_pagination_common_scenarios
 
-pytestmark = pytest.mark.anyio
-
 
 async def _test_create_log_i18n_profile(client: HttpTestHelper, data: dict):
     await client.assert_post_created(
