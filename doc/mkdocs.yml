@@ -12,6 +12,7 @@ nav:
   - Log data model: log-data-model.md
   - Web Component: web-component.md
   - REST API: api.html
+  - MCP Server: mcp.md
   - Source, license and contribution: source.md
 theme:
   name: material

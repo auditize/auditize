@@ -88,6 +88,18 @@ hide:
 
   <div class="adz-feature">
     <div class="adz-feature-image">
+      <a href="mcp">
+        <img src='images/feature-mcp-claude.png' width="500" />
+      </a>
+    </div>
+    <div class="adz-feature-text">
+      <h2>MCP Server</h2>
+      <p>Auditize's MCP Server allows you to integrate with various agentic tools, such as Claude, and explore your logs another way.</p>
+    </div>
+  </div>
+
+  <div class="adz-feature">
+    <div class="adz-feature-image">
       <a href="log-data-model">
         <img src='images/feature-log-data-model.png' width="500" />
       </a>
