@@ -4,7 +4,7 @@ import unicodedata
 import uuid
 from datetime import datetime, timedelta
 from functools import partial, partialmethod
-from typing import Any, AsyncIterator, Awaitable, Callable, Self
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Self
 from uuid import UUID
 
 import elasticsearch
@@ -626,6 +626,20 @@ class LogService:
         )
         return resp["count"]
 
+    async def count_logs(
+        self,
+        *,
+        authorized_entities: set[str] = None,
+        search_params: LogSearchParams = None,
+    ) -> int:
+        resp = await self.es.count(
+            index=self.read_alias,
+            query=await self._build_es_query(
+                search_params, authorized_entities=authorized_entities
+            ),
+        )
+        return resp["count"]
+
     async def get_storage_size(self) -> int:
         resp = await self.es.indices.stats(index=self.read_alias)
         return resp["_all"]["primaries"]["store"]["size_in_bytes"]
@@ -634,6 +648,7 @@ class LogService:
         self,
         *,
         nested: str = None,
+        nested_filter: dict = None,
         fields: list[str],
         query: dict = None,
         limit: int,
@@ -653,6 +668,17 @@ class LogService:
                 }
             },
         }
+        if nested_filter:
+            # restrict the aggregation itself to the nested sub-documents matching
+            # nested_filter, as opposed to `query` which only filters top-level documents
+            # (a document with at least one matching nested sub-document still has all its
+            # nested sub-documents, matching or not, included in the aggregation)
+            aggregations = {
+                "matching": {
+                    "filter": nested_filter,
+                    "aggs": aggregations,
+                }
+            }
         if nested:
             aggregations = {
                 "nested_group_by": {
@@ -671,9 +697,12 @@ class LogService:
         )
 
         if nested:
-            group_by_result = resp["aggregations"]["nested_group_by"]["group_by"]
+            group_by_result = resp["aggregations"]["nested_group_by"]
         else:
-            group_by_result = resp["aggregations"]["group_by"]
+            group_by_result = resp["aggregations"]
+        if nested_filter:
+            group_by_result = group_by_result["matching"]
+        group_by_result = group_by_result["group_by"]
 
         if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
             next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
@@ -780,10 +809,10 @@ class LogService:
         *,
         path: str,
         nested: bool = False,
-        authorized_entities: set[str],
-        search: str | None,
-        limit: int,
-        pagination_cursor: str | None,
+        authorized_entities: set[str] | None = None,
+        search: str | None = None,
+        limit: int = 10,
+        pagination_cursor: str | None = None,
     ) -> tuple[list[tuple[str, str]], str]:
         filter = []
         if search:
@@ -819,6 +848,25 @@ class LogService:
     get_log_tag_names = partialmethod(
         _get_aggregated_name_ref_pairs, path="tags", nested=True
     )
+
+    async def get_log_simple_tag_types(
+        self,
+        *,
+        authorized_entities: set[str] | None = None,
+        limit: int,
+        pagination_cursor: str | None,
+    ) -> tuple[list[str], str]:
+        values, next_cursor = await self._get_paginated_agg_multi_fields(
+            nested="tags",
+            nested_filter={"bool": {"must_not": {"exists": {"field": "tags.ref"}}}},
+            fields=["tags.type"],
+            query=await self._build_es_query(
+                None, authorized_entities=authorized_entities
+            ),
+            limit=limit,
+            pagination_cursor=pagination_cursor,
+        )
+        return [value[0] for value in values], next_cursor
 
     async def get_log_actor(
         self, actor_ref: str, authorized_entities: set[str]
@@ -1196,6 +1244,7 @@ class LogService:
         authorized_entities: set[str],
         *,
         parent_entity_ref=NotImplemented,
+        search: str | None = None,
         limit: int = 10,
         pagination_cursor: str = None,
     ) -> tuple[list[LogEntity], str | None]:
@@ -1221,6 +1270,10 @@ class LogService:
                     authorized_entities
                 )
                 filters.append(LogEntity.ref.in_(visible_entities))
+
+        if search:
+            filters.append(LogEntity.name.ilike(f"%{search}%"))
+
         return await self._get_log_entities(
             filters=filters, pagination_cursor=pagination_cursor, limit=limit
         )
@@ -1246,6 +1299,15 @@ class LogService:
             ):
                 raise NotFoundError()
         return await self._get_log_entity(entity_ref)
+
+    async def iter_on_log_entity_path(self, entity: LogEntity) -> Iterator[LogEntity]:
+        if entity.parent_entity_id:
+            parent_entity = await get_sql_model(
+                self.session, LogEntity, LogEntity.id == entity.parent_entity_id
+            )
+            async for ent in self.iter_on_log_entity_path(parent_entity):
+                yield ent
+        yield entity
 
     async def empty_log_db(self):
         await self.es.delete_by_query(

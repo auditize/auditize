@@ -27,9 +27,11 @@ def _exception_handler(request, exc):
     return make_error_response_from_exception(exc, get_request_lang(request))
 
 
-def build_app(*, cors_allow_origins: list[str], online_doc: bool):
+def build_app(
+    *, cors_allow_origins: list[str], online_doc: bool, path: str | None = None
+):
     if online_doc:
-        app = FastAPI()
+        app = FastAPI(path=path)
     else:
         app = FastAPI(openapi_url=None)
     app.add_exception_handler(AuditizeException, _exception_handler)

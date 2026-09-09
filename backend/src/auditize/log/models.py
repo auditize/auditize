@@ -845,10 +845,26 @@ class BaseLogSearchParams(QuerySearchParam):
 
 
 class LogSearchParams(BaseLogSearchParams):
-    actor_extra: Optional[dict] = None
-    resource_extra: Optional[dict] = None
-    source: Optional[dict] = None
-    details: Optional[dict] = None
+    actor_extra: Optional[dict] = Field(
+        description="Filter logs by actor custom fields ({field_name: field_value})",
+        json_schema_extra={"example": {"department": "IT"}},
+        default=None,
+    )
+    resource_extra: Optional[dict] = Field(
+        description="Filter logs by resource custom fields ({field_name: field_value})",
+        json_schema_extra={"example": {"environment": "production"}},
+        default=None,
+    )
+    source: Optional[dict] = Field(
+        description="Filter logs by source custom fields ({field_name: field_value})",
+        json_schema_extra={"example": {"ip": "1.2.3.4"}},
+        default=None,
+    )
+    details: Optional[dict] = Field(
+        description="Filter logs by detail custom fields ({field_name: field_value})",
+        json_schema_extra={"example": {"reason": "expired"}},
+        default=None,
+    )
 
 
 class LogSearchQueryParams(BaseLogSearchParams):
