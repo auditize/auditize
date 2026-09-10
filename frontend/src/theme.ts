@@ -34,6 +34,7 @@ export const theme = createTheme({
     blue214: BLUE_214,
   },
   primaryColor: "blue214",
+  defaultRadius: "sm",
   components: {
     Button: Button.extend({
       vars: (_, props) => {

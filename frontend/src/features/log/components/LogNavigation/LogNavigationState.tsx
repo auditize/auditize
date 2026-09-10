@@ -32,7 +32,7 @@ type LogContextProps = {
   setSelectedColumns: (columns: string[] | null) => void;
   filter?: LogFilter;
   isFilterDirty?: boolean;
-  logComponentRef: React.RefObject<HTMLDivElement>;
+  logComponentRef: React.RefObject<HTMLDivElement | null>;
 };
 
 const StateLogContext = createContext<LogContextProps | null>(null);

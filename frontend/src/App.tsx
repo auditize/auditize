@@ -9,6 +9,7 @@ import {
   Space,
   Text,
   UnstyledButton,
+  v8CssVariablesResolver,
 } from "@mantine/core";
 import "@mantine/core/styles.layer.css";
 import "@mantine/code-highlight/styles.css";
@@ -350,7 +351,10 @@ const shikiAdapter = createShikiAdapter(loadShiki);
 
 export default function App() {
   return (
-    <MantineProvider theme={theme}>
+    <MantineProvider
+      theme={theme}
+      cssVariablesResolver={v8CssVariablesResolver}
+    >
       <CodeHighlightAdapterProvider adapter={shikiAdapter}>
         <ModalsProvider modals={{ logout: LogoutModal }}>
           <Notifications />

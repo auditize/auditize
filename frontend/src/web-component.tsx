@@ -1,4 +1,4 @@
-import { MantineProvider } from "@mantine/core";
+import { MantineProvider, v8CssVariablesResolver } from "@mantine/core";
 import mantineCss from "@mantine/core/styles.layer.css?inline";
 import mantineDateCss from "@mantine/dates/styles.layer.css?inline";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -104,6 +104,7 @@ class LogWebComponent extends HTMLElement {
           <MantineProvider
             theme={theme}
             defaultColorScheme="light"
+            cssVariablesResolver={v8CssVariablesResolver}
             cssVariablesSelector="#webco"
             deduplicateCssVariables={false}
             getRootElement={() => document.getElementById("webco")!}
