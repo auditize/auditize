@@ -3,7 +3,7 @@ import { isNotEmpty, useForm, UseFormReturnType } from "@mantine/form";
 import { useTimeout } from "@mantine/hooks";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import {
   ResourceCreation,

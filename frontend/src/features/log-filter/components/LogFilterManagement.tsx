@@ -2,7 +2,7 @@ import { ActionIcon, rem, Text, Tooltip } from "@mantine/core";
 import { useDocumentTitle } from "@mantine/hooks";
 import { IconCornerDownLeft, IconFilter } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { ResourceManagement } from "@/components/ResourceManagement";
 import { iconBesideText } from "@/utils/ui";

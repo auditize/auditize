@@ -9,7 +9,7 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { IconArchive, IconInfinity } from "@tabler/icons-react";
 import { filesize } from "filesize";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router";
 
 import { DateTime } from "@/components/DateTime";
 import { ResourceManagement } from "@/components/ResourceManagement";

@@ -1,7 +1,7 @@
 import { Center, Group, Menu } from "@mantine/core";
 import { IconChevronDown } from "@tabler/icons-react";
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router";
 
 import classes from "./Navbar.module.css";
 

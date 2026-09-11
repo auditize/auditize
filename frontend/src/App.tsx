@@ -31,9 +31,9 @@ import {
   Navigate,
   NavLink,
   Outlet,
-  RouterProvider,
   useLocation,
-} from "react-router-dom";
+} from "react-router";
+import { RouterProvider } from "react-router/dom";
 import { createHighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 

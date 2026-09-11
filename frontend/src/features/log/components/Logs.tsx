@@ -12,7 +12,7 @@ import { useDocumentTitle } from "@mantine/hooks";
 import { IconEdit, IconLogs, IconRestore, IconX } from "@tabler/icons-react";
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 
 import Message from "@/components/Message";
 import { ScrollToTop } from "@/components/ScrollToTop";

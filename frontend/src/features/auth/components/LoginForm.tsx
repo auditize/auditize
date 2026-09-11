@@ -14,7 +14,7 @@ import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router";
 
 import logoPath from "@/assets/logo.svg";
 import { ApiErrorMessage, ErrorMessage } from "@/components/ErrorMessage";

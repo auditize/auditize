@@ -15,7 +15,7 @@ import { IconExclamationCircle } from "@tabler/icons-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import React, { useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, useParams } from "react-router";
 
 import logoPath from "@/assets/logo.svg";
 import {
