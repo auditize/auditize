@@ -1,10 +1,10 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
+  plugins: [react()],
   resolve: {
+    tsconfigPaths: true,
     alias: {
       // FIXME: workaround regression introduced in @tabler/icons 3.19.0
       // (see https://github.com/tabler/tabler-icons/issues/1233#issuecomment-2428245119)
