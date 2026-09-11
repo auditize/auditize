@@ -1,3 +1,10 @@
+# 0.11.0 (2026-09-11)
+
+- Add a MCP server feature (see https://www.auditize.org/mcp/)
+- Fix permission issue in actor/resource/tag search
+- Fix regression (introduced in 0.10.0) that breaks the web component library
+- Update backend and frontend dependencies
+
 # 0.10.0 (2025-12-26)
 
 - Add log translation template download for repositories
