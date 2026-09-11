@@ -1,7 +1,6 @@
 import {
   ActionIcon,
   Center,
-  Flex,
   Group,
   rem,
   Stack,
@@ -35,8 +34,6 @@ export function BaseLogs({
   withLogFilters?: boolean;
   withScrollToTop?: boolean;
 }) {
-  const { t } = useTranslation();
-  const repoListQuery = useLogRepoListQuery({ enabled: withRepoSearchParam });
   const {
     searchParams,
     setSearchParams,
@@ -44,58 +41,36 @@ export function BaseLogs({
     setSelectedColumns,
     logComponentRef,
   } = useLogNavigationState();
-  const { currentUser } = useAuthenticatedUser();
 
-  if (repoListQuery.data && repoListQuery.data.length === 0) {
-    return (
-      <Center pt="xl">
-        <Message.Info alertProps={{ style: { maxWidth: "fit-content" } }}>
-          {t("log.list.noRepos")}
-
-          {currentUser.permissions.management.repos.read &&
-            currentUser.permissions.management.repos.write && (
-              <>
-                <br />
-                <Trans i18nKey="log.list.createRepoShortcut">
-                  You can create a repository by clicking
-                  <Link to="/repos">here</Link>.
-                </Trans>
-              </>
-            )}
-        </Message.Info>
-      </Center>
-    );
-  } else {
-    return (
-      <Stack ref={logComponentRef} gap="md">
-        <LogNavigation
-          params={searchParams}
-          onChange={(newSearchParams) => {
-            setSearchParams(newSearchParams);
-          }}
-          selectedColumns={selectedColumns}
-          withRepoSearchParam={withRepoSearchParam}
-          withLogFilters={withLogFilters}
-        />
-        <LogTable
-          searchParams={searchParams}
-          onTableSearchParamChange={(name, value) => {
-            setSearchParams(
-              LogSearchParams.fromProperties({
-                repoId: searchParams.repoId,
-                since: searchParams.since,
-                until: searchParams.until,
-                [name]: value,
-              }),
-            );
-          }}
-          selectedColumns={selectedColumns}
-          onSelectedColumnsChange={setSelectedColumns}
-        />
-        {withScrollToTop && <ScrollToTop />}
-      </Stack>
-    );
-  }
+  return (
+    <Stack ref={logComponentRef} gap="md">
+      <LogNavigation
+        params={searchParams}
+        onChange={(newSearchParams) => {
+          setSearchParams(newSearchParams);
+        }}
+        selectedColumns={selectedColumns}
+        withRepoSearchParam={withRepoSearchParam}
+        withLogFilters={withLogFilters}
+      />
+      <LogTable
+        searchParams={searchParams}
+        onTableSearchParamChange={(name, value) => {
+          setSearchParams(
+            LogSearchParams.fromProperties({
+              repoId: searchParams.repoId,
+              since: searchParams.since,
+              until: searchParams.until,
+              [name]: value,
+            }),
+          );
+        }}
+        selectedColumns={selectedColumns}
+        onSelectedColumnsChange={setSelectedColumns}
+      />
+      {withScrollToTop && <ScrollToTop />}
+    </Stack>
+  );
 }
 
 function LogFilterFavoriteAction({ filter }: { filter: LogFilter }) {
@@ -244,7 +219,10 @@ function LogTitle() {
 }
 
 export function Logs() {
+  const { currentUser } = useAuthenticatedUser();
+  const repoListQuery = useLogRepoListQuery();
   const { filter, isFilterDirty } = useLogNavigationState();
+  const { t } = useTranslation();
 
   return (
     <div>
@@ -255,7 +233,26 @@ export function Logs() {
           <LogTitle />
         )}
       </Title>
-      <BaseLogs />
+      {repoListQuery.data && repoListQuery.data.length === 0 ? (
+        <Center pt="xl">
+          <Message.Info alertProps={{ style: { maxWidth: "fit-content" } }}>
+            {t("log.list.noRepos")}
+
+            {currentUser.permissions.management.repos.read &&
+              currentUser.permissions.management.repos.write && (
+                <>
+                  <br />
+                  <Trans i18nKey="log.list.createRepoShortcut">
+                    You can create a repository by clicking
+                    <Link to="/repos">here</Link>.
+                  </Trans>
+                </>
+              )}
+          </Message.Info>
+        </Center>
+      ) : (
+        <BaseLogs />
+      )}
     </div>
   );
 }
