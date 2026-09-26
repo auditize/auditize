@@ -1,32 +1,34 @@
 #!/usr/bin/env python
 
-import glob
 import json
 import os
 import sys
-from itertools import count
 
 import httpx
 
 
-def import_logs(base_url, repo_id, api_key, source_dir):
-    for log_idx, filename in enumerate(glob.glob(f"{source_dir}/*.json")):
-        with open(filename, "r") as fh:
-            log_data = json.load(fh)
+def import_logs(base_url, repo_id, api_key):
+    log_idx = 0
+    for line in sys.stdin:
+        if not line.strip():
+            continue
+        log_data = json.loads(line)
         resp = httpx.post(
             f"{base_url}/api/repos/{repo_id}/logs/import",
             headers={"Authorization": f"Bearer {api_key}"},
             json=log_data,
         )
         resp.raise_for_status()
-        print(f"Imported {log_idx+1:08d}", end="\r")
+        log_idx += 1
+        print(f"Imported {log_idx}", end="\r", file=sys.stderr)
+
+    if log_idx:
+        print(file=sys.stderr)
 
 
 def main(argv):
-    try:
-        source_dir = argv[1]
-    except IndexError:
-        sys.exit("Usage: %s SOURCE_DIRECTORY" % argv[0])
+    if len(argv) != 1:
+        sys.exit("Usage: %s < LOGS.jsonl" % argv[0])
 
     try:
         base_url = os.environ["AUDITIZE_URL"]
@@ -35,7 +37,7 @@ def main(argv):
     except KeyError as e:
         sys.exit("Missing environment variable: %s" % e)
 
-    import_logs(base_url, repo_id, api_key, source_dir)
+    import_logs(base_url, repo_id, api_key)
 
 
 if __name__ == "__main__":

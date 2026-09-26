@@ -24,19 +24,19 @@ def get_logs(base_url: str, repo_id: str, api_key: str) -> Iterator[dict]:
             break
 
 
-def download_logs(base_url, repo_id, api_key, target_dir):
+def download_logs(base_url, repo_id, api_key):
+    log_idx = None
     for log_idx, log in enumerate(get_logs(base_url, repo_id, api_key)):
-        filename = f"{target_dir}/{log_idx+1:08d}.json"
-        with open(filename, "w") as fh:
-            json.dump(log, fh, ensure_ascii=False)
-        print(f"Wrote {filename}", end="\r")
+        sys.stdout.write(json.dumps(log, ensure_ascii=False) + "\n")
+        print(f"Downloaded {log_idx + 1}", end="\r", file=sys.stderr)
+
+    if log_idx is not None:
+        print(file=sys.stderr)
 
 
 def main(argv):
-    try:
-        target_dir = argv[1]
-    except IndexError:
-        sys.exit("Usage: %s TARGET_DIRECTORY" % argv[0])
+    if len(argv) != 1:
+        sys.exit("Usage: %s > LOGS.jsonl" % argv[0])
 
     try:
         base_url = os.environ["AUDITIZE_URL"]
@@ -45,9 +45,7 @@ def main(argv):
     except KeyError as e:
         sys.exit("Missing environment variable: %s" % e)
 
-    os.makedirs(target_dir, exist_ok=True)
-
-    download_logs(base_url, repo_id, api_key, target_dir)
+    download_logs(base_url, repo_id, api_key)
 
 
 if __name__ == "__main__":
