@@ -1,10 +1,11 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastmcp.dependencies import Depends
 from fastmcp.exceptions import ToolError
 from fastmcp.server.dependencies import get_http_headers
 from mcp.types import ToolAnnotations
+from pydantic import Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.auth.authorizer import (
@@ -13,14 +14,19 @@ from auditize.auth.authorizer import (
     get_bearer_token_from_authorization_header,
 )
 from auditize.database.dbm import open_db_session
+from auditize.exceptions import ValidationError
 from auditize.log.models import (
     CustomFieldData,
     LogResponse,
     LogSearchParams,
 )
-from auditize.log.service import LogService
+from auditize.log.service import AGGREGATION_DIMENSIONS, LogService
 from auditize.mcp.app import mcp
-from auditize.mcp.models import LogEntityMcpResponse, PaginatedMcpResponse
+from auditize.mcp.models import (
+    LogAggregationMcpResponse,
+    LogEntityMcpResponse,
+    PaginatedMcpResponse,
+)
 from auditize.permissions.assertions import can_read_logs_from_repo
 
 TOOL_ANNOTATIONS = ToolAnnotations(
@@ -31,6 +37,8 @@ TOOL_ANNOTATIONS = ToolAnnotations(
 # Page size used by all tools, except search_logs which returns heavier objects.
 DEFAULT_TOOL_PAGE_LIMIT = 50
 SEARCH_LOGS_PAGE_LIMIT = 10
+
+AggregationDimension = Literal[tuple(AGGREGATION_DIMENSIONS)]
 
 CURSOR_PARAM_DESCRIPTION = (
     "Pagination cursor from a previous call's next_cursor field. "
@@ -135,6 +143,56 @@ async def count_logs(
     return await log_service.count_logs(
         search_params=search_params,
         authorized_entities=authorized_entities,
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def aggregate_logs(
+    group_by: Annotated[
+        list[AggregationDimension],
+        Field(
+            min_length=1,
+            max_length=2,
+            description="1 or 2 dimensions to group logs by",
+        ),
+    ],
+    search_params: LogSearchParams = LogSearchParams(),
+    limit: Annotated[
+        int, Field(ge=1, le=50, description="Maximum number of rows to return")
+    ] = 10,
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> LogAggregationMcpResponse:
+    """Count logs grouped by one or two dimensions, using the same filters as search_logs.
+
+    Use it for "top N" and "breakdown by" questions instead of paging through
+    search_logs. Returns a flat list of rows, one per group (one per combination of
+    values with two dimensions), sorted by count and limited to the top `limit`, plus
+    `other_count` (logs in groups beyond the top). A null dimension value groups logs
+    that have no value for that dimension.
+
+    Dimension values in rows are:
+    - a scalar for action_type, action_category, actor_type and resource_type
+    - {ref, name} for actor and resource (name is the most recent one among the
+      logs of the group)
+    """
+    try:
+        aggregation = await log_service.aggregate_logs(
+            group_by=group_by,
+            search_params=search_params,
+            authorized_entities=authorized_entities,
+            limit=limit,
+        )
+    except ValidationError as exc:
+        raise ToolError(str(exc))
+
+    return LogAggregationMcpResponse(
+        total_count=aggregation.total_count,
+        rows=[
+            {**dict(zip(group_by, values)), "count": count}
+            for values, count in aggregation.rows
+        ],
+        other_count=aggregation.other_count,
     )
 
 

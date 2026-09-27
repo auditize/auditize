@@ -18,6 +18,7 @@ Refer to your agentic tool's own documentation for how to connect it to an MCP s
 The MCP server exposes the following read-only tools:
 
 - `search_logs` and `count_logs`, to search and count logs using the same filters as the [REST API](sending-logs.md).
+- `aggregate_logs`, to count logs grouped by one or two dimensions (action type or category, actor or actor type, resource or resource type), using the same filters as `search_logs`. It returns the top groups by count, which is useful for "top N" and "breakdown by" questions.
 - `search_actors`, `search_resources`, `search_rich_tags` and `search_entities`, to resolve names into refs usable as filters in `search_logs`/`count_logs`.
 - `list_action_types`, `list_action_categories`, `list_actor_types`, `list_resource_types`, `list_attachment_types`, `list_attachment_mime_types` and `list_simple_tag_types`, to discover the possible values for these filters.
 - `list_source_fields`, `list_details_fields`, `list_actor_extra_fields`, `list_resource_extra_fields` and their `*_field_values` counterparts, to discover and filter on custom fields.

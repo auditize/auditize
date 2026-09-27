@@ -2,6 +2,7 @@ import re
 import string
 import unicodedata
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import partial, partialmethod
 from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Self
@@ -33,6 +34,7 @@ from auditize.exceptions import (
     InvalidPaginationCursor,
     NotFoundError,
     PermissionDenied,
+    ValidationError,
 )
 from auditize.helpers.datetime import now
 from auditize.log.index import get_read_alias, get_write_alias
@@ -50,6 +52,40 @@ from auditize.repo.service import get_repo, get_retention_period_enabled_repos
 from auditize.repo.sql_models import Repo, RepoStatus
 
 _CONSOLIDATED_LOG_ENTITIES = Cache(Cache.MEMORY)
+
+# Dimensions available for log aggregation and their matching ES field
+# (all of them are root-level keyword fields with at most one value per log)
+_AGGREGATION_FIELDS = {
+    "action_type": "action.type",
+    "action_category": "action.category",
+    "actor_type": "actor.type",
+    "actor": "actor.ref",
+    "resource_type": "resource.type",
+    "resource": "resource.ref",
+}
+
+AGGREGATION_DIMENSIONS = list(_AGGREGATION_FIELDS)
+
+# Dimensions whose value is returned as a {ref, name} object
+_AGGREGATION_REF_NAME_DIMENSIONS = ("actor", "resource")
+
+# ES does not return buckets for logs without value unless a placeholder is provided
+_AGGREGATION_MISSING_VALUE = "__auditize_missing_value__"
+
+
+@dataclass
+class LogAggregation:
+    total_count: int
+    # each row is a list of dimension values (in the same order as group_by) and a count
+    rows: list[tuple[list[Any], int]]
+    other_count: int
+
+
+@dataclass
+class _AggregationGroup:
+    keys: list[str]
+    count: int
+    latest_log: dict | None
 
 
 class _OffsetPaginationCursor:
@@ -639,6 +675,136 @@ class LogService:
             ),
         )
         return resp["count"]
+
+    @staticmethod
+    def _validate_aggregation_group_by(group_by: list[str]):
+        if not 1 <= len(group_by) <= 2:
+            raise ValidationError("group_by must contain 1 or 2 dimensions")
+        if len(set(group_by)) != len(group_by):
+            raise ValidationError("group_by must not contain the same dimension twice")
+        for dimension in group_by:
+            if dimension not in _AGGREGATION_FIELDS:
+                raise ValidationError(
+                    f"Invalid dimension {dimension!r}, expected one of "
+                    f"{', '.join(AGGREGATION_DIMENSIONS)}"
+                )
+
+    @staticmethod
+    def _get_aggregation_name_dimensions(group_by: list[str]) -> list[str]:
+        return [dim for dim in group_by if dim in _AGGREGATION_REF_NAME_DIMENSIONS]
+
+    @classmethod
+    def _build_aggregation(cls, group_by: list[str], limit: int) -> dict:
+        terms = [
+            {
+                "field": _AGGREGATION_FIELDS[dimension],
+                "missing": _AGGREGATION_MISSING_VALUE,
+            }
+            for dimension in group_by
+        ]
+        params = {
+            "size": limit,
+            "order": [{"_count": "desc"}, {"_key": "asc"}],
+        }
+        if len(terms) == 1:
+            aggregation = {"terms": {**terms[0], **params}}
+        else:
+            aggregation = {"multi_terms": {"terms": terms, **params}}
+
+        # Get the names of actors / resources from the most recent log of each group
+        name_dimensions = cls._get_aggregation_name_dimensions(group_by)
+        if name_dimensions:
+            aggregation["aggs"] = {
+                "latest": {
+                    "top_hits": {
+                        "size": 1,
+                        "sort": [{"emitted_at": "desc"}],
+                        "_source": {
+                            "includes": [f"{dim}.name" for dim in name_dimensions]
+                        },
+                    }
+                }
+            }
+
+        return aggregation
+
+    @classmethod
+    def _get_aggregation_groups(
+        cls, group_by: list[str], buckets: list[dict]
+    ) -> list[_AggregationGroup]:
+        with_latest_log = bool(cls._get_aggregation_name_dimensions(group_by))
+        groups = [
+            _AggregationGroup(
+                # terms returns a single key, multi_terms returns a list of keys
+                keys=bucket["key"] if len(group_by) > 1 else [bucket["key"]],
+                count=bucket["doc_count"],
+                latest_log=(
+                    bucket["latest"]["hits"]["hits"][0]["_source"]
+                    if with_latest_log
+                    else None
+                ),
+            )
+            for bucket in buckets
+        ]
+        # ES sorts the placeholder of missing values as any other value, move them
+        # after the other values in case of equal counts
+        groups.sort(
+            key=lambda group: (
+                -group.count,
+                [(key == _AGGREGATION_MISSING_VALUE, key) for key in group.keys],
+            )
+        )
+        return groups
+
+    @staticmethod
+    def _get_aggregation_value(
+        dimension: str, key: str, latest_log: dict | None
+    ) -> Any:
+        if key == _AGGREGATION_MISSING_VALUE:
+            return None
+        if dimension in _AGGREGATION_REF_NAME_DIMENSIONS:
+            return {"ref": key, "name": latest_log[dimension]["name"]}
+        return key
+
+    async def aggregate_logs(
+        self,
+        *,
+        group_by: list[str],
+        authorized_entities: set[str] = None,
+        search_params: LogSearchParams = None,
+        limit: int,
+    ) -> LogAggregation:
+        self._validate_aggregation_group_by(group_by)
+
+        resp = await self.es.search(
+            index=self.read_alias,
+            query=await self._build_es_query(
+                search_params, authorized_entities=authorized_entities
+            ),
+            size=0,
+            track_total_hits=True,
+            aggregations={"groups": self._build_aggregation(group_by, limit)},
+        )
+        total_count = resp["hits"]["total"]["value"]
+        groups = self._get_aggregation_groups(
+            group_by, resp["aggregations"]["groups"]["buckets"]
+        )
+
+        rows = [
+            (
+                [
+                    self._get_aggregation_value(dimension, key, group.latest_log)
+                    for dimension, key in zip(group_by, group.keys)
+                ],
+                group.count,
+            )
+            for group in groups
+        ]
+        return LogAggregation(
+            total_count=total_count,
+            rows=rows,
+            other_count=total_count - sum(count for _, count in rows),
+        )
 
     async def get_storage_size(self) -> int:
         resp = await self.es.indices.stats(index=self.read_alias)

@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from unittest.mock import patch
 
@@ -6,6 +7,7 @@ import pytest
 from fastmcp.client import Client
 from fastmcp.client.client import CallToolResult
 from fastmcp.client.transports import FastMCPTransport
+from fastmcp.exceptions import ToolError
 
 from auditize.mcp.app import mcp
 from conftest import ApikeyBuilder
@@ -431,3 +433,397 @@ async def test_list_custom_field_values(
         result = await mcp_client.call_tool(tool_name, {"field_name": field_name})
     expected = ["enum_value"] if field_type == "enum" else []
     assert _get_tool_data(result) == {"items": expected, "next_cursor": None}
+
+
+async def _aggregate_logs(
+    mcp_client: Client[FastMCPTransport],
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    group_by: list[str],
+    **params,
+) -> dict:
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool(
+            "aggregate_logs", {"group_by": group_by, **params}
+        )
+    return _get_tool_data(result)
+
+
+@pytest.mark.parametrize(
+    "dimension,build_log_data",
+    [
+        (
+            "action_type",
+            lambda value: {"action": {"type": value, "category": "some_category"}},
+        ),
+        (
+            "action_category",
+            lambda value: {"action": {"type": "some_action", "category": value}},
+        ),
+        (
+            "actor_type",
+            lambda value: {"actor": {"type": value, "ref": "ref", "name": "Name"}},
+        ),
+        (
+            "resource_type",
+            lambda value: {"resource": {"type": value, "ref": "ref", "name": "Name"}},
+        ),
+    ],
+)
+async def test_aggregate_logs_scalar_dimensions(
+    dimension: str,
+    build_log_data,
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for value in ("value_b", "value_a", "value_b"):
+        await repo.create_log_with(log_rw_client, build_log_data(value))
+
+    assert await _aggregate_logs(mcp_client, repo, log_read_apikey, [dimension]) == {
+        "total_count": 3,
+        "rows": [
+            {dimension: "value_b", "count": 2},
+            {dimension: "value_a", "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+@pytest.mark.parametrize("dimension", ["actor", "resource"])
+async def test_aggregate_logs_by_actor_or_resource(
+    dimension: str,
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for user_ref, name in (("1", "John Smith"), ("2", "Jane Doe"), ("1", "John Smith")):
+        await repo.create_log_with(
+            log_rw_client, {dimension: {"type": "user", "ref": user_ref, "name": name}}
+        )
+
+    assert await _aggregate_logs(mcp_client, repo, log_read_apikey, [dimension]) == {
+        "total_count": 3,
+        "rows": [
+            {dimension: {"ref": "1", "name": "John Smith"}, "count": 2},
+            {dimension: {"ref": "2", "name": "Jane Doe"}, "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_by_actor_uses_latest_name(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    now = datetime.now(timezone.utc)
+    yesterday = now - timedelta(days=1)
+
+    # create the most recent log first to make sure the name does not depend
+    # on the insertion order
+    await repo.create_log_with(
+        log_rw_client,
+        {"actor": {"type": "user", "ref": "1", "name": "John Smith"}},
+        emitted_at=now,
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {"actor": {"type": "user", "ref": "1", "name": "John"}},
+        emitted_at=yesterday,
+    )
+
+    assert await _aggregate_logs(mcp_client, repo, log_read_apikey, ["actor"]) == {
+        "total_count": 2,
+        "rows": [
+            {"actor": {"ref": "1", "name": "John Smith"}, "count": 2},
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_two_dimensions(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for user_ref, action_type in (
+        ("1", "login"),
+        ("1", "login"),
+        ("1", "login"),
+        ("1", "logout"),
+        ("2", "login"),
+        ("2", "login"),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                "action": {"type": action_type, "category": "authentication"},
+                "actor": {"type": "user", "ref": user_ref, "name": f"User {user_ref}"},
+            },
+        )
+
+    assert await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, ["actor", "action_type"]
+    ) == {
+        "total_count": 6,
+        "rows": [
+            {
+                "actor": {"ref": "1", "name": "User 1"},
+                "action_type": "login",
+                "count": 3,
+            },
+            {
+                "actor": {"ref": "2", "name": "User 2"},
+                "action_type": "login",
+                "count": 2,
+            },
+            {
+                "actor": {"ref": "1", "name": "User 1"},
+                "action_type": "logout",
+                "count": 1,
+            },
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_missing_value(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "User 1"}}
+    )
+    await repo.create_log_with(log_rw_client, {})
+    await repo.create_log_with(log_rw_client, {})
+
+    assert await _aggregate_logs(mcp_client, repo, log_read_apikey, ["actor"]) == {
+        "total_count": 3,
+        "rows": [
+            {"actor": None, "count": 2},
+            {"actor": {"ref": "1", "name": "User 1"}, "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_missing_value_two_dimensions(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    actor = {"type": "user", "ref": "1", "name": "User 1"}
+    resource = {"type": "config", "ref": "1", "name": "Resource 1"}
+    for extra in (
+        {"actor": actor, "resource": resource},
+        {"actor": actor},
+        {"actor": actor},
+        {"resource": resource},
+        {"resource": resource},
+        {"resource": resource},
+        {},
+        {},
+        {},
+        {},
+    ):
+        await repo.create_log_with(log_rw_client, extra)
+
+    assert await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, ["actor", "resource"]
+    ) == {
+        "total_count": 10,
+        "rows": [
+            {"actor": None, "resource": None, "count": 4},
+            {
+                "actor": None,
+                "resource": {"ref": "1", "name": "Resource 1"},
+                "count": 3,
+            },
+            {"actor": {"ref": "1", "name": "User 1"}, "resource": None, "count": 2},
+            {
+                "actor": {"ref": "1", "name": "User 1"},
+                "resource": {"ref": "1", "name": "Resource 1"},
+                "count": 1,
+            },
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_limit_and_other_count(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for action_type, count in (("a", 5), ("b", 4), ("c", 3), ("d", 2), ("e", 1)):
+        for _ in range(count):
+            await repo.create_log_with(
+                log_rw_client,
+                {"action": {"type": action_type, "category": "authentication"}},
+            )
+
+    data = await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, ["action_type"], limit=2
+    )
+    assert data == {
+        "total_count": 15,
+        "rows": [
+            {"action_type": "a", "count": 5},
+            {"action_type": "b", "count": 4},
+        ],
+        "other_count": 6,
+    }
+
+
+async def test_aggregate_logs_tie_ordering(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    # Rows are sorted by count desc, then by key asc to break ties
+    # ("b" is created before "a" to make sure insertion order is not used)
+    for action_type in ("b", "a", "c", "c"):
+        await repo.create_log_with(
+            log_rw_client,
+            {"action": {"type": action_type, "category": "authentication"}},
+        )
+
+    assert await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, ["action_type"]
+    ) == {
+        "total_count": 4,
+        "rows": [
+            {"action_type": "c", "count": 2},
+            {"action_type": "a", "count": 1},
+            {"action_type": "b", "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_empty(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    assert await _aggregate_logs(mcp_client, repo, log_read_apikey, ["actor"]) == {
+        "total_count": 0,
+        "rows": [],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_with_search_params(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for user_ref, status in (
+        ("1", "failure"),
+        ("1", "failure"),
+        ("1", "success"),
+        ("2", "failure"),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                "actor": {"type": "user", "ref": user_ref, "name": f"User {user_ref}"},
+                "details": [{"name": "status", "value": status, "type": "enum"}],
+            },
+        )
+
+    assert await _aggregate_logs(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        group_by=["actor"],
+        search_params={"details": {"status": "failure"}},
+    ) == {
+        "total_count": 3,
+        "rows": [
+            {"actor": {"ref": "1", "name": "User 1"}, "count": 2},
+            {"actor": {"ref": "2", "name": "User 2"}, "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_limited_permissions(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client, {"action": {"type": "login", "category": "authentication"}}
+    )
+    apikey = await apikey_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}
+    )
+
+    assert await _aggregate_logs(mcp_client, repo, apikey, ["action_type"]) == {
+        "total_count": 1,
+        "rows": [{"action_type": "login", "count": 1}],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_entity_restricted(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with_entity_path(log_rw_client, ["entity_A"])
+    await repo.create_log_with_entity_path(log_rw_client, ["entity_A", "entity_A1"])
+    await repo.create_log_with_entity_path(log_rw_client, ["entity_B"])
+    apikey = await apikey_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
+
+    assert await _aggregate_logs(mcp_client, repo, apikey, ["action_type"]) == {
+        "total_count": 2,
+        "rows": [{"action_type": "user_login", "count": 2}],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_no_permission(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    mcp_client: Client[FastMCPTransport],
+):
+    apikey = await apikey_builder({})
+    with pytest.raises(ToolError, match="permission"):
+        await _aggregate_logs(mcp_client, repo, apikey, ["action_type"])
+
+
+async def test_aggregate_logs_invalid_group_by(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    with pytest.raises(ToolError):
+        await _aggregate_logs(mcp_client, repo, log_read_apikey, ["unknown_dimension"])
+
+
+async def test_aggregate_logs_invalid_limit(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    with pytest.raises(ToolError):
+        await _aggregate_logs(
+            mcp_client, repo, log_read_apikey, ["action_type"], limit=51
+        )

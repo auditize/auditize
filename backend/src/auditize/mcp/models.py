@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -22,4 +22,30 @@ class LogEntityMcpResponse(BaseModel):
     path: str = Field(
         description="Entity path as a string",
         json_schema_extra={"example": "Customer 1 > Entity 1"},
+    )
+
+
+class LogAggregationMcpResponse(BaseModel):
+    total_count: int = Field(
+        description="Number of logs matching the search params (same as count_logs)"
+    )
+    rows: list[dict[str, Any]] = Field(
+        description=(
+            "One row per group (per combination of values with two dimensions), "
+            "sorted by count desc. Each row has one property per dimension (named "
+            "after the dimension, null for logs without value for that dimension) "
+            "and a `count` property."
+        ),
+        json_schema_extra={
+            "example": [
+                {
+                    "actor": {"ref": "user:42", "name": "Alice"},
+                    "action_type": "login",
+                    "count": 400,
+                }
+            ]
+        },
+    )
+    other_count: int = Field(
+        description="Number of logs in groups beyond the top `limit` groups"
     )
