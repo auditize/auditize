@@ -11,37 +11,37 @@
     "type": "create_configuration_profile",
     "category": "configuration"
   },
-  "source": [
-    { "name": "ip", "value": "127.0.0.1", "type": "string" },
-    {
-      "name": "user_agent",
-      "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
-      "type": "string"
-    }
-  ],
+  "source": {
+    "ip:string": "127.0.0.1",
+    "user_agent:string": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+  },
+  "source_fields": ["ip", "user_agent"],
   "actor": {
     "ref": "user:123",
     "type": "user",
     "name": "John Doe",
-    "extra": [
-      { "name": "role", "value": "admin", "type": "string" },
-      { "name": "department", "value": "IT", "type": "string" }
-    ]
+    "extra": {
+      "role:string": "admin",
+      "department:string": "IT"
+    },
+    "extra_fields": ["role", "department"]
   },
   "resource": {
     "ref": "config-profile:456",
     "type": "config_profile",
     "name": "Production Configuration Profile",
-    "extra": [
-      { "name": "environment", "value": "production", "type": "string" },
-      { "name": "version", "value": "1.2.3", "type": "string" }
-    ]
+    "extra": {
+      "environment:string": "production",
+      "version:string": "1.2.3"
+    },
+    "extra_fields": ["environment", "version"]
   },
-  "details": [
-    { "name": "field_name_1", "value": "value 1", "type": "string" },
-    { "name": "field_name_2", "value": "value 2", "type": "string" },
-    { "name": "status", "value_enum": "success", "type": "enum" }
-  ],
+  "details": {
+    "field_name_1:string": "value 1",
+    "field_name_2:string": "value 2",
+    "status:enum": "success"
+  },
+  "details_fields": ["field_name_1", "field_name_2", "status"],
   "tags": [
     { "type": "security", "name": null, "ref": null },
     { "ref": "tag:789", "type": "compliance", "name": "GDPR" },

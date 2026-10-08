@@ -184,6 +184,16 @@ class LogService:
                 )
             parent_entity_ref = entity.ref
 
+    @staticmethod
+    def _is_total_es_fields_limit_exceeded(exc: elasticsearch.BadRequestError) -> bool:
+        # Elasticsearch reports this error as a "document_parsing_exception"
+        # with no dedicated error type, so we must rely on the error message
+        try:
+            reason = exc.body["error"]["caused_by"]["reason"]
+        except (KeyError, TypeError):
+            return False
+        return reason.startswith("Limit of total fields")
+
     async def _save_log(self, log: Log) -> Log:
         try:
             await self.es.create(
@@ -196,6 +206,13 @@ class LogService:
             # NB: this should only happen in case of log import where the id
             # is provided and already exists
             raise ConstraintViolation(f"Log {log.id} already exists")
+        except elasticsearch.BadRequestError as exc:
+            if self._is_total_es_fields_limit_exceeded(exc):
+                raise ValidationError(
+                    "The log cannot be saved because the Elasticsearch limit of "
+                    "total fields for this repository's index has been reached"
+                )
+            raise
         await self._consolidate_log_entity_path(log.entity_path)
         return log
 
@@ -320,137 +337,86 @@ class LogService:
     def _query_filter(cls, query: str):
         """
         Build a filter to match words in the query against the searchable fields
-        (source.value, actor.extra.value, resource.extra.value, details.value).
+        (string and JSON custom fields gathered in custom_fields_text, resource.name).
         Each word must match indifferently of the field they are in the log.
         """
-        # This is a working but costly implementation of the query filter (which is due
-        # to the fact that we use nested fields).
-        # A more efficient implementation would be to first normalize the searchable plain text fields
-        # in a dedicated text fields and then use a simple "match" query to match the words against the text field.
-
-        words = cls._split_words(query)
-        searchable_fields = {
-            "source": "source.value",
-            "actor.extra": "actor.extra.value",
-            "resource.extra": "resource.extra.value",
-            "details": "details.value",
+        return {
+            "bool": {
+                "must": [
+                    {
+                        "bool": {
+                            "should": [
+                                {"match": {"custom_fields_text": word}},
+                                {"match": {"resource.name": word}},
+                            ],
+                            "minimum_should_match": 1,
+                        }
+                    }
+                    for word in cls._split_words(query)
+                ]
+            }
         }
 
-        def should_clauses(word):
-            clauses = [
-                {"nested": {"path": path, "query": {"match": {name: word}}}}
-                for path, name in searchable_fields.items()
-            ]
-            clauses.append({"match": {"resource.name": word}})
-            return clauses
-
-        def must_clauses():
-            return [
-                {
-                    "bool": {
-                        "should": should_clauses(word),
-                        "minimum_should_match": 1,
-                    }
-                }
-                for word in words
-            ]
-
-        return {"bool": {"must": must_clauses()}}
+    @staticmethod
+    def _get_custom_field_type_from_source(
+        source: dict, path: str, field_name: str
+    ) -> CustomFieldType:
+        """
+        Example:
+        - source: {"actor": {"extra": {"role:enum": "admin", "age:integer": 42}}}
+        - path: "actor.extra"
+        - field_name: "age"
+        - returns: CustomFieldType.INTEGER
+        """
+        custom_fields = source
+        for key in path.split("."):
+            custom_fields = custom_fields[key]
+        for key in custom_fields:
+            name, field_type = key.rsplit(":", 1)
+            if name == field_name:
+                return CustomFieldType(field_type)
+        # NB: fallback to string type, this should never happen
+        return CustomFieldType.STRING
 
     async def _get_custom_field_type(
         self, path: str, field_name: str
     ) -> CustomFieldType:
-        aggregations = {
-            "custom_fields": {
-                "nested": {"path": path},
-                "aggs": {
-                    "filter_field": {
-                        "filter": {"term": {f"{path}.name": field_name}},
-                        "aggs": {
-                            "latest_type": {
-                                "top_hits": {
-                                    "size": 1,
-                                    "sort": [{"emitted_at": {"order": "desc"}}],
-                                    "_source": {"includes": [f"{path}.type"]},
-                                }
-                            }
-                        },
-                    }
-                },
-            }
-        }
-
         resp = await self.es.search(
             index=self.read_alias,
-            aggregations=aggregations,
-            size=0,
+            query={"term": {f"{path}_fields": field_name}},
+            sort=[{"emitted_at": {"order": "desc"}}],
+            source_includes=[f"{path}.{field_name}:*"],
+            size=1,
         )
 
-        hits = resp["aggregations"]["custom_fields"]["filter_field"]["latest_type"]["hits"]["hits"]  # fmt: skip
+        hits = resp["hits"]["hits"]
         if hits:
-            return CustomFieldType(hits[0]["_source"]["type"])
+            return self._get_custom_field_type_from_source(
+                hits[0]["_source"], path, field_name
+            )
         # NB: fallback to string type, this should never happen
         return CustomFieldType.STRING
 
     async def _custom_field_search_filter(
         self, path: str, field_name: str, field_value: str
     ) -> dict:
-        match await self._get_custom_field_type(path, field_name):
+        field_type = await self._get_custom_field_type(path, field_name)
+        field = f"{path}.{field_name}:{field_type}"
+        match field_type:
             case CustomFieldType.ENUM:
-                field_value_filter = {
-                    "term": {
-                        f"{path}.value_enum": field_value,
-                    }
-                }
+                return {"term": {field: field_value}}
             case CustomFieldType.BOOLEAN:
-                field_value_filter = {
-                    "term": {
-                        f"{path}.value_boolean": validate_bool(field_value),
-                    }
-                }
+                return {"term": {field: validate_bool(field_value)}}
             case CustomFieldType.INTEGER:
-                field_value_filter = {
-                    "term": {
-                        f"{path}.value_integer": validate_int(field_value),
-                    }
-                }
+                return {"term": {field: validate_int(field_value)}}
             case CustomFieldType.FLOAT:
-                field_value_filter = {
-                    "term": {
-                        f"{path}.value_float": validate_float(field_value),
-                    }
-                }
+                return {"term": {field: validate_float(field_value)}}
             case CustomFieldType.DATETIME:
                 # NB: search on the precise value does not really make sense for a datetime field,
                 # range search will be implemented in a future version.
-                field_value_filter = {
-                    "term": {
-                        f"{path}.value_datetime": validate_datetime(field_value),
-                    }
-                }
+                return {"term": {field: validate_datetime(field_value)}}
             case _:
-                field_value_filter = {
-                    "match": {
-                        f"{path}.value": {
-                            "query": field_value,
-                            "operator": "and",
-                        }
-                    }
-                }
-
-        return {
-            "nested": {
-                "path": path,
-                "query": {
-                    "bool": {
-                        "must": [
-                            {"term": {f"{path}.name": field_name}},
-                            field_value_filter,
-                        ]
-                    }
-                },
-            }
-        }
+                return {"match": {field: {"query": field_value, "operator": "and"}}}
 
     async def _custom_fields_search_filter(
         self, path: str, fields: dict[str, str]
@@ -1078,37 +1044,28 @@ class LogService:
         after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
 
         aggregations = {
-            "group_by": {
-                "nested": {"path": path},
-                "aggs": {
-                    "by_name": {
-                        "composite": {
-                            "size": limit,
-                            "sources": [
-                                {
-                                    "name": {
-                                        "terms": {
-                                            "field": f"{path}.name",
-                                            "order": "asc",
-                                        }
-                                    }
-                                }
-                            ],
-                            **({"after": after} if after else {}),
-                        },
-                        "aggs": {
-                            "latest_type": {
-                                "top_hits": {
-                                    "size": 1,
-                                    "sort": [{"emitted_at": {"order": "desc"}}],
-                                    "_source": {
-                                        "includes": [
-                                            f"{path}.type",
-                                        ]
-                                    },
+            "by_name": {
+                "composite": {
+                    "size": limit,
+                    "sources": [
+                        {
+                            "name": {
+                                "terms": {
+                                    "field": f"{path}_fields",
+                                    "order": "asc",
                                 }
                             }
-                        },
+                        }
+                    ],
+                    **({"after": after} if after else {}),
+                },
+                "aggs": {
+                    "latest": {
+                        "top_hits": {
+                            "size": 1,
+                            "sort": [{"emitted_at": {"order": "desc"}}],
+                            "_source": {"includes": [path]},
+                        }
                     }
                 },
             }
@@ -1121,17 +1078,16 @@ class LogService:
             size=0,
         )
 
-        group_by_result = resp["aggregations"]["group_by"]["by_name"]
+        group_by_result = resp["aggregations"]["by_name"]
 
         results = []
         for bucket in group_by_result["buckets"]:
             custom_field_name = bucket["key"]["name"]
-            hits = bucket["latest_type"]["hits"]["hits"]
-
-            if hits:
-                source = hits[0]["_source"]
-                custom_field_type = source.get("type", CustomFieldType.STRING)
-                results.append((custom_field_name, custom_field_type))
+            latest_log = bucket["latest"]["hits"]["hits"][0]["_source"]
+            custom_field_type = self._get_custom_field_type_from_source(
+                latest_log, path, custom_field_name
+            )
+            results.append((custom_field_name, custom_field_type))
 
         if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
             next_cursor = serialize_pagination_cursor(group_by_result["after_key"])
@@ -1162,31 +1118,21 @@ class LogService:
         after = load_pagination_cursor(pagination_cursor) if pagination_cursor else None
 
         aggregations = {
-            "group_by": {
-                "nested": {"path": path},
-                "aggs": {
-                    "by_value_enum": {
-                        "filter": {"term": {f"{path}.name": field_name}},
-                        "aggs": {
-                            "distinct_values": {
-                                "composite": {
-                                    "size": limit,
-                                    "sources": [
-                                        {
-                                            "value_enum": {
-                                                "terms": {
-                                                    "field": f"{path}.value_enum",
-                                                    "order": "asc",
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    **({"after": after} if after else {}),
+            "distinct_values": {
+                "composite": {
+                    "size": limit,
+                    "sources": [
+                        {
+                            "value_enum": {
+                                "terms": {
+                                    "field": f"{path}.{field_name}:{CustomFieldType.ENUM}",
+                                    "order": "asc",
                                 }
                             }
-                        },
-                    }
-                },
+                        }
+                    ],
+                    **({"after": after} if after else {}),
+                }
             }
         }
 
@@ -1197,7 +1143,7 @@ class LogService:
             size=0,
         )
 
-        group_by_result = resp["aggregations"]["group_by"]["by_value_enum"]['distinct_values']  # fmt: skip
+        group_by_result = resp["aggregations"]["distinct_values"]
 
         if len(group_by_result["buckets"]) == limit and "after_key" in group_by_result:
             next_cursor = serialize_pagination_cursor(group_by_result["after_key"])

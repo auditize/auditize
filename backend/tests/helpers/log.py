@@ -158,6 +158,27 @@ class PreparedLog:
             expected_attachment["saved_at"] = matchers.IsA(str)
         expected["log_id"] = self.id
         del expected["id"]
+
+        def custom_fields_to_db(fields: list[dict]) -> tuple[dict, list[str]]:
+            return (
+                {
+                    f"{field['name']}:{field['type']}": field["value"]
+                    for field in fields
+                },
+                [field["name"] for field in fields],
+            )
+
+        for field in "source", "details":
+            expected[field], expected[f"{field}_fields"] = custom_fields_to_db(
+                expected[field]
+            )
+        for field in "actor", "resource":
+            if expected[field]:
+                entity = expected[field]
+                entity["extra"], entity["extra_fields"] = custom_fields_to_db(
+                    entity["extra"]
+                )
+
         return expected
 
     async def assert_db(self, extra=None):

@@ -1,6 +1,6 @@
 import base64
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -310,6 +310,44 @@ async def test_create_log_invalid_rich_tag(
         )
 
 
+# NB: the duplicated fields have different values and types
+_DUPLICATE_CUSTOM_FIELDS = [
+    {"name": "field", "value": "foo"},
+    {"name": "field", "value": 123},
+]
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"source": _DUPLICATE_CUSTOM_FIELDS},
+        {"details": _DUPLICATE_CUSTOM_FIELDS},
+        {
+            "actor": {
+                "ref": "user:123",
+                "type": "user",
+                "name": "John Doe",
+                "extra": _DUPLICATE_CUSTOM_FIELDS,
+            }
+        },
+        {
+            "resource": {
+                "ref": "config-profile:123",
+                "type": "config_profile",
+                "name": "Config Profile 123",
+                "extra": _DUPLICATE_CUSTOM_FIELDS,
+            }
+        },
+    ],
+)
+async def test_create_log_duplicated_custom_field_names(
+    log_write_client: HttpTestHelper, repo: PreparedRepo, fields: dict
+):
+    await log_write_client.assert_post_bad_request(
+        f"/repos/{repo.id}/logs", json=PreparedLog.prepare_data(fields)
+    )
+
+
 async def test_create_log_invalid_identifiers(
     log_write_client: HttpTestHelper, repo: PreparedRepo
 ):
@@ -394,6 +432,18 @@ async def test_create_log_invalid_identifiers(
                 }
             }
         )
+
+
+async def test_create_log_too_much_fields_in_index(
+    log_write_client: HttpTestHelper, repo: PreparedRepo
+):
+    """Check that we cannot create a log with too many fields in the index"""
+
+    custom_fields = [{"name": f"field_{i}", "value": f"value_{i}"} for i in range(1000)]
+    await log_write_client.assert_post_bad_request(
+        f"/repos/{repo.id}/logs",
+        json=PreparedLog.prepare_data({"details": custom_fields}),
+    )
 
 
 async def test_create_log_cannot_have_entities_with_same_name_and_parent(
@@ -1367,6 +1417,29 @@ class _TestGetLogsFilterCustomField:
             params={
                 f"{self.field_prefix}.{field_type}": "INVALID VALUE",
             },
+        )
+
+    async def test_field_type_change(
+        self, log_rw_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        # The field is first used as a string and then as an integer:
+        # the search must rely on the type of the most recent log (by emitted_at)
+        oldest_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data([{"name": "field", "value": "123"}]),
+            emitted_at=datetime.now() - timedelta(days=1),
+        )
+        newest_log = await repo.create_log(
+            log_rw_client,
+            self.prepare_log_data([{"name": "field", "value": 123, "type": "integer"}]),
+        )
+
+        await _test_get_logs_filter(
+            client=log_rw_client,
+            repo=repo,
+            search_params={f"{self.field_prefix}.field": "123"},
+            expected_log=newest_log,
+            extra_log=False,
         )
 
 
@@ -3019,6 +3092,43 @@ class _ConsolidatedCustomFieldsTest:
             log_read_client,
             self.get_path(repo.id),
             items=[{"name": field["name"], "type": field["type"]} for field in fields],
+        )
+
+    async def test_field_type_change(
+        self,
+        superadmin_client: HttpTestHelper,
+        log_read_client: HttpTestHelper,
+        repo: PreparedRepo,
+    ):
+        # The most recent log (by emitted_at, not by creation order) gives the field type
+        await repo.create_log(
+            superadmin_client,
+            self.prepare_log_data(
+                [
+                    {"name": "field_1", "value": "value", "type": "string"},
+                    {"name": "field_2", "value": 123, "type": "integer"},
+                ]
+            ),
+        )
+        await repo.create_log(
+            superadmin_client,
+            self.prepare_log_data(
+                [
+                    {"name": "field_1", "value": 123, "type": "integer"},
+                    {"name": "field_2", "value": "value", "type": "string"},
+                ]
+            ),
+            emitted_at=datetime.now() - timedelta(days=1),
+        )
+        await log_read_client.assert_get_ok(
+            self.get_path(repo.id),
+            expected_json={
+                "items": [
+                    {"name": "field_1", "type": "string"},
+                    {"name": "field_2", "type": "integer"},
+                ],
+                "pagination": {"next_cursor": None},
+            },
         )
 
     async def test_authorized_entities(

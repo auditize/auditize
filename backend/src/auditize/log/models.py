@@ -2,7 +2,7 @@ import base64
 import enum
 import json
 from datetime import datetime, timezone
-from typing import Annotated, Any, ClassVar, Optional, Self
+from typing import Annotated, Any, Optional, Self
 from uuid import UUID
 
 from pydantic import (
@@ -55,40 +55,15 @@ class CustomField(BaseModel):
     name: Annotated[str, BeforeValidator(normalize_identifier)]
     value: str | bool | int | float
 
-    _ES_MAPPING: ClassVar[dict[CustomFieldType, str]] = {
-        CustomFieldType.ENUM: "value_enum",
-        CustomFieldType.BOOLEAN: "value_boolean",
-        CustomFieldType.INTEGER: "value_integer",
-        CustomFieldType.FLOAT: "value_float",
-        CustomFieldType.DATETIME: "value_datetime",
-    }
 
-    @model_serializer(mode="wrap")
-    def serialize_model(
-        self, handler: SerializerFunctionWrapHandler, info: ValidationInfo
-    ) -> dict:
-        serialized = handler(self)
-        if info.context != "es":
-            return serialized
-
-        es_field_name = self._ES_MAPPING.get(self.type, "value")
-        serialized[es_field_name] = serialized.pop("value")
-
-        return serialized
-
-    @model_validator(mode="before")
-    @classmethod
-    def pre_validation(cls, data: Any, info: ValidationInfo) -> Any:
-        if info.context != "es":
-            return data
-
-        pre_validated = data.copy()
-
-        es_field_type = pre_validated.get("type", CustomFieldType.STRING)
-        es_field_name = cls._ES_MAPPING.get(es_field_type, "value")
-        pre_validated["value"] = pre_validated.pop(es_field_name)
-
-        return pre_validated
+# Custom field value attribute used by mapping versions <= 5 (nested documents)
+_LEGACY_ES_VALUE_FIELDS = {
+    CustomFieldType.ENUM: "value_enum",
+    CustomFieldType.BOOLEAN: "value_boolean",
+    CustomFieldType.INTEGER: "value_integer",
+    CustomFieldType.FLOAT: "value_float",
+    CustomFieldType.DATETIME: "value_datetime",
+}
 
 
 class EmitterType(enum.StrEnum):
@@ -193,6 +168,21 @@ class Log(BaseModel):
     attachments: list[Attachment] = Field(default_factory=list)
     entity_path: list[EntityPathNode] = Field(default_factory=list)
 
+    @staticmethod
+    def _custom_fields_to_es(data: list[dict]) -> tuple[dict, list[str]]:
+        """
+        Example:
+        - input: [{"name": "ip", "type": "string", "value": "1.2.3.4"},
+                  {"name": "port", "type": "integer", "value": 80}]
+        - output: ({"ip:string": "1.2.3.4", "port:integer": 80}, ["ip", "port"])
+        """
+        fields = {}
+        field_names = []
+        for field in data:
+            fields[f"{field['name']}:{field['type']}"] = field["value"]
+            field_names.append(field["name"])
+        return fields, field_names
+
     @model_serializer(mode="wrap")
     def serialize_model(
         self, handler: SerializerFunctionWrapHandler, info: ValidationInfo
@@ -201,7 +191,41 @@ class Log(BaseModel):
         if info.context != "es":
             return serialized
         serialized["log_id"] = serialized.pop("id")
+        for field in "source", "details":
+            serialized[field], serialized[f"{field}_fields"] = (
+                self._custom_fields_to_es(serialized[field])
+            )
+        for field in "actor", "resource":
+            if serialized[field]:
+                actor_or_resource = serialized[field]
+                actor_or_resource["extra"], actor_or_resource["extra_fields"] = (
+                    self._custom_fields_to_es(actor_or_resource["extra"])
+                )
         return serialized
+
+    @staticmethod
+    def _custom_fields_from_es(data: dict | list) -> list[dict]:
+        # NB: the list format is the one used by mapping versions <= 5,
+        # it must still be supported to be able to reindex a former index
+        if isinstance(data, list):
+            fields = []
+            for field in data:
+                field_type = field.get("type", CustomFieldType.STRING)
+                value_field = _LEGACY_ES_VALUE_FIELDS.get(field_type, "value")
+                fields.append(
+                    {
+                        "name": field["name"],
+                        "value": field[value_field],
+                        "type": field_type,
+                    }
+                )
+            return fields
+
+        fields = []
+        for key, value in data.items():
+            name, field_type = key.rsplit(":", 1)
+            fields.append({"name": name, "value": value, "type": field_type})
+        return fields
 
     @model_validator(mode="before")
     @classmethod
@@ -210,6 +234,18 @@ class Log(BaseModel):
             return data
         pre_validated = data.copy()
         pre_validated["id"] = pre_validated.pop("log_id")
+        for field in "source", "details":
+            if field in pre_validated:
+                pre_validated[field] = cls._custom_fields_from_es(pre_validated[field])
+            pre_validated.pop(f"{field}_fields", None)
+        for field in "actor", "resource":
+            if pre_validated.get(field):
+                actor_or_resource = pre_validated[field] = pre_validated[field].copy()
+                if "extra" in actor_or_resource:
+                    actor_or_resource["extra"] = cls._custom_fields_from_es(
+                        actor_or_resource["extra"]
+                    )
+                actor_or_resource.pop("extra_fields", None)
         # NB: emitter has been introduced in 0.10.0, add a dummy value for backward compatibility
         pre_validated.setdefault(
             "emitter",
@@ -566,6 +602,22 @@ class LogCreate(BaseModel):
     def validate_entity_path(self):
         if len(self.entity_path) == 0:
             raise ValueError("Entity path must be at least one entity deep")
+        return self
+
+    @model_validator(mode="after")
+    def validate_custom_field_names(self):
+        for container, fields in (
+            ("source", self.source),
+            ("actor.extra", self.actor.extra if self.actor else []),
+            ("resource.extra", self.resource.extra if self.resource else []),
+            ("details", self.details),
+        ):
+            names = [field.name for field in fields]
+            duplicates = sorted({name for name in names if names.count(name) > 1})
+            if duplicates:
+                raise ValueError(
+                    f"Duplicate custom field names in {container}: {', '.join(duplicates)}"
+                )
         return self
 
 

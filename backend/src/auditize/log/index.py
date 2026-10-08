@@ -6,9 +6,10 @@ from elasticsearch import AsyncElasticsearch, helpers
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auditize.database import get_elastic_client
+from auditize.log.models import CustomFieldType
 from auditize.repo.sql_models import Repo
 
-_MAPPING_VERSION = 5
+_MAPPING_VERSION = 6
 
 # Elasticsearch mapping history:
 # - 0.7.0:
@@ -19,6 +20,8 @@ _MAPPING_VERSION = 5
 #   - v3: unchanged mapping, use '_' instead of '-' in custom field names and identifiers in general
 #   - v4: add emitter field
 #   - v5: add emitted_at field and update sorting to use emitted_at and log_id
+# - 0.12.0:
+#   - v6: store custom fields as flat {"name:type": value} objects instead of nested documents
 
 _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
     "type": "text",
@@ -26,19 +29,44 @@ _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
     "search_analyzer": "custom_asciifolding",
 }
 
-_TYPE_CUSTOM_FIELDS = {
-    "type": "nested",
-    "properties": {
-        "type": {"type": "keyword"},
-        "name": {"type": "keyword"},
-        "value": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
-        "value_enum": {"type": "keyword"},
-        "value_boolean": {"type": "boolean"},
-        "value_integer": {"type": "long"},
-        "value_float": {"type": "double"},
-        "value_datetime": {"type": "date"},
+# Custom fields are stored as {"name:type": value} objects, the actual ES field
+# is created on the fly by the dynamic template matching the type suffix.
+#
+# NB: each distinct "name:type" pair creates a new (and permanent) field in the index mapping,
+# which is subject to the ES default limit of 1000 fields per index
+# (index.mapping.total_fields.limit). Beyond this limit, logs introducing new custom fields
+# are rejected. If needed, this limit can be raised or the
+# index.mapping.total_fields.ignore_dynamic_beyond_limit setting (ES >= 8.13) can be enabled
+# so that new fields beyond the limit are kept in the document but are not indexed.
+_CUSTOM_FIELD_TYPE_MAPPINGS = {
+    CustomFieldType.STRING: {
+        **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+        "copy_to": "custom_fields_text",
+    },
+    CustomFieldType.ENUM: {"type": "keyword"},
+    CustomFieldType.DATETIME: {"type": "date"},
+    CustomFieldType.BOOLEAN: {"type": "boolean"},
+    CustomFieldType.INTEGER: {"type": "long"},
+    CustomFieldType.FLOAT: {"type": "double"},
+    CustomFieldType.JSON: {
+        **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
+        "copy_to": "custom_fields_text",
     },
 }
+
+_DYNAMIC_TEMPLATES = [
+    {
+        f"custom_field_{field_type}": {
+            "match": f"*:{field_type}",
+            "mapping": _CUSTOM_FIELD_TYPE_MAPPINGS[field_type],
+        }
+    }
+    for field_type in CustomFieldType
+]
+
+_TYPE_CUSTOM_FIELDS = {"type": "object", "dynamic": True}
+
+_TYPE_CUSTOM_FIELD_NAMES = {"type": "keyword"}
 
 _MAPPING = {
     "properties": {
@@ -59,6 +87,7 @@ _MAPPING = {
             }
         },
         "source": _TYPE_CUSTOM_FIELDS,
+        "source_fields": _TYPE_CUSTOM_FIELD_NAMES,
         "actor": {
             "properties": {
                 "ref": {"type": "keyword"},
@@ -68,6 +97,7 @@ _MAPPING = {
                     "fields": {"keyword": {"type": "keyword"}},
                 },
                 "extra": _TYPE_CUSTOM_FIELDS,
+                "extra_fields": _TYPE_CUSTOM_FIELD_NAMES,
             }
         },
         "resource": {
@@ -79,9 +109,12 @@ _MAPPING = {
                     "fields": {"keyword": {"type": "keyword"}},
                 },
                 "extra": _TYPE_CUSTOM_FIELDS,
+                "extra_fields": _TYPE_CUSTOM_FIELD_NAMES,
             }
         },
         "details": _TYPE_CUSTOM_FIELDS,
+        "details_fields": _TYPE_CUSTOM_FIELD_NAMES,
+        "custom_fields_text": _TYPE_TEXT_CUSTOM_ASCIIFOLDING,
         "tags": {
             "type": "nested",
             "properties": {
@@ -113,7 +146,8 @@ _MAPPING = {
                 },
             },
         },
-    }
+    },
+    "dynamic_templates": _DYNAMIC_TEMPLATES,
 }
 
 

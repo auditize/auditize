@@ -44,17 +44,25 @@ async def test_save_log_db_shape(repo: PreparedRepo):
         "saved_at",
         "emitted_at",
         "source",
+        "source_fields",
         "actor",
         "resource",
         "details",
+        "details_fields",
         "tags",
         "attachments",
         "entity_path",
         "emitter",
     }
     assert db_log["action"].keys() == {"type", "category"}
-    assert db_log["actor"].keys() == {"ref", "type", "name", "extra"}
-    assert db_log["resource"].keys() == {"ref", "type", "name", "extra"}
+    assert db_log["actor"].keys() == {"ref", "type", "name", "extra", "extra_fields"}
+    assert db_log["resource"].keys() == {
+        "ref",
+        "type",
+        "name",
+        "extra",
+        "extra_fields",
+    }
     assert db_log["tags"][0].keys() == {"ref", "type", "name"}
     assert db_log["entity_path"][0].keys() == {"ref", "name"}
 
