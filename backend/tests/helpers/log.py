@@ -147,7 +147,7 @@ class PreparedLog:
             }
         )
 
-    def expected_db_document(self, extra=None) -> dict:
+    def expected_es_document(self, extra=None) -> dict:
         expected = self.expected_api_response(extra)
         expected["saved_at"] = matchers.IsA(str)
         expected["emitted_at"] = matchers.IsA(str)
@@ -159,7 +159,7 @@ class PreparedLog:
         expected["log_id"] = self.id
         del expected["id"]
 
-        def custom_fields_to_db(fields: list[dict]) -> tuple[dict, list[str]]:
+        def custom_fields_to_es(fields: list[dict]) -> tuple[dict, list[str]]:
             return (
                 {
                     f"{field['name']}:{field['type']}": field["value"]
@@ -169,28 +169,28 @@ class PreparedLog:
             )
 
         for field in "source", "details":
-            expected[field], expected[f"{field}_fields"] = custom_fields_to_db(
+            expected[field], expected[f"{field}_fields"] = custom_fields_to_es(
                 expected[field]
             )
         for field in "actor", "resource":
             if expected[field]:
                 entity = expected[field]
-                entity["extra"], entity["extra_fields"] = custom_fields_to_db(
+                entity["extra"], entity["extra_fields"] = custom_fields_to_es(
                     entity["extra"]
                 )
 
         return expected
 
-    async def assert_db(self, extra=None):
-        expected = self.expected_db_document(extra)
+    async def assert_es(self, extra=None):
+        expected = self.expected_es_document(extra)
 
         dbm = get_dbm()
         resp = await dbm.elastic_client.get(
             index=f"{self.repo.log_db_name}_read", id=self.id
         )
-        db_log = resp["_source"]
-        ic(db_log)
-        assert db_log == expected
+        es_log = resp["_source"]
+        ic(es_log)
+        assert es_log == expected
 
 
 async def assert_elastic_log_document(
@@ -198,6 +198,6 @@ async def assert_elastic_log_document(
 ):
     dbm = get_dbm()
     resp = await dbm.elastic_client.get(index=f"{repo.log_db_name}_read", id=log_id)
-    db_log = resp["_source"]
-    ic(db_log)
-    assert db_log == expected
+    es_log = resp["_source"]
+    ic(es_log)
+    assert es_log == expected

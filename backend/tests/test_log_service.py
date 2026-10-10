@@ -28,7 +28,7 @@ def make_log_data(**extra) -> LogCreate:
     )
 
 
-async def test_save_log_db_shape(repo: PreparedRepo):
+async def test_save_log_es_shape(repo: PreparedRepo):
     log = make_log_data()
 
     async with open_db_session() as session:
@@ -37,8 +37,8 @@ async def test_save_log_db_shape(repo: PreparedRepo):
             log,
             emitter=Emitter(type=EmitterType.APIKEY, id=UNKNOWN_UUID, name="API Key"),
         )
-    db_log = await repo.get_log(log.id)
-    assert set(db_log.keys()) == {
+    es_log = await repo.get_log(log.id)
+    assert set(es_log.keys()) == {
         "log_id",
         "action",
         "saved_at",
@@ -54,17 +54,17 @@ async def test_save_log_db_shape(repo: PreparedRepo):
         "entity_path",
         "emitter",
     }
-    assert db_log["action"].keys() == {"type", "category"}
-    assert db_log["actor"].keys() == {"ref", "type", "name", "extra", "extra_fields"}
-    assert db_log["resource"].keys() == {
+    assert es_log["action"].keys() == {"type", "category"}
+    assert es_log["actor"].keys() == {"ref", "type", "name", "extra", "extra_fields"}
+    assert es_log["resource"].keys() == {
         "ref",
         "type",
         "name",
         "extra",
         "extra_fields",
     }
-    assert db_log["tags"][0].keys() == {"ref", "type", "name"}
-    assert db_log["entity_path"][0].keys() == {"ref", "name"}
+    assert es_log["tags"][0].keys() == {"ref", "type", "name"}
+    assert es_log["entity_path"][0].keys() == {"ref", "name"}
 
 
 async def test_log_retention_period_disabled(

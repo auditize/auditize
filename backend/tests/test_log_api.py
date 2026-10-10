@@ -693,7 +693,7 @@ async def test_add_attachment_binary_and_all_fields(
         },
         expected_status_code=204,
     )
-    await log.assert_db(
+    await log.assert_es(
         {
             "attachments": [
                 {
