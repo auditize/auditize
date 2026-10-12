@@ -53,9 +53,9 @@ from auditize.repo.sql_models import Repo, RepoStatus
 
 _CONSOLIDATED_LOG_ENTITIES = Cache(Cache.MEMORY)
 
-# Dimensions available for log aggregation and their matching ES field
+# Builtin dimensions available for log aggregation and their matching ES field
 # (all of them are root-level keyword fields with at most one value per log)
-_AGGREGATION_FIELDS = {
+_AGGREGATION_BUILTIN_FIELDS = {
     "action_type": "action.type",
     "action_category": "action.category",
     "actor_type": "actor.type",
@@ -64,7 +64,27 @@ _AGGREGATION_FIELDS = {
     "resource": "resource.ref",
 }
 
-AGGREGATION_DIMENSIONS = list(_AGGREGATION_FIELDS)
+AGGREGATION_BUILTIN_DIMENSIONS = list(_AGGREGATION_BUILTIN_FIELDS)
+
+# Custom field dimensions are expressed as "<prefix>.<field_name>",
+# map each prefix to the ES path of the custom fields
+_AGGREGATION_CUSTOM_FIELD_PATHS = {
+    "source": "source",
+    "details": "details",
+    "actor": "actor.extra",
+    "resource": "resource.extra",
+}
+
+AGGREGATION_CUSTOM_FIELD_PREFIXES = list(_AGGREGATION_CUSTOM_FIELD_PATHS)
+
+# Custom field types that can be used as aggregation dimensions
+# (string and JSON fields are full-text fields, datetime fields are not relevant to group by)
+_AGGREGATABLE_CUSTOM_FIELD_TYPES = (
+    CustomFieldType.ENUM,
+    CustomFieldType.BOOLEAN,
+    CustomFieldType.INTEGER,
+    CustomFieldType.FLOAT,
+)
 
 # Dimensions whose value is returned as a {ref, name} object
 _AGGREGATION_REF_NAME_DIMENSIONS = ("actor", "resource")
@@ -79,6 +99,27 @@ class LogAggregation:
     # each row is a list of dimension values (in the same order as group_by) and a count
     rows: list[tuple[list[Any], int]]
     other_count: int
+
+
+@dataclass
+class _AggregationDimension:
+    # dimension as given in group_by (e.g. "actor", "details.status"), also used as
+    # the row key in the aggregation results
+    name: str
+    # ES field to aggregate on (e.g. "actor.ref", "details.status:enum")
+    es_field: str
+    # type of the custom field, None for builtin dimensions
+    custom_field_type: CustomFieldType | None = None
+
+    @property
+    def needs_runtime_field(self) -> bool:
+        # The missing value placeholder can only be used on keyword fields, non-keyword
+        # custom fields are then aggregated through a keyword runtime field
+        return self.custom_field_type in (
+            CustomFieldType.BOOLEAN,
+            CustomFieldType.INTEGER,
+            CustomFieldType.FLOAT,
+        )
 
 
 @dataclass
@@ -378,9 +419,10 @@ class LogService:
         # NB: fallback to string type, this should never happen
         return CustomFieldType.STRING
 
-    async def _get_custom_field_type(
+    async def _find_custom_field_type(
         self, path: str, field_name: str
-    ) -> CustomFieldType:
+    ) -> CustomFieldType | None:
+        """Return the custom field type from the most recent log having it, or None if no log has it."""
         resp = await self.es.search(
             index=self.read_alias,
             query={"term": {f"{path}_fields": field_name}},
@@ -394,8 +436,14 @@ class LogService:
             return self._get_custom_field_type_from_source(
                 hits[0]["_source"], path, field_name
             )
+        return None
+
+    async def _get_custom_field_type(
+        self, path: str, field_name: str
+    ) -> CustomFieldType:
+        field_type = await self._find_custom_field_type(path, field_name)
         # NB: fallback to string type, this should never happen
-        return CustomFieldType.STRING
+        return field_type or CustomFieldType.STRING
 
     async def _custom_field_search_filter(
         self, path: str, field_name: str, field_value: str
@@ -642,31 +690,105 @@ class LogService:
         )
         return resp["count"]
 
-    @staticmethod
-    def _validate_aggregation_group_by(group_by: list[str]):
+    async def _resolve_aggregation_dimension(
+        self, dimension: str
+    ) -> _AggregationDimension:
+        """
+        Examples:
+        - "actor" => _AggregationDimension("actor", "actor.ref", None)
+        - "details.status" (enum) => _AggregationDimension(
+            "details.status", "details.status:enum", CustomFieldType.ENUM
+          )
+        - "actor.age" (integer) => _AggregationDimension(
+            "actor.age", "actor.extra.age:integer", CustomFieldType.INTEGER
+          )
+        - "foo.bar", "details.unknown", "details.comment" (string) => ValidationError
+        """
+        if dimension in _AGGREGATION_BUILTIN_FIELDS:
+            return _AggregationDimension(
+                dimension, _AGGREGATION_BUILTIN_FIELDS[dimension]
+            )
+
+        prefix, _, field_name = dimension.partition(".")
+        path = _AGGREGATION_CUSTOM_FIELD_PATHS.get(prefix)
+        if not path or not field_name:
+            raise ValidationError(
+                f"Invalid dimension {dimension!r}, expected one of "
+                f"{', '.join(AGGREGATION_BUILTIN_DIMENSIONS)} or a custom field "
+                f"as <prefix>.<field_name> with prefix one of "
+                f"{', '.join(AGGREGATION_CUSTOM_FIELD_PREFIXES)}"
+            )
+
+        field_type = await self._find_custom_field_type(path, field_name)
+        if not field_type:
+            raise ValidationError(f"Unknown custom field {dimension!r}")
+        if field_type not in _AGGREGATABLE_CUSTOM_FIELD_TYPES:
+            raise ValidationError(
+                f"Custom field {dimension!r} of type {field_type} cannot be used as "
+                f"dimension, expected one of these types: "
+                f"{', '.join(_AGGREGATABLE_CUSTOM_FIELD_TYPES)}"
+            )
+        return _AggregationDimension(
+            dimension, f"{path}.{field_name}:{field_type}", field_type
+        )
+
+    async def _resolve_aggregation_dimensions(
+        self, group_by: list[str]
+    ) -> list[_AggregationDimension]:
         if not 1 <= len(group_by) <= 2:
             raise ValidationError("group_by must contain 1 or 2 dimensions")
         if len(set(group_by)) != len(group_by):
             raise ValidationError("group_by must not contain the same dimension twice")
-        for dimension in group_by:
-            if dimension not in _AGGREGATION_FIELDS:
-                raise ValidationError(
-                    f"Invalid dimension {dimension!r}, expected one of "
-                    f"{', '.join(AGGREGATION_DIMENSIONS)}"
-                )
+        return [
+            await self._resolve_aggregation_dimension(dimension)
+            for dimension in group_by
+        ]
 
     @staticmethod
-    def _get_aggregation_name_dimensions(group_by: list[str]) -> list[str]:
-        return [dim for dim in group_by if dim in _AGGREGATION_REF_NAME_DIMENSIONS]
+    def _get_aggregation_name_dimensions(
+        dimensions: list[_AggregationDimension],
+    ) -> list[str]:
+        return [
+            dim.name for dim in dimensions if dim.name in _AGGREGATION_REF_NAME_DIMENSIONS
+        ]
+
+    @staticmethod
+    def _get_aggregation_runtime_field(i: int) -> str:
+        return f"_aggregation_dimension_{i}"
 
     @classmethod
-    def _build_aggregation(cls, group_by: list[str], limit: int) -> dict:
+    def _build_aggregation_runtime_mappings(
+        cls, dimensions: list[_AggregationDimension]
+    ) -> dict:
+        return {
+            cls._get_aggregation_runtime_field(i): {
+                "type": "keyword",
+                "script": {
+                    "source": (
+                        "if (doc.containsKey(params.field) && doc[params.field].size() > 0) "
+                        "{ emit(String.valueOf(doc[params.field].value)); }"
+                    ),
+                    "params": {"field": dim.es_field},
+                },
+            }
+            for i, dim in enumerate(dimensions)
+            if dim.needs_runtime_field
+        }
+
+    @classmethod
+    def _build_aggregation(
+        cls, dimensions: list[_AggregationDimension], limit: int
+    ) -> dict:
         terms = [
             {
-                "field": _AGGREGATION_FIELDS[dimension],
+                "field": (
+                    cls._get_aggregation_runtime_field(i)
+                    if dim.needs_runtime_field
+                    else dim.es_field
+                ),
                 "missing": _AGGREGATION_MISSING_VALUE,
             }
-            for dimension in group_by
+            for i, dim in enumerate(dimensions)
         ]
         params = {
             "size": limit,
@@ -678,7 +800,7 @@ class LogService:
             aggregation = {"multi_terms": {"terms": terms, **params}}
 
         # Get the names of actors / resources from the most recent log of each group
-        name_dimensions = cls._get_aggregation_name_dimensions(group_by)
+        name_dimensions = cls._get_aggregation_name_dimensions(dimensions)
         if name_dimensions:
             aggregation["aggs"] = {
                 "latest": {
@@ -696,13 +818,13 @@ class LogService:
 
     @classmethod
     def _get_aggregation_groups(
-        cls, group_by: list[str], buckets: list[dict]
+        cls, dimensions: list[_AggregationDimension], buckets: list[dict]
     ) -> list[_AggregationGroup]:
-        with_latest_log = bool(cls._get_aggregation_name_dimensions(group_by))
+        with_latest_log = bool(cls._get_aggregation_name_dimensions(dimensions))
         groups = [
             _AggregationGroup(
                 # terms returns a single key, multi_terms returns a list of keys
-                keys=bucket["key"] if len(group_by) > 1 else [bucket["key"]],
+                keys=bucket["key"] if len(dimensions) > 1 else [bucket["key"]],
                 count=bucket["doc_count"],
                 latest_log=(
                     bucket["latest"]["hits"]["hits"][0]["_source"]
@@ -724,12 +846,20 @@ class LogService:
 
     @staticmethod
     def _get_aggregation_value(
-        dimension: str, key: str, latest_log: dict | None
+        dimension: _AggregationDimension, key: str, latest_log: dict | None
     ) -> Any:
         if key == _AGGREGATION_MISSING_VALUE:
             return None
-        if dimension in _AGGREGATION_REF_NAME_DIMENSIONS:
-            return {"ref": key, "name": latest_log[dimension]["name"]}
+        if dimension.name in _AGGREGATION_REF_NAME_DIMENSIONS:
+            return {"ref": key, "name": latest_log[dimension.name]["name"]}
+        # values of runtime fields are returned as strings
+        match dimension.custom_field_type:
+            case CustomFieldType.BOOLEAN:
+                return key == "true"
+            case CustomFieldType.INTEGER:
+                return int(key)
+            case CustomFieldType.FLOAT:
+                return float(key)
         return key
 
     async def aggregate_logs(
@@ -740,7 +870,7 @@ class LogService:
         search_params: LogSearchParams = None,
         limit: int,
     ) -> LogAggregation:
-        self._validate_aggregation_group_by(group_by)
+        dimensions = await self._resolve_aggregation_dimensions(group_by)
 
         resp = await self.es.search(
             index=self.read_alias,
@@ -749,18 +879,21 @@ class LogService:
             ),
             size=0,
             track_total_hits=True,
-            aggregations={"groups": self._build_aggregation(group_by, limit)},
+            runtime_mappings=(
+                self._build_aggregation_runtime_mappings(dimensions) or None
+            ),
+            aggregations={"groups": self._build_aggregation(dimensions, limit)},
         )
         total_count = resp["hits"]["total"]["value"]
         groups = self._get_aggregation_groups(
-            group_by, resp["aggregations"]["groups"]["buckets"]
+            dimensions, resp["aggregations"]["groups"]["buckets"]
         )
 
         rows = [
             (
                 [
                     self._get_aggregation_value(dimension, key, group.latest_log)
-                    for dimension, key in zip(group_by, group.keys)
+                    for dimension, key in zip(dimensions, group.keys)
                 ],
                 group.count,
             )

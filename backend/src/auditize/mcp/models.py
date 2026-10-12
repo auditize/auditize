@@ -40,7 +40,7 @@ class LogAggregationMcpResponse(BaseModel):
             "example": [
                 {
                     "actor": {"ref": "user:42", "name": "Alice"},
-                    "action_type": "login",
+                    "details.status": "failed",
                     "count": 400,
                 }
             ]

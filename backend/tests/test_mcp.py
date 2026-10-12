@@ -759,6 +759,169 @@ async def test_aggregate_logs_with_search_params(
     }
 
 
+def _build_log_data_with_custom_fields(prefix: str, fields: list[dict]) -> dict:
+    match prefix:
+        case "actor" | "resource":
+            return {prefix: {"type": prefix, "ref": "1", "name": "Name", "extra": fields}}
+        case _:
+            return {prefix: fields}
+
+
+@pytest.mark.parametrize("prefix", ["source", "details", "actor", "resource"])
+@pytest.mark.parametrize(
+    "field_type,values",
+    [
+        ("enum", ["a", "a", "b"]),
+        ("boolean", [True, True, False]),
+        ("integer", [200, 200, 404]),
+        ("float", [1.5, 1.5, 2.5]),
+    ],
+)
+async def test_aggregate_logs_by_custom_field(
+    prefix: str,
+    field_type: str,
+    values: list,
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for value in values:
+        await repo.create_log_with(
+            log_rw_client,
+            _build_log_data_with_custom_fields(
+                prefix, [{"name": "field", "value": value, "type": field_type}]
+            ),
+        )
+    # log without the custom field
+    await repo.create_log_with(
+        log_rw_client, _build_log_data_with_custom_fields(prefix, [])
+    )
+
+    dimension = f"{prefix}.field"
+    assert await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, [dimension]
+    ) == {
+        "total_count": 4,
+        "rows": [
+            {dimension: values[0], "count": 2},
+            {dimension: values[2], "count": 1},
+            {dimension: None, "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_by_actor_and_actor_custom_field(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for user_ref, role in (("1", "admin"), ("1", "admin"), ("2", "user")):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                "actor": {
+                    "type": "user",
+                    "ref": user_ref,
+                    "name": f"User {user_ref}",
+                    "extra": [{"name": "role", "value": role, "type": "enum"}],
+                }
+            },
+        )
+
+    assert await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, ["actor", "actor.role"]
+    ) == {
+        "total_count": 3,
+        "rows": [
+            {"actor": {"ref": "1", "name": "User 1"}, "actor.role": "admin", "count": 2},
+            {"actor": {"ref": "2", "name": "User 2"}, "actor.role": "user", "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+async def test_aggregate_logs_by_custom_field_with_search_params(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for action_type, status in (
+        ("login", "failure"),
+        ("login", "failure"),
+        ("login", "success"),
+        ("logout", "failure"),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                "action": {"type": action_type, "category": "authentication"},
+                "details": [{"name": "status", "value": status, "type": "enum"}],
+            },
+        )
+
+    assert await _aggregate_logs(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        ["action_type", "details.status"],
+        search_params={"action_type": "login"},
+    ) == {
+        "total_count": 3,
+        "rows": [
+            {"action_type": "login", "details.status": "failure", "count": 2},
+            {"action_type": "login", "details.status": "success", "count": 1},
+        ],
+        "other_count": 0,
+    }
+
+
+@pytest.mark.parametrize("field_type", ["string", "json", "datetime"])
+async def test_aggregate_logs_by_custom_field_unsupported_type(
+    field_type: str,
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_with_custom_fields,
+    mcp_client: Client[FastMCPTransport],
+):
+    with pytest.raises(ToolError, match="cannot be used as dimension"):
+        await _aggregate_logs(
+            mcp_client, repo, log_read_apikey, [f"details.{field_type}_field"]
+        )
+
+
+async def test_aggregate_logs_by_unknown_custom_field(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_with_custom_fields,
+    mcp_client: Client[FastMCPTransport],
+):
+    with pytest.raises(ToolError, match="Unknown custom field"):
+        await _aggregate_logs(mcp_client, repo, log_read_apikey, ["details.unknown"])
+
+
+@pytest.mark.parametrize(
+    "group_by",
+    [
+        ["unknown_prefix.enum_field"],
+        ["details."],
+        ["details.enum_field", "details.enum_field"],
+    ],
+)
+async def test_aggregate_logs_by_custom_field_invalid_group_by(
+    group_by: list[str],
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_with_custom_fields,
+    mcp_client: Client[FastMCPTransport],
+):
+    with pytest.raises(ToolError):
+        await _aggregate_logs(mcp_client, repo, log_read_apikey, group_by)
+
+
 async def test_aggregate_logs_limited_permissions(
     repo: PreparedRepo,
     apikey_builder: ApikeyBuilder,

@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastmcp.dependencies import Depends
 from fastmcp.exceptions import ToolError
@@ -20,7 +20,11 @@ from auditize.log.models import (
     LogResponse,
     LogSearchParams,
 )
-from auditize.log.service import AGGREGATION_DIMENSIONS, LogService
+from auditize.log.service import (
+    AGGREGATION_BUILTIN_DIMENSIONS,
+    AGGREGATION_CUSTOM_FIELD_PREFIXES,
+    LogService,
+)
 from auditize.mcp.app import mcp
 from auditize.mcp.models import (
     LogAggregationMcpResponse,
@@ -37,8 +41,6 @@ TOOL_ANNOTATIONS = ToolAnnotations(
 # Page size used by all tools, except search_logs which returns heavier objects.
 DEFAULT_TOOL_PAGE_LIMIT = 50
 SEARCH_LOGS_PAGE_LIMIT = 10
-
-AggregationDimension = Literal[tuple(AGGREGATION_DIMENSIONS)]
 
 CURSOR_PARAM_DESCRIPTION = (
     "Pagination cursor from a previous call's next_cursor field. "
@@ -149,11 +151,17 @@ async def count_logs(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def aggregate_logs(
     group_by: Annotated[
-        list[AggregationDimension],
+        list[str],
         Field(
             min_length=1,
             max_length=2,
-            description="1 or 2 dimensions to group logs by",
+            description=(
+                "1 or 2 dimensions to group logs by. A dimension is either one of "
+                f"{', '.join(AGGREGATION_BUILTIN_DIMENSIONS)} or a custom field as "
+                "<prefix>.<field_name> with prefix one of "
+                f"{', '.join(AGGREGATION_CUSTOM_FIELD_PREFIXES)} "
+                "(e.g. details.status, actor.role)"
+            ),
         ),
     ],
     search_params: LogSearchParams = LogSearchParams(),
@@ -171,10 +179,18 @@ async def aggregate_logs(
     `other_count` (logs in groups beyond the top). A null dimension value groups logs
     that have no value for that dimension.
 
+    Custom fields (source.<field_name>, details.<field_name>, actor.<field_name>,
+    resource.<field_name>) can be used as dimensions if they are of type enum,
+    boolean, integer or float. Discover available field names and their type with
+    list_source_fields / list_details_fields / list_actor_extra_fields /
+    list_resource_extra_fields.
+
     Dimension values in rows are:
     - a scalar for action_type, action_category, actor_type and resource_type
     - {ref, name} for actor and resource (name is the most recent one among the
       logs of the group)
+    - a string, boolean, integer or float for custom fields of type enum, boolean,
+      integer or float respectively
     """
     try:
         aggregation = await log_service.aggregate_logs(
