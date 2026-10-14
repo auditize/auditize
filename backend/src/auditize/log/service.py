@@ -89,9 +89,6 @@ _AGGREGATABLE_CUSTOM_FIELD_TYPES = (
 # Dimensions whose value is returned as a {ref, name} object
 _AGGREGATION_REF_NAME_DIMENSIONS = ("actor", "resource")
 
-# ES does not return buckets for logs without value unless a placeholder is provided
-_AGGREGATION_MISSING_VALUE = "__auditize_missing_value__"
-
 
 @dataclass
 class LogAggregation:
@@ -111,20 +108,10 @@ class _AggregationDimension:
     # type of the custom field, None for builtin dimensions
     custom_field_type: CustomFieldType | None = None
 
-    @property
-    def needs_runtime_field(self) -> bool:
-        # The missing value placeholder can only be used on keyword fields, non-keyword
-        # custom fields are then aggregated through a keyword runtime field
-        return self.custom_field_type in (
-            CustomFieldType.BOOLEAN,
-            CustomFieldType.INTEGER,
-            CustomFieldType.FLOAT,
-        )
-
 
 @dataclass
 class _AggregationGroup:
-    keys: list[str]
+    keys: list[Any]
     count: int
     latest_log: dict | None
 
@@ -749,47 +736,17 @@ class LogService:
         dimensions: list[_AggregationDimension],
     ) -> list[str]:
         return [
-            dim.name for dim in dimensions if dim.name in _AGGREGATION_REF_NAME_DIMENSIONS
+            dim.name
+            for dim in dimensions
+            if dim.name in _AGGREGATION_REF_NAME_DIMENSIONS
         ]
-
-    @staticmethod
-    def _get_aggregation_runtime_field(i: int) -> str:
-        return f"_aggregation_dimension_{i}"
-
-    @classmethod
-    def _build_aggregation_runtime_mappings(
-        cls, dimensions: list[_AggregationDimension]
-    ) -> dict:
-        return {
-            cls._get_aggregation_runtime_field(i): {
-                "type": "keyword",
-                "script": {
-                    "source": (
-                        "if (doc.containsKey(params.field) && doc[params.field].size() > 0) "
-                        "{ emit(String.valueOf(doc[params.field].value)); }"
-                    ),
-                    "params": {"field": dim.es_field},
-                },
-            }
-            for i, dim in enumerate(dimensions)
-            if dim.needs_runtime_field
-        }
 
     @classmethod
     def _build_aggregation(
         cls, dimensions: list[_AggregationDimension], limit: int
     ) -> dict:
-        terms = [
-            {
-                "field": (
-                    cls._get_aggregation_runtime_field(i)
-                    if dim.needs_runtime_field
-                    else dim.es_field
-                ),
-                "missing": _AGGREGATION_MISSING_VALUE,
-            }
-            for i, dim in enumerate(dimensions)
-        ]
+        # NB: logs without value for a dimension are not part of any group
+        terms = [{"field": dim.es_field} for dim in dimensions]
         params = {
             "size": limit,
             "order": [{"_count": "desc"}, {"_key": "asc"}],
@@ -821,7 +778,7 @@ class LogService:
         cls, dimensions: list[_AggregationDimension], buckets: list[dict]
     ) -> list[_AggregationGroup]:
         with_latest_log = bool(cls._get_aggregation_name_dimensions(dimensions))
-        groups = [
+        return [
             _AggregationGroup(
                 # terms returns a single key, multi_terms returns a list of keys
                 keys=bucket["key"] if len(dimensions) > 1 else [bucket["key"]],
@@ -834,32 +791,16 @@ class LogService:
             )
             for bucket in buckets
         ]
-        # ES sorts the placeholder of missing values as any other value, move them
-        # after the other values in case of equal counts
-        groups.sort(
-            key=lambda group: (
-                -group.count,
-                [(key == _AGGREGATION_MISSING_VALUE, key) for key in group.keys],
-            )
-        )
-        return groups
 
     @staticmethod
     def _get_aggregation_value(
-        dimension: _AggregationDimension, key: str, latest_log: dict | None
+        dimension: _AggregationDimension, key: Any, latest_log: dict | None
     ) -> Any:
-        if key == _AGGREGATION_MISSING_VALUE:
-            return None
         if dimension.name in _AGGREGATION_REF_NAME_DIMENSIONS:
             return {"ref": key, "name": latest_log[dimension.name]["name"]}
-        # values of runtime fields are returned as strings
-        match dimension.custom_field_type:
-            case CustomFieldType.BOOLEAN:
-                return key == "true"
-            case CustomFieldType.INTEGER:
-                return int(key)
-            case CustomFieldType.FLOAT:
-                return float(key)
+        # ES returns boolean keys as 1 / 0
+        if dimension.custom_field_type == CustomFieldType.BOOLEAN:
+            return bool(key)
         return key
 
     async def aggregate_logs(
@@ -879,9 +820,6 @@ class LogService:
             ),
             size=0,
             track_total_hits=True,
-            runtime_mappings=(
-                self._build_aggregation_runtime_mappings(dimensions) or None
-            ),
             aggregations={"groups": self._build_aggregation(dimensions, limit)},
         )
         total_count = resp["hits"]["total"]["value"]

@@ -33,8 +33,7 @@ class LogAggregationMcpResponse(BaseModel):
         description=(
             "One row per group (per combination of values with two dimensions), "
             "sorted by count desc. Each row has one property per dimension (named "
-            "after the dimension, null for logs without value for that dimension) "
-            "and a `count` property."
+            "after the dimension) and a `count` property."
         ),
         json_schema_extra={
             "example": [
@@ -47,5 +46,8 @@ class LogAggregationMcpResponse(BaseModel):
         },
     )
     other_count: int = Field(
-        description="Number of logs in groups beyond the top `limit` groups"
+        description=(
+            "Number of logs that are not in the returned rows: logs in groups beyond "
+            "the top `limit` groups and logs without value for a dimension"
+        )
     )

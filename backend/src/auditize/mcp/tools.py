@@ -176,8 +176,8 @@ async def aggregate_logs(
     Use it for "top N" and "breakdown by" questions instead of paging through
     search_logs. Returns a flat list of rows, one per group (one per combination of
     values with two dimensions), sorted by count and limited to the top `limit`, plus
-    `other_count` (logs in groups beyond the top). A null dimension value groups logs
-    that have no value for that dimension.
+    `other_count` (logs that are not in the returned rows). Logs without value for a
+    dimension are not part of any group and are counted in `other_count`.
 
     Custom fields (source.<field_name>, details.<field_name>, actor.<field_name>,
     resource.<field_name>) can be used as dimensions if they are of type enum,

@@ -592,7 +592,7 @@ async def test_aggregate_logs_two_dimensions(
     }
 
 
-async def test_aggregate_logs_missing_value(
+async def test_aggregate_logs_without_value(
     repo: PreparedRepo,
     log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
@@ -604,17 +604,15 @@ async def test_aggregate_logs_missing_value(
     await repo.create_log_with(log_rw_client, {})
     await repo.create_log_with(log_rw_client, {})
 
+    # logs without actor are not part of any row but are counted in other_count
     assert await _aggregate_logs(mcp_client, repo, log_read_apikey, ["actor"]) == {
         "total_count": 3,
-        "rows": [
-            {"actor": None, "count": 2},
-            {"actor": {"ref": "1", "name": "User 1"}, "count": 1},
-        ],
-        "other_count": 0,
+        "rows": [{"actor": {"ref": "1", "name": "User 1"}, "count": 1}],
+        "other_count": 2,
     }
 
 
-async def test_aggregate_logs_missing_value_two_dimensions(
+async def test_aggregate_logs_without_value_two_dimensions(
     repo: PreparedRepo,
     log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
@@ -641,20 +639,13 @@ async def test_aggregate_logs_missing_value_two_dimensions(
     ) == {
         "total_count": 10,
         "rows": [
-            {"actor": None, "resource": None, "count": 4},
-            {
-                "actor": None,
-                "resource": {"ref": "1", "name": "Resource 1"},
-                "count": 3,
-            },
-            {"actor": {"ref": "1", "name": "User 1"}, "resource": None, "count": 2},
             {
                 "actor": {"ref": "1", "name": "User 1"},
                 "resource": {"ref": "1", "name": "Resource 1"},
                 "count": 1,
             },
         ],
-        "other_count": 0,
+        "other_count": 9,
     }
 
 
@@ -762,7 +753,9 @@ async def test_aggregate_logs_with_search_params(
 def _build_log_data_with_custom_fields(prefix: str, fields: list[dict]) -> dict:
     match prefix:
         case "actor" | "resource":
-            return {prefix: {"type": prefix, "ref": "1", "name": "Name", "extra": fields}}
+            return {
+                prefix: {"type": prefix, "ref": "1", "name": "Name", "extra": fields}
+            }
         case _:
             return {prefix: fields}
 
@@ -799,14 +792,55 @@ async def test_aggregate_logs_by_custom_field(
     )
 
     dimension = f"{prefix}.field"
-    assert await _aggregate_logs(
-        mcp_client, repo, log_read_apikey, [dimension]
-    ) == {
+    assert await _aggregate_logs(mcp_client, repo, log_read_apikey, [dimension]) == {
         "total_count": 4,
         "rows": [
             {dimension: values[0], "count": 2},
             {dimension: values[2], "count": 1},
-            {dimension: None, "count": 1},
+        ],
+        "other_count": 1,
+    }
+
+
+async def test_aggregate_logs_by_two_non_keyword_custom_fields(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for success, code, duration in (
+        (True, 200, 1.5),
+        (True, 200, 1.5),
+        (False, 404, 2.5),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                "details": [
+                    {"name": "success", "value": success, "type": "boolean"},
+                    {"name": "code", "value": code, "type": "integer"},
+                    {"name": "duration", "value": duration, "type": "float"},
+                ]
+            },
+        )
+
+    assert await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, ["details.success", "details.code"]
+    ) == {
+        "total_count": 3,
+        "rows": [
+            {"details.success": True, "details.code": 200, "count": 2},
+            {"details.success": False, "details.code": 404, "count": 1},
+        ],
+        "other_count": 0,
+    }
+    assert await _aggregate_logs(
+        mcp_client, repo, log_read_apikey, ["details.duration", "details.success"]
+    ) == {
+        "total_count": 3,
+        "rows": [
+            {"details.duration": 1.5, "details.success": True, "count": 2},
+            {"details.duration": 2.5, "details.success": False, "count": 1},
         ],
         "other_count": 0,
     }
@@ -836,7 +870,11 @@ async def test_aggregate_logs_by_actor_and_actor_custom_field(
     ) == {
         "total_count": 3,
         "rows": [
-            {"actor": {"ref": "1", "name": "User 1"}, "actor.role": "admin", "count": 2},
+            {
+                "actor": {"ref": "1", "name": "User 1"},
+                "actor.role": "admin",
+                "count": 2,
+            },
             {"actor": {"ref": "2", "name": "User 2"}, "actor.role": "user", "count": 1},
         ],
         "other_count": 0,
