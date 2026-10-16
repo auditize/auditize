@@ -306,8 +306,9 @@ async def aggregate_logs_over_time(
       per period
 
     The time window is given by search_params.since / until (or by the oldest / most
-    recent matching log if not set). The number of periods is limited: narrow the
-    time window or use a larger interval if the tool reports too many periods.
+    recent matching log if not set). The number of periods is limited (and lower with
+    split_by, depending on split_limit): if the tool reports too many periods, narrow
+    the time window, use a larger interval or reduce split_limit.
 
     Every period is returned, including periods without logs. With split_by, each
     period only contains the top values having logs in that period (use

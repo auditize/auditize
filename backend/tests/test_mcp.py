@@ -1484,20 +1484,77 @@ async def test_aggregate_logs_over_time_too_many_periods(
             mcp_client, repo, log_read_apikey, "5_minutes", search_params=one_day
         )
 
-    # the limit is lower when split_by is used
-    half_a_day = {"since": "2026-01-15T00:00:00Z", "until": "2026-01-15T11:59:59Z"}
-    await _aggregate_logs_over_time(
-        mcp_client, repo, log_read_apikey, "5_minutes", search_params=half_a_day
-    )
-    with pytest.raises(ToolError, match="Too many periods.*with split_by"):
-        await _aggregate_logs_over_time(
+
+@pytest.mark.parametrize(
+    "split_limit,max_periods",
+    [
+        (1, 200),
+        (2, 200),
+        (5, 100),
+        (10, 50),
+    ],
+)
+async def test_aggregate_logs_over_time_too_many_periods_with_split_by(
+    split_limit: int,
+    max_periods: int,
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    # the number of breakdown entries (periods x split_limit) is limited
+    async def aggregate(period_count: int):
+        # the estimated number of periods is (until - since) // interval + 2
+        return await _aggregate_logs_over_time(
             mcp_client,
             repo,
             log_read_apikey,
-            "5_minutes",
-            search_params=half_a_day,
+            "1_hour",
+            search_params={
+                "since": "2026-01-01T00:00:00Z",
+                "until": (
+                    datetime.fromisoformat("2026-01-01T00:00:00Z")
+                    + timedelta(hours=period_count - 2)
+                ).isoformat(),
+            },
             split_by="actor",
+            split_limit=split_limit,
         )
+
+    await aggregate(max_periods)
+    with pytest.raises(
+        ToolError, match=f"Too many periods.*max {max_periods} with split_limit"
+    ):
+        await aggregate(max_periods + 1)
+
+
+async def test_aggregate_logs_over_time_too_many_periods_without_time_window(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    # the time window is given by the logs, the number of periods is checked
+    # once the aggregation is done
+    for emitted_at in ("2026-01-15T00:00:00Z", "2026-01-15T23:59:59Z"):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    with pytest.raises(ToolError, match="Too many periods.*'15_minutes'"):
+        await _aggregate_logs_over_time(mcp_client, repo, log_read_apikey, "5_minutes")
+
+
+async def test_aggregate_logs_over_time_too_many_es_buckets(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    # the time window is given by the logs and is too large for the number of
+    # ES buckets allowed by ES (search.max_buckets)
+    for emitted_at in ("2026-01-01T00:00:00Z", "2026-03-01T00:00:00Z"):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    with pytest.raises(ToolError, match="Too many periods.*larger interval"):
+        await _aggregate_logs_over_time(mcp_client, repo, log_read_apikey, "1_minute")
 
 
 async def test_aggregate_logs_over_time_cyclic_time_window_too_large(

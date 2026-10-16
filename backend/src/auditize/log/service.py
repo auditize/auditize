@@ -144,10 +144,12 @@ _DAYS_OF_WEEK = (
     "sunday",
 )
 
-# Maximum number of periods returned by the time aggregation (histogram mode),
-# lower when split_by is used since dimension values are repeated in each period
+# Maximum number of periods returned by the time aggregation (histogram mode)
 MAX_TIME_PERIODS = 200
-MAX_TIME_PERIODS_WITH_SPLIT = 100
+# Maximum number of breakdown entries (periods x split_limit) returned by the time
+# aggregation when split_by is used, since dimension values are repeated in each
+# period (histogram mode)
+MAX_TIME_BREAKDOWN_ENTRIES = 500
 
 # Maximum number of ES buckets of the underlying aggregation in cyclic mode
 _MAX_CYCLIC_ES_BUCKETS = 20_000
@@ -171,7 +173,7 @@ class _TimePeriods:
         self.interval = interval
 
     def build_es_date_histogram(
-        self, tz: ZoneInfo, start: datetime, end: datetime
+        self, tz: ZoneInfo, since: datetime | None, until: datetime | None
     ) -> dict:
         return {
             "field": "emitted_at",
@@ -196,22 +198,37 @@ class _TimePeriods:
         raise NotImplementedError()
 
     def check_size(self, start: datetime, end: datetime, split_limit: int | None):
+        """
+        Raise a ValidationError if the time window [start, end] would result in too
+        many periods or ES buckets.
+        """
         raise NotImplementedError()
+
+    def get_too_many_es_buckets_error(self) -> ValidationError:
+        return ValidationError(
+            f"Time window is too large for interval {self.interval.value!r}, "
+            "narrow the time window (since / until)"
+        )
 
 
 class _HistogramTimePeriods(_TimePeriods):
     def build_es_date_histogram(
-        self, tz: ZoneInfo, start: datetime, end: datetime
+        self, tz: ZoneInfo, since: datetime | None, until: datetime | None
     ) -> dict:
-        return {
-            **super().build_es_date_histogram(tz, start, end),
-            # include empty periods across the whole time window
+        histogram = {
+            **super().build_es_date_histogram(tz, since, until),
+            # include empty periods between the first and the last log
             "min_doc_count": 0,
-            "extended_bounds": {
-                "min": int(start.timestamp() * 1000),
-                "max": int(end.timestamp() * 1000),
-            },
         }
+        # include empty periods up to the bounds of the time window if known
+        extended_bounds = {}
+        if since:
+            extended_bounds["min"] = int(since.timestamp() * 1000)
+        if until:
+            extended_bounds["max"] = int(until.timestamp() * 1000)
+        if extended_bounds:
+            histogram["extended_bounds"] = extended_bounds
+        return histogram
 
     def get_period_keys(self) -> None:
         return None
@@ -222,8 +239,14 @@ class _HistogramTimePeriods(_TimePeriods):
     def to_period(self, period_key: int, tz: ZoneInfo) -> datetime:
         return datetime.fromtimestamp(period_key / 1000, tz)
 
+    @staticmethod
+    def _get_max_periods(split_limit: int | None) -> int:
+        if split_limit:
+            return min(MAX_TIME_PERIODS, MAX_TIME_BREAKDOWN_ENTRIES // split_limit)
+        return MAX_TIME_PERIODS
+
     def check_size(self, start: datetime, end: datetime, split_limit: int | None):
-        max_periods = MAX_TIME_PERIODS_WITH_SPLIT if split_limit else MAX_TIME_PERIODS
+        max_periods = self._get_max_periods(split_limit)
         period_count = _estimate_period_count(start, end, self.interval.duration)
         if period_count <= max_periods:
             return
@@ -241,14 +264,21 @@ class _HistogramTimePeriods(_TimePeriods):
         raise ValidationError(
             f"Too many periods (about {period_count}) for interval "
             f"{self.interval.value!r} over this time window (max {max_periods}"
-            + (" with split_by" if split_limit else "")
+            + (f" with split_limit={split_limit}" if split_limit else "")
             + "), "
             + (
-                f"use interval {suggested_interval!r} or larger, or narrow the "
-                "time window (since / until)"
+                f"use interval {suggested_interval!r} or larger, "
                 if suggested_interval
-                else "narrow the time window (since / until)"
+                else ""
             )
+            + ("reduce split_limit, " if split_limit and split_limit > 1 else "")
+            + "or narrow the time window (since / until)"
+        )
+
+    def get_too_many_es_buckets_error(self) -> ValidationError:
+        return ValidationError(
+            f"Too many periods for interval {self.interval.value!r} over this time "
+            "window, use a larger interval or narrow the time window (since / until)"
         )
 
 
@@ -262,10 +292,10 @@ class _CyclicTimePeriods(_TimePeriods):
     supports_count_distinct = False
 
     def build_es_date_histogram(
-        self, tz: ZoneInfo, start: datetime, end: datetime
+        self, tz: ZoneInfo, since: datetime | None, until: datetime | None
     ) -> dict:
         # periods without logs are filled by get_period_keys
-        return {**super().build_es_date_histogram(tz, start, end), "min_doc_count": 1}
+        return {**super().build_es_date_histogram(tz, since, until), "min_doc_count": 1}
 
     def to_period_key(self, es_key: int, tz: ZoneInfo) -> int:
         return self._fold(datetime.fromtimestamp(es_key / 1000, tz))
@@ -278,11 +308,10 @@ class _CyclicTimePeriods(_TimePeriods):
             1 + (split_limit or 0)
         )
         if es_bucket_count > _MAX_CYCLIC_ES_BUCKETS:
-            raise ValidationError(
-                f"Time window is too large for interval {self.interval.value!r}, "
-                "narrow the time window (since / until)"
-                + (" or reduce split_limit" if split_limit else "")
-            )
+            error = self.get_too_many_es_buckets_error()
+            if split_limit:
+                error = ValidationError(f"{error} or reduce split_limit")
+            raise error
 
 
 class _HourOfDayTimePeriods(_CyclicTimePeriods):
@@ -389,6 +418,17 @@ class _TimeAggregationParams:
     split_dimension: _AggregationDimension | None
     split_limit: int
     distinct_dimension: _AggregationDimension | None
+
+
+@dataclass
+class _TimeAggregationSearchResult:
+    # time window of the aggregation, None if there is no log to aggregate
+    # and the search params don't provide it
+    start: datetime | None
+    end: datetime | None
+    total_count: int
+    timeline_buckets: list[dict]
+    breakdown_buckets: list[dict]
 
 
 class _OffsetPaginationCursor:
@@ -1127,8 +1167,9 @@ class LogService:
         except (ZoneInfoNotFoundError, ValueError):
             raise ValidationError(f"Invalid timezone {name!r}")
 
-    async def _get_time_aggregation_bounds(
-        self, query: dict | None, search_params: LogSearchParams | None
+    @staticmethod
+    def _get_time_aggregation_search_window(
+        search_params: LogSearchParams | None,
     ) -> tuple[datetime | None, datetime | None]:
         def normalize(value: datetime | None) -> datetime | None:
             # naive datetimes are considered as UTC (like ES does)
@@ -1138,29 +1179,18 @@ class LogService:
 
         since = normalize(search_params.since if search_params else None)
         until = normalize(search_params.until if search_params else None)
-        if since and until:
-            if since > until:
-                raise ValidationError("since must be before until")
-            return since, until
+        if since and until and since > until:
+            raise ValidationError("since must be before until")
+        return since, until
 
-        # get the missing bound(s) from the logs to aggregate
-        resp = await self.es.search(
-            index=self.read_alias,
-            query=query,
-            size=0,
-            aggregations={
-                "min": {"min": {"field": "emitted_at"}},
-                "max": {"max": {"field": "emitted_at"}},
-            },
-        )
-        min_value = resp["aggregations"]["min"]["value"]
-        max_value = resp["aggregations"]["max"]["value"]
-        if min_value is None:
-            return None, None
-        return (
-            since or datetime.fromtimestamp(min_value / 1000, timezone.utc),
-            until or datetime.fromtimestamp(max_value / 1000, timezone.utc),
-        )
+    @staticmethod
+    def _is_too_many_es_buckets(exc: elasticsearch.BadRequestError) -> bool:
+        try:
+            return (
+                exc.body["error"]["caused_by"]["type"] == "too_many_buckets_exception"
+            )
+        except (KeyError, TypeError):
+            return False
 
     async def _resolve_time_aggregation_params(
         self,
@@ -1198,11 +1228,14 @@ class LogService:
 
     @classmethod
     def _build_time_aggregations(
-        cls, params: _TimeAggregationParams, start: datetime, end: datetime
+        cls,
+        params: _TimeAggregationParams,
+        since: datetime | None,
+        until: datetime | None,
     ) -> dict:
         histogram_aggregation = {
             "date_histogram": params.periods.build_es_date_histogram(
-                params.tz, start, end
+                params.tz, since, until
             )
         }
         if params.distinct_dimension:
@@ -1222,36 +1255,59 @@ class LogService:
             )
             aggregations["breakdown"] = breakdown_aggregation
 
+        # get the missing bound(s) of the time window from the logs
+        if not since:
+            aggregations["min"] = {"min": {"field": "emitted_at"}}
+        if not until:
+            aggregations["max"] = {"max": {"field": "emitted_at"}}
+
         return aggregations
 
     async def _search_time_aggregation(
         self,
         query: dict | None,
-        start: datetime | None,
-        end: datetime | None,
+        since: datetime | None,
+        until: datetime | None,
         params: _TimeAggregationParams,
-    ) -> tuple[int, list[dict], list[dict]]:
-        """
-        Return the total count, the timeline ES buckets and the breakdown ES buckets.
-        """
-        if not start:
-            # no log to aggregate and no time window given by the search params
-            return 0, [], []
+    ) -> _TimeAggregationSearchResult:
+        split_limit = params.split_limit if params.split_dimension else None
+        # check the size before running the aggregation if the time window is known,
+        # otherwise it is checked afterward (ES max buckets acting as a safeguard)
+        if since and until:
+            params.periods.check_size(since, until, split_limit)
 
-        params.periods.check_size(
-            start, end, params.split_limit if params.split_dimension else None
-        )
-        resp = await self.es.search(
-            index=self.read_alias,
-            query=query,
-            size=0,
-            track_total_hits=True,
-            aggregations=self._build_time_aggregations(params, start, end),
-        )
-        return (
-            resp["hits"]["total"]["value"],
-            resp["aggregations"]["timeline"]["buckets"],
-            (
+        try:
+            resp = await self.es.search(
+                index=self.read_alias,
+                query=query,
+                size=0,
+                track_total_hits=True,
+                aggregations=self._build_time_aggregations(params, since, until),
+            )
+        except elasticsearch.BadRequestError as exc:
+            if self._is_too_many_es_buckets(exc):
+                raise params.periods.get_too_many_es_buckets_error()
+            raise
+
+        total_count = resp["hits"]["total"]["value"]
+        if not (since and until):
+            if total_count == 0:
+                # no log to aggregate and no time window given by the search params
+                return _TimeAggregationSearchResult(None, None, 0, [], [])
+            since = since or datetime.fromtimestamp(
+                resp["aggregations"]["min"]["value"] / 1000, timezone.utc
+            )
+            until = until or datetime.fromtimestamp(
+                resp["aggregations"]["max"]["value"] / 1000, timezone.utc
+            )
+            params.periods.check_size(since, until, split_limit)
+
+        return _TimeAggregationSearchResult(
+            start=since,
+            end=until,
+            total_count=total_count,
+            timeline_buckets=resp["aggregations"]["timeline"]["buckets"],
+            breakdown_buckets=(
                 resp["aggregations"]["breakdown"]["buckets"]
                 if params.split_dimension
                 else []
@@ -1347,19 +1403,15 @@ class LogService:
         query = await self._build_es_query(
             search_params, authorized_entities=authorized_entities
         )
-        start, end = await self._get_time_aggregation_bounds(query, search_params)
-        (
-            total_count,
-            timeline_buckets,
-            breakdown_buckets,
-        ) = await self._search_time_aggregation(query, start, end, params)
+        since, until = self._get_time_aggregation_search_window(search_params)
+        result = await self._search_time_aggregation(query, since, until, params)
         return LogTimeAggregation(
-            start=start.astimezone(params.tz) if start else None,
-            end=end.astimezone(params.tz) if end else None,
-            total_count=total_count,
+            start=result.start.astimezone(params.tz) if result.start else None,
+            end=result.end.astimezone(params.tz) if result.end else None,
+            total_count=result.total_count,
             timeline=self._build_time_periods(
-                self._get_time_aggregation_counts(timeline_buckets, params),
-                self._get_time_aggregation_series(breakdown_buckets, params),
+                self._get_time_aggregation_counts(result.timeline_buckets, params),
+                self._get_time_aggregation_series(result.breakdown_buckets, params),
                 params,
             ),
         )
