@@ -24,11 +24,14 @@ from auditize.log.service import (
     AGGREGATION_BUILTIN_DIMENSIONS,
     AGGREGATION_CUSTOM_FIELD_PREFIXES,
     LogService,
+    LogTimePeriod,
+    TimeAggregationInterval,
 )
 from auditize.mcp.app import mcp
 from auditize.mcp.models import (
     LogAggregationMcpResponse,
     LogEntityMcpResponse,
+    LogTimeAggregationMcpResponse,
     PaginatedMcpResponse,
 )
 from auditize.permissions.assertions import can_read_logs_from_repo
@@ -45,6 +48,14 @@ SEARCH_LOGS_PAGE_LIMIT = 10
 CURSOR_PARAM_DESCRIPTION = (
     "Pagination cursor from a previous call's next_cursor field. "
     "Leave unset to get the first page."
+)
+
+
+AGGREGATION_DIMENSION_DESCRIPTION = (
+    "A dimension is either one of "
+    f"{', '.join(AGGREGATION_BUILTIN_DIMENSIONS)} or a custom field as "
+    "<prefix>.<field_name> with prefix one of "
+    f"{', '.join(AGGREGATION_CUSTOM_FIELD_PREFIXES)} (e.g. details.status, actor.role)"
 )
 
 
@@ -156,11 +167,8 @@ async def aggregate_logs(
             min_length=1,
             max_length=2,
             description=(
-                "1 or 2 dimensions to group logs by. A dimension is either one of "
-                f"{', '.join(AGGREGATION_BUILTIN_DIMENSIONS)} or a custom field as "
-                "<prefix>.<field_name> with prefix one of "
-                f"{', '.join(AGGREGATION_CUSTOM_FIELD_PREFIXES)} "
-                "(e.g. details.status, actor.role)"
+                "1 or 2 dimensions to group logs by. "
+                + AGGREGATION_DIMENSION_DESCRIPTION
             ),
         ),
     ],
@@ -209,6 +217,132 @@ async def aggregate_logs(
             for values, count in aggregation.rows
         ],
         other_count=aggregation.other_count,
+    )
+
+
+def _build_time_period_entry(
+    period: LogTimePeriod, split_by: str | None, count_distinct: str | None
+) -> dict:
+    # distinct_count, breakdown and other_count are only set when the matching
+    # option is used
+    entry = {"period": period.period, "count": period.count}
+    if count_distinct:
+        entry["distinct_count"] = period.distinct_count
+    if split_by:
+        entry["breakdown"] = []
+        for value, count, distinct_count in period.breakdown:
+            breakdown_entry = {split_by: value, "count": count}
+            if count_distinct:
+                breakdown_entry["distinct_count"] = distinct_count
+            entry["breakdown"].append(breakdown_entry)
+        entry["other_count"] = period.other_count
+    return entry
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def aggregate_logs_over_time(
+    interval: Annotated[
+        TimeAggregationInterval,
+        Field(
+            description=(
+                "Duration of each period, or hour_of_day / day_of_week "
+                "to get the activity profile over the hours of the day / the days of "
+                "the week across the whole time window"
+            )
+        ),
+    ],
+    search_params: LogSearchParams = LogSearchParams(),
+    timezone: Annotated[
+        str,
+        Field(
+            description=(
+                "IANA timezone (e.g. Europe/Paris) used to align periods and to "
+                "compute hours of day / days of week"
+            )
+        ),
+    ] = "UTC",
+    split_by: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Optional dimension to break down each period by its top values. "
+                + AGGREGATION_DIMENSION_DESCRIPTION
+            )
+        ),
+    ] = None,
+    split_limit: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=10,
+            description=(
+                "Number of top values of split_by (top values are computed over "
+                "the whole time window)"
+            ),
+        ),
+    ] = 5,
+    count_distinct: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Optional dimension whose distinct values are counted in each period "
+                "(not available with hour_of_day / day_of_week). "
+                + AGGREGATION_DIMENSION_DESCRIPTION
+            )
+        ),
+    ] = None,
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> LogTimeAggregationMcpResponse:
+    """Count logs per period of time, using the same filters as search_logs.
+
+    Use it for "when" and "how does it evolve" questions instead of paging through
+    search_logs:
+    - periods of a fixed duration (1_minute to 1_month) to spot spikes or gaps
+    - hour_of_day / day_of_week to get the activity profile across the time window
+    - split_by to see which top values of a dimension (e.g. actor) contribute to
+      each period
+    - count_distinct to count distinct values of a dimension (e.g. actor, resource)
+      per period
+
+    The time window is given by search_params.since / until (or by the oldest / most
+    recent matching log if not set). The number of periods is limited: narrow the
+    time window or use a larger interval if the tool reports too many periods.
+
+    Every period is returned, including periods without logs. With split_by, each
+    period only contains the top values having logs in that period (use
+    aggregate_logs to get their total counts). Dimension values are formatted like in
+    aggregate_logs. Distinct counts are approximate above ~3000 distinct values.
+
+    Custom fields (source.<field_name>, details.<field_name>, actor.<field_name>,
+    resource.<field_name>) can be used as dimensions if they are of type enum,
+    boolean, integer or float. Discover available field names and their type with
+    list_source_fields / list_details_fields / list_actor_extra_fields /
+    list_resource_extra_fields.
+    """
+    try:
+        aggregation = await log_service.aggregate_logs_over_time(
+            interval=interval,
+            timezone_name=timezone,
+            split_by=split_by,
+            split_limit=split_limit,
+            count_distinct=count_distinct,
+            search_params=search_params,
+            authorized_entities=authorized_entities,
+        )
+    except ValidationError as exc:
+        raise ToolError(str(exc))
+
+    return LogTimeAggregationMcpResponse(
+        interval=interval.value,
+        timezone=timezone,
+        start=aggregation.start,
+        end=aggregation.end,
+        total_count=aggregation.total_count,
+        timeline=[
+            _build_time_period_entry(period, split_by, count_distinct)
+            for period in aggregation.timeline
+        ],
     )
 
 

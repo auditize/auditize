@@ -73,11 +73,15 @@ class PreparedRepo:
         client: HttpTestHelper,
         data: dict = None,
         *,
-        saved_at: datetime = None,
-        emitted_at: datetime = None,
+        saved_at: datetime | str = None,
+        emitted_at: datetime | str = None,
     ) -> PreparedLog:
         if data is None:
             data = PreparedLog.prepare_data()
+        if isinstance(saved_at, str):
+            saved_at = datetime.fromisoformat(saved_at)
+        if isinstance(emitted_at, str):
+            emitted_at = datetime.fromisoformat(emitted_at)
         if emitted_at:
             data["emitted_at"] = serialize_datetime(emitted_at)
         resp = await client.assert_post(
@@ -98,8 +102,8 @@ class PreparedRepo:
         client: HttpTestHelper,
         extra: dict,
         *,
-        saved_at: datetime = None,
-        emitted_at: datetime = None,
+        saved_at: datetime | str = None,
+        emitted_at: datetime | str = None,
     ):
         return await self.create_log(
             client,
@@ -113,8 +117,8 @@ class PreparedRepo:
         client: HttpTestHelper,
         entity_path: list[str] | None,
         *,
-        saved_at: datetime = None,
-        emitted_at: datetime = None,
+        saved_at: datetime | str = None,
+        emitted_at: datetime | str = None,
     ):
         return await self.create_log_with(
             client,

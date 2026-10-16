@@ -1028,3 +1028,558 @@ async def test_aggregate_logs_invalid_limit(
         await _aggregate_logs(
             mcp_client, repo, log_read_apikey, ["action_type"], limit=51
         )
+
+
+async def _aggregate_logs_over_time(
+    mcp_client: Client[FastMCPTransport],
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    interval: str,
+    **params,
+) -> dict:
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool(
+            "aggregate_logs_over_time", {"interval": interval, **params}
+        )
+    return _get_tool_data(result)
+
+
+def _actor(ref: str) -> dict:
+    return {"actor": {"type": "user", "ref": ref, "name": f"User {ref}"}}
+
+
+def _empty_cyclic_timeline(periods, **extra) -> list[dict]:
+    return [{"period": period, "count": 0, **extra} for period in periods]
+
+
+async def test_aggregate_logs_over_time_histogram(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for emitted_at in (
+        "2026-01-15T08:30:00Z",  # outside the time window
+        "2026-01-15T10:05:00Z",
+        "2026-01-15T10:20:00Z",
+        "2026-01-15T12:30:00Z",
+        "2026-01-15T13:30:00Z",  # outside the time window
+    ):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    assert await _aggregate_logs_over_time(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "1_hour",
+        search_params={
+            "since": "2026-01-15T09:00:00Z",
+            "until": "2026-01-15T12:59:59Z",
+        },
+    ) == {
+        "interval": "1_hour",
+        "timezone": "UTC",
+        "start": "2026-01-15T09:00:00Z",
+        "end": "2026-01-15T12:59:59Z",
+        "total_count": 3,
+        "timeline": [
+            {"period": "2026-01-15T09:00:00Z", "count": 0},
+            {"period": "2026-01-15T10:00:00Z", "count": 2},
+            {"period": "2026-01-15T11:00:00Z", "count": 0},
+            {"period": "2026-01-15T12:00:00Z", "count": 1},
+        ],
+    }
+
+
+async def test_aggregate_logs_over_time_window_from_logs(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for emitted_at in ("2026-01-15T10:05:00Z", "2026-01-15T12:30:00Z"):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    assert await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "1_hour"
+    ) == {
+        "interval": "1_hour",
+        "timezone": "UTC",
+        "start": "2026-01-15T10:05:00Z",
+        "end": "2026-01-15T12:30:00Z",
+        "total_count": 2,
+        "timeline": [
+            {"period": "2026-01-15T10:00:00Z", "count": 1},
+            {"period": "2026-01-15T11:00:00Z", "count": 0},
+            {"period": "2026-01-15T12:00:00Z", "count": 1},
+        ],
+    }
+
+    # only "since" is given, "until" is the date of the most recent log
+    data = await _aggregate_logs_over_time(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "1_hour",
+        search_params={"since": "2026-01-15T11:00:00Z"},
+    )
+    assert data["start"] == "2026-01-15T11:00:00Z"
+    assert data["end"] == "2026-01-15T12:30:00Z"
+    assert data["timeline"] == [
+        {"period": "2026-01-15T11:00:00Z", "count": 0},
+        {"period": "2026-01-15T12:00:00Z", "count": 1},
+    ]
+
+
+async def test_aggregate_logs_over_time_empty(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    assert await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "1_hour", split_by="actor"
+    ) == {
+        "interval": "1_hour",
+        "timezone": "UTC",
+        "start": None,
+        "end": None,
+        "total_count": 0,
+        "timeline": [],
+    }
+
+    assert await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "day_of_week", split_by="actor"
+    ) == {
+        "interval": "day_of_week",
+        "timezone": "UTC",
+        "start": None,
+        "end": None,
+        "total_count": 0,
+        "timeline": _empty_cyclic_timeline(
+            [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+                "sunday",
+            ],
+            breakdown=[],
+            other_count=0,
+        ),
+    }
+
+
+async def test_aggregate_logs_over_time_empty_with_time_window(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    data = await _aggregate_logs_over_time(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "1_day",
+        search_params={
+            "since": "2026-01-15T00:00:00Z",
+            "until": "2026-01-16T23:59:59Z",
+        },
+        count_distinct="actor",
+    )
+    assert data["total_count"] == 0
+    assert data["timeline"] == [
+        {"period": "2026-01-15T00:00:00Z", "count": 0, "distinct_count": 0},
+        {"period": "2026-01-16T00:00:00Z", "count": 0, "distinct_count": 0},
+    ]
+
+
+async def test_aggregate_logs_over_time_daily_with_timezone(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    # 2026-01-15 23:30 and 2026-01-16 00:30 in Europe/Paris (UTC+1)
+    for emitted_at in ("2026-01-15T22:30:00Z", "2026-01-15T23:30:00Z"):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    assert await _aggregate_logs_over_time(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "1_day",
+        timezone="Europe/Paris",
+        search_params={
+            "since": "2026-01-14T23:00:00Z",
+            "until": "2026-01-16T22:59:59Z",
+        },
+    ) == {
+        "interval": "1_day",
+        "timezone": "Europe/Paris",
+        "start": "2026-01-15T00:00:00+01:00",
+        "end": "2026-01-16T23:59:59+01:00",
+        "total_count": 2,
+        "timeline": [
+            {"period": "2026-01-15T00:00:00+01:00", "count": 1},
+            {"period": "2026-01-16T00:00:00+01:00", "count": 1},
+        ],
+    }
+
+
+async def test_aggregate_logs_over_time_hour_of_day(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for emitted_at in (
+        "2026-01-15T02:10:00Z",  # 03:10 in Europe/Paris
+        "2026-01-16T02:50:00Z",  # 03:50 in Europe/Paris
+        "2026-01-17T13:00:00Z",  # 14:00 in Europe/Paris
+    ):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    data = await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "hour_of_day", timezone="Europe/Paris"
+    )
+    expected_timeline = _empty_cyclic_timeline(range(24))
+    expected_timeline[3]["count"] = 2
+    expected_timeline[14]["count"] = 1
+    assert data == {
+        "interval": "hour_of_day",
+        "timezone": "Europe/Paris",
+        "start": "2026-01-15T03:10:00+01:00",
+        "end": "2026-01-17T14:00:00+01:00",
+        "total_count": 3,
+        "timeline": expected_timeline,
+    }
+
+
+async def test_aggregate_logs_over_time_hour_of_day_across_dst_change(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    # Europe/Paris switches from UTC+1 to UTC+2 on 2026-03-29
+    for emitted_at in ("2026-03-28T08:00:00Z", "2026-03-30T07:00:00Z"):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    data = await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "hour_of_day", timezone="Europe/Paris"
+    )
+    expected_timeline = _empty_cyclic_timeline(range(24))
+    expected_timeline[9]["count"] = 2
+    assert data["timeline"] == expected_timeline
+
+
+async def test_aggregate_logs_over_time_day_of_week(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for emitted_at in (
+        "2026-01-12T10:00:00Z",  # monday
+        "2026-01-17T23:30:00Z",  # saturday in UTC, sunday in Europe/Paris
+        "2026-01-19T10:00:00Z",  # monday
+    ):
+        await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
+
+    data = await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "day_of_week", timezone="Europe/Paris"
+    )
+    assert data["total_count"] == 3
+    assert data["timeline"] == [
+        {"period": "monday", "count": 2},
+        {"period": "tuesday", "count": 0},
+        {"period": "wednesday", "count": 0},
+        {"period": "thursday", "count": 0},
+        {"period": "friday", "count": 0},
+        {"period": "saturday", "count": 0},
+        {"period": "sunday", "count": 1},
+    ]
+
+
+async def test_aggregate_logs_over_time_split_by_actor(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    # top 2 actors over the time window are 1 (3 logs) and 2 (2 logs), actor 3
+    # is not part of the top even if it is as active as actor 1 at 12:00
+    for emitted_at, extra in (
+        ("2026-01-15T10:05:00Z", _actor("1")),
+        ("2026-01-15T10:10:00Z", _actor("1")),
+        ("2026-01-15T10:20:00Z", _actor("2")),
+        ("2026-01-15T11:05:00Z", _actor("2")),
+        ("2026-01-15T11:10:00Z", {}),
+        ("2026-01-15T12:05:00Z", _actor("1")),
+        ("2026-01-15T12:10:00Z", _actor("3")),
+    ):
+        await repo.create_log_with(log_rw_client, extra, emitted_at=emitted_at)
+
+    data = await _aggregate_logs_over_time(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "1_hour",
+        split_by="actor",
+        split_limit=2,
+    )
+    assert data["total_count"] == 7
+    assert data["timeline"] == [
+        {
+            "period": "2026-01-15T10:00:00Z",
+            "count": 3,
+            "breakdown": [
+                {"actor": {"ref": "1", "name": "User 1"}, "count": 2},
+                {"actor": {"ref": "2", "name": "User 2"}, "count": 1},
+            ],
+            "other_count": 0,
+        },
+        {
+            "period": "2026-01-15T11:00:00Z",
+            "count": 2,
+            "breakdown": [{"actor": {"ref": "2", "name": "User 2"}, "count": 1}],
+            "other_count": 1,
+        },
+        {
+            "period": "2026-01-15T12:00:00Z",
+            "count": 2,
+            "breakdown": [{"actor": {"ref": "1", "name": "User 1"}, "count": 1}],
+            "other_count": 1,
+        },
+    ]
+
+
+async def test_aggregate_logs_over_time_split_by_custom_field_cyclic(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for emitted_at, status in (
+        ("2026-01-15T02:00:00Z", "failure"),
+        ("2026-01-16T02:30:00Z", "failure"),
+        ("2026-01-16T14:00:00Z", "success"),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {"details": [{"name": "status", "value": status, "type": "enum"}]},
+            emitted_at=emitted_at,
+        )
+
+    data = await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "hour_of_day", split_by="details.status"
+    )
+    expected_timeline = _empty_cyclic_timeline(range(24), breakdown=[], other_count=0)
+    expected_timeline[2] = {
+        "period": 2,
+        "count": 2,
+        "breakdown": [{"details.status": "failure", "count": 2}],
+        "other_count": 0,
+    }
+    expected_timeline[14] = {
+        "period": 14,
+        "count": 1,
+        "breakdown": [{"details.status": "success", "count": 1}],
+        "other_count": 0,
+    }
+    assert data["timeline"] == expected_timeline
+
+
+async def test_aggregate_logs_over_time_count_distinct(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for emitted_at, actor_ref, action_type in (
+        ("2026-01-15T10:05:00Z", "1", "login"),
+        ("2026-01-15T10:10:00Z", "2", "login"),
+        ("2026-01-15T10:20:00Z", "1", "login"),
+        ("2026-01-15T10:30:00Z", "1", "logout"),
+        ("2026-01-15T11:30:00Z", "3", "login"),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                **_actor(actor_ref),
+                "action": {"type": action_type, "category": "authentication"},
+            },
+            emitted_at=emitted_at,
+        )
+
+    data = await _aggregate_logs_over_time(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "1_hour",
+        split_by="action_type",
+        count_distinct="actor",
+    )
+    assert data["timeline"] == [
+        {
+            "period": "2026-01-15T10:00:00Z",
+            "count": 4,
+            "distinct_count": 2,
+            "breakdown": [
+                {"action_type": "login", "count": 3, "distinct_count": 2},
+                {"action_type": "logout", "count": 1, "distinct_count": 1},
+            ],
+            "other_count": 0,
+        },
+        {
+            "period": "2026-01-15T11:00:00Z",
+            "count": 1,
+            "distinct_count": 1,
+            "breakdown": [{"action_type": "login", "count": 1, "distinct_count": 1}],
+            "other_count": 0,
+        },
+    ]
+
+
+async def test_aggregate_logs_over_time_with_search_params(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for emitted_at, action_type in (
+        ("2026-01-15T10:05:00Z", "login"),
+        ("2026-01-15T10:10:00Z", "logout"),
+        ("2026-01-15T11:05:00Z", "login"),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {"action": {"type": action_type, "category": "authentication"}},
+            emitted_at=emitted_at,
+        )
+
+    data = await _aggregate_logs_over_time(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "1_hour",
+        search_params={"action_type": "login"},
+    )
+    assert data["total_count"] == 2
+    assert data["timeline"] == [
+        {"period": "2026-01-15T10:00:00Z", "count": 1},
+        {"period": "2026-01-15T11:00:00Z", "count": 1},
+    ]
+
+
+async def test_aggregate_logs_over_time_too_many_periods(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    one_day = {"since": "2026-01-15T00:00:00Z", "until": "2026-01-15T23:59:59Z"}
+    with pytest.raises(ToolError, match="Too many periods.*'15_minutes'"):
+        await _aggregate_logs_over_time(
+            mcp_client, repo, log_read_apikey, "5_minutes", search_params=one_day
+        )
+
+    # the limit is lower when split_by is used
+    half_a_day = {"since": "2026-01-15T00:00:00Z", "until": "2026-01-15T11:59:59Z"}
+    await _aggregate_logs_over_time(
+        mcp_client, repo, log_read_apikey, "5_minutes", search_params=half_a_day
+    )
+    with pytest.raises(ToolError, match="Too many periods.*with split_by"):
+        await _aggregate_logs_over_time(
+            mcp_client,
+            repo,
+            log_read_apikey,
+            "5_minutes",
+            search_params=half_a_day,
+            split_by="actor",
+        )
+
+
+async def test_aggregate_logs_over_time_cyclic_time_window_too_large(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    with pytest.raises(ToolError, match="Time window is too large"):
+        await _aggregate_logs_over_time(
+            mcp_client,
+            repo,
+            log_read_apikey,
+            "hour_of_day",
+            search_params={
+                "since": "2020-01-01T00:00:00Z",
+                "until": "2023-01-01T00:00:00Z",
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    "params,error",
+    [
+        ({"interval": "2h"}, None),
+        ({"interval": "1_hour", "timezone": "Mars/Olympus"}, "Invalid timezone"),
+        ({"interval": "1_hour", "split_by": "unknown"}, "Invalid dimension"),
+        ({"interval": "1_hour", "count_distinct": "unknown"}, "Invalid dimension"),
+        (
+            {"interval": "1_hour", "split_by": "actor", "count_distinct": "actor"},
+            "must be different",
+        ),
+        (
+            {"interval": "hour_of_day", "count_distinct": "actor"},
+            "count_distinct cannot be used",
+        ),
+        ({"interval": "1_hour", "split_by": "actor", "split_limit": 11}, None),
+        (
+            {
+                "interval": "1_hour",
+                "search_params": {
+                    "since": "2026-01-16T00:00:00Z",
+                    "until": "2026-01-15T00:00:00Z",
+                },
+            },
+            "since must be before until",
+        ),
+    ],
+)
+async def test_aggregate_logs_over_time_invalid_params(
+    params: dict,
+    error: str | None,
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    with pytest.raises(ToolError, match=error):
+        await _aggregate_logs_over_time(mcp_client, repo, log_read_apikey, **params)
+
+
+async def test_aggregate_logs_over_time_entity_restricted(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with_entity_path(log_rw_client, ["entity_A"])
+    await repo.create_log_with_entity_path(log_rw_client, ["entity_A", "entity_A1"])
+    await repo.create_log_with_entity_path(log_rw_client, ["entity_B"])
+    apikey = await apikey_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
+
+    data = await _aggregate_logs_over_time(mcp_client, repo, apikey, "day_of_week")
+    assert data["total_count"] == 2
+    assert sum(period["count"] for period in data["timeline"]) == 2
+
+
+async def test_aggregate_logs_over_time_no_permission(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    mcp_client: Client[FastMCPTransport],
+):
+    apikey = await apikey_builder({})
+    with pytest.raises(ToolError, match="permission"):
+        await _aggregate_logs_over_time(mcp_client, repo, apikey, "1_hour")

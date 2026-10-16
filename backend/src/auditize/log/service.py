@@ -3,10 +3,12 @@ import string
 import unicodedata
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from enum import StrEnum
 from functools import partial, partialmethod
 from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, Self
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import elasticsearch
 from aiocache import Cache
@@ -90,12 +92,276 @@ _AGGREGATABLE_CUSTOM_FIELD_TYPES = (
 _AGGREGATION_REF_NAME_DIMENSIONS = ("actor", "resource")
 
 
+class TimeAggregationInterval(StrEnum):
+    """
+    Intervals of the time aggregation, along with their ES date_histogram interval
+    and the approximate duration of an ES bucket (used to estimate the number of
+    periods). For hour_of_day / day_of_week, the ES interval is the one of the
+    underlying aggregation whose buckets are then folded.
+    """
+
+    # "fixed_interval" or "calendar_interval"
+    es_interval_param: str
+    es_interval: str
+    duration: timedelta
+
+    def __new__(
+        cls,
+        value: str,
+        es_interval_param: str,
+        es_interval: str,
+        duration: timedelta,
+    ):
+        member = str.__new__(cls, value)
+        member._value_ = value
+        member.es_interval_param = es_interval_param
+        member.es_interval = es_interval
+        member.duration = duration
+        return member
+
+    ONE_MINUTE = "1_minute", "fixed_interval", "1m", timedelta(minutes=1)
+    FIVE_MINUTES = "5_minutes", "fixed_interval", "5m", timedelta(minutes=5)
+    FIFTEEN_MINUTES = "15_minutes", "fixed_interval", "15m", timedelta(minutes=15)
+    THIRTY_MINUTES = "30_minutes", "fixed_interval", "30m", timedelta(minutes=30)
+    ONE_HOUR = "1_hour", "fixed_interval", "1h", timedelta(hours=1)
+    THREE_HOURS = "3_hours", "fixed_interval", "3h", timedelta(hours=3)
+    SIX_HOURS = "6_hours", "fixed_interval", "6h", timedelta(hours=6)
+    TWELVE_HOURS = "12_hours", "fixed_interval", "12h", timedelta(hours=12)
+    ONE_DAY = "1_day", "calendar_interval", "1d", timedelta(days=1)
+    ONE_WEEK = "1_week", "calendar_interval", "1w", timedelta(weeks=1)
+    ONE_MONTH = "1_month", "calendar_interval", "1M", timedelta(days=28)
+    HOUR_OF_DAY = "hour_of_day", "calendar_interval", "1h", timedelta(hours=1)
+    DAY_OF_WEEK = "day_of_week", "calendar_interval", "1d", timedelta(days=1)
+
+
+_DAYS_OF_WEEK = (
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+)
+
+# Maximum number of periods returned by the time aggregation (histogram mode),
+# lower when split_by is used since dimension values are repeated in each period
+MAX_TIME_PERIODS = 200
+MAX_TIME_PERIODS_WITH_SPLIT = 100
+
+# Maximum number of ES buckets of the underlying aggregation in cyclic mode
+_MAX_CYCLIC_ES_BUCKETS = 20_000
+
+
+def _estimate_period_count(start: datetime, end: datetime, duration: timedelta) -> int:
+    # upper bound: periods are aligned on the interval, so the first and last
+    # periods may be partially covered by the time window
+    return (end - start) // duration + 2
+
+
+class _TimePeriods:
+    """
+    How logs are split into periods by the time aggregation for a given interval.
+    """
+
+    # whether count_distinct can be used with this interval
+    supports_count_distinct = True
+
+    def __init__(self, interval: TimeAggregationInterval):
+        self.interval = interval
+
+    def build_es_date_histogram(
+        self, tz: ZoneInfo, start: datetime, end: datetime
+    ) -> dict:
+        return {
+            "field": "emitted_at",
+            self.interval.es_interval_param: self.interval.es_interval,
+            "time_zone": tz.key,
+        }
+
+    def get_period_keys(self) -> list | None:
+        """
+        Return the ordered keys of all the periods, or None if the periods
+        are given by the ES response.
+        """
+        raise NotImplementedError()
+
+    def to_period_key(self, es_key: int, tz: ZoneInfo) -> Any:
+        """
+        Return the key of the period an ES date_histogram bucket belongs to.
+        """
+        raise NotImplementedError()
+
+    def to_period(self, period_key: Any, tz: ZoneInfo) -> datetime | int | str:
+        raise NotImplementedError()
+
+    def check_size(self, start: datetime, end: datetime, split_limit: int | None):
+        raise NotImplementedError()
+
+
+class _HistogramTimePeriods(_TimePeriods):
+    def build_es_date_histogram(
+        self, tz: ZoneInfo, start: datetime, end: datetime
+    ) -> dict:
+        return {
+            **super().build_es_date_histogram(tz, start, end),
+            # include empty periods across the whole time window
+            "min_doc_count": 0,
+            "extended_bounds": {
+                "min": int(start.timestamp() * 1000),
+                "max": int(end.timestamp() * 1000),
+            },
+        }
+
+    def get_period_keys(self) -> None:
+        return None
+
+    def to_period_key(self, es_key: int, tz: ZoneInfo) -> int:
+        return es_key
+
+    def to_period(self, period_key: int, tz: ZoneInfo) -> datetime:
+        return datetime.fromtimestamp(period_key / 1000, tz)
+
+    def check_size(self, start: datetime, end: datetime, split_limit: int | None):
+        max_periods = MAX_TIME_PERIODS_WITH_SPLIT if split_limit else MAX_TIME_PERIODS
+        period_count = _estimate_period_count(start, end, self.interval.duration)
+        if period_count <= max_periods:
+            return
+
+        suggested_interval = next(
+            (
+                periods.interval.value
+                for periods in _TIME_PERIODS.values()
+                if isinstance(periods, _HistogramTimePeriods)
+                and _estimate_period_count(start, end, periods.interval.duration)
+                <= max_periods
+            ),
+            None,
+        )
+        raise ValidationError(
+            f"Too many periods (about {period_count}) for interval "
+            f"{self.interval.value!r} over this time window (max {max_periods}"
+            + (" with split_by" if split_limit else "")
+            + "), "
+            + (
+                f"use interval {suggested_interval!r} or larger, or narrow the "
+                "time window (since / until)"
+                if suggested_interval
+                else "narrow the time window (since / until)"
+            )
+        )
+
+
+class _CyclicTimePeriods(_TimePeriods):
+    """
+    Logs are first aggregated using the underlying ES interval, then the resulting
+    ES buckets are folded into the cyclic periods (hours of day, days of week).
+    """
+
+    # distinct counts cannot be summed when folding ES buckets
+    supports_count_distinct = False
+
+    def build_es_date_histogram(
+        self, tz: ZoneInfo, start: datetime, end: datetime
+    ) -> dict:
+        # periods without logs are filled by get_period_keys
+        return {**super().build_es_date_histogram(tz, start, end), "min_doc_count": 1}
+
+    def to_period_key(self, es_key: int, tz: ZoneInfo) -> int:
+        return self._fold(datetime.fromtimestamp(es_key / 1000, tz))
+
+    def _fold(self, value: datetime) -> int:
+        raise NotImplementedError()
+
+    def check_size(self, start: datetime, end: datetime, split_limit: int | None):
+        es_bucket_count = _estimate_period_count(start, end, self.interval.duration) * (
+            1 + (split_limit or 0)
+        )
+        if es_bucket_count > _MAX_CYCLIC_ES_BUCKETS:
+            raise ValidationError(
+                f"Time window is too large for interval {self.interval.value!r}, "
+                "narrow the time window (since / until)"
+                + (" or reduce split_limit" if split_limit else "")
+            )
+
+
+class _HourOfDayTimePeriods(_CyclicTimePeriods):
+    def __init__(self):
+        super().__init__(TimeAggregationInterval.HOUR_OF_DAY)
+
+    def get_period_keys(self) -> list[int]:
+        return list(range(24))
+
+    def _fold(self, value: datetime) -> int:
+        return value.hour
+
+    def to_period(self, period_key: int, tz: ZoneInfo) -> int:
+        return period_key
+
+
+class _DayOfWeekTimePeriods(_CyclicTimePeriods):
+    def __init__(self):
+        super().__init__(TimeAggregationInterval.DAY_OF_WEEK)
+
+    def get_period_keys(self) -> list[int]:
+        return list(range(7))
+
+    def _fold(self, value: datetime) -> int:
+        return value.weekday()
+
+    def to_period(self, period_key: int, tz: ZoneInfo) -> str:
+        return _DAYS_OF_WEEK[period_key]
+
+
+# Periods of each interval of the time aggregation (the order of histogram
+# intervals matters, it is used to suggest a larger interval)
+_TIME_PERIODS = {
+    periods.interval: periods
+    for periods in (
+        *(
+            _HistogramTimePeriods(interval)
+            for interval in TimeAggregationInterval
+            if interval
+            not in (
+                TimeAggregationInterval.HOUR_OF_DAY,
+                TimeAggregationInterval.DAY_OF_WEEK,
+            )
+        ),
+        _HourOfDayTimePeriods(),
+        _DayOfWeekTimePeriods(),
+    )
+}
+
+
 @dataclass
 class LogAggregation:
     total_count: int
     # each row is a list of dimension values (in the same order as group_by) and a count
     rows: list[tuple[list[Any], int]]
     other_count: int
+
+
+@dataclass
+class LogTimePeriod:
+    # a datetime (histogram mode), an hour of day (0-23) or a day of week name
+    period: datetime | int | str
+    count: int
+    # set only if count_distinct is used
+    distinct_count: int | None = None
+    # set only if split_by is used: (dimension value, count, distinct_count) for
+    # each top value having logs in the period
+    breakdown: list[tuple[Any, int, int | None]] | None = None
+    other_count: int | None = None
+
+
+@dataclass
+class LogTimeAggregation:
+    # time window of the aggregation, None if there is no log to aggregate
+    # and the search params don't provide it
+    start: datetime | None
+    end: datetime | None
+    total_count: int
+    timeline: list[LogTimePeriod]
 
 
 @dataclass
@@ -114,6 +380,15 @@ class _AggregationGroup:
     keys: list[Any]
     count: int
     latest_log: dict | None
+
+
+@dataclass
+class _TimeAggregationParams:
+    periods: _TimePeriods
+    tz: ZoneInfo
+    split_dimension: _AggregationDimension | None
+    split_limit: int
+    distinct_dimension: _AggregationDimension | None
 
 
 class _OffsetPaginationCursor:
@@ -756,22 +1031,24 @@ class LogService:
         else:
             aggregation = {"multi_terms": {"terms": terms, **params}}
 
-        # Get the names of actors / resources from the most recent log of each group
         name_dimensions = cls._get_aggregation_name_dimensions(dimensions)
         if name_dimensions:
             aggregation["aggs"] = {
-                "latest": {
-                    "top_hits": {
-                        "size": 1,
-                        "sort": [{"emitted_at": "desc"}],
-                        "_source": {
-                            "includes": [f"{dim}.name" for dim in name_dimensions]
-                        },
-                    }
-                }
+                "latest": cls._build_latest_log_aggregation(name_dimensions)
             }
 
         return aggregation
+
+    @staticmethod
+    def _build_latest_log_aggregation(name_dimensions: list[str]) -> dict:
+        # Get the names of actors / resources from the most recent log of each group
+        return {
+            "top_hits": {
+                "size": 1,
+                "sort": [{"emitted_at": "desc"}],
+                "_source": {"includes": [f"{dim}.name" for dim in name_dimensions]},
+            }
+        }
 
     @classmethod
     def _get_aggregation_groups(
@@ -841,6 +1118,250 @@ class LogService:
             total_count=total_count,
             rows=rows,
             other_count=total_count - sum(count for _, count in rows),
+        )
+
+    @staticmethod
+    def _get_time_zone(name: str) -> ZoneInfo:
+        try:
+            return ZoneInfo(name)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValidationError(f"Invalid timezone {name!r}")
+
+    async def _get_time_aggregation_bounds(
+        self, query: dict | None, search_params: LogSearchParams | None
+    ) -> tuple[datetime | None, datetime | None]:
+        def normalize(value: datetime | None) -> datetime | None:
+            # naive datetimes are considered as UTC (like ES does)
+            if value and not value.tzinfo:
+                return value.replace(tzinfo=timezone.utc)
+            return value
+
+        since = normalize(search_params.since if search_params else None)
+        until = normalize(search_params.until if search_params else None)
+        if since and until:
+            if since > until:
+                raise ValidationError("since must be before until")
+            return since, until
+
+        # get the missing bound(s) from the logs to aggregate
+        resp = await self.es.search(
+            index=self.read_alias,
+            query=query,
+            size=0,
+            aggregations={
+                "min": {"min": {"field": "emitted_at"}},
+                "max": {"max": {"field": "emitted_at"}},
+            },
+        )
+        min_value = resp["aggregations"]["min"]["value"]
+        max_value = resp["aggregations"]["max"]["value"]
+        if min_value is None:
+            return None, None
+        return (
+            since or datetime.fromtimestamp(min_value / 1000, timezone.utc),
+            until or datetime.fromtimestamp(max_value / 1000, timezone.utc),
+        )
+
+    async def _resolve_time_aggregation_params(
+        self,
+        interval: TimeAggregationInterval,
+        timezone_name: str,
+        split_by: str | None,
+        split_limit: int,
+        count_distinct: str | None,
+    ) -> _TimeAggregationParams:
+        periods = _TIME_PERIODS[interval]
+        tz = self._get_time_zone(timezone_name)
+
+        if split_by and split_by == count_distinct:
+            raise ValidationError("split_by and count_distinct must be different")
+        if count_distinct and not periods.supports_count_distinct:
+            raise ValidationError(
+                f"count_distinct cannot be used with interval {interval.value!r}"
+            )
+
+        return _TimeAggregationParams(
+            periods=periods,
+            tz=tz,
+            split_dimension=(
+                await self._resolve_aggregation_dimension(split_by)
+                if split_by
+                else None
+            ),
+            split_limit=split_limit,
+            distinct_dimension=(
+                await self._resolve_aggregation_dimension(count_distinct)
+                if count_distinct
+                else None
+            ),
+        )
+
+    @classmethod
+    def _build_time_aggregations(
+        cls, params: _TimeAggregationParams, start: datetime, end: datetime
+    ) -> dict:
+        histogram_aggregation = {
+            "date_histogram": params.periods.build_es_date_histogram(
+                params.tz, start, end
+            )
+        }
+        if params.distinct_dimension:
+            histogram_aggregation["aggs"] = {
+                "distinct": {
+                    "cardinality": {"field": params.distinct_dimension.es_field}
+                }
+            }
+
+        aggregations = {"timeline": histogram_aggregation}
+        if params.split_dimension:
+            breakdown_aggregation = cls._build_aggregation(
+                [params.split_dimension], params.split_limit
+            )
+            breakdown_aggregation.setdefault("aggs", {})["timeline"] = (
+                histogram_aggregation
+            )
+            aggregations["breakdown"] = breakdown_aggregation
+
+        return aggregations
+
+    async def _search_time_aggregation(
+        self,
+        query: dict | None,
+        start: datetime | None,
+        end: datetime | None,
+        params: _TimeAggregationParams,
+    ) -> tuple[int, list[dict], list[dict]]:
+        """
+        Return the total count, the timeline ES buckets and the breakdown ES buckets.
+        """
+        if not start:
+            # no log to aggregate and no time window given by the search params
+            return 0, [], []
+
+        params.periods.check_size(
+            start, end, params.split_limit if params.split_dimension else None
+        )
+        resp = await self.es.search(
+            index=self.read_alias,
+            query=query,
+            size=0,
+            track_total_hits=True,
+            aggregations=self._build_time_aggregations(params, start, end),
+        )
+        return (
+            resp["hits"]["total"]["value"],
+            resp["aggregations"]["timeline"]["buckets"],
+            (
+                resp["aggregations"]["breakdown"]["buckets"]
+                if params.split_dimension
+                else []
+            ),
+        )
+
+    @staticmethod
+    def _get_time_aggregation_counts(
+        buckets: list[dict], params: _TimeAggregationParams
+    ) -> dict[Any, tuple[int, int | None]]:
+        """
+        Return (count, distinct_count) by period key.
+        """
+        counts = {}
+        for bucket in buckets:
+            period_key = params.periods.to_period_key(bucket["key"], params.tz)
+            count, _ = counts.get(period_key, (0, None))
+            counts[period_key] = (
+                count + bucket["doc_count"],
+                # distinct counts are never folded (count_distinct is not
+                # supported by cyclic periods)
+                bucket["distinct"]["value"] if params.distinct_dimension else None,
+            )
+        return counts
+
+    @classmethod
+    def _get_time_aggregation_series(
+        cls, breakdown_buckets: list[dict], params: _TimeAggregationParams
+    ) -> list[tuple[Any, dict[Any, tuple[int, int | None]]]]:
+        """
+        Return (dimension value, counts by period key) for each top value of split_by.
+        """
+        if not params.split_dimension:
+            return []
+        groups = cls._get_aggregation_groups(
+            [params.split_dimension], breakdown_buckets
+        )
+        return [
+            (
+                cls._get_aggregation_value(
+                    params.split_dimension, group.keys[0], group.latest_log
+                ),
+                cls._get_time_aggregation_counts(bucket["timeline"]["buckets"], params),
+            )
+            for group, bucket in zip(groups, breakdown_buckets)
+        ]
+
+    @staticmethod
+    def _build_time_periods(
+        counts: dict[Any, tuple[int, int | None]],
+        series: list[tuple[Any, dict[Any, tuple[int, int | None]]]],
+        params: _TimeAggregationParams,
+    ) -> list[LogTimePeriod]:
+        period_keys = params.periods.get_period_keys()
+        if period_keys is None:
+            period_keys = list(counts)
+        default_counts = (0, 0 if params.distinct_dimension else None)
+
+        timeline = []
+        for period_key in period_keys:
+            count, distinct_count = counts.get(period_key, default_counts)
+            period = LogTimePeriod(
+                period=params.periods.to_period(period_key, params.tz),
+                count=count,
+                distinct_count=distinct_count,
+            )
+            if params.split_dimension:
+                period.breakdown = [
+                    (value, *series_counts[period_key])
+                    for value, series_counts in series
+                    if series_counts.get(period_key, (0,))[0] > 0
+                ]
+                period.other_count = count - sum(
+                    entry_count for _, entry_count, _ in period.breakdown
+                )
+            timeline.append(period)
+        return timeline
+
+    async def aggregate_logs_over_time(
+        self,
+        *,
+        interval: TimeAggregationInterval,
+        timezone_name: str = "UTC",
+        split_by: str | None = None,
+        split_limit: int = 5,
+        count_distinct: str | None = None,
+        authorized_entities: set[str] = None,
+        search_params: LogSearchParams = None,
+    ) -> LogTimeAggregation:
+        params = await self._resolve_time_aggregation_params(
+            interval, timezone_name, split_by, split_limit, count_distinct
+        )
+        query = await self._build_es_query(
+            search_params, authorized_entities=authorized_entities
+        )
+        start, end = await self._get_time_aggregation_bounds(query, search_params)
+        (
+            total_count,
+            timeline_buckets,
+            breakdown_buckets,
+        ) = await self._search_time_aggregation(query, start, end, params)
+        return LogTimeAggregation(
+            start=start.astimezone(params.tz) if start else None,
+            end=end.astimezone(params.tz) if end else None,
+            total_count=total_count,
+            timeline=self._build_time_periods(
+                self._get_time_aggregation_counts(timeline_buckets, params),
+                self._get_time_aggregation_series(breakdown_buckets, params),
+                params,
+            ),
         )
 
     async def get_storage_size(self) -> int:
