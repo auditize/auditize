@@ -684,19 +684,13 @@ class LogService:
         Each word must match indifferently of the field they are in the log.
         """
         return {
-            "bool": {
-                "must": [
-                    {
-                        "bool": {
-                            "should": [
-                                {"match": {"custom_fields_text": word}},
-                                {"match": {"resource.name": word}},
-                            ],
-                            "minimum_should_match": 1,
-                        }
-                    }
-                    for word in cls._split_words(query)
-                ]
+            "multi_match": {
+                "query": query,
+                "fields": ["custom_fields_text", "resource.name"],
+                "type": "cross_fields",
+                "operator": "and",
+                # a query without any word (punctuation only) matches all logs
+                "zero_terms_query": "all",
             }
         }
 

@@ -1628,6 +1628,35 @@ class _TestGetLogsFullTextSearchCustomField:
             log_rw_client, repo, {"q": "foo barre"}, matching_log
         )
 
+    async def test_word_with_punctuation(
+        self, log_rw_client: HttpTestHelper, repo: PreparedRepo
+    ):
+        matching_log = await repo.create_log_with(
+            log_rw_client,
+            self.prepare_log_data(
+                [
+                    {
+                        "name": "user_agent",
+                        "value": "Mozilla/5.0 (KHTML, like Gecko) Chrome/121.0 Safari/537.36",
+                    },
+                ]
+            ),
+        )
+        non_matching_log = await repo.create_log_with(
+            log_rw_client,
+            self.prepare_log_data(
+                [
+                    {
+                        "name": "user_agent",
+                        "value": "Mozilla/5.0 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+                    },
+                ]
+            ),
+        )
+        await _test_get_logs_filter(
+            log_rw_client, repo, {"q": "Chrome/121.0"}, matching_log
+        )
+
 
 class TestGetLogsFullTextSearchSource(
     _SourceCustomFieldsMixin, _TestGetLogsFullTextSearchCustomField
@@ -1667,6 +1696,24 @@ async def test_get_logs_full_text_search_resource_name(
         },
     )
     await _test_get_logs_filter(log_rw_client, repo, {"q": "foo bar"}, log)
+
+
+async def test_get_logs_full_text_search_word_across_fields(
+    log_rw_client: HttpTestHelper, repo: PreparedRepo
+):
+    # the tokens of a single word ("foo/bar") can be found in different fields
+    log = await repo.create_log_with(
+        log_rw_client,
+        {
+            "resource": {
+                "name": "foo",
+                "ref": "config-profile:123",
+                "type": "config_profile",
+            },
+            "source": [{"name": "param", "value": "bar"}],
+        },
+    )
+    await _test_get_logs_filter(log_rw_client, repo, {"q": "foo/bar"}, log)
 
 
 async def test_get_logs_filter_entity_id_exact_entity(
