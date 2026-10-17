@@ -800,6 +800,18 @@ class BaseLogSearchParams(QuerySearchParam):
     # That triggers a pydantic validation error because None is not explicitly allowed.
     # The Optional[] is also needed because (among others) this model is used in GET /users/me/logs/filters
     # for the search_params field (where field values can be None).
+
+    # Override QuerySearchParam.q to document the log-specific full-text search
+    q: Optional[str] = Field(
+        description=(
+            "Full-text search on the resource name and the string and JSON custom fields "
+            "(source, actor, resource and details), case and accent insensitive. "
+            "Every word of the query must match, but words may match in different fields "
+            "of the log."
+        ),
+        json_schema_extra={"example": "john 192.168.1.1"},
+        default=None,
+    )
     action_type: Optional[str] = Field(
         description="Filter logs by action type",
         json_schema_extra={"example": "create-configuration-profile"},
