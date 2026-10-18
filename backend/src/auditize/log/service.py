@@ -68,16 +68,16 @@ _AGGREGATION_BUILTIN_FIELDS = {
 
 AGGREGATION_BUILTIN_DIMENSIONS = list(_AGGREGATION_BUILTIN_FIELDS)
 
-# Custom field dimensions are expressed as "<prefix>.<field_name>",
-# map each prefix to the ES path of the custom fields
-_AGGREGATION_CUSTOM_FIELD_PATHS = {
+# Custom field dimensions are expressed as "<group>.<field_name>",
+# map each custom field group to the ES path of its custom fields
+_CUSTOM_FIELD_GROUP_PATHS = {
     "source": "source",
     "details": "details",
     "actor": "actor.extra",
     "resource": "resource.extra",
 }
 
-AGGREGATION_CUSTOM_FIELD_PREFIXES = list(_AGGREGATION_CUSTOM_FIELD_PATHS)
+CUSTOM_FIELD_GROUPS = list(_CUSTOM_FIELD_GROUP_PATHS)
 
 # Custom field types that can be used as aggregation dimensions
 # (string and JSON fields are full-text fields, datetime fields are not relevant to group by)
@@ -1005,14 +1005,14 @@ class LogService:
                 dimension, _AGGREGATION_BUILTIN_FIELDS[dimension]
             )
 
-        prefix, _, field_name = dimension.partition(".")
-        path = _AGGREGATION_CUSTOM_FIELD_PATHS.get(prefix)
+        group, _, field_name = dimension.partition(".")
+        path = _CUSTOM_FIELD_GROUP_PATHS.get(group)
         if not path or not field_name:
             raise ValidationError(
                 f"Invalid dimension {dimension!r}, expected one of "
                 f"{', '.join(AGGREGATION_BUILTIN_DIMENSIONS)} or a custom field "
-                f"as <prefix>.<field_name> with prefix one of "
-                f"{', '.join(AGGREGATION_CUSTOM_FIELD_PREFIXES)}"
+                f"as <group>.<field_name> with group one of "
+                f"{', '.join(CUSTOM_FIELD_GROUPS)}"
             )
 
         field_type = await self._find_custom_field_type(path, field_name)

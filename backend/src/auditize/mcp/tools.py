@@ -22,7 +22,7 @@ from auditize.log.models import (
 )
 from auditize.log.service import (
     AGGREGATION_BUILTIN_DIMENSIONS,
-    AGGREGATION_CUSTOM_FIELD_PREFIXES,
+    CUSTOM_FIELD_GROUPS,
     LogService,
     LogTimePeriod,
     TimeAggregationInterval,
@@ -54,8 +54,8 @@ CURSOR_PARAM_DESCRIPTION = (
 AGGREGATION_DIMENSION_DESCRIPTION = (
     "A dimension is either one of "
     f"{', '.join(AGGREGATION_BUILTIN_DIMENSIONS)} or a custom field as "
-    "<prefix>.<field_name> with prefix one of "
-    f"{', '.join(AGGREGATION_CUSTOM_FIELD_PREFIXES)} (e.g. details.status, actor.role)"
+    "<group>.<field_name> with group one of "
+    f"{', '.join(CUSTOM_FIELD_GROUPS)} (e.g. details.status, actor.role)"
 )
 
 

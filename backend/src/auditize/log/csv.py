@@ -21,14 +21,14 @@ from auditize.log_i18n_profile.sql_models import LogI18nProfile
 
 
 def _custom_field_value_to_csv_value(
-    prefix: str,
+    group: str,
     field: CustomField,
     translator: Callable[[str, str, str], str],
     lang: Lang,
 ) -> str:
     match field.type:
         case CustomFieldType.ENUM:
-            return translator(prefix, field.name, field.value)
+            return translator(group, field.name, field.value)
         case CustomFieldType.BOOLEAN:
             return (
                 t("log.csv.true", lang=lang)
@@ -40,14 +40,14 @@ def _custom_field_value_to_csv_value(
 
 
 def _custom_fields_to_dict(
-    prefix: str,
+    group: str,
     custom_fields: list[CustomField],
     translator: Callable[[str, str, str], str],
     lang: Lang,
 ) -> dict:
     return {
-        f"{prefix}.{field.name}": (
-            _custom_field_value_to_csv_value(prefix, field, translator, lang)
+        f"{group}.{field.name}": (
+            _custom_field_value_to_csv_value(group, field, translator, lang)
         )
         for field in custom_fields
     }

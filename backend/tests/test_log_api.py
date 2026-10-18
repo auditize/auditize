@@ -1228,7 +1228,7 @@ async def test_get_logs_filter_resource_ref(
 
 
 class _DetailsCustomFieldsMixin:
-    field_prefix = "details"
+    field_group = "details"
     relative_path = "details"
 
     def prepare_log_data(self, fields: list[dict]) -> dict:
@@ -1236,7 +1236,7 @@ class _DetailsCustomFieldsMixin:
 
 
 class _SourceCustomFieldsMixin:
-    field_prefix = "source"
+    field_group = "source"
     relative_path = "source"
 
     def prepare_log_data(self, fields: list[dict]) -> dict:
@@ -1244,7 +1244,7 @@ class _SourceCustomFieldsMixin:
 
 
 class _ResourceExtraCustomFieldsMixin:
-    field_prefix = "resource"
+    field_group = "resource"
     relative_path = "resources/extras"
 
     def prepare_log_data(self, fields: list[dict]) -> dict:
@@ -1261,7 +1261,7 @@ class _ResourceExtraCustomFieldsMixin:
 
 
 class _ActorExtraCustomFieldsMixin:
-    field_prefix = "actor"
+    field_group = "actor"
     relative_path = "actors/extras"
 
     def prepare_log_data(self, fields: list[dict]) -> dict:
@@ -1282,7 +1282,7 @@ class _TestGetLogsFilterCustomField:
         raise NotImplementedError
 
     @property
-    def field_prefix(self) -> str:
+    def field_group(self) -> str:
         raise NotImplementedError
 
     @pytest.mark.parametrize(
@@ -1380,7 +1380,7 @@ class _TestGetLogsFilterCustomField:
             client=log_rw_client,
             repo=repo,
             search_params={
-                f"{self.field_prefix}.{key}": value
+                f"{self.field_group}.{key}": value
                 for key, value in filter_params.items()
             },
             expected_log=matching_log,
@@ -1415,7 +1415,7 @@ class _TestGetLogsFilterCustomField:
         await log_rw_client.assert_get_bad_request(
             f"/repos/{repo.id}/logs",
             params={
-                f"{self.field_prefix}.{field_type}": "INVALID VALUE",
+                f"{self.field_group}.{field_type}": "INVALID VALUE",
             },
         )
 
@@ -1437,7 +1437,7 @@ class _TestGetLogsFilterCustomField:
         await _test_get_logs_filter(
             client=log_rw_client,
             repo=repo,
-            search_params={f"{self.field_prefix}.field": "123"},
+            search_params={f"{self.field_group}.field": "123"},
             expected_log=newest_log,
             extra_log=False,
         )

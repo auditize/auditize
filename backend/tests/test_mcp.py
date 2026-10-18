@@ -750,17 +750,15 @@ async def test_aggregate_logs_with_search_params(
     }
 
 
-def _build_log_data_with_custom_fields(prefix: str, fields: list[dict]) -> dict:
-    match prefix:
+def _build_log_data_with_custom_fields(group: str, fields: list[dict]) -> dict:
+    match group:
         case "actor" | "resource":
-            return {
-                prefix: {"type": prefix, "ref": "1", "name": "Name", "extra": fields}
-            }
+            return {group: {"type": group, "ref": "1", "name": "Name", "extra": fields}}
         case _:
-            return {prefix: fields}
+            return {group: fields}
 
 
-@pytest.mark.parametrize("prefix", ["source", "details", "actor", "resource"])
+@pytest.mark.parametrize("group", ["source", "details", "actor", "resource"])
 @pytest.mark.parametrize(
     "field_type,values",
     [
@@ -771,7 +769,7 @@ def _build_log_data_with_custom_fields(prefix: str, fields: list[dict]) -> dict:
     ],
 )
 async def test_aggregate_logs_by_custom_field(
-    prefix: str,
+    group: str,
     field_type: str,
     values: list,
     repo: PreparedRepo,
@@ -783,15 +781,15 @@ async def test_aggregate_logs_by_custom_field(
         await repo.create_log_with(
             log_rw_client,
             _build_log_data_with_custom_fields(
-                prefix, [{"name": "field", "value": value, "type": field_type}]
+                group, [{"name": "field", "value": value, "type": field_type}]
             ),
         )
     # log without the custom field
     await repo.create_log_with(
-        log_rw_client, _build_log_data_with_custom_fields(prefix, [])
+        log_rw_client, _build_log_data_with_custom_fields(group, [])
     )
 
-    dimension = f"{prefix}.field"
+    dimension = f"{group}.field"
     assert await _aggregate_logs(mcp_client, repo, log_read_apikey, [dimension]) == {
         "total_count": 4,
         "rows": [
@@ -944,7 +942,7 @@ async def test_aggregate_logs_by_unknown_custom_field(
 @pytest.mark.parametrize(
     "group_by",
     [
-        ["unknown_prefix.enum_field"],
+        ["unknown_group.enum_field"],
         ["details."],
         ["details.enum_field", "details.enum_field"],
     ],

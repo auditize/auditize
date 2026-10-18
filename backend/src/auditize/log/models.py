@@ -934,12 +934,12 @@ class LogSearchParams(BaseLogSearchParams):
 class LogSearchQueryParams(BaseLogSearchParams):
     model_config = ConfigDict(extra="allow")
 
-    def _get_custom_field_search_params(self, prefix: str) -> dict[str, str]:
+    def _get_custom_field_search_params(self, group: str) -> dict[str, str]:
         params = {}
         if self.__pydantic_extra__:
             for param_name, param_value in self.__pydantic_extra__.items():
                 parts = param_name.split(".")
-                if len(parts) == 2 and parts[0] == prefix:
+                if len(parts) == 2 and parts[0] == group:
                     params[parts[1]] = param_value
         return params
 
