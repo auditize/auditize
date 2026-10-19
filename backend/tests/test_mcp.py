@@ -1845,7 +1845,7 @@ async def test_describe_repo_truncated_action_types(
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
-    with patch("auditize.log.service._MAX_ACTION_TYPES", 1):
+    with patch("auditize.mcp.service._MAX_ACTION_TYPES", 1):
         assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
             "logs": 3,
             "first_log_at": "2024-01-01T10:00:00.000Z",
@@ -2257,7 +2257,7 @@ async def test_describe_action_truncated_custom_fields(
         emitted_at=_emitted_at(1),
     )
 
-    with patch("auditize.log.service._MAX_FIELDS_PER_GROUP", 1):
+    with patch("auditize.mcp.service._MAX_FIELDS_PER_GROUP", 1):
         assert await _call_tool(
             mcp_client, repo, log_read_apikey, "describe_action", action_type="login"
         ) == _expected_action_description(
@@ -2353,7 +2353,7 @@ async def test_describe_repo_truncated_custom_fields(
         emitted_at=_emitted_at(1),
     )
 
-    with patch("auditize.log.service._MAX_FIELDS_PER_GROUP", 1):
+    with patch("auditize.mcp.service._MAX_FIELDS_PER_GROUP", 1):
         assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
             "logs": 2,
             "first_log_at": "2024-01-01T10:00:00.000Z",
@@ -2419,7 +2419,7 @@ async def test_describe_repo_approximate_distinct_counts(
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
-    with patch("auditize.log.service._CARDINALITY_PRECISION_THRESHOLD", 1):
+    with patch("auditize.mcp.service._CARDINALITY_PRECISION_THRESHOLD", 1):
         assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
             "logs": 3,
             "first_log_at": "2024-01-01T10:00:00.000Z",

@@ -17,26 +17,26 @@ from auditize.auth.authorizer import (
 from auditize.database.dbm import open_db_session
 from auditize.exceptions import NotFoundError, ValidationError
 from auditize.log.models import (
-    ActionDescription,
     CustomFieldData,
     LogResponse,
     LogSearchParams,
-    RepoDescription,
 )
 from auditize.log.service import (
     AGGREGATION_BUILTIN_DIMENSIONS,
     CUSTOM_FIELD_GROUPS,
-    LogService,
     LogTimePeriod,
     TimeAggregationInterval,
 )
 from auditize.mcp.app import mcp
 from auditize.mcp.models import (
+    ActionDescription,
     LogAggregationMcpResponse,
     LogEntityMcpResponse,
     LogTimeAggregationMcpResponse,
     PaginatedMcpResponse,
+    RepoDescription,
 )
+from auditize.mcp.service import McpLogService
 from auditize.permissions.assertions import can_read_logs_from_repo
 
 TOOL_ANNOTATIONS = ToolAnnotations(
@@ -69,7 +69,7 @@ async def get_authorized(
 
     authorization_header = headers.get("authorization")
     if not authorization_header:
-        raise ToolError(f"Authorization header is required")
+        raise ToolError("Authorization header is required")
 
     bearer_token = get_bearer_token_from_authorization_header(authorization_header)
     authenticated = await authenticate_apikey(db_session, bearer_token)
@@ -80,7 +80,7 @@ async def get_authorized(
 async def get_log_service(
     db_session: AsyncSession = Depends(open_db_session),
     authenticated: Authenticated = Depends(get_authorized),
-) -> LogService:
+) -> McpLogService:
     headers = get_http_headers()
 
     raw_repo_id = headers.get("x-auditize-repo")
@@ -97,11 +97,11 @@ async def get_log_service(
             f"Apikey does not have permission to read logs from repository {repo_id!r}"
         )
 
-    return await LogService.for_reading(db_session, repo_id)
+    return await McpLogService.for_reading(db_session, repo_id)
 
 
 def get_authorized_entities(
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized: Authenticated = Depends(get_authorized),
 ) -> set[str]:
     return authorized.permissions.get_repo_readable_entities(log_service.repo.id)
@@ -111,7 +111,7 @@ def get_authorized_entities(
 async def search_logs(
     search_params: LogSearchParams,
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[LogResponse]:
     """Search for logs in the repository given optional keywords in the query.
@@ -141,7 +141,7 @@ async def search_logs(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def count_logs(
     search_params: LogSearchParams,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> int:
     """Count the logs in the repository matching optional keywords in the query.
@@ -179,7 +179,7 @@ async def aggregate_logs(
     limit: Annotated[
         int, Field(ge=1, le=50, description="Maximum number of rows to return")
     ] = 10,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> LogAggregationMcpResponse:
     """Count logs grouped by one or two dimensions, using the same filters as search_logs.
@@ -294,7 +294,7 @@ async def aggregate_logs_over_time(
             )
         ),
     ] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> LogTimeAggregationMcpResponse:
     """Count logs per period of time, using the same filters as search_logs.
@@ -362,7 +362,7 @@ async def describe_repo(
     until: Annotated[
         datetime | None, Field(description=UNTIL_PARAM_DESCRIPTION)
     ] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> RepoDescription:
     """Get a compact overview of the repository: number of logs, time range, action types
@@ -393,7 +393,7 @@ async def describe_action(
     until: Annotated[
         datetime | None, Field(description=UNTIL_PARAM_DESCRIPTION)
     ] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> ActionDescription:
     """Describe the logs of one action type: count, time range, actor and resource types,
@@ -420,7 +420,7 @@ async def describe_action(
 async def search_actors(
     query: Annotated[str | None, "The query (keywords) to search for actors"],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[tuple[str, str]]:
     """Search for actors on partial name match ("Jo Do" will match "John Doe").
@@ -450,7 +450,7 @@ async def search_actors(
 async def search_resources(
     query: Annotated[str | None, "The query (keywords) to search for resources"],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[tuple[str, str]]:
     """Search for resources on partial name match ("Config" will match "Config Profile 123").
@@ -480,7 +480,7 @@ async def search_resources(
 async def search_rich_tags(
     query: Annotated[str | None, "The query (keywords) to search for rich tags"],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[tuple[str, str]]:
     """Search for rich tags on partial name match ("abc" will match "Profile ABC").
@@ -512,7 +512,7 @@ async def search_rich_tags(
 async def search_entities(
     query: Annotated[str, "The query (keywords) to search for entities"],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[LogEntityMcpResponse]:
     """Search for entities on partial name match ("Ent" will match "Entity 1").
@@ -553,7 +553,7 @@ async def search_entities(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_action_types(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List all possible action types.
@@ -576,7 +576,7 @@ async def list_action_types(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_action_categories(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List all possible action categories (action categories are used to group action types).
@@ -599,7 +599,7 @@ async def list_action_categories(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_actor_types(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List all possible actor types.
@@ -622,7 +622,7 @@ async def list_actor_types(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_resource_types(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List all possible resource types.
@@ -645,7 +645,7 @@ async def list_resource_types(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_attachment_types(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List all possible attachment types.
@@ -668,7 +668,7 @@ async def list_attachment_types(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_attachment_mime_types(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List all possible attachment MIME types.
@@ -694,7 +694,7 @@ async def list_attachment_mime_types(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_simple_tag_types(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List all possible tag types for simple tags.
@@ -719,7 +719,7 @@ async def list_simple_tag_types(
 
 
 async def _list_custom_fields(
-    log_service: LogService,
+    log_service: McpLogService,
     authorized_entities: set[str],
     get_data_func_name: str,
     cursor: str | None,
@@ -736,7 +736,7 @@ async def _list_custom_fields(
 
 
 async def _list_custom_field_enum_values(
-    log_service: LogService,
+    log_service: McpLogService,
     authorized_entities: set[str],
     get_data_func_name: str,
     field_name: str,
@@ -754,7 +754,7 @@ async def _list_custom_field_enum_values(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_source_fields(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "source", along with their type.
@@ -779,7 +779,7 @@ async def list_source_fields(
 async def list_source_field_values(
     field_name: Annotated[str, "The field name, as returned by list_source_fields"],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "source" custom field.
@@ -803,7 +803,7 @@ async def list_source_field_values(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_details_fields(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "details", along with their type.
@@ -828,7 +828,7 @@ async def list_details_fields(
 async def list_detail_field_values(
     field_name: Annotated[str, "The field name, as returned by list_details_fields"],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "details" custom field.
@@ -852,7 +852,7 @@ async def list_detail_field_values(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_actor_extra_fields(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "actor_extra", along with their type.
@@ -879,7 +879,7 @@ async def list_actor_extra_field_values(
         str, "The field name, as returned by list_actor_extra_fields"
     ],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "actor_extra" custom field.
@@ -907,7 +907,7 @@ async def list_actor_extra_field_values(
 @mcp.tool(annotations=TOOL_ANNOTATIONS)
 async def list_resource_extra_fields(
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[CustomFieldData]:
     """List the available custom field names under "resource_extra", along with their type.
@@ -934,7 +934,7 @@ async def list_resource_extra_field_values(
         str, "The field name, as returned by list_resource_extra_fields"
     ],
     cursor: Annotated[str | None, CURSOR_PARAM_DESCRIPTION] = None,
-    log_service: LogService = Depends(get_log_service),
+    log_service: McpLogService = Depends(get_log_service),
     authorized_entities: set[str] = Depends(get_authorized_entities),
 ) -> PaginatedMcpResponse[str]:
     """List the distinct known values for one "resource_extra" custom field.
