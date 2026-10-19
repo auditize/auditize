@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Annotated
 
 from fastmcp.dependencies import Depends
@@ -14,11 +15,13 @@ from auditize.auth.authorizer import (
     get_bearer_token_from_authorization_header,
 )
 from auditize.database.dbm import open_db_session
-from auditize.exceptions import ValidationError
+from auditize.exceptions import NotFoundError, ValidationError
 from auditize.log.models import (
+    ActionDescription,
     CustomFieldData,
     LogResponse,
     LogSearchParams,
+    RepoDescription,
 )
 from auditize.log.service import (
     AGGREGATION_BUILTIN_DIMENSIONS,
@@ -345,6 +348,72 @@ async def aggregate_logs_over_time(
             for period in aggregation.timeline
         ],
     )
+
+
+SINCE_PARAM_DESCRIPTION = "Only take into account logs emitted at or after this date"
+UNTIL_PARAM_DESCRIPTION = "Only take into account logs emitted at or before this date"
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def describe_repo(
+    since: Annotated[
+        datetime | None, Field(description=SINCE_PARAM_DESCRIPTION)
+    ] = None,
+    until: Annotated[
+        datetime | None, Field(description=UNTIL_PARAM_DESCRIPTION)
+    ] = None,
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> RepoDescription:
+    """Get a compact overview of the repository: number of logs, time range, action types
+    (with category and count), actor types and resource types (with count and number of
+    distinct actors/resources), and the catalog of custom fields (source, details, actor,
+    resource) with their type.
+
+    Call this first when exploring a repository you don't know yet: it replaces
+    list_action_types, list_actor_types, list_resource_types and list_*_fields.
+
+    It does not return field values, value ranges or field coverage: call
+    describe_action(action_type) for the action types relevant to your question.
+
+    since / until restrict everything (counts, time range and field catalog) to the
+    logs emitted within that window.
+    """
+    return await log_service.describe_repo(
+        authorized_entities=authorized_entities, since=since, until=until
+    )
+
+
+@mcp.tool(annotations=TOOL_ANNOTATIONS)
+async def describe_action(
+    action_type: Annotated[str, Field(description="The action type to describe")],
+    since: Annotated[
+        datetime | None, Field(description=SINCE_PARAM_DESCRIPTION)
+    ] = None,
+    until: Annotated[
+        datetime | None, Field(description=UNTIL_PARAM_DESCRIPTION)
+    ] = None,
+    log_service: LogService = Depends(get_log_service),
+    authorized_entities: set[str] = Depends(get_authorized_entities),
+) -> ActionDescription:
+    """Describe the logs of one action type: count, time range, actor and resource types,
+    and every custom field actually present in these logs with its coverage (share of
+    logs having the field), number of distinct values, its values with their counts
+    (when there are at most 20) and its min/max range (numeric and datetime fields).
+
+    Use it after describe_repo, for the action types relevant to your question, before
+    filtering or aggregating on custom fields. It usually replaces several
+    list_*_field_values and aggregate_logs calls.
+    """
+    try:
+        return await log_service.describe_action(
+            action_type,
+            authorized_entities=authorized_entities,
+            since=since,
+            until=until,
+        )
+    except NotFoundError as exc:
+        raise ToolError(str(exc))
 
 
 @mcp.tool(annotations=TOOL_ANNOTATIONS)

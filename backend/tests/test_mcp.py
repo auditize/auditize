@@ -1638,3 +1638,930 @@ async def test_aggregate_logs_over_time_no_permission(
     apikey = await apikey_builder({})
     with pytest.raises(ToolError, match="permission"):
         await _aggregate_logs_over_time(mcp_client, repo, apikey, "1_hour")
+
+
+async def _call_tool(
+    mcp_client: Client[FastMCPTransport],
+    repo: PreparedRepo,
+    apikey: PreparedApikey,
+    tool: str,
+    **params,
+) -> dict:
+    with mock_mcp_http_headers(repo, apikey):
+        result = await mcp_client.call_tool(tool, params)
+    return _get_tool_data(result)
+
+
+def _action(type_: str, category: str = "category") -> dict:
+    return {"action": {"type": type_, "category": category}}
+
+
+def _resource(ref: str) -> dict:
+    return {"resource": {"type": "doc", "ref": ref, "name": f"Doc {ref}"}}
+
+
+def _custom_field(name: str, value: Any, type_: str) -> dict:
+    return {"name": name, "value": value, "type": type_}
+
+
+def _empty_custom_field_group() -> dict:
+    return {"total": 0, "truncated": False, "items": {}}
+
+
+def _custom_field_groups(**groups) -> dict:
+    """
+    Expected custom_fields of a description, groups not given are empty.
+    """
+    return {
+        group: groups.get(group, _empty_custom_field_group())
+        for group in ("source", "details", "actor", "resource")
+    }
+
+
+def _custom_field_stats(type_: str, coverage: float, **stats) -> dict:
+    return {
+        "type": type_,
+        "coverage": coverage,
+        "distinct_values": None,
+        "values": None,
+        "range": None,
+        **stats,
+    }
+
+
+async def test_describe_repo_empty(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+):
+    assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
+        "logs": 0,
+        "first_log_at": None,
+        "last_log_at": None,
+        "action_types": {"total": 0, "truncated": False, "items": []},
+        "actor_types": [],
+        "resource_types": [],
+        "logs_without_actor": 0,
+        "logs_without_resource": 0,
+        "custom_fields": {
+            "source": _empty_custom_field_group(),
+            "details": _empty_custom_field_group(),
+            "actor": _empty_custom_field_group(),
+            "resource": _empty_custom_field_group(),
+        },
+    }
+
+
+async def _create_describe_repo_logs(repo: PreparedRepo, client: HttpTestHelper):
+    await repo.create_log_with(
+        client,
+        {
+            **_action("login", "auth"),
+            **_actor("1"),
+            "details": [_custom_field("mfa", True, "boolean")],
+        },
+        emitted_at="2024-01-01T10:00:00Z",
+    )
+    await repo.create_log_with(
+        client,
+        {**_action("login", "auth"), **_actor("2")},
+        emitted_at="2024-01-02T10:00:00Z",
+    )
+    await repo.create_log_with(
+        client,
+        {
+            **_action("view", "doc"),
+            **_actor("1"),
+            **_resource("a"),
+            "source": [_custom_field("ip", "1.2.3.4", "string")],
+        },
+        emitted_at="2024-01-03T10:00:00Z",
+    )
+
+
+async def test_describe_repo(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await _create_describe_repo_logs(repo, log_rw_client)
+
+    assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
+        "logs": 3,
+        "first_log_at": "2024-01-01T10:00:00.000Z",
+        "last_log_at": "2024-01-03T10:00:00.000Z",
+        "action_types": {
+            "total": 2,
+            "truncated": False,
+            "items": [
+                {"name": "login", "category": "auth", "logs": 2},
+                {"name": "view", "category": "doc", "logs": 1},
+            ],
+        },
+        "actor_types": [
+            {
+                "name": "user",
+                "logs": 3,
+                "distinct_actors": {"count": 2, "approx": False},
+            }
+        ],
+        "resource_types": [
+            {
+                "name": "doc",
+                "logs": 1,
+                "distinct_resources": {"count": 1, "approx": False},
+            }
+        ],
+        "logs_without_actor": 0,
+        "logs_without_resource": 2,
+        "custom_fields": {
+            "source": {"total": 1, "truncated": False, "items": {"ip": "string"}},
+            "details": {"total": 1, "truncated": False, "items": {"mfa": "boolean"}},
+            "actor": _empty_custom_field_group(),
+            "resource": _empty_custom_field_group(),
+        },
+    }
+
+
+async def test_describe_repo_with_time_window(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await _create_describe_repo_logs(repo, log_rw_client)
+
+    assert await _call_tool(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "describe_repo",
+        since="2024-01-02T00:00:00Z",
+        until="2024-01-03T23:59:59Z",
+    ) == {
+        "logs": 2,
+        "first_log_at": "2024-01-02T10:00:00.000Z",
+        "last_log_at": "2024-01-03T10:00:00.000Z",
+        "action_types": {
+            "total": 2,
+            "truncated": False,
+            "items": [
+                {"name": "login", "category": "auth", "logs": 1},
+                {"name": "view", "category": "doc", "logs": 1},
+            ],
+        },
+        "actor_types": [
+            {
+                "name": "user",
+                "logs": 2,
+                "distinct_actors": {"count": 2, "approx": False},
+            }
+        ],
+        "resource_types": [
+            {
+                "name": "doc",
+                "logs": 1,
+                "distinct_resources": {"count": 1, "approx": False},
+            }
+        ],
+        "logs_without_actor": 0,
+        "logs_without_resource": 1,
+        "custom_fields": {
+            "source": {"total": 1, "truncated": False, "items": {"ip": "string"}},
+            # the "mfa" field only exists in a log outside the time window
+            "details": _empty_custom_field_group(),
+            "actor": _empty_custom_field_group(),
+            "resource": _empty_custom_field_group(),
+        },
+    }
+
+
+async def test_describe_repo_truncated_action_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await _create_describe_repo_logs(repo, log_rw_client)
+
+    with patch("auditize.log.service._MAX_ACTION_TYPES", 1):
+        assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
+            "logs": 3,
+            "first_log_at": "2024-01-01T10:00:00.000Z",
+            "last_log_at": "2024-01-03T10:00:00.000Z",
+            "action_types": {
+                "total": 2,
+                "truncated": True,
+                "items": [{"name": "login", "category": "auth", "logs": 2}],
+            },
+            "actor_types": [
+                {
+                    "name": "user",
+                    "logs": 3,
+                    "distinct_actors": {"count": 2, "approx": False},
+                }
+            ],
+            "resource_types": [
+                {
+                    "name": "doc",
+                    "logs": 1,
+                    "distinct_resources": {"count": 1, "approx": False},
+                }
+            ],
+            "logs_without_actor": 0,
+            "logs_without_resource": 2,
+            "custom_fields": _custom_field_groups(
+                source={"total": 1, "truncated": False, "items": {"ip": "string"}},
+                details={"total": 1, "truncated": False, "items": {"mfa": "boolean"}},
+            ),
+        }
+
+
+async def test_describe_repo_entity_restricted(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("login"),
+            "entity_path": [{"ref": "entity_A", "name": "Entity A"}],
+            "details": [_custom_field("visible", "yes", "enum")],
+        },
+        emitted_at="2024-01-01T10:00:00Z",
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("logout"),
+            "entity_path": [{"ref": "entity_B", "name": "Entity B"}],
+            "details": [_custom_field("hidden", "yes", "enum")],
+        },
+        emitted_at="2024-01-02T10:00:00Z",
+    )
+    apikey = await apikey_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
+
+    assert await _call_tool(mcp_client, repo, apikey, "describe_repo") == {
+        "logs": 1,
+        "first_log_at": "2024-01-01T10:00:00.000Z",
+        "last_log_at": "2024-01-01T10:00:00.000Z",
+        "action_types": {
+            "total": 1,
+            "truncated": False,
+            "items": [{"name": "login", "category": "category", "logs": 1}],
+        },
+        "actor_types": [],
+        "resource_types": [],
+        "logs_without_actor": 1,
+        "logs_without_resource": 1,
+        "custom_fields": _custom_field_groups(
+            details={"total": 1, "truncated": False, "items": {"visible": "enum"}},
+        ),
+    }
+
+
+async def test_describe_action_unknown(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(log_rw_client, _action("login"))
+    with pytest.raises(ToolError, match="Unknown action type 'unknown'"):
+        await _call_tool(
+            mcp_client, repo, log_read_apikey, "describe_action", action_type="unknown"
+        )
+
+
+async def test_describe_action_empty_time_window(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("login", "auth"),
+            "details": [_custom_field("mfa", True, "boolean")],
+        },
+        emitted_at="2024-01-01T10:00:00Z",
+    )
+    assert await _call_tool(
+        mcp_client,
+        repo,
+        log_read_apikey,
+        "describe_action",
+        action_type="login",
+        since="2025-01-01T00:00:00Z",
+    ) == {
+        "action_type": "login",
+        "category": "auth",
+        "logs": 0,
+        "first_log_at": None,
+        "last_log_at": None,
+        "distinct_actors": {"count": 0, "approx": False},
+        "actor_types": [],
+        "resource_types": [],
+        "logs_without_resource": 0,
+        "custom_fields": {
+            "source": _empty_custom_field_group(),
+            "details": _empty_custom_field_group(),
+            "actor": _empty_custom_field_group(),
+            "resource": _empty_custom_field_group(),
+        },
+    }
+
+
+async def test_describe_action(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for i in range(3):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                **_action("view", "doc"),
+                "actor": {
+                    "type": "advisor",
+                    "ref": str(i),
+                    "name": f"Advisor {i}",
+                    "extra": [_custom_field("region", "north", "enum")],
+                },
+                **_resource(str(i)),
+                "details": [
+                    _custom_field("status", 200 + i, "integer"),
+                    _custom_field("scope", "own", "enum"),
+                    _custom_field("region", "south", "enum"),
+                    _custom_field("at", f"2024-01-0{i + 1}T00:00:00Z", "datetime"),
+                    _custom_field("payload", '{"a": 1}', "json"),
+                ],
+            },
+            emitted_at=f"2024-02-0{i + 1}T10:00:00Z",
+        )
+    # an actor type for which most of the fields are missing
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("view", "doc"),
+            "actor": {"type": "agent", "ref": "x", "name": "Agent"},
+            **_resource("0"),
+            "details": [_custom_field("status", 404, "integer")],
+        },
+        emitted_at="2024-02-04T10:00:00Z",
+    )
+    # another action whose field must not be listed
+    await repo.create_log_with(
+        log_rw_client,
+        {**_action("login"), "source": [_custom_field("ip", "1.2.3.4", "string")]},
+    )
+
+    assert await _call_tool(
+        mcp_client, repo, log_read_apikey, "describe_action", action_type="view"
+    ) == {
+        "action_type": "view",
+        "category": "doc",
+        "logs": 4,
+        "first_log_at": "2024-02-01T10:00:00.000Z",
+        "last_log_at": "2024-02-04T10:00:00.000Z",
+        "distinct_actors": {"count": 4, "approx": False},
+        "actor_types": [
+            {"name": "advisor", "logs": 3},
+            {"name": "agent", "logs": 1},
+        ],
+        "resource_types": [
+            {
+                "name": "doc",
+                "logs": 4,
+                "distinct_resources": {"count": 3, "approx": False},
+            }
+        ],
+        "logs_without_resource": 0,
+        "custom_fields": {
+            "source": _empty_custom_field_group(),
+            "details": {
+                "total": 5,
+                "truncated": False,
+                "items": {
+                    "status": _custom_field_stats(
+                        "integer",
+                        1.0,
+                        distinct_values={"count": 4, "approx": False},
+                        values={"200": 1, "201": 1, "202": 1, "404": 1},
+                        range=[200, 404],
+                    ),
+                    "at": _custom_field_stats(
+                        "datetime",
+                        0.75,
+                        range=["2024-01-01T00:00:00.000Z", "2024-01-03T00:00:00.000Z"],
+                    ),
+                    "payload": _custom_field_stats("json", 0.75),
+                    "region": _custom_field_stats(
+                        "enum",
+                        0.75,
+                        distinct_values={"count": 1, "approx": False},
+                        values={"south": 3},
+                    ),
+                    "scope": _custom_field_stats(
+                        "enum",
+                        0.75,
+                        distinct_values={"count": 1, "approx": False},
+                        values={"own": 3},
+                    ),
+                },
+            },
+            # same field name as in details, but a distinct field
+            "actor": {
+                "total": 1,
+                "truncated": False,
+                "items": {
+                    "region": _custom_field_stats(
+                        "enum",
+                        0.75,
+                        distinct_values={"count": 1, "approx": False},
+                        values={"north": 3},
+                    ),
+                },
+            },
+            "resource": _empty_custom_field_group(),
+        },
+    }
+
+
+def _expected_action_description(logs: int, details: dict, **extra) -> dict:
+    """
+    Expected describe_action response for "login" logs without actor nor resource
+    (unless overridden by extra), emitted every minute from 2024-01-01T10:00:00Z.
+    """
+    return {
+        "action_type": "login",
+        "category": "category",
+        "logs": logs,
+        "first_log_at": "2024-01-01T10:00:00.000Z",
+        "last_log_at": f"2024-01-01T10:{logs - 1:02d}:00.000Z",
+        "distinct_actors": {"count": 0, "approx": False},
+        "actor_types": [],
+        "resource_types": [],
+        "logs_without_resource": logs,
+        "custom_fields": _custom_field_groups(details=details),
+        **extra,
+    }
+
+
+def _emitted_at(i: int) -> str:
+    return f"2024-01-01T10:{i:02d}:00Z"
+
+
+@pytest.mark.parametrize("value_count", [20, 21])
+async def test_describe_action_enum_values_limit(
+    value_count: int,
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for i in range(value_count):
+        await repo.create_log_with(
+            log_rw_client,
+            {**_action("login"), "details": [_custom_field("code", f"v{i}", "enum")]},
+            emitted_at=_emitted_at(i),
+        )
+    assert await _call_tool(
+        mcp_client, repo, log_read_apikey, "describe_action", action_type="login"
+    ) == _expected_action_description(
+        value_count,
+        {
+            "total": 1,
+            "truncated": False,
+            "items": {
+                "code": _custom_field_stats(
+                    "enum",
+                    1.0,
+                    distinct_values={"count": value_count, "approx": False},
+                    # values are only given up to 20 distinct values
+                    values=(
+                        {f"v{i}": 1 for i in range(value_count)}
+                        if value_count <= 20
+                        else None
+                    ),
+                )
+            },
+        },
+    )
+
+
+async def test_describe_action_partially_present_boolean_field(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("login"),
+            **_actor("1"),
+            "details": [_custom_field("mfa", True, "boolean")],
+        },
+        emitted_at=_emitted_at(0),
+    )
+    await repo.create_log_with(
+        log_rw_client, _action("login"), emitted_at=_emitted_at(1)
+    )
+
+    assert await _call_tool(
+        mcp_client, repo, log_read_apikey, "describe_action", action_type="login"
+    ) == _expected_action_description(
+        2,
+        {
+            "total": 1,
+            "truncated": False,
+            "items": {
+                "mfa": _custom_field_stats(
+                    "boolean",
+                    0.5,
+                    distinct_values={"count": 1, "approx": False},
+                    values={"true": 1},
+                )
+            },
+        },
+        distinct_actors={"count": 1, "approx": False},
+        actor_types=[{"name": "user", "logs": 1}],
+    )
+
+
+async def test_describe_action_custom_field_with_several_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {**_action("login"), "details": [_custom_field("code", 1, "integer")]},
+        emitted_at=_emitted_at(0),
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {**_action("login"), "details": [_custom_field("code", "a", "enum")]},
+        emitted_at=_emitted_at(1),
+    )
+
+    # only the most recent type of the field is described
+    assert await _call_tool(
+        mcp_client, repo, log_read_apikey, "describe_action", action_type="login"
+    ) == _expected_action_description(
+        2,
+        {
+            "total": 1,
+            "truncated": False,
+            "items": {
+                "code": _custom_field_stats(
+                    "enum",
+                    0.5,
+                    distinct_values={"count": 1, "approx": False},
+                    values={"a": 1},
+                ),
+            },
+        },
+    )
+
+
+async def test_describe_action_truncated_custom_fields(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("login"),
+            "details": [
+                _custom_field("a", "x", "enum"),
+                _custom_field("b", "x", "enum"),
+            ],
+        },
+        emitted_at=_emitted_at(0),
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {**_action("login"), "details": [_custom_field("b", "x", "enum")]},
+        emitted_at=_emitted_at(1),
+    )
+
+    with patch("auditize.log.service._MAX_FIELDS_PER_GROUP", 1):
+        assert await _call_tool(
+            mcp_client, repo, log_read_apikey, "describe_action", action_type="login"
+        ) == _expected_action_description(
+            2,
+            {
+                "total": 2,
+                "truncated": True,
+                # the field with the highest coverage is kept
+                "items": {
+                    "b": _custom_field_stats(
+                        "enum",
+                        1.0,
+                        distinct_values={"count": 1, "approx": False},
+                        values={"x": 2},
+                    )
+                },
+            },
+        )
+
+
+@pytest.mark.parametrize("tool", ["describe_repo", "describe_action"])
+async def test_describe_no_permission(
+    tool: str,
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    mcp_client: Client[FastMCPTransport],
+):
+    apikey = await apikey_builder({})
+    params = {"action_type": "login"} if tool == "describe_action" else {}
+    with pytest.raises(ToolError, match="permission"):
+        await _call_tool(mcp_client, repo, apikey, tool, **params)
+
+
+async def test_describe_repo_custom_fields_match_list_fields(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await _create_describe_repo_logs(repo, log_rw_client)
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("view", "doc"),
+            "actor": {
+                "type": "user",
+                "ref": "1",
+                "name": "User 1",
+                "extra": [_custom_field("role", "admin", "enum")],
+            },
+            "resource": {
+                "type": "doc",
+                "ref": "a",
+                "name": "Doc a",
+                "extra": [_custom_field("size", 12, "integer")],
+            },
+        },
+    )
+
+    description = await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo")
+    for group, list_tool in [
+        ("source", "list_source_fields"),
+        ("details", "list_details_fields"),
+        ("actor", "list_actor_extra_fields"),
+        ("resource", "list_resource_extra_fields"),
+    ]:
+        list_result = await _call_tool(mcp_client, repo, log_read_apikey, list_tool)
+        assert description["custom_fields"][group]["items"] == {
+            item["name"]: item["type"] for item in list_result["items"]
+        }
+
+
+async def test_describe_repo_truncated_custom_fields(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("login"),
+            "details": [
+                _custom_field("a", "x", "enum"),
+                _custom_field("b", "x", "enum"),
+            ],
+        },
+        emitted_at=_emitted_at(0),
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {**_action("login"), "details": [_custom_field("b", "x", "enum")]},
+        emitted_at=_emitted_at(1),
+    )
+
+    with patch("auditize.log.service._MAX_FIELDS_PER_GROUP", 1):
+        assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
+            "logs": 2,
+            "first_log_at": "2024-01-01T10:00:00.000Z",
+            "last_log_at": "2024-01-01T10:01:00.000Z",
+            "action_types": {
+                "total": 1,
+                "truncated": False,
+                "items": [{"name": "login", "category": "category", "logs": 2}],
+            },
+            "actor_types": [],
+            "resource_types": [],
+            "logs_without_actor": 2,
+            "logs_without_resource": 2,
+            "custom_fields": _custom_field_groups(
+                # the most frequent field is kept
+                details={"total": 2, "truncated": True, "items": {"b": "enum"}},
+            ),
+        }
+
+
+async def test_describe_repo_custom_field_with_several_types(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {**_action("login"), "details": [_custom_field("code", 1, "integer")]},
+        emitted_at=_emitted_at(0),
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {**_action("login"), "details": [_custom_field("code", "a", "enum")]},
+        emitted_at=_emitted_at(1),
+    )
+
+    assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
+        "logs": 2,
+        "first_log_at": "2024-01-01T10:00:00.000Z",
+        "last_log_at": "2024-01-01T10:01:00.000Z",
+        "action_types": {
+            "total": 1,
+            "truncated": False,
+            "items": [{"name": "login", "category": "category", "logs": 2}],
+        },
+        "actor_types": [],
+        "resource_types": [],
+        "logs_without_actor": 2,
+        "logs_without_resource": 2,
+        "custom_fields": _custom_field_groups(
+            # only the most recent type of the field is given
+            details={"total": 1, "truncated": False, "items": {"code": "enum"}},
+        ),
+    }
+
+
+async def test_describe_repo_approximate_distinct_counts(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await _create_describe_repo_logs(repo, log_rw_client)
+
+    with patch("auditize.log.service._CARDINALITY_PRECISION_THRESHOLD", 1):
+        assert await _call_tool(mcp_client, repo, log_read_apikey, "describe_repo") == {
+            "logs": 3,
+            "first_log_at": "2024-01-01T10:00:00.000Z",
+            "last_log_at": "2024-01-03T10:00:00.000Z",
+            "action_types": {
+                "total": 2,
+                "truncated": False,
+                "items": [
+                    {"name": "login", "category": "auth", "logs": 2},
+                    {"name": "view", "category": "doc", "logs": 1},
+                ],
+            },
+            "actor_types": [
+                {
+                    "name": "user",
+                    "logs": 3,
+                    # above the precision threshold
+                    "distinct_actors": {"count": 2, "approx": True},
+                }
+            ],
+            "resource_types": [
+                {
+                    "name": "doc",
+                    "logs": 1,
+                    # not above the precision threshold
+                    "distinct_resources": {"count": 1, "approx": False},
+                }
+            ],
+            "logs_without_actor": 0,
+            "logs_without_resource": 2,
+            "custom_fields": _custom_field_groups(
+                source={"total": 1, "truncated": False, "items": {"ip": "string"}},
+                details={"total": 1, "truncated": False, "items": {"mfa": "boolean"}},
+            ),
+        }
+
+
+async def test_describe_action_entity_restricted(
+    repo: PreparedRepo,
+    apikey_builder: ApikeyBuilder,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("login"),
+            **_actor("1"),
+            "entity_path": [{"ref": "entity_A", "name": "Entity A"}],
+            "details": [_custom_field("mfa", True, "boolean")],
+        },
+        emitted_at=_emitted_at(0),
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("login"),
+            **_actor("2"),
+            "entity_path": [{"ref": "entity_B", "name": "Entity B"}],
+            "details": [
+                _custom_field("mfa", False, "boolean"),
+                _custom_field("method", "otp", "enum"),
+            ],
+        },
+        emitted_at=_emitted_at(1),
+    )
+    await repo.create_log_with(
+        log_rw_client,
+        {
+            **_action("logout"),
+            "entity_path": [{"ref": "entity_B", "name": "Entity B"}],
+        },
+        emitted_at=_emitted_at(2),
+    )
+    apikey = await apikey_builder(
+        {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
+    )
+
+    # an action type only existing in a non readable entity is unknown
+    with pytest.raises(ToolError, match="Unknown action type 'logout'"):
+        await _call_tool(
+            mcp_client, repo, apikey, "describe_action", action_type="logout"
+        )
+
+    # logs of non readable entities are not taken into account
+    assert await _call_tool(
+        mcp_client, repo, apikey, "describe_action", action_type="login"
+    ) == _expected_action_description(
+        1,
+        {
+            "total": 1,
+            "truncated": False,
+            "items": {
+                "mfa": _custom_field_stats(
+                    "boolean",
+                    1.0,
+                    distinct_values={"count": 1, "approx": False},
+                    values={"true": 1},
+                )
+            },
+        },
+        distinct_actors={"count": 1, "approx": False},
+        actor_types=[{"name": "user", "logs": 1}],
+    )
+
+
+async def test_describe_action_float_and_string_fields(
+    repo: PreparedRepo,
+    log_read_apikey: PreparedApikey,
+    log_rw_client: HttpTestHelper,
+    mcp_client: Client[FastMCPTransport],
+):
+    for i, (amount, label) in enumerate([(1.5, "first"), (2.5, "second")]):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                **_action("login"),
+                "details": [
+                    _custom_field("amount", amount, "float"),
+                    _custom_field("label", label, "string"),
+                ],
+            },
+            emitted_at=_emitted_at(i),
+        )
+
+    assert await _call_tool(
+        mcp_client, repo, log_read_apikey, "describe_action", action_type="login"
+    ) == _expected_action_description(
+        2,
+        {
+            "total": 2,
+            "truncated": False,
+            "items": {
+                "amount": _custom_field_stats(
+                    "float",
+                    1.0,
+                    distinct_values={"count": 2, "approx": False},
+                    values={"1.5": 1, "2.5": 1},
+                    range=[1.5, 2.5],
+                ),
+                # string fields are full-text fields, only their coverage is given
+                "label": _custom_field_stats("string", 1.0),
+            },
+        },
+    )
