@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from unittest.mock import patch
@@ -39,16 +40,25 @@ def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
         yield
 
 
-async def _call_tool(
-    tool: str,
-    mcp_client: Client[FastMCPTransport],
+@dataclass
+class ToolCaller:
+    repo: PreparedRepo
+    apikey: PreparedApikey
+    mcp_client: Client[FastMCPTransport]
+
+    async def __call__(self, tool: str, params: dict | None = None) -> Any:
+        with mock_mcp_http_headers(self.repo, self.apikey):
+            result = await self.mcp_client.call_tool(tool, params or {})
+        return result.structured_content
+
+
+@pytest.fixture
+def call_tool(
     repo: PreparedRepo,
-    apikey: PreparedApikey,
-    params: dict | None = None,
-) -> Any:
-    with mock_mcp_http_headers(repo, apikey):
-        result = await mcp_client.call_tool(tool, params or {})
-    return result.structured_content
+    log_read_apikey: PreparedApikey,
+    mcp_client: Client[FastMCPTransport],
+) -> ToolCaller:
+    return ToolCaller(repo, log_read_apikey, mcp_client)
 
 
 def _action(type_: str, category: str = "category") -> dict:
@@ -73,9 +83,8 @@ def _emitted_at(i: int) -> str:
 
 async def test_search_logs(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     log_1 = await repo.create_log_with(
         log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
@@ -84,13 +93,7 @@ async def test_search_logs(
         log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
     )
 
-    assert await _call_tool(
-        "search_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"search_params": {"actor_ref": "2"}},
-    ) == {
+    assert await call_tool("search_logs", {"search_params": {"actor_ref": "2"}}) == {
         "items": [log_2.expected_api_response()],
         "next_cursor": None,
     }
@@ -109,8 +112,8 @@ async def test_search_logs_limited_permissions(
         {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}
     )
 
-    assert await _call_tool(
-        "search_logs", mcp_client, repo, apikey, {"search_params": {}}
+    assert await ToolCaller(repo, apikey, mcp_client)(
+        "search_logs", {"search_params": {}}
     ) == {
         "items": [log.expected_api_response()],
         "next_cursor": None,
@@ -119,29 +122,22 @@ async def test_search_logs_limited_permissions(
 
 async def test_search_logs_pagination(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     # emitted_at defaults to "now", so logs created later sort first (search_logs
     # orders by emitted_at desc)
     logs = [await repo.create_log_with(log_rw_client, {}) for _ in range(11)]
     logs.reverse()
 
-    first_page = await _call_tool(
-        "search_logs", mcp_client, repo, log_read_apikey, {"search_params": {}}
-    )
+    first_page = await call_tool("search_logs", {"search_params": {}})
     assert first_page == {
         "items": [log.expected_api_response() for log in logs[:10]],
         "next_cursor": matchers.String(),
     }
 
-    assert await _call_tool(
-        "search_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"search_params": {}, "cursor": first_page["next_cursor"]},
+    assert await call_tool(
+        "search_logs", {"search_params": {}, "cursor": first_page["next_cursor"]}
     ) == {
         "items": [log.expected_api_response() for log in logs[10:]],
         "next_cursor": None,
@@ -150,9 +146,8 @@ async def test_search_logs_pagination(
 
 async def test_count_logs(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
@@ -161,23 +156,16 @@ async def test_count_logs(
         log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
     )
 
-    assert await _call_tool(
-        "count_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"search_params": {"actor_ref": "2"}},
-    ) == {"result": 1}
-    assert await _call_tool(
-        "count_logs", mcp_client, repo, log_read_apikey, {"search_params": {}}
-    ) == {"result": 2}
+    assert await call_tool("count_logs", {"search_params": {"actor_ref": "2"}}) == {
+        "result": 1
+    }
+    assert await call_tool("count_logs", {"search_params": {}}) == {"result": 2}
 
 
 async def test_search_actors(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
@@ -186,9 +174,7 @@ async def test_search_actors(
         log_rw_client, {"actor": {"type": "user", "ref": "2", "name": "Jane Doe"}}
     )
 
-    assert await _call_tool(
-        "search_actors", mcp_client, repo, log_read_apikey, {"query": "jane"}
-    ) == {
+    assert await call_tool("search_actors", {"query": "jane"}) == {
         "items": [["Jane Doe", "2"]],
         "next_cursor": None,
     }
@@ -196,9 +182,8 @@ async def test_search_actors(
 
 async def test_search_resources(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -209,9 +194,7 @@ async def test_search_resources(
         {"resource": {"type": "doc", "ref": "doc-2", "name": "Document Template"}},
     )
 
-    assert await _call_tool(
-        "search_resources", mcp_client, repo, log_read_apikey, {"query": "config"}
-    ) == {
+    assert await call_tool("search_resources", {"query": "config"}) == {
         "items": [["Config Profile 123", "cfg-1"]],
         "next_cursor": None,
     }
@@ -219,9 +202,8 @@ async def test_search_resources(
 
 async def test_search_rich_tags(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -233,9 +215,7 @@ async def test_search_rich_tags(
         },
     )
 
-    assert await _call_tool(
-        "search_rich_tags", mcp_client, repo, log_read_apikey, {"query": "prof"}
-    ) == {
+    assert await call_tool("search_rich_tags", {"query": "prof"}) == {
         "items": [["Config Profile 123", "cfg-1"]],
         "next_cursor": None,
     }
@@ -243,14 +223,11 @@ async def test_search_rich_tags(
 
 async def test_search_entities(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with_entity_path(log_rw_client, ["Customer", "Organization"])
-    assert await _call_tool(
-        "search_entities", mcp_client, repo, log_read_apikey, {"query": "orga"}
-    ) == {
+    assert await call_tool("search_entities", {"query": "orga"}) == {
         "items": [
             {
                 "ref": "Organization",
@@ -264,12 +241,11 @@ async def test_search_entities(
 
 async def test_list_action_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log(log_rw_client)
-    assert await _call_tool("list_action_types", mcp_client, repo, log_read_apikey) == {
+    assert await call_tool("list_action_types") == {
         "items": ["user_login"],
         "next_cursor": None,
     }
@@ -277,14 +253,11 @@ async def test_list_action_types(
 
 async def test_list_action_categories(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log(log_rw_client)
-    assert await _call_tool(
-        "list_action_categories", mcp_client, repo, log_read_apikey
-    ) == {
+    assert await call_tool("list_action_categories") == {
         "items": ["authentication"],
         "next_cursor": None,
     }
@@ -292,14 +265,13 @@ async def test_list_action_categories(
 
 async def test_list_actor_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client, {"actor": {"type": "user", "ref": "1", "name": "John Smith"}}
     )
-    assert await _call_tool("list_actor_types", mcp_client, repo, log_read_apikey) == {
+    assert await call_tool("list_actor_types") == {
         "items": ["user"],
         "next_cursor": None,
     }
@@ -307,50 +279,49 @@ async def test_list_actor_types(
 
 async def test_list_resource_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
         {"resource": {"type": "config", "ref": "cfg-1", "name": "Config Profile 123"}},
     )
-    assert await _call_tool(
-        "list_resource_types", mcp_client, repo, log_read_apikey
-    ) == {"items": ["config"], "next_cursor": None}
+    assert await call_tool("list_resource_types") == {
+        "items": ["config"],
+        "next_cursor": None,
+    }
 
 
 async def test_list_attachment_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     log = await repo.create_log(log_rw_client)
     await log.upload_attachment(log_rw_client, type="text_file")
-    assert await _call_tool(
-        "list_attachment_types", mcp_client, repo, log_read_apikey
-    ) == {"items": ["text_file"], "next_cursor": None}
+    assert await call_tool("list_attachment_types") == {
+        "items": ["text_file"],
+        "next_cursor": None,
+    }
 
 
 async def test_list_attachment_mime_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     log = await repo.create_log(log_rw_client)
     await log.upload_attachment(log_rw_client, mime_type="text/plain")
-    assert await _call_tool(
-        "list_attachment_mime_types", mcp_client, repo, log_read_apikey
-    ) == {"items": ["text/plain"], "next_cursor": None}
+    assert await call_tool("list_attachment_mime_types") == {
+        "items": ["text/plain"],
+        "next_cursor": None,
+    }
 
 
 async def test_list_simple_tag_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -361,9 +332,10 @@ async def test_list_simple_tag_types(
             ]
         },
     )
-    assert await _call_tool(
-        "list_simple_tag_types", mcp_client, repo, log_read_apikey
-    ) == {"items": ["security"], "next_cursor": None}
+    assert await call_tool("list_simple_tag_types") == {
+        "items": ["security"],
+        "next_cursor": None,
+    }
 
 
 # One field per possible CustomFieldType (see auditize.log.models.CustomFieldType), sorted by
@@ -427,12 +399,10 @@ async def log_with_custom_fields(repo: PreparedRepo, log_rw_client: HttpTestHelp
     ],
 )
 async def test_list_custom_fields(
+    call_tool: ToolCaller,
     tool_name: str,
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
 ):
-    assert await _call_tool(tool_name, mcp_client, repo, log_read_apikey) == {
+    assert await call_tool(tool_name) == {
         "items": EXPECTED_CUSTOM_FIELDS,
         "next_cursor": None,
     }
@@ -450,17 +420,16 @@ async def test_list_custom_fields(
 )
 @pytest.mark.parametrize("field_name,field_type", CUSTOM_FIELD_NAMES_AND_TYPES)
 async def test_list_custom_field_values(
+    call_tool: ToolCaller,
     tool_name: str,
     field_name: str,
     field_type: str,
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
 ):
     expected = ["enum_value"] if field_type == "enum" else []
-    assert await _call_tool(
-        tool_name, mcp_client, repo, log_read_apikey, {"field_name": field_name}
-    ) == {"items": expected, "next_cursor": None}
+    assert await call_tool(tool_name, {"field_name": field_name}) == {
+        "items": expected,
+        "next_cursor": None,
+    }
 
 
 @pytest.mark.parametrize(
@@ -485,19 +454,16 @@ async def test_list_custom_field_values(
     ],
 )
 async def test_aggregate_logs_scalar_dimensions(
+    repo: PreparedRepo,
+    log_rw_client: HttpTestHelper,
+    call_tool: ToolCaller,
     dimension: str,
     build_log_data,
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
 ):
     for value in ("value_b", "value_a", "value_b"):
         await repo.create_log_with(log_rw_client, build_log_data(value))
 
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, log_read_apikey, {"group_by": [dimension]}
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": [dimension]}) == {
         "total_count": 3,
         "rows": [
             {dimension: "value_b", "count": 2},
@@ -509,20 +475,17 @@ async def test_aggregate_logs_scalar_dimensions(
 
 @pytest.mark.parametrize("dimension", ["actor", "resource"])
 async def test_aggregate_logs_by_actor_or_resource(
-    dimension: str,
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
+    dimension: str,
 ):
     for user_ref, name in (("1", "John Smith"), ("2", "Jane Doe"), ("1", "John Smith")):
         await repo.create_log_with(
             log_rw_client, {dimension: {"type": "user", "ref": user_ref, "name": name}}
         )
 
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, log_read_apikey, {"group_by": [dimension]}
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": [dimension]}) == {
         "total_count": 3,
         "rows": [
             {dimension: {"ref": "1", "name": "John Smith"}, "count": 2},
@@ -534,9 +497,8 @@ async def test_aggregate_logs_by_actor_or_resource(
 
 async def test_aggregate_logs_by_actor_uses_latest_name(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     now = datetime.now(timezone.utc)
     yesterday = now - timedelta(days=1)
@@ -554,9 +516,7 @@ async def test_aggregate_logs_by_actor_uses_latest_name(
         emitted_at=yesterday,
     )
 
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, log_read_apikey, {"group_by": ["actor"]}
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": ["actor"]}) == {
         "total_count": 2,
         "rows": [
             {"actor": {"ref": "1", "name": "John Smith"}, "count": 2},
@@ -567,9 +527,8 @@ async def test_aggregate_logs_by_actor_uses_latest_name(
 
 async def test_aggregate_logs_two_dimensions(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for user_ref, action_type in (
         ("1", "login"),
@@ -587,12 +546,8 @@ async def test_aggregate_logs_two_dimensions(
             },
         )
 
-    assert await _call_tool(
-        "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"group_by": ["actor", "action_type"]},
+    assert await call_tool(
+        "aggregate_logs", {"group_by": ["actor", "action_type"]}
     ) == {
         "total_count": 6,
         "rows": [
@@ -618,18 +573,15 @@ async def test_aggregate_logs_two_dimensions(
 
 async def test_aggregate_logs_without_value(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(log_rw_client, _actor("1"))
     await repo.create_log_with(log_rw_client, {})
     await repo.create_log_with(log_rw_client, {})
 
     # logs without actor are not part of any row but are counted in other_count
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, log_read_apikey, {"group_by": ["actor"]}
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": ["actor"]}) == {
         "total_count": 3,
         "rows": [{"actor": {"ref": "1", "name": "User 1"}, "count": 1}],
         "other_count": 2,
@@ -638,9 +590,8 @@ async def test_aggregate_logs_without_value(
 
 async def test_aggregate_logs_without_value_two_dimensions(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     actor = {"type": "user", "ref": "1", "name": "User 1"}
     resource = {"type": "config", "ref": "1", "name": "Resource 1"}
@@ -658,13 +609,7 @@ async def test_aggregate_logs_without_value_two_dimensions(
     ):
         await repo.create_log_with(log_rw_client, extra)
 
-    assert await _call_tool(
-        "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"group_by": ["actor", "resource"]},
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": ["actor", "resource"]}) == {
         "total_count": 10,
         "rows": [
             {
@@ -679,9 +624,8 @@ async def test_aggregate_logs_without_value_two_dimensions(
 
 async def test_aggregate_logs_limit_and_other_count(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for action_type, count in (("a", 5), ("b", 4), ("c", 3), ("d", 2), ("e", 1)):
         for _ in range(count):
@@ -690,13 +634,7 @@ async def test_aggregate_logs_limit_and_other_count(
                 _action(action_type, "authentication"),
             )
 
-    data = await _call_tool(
-        "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"group_by": ["action_type"], "limit": 2},
-    )
+    data = await call_tool("aggregate_logs", {"group_by": ["action_type"], "limit": 2})
     assert data == {
         "total_count": 15,
         "rows": [
@@ -709,9 +647,8 @@ async def test_aggregate_logs_limit_and_other_count(
 
 async def test_aggregate_logs_tie_ordering(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     # Rows are sorted by count desc, then by key asc to break ties
     # ("b" is created before "a" to make sure insertion order is not used)
@@ -721,13 +658,7 @@ async def test_aggregate_logs_tie_ordering(
             _action(action_type, "authentication"),
         )
 
-    assert await _call_tool(
-        "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"group_by": ["action_type"]},
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": ["action_type"]}) == {
         "total_count": 4,
         "rows": [
             {"action_type": "c", "count": 2},
@@ -739,13 +670,9 @@ async def test_aggregate_logs_tie_ordering(
 
 
 async def test_aggregate_logs_empty(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, log_read_apikey, {"group_by": ["actor"]}
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": ["actor"]}) == {
         "total_count": 0,
         "rows": [],
         "other_count": 0,
@@ -754,9 +681,8 @@ async def test_aggregate_logs_empty(
 
 async def test_aggregate_logs_with_search_params(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for user_ref, status in (
         ("1", "failure"),
@@ -772,11 +698,8 @@ async def test_aggregate_logs_with_search_params(
             },
         )
 
-    assert await _call_tool(
+    assert await call_tool(
         "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"group_by": ["actor"], "search_params": {"details": {"status": "failure"}}},
     ) == {
         "total_count": 3,
@@ -809,13 +732,12 @@ def _build_log_data_with_custom_fields(group: str, fields: list[dict]) -> dict:
     ],
 )
 async def test_aggregate_logs_by_custom_field(
+    repo: PreparedRepo,
+    log_rw_client: HttpTestHelper,
+    call_tool: ToolCaller,
     group: str,
     field_type: str,
     values: list,
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
 ):
     for value in values:
         await repo.create_log_with(
@@ -830,9 +752,7 @@ async def test_aggregate_logs_by_custom_field(
     )
 
     dimension = f"{group}.field"
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, log_read_apikey, {"group_by": [dimension]}
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": [dimension]}) == {
         "total_count": 4,
         "rows": [
             {dimension: values[0], "count": 2},
@@ -844,9 +764,8 @@ async def test_aggregate_logs_by_custom_field(
 
 async def test_aggregate_logs_by_two_non_keyword_custom_fields(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for success, code, duration in (
         (True, 200, 1.5),
@@ -864,12 +783,8 @@ async def test_aggregate_logs_by_two_non_keyword_custom_fields(
             },
         )
 
-    assert await _call_tool(
-        "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"group_by": ["details.success", "details.code"]},
+    assert await call_tool(
+        "aggregate_logs", {"group_by": ["details.success", "details.code"]}
     ) == {
         "total_count": 3,
         "rows": [
@@ -878,12 +793,8 @@ async def test_aggregate_logs_by_two_non_keyword_custom_fields(
         ],
         "other_count": 0,
     }
-    assert await _call_tool(
-        "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"group_by": ["details.duration", "details.success"]},
+    assert await call_tool(
+        "aggregate_logs", {"group_by": ["details.duration", "details.success"]}
     ) == {
         "total_count": 3,
         "rows": [
@@ -896,9 +807,8 @@ async def test_aggregate_logs_by_two_non_keyword_custom_fields(
 
 async def test_aggregate_logs_by_actor_and_actor_custom_field(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for user_ref, role in (("1", "admin"), ("1", "admin"), ("2", "user")):
         await repo.create_log_with(
@@ -906,13 +816,7 @@ async def test_aggregate_logs_by_actor_and_actor_custom_field(
             _actor(user_ref, extra=[_custom_field("role", role, "enum")]),
         )
 
-    assert await _call_tool(
-        "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"group_by": ["actor", "actor.role"]},
-    ) == {
+    assert await call_tool("aggregate_logs", {"group_by": ["actor", "actor.role"]}) == {
         "total_count": 3,
         "rows": [
             {
@@ -928,9 +832,8 @@ async def test_aggregate_logs_by_actor_and_actor_custom_field(
 
 async def test_aggregate_logs_by_custom_field_with_search_params(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for action_type, status in (
         ("login", "failure"),
@@ -946,11 +849,8 @@ async def test_aggregate_logs_by_custom_field_with_search_params(
             },
         )
 
-    assert await _call_tool(
+    assert await call_tool(
         "aggregate_logs",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {
             "group_by": ["action_type", "details.status"],
             "search_params": {"action_type": "login"},
@@ -967,36 +867,20 @@ async def test_aggregate_logs_by_custom_field_with_search_params(
 
 @pytest.mark.parametrize("field_type", ["string", "json", "datetime"])
 async def test_aggregate_logs_by_custom_field_unsupported_type(
-    field_type: str,
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_with_custom_fields,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
+    field_type: str,
 ):
     with pytest.raises(ToolError, match="cannot be used as dimension"):
-        await _call_tool(
-            "aggregate_logs",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"group_by": [f"details.{field_type}_field"]},
-        )
+        await call_tool("aggregate_logs", {"group_by": [f"details.{field_type}_field"]})
 
 
 async def test_aggregate_logs_by_unknown_custom_field(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_with_custom_fields,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     with pytest.raises(ToolError, match="Unknown custom field"):
-        await _call_tool(
-            "aggregate_logs",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"group_by": ["details.unknown"]},
-        )
+        await call_tool("aggregate_logs", {"group_by": ["details.unknown"]})
 
 
 @pytest.mark.parametrize(
@@ -1008,16 +892,12 @@ async def test_aggregate_logs_by_unknown_custom_field(
     ],
 )
 async def test_aggregate_logs_by_custom_field_invalid_group_by(
-    group_by: list[str],
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_with_custom_fields,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
+    group_by: list[str],
 ):
     with pytest.raises(ToolError):
-        await _call_tool(
-            "aggregate_logs", mcp_client, repo, log_read_apikey, {"group_by": group_by}
-        )
+        await call_tool("aggregate_logs", {"group_by": group_by})
 
 
 async def test_aggregate_logs_limited_permissions(
@@ -1031,8 +911,8 @@ async def test_aggregate_logs_limited_permissions(
         {"logs": {"repos": [{"repo_id": repo.id, "read": True}]}}
     )
 
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, apikey, {"group_by": ["action_type"]}
+    assert await ToolCaller(repo, apikey, mcp_client)(
+        "aggregate_logs", {"group_by": ["action_type"]}
     ) == {
         "total_count": 1,
         "rows": [{"action_type": "login", "count": 1}],
@@ -1053,8 +933,8 @@ async def test_aggregate_logs_entity_restricted(
         {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
     )
 
-    assert await _call_tool(
-        "aggregate_logs", mcp_client, repo, apikey, {"group_by": ["action_type"]}
+    assert await ToolCaller(repo, apikey, mcp_client)(
+        "aggregate_logs", {"group_by": ["action_type"]}
     ) == {
         "total_count": 2,
         "rows": [{"action_type": "user_login", "count": 2}],
@@ -1069,46 +949,29 @@ async def test_aggregate_logs_no_permission(
 ):
     apikey = await apikey_builder({})
     with pytest.raises(ToolError, match="permission"):
-        await _call_tool(
-            "aggregate_logs", mcp_client, repo, apikey, {"group_by": ["action_type"]}
+        await ToolCaller(repo, apikey, mcp_client)(
+            "aggregate_logs", {"group_by": ["action_type"]}
         )
 
 
 async def test_aggregate_logs_invalid_group_by(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     with pytest.raises(ToolError):
-        await _call_tool(
-            "aggregate_logs",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"group_by": ["unknown_dimension"]},
-        )
+        await call_tool("aggregate_logs", {"group_by": ["unknown_dimension"]})
 
 
 async def test_aggregate_logs_invalid_limit(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     with pytest.raises(ToolError):
-        await _call_tool(
-            "aggregate_logs",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"group_by": ["action_type"], "limit": 51},
-        )
+        await call_tool("aggregate_logs", {"group_by": ["action_type"], "limit": 51})
 
 
 async def test_aggregate_logs_over_time_histogram(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for emitted_at in (
         "2026-01-15T08:30:00Z",  # outside the time window
@@ -1119,11 +982,8 @@ async def test_aggregate_logs_over_time_histogram(
     ):
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
-    assert await _call_tool(
+    assert await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {
             "interval": "1_hour",
             "search_params": {
@@ -1148,20 +1008,13 @@ async def test_aggregate_logs_over_time_histogram(
 
 async def test_aggregate_logs_over_time_window_from_logs(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for emitted_at in ("2026-01-15T10:05:00Z", "2026-01-15T12:30:00Z"):
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
-    assert await _call_tool(
-        "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"interval": "1_hour"},
-    ) == {
+    assert await call_tool("aggregate_logs_over_time", {"interval": "1_hour"}) == {
         "interval": "1_hour",
         "timezone": "UTC",
         "start": "2026-01-15T10:05:00Z",
@@ -1175,11 +1028,8 @@ async def test_aggregate_logs_over_time_window_from_logs(
     }
 
     # only "since" is given, "until" is the date of the most recent log
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "1_hour", "search_params": {"since": "2026-01-15T11:00:00Z"}},
     )
     assert data == {
@@ -1196,16 +1046,10 @@ async def test_aggregate_logs_over_time_window_from_logs(
 
 
 async def test_aggregate_logs_over_time_empty(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
-    assert await _call_tool(
-        "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"interval": "1_hour", "split_by": "actor"},
+    assert await call_tool(
+        "aggregate_logs_over_time", {"interval": "1_hour", "split_by": "actor"}
     ) == {
         "interval": "1_hour",
         "timezone": "UTC",
@@ -1215,12 +1059,8 @@ async def test_aggregate_logs_over_time_empty(
         "timeline": [],
     }
 
-    assert await _call_tool(
-        "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"interval": "day_of_week", "split_by": "actor"},
+    assert await call_tool(
+        "aggregate_logs_over_time", {"interval": "day_of_week", "split_by": "actor"}
     ) == {
         "interval": "day_of_week",
         "timezone": "UTC",
@@ -1243,15 +1083,10 @@ async def test_aggregate_logs_over_time_empty(
 
 
 async def test_aggregate_logs_over_time_empty_with_time_window(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {
             "interval": "1_day",
             "search_params": {
@@ -1276,19 +1111,15 @@ async def test_aggregate_logs_over_time_empty_with_time_window(
 
 async def test_aggregate_logs_over_time_daily_with_timezone(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     # 2026-01-15 23:30 and 2026-01-16 00:30 in Europe/Paris (UTC+1)
     for emitted_at in ("2026-01-15T22:30:00Z", "2026-01-15T23:30:00Z"):
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
-    assert await _call_tool(
+    assert await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {
             "interval": "1_day",
             "timezone": "Europe/Paris",
@@ -1312,9 +1143,8 @@ async def test_aggregate_logs_over_time_daily_with_timezone(
 
 async def test_aggregate_logs_over_time_hour_of_day(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for emitted_at in (
         "2026-01-15T02:10:00Z",  # 03:10 in Europe/Paris
@@ -1323,11 +1153,8 @@ async def test_aggregate_logs_over_time_hour_of_day(
     ):
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "hour_of_day", "timezone": "Europe/Paris"},
     )
     expected_timeline = [{"period": period, "count": 0} for period in range(24)]
@@ -1345,19 +1172,15 @@ async def test_aggregate_logs_over_time_hour_of_day(
 
 async def test_aggregate_logs_over_time_hour_of_day_across_dst_change(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     # Europe/Paris switches from UTC+1 to UTC+2 on 2026-03-29
     for emitted_at in ("2026-03-28T08:00:00Z", "2026-03-30T07:00:00Z"):
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "hour_of_day", "timezone": "Europe/Paris"},
     )
     expected_timeline = [{"period": period, "count": 0} for period in range(24)]
@@ -1374,9 +1197,8 @@ async def test_aggregate_logs_over_time_hour_of_day_across_dst_change(
 
 async def test_aggregate_logs_over_time_day_of_week(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for emitted_at in (
         "2026-01-12T10:00:00Z",  # monday
@@ -1385,11 +1207,8 @@ async def test_aggregate_logs_over_time_day_of_week(
     ):
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "day_of_week", "timezone": "Europe/Paris"},
     )
     assert data == {
@@ -1412,9 +1231,8 @@ async def test_aggregate_logs_over_time_day_of_week(
 
 async def test_aggregate_logs_over_time_split_by_actor(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     # top 2 actors over the time window are 1 (3 logs) and 2 (2 logs), actor 3
     # is not part of the top even if it is as active as actor 1 at 12:00
@@ -1429,11 +1247,8 @@ async def test_aggregate_logs_over_time_split_by_actor(
     ):
         await repo.create_log_with(log_rw_client, extra, emitted_at=emitted_at)
 
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "1_hour", "split_by": "actor", "split_limit": 2},
     )
     assert data == {
@@ -1470,9 +1285,8 @@ async def test_aggregate_logs_over_time_split_by_actor(
 
 async def test_aggregate_logs_over_time_split_by_custom_field_cyclic(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for emitted_at, status in (
         ("2026-01-15T02:00:00Z", "failure"),
@@ -1485,11 +1299,8 @@ async def test_aggregate_logs_over_time_split_by_custom_field_cyclic(
             emitted_at=emitted_at,
         )
 
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "hour_of_day", "split_by": "details.status"},
     )
     expected_timeline = [
@@ -1520,9 +1331,8 @@ async def test_aggregate_logs_over_time_split_by_custom_field_cyclic(
 
 async def test_aggregate_logs_over_time_count_distinct(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for emitted_at, actor_ref, action_type in (
         ("2026-01-15T10:05:00Z", "1", "login"),
@@ -1540,11 +1350,8 @@ async def test_aggregate_logs_over_time_count_distinct(
             emitted_at=emitted_at,
         )
 
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "1_hour", "split_by": "action_type", "count_distinct": "actor"},
     )
     assert data == {
@@ -1579,9 +1386,8 @@ async def test_aggregate_logs_over_time_count_distinct(
 
 async def test_aggregate_logs_over_time_with_search_params(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for emitted_at, action_type in (
         ("2026-01-15T10:05:00Z", "login"),
@@ -1594,11 +1400,8 @@ async def test_aggregate_logs_over_time_with_search_params(
             emitted_at=emitted_at,
         )
 
-    data = await _call_tool(
+    data = await call_tool(
         "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"interval": "1_hour", "search_params": {"action_type": "login"}},
     )
     assert data == {
@@ -1615,17 +1418,12 @@ async def test_aggregate_logs_over_time_with_search_params(
 
 
 async def test_aggregate_logs_over_time_too_many_periods(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     one_day = {"since": "2026-01-15T00:00:00Z", "until": "2026-01-15T23:59:59Z"}
     with pytest.raises(ToolError, match="Too many periods.*'15_minutes'"):
-        await _call_tool(
+        await call_tool(
             "aggregate_logs_over_time",
-            mcp_client,
-            repo,
-            log_read_apikey,
             {"interval": "5_minutes", "search_params": one_day},
         )
 
@@ -1640,20 +1438,15 @@ async def test_aggregate_logs_over_time_too_many_periods(
     ],
 )
 async def test_aggregate_logs_over_time_too_many_periods_with_split_by(
+    call_tool: ToolCaller,
     split_limit: int,
     max_periods: int,
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
 ):
     # the number of breakdown entries (periods x split_limit) is limited
     async def aggregate(period_count: int):
         # the estimated number of periods is (until - since) // interval + 2
-        return await _call_tool(
+        return await call_tool(
             "aggregate_logs_over_time",
-            mcp_client,
-            repo,
-            log_read_apikey,
             {
                 "interval": "1_hour",
                 "search_params": {
@@ -1677,9 +1470,8 @@ async def test_aggregate_logs_over_time_too_many_periods_with_split_by(
 
 async def test_aggregate_logs_over_time_too_many_periods_without_time_window(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     # the time window is given by the logs, the number of periods is checked
     # once the aggregation is done
@@ -1687,20 +1479,13 @@ async def test_aggregate_logs_over_time_too_many_periods_without_time_window(
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
     with pytest.raises(ToolError, match="Too many periods.*'15_minutes'"):
-        await _call_tool(
-            "aggregate_logs_over_time",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"interval": "5_minutes"},
-        )
+        await call_tool("aggregate_logs_over_time", {"interval": "5_minutes"})
 
 
 async def test_aggregate_logs_over_time_too_many_es_buckets(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     # the time window is given by the logs and is too large for the number of
     # ES buckets allowed by ES (search.max_buckets)
@@ -1708,26 +1493,15 @@ async def test_aggregate_logs_over_time_too_many_es_buckets(
         await repo.create_log_with(log_rw_client, {}, emitted_at=emitted_at)
 
     with pytest.raises(ToolError, match="Too many periods.*larger interval"):
-        await _call_tool(
-            "aggregate_logs_over_time",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"interval": "1_minute"},
-        )
+        await call_tool("aggregate_logs_over_time", {"interval": "1_minute"})
 
 
 async def test_aggregate_logs_over_time_cyclic_time_window_too_large(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     with pytest.raises(ToolError, match="Time window is too large"):
-        await _call_tool(
+        await call_tool(
             "aggregate_logs_over_time",
-            mcp_client,
-            repo,
-            log_read_apikey,
             {
                 "interval": "hour_of_day",
                 "search_params": {
@@ -1767,16 +1541,12 @@ async def test_aggregate_logs_over_time_cyclic_time_window_too_large(
     ],
 )
 async def test_aggregate_logs_over_time_invalid_params(
+    call_tool: ToolCaller,
     params: dict,
     error: str | None,
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
 ):
     with pytest.raises(ToolError, match=error):
-        await _call_tool(
-            "aggregate_logs_over_time", mcp_client, repo, log_read_apikey, params
-        )
+        await call_tool("aggregate_logs_over_time", params)
 
 
 async def test_aggregate_logs_over_time_entity_restricted(
@@ -1797,12 +1567,8 @@ async def test_aggregate_logs_over_time_entity_restricted(
         {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
     )
 
-    assert await _call_tool(
-        "aggregate_logs_over_time",
-        mcp_client,
-        repo,
-        apikey,
-        {"interval": "day_of_week"},
+    assert await ToolCaller(repo, apikey, mcp_client)(
+        "aggregate_logs_over_time", {"interval": "day_of_week"}
     ) == {
         "interval": "day_of_week",
         "timezone": "UTC",
@@ -1828,17 +1594,15 @@ async def test_aggregate_logs_over_time_no_permission(
 ):
     apikey = await apikey_builder({})
     with pytest.raises(ToolError, match="permission"):
-        await _call_tool(
-            "aggregate_logs_over_time", mcp_client, repo, apikey, {"interval": "1_hour"}
+        await ToolCaller(repo, apikey, mcp_client)(
+            "aggregate_logs_over_time", {"interval": "1_hour"}
         )
 
 
 async def test_describe_repo_empty(
-    repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
-    assert await _call_tool("describe_repo", mcp_client, repo, log_read_apikey) == {
+    assert await call_tool("describe_repo") == {
         "logs": 0,
         "first_log_at": None,
         "last_log_at": None,
@@ -1885,13 +1649,12 @@ async def _create_describe_repo_logs(repo: PreparedRepo, client: HttpTestHelper)
 
 async def test_describe_repo(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
-    assert await _call_tool("describe_repo", mcp_client, repo, log_read_apikey) == {
+    assert await call_tool("describe_repo") == {
         "logs": 3,
         "first_log_at": "2024-01-01T10:00:00.000Z",
         "last_log_at": "2024-01-03T10:00:00.000Z",
@@ -1930,17 +1693,13 @@ async def test_describe_repo(
 
 async def test_describe_repo_with_time_window(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
-    assert await _call_tool(
+    assert await call_tool(
         "describe_repo",
-        mcp_client,
-        repo,
-        log_read_apikey,
         {"since": "2024-01-02T00:00:00Z", "until": "2024-01-03T23:59:59Z"},
     ) == {
         "logs": 2,
@@ -1981,14 +1740,13 @@ async def test_describe_repo_with_time_window(
 
 async def test_describe_repo_truncated_action_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
     with patch("auditize.mcp.service._MAX_ACTION_TYPES", 1):
-        assert await _call_tool("describe_repo", mcp_client, repo, log_read_apikey) == {
+        assert await call_tool("describe_repo") == {
             "logs": 3,
             "first_log_at": "2024-01-01T10:00:00.000Z",
             "last_log_at": "2024-01-03T10:00:00.000Z",
@@ -2054,7 +1812,7 @@ async def test_describe_repo_entity_restricted(
         {"logs": {"repos": [{"repo_id": repo.id, "readable_entities": ["entity_A"]}]}}
     )
 
-    assert await _call_tool("describe_repo", mcp_client, repo, apikey) == {
+    assert await ToolCaller(repo, apikey, mcp_client)("describe_repo") == {
         "logs": 1,
         "first_log_at": "2024-01-01T10:00:00.000Z",
         "last_log_at": "2024-01-01T10:00:00.000Z",
@@ -2078,26 +1836,18 @@ async def test_describe_repo_entity_restricted(
 
 async def test_describe_action_unknown(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(log_rw_client, _action("login"))
     with pytest.raises(ToolError, match="Unknown action type 'unknown'"):
-        await _call_tool(
-            "describe_action",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"action_type": "unknown"},
-        )
+        await call_tool("describe_action", {"action_type": "unknown"})
 
 
 async def test_describe_action_empty_time_window(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -2107,12 +1857,8 @@ async def test_describe_action_empty_time_window(
         },
         emitted_at="2024-01-01T10:00:00Z",
     )
-    assert await _call_tool(
-        "describe_action",
-        mcp_client,
-        repo,
-        log_read_apikey,
-        {"action_type": "login", "since": "2025-01-01T00:00:00Z"},
+    assert await call_tool(
+        "describe_action", {"action_type": "login", "since": "2025-01-01T00:00:00Z"}
     ) == {
         "action_type": "login",
         "category": "auth",
@@ -2134,9 +1880,8 @@ async def test_describe_action_empty_time_window(
 
 async def test_describe_action(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for i in range(3):
         await repo.create_log_with(
@@ -2177,9 +1922,7 @@ async def test_describe_action(
         {**_action("login"), "source": [_custom_field("ip", "1.2.3.4", "string")]},
     )
 
-    assert await _call_tool(
-        "describe_action", mcp_client, repo, log_read_apikey, {"action_type": "view"}
-    ) == {
+    assert await call_tool("describe_action", {"action_type": "view"}) == {
         "action_type": "view",
         "category": "doc",
         "logs": 4,
@@ -2265,11 +2008,10 @@ async def test_describe_action(
 
 @pytest.mark.parametrize("value_count", [20, 21])
 async def test_describe_action_enum_values_limit(
-    value_count: int,
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
+    value_count: int,
 ):
     for i in range(value_count):
         await repo.create_log_with(
@@ -2277,9 +2019,7 @@ async def test_describe_action_enum_values_limit(
             {**_action("login"), "details": [_custom_field("code", f"v{i}", "enum")]},
             emitted_at=_emitted_at(i),
         )
-    assert await _call_tool(
-        "describe_action", mcp_client, repo, log_read_apikey, {"action_type": "login"}
-    ) == {
+    assert await call_tool("describe_action", {"action_type": "login"}) == {
         "action_type": "login",
         "category": "category",
         "logs": value_count,
@@ -2316,9 +2056,8 @@ async def test_describe_action_enum_values_limit(
 
 async def test_describe_action_partially_present_boolean_field(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -2333,9 +2072,7 @@ async def test_describe_action_partially_present_boolean_field(
         log_rw_client, _action("login"), emitted_at=_emitted_at(1)
     )
 
-    assert await _call_tool(
-        "describe_action", mcp_client, repo, log_read_apikey, {"action_type": "login"}
-    ) == {
+    assert await call_tool("describe_action", {"action_type": "login"}) == {
         "action_type": "login",
         "category": "category",
         "logs": 2,
@@ -2368,9 +2105,8 @@ async def test_describe_action_partially_present_boolean_field(
 
 async def test_describe_action_custom_field_with_several_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -2384,9 +2120,7 @@ async def test_describe_action_custom_field_with_several_types(
     )
 
     # only the most recent type of the field is described
-    assert await _call_tool(
-        "describe_action", mcp_client, repo, log_read_apikey, {"action_type": "login"}
-    ) == {
+    assert await call_tool("describe_action", {"action_type": "login"}) == {
         "action_type": "login",
         "category": "category",
         "logs": 2,
@@ -2419,9 +2153,8 @@ async def test_describe_action_custom_field_with_several_types(
 
 async def test_describe_action_truncated_custom_fields(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -2441,13 +2174,7 @@ async def test_describe_action_truncated_custom_fields(
     )
 
     with patch("auditize.mcp.service._MAX_FIELDS_PER_GROUP", 1):
-        assert await _call_tool(
-            "describe_action",
-            mcp_client,
-            repo,
-            log_read_apikey,
-            {"action_type": "login"},
-        ) == {
+        assert await call_tool("describe_action", {"action_type": "login"}) == {
             "action_type": "login",
             "category": "category",
             "logs": 2,
@@ -2479,24 +2206,23 @@ async def test_describe_action_truncated_custom_fields(
         }
 
 
-@pytest.mark.parametrize("tool", ["describe_repo", "describe_action"])
+@pytest.mark.parametrize("tool_name", ["describe_repo", "describe_action"])
 async def test_describe_no_permission(
-    tool: str,
+    tool_name: str,
     repo: PreparedRepo,
     apikey_builder: ApikeyBuilder,
     mcp_client: Client[FastMCPTransport],
 ):
     apikey = await apikey_builder({})
-    params = {"action_type": "login"} if tool == "describe_action" else {}
+    params = {"action_type": "login"} if tool_name == "describe_action" else {}
     with pytest.raises(ToolError, match="permission"):
-        await _call_tool(tool, mcp_client, repo, apikey, params)
+        await ToolCaller(repo, apikey, mcp_client)(tool_name, params)
 
 
 async def test_describe_repo_custom_fields_match_list_fields(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
     await repo.create_log_with(
@@ -2508,14 +2234,14 @@ async def test_describe_repo_custom_fields_match_list_fields(
         },
     )
 
-    description = await _call_tool("describe_repo", mcp_client, repo, log_read_apikey)
+    description = await call_tool("describe_repo")
     for group, list_tool in [
         ("source", "list_source_fields"),
         ("details", "list_details_fields"),
         ("actor", "list_actor_extra_fields"),
         ("resource", "list_resource_extra_fields"),
     ]:
-        assert await _call_tool(list_tool, mcp_client, repo, log_read_apikey) == {
+        assert await call_tool(list_tool) == {
             "items": [
                 {"name": name, "type": type_}
                 for name, type_ in description["custom_fields"][group]["items"].items()
@@ -2526,9 +2252,8 @@ async def test_describe_repo_custom_fields_match_list_fields(
 
 async def test_describe_repo_truncated_custom_fields(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -2548,7 +2273,7 @@ async def test_describe_repo_truncated_custom_fields(
     )
 
     with patch("auditize.mcp.service._MAX_FIELDS_PER_GROUP", 1):
-        assert await _call_tool("describe_repo", mcp_client, repo, log_read_apikey) == {
+        assert await call_tool("describe_repo") == {
             "logs": 2,
             "first_log_at": "2024-01-01T10:00:00.000Z",
             "last_log_at": "2024-01-01T10:01:00.000Z",
@@ -2573,9 +2298,8 @@ async def test_describe_repo_truncated_custom_fields(
 
 async def test_describe_repo_custom_field_with_several_types(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await repo.create_log_with(
         log_rw_client,
@@ -2588,7 +2312,7 @@ async def test_describe_repo_custom_field_with_several_types(
         emitted_at=_emitted_at(1),
     )
 
-    assert await _call_tool("describe_repo", mcp_client, repo, log_read_apikey) == {
+    assert await call_tool("describe_repo") == {
         "logs": 2,
         "first_log_at": "2024-01-01T10:00:00.000Z",
         "last_log_at": "2024-01-01T10:01:00.000Z",
@@ -2613,14 +2337,13 @@ async def test_describe_repo_custom_field_with_several_types(
 
 async def test_describe_repo_approximate_distinct_counts(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
     with patch("auditize.mcp.service._CARDINALITY_PRECISION_THRESHOLD", 1):
-        assert await _call_tool("describe_repo", mcp_client, repo, log_read_apikey) == {
+        assert await call_tool("describe_repo") == {
             "logs": 3,
             "first_log_at": "2024-01-01T10:00:00.000Z",
             "last_log_at": "2024-01-03T10:00:00.000Z",
@@ -2706,13 +2429,13 @@ async def test_describe_action_entity_restricted(
 
     # an action type only existing in a non readable entity is unknown
     with pytest.raises(ToolError, match="Unknown action type 'logout'"):
-        await _call_tool(
-            "describe_action", mcp_client, repo, apikey, {"action_type": "logout"}
+        await ToolCaller(repo, apikey, mcp_client)(
+            "describe_action", {"action_type": "logout"}
         )
 
     # logs of non readable entities are not taken into account
-    assert await _call_tool(
-        "describe_action", mcp_client, repo, apikey, {"action_type": "login"}
+    assert await ToolCaller(repo, apikey, mcp_client)(
+        "describe_action", {"action_type": "login"}
     ) == {
         "action_type": "login",
         "category": "category",
@@ -2746,9 +2469,8 @@ async def test_describe_action_entity_restricted(
 
 async def test_describe_action_float_and_string_fields(
     repo: PreparedRepo,
-    log_read_apikey: PreparedApikey,
     log_rw_client: HttpTestHelper,
-    mcp_client: Client[FastMCPTransport],
+    call_tool: ToolCaller,
 ):
     for i, (amount, label) in enumerate([(1.5, "first"), (2.5, "second")]):
         await repo.create_log_with(
@@ -2763,9 +2485,7 @@ async def test_describe_action_float_and_string_fields(
             emitted_at=_emitted_at(i),
         )
 
-    assert await _call_tool(
-        "describe_action", mcp_client, repo, log_read_apikey, {"action_type": "login"}
-    ) == {
+    assert await call_tool("describe_action", {"action_type": "login"}) == {
         "action_type": "login",
         "category": "category",
         "logs": 2,
