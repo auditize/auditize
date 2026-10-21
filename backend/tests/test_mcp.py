@@ -725,6 +725,14 @@ def _build_log_data_with_custom_fields(group: str, fields: list[dict]) -> dict:
 @pytest.mark.parametrize(
     "field_type,values",
     [
+        (
+            "string",
+            [
+                "Mozilla/5.0 (X11; Linux x86_64)",
+                "Mozilla/5.0 (X11; Linux x86_64)",
+                "curl/8.4.0",
+            ],
+        ),
         ("enum", ["a", "a", "b"]),
         ("boolean", [True, True, False]),
         ("integer", [200, 200, 404]),
@@ -865,7 +873,7 @@ async def test_aggregate_logs_by_custom_field_with_search_params(
     }
 
 
-@pytest.mark.parametrize("field_type", ["string", "json", "datetime"])
+@pytest.mark.parametrize("field_type", ["json", "datetime"])
 async def test_aggregate_logs_by_custom_field_unsupported_type(
     log_with_custom_fields,
     call_tool: ToolCaller,
@@ -1377,6 +1385,60 @@ async def test_aggregate_logs_over_time_count_distinct(
                 "distinct_count": 1,
                 "breakdown": [
                     {"action_type": "login", "count": 1, "distinct_count": 1}
+                ],
+                "other_count": 0,
+            },
+        ],
+    }
+
+
+async def test_aggregate_logs_over_time_string_custom_fields(
+    repo: PreparedRepo,
+    log_rw_client: HttpTestHelper,
+    call_tool: ToolCaller,
+):
+    for emitted_at, role, ip in (
+        ("2026-01-15T10:05:00Z", "Account Manager", "192.168.1.10"),
+        ("2026-01-15T10:10:00Z", "Account Manager", "192.168.1.11"),
+        ("2026-01-15T10:20:00Z", "Account Manager", "192.168.1.10"),
+        ("2026-01-15T10:30:00Z", "Support Agent", "10.0.0.1"),
+        ("2026-01-15T11:30:00Z", "Support Agent", "10.0.0.1"),
+    ):
+        await repo.create_log_with(
+            log_rw_client,
+            {
+                **_actor("1", extra=[_custom_field("role", role, "string")]),
+                "source": [_custom_field("ip", ip, "string")],
+            },
+            emitted_at=emitted_at,
+        )
+
+    assert await call_tool(
+        "aggregate_logs_over_time",
+        {"interval": "1_hour", "split_by": "actor.role", "count_distinct": "source.ip"},
+    ) == {
+        "interval": "1_hour",
+        "timezone": "UTC",
+        "start": "2026-01-15T10:05:00Z",
+        "end": "2026-01-15T11:30:00Z",
+        "total_count": 5,
+        "timeline": [
+            {
+                "period": "2026-01-15T10:00:00Z",
+                "count": 4,
+                "distinct_count": 3,
+                "breakdown": [
+                    {"actor.role": "Account Manager", "count": 3, "distinct_count": 2},
+                    {"actor.role": "Support Agent", "count": 1, "distinct_count": 1},
+                ],
+                "other_count": 0,
+            },
+            {
+                "period": "2026-01-15T11:00:00Z",
+                "count": 1,
+                "distinct_count": 1,
+                "breakdown": [
+                    {"actor.role": "Support Agent", "count": 1, "distinct_count": 1}
                 ],
                 "other_count": 0,
             },

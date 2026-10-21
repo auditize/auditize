@@ -87,8 +87,9 @@ CUSTOM_FIELD_GROUP_PATHS = {
 CUSTOM_FIELD_GROUPS = list(CUSTOM_FIELD_GROUP_PATHS)
 
 # Custom field types that can be used as aggregation dimensions
-# (string and JSON fields are full-text fields, datetime fields are not relevant to group by)
+# (JSON fields are full-text fields, datetime fields are not relevant to group by)
 AGGREGATABLE_CUSTOM_FIELD_TYPES = (
+    CustomFieldType.STRING,
     CustomFieldType.ENUM,
     CustomFieldType.BOOLEAN,
     CustomFieldType.INTEGER,
@@ -1005,7 +1006,10 @@ class LogService:
         - "actor.age" (integer) => _AggregationDimension(
             "actor.age", "actor.extra.age:integer", CustomFieldType.INTEGER
           )
-        - "foo.bar", "details.unknown", "details.comment" (string) => ValidationError
+        - "source.ip" (string) => _AggregationDimension(
+            "source.ip", "source.ip:string.keyword", CustomFieldType.STRING
+          )
+        - "foo.bar", "details.unknown", "details.payload" (json) => ValidationError
         """
         if dimension in _AGGREGATION_BUILTIN_FIELDS:
             return _AggregationDimension(
@@ -1031,9 +1035,10 @@ class LogService:
                 f"dimension, expected one of these types: "
                 f"{', '.join(AGGREGATABLE_CUSTOM_FIELD_TYPES)}"
             )
-        return _AggregationDimension(
-            dimension, f"{path}.{field_name}:{field_type}", field_type
-        )
+        es_field = f"{path}.{field_name}:{field_type}"
+        if field_type == CustomFieldType.STRING:
+            es_field += ".keyword"
+        return _AggregationDimension(dimension, es_field, field_type)
 
     async def _resolve_aggregation_dimensions(
         self, group_by: list[str]

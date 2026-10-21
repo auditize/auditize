@@ -191,17 +191,18 @@ async def aggregate_logs(
     dimension are not part of any group and are counted in `other_count`.
 
     Custom fields (source.<field_name>, details.<field_name>, actor.<field_name>,
-    resource.<field_name>) can be used as dimensions if they are of type enum,
-    boolean, integer or float. Discover available field names and their type with
-    list_source_fields / list_details_fields / list_actor_extra_fields /
-    list_resource_extra_fields.
+    resource.<field_name>) can be used as dimensions if they are of type string,
+    enum, boolean, integer or float. Discover available field names and their type
+    with list_source_fields / list_details_fields / list_actor_extra_fields /
+    list_resource_extra_fields. String values are grouped as is (case-sensitive),
+    values longer than 1024 characters are not part of any group.
 
     Dimension values in rows are:
     - a scalar for action_type, action_category, actor_type and resource_type
     - {ref, name} for actor and resource (name is the most recent one among the
       logs of the group)
-    - a string, boolean, integer or float for custom fields of type enum, boolean,
-      integer or float respectively
+    - a string, boolean, integer or float for custom fields of type string / enum,
+      boolean, integer or float respectively
     """
     try:
         aggregation = await log_service.aggregate_logs(
@@ -319,10 +320,11 @@ async def aggregate_logs_over_time(
     aggregate_logs. Distinct counts are approximate above ~3000 distinct values.
 
     Custom fields (source.<field_name>, details.<field_name>, actor.<field_name>,
-    resource.<field_name>) can be used as dimensions if they are of type enum,
-    boolean, integer or float. Discover available field names and their type with
-    list_source_fields / list_details_fields / list_actor_extra_fields /
-    list_resource_extra_fields.
+    resource.<field_name>) can be used as dimensions if they are of type string,
+    enum, boolean, integer or float. Discover available field names and their type
+    with list_source_fields / list_details_fields / list_actor_extra_fields /
+    list_resource_extra_fields. String values are grouped as is (case-sensitive),
+    values longer than 1024 characters are not part of any group.
     """
     try:
         aggregation = await log_service.aggregate_logs_over_time(

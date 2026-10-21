@@ -267,7 +267,10 @@ class McpLogService(LogService):
         # the date of the last log having the field tells which type is the most
         # recent one when the field has been used with several types
         aggs = {"last_log_at": {"max": {"field": "emitted_at"}}}
-        if field.type in AGGREGATABLE_CUSTOM_FIELD_TYPES:
+        if (
+            field.type in AGGREGATABLE_CUSTOM_FIELD_TYPES
+            and field.type != CustomFieldType.STRING
+        ):
             aggs["distinct"] = cls._build_cardinality_aggregation(field.es_field)
             # one more than the limit to know whether the limit is exceeded
             aggs["values"] = {
