@@ -9,7 +9,7 @@ from auditize.database import get_elastic_client
 from auditize.log.models import CustomFieldType
 from auditize.repo.sql_models import Repo
 
-_MAPPING_VERSION = 6
+_MAPPING_VERSION = 7
 
 # Elasticsearch mapping history:
 # - 0.7.0:
@@ -22,12 +22,18 @@ _MAPPING_VERSION = 6
 #   - v5: add emitted_at field and update sorting to use emitted_at and log_id
 # - 0.12.0:
 #   - v6: store custom fields as flat {"name:type": value} objects instead of nested documents
+#   - v7: add a keyword sub-field to string custom fields to make them aggregatable
 
 _TYPE_TEXT_CUSTOM_ASCIIFOLDING = {
     "type": "text",
     "analyzer": "custom_asciifolding",
     "search_analyzer": "custom_asciifolding",
 }
+
+# Longer string values are not indexed as keyword (thus not aggregatable): such values
+# are unlikely to be useful in aggregations and would bloat the index (and could exceed
+# the Lucene term size limit)
+_CUSTOM_FIELD_KEYWORD_IGNORE_ABOVE = 1024
 
 # Custom fields are stored as {"name:type": value} objects, the actual ES field
 # is created on the fly by the dynamic template matching the type suffix.
@@ -42,6 +48,12 @@ _CUSTOM_FIELD_TYPE_MAPPINGS = {
     CustomFieldType.STRING: {
         **_TYPE_TEXT_CUSTOM_ASCIIFOLDING,
         "copy_to": "custom_fields_text",
+        "fields": {
+            "keyword": {
+                "type": "keyword",
+                "ignore_above": _CUSTOM_FIELD_KEYWORD_IGNORE_ABOVE,
+            }
+        },
     },
     CustomFieldType.ENUM: {"type": "keyword"},
     CustomFieldType.DATETIME: {"type": "date"},

@@ -1,0 +1,236 @@
+{
+  "properties": {
+    "log_id": {
+      "type": "keyword"
+    },
+    "saved_at": {
+      "type": "date"
+    },
+    "emitted_at": {
+      "type": "date"
+    },
+    "emitter": {
+      "properties": {
+        "type": {
+          "type": "keyword"
+        },
+        "id": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding"
+        }
+      }
+    },
+    "action": {
+      "properties": {
+        "type": {
+          "type": "keyword"
+        },
+        "category": {
+          "type": "keyword"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "dynamic": true
+    },
+    "source_fields": {
+      "type": "keyword"
+    },
+    "actor": {
+      "properties": {
+        "ref": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "extra": {
+          "type": "object",
+          "dynamic": true
+        },
+        "extra_fields": {
+          "type": "keyword"
+        }
+      }
+    },
+    "resource": {
+      "properties": {
+        "ref": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "extra": {
+          "type": "object",
+          "dynamic": true
+        },
+        "extra_fields": {
+          "type": "keyword"
+        }
+      }
+    },
+    "details": {
+      "type": "object",
+      "dynamic": true
+    },
+    "details_fields": {
+      "type": "keyword"
+    },
+    "custom_fields_text": {
+      "type": "text",
+      "analyzer": "custom_asciifolding",
+      "search_analyzer": "custom_asciifolding"
+    },
+    "tags": {
+      "type": "nested",
+      "properties": {
+        "ref": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    },
+    "attachments": {
+      "type": "nested",
+      "properties": {
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "mime_type": {
+          "type": "keyword"
+        },
+        "saved_at": {
+          "type": "date"
+        },
+        "data": {
+          "type": "binary"
+        }
+      }
+    },
+    "entity_path": {
+      "type": "nested",
+      "properties": {
+        "ref": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "dynamic_templates": [
+    {
+      "custom_field_string": {
+        "match": "*:string",
+        "mapping": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "copy_to": "custom_fields_text"
+        }
+      }
+    },
+    {
+      "custom_field_enum": {
+        "match": "*:enum",
+        "mapping": {
+          "type": "keyword"
+        }
+      }
+    },
+    {
+      "custom_field_datetime": {
+        "match": "*:datetime",
+        "mapping": {
+          "type": "date"
+        }
+      }
+    },
+    {
+      "custom_field_boolean": {
+        "match": "*:boolean",
+        "mapping": {
+          "type": "boolean"
+        }
+      }
+    },
+    {
+      "custom_field_integer": {
+        "match": "*:integer",
+        "mapping": {
+          "type": "long"
+        }
+      }
+    },
+    {
+      "custom_field_float": {
+        "match": "*:float",
+        "mapping": {
+          "type": "double"
+        }
+      }
+    },
+    {
+      "custom_field_json": {
+        "match": "*:json",
+        "mapping": {
+          "type": "text",
+          "analyzer": "custom_asciifolding",
+          "search_analyzer": "custom_asciifolding",
+          "copy_to": "custom_fields_text"
+        }
+      }
+    }
+  ]
+}
