@@ -1,3 +1,13 @@
+# 0.12.0 (2026-10-22)
+
+- MCP: Add `describe_repo` and `describe_action` tools to get an overview of
+  the repository and of a given action type
+- MCP: Add `aggregate_logs` tool to count logs grouped by 1 or 2 dimensions
+- MCP: Add `aggregate_logs_over_time` tool to count logs per period
+  or per hour of day / day of week
+- Fix full-text search on words containing punctuation
+  (e.g. "Chrome/121.0" or "192.168.1.1")
+
 # 0.11.0 (2026-09-11)
 
 - Add a MCP server feature (see https://www.auditize.org/mcp/)
