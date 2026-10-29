@@ -1,14 +1,9 @@
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import NamedTuple
 
 from auditize.exceptions import NotFoundError
-from auditize.log.models import CustomFieldType, LogSearchParams
-from auditize.log.service import (
-    AGGREGATABLE_CUSTOM_FIELD_TYPES,
-    CUSTOM_FIELD_GROUP_PATHS,
-    LogService,
-)
-from auditize.mcp.models import (
+from auditize.llm_tools.models import (
     ActionDescription,
     ActionTypeStats,
     ActorTypeStats,
@@ -20,6 +15,12 @@ from auditize.mcp.models import (
     TruncatedDict,
     TruncatedList,
     TypeLogCount,
+)
+from auditize.log.models import CustomFieldType, LogSearchParams
+from auditize.log.service import (
+    AGGREGATABLE_CUSTOM_FIELD_TYPES,
+    CUSTOM_FIELD_GROUP_PATHS,
+    LogService,
 )
 
 # Limits of describe_repo / describe_action results
@@ -42,7 +43,7 @@ class _MappedCustomField(NamedTuple):
         return f"{CUSTOM_FIELD_GROUP_PATHS[self.group]}.{self.name}:{self.type}"
 
 
-class McpLogService(LogService):
+class ToolLogService(LogService):
     @staticmethod
     def _build_cardinality_aggregation(field: str) -> dict:
         return {
@@ -442,3 +443,9 @@ class McpLogService(LogService):
                 fields, window_aggs, log_count
             ),
         )
+
+
+@dataclass
+class ToolContext:
+    log_service: ToolLogService
+    authorized_entities: set[str]

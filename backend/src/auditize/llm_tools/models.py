@@ -10,7 +10,7 @@ from auditize.log.models import CustomFieldType
 ItemT = TypeVar("ItemT")
 
 
-class PaginatedMcpResponse(BaseModel, Generic[ItemT]):
+class PaginatedToolResponse(BaseModel, Generic[ItemT]):
     items: list[ItemT] = Field(description="Page items")
     next_cursor: str | None = Field(
         default=None,
@@ -21,7 +21,7 @@ class PaginatedMcpResponse(BaseModel, Generic[ItemT]):
     )
 
 
-class LogEntityMcpResponse(BaseModel):
+class LogEntityToolResponse(BaseModel):
     ref: str = Field(description="Entity ref")
     name: str = Field(description="Entity name")
     path: str = Field(
@@ -30,7 +30,7 @@ class LogEntityMcpResponse(BaseModel):
     )
 
 
-class LogAggregationMcpResponse(BaseModel):
+class LogAggregationToolResponse(BaseModel):
     total_count: int = Field(
         description="Number of logs matching the search params (same as count_logs)"
     )
@@ -58,7 +58,7 @@ class LogAggregationMcpResponse(BaseModel):
     )
 
 
-class LogTimeAggregationMcpResponse(BaseModel):
+class LogTimeAggregationToolResponse(BaseModel):
     interval: str = Field(description="Interval of the periods")
     timezone: str = Field(description="Timezone used to compute the periods")
     start: datetime | None = Field(
