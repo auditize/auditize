@@ -41,6 +41,8 @@ def test_get_config():
     assert config.cors_allow_origins == []
     assert config.log_expiration_schedule == "0 1 * * *"
     assert config.cookie_secure is False
+    assert config.llm_model is None
+    assert config.llm_api_key is None
     assert config.test_mode is True
     assert config.online_doc is False
 
@@ -78,6 +80,8 @@ def test_config_minimum_viable_config():
     assert config.cors_allow_origins == []
     assert config.log_expiration_schedule == "0 1 * * *"
     assert config.cookie_secure is False
+    assert config.llm_model is None
+    assert config.llm_api_key is None
     assert config.test_mode is False
     assert config.online_doc is False
 
@@ -87,6 +91,24 @@ def test_config_var_db_name():
         {**MINIMUM_VIABLE_CONFIG, "AUDITIZE_DB_NAME": "my_db"}
     )
     assert config.db_name == "my_db"
+
+
+def test_config_var_llm():
+    config = Config.load_from_env(
+        {
+            **MINIMUM_VIABLE_CONFIG,
+            "AUDITIZE_LLM_MODEL": "my-model",
+            "AUDITIZE_LLM_API_KEY": "my-api-key",
+        }
+    )
+    assert config.llm_model == "my-model"
+    assert config.llm_api_key == "my-api-key"
+
+
+@pytest.mark.parametrize("key", ["AUDITIZE_LLM_MODEL", "AUDITIZE_LLM_API_KEY"])
+def test_config_var_llm_incomplete(key):
+    with pytest.raises(ConfigError):
+        Config.load_from_env({**MINIMUM_VIABLE_CONFIG, key: "value"})
 
 
 def test_config_custom_postgres():

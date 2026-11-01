@@ -44,6 +44,8 @@ class Config:
     test_mode: bool
     online_doc: bool
     log_expiration_schedule: str
+    llm_model: str | None
+    llm_api_key: str | None
 
     @staticmethod
     def _validate_list(value):
@@ -86,6 +88,11 @@ class Config:
         if bool(self.elastic_user) ^ bool(self.elastic_password):
             raise ConfigError(
                 "ElasticSearch configuration is incomplete, please provide both AUDITIZE_ES_USER and AUDITIZE_ES_PASSWORD"
+            )
+
+        if bool(self.llm_model) ^ bool(self.llm_api_key):
+            raise ConfigError(
+                "LLM configuration is incomplete, please provide both AUDITIZE_LLM_MODEL and AUDITIZE_LLM_API_KEY"
             )
 
     @classmethod
@@ -166,6 +173,8 @@ class Config:
                     validator=cls._validate_bool,
                     default=False,
                 ),
+                llm_model=optional("AUDITIZE_LLM_MODEL"),
+                llm_api_key=optional("AUDITIZE_LLM_API_KEY"),
                 ###
                 # "Private" configuration
                 ###
