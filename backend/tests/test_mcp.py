@@ -33,7 +33,7 @@ async def log_read_apikey(apikey_builder):
 @contextmanager
 def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
     with patch(
-        "auditize.mcp.tools.get_http_headers",
+        "auditize.mcp.tool_adapter.get_http_headers",
         return_value={
             "x-auditize-repo": repo.id,
             "authorization": f"Bearer {apikey.key}",

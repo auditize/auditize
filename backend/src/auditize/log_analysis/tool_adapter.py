@@ -1,12 +1,11 @@
 import functools
 import inspect
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable
 
 from pydantic_ai import ModelRetry, RunContext, Tool
 
 from auditize.llm_tools.adapter import is_tool_usage_error, split_tool_signature
 from auditize.llm_tools.service import ToolContext
-from auditize.llm_tools.tools import LOG_TOOLS
 
 _TOOL_MAX_RETRIES = 3
 
@@ -45,7 +44,3 @@ def to_pydantic_ai_tool(fn: Callable[..., Awaitable]) -> Tool[ToolContext]:
         # support concurrent operations.
         sequential=True,
     )
-
-
-def get_tools() -> Iterator[Tool[ToolContext]]:
-    yield from map(to_pydantic_ai_tool, LOG_TOOLS)

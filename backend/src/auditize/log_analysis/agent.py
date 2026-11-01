@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auditize.config import get_config
 from auditize.exceptions import ConfigError
 from auditize.llm_tools.service import ToolContext, ToolLogService
-from auditize.log_analysis.tools import get_tools
+from auditize.llm_tools.tools import LOG_TOOLS
+from auditize.log_analysis.tool_adapter import to_pydantic_ai_tool
 from auditize.repo.sql_models import Repo
 
 # Total for an analysis, across all the model requests
@@ -45,7 +46,7 @@ async def analyze_logs(session: AsyncSession, repo: Repo, prompt: str) -> str:
         _build_model(),
         deps_type=ToolContext,
         instructions=_INSTRUCTIONS,
-        tools=list(get_tools()),
+        tools=[to_pydantic_ai_tool(tool) for tool in LOG_TOOLS],
     )
     # NB: like the other CLI commands, there is no restriction on the log entities
     ctx = ToolContext(

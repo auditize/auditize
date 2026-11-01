@@ -16,13 +16,10 @@ from pydantic_ai.messages import ModelMessage, ToolReturnPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from auditize.__main__ import async_main
-from auditize.config import get_config
 from auditize.database.dbm import open_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.llm_tools.service import ToolLogService
-from auditize.llm_tools.tools import LOG_TOOLS
-from auditize.log_analysis.agent import _build_model, analyze_logs
-from auditize.log_analysis.tools import get_tools
+from auditize.log_analysis.agent import analyze_logs
 from auditize.repo.service import get_repo
 from helpers.http import HttpTestHelper
 from helpers.repo import PreparedRepo

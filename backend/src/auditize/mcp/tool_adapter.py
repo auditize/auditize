@@ -1,7 +1,7 @@
 import functools
 import inspect
 import uuid
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable
 
 from fastmcp.dependencies import Depends
 from fastmcp.exceptions import ToolError
@@ -18,7 +18,6 @@ from auditize.auth.authorizer import (
 from auditize.database.dbm import open_db_session
 from auditize.llm_tools.adapter import is_tool_usage_error, split_tool_signature
 from auditize.llm_tools.service import ToolContext, ToolLogService
-from auditize.llm_tools.tools import LOG_TOOLS
 from auditize.logger import get_logger
 from auditize.permissions.assertions import can_read_logs_from_repo
 
@@ -113,7 +112,3 @@ def to_mcp_tool(fn: Callable[..., Awaitable]) -> Tool:
         ]
     )
     return Tool.from_function(wrapper, annotations=_TOOL_ANNOTATIONS)
-
-
-def get_tools() -> Iterator[Tool]:
-    yield from map(to_mcp_tool, LOG_TOOLS)
