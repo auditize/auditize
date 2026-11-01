@@ -15,3 +15,4 @@ sqlalchemy[asyncio]~=2.0.36
 asyncpg
 alembic~=1.14.0
 fastmcp>=3.0.0,<4
+pydantic-ai>=2,<3

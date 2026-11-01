@@ -16,7 +16,7 @@ from auditize.auth.authorizer import (
     get_bearer_token_from_authorization_header,
 )
 from auditize.database.dbm import open_db_session
-from auditize.exceptions import AuditizeException, InternalError
+from auditize.llm_tools.adapter import is_tool_usage_error, split_tool_signature
 from auditize.llm_tools.service import ToolContext, ToolLogService
 from auditize.llm_tools.tools import LOG_TOOLS
 from auditize.logger import get_logger
@@ -87,16 +87,7 @@ def to_mcp_tool(fn: Callable[..., Awaitable]) -> Tool:
     Turn a tool function taking a ToolContext as first parameter into a FastMCP tool,
     the ToolContext being provided by the get_tool_context dependency.
     """
-    if not inspect.iscoroutinefunction(fn):
-        raise TypeError(f"Tool {fn.__name__!r} must be an async function")
-
-    sig = inspect.signature(fn)
-    params = list(sig.parameters.values())
-    if not params or params[0].annotation is not ToolContext:
-        raise TypeError(
-            f"First parameter of tool {fn.__name__!r} must be annotated as ToolContext"
-        )
-    ctx_param, *tool_params = params
+    sig, ctx_param, tool_params = split_tool_signature(fn)
 
     @functools.wraps(fn)
     async def wrapper(**kwargs):
@@ -104,9 +95,7 @@ def to_mcp_tool(fn: Callable[..., Awaitable]) -> Tool:
         try:
             return await fn(ctx, **kwargs)
         except Exception as exc:
-            if isinstance(exc, AuditizeException) and not isinstance(
-                exc, InternalError
-            ):
+            if is_tool_usage_error(exc):
                 raise ToolError(str(exc)) from None
             logger.exception("An unexpected error occurred")
             raise ToolError("Internal Error") from exc
