@@ -83,7 +83,7 @@ async def test_analysis_cli(
         await _run_analysis_cli(repo.id, "How many logs?")
 
     assert model.get_tool_returns("count_logs") == [1]
-    assert capsys.readouterr().out == "There is 1 log\n"
+    assert capsys.readouterr().out.strip() == "There is 1 log"
 
 
 async def test_analysis_cli_tool_calls_do_not_overlap(repo: PreparedRepo, capsys):
@@ -114,7 +114,7 @@ async def test_analysis_cli_tool_calls_do_not_overlap(repo: PreparedRepo, capsys
 
     assert model.get_tool_returns("count_logs") == [1, 1]
     assert max_running == 1
-    assert capsys.readouterr().out == "Done\n"
+    assert capsys.readouterr().out.strip() == "Done"
 
 
 async def test_analysis_cli_tool_error_sent_to_model(repo: PreparedRepo, capsys):
@@ -129,7 +129,7 @@ async def test_analysis_cli_tool_error_sent_to_model(repo: PreparedRepo, capsys)
     tool_returns = model.get_tool_returns("describe_action")
     assert len(tool_returns) == 1
     assert "Unknown action type 'unknown'" in tool_returns[0]
-    assert capsys.readouterr().out == "This action type does not exist\n"
+    assert capsys.readouterr().out.strip() == "This action type does not exist"
 
 
 async def test_analysis_cli_model_error(repo: PreparedRepo):

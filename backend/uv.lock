@@ -313,6 +313,7 @@ dependencies = [
     { name = "pydantic-ai" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
+    { name = "rich" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -346,6 +347,7 @@ requires-dist = [
     { name = "pydantic-ai", specifier = ">=2,<3" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
+    { name = "rich" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "~=2.0.36" },
     { name = "uvicorn", extras = ["standard"] },
 ]

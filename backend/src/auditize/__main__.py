@@ -7,6 +7,8 @@ import sys
 from uuid import UUID
 
 import uvicorn
+from rich.console import Console
+from rich.markdown import Markdown
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
@@ -181,7 +183,7 @@ async def analyze_repo_logs(repo_id: UUID):
             result = await analyze_logs(session, repo, prompt)
         except AuditizeException as exc:
             sys.exit(f"Error: {exc}")
-        print(result)
+        Console().print(Markdown(result))
 
 
 async def schedule():
