@@ -1,5 +1,6 @@
 import asyncio
 import io
+import re
 import uuid
 from contextlib import contextmanager
 from unittest import mock
@@ -83,7 +84,9 @@ async def test_analysis_cli(
         await _run_analysis_cli(repo.id, "How many logs?")
 
     assert model.get_tool_returns("count_logs") == [1]
-    assert capsys.readouterr().out.strip() == "There is 1 log"
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "There is 1 log"
+    assert re.search(r"Tokens: .+ input, .+ output", captured.err)
 
 
 async def test_analysis_cli_tool_calls_do_not_overlap(repo: PreparedRepo, capsys):
@@ -202,9 +205,9 @@ async def test_analyze_logs(superadmin_client: HttpTestHelper, repo: PreparedRep
 
     with _mock_model(model):
         async with open_db_session() as session:
-            output = await analyze_logs(
+            result = await analyze_logs(
                 session, await get_repo(session, repo.id), "How many logs?"
             )
 
     assert model.get_tool_returns("count_logs") == [1]
-    assert output == "There is 1 log"
+    assert result.output == "There is 1 log"

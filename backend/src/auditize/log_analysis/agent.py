@@ -1,5 +1,5 @@
 import pydantic_ai
-from pydantic_ai import Agent
+from pydantic_ai import Agent, AgentRunResult
 from pydantic_ai.models import Model, infer_model
 from pydantic_ai.providers import infer_provider_class
 from pydantic_ai.usage import UsageLimits
@@ -41,10 +41,9 @@ def _build_model() -> Model:
     )
 
 
-async def analyze_logs(session: AsyncSession, repo: Repo, prompt: str) -> str:
-    """
-    Return the final response of the model.
-    """
+async def analyze_logs(
+    session: AsyncSession, repo: Repo, prompt: str
+) -> AgentRunResult[str]:
     agent = Agent(
         _build_model(),
         deps_type=ToolContext,
@@ -56,5 +55,4 @@ async def analyze_logs(session: AsyncSession, repo: Repo, prompt: str) -> str:
         log_service=await ToolLogService.for_reading(session, repo),
         authorized_entities=set(),
     )
-    result = await agent.run(prompt, deps=ctx, usage_limits=_USAGE_LIMITS)
-    return result.output
+    return await agent.run(prompt, deps=ctx, usage_limits=_USAGE_LIMITS)

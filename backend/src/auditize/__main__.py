@@ -7,6 +7,7 @@ import sys
 from uuid import UUID
 
 import uvicorn
+from babel.numbers import format_compact_decimal
 from rich.console import Console
 from rich.markdown import Markdown
 from sqlalchemy import text
@@ -163,8 +164,13 @@ async def reindex_repo(repo: UUID | None):
             return
 
 
+def _format_token_count(count: int) -> str:
+    return format_compact_decimal(count, locale="en", fraction_digits=1)
+
+
 async def analyze_repo_logs(repo_id: UUID):
     _lazy_init()
+
     async with open_db_session() as session:
         try:
             repo = await get_repo(session, repo_id)
@@ -179,12 +185,20 @@ async def analyze_repo_logs(repo_id: UUID):
         if not prompt:
             sys.exit("Error: the prompt must be provided on the standard input")
 
+        out_console = Console()
+        err_console = Console(stderr=True)
         try:
-            with Console(stderr=True).status("Analyzing logs..."):
+            with err_console.status("Analyzing logs..."):
                 result = await analyze_logs(session, repo, prompt)
         except AuditizeException as exc:
             sys.exit(f"Error: {exc}")
-        Console().print(Markdown(result))
+        out_console.print(Markdown(result.output))
+        err_console.rule(style="cyan")
+        err_console.print(
+            f"Tokens: {_format_token_count(result.usage.input_tokens)} input, "
+            f"{_format_token_count(result.usage.output_tokens)} output",
+            style="bold cyan",
+        )
 
 
 async def schedule():
