@@ -180,7 +180,8 @@ async def analyze_repo_logs(repo_id: UUID):
             sys.exit("Error: the prompt must be provided on the standard input")
 
         try:
-            result = await analyze_logs(session, repo, prompt)
+            with Console(stderr=True).status("Analyzing logs..."):
+                result = await analyze_logs(session, repo, prompt)
         except AuditizeException as exc:
             sys.exit(f"Error: {exc}")
         Console().print(Markdown(result))

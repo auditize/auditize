@@ -1,3 +1,4 @@
+import pydantic_ai
 from pydantic_ai import Agent
 from pydantic_ai.models import Model, infer_model
 from pydantic_ai.providers import infer_provider_class
@@ -10,6 +11,8 @@ from auditize.llm_tools.service import ToolContext, ToolLogService
 from auditize.llm_tools.tools import LOG_TOOLS
 from auditize.log_analysis.tool_adapter import to_pydantic_ai_tool
 from auditize.repo.sql_models import Repo
+
+pydantic_ai.BANNER_ENABLED = False
 
 # Total for an analysis, across all the model requests
 _USAGE_LIMITS = UsageLimits(output_tokens_limit=10_000)
