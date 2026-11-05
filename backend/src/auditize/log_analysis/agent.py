@@ -1,5 +1,9 @@
+import json
+from collections.abc import Callable
+
 import pydantic_ai
 from pydantic_ai import Agent, AgentRunResult
+from pydantic_ai.messages import FunctionToolCallEvent, ToolCallPart
 from pydantic_ai.models import Model, infer_model
 from pydantic_ai.providers import infer_provider_class
 from pydantic_ai.usage import UsageLimits
@@ -16,6 +20,8 @@ pydantic_ai.BANNER_ENABLED = False
 
 # Total for an analysis, across all the model requests
 _USAGE_LIMITS = UsageLimits(output_tokens_limit=10_000)
+
+_TOOL_CALL_MAX_LENGTH = 80
 
 _INSTRUCTIONS = """\
 You analyze the audit logs of an Auditize log repository to answer the user's request.
@@ -41,18 +47,52 @@ def _build_model() -> Model:
     )
 
 
+def _format_tool_call(part: ToolCallPart) -> str:
+    args = ", ".join(
+        f"{name}={json.dumps(value, ensure_ascii=False)}"
+        for name, value in part.args_as_dict().items()
+    )
+    call = f"{part.tool_name}({args})"
+    if len(call) > _TOOL_CALL_MAX_LENGTH:
+        call = call[: _TOOL_CALL_MAX_LENGTH - 1] + "…"
+    return call
+
+
 async def analyze_logs(
-    session: AsyncSession, repo: Repo, prompt: str
+    session: AsyncSession,
+    repo: Repo,
+    prompt: str,
+    on_step: Callable[[str], None] | None = None,
 ) -> AgentRunResult[str]:
+    """
+    Analyze the logs of the repository according to the prompt, on_step being
+    called with a description of each step of the analysis.
+    """
     agent = Agent(
         _build_model(),
         deps_type=ToolContext,
         instructions=_INSTRUCTIONS,
         tools=[to_pydantic_ai_tool(tool) for tool in LOG_TOOLS],
     )
+
     # NB: like the other CLI commands, there is no restriction on the log entities
     ctx = ToolContext(
         log_service=await ToolLogService.for_reading(session, repo),
         authorized_entities=set(),
     )
-    return await agent.run(prompt, deps=ctx, usage_limits=_USAGE_LIMITS)
+
+    if on_step:
+        # Unlike agent.run() with an event_stream_handler, iterating over the nodes
+        # does not require the model requests to be streamed
+        async with agent.iter(prompt, deps=ctx, usage_limits=_USAGE_LIMITS) as run:
+            async for node in run:
+                if Agent.is_model_request_node(node):
+                    on_step("Waiting for model...")
+                elif Agent.is_call_tools_node(node):
+                    async with node.stream(run.ctx) as events:
+                        async for event in events:
+                            if isinstance(event, FunctionToolCallEvent):
+                                on_step(f"Calling {_format_tool_call(event.part)}...")
+        return run.result
+    else:
+        return await agent.run(prompt, deps=ctx, usage_limits=_USAGE_LIMITS)

@@ -10,6 +10,7 @@ import uvicorn
 from babel.numbers import format_compact_decimal
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.markup import escape
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
@@ -188,8 +189,13 @@ async def analyze_repo_logs(repo_id: UUID):
         out_console = Console()
         err_console = Console(stderr=True)
         try:
-            with err_console.status("Analyzing logs..."):
-                result = await analyze_logs(session, repo, prompt)
+            with err_console.status("Analyzing logs...") as status:
+                result = await analyze_logs(
+                    session,
+                    repo,
+                    prompt,
+                    on_step=lambda step: status.update(escape(step)),
+                )
         except AuditizeException as exc:
             sys.exit(f"Error: {exc}")
         out_console.print(Markdown(result.output))
