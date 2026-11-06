@@ -1,3 +1,4 @@
+import itertools
 import os
 
 import pytest
@@ -43,6 +44,10 @@ def test_get_config():
     assert config.cookie_secure is False
     assert config.llm_model is None
     assert config.llm_api_key is None
+    assert config.langfuse_url is None
+    assert config.langfuse_public_key is None
+    assert config.langfuse_secret_key is None
+    assert config.is_langfuse_enabled() is False
     assert config.test_mode is True
     assert config.online_doc is False
 
@@ -82,6 +87,10 @@ def test_config_minimum_viable_config():
     assert config.cookie_secure is False
     assert config.llm_model is None
     assert config.llm_api_key is None
+    assert config.langfuse_url is None
+    assert config.langfuse_public_key is None
+    assert config.langfuse_secret_key is None
+    assert config.is_langfuse_enabled() is False
     assert config.test_mode is False
     assert config.online_doc is False
 
@@ -109,6 +118,36 @@ def test_config_var_llm():
 def test_config_var_llm_incomplete(key):
     with pytest.raises(ConfigError):
         Config.load_from_env({**MINIMUM_VIABLE_CONFIG, key: "value"})
+
+
+_LANGFUSE_CONFIG = {
+    "AUDITIZE_LANGFUSE_URL": "https://langfuse.example.com",
+    "AUDITIZE_LANGFUSE_PUBLIC_KEY": "pk-lf-1234",
+    "AUDITIZE_LANGFUSE_SECRET_KEY": "sk-lf-5678",
+}
+
+
+def test_config_var_langfuse():
+    config = Config.load_from_env({**MINIMUM_VIABLE_CONFIG, **_LANGFUSE_CONFIG})
+    assert config.langfuse_url == "https://langfuse.example.com"
+    assert config.langfuse_public_key == "pk-lf-1234"
+    assert config.langfuse_secret_key == "sk-lf-5678"
+    assert config.is_langfuse_enabled() is True
+
+
+@pytest.mark.parametrize(
+    "keys",
+    [
+        keys
+        for size in (1, 2)
+        for keys in itertools.combinations(_LANGFUSE_CONFIG.keys(), size)
+    ],
+)
+def test_config_var_langfuse_incomplete(keys):
+    with pytest.raises(ConfigError, match="Langfuse configuration is incomplete"):
+        Config.load_from_env(
+            {**MINIMUM_VIABLE_CONFIG, **{key: _LANGFUSE_CONFIG[key] for key in keys}}
+        )
 
 
 def test_config_custom_postgres():

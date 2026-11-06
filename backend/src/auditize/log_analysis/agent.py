@@ -1,10 +1,15 @@
+import functools
 import json
 from collections.abc import Callable
 
 import pydantic_ai
+from langfuse import Langfuse
+from opentelemetry.sdk.trace import TracerProvider
 from pydantic_ai import Agent, AgentRunResult
+from pydantic_ai.capabilities import Instrumentation
 from pydantic_ai.messages import FunctionToolCallEvent, ToolCallPart
 from pydantic_ai.models import Model, infer_model
+from pydantic_ai.models.instrumented import InstrumentationSettings
 from pydantic_ai.providers import infer_provider_class
 from pydantic_ai.usage import UsageLimits
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,29 +63,30 @@ def _format_tool_call(part: ToolCallPart) -> str:
     return call
 
 
-async def analyze_logs(
-    session: AsyncSession,
-    repo: Repo,
+# NB: the tracer provider is built only once since the Langfuse client is a
+# singleton (per public key) that only takes the first tracer provider into account
+@functools.cache
+def _get_langfuse_tracer_provider() -> TracerProvider | None:
+    config = get_config()
+    if not config.is_langfuse_enabled():
+        return None
+    tracer_provider = TracerProvider()
+    # The Langfuse client registers its span exporter on the tracer provider
+    Langfuse(
+        base_url=config.langfuse_url,
+        public_key=config.langfuse_public_key,
+        secret_key=config.langfuse_secret_key,
+        tracer_provider=tracer_provider,
+    )
+    return tracer_provider
+
+
+async def _run_agent(
+    agent: Agent[ToolContext, str],
     prompt: str,
-    on_step: Callable[[str], None] | None = None,
+    ctx: ToolContext,
+    on_step: Callable[[str], None] | None,
 ) -> AgentRunResult[str]:
-    """
-    Analyze the logs of the repository according to the prompt, on_step being
-    called with a description of each step of the analysis.
-    """
-    agent = Agent(
-        _build_model(),
-        deps_type=ToolContext,
-        instructions=_INSTRUCTIONS,
-        tools=[to_pydantic_ai_tool(tool) for tool in LOG_TOOLS],
-    )
-
-    # NB: like the other CLI commands, there is no restriction on the log entities
-    ctx = ToolContext(
-        log_service=await ToolLogService.for_reading(session, repo),
-        authorized_entities=set(),
-    )
-
     if on_step:
         # Unlike agent.run() with an event_stream_handler, iterating over the nodes
         # does not require the model requests to be streamed
@@ -96,3 +102,40 @@ async def analyze_logs(
         return run.result
     else:
         return await agent.run(prompt, deps=ctx, usage_limits=_USAGE_LIMITS)
+
+
+async def analyze_logs(
+    session: AsyncSession,
+    repo: Repo,
+    prompt: str,
+    on_step: Callable[[str], None] | None = None,
+) -> AgentRunResult[str]:
+    """
+    Analyze the logs of the repository according to the prompt, on_step being
+    called with a description of each step of the analysis.
+    """
+    tracer_provider = _get_langfuse_tracer_provider()
+    agent = Agent(
+        _build_model(),
+        deps_type=ToolContext,
+        instructions=_INSTRUCTIONS,
+        tools=[to_pydantic_ai_tool(tool) for tool in LOG_TOOLS],
+        capabilities=(
+            [Instrumentation(InstrumentationSettings(tracer_provider=tracer_provider))]
+            if tracer_provider
+            else []
+        ),
+    )
+
+    # NB: like the other CLI commands, there is no restriction on the log entities
+    ctx = ToolContext(
+        log_service=await ToolLogService.for_reading(session, repo),
+        authorized_entities=set(),
+    )
+
+    try:
+        return await _run_agent(agent, prompt, ctx, on_step)
+    finally:
+        if tracer_provider:
+            # Make sure the spans are sent before the end of the process (CLI)
+            tracer_provider.force_flush()

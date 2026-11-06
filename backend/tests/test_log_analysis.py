@@ -6,21 +6,25 @@ from contextlib import contextmanager
 from unittest import mock
 
 import pytest
+from opentelemetry.sdk.trace import TracerProvider
 from pydantic_ai import (
+    Agent,
     ModelResponse,
     TextPart,
     ToolCallPart,
     UnexpectedModelBehavior,
     UsageLimitExceeded,
 )
+from pydantic_ai.capabilities import Instrumentation
 from pydantic_ai.messages import ModelMessage, ToolReturnPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from auditize.__main__ import async_main
+from auditize.config import get_config
 from auditize.database.dbm import open_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.llm_tools.service import ToolLogService
-from auditize.log_analysis.agent import analyze_logs
+from auditize.log_analysis.agent import _get_langfuse_tracer_provider, analyze_logs
 from auditize.repo.service import get_repo
 from helpers.http import HttpTestHelper
 from helpers.repo import PreparedRepo
@@ -211,3 +215,59 @@ async def test_analyze_logs(superadmin_client: HttpTestHelper, repo: PreparedRep
 
     assert model.get_tool_returns("count_logs") == [1]
     assert result.output == "There is 1 log"
+
+
+@contextmanager
+def _mock_langfuse():
+    # The tracer provider is cached by the agent module: clear the cache so that it is
+    # built against the mocked Langfuse configuration, and so that it does not leak
+    # to the other tests
+    _get_langfuse_tracer_provider.cache_clear()
+    try:
+        with mock.patch.multiple(
+            get_config(),
+            langfuse_url="https://langfuse.example.com",
+            langfuse_public_key="pk-lf-1234",
+            langfuse_secret_key="sk-lf-5678",
+        ):
+            # Avoid creating an actual Langfuse client
+            with mock.patch("auditize.log_analysis.agent.Langfuse"):
+                yield
+    finally:
+        _get_langfuse_tracer_provider.cache_clear()
+
+
+async def test_analyze_logs_langfuse(repo: PreparedRepo):
+    model = ScriptedModel([TextPart("There is no log")])
+
+    with _mock_model(model), _mock_langfuse():
+        with (
+            mock.patch("auditize.log_analysis.agent.Agent", wraps=Agent) as agent_class,
+            mock.patch.object(TracerProvider, "force_flush") as force_flush,
+        ):
+            async with open_db_session() as session:
+                await analyze_logs(
+                    session, await get_repo(session, repo.id), "How many logs?"
+                )
+
+    capabilities = agent_class.call_args.kwargs["capabilities"]
+    assert any(isinstance(c, Instrumentation) for c in capabilities)
+    force_flush.assert_called_once()
+
+
+async def test_analyze_logs_langfuse_not_configured(repo: PreparedRepo):
+    model = ScriptedModel([TextPart("There is no log")])
+
+    with _mock_model(model):
+        with (
+            mock.patch("auditize.log_analysis.agent.Agent", wraps=Agent) as agent_class,
+            mock.patch.object(TracerProvider, "force_flush") as force_flush,
+        ):
+            async with open_db_session() as session:
+                await analyze_logs(
+                    session, await get_repo(session, repo.id), "How many logs?"
+                )
+
+    capabilities = agent_class.call_args.kwargs["capabilities"]
+    assert not any(isinstance(c, Instrumentation) for c in capabilities)
+    force_flush.assert_not_called()
