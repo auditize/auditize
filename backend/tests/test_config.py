@@ -5,6 +5,7 @@ import pytest
 
 from auditize.config import Config, get_config
 from auditize.exceptions import ConfigError
+from helpers.config import get_test_config_vars
 
 MINIMUM_VIABLE_CONFIG = {
     "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
@@ -14,16 +15,17 @@ MINIMUM_VIABLE_CONFIG = {
 
 def test_get_config():
     # test get_config assuming environment variables set in conftest.py
+    config_vars = get_test_config_vars()
     config = get_config()
     assert isinstance(config, Config)
     assert config.public_url == "http://localhost:8000"
     assert config.jwt_signing_key is not None
-    assert config.postgres_host == "localhost"
-    assert config.postgres_port == 5432
+    assert config.postgres_host == config_vars["AUDITIZE_PG_HOST"]
+    assert config.postgres_port == int(config_vars["AUDITIZE_PG_PORT"])
     assert config.postgres_user is not None
     assert config.postgres_password is not None
-    assert config.elastic_url == "https://localhost:9200"
-    assert config.elastic_user == "elastic"
+    assert config.elastic_url == config_vars["AUDITIZE_ES_URL"]
+    assert config.elastic_user == config_vars["AUDITIZE_ES_USER"]
     assert config.elastic_password
     assert config.elastic_ssl_verify is False
     assert config.user_session_token_lifetime == 43200  # 12 hours

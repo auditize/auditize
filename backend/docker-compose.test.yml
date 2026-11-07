@@ -1,0 +1,61 @@
+# PostgreSQL & Elasticsearch services for running the backend test suite.
+#
+# Data is EPHEMERAL on purpose: services use anonymous volumes and are meant
+# to be thrown away. Always stop them with "down -v" so that the anonymous
+# volumes do not pile up:
+#
+#   docker compose -f docker-compose.test.yml up -d --wait
+#   docker compose -f docker-compose.test.yml down -v
+#
+# On macOS, tests run much faster against these services than natively (~50s vs
+# ~110s sequentially, ~25s with "pytest -n 4" which natively is even slower):
+# native Elasticsearch pays a costly F_FULLFSYNC on each translog write, and the
+# per-test PostgreSQL TRUNCATE recreates ~100 files, several times slower on APFS
+# than on the ext4 filesystem of the Docker Linux VM.
+#
+# Ports are not the default ones so that they don't conflict with locally
+# installed PostgreSQL & Elasticsearch. To run the tests against these
+# services, create a (non committed) .env.test file in the backend directory:
+#
+#   ES_URL=http://localhost:9201
+#   ES_PASSWORD=unused
+#   PG_PORT=5434
+#   PG_USER=auditize
+#   PG_PASSWORD=auditize
+
+name: auditize-test
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: auditize
+      POSTGRES_PASSWORD: auditize
+    # durability is useless for tests, trade it for speed
+    command: >
+      postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+    volumes:
+      - /var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "auditize"]
+      interval: 2s
+      retries: 30
+
+  elasticsearch:
+    image: elasticsearch:8.19.4
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      # don't let disk watermarks block writes on a nearly full host disk
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+    volumes:
+      - /usr/share/elasticsearch/data
+    ports:
+      - "9201:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health?wait_for_status=yellow"]
+      interval: 3s
+      retries: 40

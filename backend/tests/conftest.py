@@ -1,4 +1,3 @@
-import os
 from typing import Awaitable, Callable, Optional, Protocol
 
 import pytest
@@ -11,6 +10,7 @@ ic.configureOutput(includeContext=True)
 
 pytest.register_assert_rewrite("helpers")
 from helpers.apikey import PreparedApikey
+from helpers.config import get_test_config_vars
 from helpers.database import (
     TestLogDatabasePool,
     create_pg_db,
@@ -27,22 +27,7 @@ from helpers.user import PreparedUser
 
 @pytest.fixture(scope="session", autouse=True)
 def _config():
-    init_config(
-        {
-            "AUDITIZE_ES_URL": "https://localhost:9200",
-            "AUDITIZE_ES_USER": "elastic",
-            "AUDITIZE_ES_PASSWORD": os.environ["ES_PASSWORD"],
-            "AUDITIZE_ES_SSL_VERIFY": "false",
-            "AUDITIZE_PG_HOST": os.environ.get("PG_HOST", "localhost"),
-            "AUDITIZE_PG_USER": os.environ.get("PG_USER", os.environ.get("USER", "")),
-            "AUDITIZE_PG_PASSWORD": os.environ.get("PG_PASSWORD", ""),
-            "AUDITIZE_PUBLIC_URL": "http://localhost:8000",
-            "AUDITIZE_JWT_SIGNING_KEY": "917c5d359493bf90140e4f725b351d2282a6c23bb78d096cb7913d7090375a73",
-            "AUDITIZE_ATTACHMENT_MAX_SIZE": "1024",
-            "AUDITIZE_EXPORT_MAX_ROWS": "10",
-            "_AUDITIZE_TEST_MODE": "true",
-        }
-    )
+    init_config(get_test_config_vars())
 
 
 @pytest.fixture(scope="session")
