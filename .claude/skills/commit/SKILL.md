@@ -1,5 +1,5 @@
 ---
-name: auditize-commit
+name: commit
 description: Create git commits in the Auditize repository following its message conventions ([back]/[front]/[doc]/... prefix, optional scope, short subject, no Co-Authored-By) and only after the user has validated the proposed message. Use this skill whenever the user explicitly asks to commit in the Auditize repo ("commit", "commite", "fais un commit", "commit ça", "on peut commiter"), including when the request comes with constraints on the message. Do not use it when the user has not explicitly asked to commit.
 ---
 
