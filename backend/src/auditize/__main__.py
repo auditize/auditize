@@ -7,6 +7,10 @@ import sys
 from uuid import UUID
 
 import uvicorn
+from babel.numbers import format_compact_decimal
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.markup import escape
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
@@ -15,12 +19,15 @@ from auditize.config import get_config, init_config
 from auditize.database import init_dbm
 from auditize.database.dbm import migrate_database, open_db_session
 from auditize.exceptions import (
+    AuditizeException,
     ConfigAlreadyInitialized,
     ConfigError,
     ConstraintViolation,
+    NotFoundError,
 )
 from auditize.log.index import get_reindexable_repos, is_index_up_to_date, reindex_index
 from auditize.log.service import LogService
+from auditize.log_analysis.agent import analyze_logs
 from auditize.openapi import get_customized_openapi_schema
 from auditize.permissions.sql_models import Permissions
 from auditize.repo.service import get_all_repos, get_repo
@@ -158,6 +165,48 @@ async def reindex_repo(repo: UUID | None):
             return
 
 
+def _format_token_count(count: int) -> str:
+    return format_compact_decimal(count, locale="en", fraction_digits=1)
+
+
+async def analyze_repo_logs(repo_id: UUID):
+    _lazy_init()
+
+    async with open_db_session() as session:
+        try:
+            repo = await get_repo(session, repo_id)
+        except NotFoundError:
+            sys.exit(f"Error: repository {repo_id} not found")
+
+        await LogService.for_reading(
+            session, repo
+        )  # Make sure that the repository logs can be read before waiting for the prompt
+
+        prompt = sys.stdin.read().strip()
+        if not prompt:
+            sys.exit("Error: the prompt must be provided on the standard input")
+
+        out_console = Console()
+        err_console = Console(stderr=True)
+        try:
+            with err_console.status("Analyzing logs...") as status:
+                result = await analyze_logs(
+                    session,
+                    repo,
+                    prompt,
+                    on_step=lambda step: status.update(escape(step)),
+                )
+        except AuditizeException as exc:
+            sys.exit(f"Error: {exc}")
+        out_console.print(Markdown(result.output))
+        err_console.rule(style="cyan")
+        err_console.print(
+            f"Tokens: {_format_token_count(result.usage.input_tokens)} input, "
+            f"{_format_token_count(result.usage.output_tokens)} output",
+            style="bold cyan",
+        )
+
+
 async def schedule():
     _lazy_init()
     scheduler = build_scheduler()
@@ -266,6 +315,17 @@ async def async_main(args=None):
         help="Optional repository ID to limit the reindex to",
     )
     reindex_repo_parser.set_defaults(func=lambda cmd_args: reindex_repo(cmd_args.repo))
+
+    # CMD analyze-logs
+    analyze_logs_parser = sub_parsers.add_parser(
+        "analyze-logs",
+        help="Analyze the logs of a repository using a LLM, "
+        "the prompt is read from the standard input",
+    )
+    analyze_logs_parser.add_argument("repo", type=UUID, help="Repository ID")
+    analyze_logs_parser.set_defaults(
+        func=lambda cmd_args: analyze_repo_logs(cmd_args.repo)
+    )
 
     # CMD schedule
     schedule_parser = sub_parsers.add_parser(

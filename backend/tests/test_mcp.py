@@ -9,6 +9,8 @@ from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
 from fastmcp.exceptions import ToolError
 
+from auditize.exceptions import InternalError, NotFoundError
+from auditize.llm_tools.service import ToolLogService
 from auditize.mcp.app import mcp
 from conftest import ApikeyBuilder
 from helpers import matchers
@@ -31,7 +33,7 @@ async def log_read_apikey(apikey_builder):
 @contextmanager
 def mock_mcp_http_headers(repo: PreparedRepo, apikey: PreparedApikey):
     with patch(
-        "auditize.mcp.tools.get_http_headers",
+        "auditize.mcp.tool_adapter.get_http_headers",
         return_value={
             "x-auditize-repo": repo.id,
             "authorization": f"Bearer {apikey.key}",
@@ -79,6 +81,71 @@ def _custom_field(name: str, value: Any, type_: str) -> dict:
 
 def _emitted_at(i: int) -> str:
     return f"2024-01-01T10:{i:02d}:00Z"
+
+
+async def test_tool_definition(mcp_client: Client[FastMCPTransport]):
+    # Check on a representative tool that the signature rewriting done by to_mcp_tool
+    # produces the expected MCP tool definition (and hides the injected context)
+    tools = {tool.name: tool for tool in await mcp_client.list_tools()}
+    tool = tools["aggregate_logs"]
+
+    assert tool.description.startswith(
+        "Count logs grouped by one or two dimensions, using the same filters as search_logs."
+    )
+
+    assert tool.inputSchema["properties"].keys() == {
+        "group_by",
+        "search_params",
+        "limit",
+    }
+    assert tool.inputSchema["required"] == ["group_by"]
+    assert tool.inputSchema["properties"]["group_by"] == {
+        "type": "array",
+        "items": {"type": "string"},
+        "minItems": 1,
+        "maxItems": 2,
+        "description": matchers.String(),
+    }
+    assert tool.inputSchema["properties"]["limit"] == {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50,
+        "default": 10,
+        "description": "Maximum number of rows to return",
+    }
+
+    assert tool.outputSchema["properties"].keys() == {
+        "total_count",
+        "rows",
+        "other_count",
+    }
+
+    assert tool.annotations.readOnlyHint is True
+    assert tool.annotations.openWorldHint is False
+
+
+async def test_tool_auditize_exception(call_tool: ToolCaller, caplog):
+    with patch.object(
+        ToolLogService, "count_logs", side_effect=NotFoundError("Something not found")
+    ):
+        with pytest.raises(ToolError, match="^Something not found$"):
+            await call_tool("count_logs", {"search_params": {}})
+
+    assert "An unexpected error occurred" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "exception", [RuntimeError("Some details"), InternalError("Some details")]
+)
+async def test_tool_unexpected_exception(
+    call_tool: ToolCaller, caplog, exception: Exception
+):
+    with patch.object(ToolLogService, "count_logs", side_effect=exception):
+        with pytest.raises(ToolError, match="^Internal Error$"):
+            await call_tool("count_logs", {"search_params": {}})
+
+    assert "An unexpected error occurred" in caplog.text
+    assert "Some details" in caplog.text
 
 
 async def test_search_logs(
@@ -1807,7 +1874,7 @@ async def test_describe_repo_truncated_action_types(
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
-    with patch("auditize.mcp.service._MAX_ACTION_TYPES", 1):
+    with patch("auditize.llm_tools.service._MAX_ACTION_TYPES", 1):
         assert await call_tool("describe_repo") == {
             "logs": 3,
             "first_log_at": "2024-01-01T10:00:00.000Z",
@@ -2235,7 +2302,7 @@ async def test_describe_action_truncated_custom_fields(
         emitted_at=_emitted_at(1),
     )
 
-    with patch("auditize.mcp.service._MAX_FIELDS_PER_GROUP", 1):
+    with patch("auditize.llm_tools.service._MAX_FIELDS_PER_GROUP", 1):
         assert await call_tool("describe_action", {"action_type": "login"}) == {
             "action_type": "login",
             "category": "category",
@@ -2334,7 +2401,7 @@ async def test_describe_repo_truncated_custom_fields(
         emitted_at=_emitted_at(1),
     )
 
-    with patch("auditize.mcp.service._MAX_FIELDS_PER_GROUP", 1):
+    with patch("auditize.llm_tools.service._MAX_FIELDS_PER_GROUP", 1):
         assert await call_tool("describe_repo") == {
             "logs": 2,
             "first_log_at": "2024-01-01T10:00:00.000Z",
@@ -2404,7 +2471,7 @@ async def test_describe_repo_approximate_distinct_counts(
 ):
     await _create_describe_repo_logs(repo, log_rw_client)
 
-    with patch("auditize.mcp.service._CARDINALITY_PRECISION_THRESHOLD", 1):
+    with patch("auditize.llm_tools.service._CARDINALITY_PRECISION_THRESHOLD", 1):
         assert await call_tool("describe_repo") == {
             "logs": 3,
             "first_log_at": "2024-01-01T10:00:00.000Z",

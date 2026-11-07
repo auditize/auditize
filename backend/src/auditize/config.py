@@ -44,6 +44,11 @@ class Config:
     test_mode: bool
     online_doc: bool
     log_expiration_schedule: str
+    llm_model: str | None
+    llm_api_key: str | None
+    langfuse_url: str | None
+    langfuse_public_key: str | None
+    langfuse_secret_key: str | None
 
     @staticmethod
     def _validate_list(value):
@@ -86,6 +91,24 @@ class Config:
         if bool(self.elastic_user) ^ bool(self.elastic_password):
             raise ConfigError(
                 "ElasticSearch configuration is incomplete, please provide both AUDITIZE_ES_USER and AUDITIZE_ES_PASSWORD"
+            )
+
+        if bool(self.llm_model) ^ bool(self.llm_api_key):
+            raise ConfigError(
+                "LLM configuration is incomplete, please provide both AUDITIZE_LLM_MODEL and AUDITIZE_LLM_API_KEY"
+            )
+
+        langfuse_values = (
+            self.langfuse_url,
+            self.langfuse_public_key,
+            self.langfuse_secret_key,
+        )
+        if any(langfuse_values) and not all(langfuse_values):
+            raise ConfigError(
+                "Langfuse configuration is incomplete, please provide all of the following environment variables:\n"
+                "- AUDITIZE_LANGFUSE_URL\n"
+                "- AUDITIZE_LANGFUSE_PUBLIC_KEY\n"
+                "- AUDITIZE_LANGFUSE_SECRET_KEY\n"
             )
 
     @classmethod
@@ -166,6 +189,11 @@ class Config:
                     validator=cls._validate_bool,
                     default=False,
                 ),
+                llm_model=optional("AUDITIZE_LLM_MODEL"),
+                llm_api_key=optional("AUDITIZE_LLM_API_KEY"),
+                langfuse_url=optional("AUDITIZE_LANGFUSE_URL"),
+                langfuse_public_key=optional("AUDITIZE_LANGFUSE_PUBLIC_KEY"),
+                langfuse_secret_key=optional("AUDITIZE_LANGFUSE_SECRET_KEY"),
                 ###
                 # "Private" configuration
                 ###
@@ -208,6 +236,9 @@ class Config:
 
     def is_smtp_enabled(self):
         return self.smtp_sender is not None
+
+    def is_langfuse_enabled(self):
+        return self.langfuse_url is not None
 
     def get_db_url(self, db_name=None):
         if db_name is None:
