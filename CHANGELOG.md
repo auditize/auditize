@@ -1,3 +1,7 @@
+# 0.13.0 (2026-11-09)
+
+- Add `analyze-logs` CLI command to analyze logs using an LLM (v0 of log analysis in Auditize)
+
 # 0.12.0 (2026-10-22)
 
 - MCP: Add `describe_repo` and `describe_action` tools to get an overview of
