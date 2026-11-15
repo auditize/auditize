@@ -278,3 +278,19 @@ async def test_log_retention_period_purge_log_entities_2(
             },
         },
     )
+
+
+def test_build_authorized_entities_es_query():
+    # None means all entities: no filter
+    assert LogService._build_authorized_entities_es_query(None) is None
+
+    # an empty set means no entity: no log must match (fail-closed)
+    assert LogService._build_authorized_entities_es_query(set()) == {"match_none": {}}
+
+    # otherwise, filter on the given entities
+    assert LogService._build_authorized_entities_es_query({"e1"}) == {
+        "nested": {
+            "path": "entity_path",
+            "query": {"bool": {"filter": {"terms": {"entity_path.ref": ["e1"]}}}},
+        }
+    }

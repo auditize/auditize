@@ -130,7 +130,7 @@ async def analyze_logs(
     # NB: like the other CLI commands, there is no restriction on the log entities
     ctx = ToolContext(
         log_service=await ToolLogService.for_reading(session, repo),
-        authorized_entities=set(),
+        authorized_entities=None,
     )
 
     try:

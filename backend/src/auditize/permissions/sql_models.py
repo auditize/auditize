@@ -66,9 +66,21 @@ class Permissions(MappedAsDataclass, SqlModel):
                 return repo_perms
         return None
 
-    def get_repo_readable_entities(self, repo_id: UUID) -> set[str]:
+    def get_repo_readable_entities(self, repo_id: UUID) -> set[str] | None:
+        """
+        Return the log entities readable on the given repository:
+        - None if all entities are readable (no restriction),
+        - an empty set if no entity is readable,
+        - the set of readable entity refs otherwise.
+        """
+        if self.is_superadmin or self.logs_read:
+            return None
         perms = self.get_repo_log_permissions_by_id(repo_id)
-        return set(entity.ref for entity in perms.readable_entities) if perms else set()
+        if not perms:
+            return set()
+        if perms.read:
+            return None
+        return set(entity.ref for entity in perms.readable_entities)
 
 
 class HasPermissions:

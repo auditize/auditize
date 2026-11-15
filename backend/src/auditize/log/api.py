@@ -72,7 +72,7 @@ async def _get_aggregated_names(
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
-    authorized_entities: set[str],
+    authorized_entities: set[str] | None,
     page_params: CursorPaginationParams,
     **kwargs,
 ) -> NameListResponse:
@@ -91,7 +91,7 @@ async def _get_aggregated_name_ref_pairs(
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
-    authorized_entities: set[str],
+    authorized_entities: set[str] | None,
     params: CursorPaginatedSearchParams,
 ) -> NameRefPairListResponse:
     service = await LogService.for_reading(session, repo_id)
@@ -109,7 +109,7 @@ async def _get_custom_fields(
     session: AsyncSession,
     repo_id: UUID,
     get_data_func_name,
-    authorized_entities: set[str],
+    authorized_entities: set[str] | None,
     params: CursorPaginationParams,
 ) -> CustomFieldListResponse:
     service = await LogService.for_reading(session, repo_id)
@@ -127,7 +127,7 @@ async def _get_custom_field_enum_values(
     repo_id: UUID,
     field_name: str,
     get_data_func_name,
-    authorized_entities: set[str],
+    authorized_entities: set[str] | None,
     params: CursorPaginationParams,
 ) -> CustomFieldEnumValueListResponse:
     service = await LogService.for_reading(session, repo_id)

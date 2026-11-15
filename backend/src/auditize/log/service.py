@@ -610,8 +610,12 @@ class LogService:
     def _build_authorized_entities_es_query(
         authorized_entities: set[str] | None,
     ) -> dict | None:
-        if not authorized_entities:
+        # None means that all entities are authorized (no filter), while an
+        # empty set means that no entity is authorized (no log must match)
+        if authorized_entities is None:
             return None
+        if not authorized_entities:
+            return {"match_none": {}}
         return {
             "nested": {
                 "path": "entity_path",
@@ -626,14 +630,14 @@ class LogService:
         }
 
     @staticmethod
-    def _check_log_visibility(log: Log, authorized_entities: set[str]):
+    def _check_log_visibility(log: Log, authorized_entities: set[str] | None):
         if (
-            authorized_entities
+            authorized_entities is not None
             and not set(entity.ref for entity in log.entity_path) & authorized_entities
         ):
             raise NotFoundError()
 
-    async def get_log(self, log_id: UUID, authorized_entities: set[str]) -> Log:
+    async def get_log(self, log_id: UUID, authorized_entities: set[str] | None) -> Log:
         try:
             resp = await self.es.get(
                 index=self.read_alias,
@@ -649,7 +653,7 @@ class LogService:
         return log
 
     async def get_log_attachment(
-        self, log_id: UUID, attachment_idx: int, authorized_entities: set[str]
+        self, log_id: UUID, attachment_idx: int, authorized_entities: set[str] | None
     ) -> Log.Attachment:
         # NB: we retrieve all attachments here, which is not really efficient if the log contains
         # more than 1 log, unfortunately ES does not a let us retrieve a nested object to a specific
@@ -782,7 +786,7 @@ class LogService:
         self,
         search_params: LogSearchParams | None = None,
         *,
-        authorized_entities: set[str] | None = None,
+        authorized_entities: set[str] | None,
     ) -> dict | None:
         sp = search_params
         filter = []
@@ -906,7 +910,7 @@ class LogService:
                     }
                 )
 
-        if authorized_entities:
+        if authorized_entities is not None:
             filter.append(self._build_authorized_entities_es_query(authorized_entities))
 
         return {"bool": {"filter": filter}} if filter else None
@@ -914,7 +918,7 @@ class LogService:
     async def get_logs(
         self,
         *,
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None,
         search_params: LogSearchParams = None,
         include_attachment_data: bool = False,
         sort_by_saved_at: bool = False,
@@ -958,7 +962,7 @@ class LogService:
         self,
         search_params: LogSearchParams | None = None,
         *,
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None,
     ) -> Log | None:
         resp = await self.es.search(
             index=self.read_alias,
@@ -983,7 +987,7 @@ class LogService:
     async def count_logs(
         self,
         *,
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None,
         search_params: LogSearchParams = None,
     ) -> int:
         resp = await self.es.count(
@@ -1130,7 +1134,7 @@ class LogService:
         self,
         *,
         group_by: list[str],
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None,
         search_params: LogSearchParams = None,
         limit: int,
     ) -> LogAggregation:
@@ -1400,7 +1404,7 @@ class LogService:
         split_by: str | None = None,
         split_limit: int = 5,
         count_distinct: str | None = None,
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None,
         search_params: LogSearchParams = None,
     ) -> LogTimeAggregation:
         params = await self._resolve_time_aggregation_params(
@@ -1503,7 +1507,7 @@ class LogService:
         *,
         nested: str = None,
         field: str,
-        authorized_entities: set[str] | None = None,
+        authorized_entities: set[str] | None,
         search_params: LogSearchParams | None = None,
         limit: int,
         pagination_cursor: str | None,
@@ -1526,7 +1530,7 @@ class LogService:
     async def get_log_action_types(
         self,
         *,
-        authorized_entities: set[str] | None = None,
+        authorized_entities: set[str] | None,
         action_category: str | None = None,
         limit: int,
         pagination_cursor: str | None,
@@ -1591,7 +1595,7 @@ class LogService:
         *,
         path: str,
         nested: bool = False,
-        authorized_entities: set[str] | None = None,
+        authorized_entities: set[str] | None,
         search: str | None = None,
         limit: int = 10,
         pagination_cursor: str | None = None,
@@ -1609,7 +1613,7 @@ class LogService:
             if nested:
                 words_query = {"nested": {"path": path, "query": words_query}}
             filter.append(words_query)
-        if authorized_entities:
+        if authorized_entities is not None:
             filter.append(self._build_authorized_entities_es_query(authorized_entities))
 
         values, next_cursor = await self._get_paginated_agg_multi_fields(
@@ -1634,7 +1638,7 @@ class LogService:
     async def get_log_simple_tag_types(
         self,
         *,
-        authorized_entities: set[str] | None = None,
+        authorized_entities: set[str] | None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str]:
@@ -1651,7 +1655,7 @@ class LogService:
         return [value[0] for value in values], next_cursor
 
     async def get_log_actor(
-        self, actor_ref: str, authorized_entities: set[str]
+        self, actor_ref: str, authorized_entities: set[str] | None
     ) -> Log.Actor:
         log = await self.get_newest_log(
             LogSearchParams(actor_ref=actor_ref),
@@ -1662,7 +1666,7 @@ class LogService:
         return log.actor
 
     async def get_log_resource(
-        self, resource_ref: str, authorized_entities: set[str]
+        self, resource_ref: str, authorized_entities: set[str] | None
     ) -> Log.Resource:
         log = await self.get_newest_log(
             LogSearchParams(resource_ref=resource_ref),
@@ -1672,7 +1676,9 @@ class LogService:
             raise NotFoundError(f"Resource {resource_ref!r} not found")
         return log.resource
 
-    async def get_log_tag(self, tag_ref: str, authorized_entities: set[str]) -> Log.Tag:
+    async def get_log_tag(
+        self, tag_ref: str, authorized_entities: set[str] | None
+    ) -> Log.Tag:
         log = await self.get_newest_log(
             LogSearchParams(tag_ref=tag_ref),
             authorized_entities=authorized_entities,
@@ -1687,7 +1693,7 @@ class LogService:
         self,
         *,
         path: str,
-        authorized_entities: set[str] | None = None,
+        authorized_entities: set[str] | None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[tuple[str, CustomFieldType]], str | None]:
@@ -1761,7 +1767,7 @@ class LogService:
         *,
         path: str,
         field_name: str,
-        authorized_entities: set[str] | None = None,
+        authorized_entities: set[str] | None,
         limit: int,
         pagination_cursor: str | None,
     ) -> tuple[list[str], str | None]:
@@ -1823,7 +1829,9 @@ class LogService:
         It performs the same operation recursively on its ancestors.
         """
         associated_logs, _ = await self.get_logs(
-            search_params=LogSearchParams(entity_ref=entity.ref), limit=1
+            authorized_entities=None,
+            search_params=LogSearchParams(entity_ref=entity.ref),
+            limit=1,
         )
         if not associated_logs:
             await self.session.delete(entity)
@@ -2003,7 +2011,7 @@ class LogService:
 
     async def get_log_entities(
         self,
-        authorized_entities: set[str],
+        authorized_entities: set[str] | None,
         *,
         parent_entity_ref=NotImplemented,
         search: str | None = None,
@@ -2016,11 +2024,11 @@ class LogService:
         if parent_entity_ref is not NotImplemented:
             filters.append(LogEntity.parent_entity_ref == parent_entity_ref)
 
-        if authorized_entities:
+        if authorized_entities is not None:
             # get the complete hierarchy of the entity from the entity itself to the top entity
             parent_entity_ref_hierarchy = (
                 await self._get_entity_hierarchy(parent_entity_ref)
-                if parent_entity_ref
+                if parent_entity_ref not in (None, NotImplemented)
                 else set()
             )
             # we check if we have permission on parent_entity_ref or any of its parent entities
@@ -2048,9 +2056,9 @@ class LogService:
         )
 
     async def get_log_entity(
-        self, entity_ref: str, authorized_entities: set[str]
+        self, entity_ref: str, authorized_entities: set[str] | None
     ) -> Log.EntityPathNode:
-        if authorized_entities:
+        if authorized_entities is not None:
             entity_ref_hierarchy = await self._get_entity_hierarchy(entity_ref)
             authorized_entities_hierarchy = await self._get_entities_hierarchy(
                 authorized_entities
@@ -2087,9 +2095,13 @@ class LogService:
     async def _iter_paginated_items[T](
         func: Callable[..., Awaitable[tuple[list[T], str | None]]],
     ) -> AsyncIterator[T]:
+        # NB: this is only used to build the translation template, which covers
+        # the whole repository, hence no restriction on log entities
         cursor = None
         while True:
-            items, next_cursor = await func(limit=100, pagination_cursor=cursor)
+            items, next_cursor = await func(
+                authorized_entities=None, limit=100, pagination_cursor=cursor
+            )
             for item in items:
                 yield item
             if not next_cursor:

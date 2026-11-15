@@ -70,13 +70,13 @@ async def get_log_service(
 def get_authorized_entities(
     log_service: ToolLogService = Depends(get_log_service),
     authorized: Authenticated = Depends(get_authorized),
-) -> set[str]:
+) -> set[str] | None:
     return authorized.permissions.get_repo_readable_entities(log_service.repo.id)
 
 
 async def get_tool_context(
     log_service: ToolLogService = Depends(get_log_service),
-    authorized_entities: set[str] = Depends(get_authorized_entities),
+    authorized_entities: set[str] | None = Depends(get_authorized_entities),
 ) -> ToolContext:
     return ToolContext(log_service=log_service, authorized_entities=authorized_entities)
 

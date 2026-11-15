@@ -145,7 +145,11 @@ class UserRepoPermissions(BaseModel):
         description="Whether authenticated can write logs into the repository"
     )
     readable_entities: list[str] = Field(
-        description="The entities the authenticated can access on read. Empty list means all entities.",
+        description=(
+            "The entities the authenticated can access on read, only relevant when "
+            "`read` is false (it is always empty when `read` is true, as all "
+            "entities are readable)."
+        ),
     )
 
 

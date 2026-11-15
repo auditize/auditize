@@ -137,7 +137,7 @@ def validate_log_csv_columns(cols: list[str]):
 async def stream_logs_as_csv(
     log_service: LogService,
     *,
-    authorized_entities: set[str] = None,
+    authorized_entities: set[str] | None,
     search_params: LogSearchParams = None,
     columns: list[str],
     lang: Lang,

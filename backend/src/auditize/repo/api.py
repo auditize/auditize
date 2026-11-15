@@ -260,7 +260,7 @@ async def list_user_repos(
                 and authorized.comply(can_write_logs_to_repo(repo_read.id))
             ),
             readable_entities=list(
-                authorized.permissions.get_repo_readable_entities(repo_read.id)
+                authorized.permissions.get_repo_readable_entities(repo_read.id) or []
             ),
         )
 

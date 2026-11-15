@@ -8,7 +8,7 @@ from auditize.log.service import LogService
 async def stream_logs_as_jsonl(
     log_service: LogService,
     *,
-    authorized_entities: set[str] = None,
+    authorized_entities: set[str] | None,
     search_params: LogSearchParams = None,
 ) -> AsyncGenerator[str, None]:
     max_rows = get_config().export_max_rows

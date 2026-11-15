@@ -408,6 +408,31 @@ def test_authorize_grant_on_logs_with_entity():
     assert_unauthorized(granted_perms, granted_perms)
 
 
+@pytest.mark.parametrize(
+    "perms,expected",
+    [
+        # full access to all repos:
+        ({"is_superadmin": True}, None),
+        ({"logs": {"read": True}}, None),
+        # full access to the repo:
+        ({"logs": {"repos": [{"repo_id": REPO_1, "read": True}]}}, None),
+        # access restricted to some entities of the repo:
+        (
+            {"logs": {"repos": [{"repo_id": REPO_1, "readable_entities": ["e1"]}]}},
+            {"e1"},
+        ),
+        # no access to the repo:
+        ({}, set()),
+        ({"logs": {"write": True}}, set()),
+        ({"logs": {"repos": [{"repo_id": REPO_1, "write": True}]}}, set()),
+        ({"logs": {"repos": [{"repo_id": REPO_2, "read": True}]}}, set()),
+    ],
+)
+def test_get_repo_readable_entities(perms: dict, expected: set[str] | None):
+    permissions = normalize_permissions(_build_permissions_from_dict(perms))
+    assert permissions.get_repo_readable_entities(REPO_1) == expected
+
+
 def test_permission_assertions_on_logs_as_permissions_specific_repos():
     perms = {
         "logs": {

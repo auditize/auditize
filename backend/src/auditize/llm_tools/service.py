@@ -211,7 +211,7 @@ class ToolLogService(LogService):
     async def describe_repo(
         self,
         *,
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None,
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> RepoDescription:
@@ -298,8 +298,9 @@ class ToolLogService(LogService):
         # The query only filters on the action type, so that the number of hits
         # tells whether the action type exists, the time window is applied
         # through the "window" filter aggregation
+        # NB: the authorized entities restriction is already applied by the main query
         window_query = await self._build_es_query(
-            LogSearchParams(since=since, until=until)
+            LogSearchParams(since=since, until=until), authorized_entities=None
         )
         resp = await self.es.search(
             index=self.read_alias,
@@ -412,7 +413,7 @@ class ToolLogService(LogService):
         self,
         action_type: str,
         *,
-        authorized_entities: set[str] = None,
+        authorized_entities: set[str] | None,
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> ActionDescription:
@@ -448,4 +449,4 @@ class ToolLogService(LogService):
 @dataclass
 class ToolContext:
     log_service: ToolLogService
-    authorized_entities: set[str]
+    authorized_entities: set[str] | None

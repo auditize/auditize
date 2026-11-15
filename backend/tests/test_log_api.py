@@ -2165,6 +2165,10 @@ async def test_get_log_entities_visibility(
     await _test_get_log_entities_visibility(
         apikey_builder, repo, ["AA"], {"parent_entity_ref": "B"}, []
     )
+    # without root / parent_entity_ref filter
+    await _test_get_log_entities_visibility(
+        apikey_builder, repo, ["AA"], {}, ["A", "AA"]
+    )
 
     # Test with a user with entity permission on entity "AAA"
     await _test_get_log_entities_visibility(

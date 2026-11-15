@@ -5,6 +5,9 @@
 - Fix user email update being always denied for non-superadmin users
 - Fix partial update of the log permissions of a repository (user / API key)
   that could drop unrelated permissions on that repository
+- Fix log entity listing (without `root` / `parent_entity_ref` filter, e.g. the
+  MCP `search_entities` tool) failing for users / API keys restricted to some
+  log entities
 
 # 0.13.0 (2026-11-09)
 
