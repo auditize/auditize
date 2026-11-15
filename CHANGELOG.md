@@ -3,6 +3,8 @@
 - Security: API key secret regeneration now requires the caller to hold all the
   permissions of the target API key (privilege escalation fix)
 - Fix user email update being always denied for non-superadmin users
+- Fix partial update of the log permissions of a repository (user / API key)
+  that could drop unrelated permissions on that repository
 
 # 0.13.0 (2026-11-09)
 

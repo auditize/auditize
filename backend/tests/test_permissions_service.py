@@ -777,6 +777,68 @@ def test_update_permissions_drop_repo():
     )
 
 
+def _test_update_repo_log_permissions(
+    current: dict, update: dict, expected: list[dict]
+):
+    _test_update_permission(
+        {"logs": {"repos": [{"repo_id": REPO_1, **current}]}},
+        {"logs": {"repos": [{"repo_id": REPO_1, **update}]}},
+        {
+            "is_superadmin": False,
+            "logs": {
+                "read": False,
+                "write": False,
+                "repos": [{"repo_id": REPO_1, **perms} for perms in expected],
+            },
+            "management": {
+                "repos": {"read": False, "write": False},
+                "users": {"read": False, "write": False},
+                "apikeys": {"read": False, "write": False},
+            },
+        },
+    )
+
+
+def test_update_permissions_partial_repo_update_drop_read():
+    _test_update_repo_log_permissions(
+        {"read": True, "write": True},
+        {"read": False},
+        [{"read": False, "write": True, "readable_entities": []}],
+    )
+
+
+def test_update_permissions_partial_repo_update_drop_write():
+    _test_update_repo_log_permissions(
+        {"read": True, "write": True},
+        {"write": False},
+        [{"read": True, "write": False, "readable_entities": []}],
+    )
+
+
+def test_update_permissions_partial_repo_update_drop_readable_entities():
+    _test_update_repo_log_permissions(
+        {"write": True, "readable_entities": ["entity1"]},
+        {"readable_entities": []},
+        [{"read": False, "write": True, "readable_entities": []}],
+    )
+
+
+def test_update_permissions_partial_repo_update_drop_last_permission():
+    _test_update_repo_log_permissions(
+        {"readable_entities": ["entity1"]},
+        {"readable_entities": []},
+        [],
+    )
+
+
+def test_update_permissions_partial_repo_update_no_change():
+    _test_update_repo_log_permissions(
+        {"read": True, "write": True},
+        {},
+        [{"read": True, "write": True, "readable_entities": []}],
+    )
+
+
 def _test_get_applicable_permissions(input: dict, expected: dict):
     assert (
         compute_applicable_permissions(_build_permissions_from_dict(input)).model_dump()

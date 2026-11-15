@@ -218,6 +218,46 @@ class BasePermissionTests:
                 ),
             )
 
+    async def test_update_permissions_partial_repo_update(
+        self,
+        repo: PreparedRepo,
+        superadmin_client: HttpTestHelper,
+    ):
+        assignee = await self.create_assignee(
+            superadmin_client,
+            self.prepare_assignee_data(
+                {
+                    "permissions": {
+                        "logs": {
+                            "repos": [
+                                {"repo_id": repo.id, "read": True, "write": True}
+                            ],
+                        },
+                    }
+                }
+            ),
+        )
+
+        # Only "read" is updated, "write" must be kept
+        await superadmin_client.assert_patch_ok(
+            f"{self.base_path}/{assignee.id}",
+            json={
+                "permissions": {
+                    "logs": {"repos": [{"repo_id": repo.id, "read": False}]},
+                }
+            },
+        )
+
+        resp = await superadmin_client.assert_get_ok(f"{self.base_path}/{assignee.id}")
+        assert resp.json()["permissions"]["logs"]["repos"] == [
+            {
+                "repo_id": repo.id,
+                "read": False,
+                "write": True,
+                "readable_entities": [],
+            }
+        ]
+
     async def test_update_permissions_unknown_repo(
         self, superadmin_client: HttpTestHelper
     ):

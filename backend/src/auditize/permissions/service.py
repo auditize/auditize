@@ -162,24 +162,14 @@ def _update_log_permissions(
                 ),
                 None,
             )
-            if current_repo_perms:
-                if not any(
-                    (
-                        updated_repo_perms.read,
-                        updated_repo_perms.write,
-                        updated_repo_perms.readable_entities,
-                    )
-                ):
-                    # Remove repo log permissions that are said to be removed
-                    current.repo_log_permissions.remove(current_repo_perms)
-                else:
-                    # Update existing repo log permissions
-                    _update_repo_log_permissions(current_repo_perms, updated_repo_perms)
-            else:
-                # Add new repo log permissions
-                new_repo_perms = RepoLogPermissions(repo_id=updated_repo_perms.repo_id)
-                _update_repo_log_permissions(new_repo_perms, updated_repo_perms)
-                current.repo_log_permissions.append(new_repo_perms)
+            if not current_repo_perms:
+                current_repo_perms = RepoLogPermissions(
+                    repo_id=updated_repo_perms.repo_id
+                )
+                current.repo_log_permissions.append(current_repo_perms)
+            # NB: repo log permissions that end up empty (no read, no write,
+            # no readable entities) are removed by normalize_permissions
+            _update_repo_log_permissions(current_repo_perms, updated_repo_perms)
 
 
 def update_permissions(
