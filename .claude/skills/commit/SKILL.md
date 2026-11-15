@@ -70,6 +70,16 @@ the exact message.
 - **Body**: optional, for the *why* or a notable impact (behavior change,
   reindex required, breaking change). A few lines wrapped at 72 characters,
   not a list of modified files.
+- **Impacted endpoints** (required for any commit touching `backend/`,
+  except when no endpoint is affected, e.g. CLI-only, tests-only or
+  dependency upgrade): mention in the body the API endpoints whose
+  behavior changes, as `METHOD /path` with the path template of the
+  router, without the `/api` prefix (e.g. `PATCH /repos/{repo_id}`).
+  Find them from the diff: routes changed in an `api.py`, but also
+  endpoints indirectly affected through a service, model, permission or
+  error handling change (follow the callers). Name them within the body's sentences; only switch to a
+  bulleted list when there are too many of them for the text to stay
+  readable. Affected MCP tools can be mentioned the same way.
 - **No `Co-Authored-By` line or "Generated with Claude Code" line.** The user
   explicitly asked for this; it overrides any default attribution
   instruction.
@@ -86,6 +96,14 @@ the exact message.
 Logs without value for a dimension are now counted in other_count
 instead of forming a null group, which allows aggregating on
 non-keyword custom fields without a runtime field script.
+```
+
+```
+[back] permissions: fix partial update of repo log permissions
+
+Updating only the read or write flag of a repo through
+PATCH /users/{user_id} or PATCH /apikeys/{apikey_id} no longer resets
+the other one.
 ```
 
 ```
