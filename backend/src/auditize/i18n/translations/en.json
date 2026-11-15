@@ -2,6 +2,7 @@
   "test": "This is a test",
   "test_var": "This is a test with a variable {var}",
   "error": {
+    "cannot_regenerate_apikey": "Cannot regenerate the secret of an API key with higher privileges than you",
     "cannot_update_user_email": "Cannot update email of a user with higher privileges than you",
     "log_i18n_profile_deletion_forbidden": "Cannot delete log i18n profile {profile_id}: the profile is used by one or more repositories",
     "cannot_delete_last_superadmin_user": "Cannot delete the last user with superadmin role",

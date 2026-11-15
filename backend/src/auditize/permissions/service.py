@@ -8,6 +8,7 @@ from auditize.permissions.models import (
     ApplicablePermissions,
     LogPermissionsInput,
     LogPermissionsOutput,
+    ManagementPermissionsInput,
     ManagementPermissionsOutput,
     Permissions,
     PermissionsInput,
@@ -348,6 +349,57 @@ def authorize_grant(grantor_perms: Permissions, assignee_perms: PermissionsInput
         grantor_perms.apikeys_write,
         "apikeys",
     )
+
+
+def _granted_only(value: bool) -> bool | None:
+    # In a PermissionsInput, None means "unchanged" while False means "revoke";
+    # only actually granted permissions must be taken into account here
+    return True if value else None
+
+
+def _build_granted_permissions_input(perms: Permissions) -> PermissionsInput:
+    return PermissionsInput(
+        is_superadmin=_granted_only(perms.is_superadmin),
+        logs=LogPermissionsInput(
+            read=_granted_only(perms.logs_read),
+            write=_granted_only(perms.logs_write),
+            repos=[
+                RepoLogPermissionsInput(
+                    repo_id=repo_perms.repo_id,
+                    read=_granted_only(repo_perms.read),
+                    write=_granted_only(repo_perms.write),
+                    readable_entities=[
+                        entity.ref for entity in repo_perms.readable_entities
+                    ]
+                    or None,
+                )
+                for repo_perms in perms.repo_log_permissions
+            ],
+        ),
+        management=ManagementPermissionsInput(
+            repos=ReadWritePermissionsInput(
+                read=_granted_only(perms.repos_read),
+                write=_granted_only(perms.repos_write),
+            ),
+            users=ReadWritePermissionsInput(
+                read=_granted_only(perms.users_read),
+                write=_granted_only(perms.users_write),
+            ),
+            apikeys=ReadWritePermissionsInput(
+                read=_granted_only(perms.apikeys_read),
+                write=_granted_only(perms.apikeys_write),
+            ),
+        ),
+    )
+
+
+def authorize_no_higher_privileges(
+    perms: Permissions, target_perms: Permissions
+) -> None:
+    """
+    Raise PermissionDenied if target_perms grants any permission not covered by perms.
+    """
+    authorize_grant(perms, _build_granted_permissions_input(target_perms))
 
 
 def is_authorized(perms: Permissions, assertion: PermissionAssertion) -> bool:

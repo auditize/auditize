@@ -1,3 +1,9 @@
+# Unreleased
+
+- Security: API key secret regeneration now requires the caller to hold all the
+  permissions of the target API key (privilege escalation fix)
+- Fix user email update being always denied for non-superadmin users
+
 # 0.13.0 (2026-11-09)
 
 - Add `analyze-logs` CLI command to analyze logs using an LLM (v0 of log analysis in Auditize)

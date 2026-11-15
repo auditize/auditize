@@ -22,7 +22,7 @@ from auditize.permissions.assertions import (
     can_read_apikey,
     can_write_apikey,
 )
-from auditize.permissions.service import authorize_grant
+from auditize.permissions.service import authorize_grant, authorize_no_higher_privileges
 
 router = APIRouter(
     responses=error_responses(status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
@@ -145,7 +145,8 @@ async def delete_apikey(
 @router.post(
     "/apikeys/{apikey_id}/key",
     summary="Re-generate API key secret",
-    description="Requires `apikey:write` permission.",
+    description="Requires `apikey:write` permission and all the permissions "
+    "of the target API key.",
     operation_id="generate_apikey_new_secret",
     tags=["apikey"],
     status_code=status.HTTP_200_OK,
@@ -158,5 +159,10 @@ async def regenerate_apikey(
     apikey_id: UUID,
 ):
     _ensure_cannot_alter_own_apikey(authorized, apikey_id)
+    apikey = await service.get_apikey(session, apikey_id)
+    try:
+        authorize_no_higher_privileges(authorized.permissions, apikey.permissions)
+    except PermissionDenied:
+        raise PermissionDenied(("error.cannot_regenerate_apikey",))
     key = await service.regenerate_apikey(session, apikey_id)
     return ApikeyRegenerationResponse(key=key)

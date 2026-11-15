@@ -10,7 +10,7 @@ from auditize.auth.authorizer import Authenticated, Require, RequireUser
 from auditize.dependencies import get_db_session
 from auditize.exceptions import PermissionDenied
 from auditize.permissions.assertions import can_read_user, can_write_user
-from auditize.permissions.service import authorize_grant
+from auditize.permissions.service import authorize_grant, authorize_no_higher_privileges
 from auditize.user import service
 from auditize.user.models import (
     UserCreate,
@@ -47,7 +47,7 @@ async def _ensure_cannot_update_email_of_user_with_non_grantable_permission(
     user = await service.get_user(session, user_id)
     if update.email != user.email:
         try:
-            authorize_grant(authorized.permissions, user.permissions)
+            authorize_no_higher_privileges(authorized.permissions, user.permissions)
         except PermissionDenied:
             raise PermissionDenied(("error.cannot_update_user_email",))
 

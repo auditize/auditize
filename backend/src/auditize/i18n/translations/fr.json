@@ -2,6 +2,7 @@
   "test": "Ceci est un test",
   "test_var": "Ceci est un test avec une variable {var}",
   "error": {
+    "cannot_regenerate_apikey": "Impossible de régénérer le secret d'une clé d'API ayant des privilèges supérieurs aux vôtres",
     "cannot_update_user_email": "Impossible de mettre à jour l'email d'un utilisateur ayant des privilèges supérieurs aux vôtres",
     "log_i18n_profile_deletion_forbidden": "Impossible de supprimer le profil de traduction de journaux {profile_id} : le profil est utilisé par un ou plusieurs dépôts",
     "cannot_delete_last_superadmin_user": "Impossible de supprimer le dernier utilisateur ayant le rôle superadmin",

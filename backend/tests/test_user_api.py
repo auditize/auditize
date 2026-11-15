@@ -24,7 +24,6 @@ from helpers.repo import PreparedRepo
 from helpers.user import PreparedUser
 from helpers.utils import DATETIME_FORMAT
 
-
 UNKNOWN_PASSWORD_RESET_TOKEN = (
     "5620281609bbdc9796751a1cb1ac58efb27497b1fd14a0788faa83ada93e6048"
 )
@@ -237,6 +236,33 @@ async def test_user_update_email_with_user_holding_non_grantable_permission(
     async with grantor.client() as client:
         client: HttpTestHelper
         await client.assert_patch_forbidden(
+            f"/users/{assignee.id}",
+            json={"email": "another.email@example.net"},
+        )
+
+
+async def test_user_update_email_with_user_holding_grantable_permission(
+    user_builder: UserBuilder,
+):
+    grantor = await user_builder(
+        {
+            "management": {
+                "users": {"read": True, "write": True},
+                "repos": {"read": True, "write": True},
+            }
+        }
+    )
+    assignee = await user_builder(
+        {
+            "management": {
+                "repos": {"read": True, "write": True},
+            }
+        }
+    )
+
+    async with grantor.client() as client:
+        client: HttpTestHelper
+        await client.assert_patch_ok(
             f"/users/{assignee.id}",
             json={"email": "another.email@example.net"},
         )

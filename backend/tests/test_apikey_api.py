@@ -9,7 +9,6 @@ from helpers.pagination import do_test_page_pagination_common_scenarios
 from helpers.permissions.tests import BasePermissionTests
 from helpers.user import PreparedUser
 
-
 # Make API calls as a user instead of apikey to let an empty apikeys collection
 # when testing apikeys.
 
@@ -146,6 +145,45 @@ async def test_apikey_regenerate_key_forbidden(
 async def test_apikey_regenerate_key_self(apikey: PreparedApikey):
     async with apikey.client() as client:
         await client.assert_post_forbidden(f"/apikeys/{apikey.id}/key")
+
+
+async def test_apikey_regenerate_key_forbidden_on_superadmin_apikey(
+    apikey_builder: ApikeyBuilder,
+):
+    grantor = await apikey_builder({"management": {"apikeys": {"write": True}}})
+    target = await apikey_builder({"is_superadmin": True})
+    async with grantor.client() as client:
+        await client.assert_post_forbidden(f"/apikeys/{target.id}/key")
+
+
+async def test_apikey_regenerate_key_forbidden_on_apikey_with_higher_privileges(
+    apikey_builder: ApikeyBuilder,
+):
+    grantor = await apikey_builder({"management": {"apikeys": {"write": True}}})
+    target = await apikey_builder({"management": {"repos": {"write": True}}})
+    async with grantor.client() as client:
+        await client.assert_post_forbidden(f"/apikeys/{target.id}/key")
+
+
+async def test_apikey_regenerate_key_on_apikey_without_higher_privileges(
+    apikey_builder: ApikeyBuilder,
+):
+    grantor = await apikey_builder(
+        {
+            "management": {
+                "apikeys": {"write": True},
+                "repos": {"read": True, "write": True},
+            }
+        }
+    )
+    target = await apikey_builder(
+        {"management": {"repos": {"read": True, "write": True}}}
+    )
+    async with grantor.client() as client:
+        await client.assert_post_ok(
+            f"/apikeys/{target.id}/key",
+            expected_json={"key": matchers.IsA(str)},
+        )
 
 
 async def test_apikey_get(apikey_read_client: HttpTestHelper, apikey: PreparedApikey):

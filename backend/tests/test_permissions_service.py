@@ -10,6 +10,7 @@ from auditize.permissions.models import PermissionsInput
 from auditize.permissions.service import (
     authorize_access,
     authorize_grant,
+    authorize_no_higher_privileges,
     build_permissions,
     build_permissions_output,
     compute_applicable_permissions,
@@ -24,12 +25,14 @@ REPO_3 = UUID("14f27afe-902d-4176-8612-920bc59f95cb")
 REPO_4 = UUID("8ecdf2db-c70d-4cad-8610-d4334e65d0df")
 
 
+def _build_permissions_from_dict(input: dict) -> Permissions:
+    return build_permissions(PermissionsInput.model_validate(input))
+
+
 def _test_normalization_permissions(input: dict, expected: dict):
     assert (
         build_permissions_output(
-            normalize_permissions(
-                build_permissions(PermissionsInput.model_validate(input))
-            )
+            normalize_permissions(_build_permissions_from_dict(input))
         ).model_dump()
         == expected
     )
@@ -321,7 +324,7 @@ def test_normalization_read_and_write_logs_on_all_repos():
 
 
 def assert_authorized(grantor_perms, *granted_perms):
-    grantor_perms = build_permissions(PermissionsInput.model_validate(grantor_perms))
+    grantor_perms = _build_permissions_from_dict(grantor_perms)
 
     for granted in granted_perms:
         ic(granted)
@@ -329,7 +332,7 @@ def assert_authorized(grantor_perms, *granted_perms):
 
 
 def assert_unauthorized(grantor_perms, *granted_perms):
-    grantor_perms = build_permissions(PermissionsInput.model_validate(grantor_perms))
+    grantor_perms = _build_permissions_from_dict(grantor_perms)
 
     for granted in granted_perms:
         ic(granted)
@@ -450,7 +453,7 @@ def test_permission_assertions_on_management_as_specific_permissions():
 
 
 def _test_update_permission(current: dict, update: dict, expected: dict):
-    current = build_permissions(PermissionsInput.model_validate(current))
+    current = _build_permissions_from_dict(current)
     update = PermissionsInput.model_validate(update)
 
     update_permissions(current, update)
@@ -776,9 +779,7 @@ def test_update_permissions_drop_repo():
 
 def _test_get_applicable_permissions(input: dict, expected: dict):
     assert (
-        compute_applicable_permissions(
-            build_permissions(PermissionsInput.model_validate(input))
-        ).model_dump()
+        compute_applicable_permissions(_build_permissions_from_dict(input)).model_dump()
         == expected
     )
 
@@ -867,3 +868,97 @@ def test_authorize_access():
     # Not OK case
     with pytest.raises(PermissionDenied):
         authorize_access(Permissions(), assertion)
+
+
+def _assert_no_higher_privileges(perms: dict, target_perms: dict):
+    authorize_no_higher_privileges(
+        _build_permissions_from_dict(perms),
+        _build_permissions_from_dict(target_perms),
+    )
+
+
+def _assert_higher_privileges(perms: dict, target_perms: dict):
+    with pytest.raises(PermissionDenied):
+        authorize_no_higher_privileges(
+            _build_permissions_from_dict(perms),
+            _build_permissions_from_dict(target_perms),
+        )
+
+
+def test_authorize_no_higher_privileges_as_superadmin():
+    _assert_no_higher_privileges({"is_superadmin": True}, {"is_superadmin": True})
+    _assert_no_higher_privileges(
+        {"is_superadmin": True},
+        {
+            "logs": {"read": True, "write": True},
+            "management": {"apikeys": {"read": True, "write": True}},
+        },
+    )
+
+
+def test_authorize_no_higher_privileges_superadmin_target():
+    _assert_higher_privileges(
+        {
+            "logs": {"read": True, "write": True},
+            "management": {
+                "repos": {"read": True, "write": True},
+                "users": {"read": True, "write": True},
+                "apikeys": {"read": True, "write": True},
+            },
+        },
+        {"is_superadmin": True},
+    )
+
+
+def test_authorize_no_higher_privileges_no_permissions():
+    _assert_no_higher_privileges({}, {})
+    _assert_no_higher_privileges({"management": {"apikeys": {"write": True}}}, {})
+
+
+def test_authorize_no_higher_privileges_same_permissions():
+    perms = {
+        "logs": {
+            "read": True,
+            "repos": [
+                {"repo_id": REPO_1, "write": True},
+                {"repo_id": REPO_2, "readable_entities": ["entity_A"]},
+            ],
+        },
+        "management": {
+            "repos": {"read": True, "write": True},
+            "users": {"read": True},
+            "apikeys": {"write": True},
+        },
+    }
+    _assert_no_higher_privileges(perms, perms)
+
+
+def test_authorize_no_higher_privileges_global_logs_cover_repo_logs():
+    _assert_no_higher_privileges(
+        {"logs": {"read": True, "write": True}},
+        {
+            "logs": {
+                "repos": [
+                    {"repo_id": REPO_1, "read": True, "write": True},
+                    {"repo_id": REPO_2, "readable_entities": ["entity_A"]},
+                ]
+            }
+        },
+    )
+
+
+def test_authorize_no_higher_privileges_missing_permissions():
+    perms = {
+        "logs": {"repos": [{"repo_id": REPO_1, "read": True}]},
+        "management": {"repos": {"read": True}, "apikeys": {"write": True}},
+    }
+    for target in (
+        {"management": {"repos": {"write": True}}},
+        {"management": {"users": {"read": True}}},
+        {"management": {"apikeys": {"read": True}}},
+        {"logs": {"read": True}},
+        {"logs": {"repos": [{"repo_id": REPO_1, "write": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_2, "read": True}]}},
+        {"logs": {"repos": [{"repo_id": REPO_2, "readable_entities": ["entity_A"]}]}},
+    ):
+        _assert_higher_privileges(perms, target)
