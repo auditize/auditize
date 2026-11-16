@@ -1,7 +1,7 @@
+from dirty_equals import IsStr
 from httpx import Response
 
 from conftest import ApikeyBuilder
-from helpers import matchers
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID
@@ -20,7 +20,7 @@ async def test_apikey_create(apikey_write_client: HttpTestHelper):
         "/apikeys",
         json=data,
         expected_json=PreparedApikey.build_expected_api_response(
-            {**data, "key": matchers.IsA(str)}
+            {**data, "key": IsStr()}
         ),
     )
 
@@ -124,7 +124,7 @@ async def test_apikey_regenerate_key(
     # Regenerate the key
     resp = await apikey_write_client.assert_post_ok(
         f"/apikeys/{apikey.id}/key",
-        expected_json={"key": matchers.IsA(str)},
+        expected_json={"key": IsStr()},
     )
 
     # Test that the generated key actually works
@@ -182,7 +182,7 @@ async def test_apikey_regenerate_key_on_apikey_without_higher_privileges(
     async with grantor.client() as client:
         await client.assert_post_ok(
             f"/apikeys/{target.id}/key",
-            expected_json={"key": matchers.IsA(str)},
+            expected_json={"key": IsStr()},
         )
 
 

@@ -1,4 +1,4 @@
-from helpers import matchers
+from dirty_equals import IsStr
 
 from .http import HttpTestHelper
 
@@ -51,7 +51,7 @@ async def do_test_cursor_pagination_common_scenarios(
         params={**params, "limit": 3},
         expected_json={
             "items": items[:3],
-            "pagination": {"next_cursor": matchers.IsA(str)},
+            "pagination": {"next_cursor": IsStr()},
         },
     )
     await client.assert_get(

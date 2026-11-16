@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator
 from uuid import UUID, uuid4
 
+from dirty_equals import IsStr
 from httpx import Response
 
 from auditize.database.dbm import open_db_session
@@ -15,7 +16,6 @@ from auditize.user.service import (
     update_user,
 )
 from auditize.user.sql_models import User
-from helpers import matchers
 
 from .http import HttpTestHelper, get_cookie_by_name
 from .log_filter import PreparedLogFilter
@@ -120,7 +120,7 @@ class PreparedUser:
     @staticmethod
     def build_expected_api_response(extra=None) -> dict:
         return {
-            "id": matchers.IsA(str),
+            "id": IsStr(),
             "created_at": DATETIME_FORMAT,
             "updated_at": DATETIME_FORMAT,
             "lang": "en",

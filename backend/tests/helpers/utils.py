@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 
-from helpers import matchers
+from dirty_equals import IsStr
 
-DATETIME_FORMAT = matchers.Regex(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z")
+DATETIME_FORMAT = IsStr(regex=r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z")
 
 
 def strip_dict_keys(d: dict, *keys):

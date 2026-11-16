@@ -1,10 +1,10 @@
 import time
 from unittest.mock import patch
 
+from dirty_equals import IsStr
 from icecream import ic
 
 from conftest import ApikeyBuilder, UserBuilder
-from helpers import matchers
 from helpers.http import HttpTestHelper, get_cookie_by_name
 from helpers.log import UNKNOWN_UUID
 from helpers.permissions.constants import DEFAULT_APPLICABLE_PERMISSIONS
@@ -105,7 +105,7 @@ async def test_access_token_empty_permissions(apikey_builder: ApikeyBuilder):
             "/auth/access-token",
             json={"permissions": {}},
             expected_json={
-                "access_token": matchers.String(),
+                "access_token": IsStr(),
                 "expires_at": DATETIME_FORMAT,
             },
         )
@@ -120,7 +120,7 @@ async def test_access_token_authorized_permissions(
             "/auth/access-token",
             json={"permissions": {"is_superadmin": True}},
             expected_json={
-                "access_token": matchers.String(),
+                "access_token": IsStr(),
                 "expires_at": DATETIME_FORMAT,
             },
         )

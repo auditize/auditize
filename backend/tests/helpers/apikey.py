@@ -1,12 +1,13 @@
 import uuid
 
+from dirty_equals import IsStr
+
 from auditize.apikey.models import ApikeyCreate
 from auditize.apikey.service import create_apikey
 from auditize.apikey.sql_models import Apikey
 from auditize.database.dbm import open_db_session
 from auditize.permissions.models import PermissionsInput
 
-from . import matchers
 from .http import HttpTestHelper
 from .permissions.constants import DEFAULT_PERMISSIONS
 from .utils import DATETIME_FORMAT
@@ -62,7 +63,7 @@ class PreparedApikey:
     @staticmethod
     def build_expected_api_response(extra=None):
         return {
-            "id": matchers.IsA(str),
+            "id": IsStr(),
             "permissions": DEFAULT_PERMISSIONS,
             "created_at": DATETIME_FORMAT,
             "updated_at": DATETIME_FORMAT,

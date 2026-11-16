@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+from dirty_equals import IsStr
 from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
 from fastmcp.exceptions import ToolError
@@ -13,7 +14,6 @@ from auditize.exceptions import InternalError, NotFoundError
 from auditize.llm_tools.service import ToolLogService
 from auditize.mcp.app import mcp
 from conftest import ApikeyBuilder
-from helpers import matchers
 from helpers.apikey import PreparedApikey
 from helpers.http import HttpTestHelper
 from helpers.repo import PreparedRepo
@@ -104,7 +104,7 @@ async def test_tool_definition(mcp_client: Client[FastMCPTransport]):
         "items": {"type": "string"},
         "minItems": 1,
         "maxItems": 2,
-        "description": matchers.String(),
+        "description": IsStr(),
     }
     assert tool.inputSchema["properties"]["limit"] == {
         "type": "integer",
@@ -200,7 +200,7 @@ async def test_search_logs_pagination(
     first_page = await call_tool("search_logs", {"search_params": {}})
     assert first_page == {
         "items": [log.expected_api_response() for log in logs[:10]],
-        "next_cursor": matchers.String(),
+        "next_cursor": IsStr(),
     }
 
     assert await call_tool(

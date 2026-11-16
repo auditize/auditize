@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+from dirty_equals import IsDatetime, IsInstance, IsStr
 
 from conftest import ApikeyBuilder, RepoBuilder, UserBuilder
-from helpers import matchers
 from helpers.http import HttpTestHelper
 from helpers.log import UNKNOWN_UUID, PreparedLog
 from helpers.pagination import (
@@ -360,8 +360,8 @@ async def test_create_log_invalid_identifiers(
                 "localized_message": None,
                 "validation_errors": [
                     {
-                        "field": matchers.IsA(str),
-                        "message": matchers.StartsWith("String should match pattern"),
+                        "field": IsStr(),
+                        "message": IsStr(regex="String should match pattern.*"),
                     }
                 ],
             },
@@ -701,7 +701,7 @@ async def test_add_attachment_binary_and_all_fields(
                     "type": "binary",
                     "mime_type": "application/octet-stream",
                     "data": data,
-                    "saved_at": matchers.IsA(datetime),
+                    "saved_at": IsDatetime(),
                 }
             ]
         }
@@ -1097,7 +1097,7 @@ async def test_get_logs_limit(log_rw_client: HttpTestHelper, repo: PreparedRepo)
         f"/repos/{repo.id}/logs?limit=1",
         expected_json={
             "items": [log2.expected_api_response()],
-            "pagination": {"next_cursor": matchers.IsA(str)},
+            "pagination": {"next_cursor": IsStr()},
         },
     )
 
@@ -2071,10 +2071,8 @@ async def _test_get_log_entities_visibility(
                     {
                         "ref": entity_ref,
                         "name": entity_ref,
-                        "parent_entity_ref": matchers.OneOf(
-                            [matchers.Eq(None), matchers.IsA(str)]
-                        ),
-                        "has_children": matchers.IsA(bool),
+                        "parent_entity_ref": IsStr() | None,
+                        "has_children": IsInstance(bool),
                     }
                     for entity_ref in expected
                 ],
@@ -2252,10 +2250,8 @@ async def _test_get_log_entity_visibility(
                 expected_json={
                     "ref": entity_ref,
                     "name": entity_ref,
-                    "parent_entity_ref": matchers.OneOf(
-                        [matchers.Eq(None), matchers.IsA(str)]
-                    ),
-                    "has_children": matchers.IsA(bool),
+                    "parent_entity_ref": IsStr() | None,
+                    "has_children": IsInstance(bool),
                 },
             )
         else:

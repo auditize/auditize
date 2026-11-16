@@ -41,6 +41,7 @@ dev = [
   "httpx",
   "icecream",
   "ruff",
+  "dirty-equals",
 ]
 doc = [
   "mkdocs-material",

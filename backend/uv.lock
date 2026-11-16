@@ -388,6 +388,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "dirty-equals" },
     { name = "httpx" },
     { name = "icecream" },
     { name = "pytest" },
@@ -425,6 +426,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "dirty-equals" },
     { name = "httpx" },
     { name = "icecream" },
     { name = "pytest" },
@@ -922,6 +924,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b4/2c/b6d63f4963883f9c5d6faa8153dd401a410ee72d6caf0ba1a74ce5fcbaac/cyclopts-5.5.0.tar.gz", hash = "sha256:995f779ef1cabdae1fd5fd4a92d303dc80a060c11c205137b77fb75bec079237", size = 257871, upload-time = "2026-11-14T02:13:36.903Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/51/af/7e6590a562ed6ac0fe9f35cdb24958d754fdf84021cec536037f3ae7dd02/cyclopts-5.5.0-py3-none-any.whl", hash = "sha256:ddc58a8e2035292ec7b81666ff07c4b32a4118ad4d7ef55593b91a02b6e34754", size = 300703, upload-time = "2026-11-14T02:13:35.244Z" },
+]
+
+[[package]]
+name = "dirty-equals"
+version = "0.11"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/30/1d/c5913ac9d6615515a00f4bdc71356d302437cb74ff2e9aaccd3c14493b78/dirty_equals-0.11.tar.gz", hash = "sha256:f4ac74ee88f2d11e2fa0f65eb30ee4f07105c5f86f4dc92b09eb1138775027c3", size = 128067, upload-time = "2025-11-17T01:51:24.451Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bb/8d/dbff05239043271dbeace563a7686212a3dd517864a35623fe4d4a64ca19/dirty_equals-0.11-py3-none-any.whl", hash = "sha256:b1d7093273fc2f9be12f443a8ead954ef6daaf6746fd42ef3a5616433ee85286", size = 28051, upload-time = "2025-11-17T01:51:22.849Z" },
 ]
 
 [[package]]

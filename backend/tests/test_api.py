@@ -4,8 +4,8 @@
 from unittest.mock import patch
 
 import pytest
+from dirty_equals import IsStr
 
-from helpers import matchers
 from helpers.http import HttpTestHelper
 
 
@@ -14,7 +14,7 @@ async def test_bad_json(superadmin_client: HttpTestHelper):
         "/repos",
         json="bad json",
         expected_json={
-            "message": matchers.StartsWith("Input should be a valid"),
+            "message": IsStr(regex="Input should be a valid.*"),
             "localized_message": None,
             "validation_errors": [],
         },
