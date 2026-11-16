@@ -1,5 +1,6 @@
 # Unreleased
 
+- Add official support for Python 3.15
 - Security: API key secret regeneration now requires the caller to hold all the
   permissions of the target API key (privilege escalation fix)
 - Fix user email update being always denied for non-superadmin users
