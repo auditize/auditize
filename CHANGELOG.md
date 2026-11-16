@@ -1,14 +1,18 @@
-# Unreleased
+# 0.13.1 (2026-11-16)
 
 - Add official support for Python 3.15
-- Security: API key secret regeneration now requires the caller to hold all the
-  permissions of the target API key (privilege escalation fix)
-- Fix user email update being always denied for non-superadmin users
-- Fix partial update of the log permissions of a repository (user / API key)
-  that could drop unrelated permissions on that repository
-- Fix log entity listing (without `root` / `parent_entity_ref` filter, e.g. the
-  MCP `search_entities` tool) failing for users / API keys restricted to some
-  log entities
+- Security: API key secret regeneration (`POST /api/apikeys/{apikey_id}/key`)
+  now requires the caller to hold all the permissions of the target API key
+  (privilege escalation fix)
+- Fix user email update (`PATCH /api/users/{user_id}`) being always denied for
+  non-superadmin users
+- Fix partial update of the log permissions of a repository
+  (`PATCH /api/users/{user_id}` and `PATCH /api/apikeys/{apikey_id}`) that could
+  drop unrelated permissions on that repository
+- Fix log entity listing (`GET /api/repos/{repo_id}/logs/entities` without
+  `root` / `parent_entity_ref` filter, e.g. the MCP `search_entities` tool)
+  failing for users / API keys restricted to some log entities
+- Update backend and frontend dependencies
 
 # 0.13.0 (2026-11-09)
 
